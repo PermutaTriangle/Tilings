@@ -16,7 +16,7 @@ __all__ = ("Tile", "Tiling")
 
 class Tile(object):
     "An enum used to represent different tiles in tilings"
-    INPUT_SET = X = "Input set"
+    #INPUT_SET = X = "Input set"
     ALL = UNIVERSE = PermSet()
     POINT = P = PermSet([Perm()])  # pylint: disable=invalid-name
     INCREASING = PermSet.avoiding(Perm((1, 0)))
@@ -24,17 +24,13 @@ class Tile(object):
 
 
 class Tiling(dict):
-    def __init__(self, iterable):
-        super(Tiling, self).__init__(iterable)
+    def __init__(self, tiles=()):
         # Inefficient AF?
+        super(Tiling, self).__init__(tiles)
         self._max_i = max(i for (i, _) in self) + 1 if self else 1
         self._max_j = max(j for (_, j) in self) + 1 if self else 1
-    #def __init__(self, tile_dict):
-    #    #for key, value in iteritems(tile_dict):
-    #    #    print(key, value)
-    #    #self.rule = {(i, j): s
-    #    #             for ((i,j), s) in rule.items()
-    #    #             if s is not None}
+        #for key, value in iteritems(tiles):
+        #    print(key, value)
 
 
     def __hash__(self):
@@ -42,7 +38,7 @@ class Tiling(dict):
         return sum(hash((key, value)) for (key, value) in iteritems(self))
 
     def __repr__(self):
-        return "<A tiling>"
+        return "<A tiling with {} non-empty tiles>".format(len(self))
 
     def __str__(self):
         n = self._max_i
@@ -62,9 +58,11 @@ class Tiling(dict):
                     arr[i][j] = '|'
 
         for i,j in self:
-            if type(self[(i,j)]) is Tile.INPUT_SET:
-                arr[2*i+1][2*j+1] = 'X'
-            elif type(self[(i,j)]) is Tile.POINT:
+            #if type(self[(i,j)]) is Tile.INPUT_SET:
+            #    arr[2*i+1][2*j+1] = 'X'
+            #elif type(self[(i,j)]) is Tile.POINT:
+            #    arr[2*i+1][2*j+1] = 'o'
+            if type(self[(i,j)]) is Tile.POINT:
                 arr[2*i+1][2*j+1] = 'o'
             else:
                 if self[(i,j)] not in labels:
@@ -80,24 +78,12 @@ class Tiling(dict):
         return out
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#
+# Please ignore the code below, will be used later
+#
 
 
 POINT_PERM_SET = PermSet(Perm(0,))
-
 
 
 class GeneratingRule(Descriptor):
@@ -179,9 +165,6 @@ class GeneratingSet(PermSetDescribed):
         PermSetDescribed.__init__(self, descriptor)
         self.rule = descriptor.rule  # TODO: Don't be so hacky
 
-    def of_length(self, length):
-        raise NotImplementedError
-
     def __contains__(self, item):
         raise NotImplementedError
 
@@ -231,7 +214,8 @@ class GeneratingSet(PermSetDescribed):
                 scolpart = [ [ sorted(colpart[i][j]) for j in range(h) ] for i in range(w) ]
                 for rowpart in product(*[ ordered_set_partitions(range(rowcnt[row]), [ cntz[row][col] for col in range(w) ]) for row in range(h) ]):
                     srowpart = [ [ sorted(rowpart[i][j]) for j in range(w) ] for i in range(h) ]
-                    for perm_ass in product(*[ s[1].of_length(cnt) for cnt, s in zip(count_ass, rule) ]):
+                    for perm_ass in product(*[ s[1].of_length(cnt) if s[1] is not Tile.P else s[1][0] for cnt, s in zip(count_ass, rule) ]):
+                    #for perm_ass in product(*[ s[1].of_length(cnt) for cnt, s in zip(count_ass, rule) ]):
                     #for perm_ass in product(*[ s[1].generate_of_length(cnt, input) for cnt, s in zip(count_ass, rule) ]):
                         arr = [ [ [] for j in range(w) ] for i in range(h) ]
 
