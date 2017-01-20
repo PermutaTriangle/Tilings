@@ -1,8 +1,10 @@
 from re import split
-from grid import Grid, GridSet
+from Tiling import Tile, Tiling
 
-def gridsFromFile(file_name):
-    grids = []
+from Permuta import Perm, PermSet
+
+def tilingsFromFile(file_name):
+    tilings = []
     with open(file_name) as f:
         s = f.read()
 
@@ -22,8 +24,9 @@ def gridsFromFile(file_name):
             item = el.strip().split('\n\n')[0]
             table = []
             rules = {}
+            rule = {}
             # Parse each line
-            for i in split(r'\n', item):
+            for i in split('\n', item):
                 if i.startswith('+'):
                     continue
                 if i.startswith('|'):
@@ -31,8 +34,17 @@ def gridsFromFile(file_name):
                 else:
                     num, rule = i.split(': ')
                     rules[num] = rule
-            grids.append(Grid(table, rules))
-    return GridSet(grids)
+            for i in range(len(table)):
+                for j in range(len(table[i])):
+                    char = table[i][j]
+                    if char == 'X':
+                        rule[(i, j)] = 'self'
+                    elif char.isnumeric():
+                        rule[(i, j)] = rules.get(char, None)
+                    elif char == 'o':
+                        rule[(i, j)] = 'p'
+            tilings.append((table,rules))
+    return tilings
 
 if __name__ == '__main__':
     print(gridsFromFile('ex9_output.txt'))
