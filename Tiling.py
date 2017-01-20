@@ -11,8 +11,93 @@ from permuta.descriptors import Descriptor
 from permuta._perm_set.unbounded.described import PermSetDescribed
 
 
-P = POINT_PERM_SET = PermSet([Perm()])
-N = EMPTY_PERM_SET = None  # PermSet([])
+__all__ = ("Tile", "Tiling")
+
+
+class Tile(object):
+    "An enum used to represent different tiles in tilings"
+    INPUT_SET = X = "Input set"
+    ALL = UNIVERSE = PermSet()
+    POINT = P = PermSet([Perm()])  # pylint: disable=invalid-name
+    INCREASING = PermSet.avoiding(Perm((1, 0)))
+    DECREASING = PermSet.avoiding(Perm((0, 1)))
+
+
+class Tiling(dict):
+    def __init__(self, iterable):
+        super(Tiling, self).__init__(iterable)
+        # Inefficient AF?
+        self._max_i = max(i for (i, _) in self) + 1 if self else 1
+        self._max_j = max(j for (_, j) in self) + 1 if self else 1
+    #def __init__(self, tile_dict):
+    #    #for key, value in iteritems(tile_dict):
+    #    #    print(key, value)
+    #    #self.rule = {(i, j): s
+    #    #             for ((i,j), s) in rule.items()
+    #    #             if s is not None}
+
+
+    def __hash__(self):
+        # TODO: Hash without using sum?
+        return sum(hash((key, value)) for (key, value) in iteritems(self))
+
+    def __repr__(self):
+        return "<A tiling>"
+
+    def __str__(self):
+        n = self._max_i
+        m = self._max_j
+        arr = [ [ ' ' for j in range(2*m+1) ] for i in range(2*n+1) ]
+        labels = {}
+
+        for i in range(2*n+1):
+            for j in range(2*m+1):
+                a = i % 2 == 0
+                b = j % 2 == 0
+                if a and b:
+                    arr[i][j] = '+'
+                elif a:
+                    arr[i][j] = '-'
+                elif b:
+                    arr[i][j] = '|'
+
+        for i,j in self:
+            if type(self[(i,j)]) is Tile.INPUT_SET:
+                arr[2*i+1][2*j+1] = 'X'
+            elif type(self[(i,j)]) is Tile.POINT:
+                arr[2*i+1][2*j+1] = 'o'
+            else:
+                if self[(i,j)] not in labels:
+                    labels[self[(i,j)]] = str(len(labels) + 1)
+
+                arr[2*i+1][2*j+1] = labels[self[(i,j)]]
+
+        out = '\n'.join( ''.join(row) for row in arr )
+
+        for k, v in sorted(labels.items(), key=lambda x: x[1]):
+            out += '\n{}: {!s}'.format(v, k)
+
+        return out
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+POINT_PERM_SET = PermSet(Perm(0,))
+
 
 
 class GeneratingRule(Descriptor):
