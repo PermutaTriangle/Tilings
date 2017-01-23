@@ -19,7 +19,7 @@ class Tile(object):
     #INPUT_SET = X = "Input set"
     I = INDEFINITE = 1  # pylint: disable=invalid-name
     U = UNIVERSE = PermSet()  # pylint: disable=invalid-name
-    P = POINT = PermSet([Perm()])  # pylint: disable=invalid-name
+    P = POINT = PermSet([Perm(0,)])  # pylint: disable=invalid-name
     INCREASING = PermSet.avoiding(Perm((1, 0)))
     DECREASING = PermSet.avoiding(Perm((0, 1)))
 
@@ -124,11 +124,11 @@ class TilingPermSet(PermSetDescribed):
         h = max( k[0] for k,v in rule ) + 1 if rule else 1
         w = max( k[1] for k,v in rule ) + 1 if rule else 1
 
-        #def permute(arr, perm):
-        #    res = [None] * len(arr)
-        #    for i in range(len(arr)):
-        #        res[i] = arr[perm[i] - 1]
-        #    return res
+        def permute(arr, perm):
+            res = [None] * len(arr)
+            for i in range(len(arr)):
+                res[i] = arr[perm[i] - 1]
+            return res
 
         def count_assignments(at, left):
 
@@ -158,15 +158,14 @@ class TilingPermSet(PermSetDescribed):
             colcnt = [ sum( cntz[row][col] for row in range(h) ) for col in range(w) ]
 
             for colpart in product(*[ ordered_set_partitions(range(colcnt[col]), [ cntz[row][col] for row in range(h) ]) for col in range(w) ]):
-                print(colpart)
                 scolpart = [ [ sorted(colpart[i][j]) for j in range(h) ] for i in range(w) ]
                 for rowpart in product(*[ ordered_set_partitions(range(rowcnt[row]), [ cntz[row][col] for col in range(w) ]) for row in range(h) ]):
+                    #print(rowpart)
                     srowpart = [ [ sorted(rowpart[i][j]) for j in range(w) ] for i in range(h) ]
                     for perm_ass in product(*[ s[1].of_length(cnt) for cnt, s in zip(count_ass, rule) ]):
                     #for perm_ass in product(*[ s[1].of_length(cnt) if s[1] is not Tile.P else s[1][0] for cnt, s in zip(count_ass, rule) ]):
                     #for perm_ass in product(*[ s[1].generate_of_length(cnt, input) for cnt, s in zip(count_ass, rule) ]):
                         arr = [ [ [] for j in range(w) ] for i in range(h) ]
-                        print(arr)
 
                         for i, perm in enumerate(perm_ass):
                             arr[rule[i][0][0]][rule[i][0][1]] = perm
@@ -177,8 +176,8 @@ class TilingPermSet(PermSetDescribed):
                         #cumul = 1
                         for row in range(h-1,-1,-1):
                             for col in range(w):
-                                for idx, val in zip(scolpart[col][row], arr[row][col].apply(srowpart[row][col])):
-                                #for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):
+                                #for idx, val in zip(scolpart[col][row], arr[row][col].apply(srowpart[row][col])):
+                                for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):
                                     res[col][idx] = cumul + val
 
                             cumul += rowcnt[row]
