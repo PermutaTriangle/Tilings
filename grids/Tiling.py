@@ -117,6 +117,9 @@ class TilingPermSet(PermSetDescribed):
     def __getitem__(self, key):
         raise NotImplementedError
 
+    def __len__(self):
+        raise NotImplementedError
+
     def of_length(self, n):
     #def generate_of_length(self, n, input):
 
@@ -197,7 +200,7 @@ TPS = TilingPermSet(TD)
 #
 
 
-POINT_PERM_SET = PermSet(Perm(0,))
+POINT_PERM_SET = PermSet([Perm(0,)])
 
 
 class GeneratingRule(Descriptor):
