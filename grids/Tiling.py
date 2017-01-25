@@ -130,7 +130,7 @@ class TilingPermSet(PermSetDescribed):
         def permute(arr, perm):
             res = [None] * len(arr)
             for i in range(len(arr)):
-                res[i] = arr[perm[i] - 1]
+                res[i] = arr[perm[i]]
             return res
 
         def count_assignments(at, left):
@@ -184,7 +184,6 @@ class TilingPermSet(PermSetDescribed):
                                     res[col][idx] = cumul + val
 
                             cumul += rowcnt[row]
-
                         yield Perm(flatten(res))
 
 
