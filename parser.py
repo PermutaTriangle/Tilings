@@ -1,7 +1,6 @@
 from re import split
-from Tiling import Tile, Tiling
-
-from Permuta import Perm, PermSet
+from grids.Tiling import Tile, Tiling
+from permuta import PermSet, Perm
 
 def tilingsFromFile(file_name):
     tilings = []
@@ -23,28 +22,33 @@ def tilingsFromFile(file_name):
             # We always take the first rule in a block, they are seperated by two newlines
             item = el.strip().split('\n\n')[0]
             table = []
-            rules = {}
+            permsets = {}
             rule = {}
             # Parse each line
             for i in split('\n', item):
                 if i.startswith('+'):
                     continue
                 if i.startswith('|'):
-                    table.append(i.strip().split('|')[1:-1])
+                    table.append( i.strip().split('|')[1:-1] )
                 else:
-                    num, rule = i.split(': ')
-                    rules[num] = rule
+                    num, avoids = i.split(': ')
+                    # Remove "Av()"
+                    avoids = avoids[3:-1]
+                    # Get 2d array
+                    avoids = eval(avoids)
+                    avoids = PermSet.avoiding([ Perm.one(perm) for perm in avoids ])
+                    permsets[num] = avoids
             for i in range(len(table)):
                 for j in range(len(table[i])):
                     char = table[i][j]
                     if char == 'X':
-                        rule[(i, j)] = 'self'
+                        rule[(i, j)] = 'input_set'
                     elif char.isnumeric():
-                        rule[(i, j)] = rules.get(char, None)
+                        rule[(i, j)] = permsets.get(char, None)
                     elif char == 'o':
-                        rule[(i, j)] = 'p'
-            tilings.append((table,rules))
+                        rule[(i, j)] = Tile.POINT
+            tilings.append(Tiling(rule))
     return tilings
 
 if __name__ == '__main__':
-    print(gridsFromFile('ex9_output.txt'))
+    print(tilingsFromFile('../Parse/ex9_output.txt'))
