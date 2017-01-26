@@ -42,7 +42,7 @@ def tilingsFromFile(file_name):
                 for j in range(len(table[i])):
                     char = table[i][j]
                     if char == 'X':
-                        rule[(i, j)] = 'X'
+                        rule[(i, j)] = 'input_set'
                     elif char.isnumeric():
                         rule[(i, j)] = permsets.get(char, None)
                     elif char == 'o':

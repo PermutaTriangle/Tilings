@@ -117,6 +117,9 @@ class TilingPermSet(PermSetDescribed):
     def __getitem__(self, key):
         raise NotImplementedError
 
+    def __len__(self):
+        raise NotImplementedError
+
     def of_length(self, n):
     #def generate_of_length(self, n, input):
 
@@ -127,7 +130,7 @@ class TilingPermSet(PermSetDescribed):
         def permute(arr, perm):
             res = [None] * len(arr)
             for i in range(len(arr)):
-                res[i] = arr[perm[i] - 1]
+                res[i] = arr[perm[i]]
             return res
 
         def count_assignments(at, left):
@@ -181,7 +184,6 @@ class TilingPermSet(PermSetDescribed):
                                     res[col][idx] = cumul + val
 
                             cumul += rowcnt[row]
-
                         yield Perm(flatten(res))
 
 
@@ -197,7 +199,7 @@ TPS = TilingPermSet(TD)
 #
 
 
-POINT_PERM_SET = PermSet(Perm(0,))
+POINT_PERM_SET = PermSet([Perm(0,)])
 
 
 class GeneratingRule(Descriptor):
