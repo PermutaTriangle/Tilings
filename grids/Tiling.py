@@ -86,6 +86,55 @@ class Tiling(dict):
 
         return out
 
+    def rank(self):
+        n = self._max_i
+        m = self._max_j
+        rows = [0]*n
+        cols = [0]*m
+
+        for i,j in self:
+            if type(self[(i,j)]) is Tile.POINT:
+                if rows[i] in (1,2):
+                    rows[i] += 2
+                else:
+                    rows[i] = max(1, rows[i])
+                if cols[j] in (1,2):
+                    cols[j] += 2
+                else:
+                    cols[j] = max(1, cols[j])
+            else:
+                if rows[i] in (1,3):
+                    rows[i] = 4
+                elif rows[i] == (2,4):
+                    rows[i] = 6
+                else:
+                    rows[i] = max(2, rows[i])
+                if cols[j] in (1,3):
+                    cols[j] = 4
+                elif cols[j] == (2,4):
+                    cols[j] = 6
+                else:
+                    cols[j] = max(2, colws[j])
+
+        res = max(max(rows), max(cols))
+        
+        for i,j in self:
+            if type(self[(i,j)]) is Tile.POINT:
+                if rows[i] == 3 and cols[j] == 3:
+                    res = max(res, 5)
+                elif rows[i] in (2,4,6) and cols[j] in (2,4,6):
+                    res = 7
+            else:
+                if rows[i] in (1,3) and cols[j] in (1,3):
+                    res = 7
+                elif rows[i] == 6 and cols[i] == 6:
+                    res = 7
+
+        return res
+
+
+
+    
 
 class TilingPermSetDescriptor(Descriptor):
     # TODO: Pluralize
