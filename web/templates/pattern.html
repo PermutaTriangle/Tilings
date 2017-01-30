@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<head>
+ <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+   tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
+  });
+ </script>
+ <script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
+ <title>Av({{ val['avoid'] }})</title>
+</head>
+<body>
+ <ul>
+  <li>Avoid: {{ val['avoid'] }}</li>
+  <li>Tile: {{ val['tile'] }}</li>
+  <li>Examples: {{ val['examples'] }} </li>
+  <li>Recurrence: {{ val['recurrence'] }} </li>
+  <li>Generating function: {{ val['genf'] }} </li>
+  <li>Solved generating function: {{ val['solved_genf'] }} </li>
+  <li>Coeffecients: {{ val['coeffs'] }} </li>
+ </ul>
+</body>
