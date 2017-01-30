@@ -22,19 +22,21 @@ class TestTilingRank(unittest.TestCase):
     def test_point_L_clash(self):
         self.assertEqual(Tiling({(0,0): Tile.P, (0,1): Tile.P, (1,0): Tile.P}).rank(), 5)
 
-    def test_set_set_clash(self):
-        self.assertEqual(Tiling({(0,0): Tile.DECREASING, (1,0): Tile.INCREASING}).rank(), 6)
+    def test_point_set_L_clash(self):
+        self.assertEqual(Tiling({(0,0): Tile.P, (0,1): Tile.INCREASING, (1,0): Tile.P}).rank(), 6)
+        self.assertEqual(Tiling({(0,0): Tile.DECREASING, (0,1): Tile.P, (1,0): Tile.P}).rank(), 6)
+        self.assertEqual(Tiling({(0,0): Tile.P, (0,1): Tile.P, (1,0): Tile.DECREASING}).rank(), 6)
+        self.assertEqual(Tiling({(0,0): Tile.P, (0,1): Tile.INCREASING, (1,0): Tile.INCREASING}).rank(), 6)
 
-    def test_other_clashes(self):
+    def test_set_set_clash(self):
+        self.assertEqual(Tiling({(0,0): Tile.DECREASING, (1,0): Tile.INCREASING}).rank(), 7)
         self.assertEqual(Tiling({(0,0): Tile.DECREASING, (1,1): Tile.INCREASING, (1,2): Tile.P, (2,1): Tile.DECREASING}).rank(), 7)
-        self.assertEqual(Tiling({(0,0): Tile.DECREASING, (0,1): Tile.INCREASING, (1,0): Tile.INCREASING, (1,1): Tile.DECREASING}).rank(), 7)
-        self.assertEqual(Tiling({(0,0): Tile.DECREASING, (0,1): Tile.INCREASING, (1,0): Tile.INCREASING}).rank(), 7)
-        self.assertEqual(Tiling({(0,0): Tile.P, (0,1): Tile.INCREASING, (1,0): Tile.INCREASING}).rank(), 7)
         self.assertEqual(Tiling({(0,0): Tile.DECREASING, (0,1): Tile.P, (1,0): Tile.INCREASING}).rank(), 7)
         self.assertEqual(Tiling({(0,0): Tile.DECREASING, (0,1): Tile.INCREASING, (1,0): Tile.P}).rank(), 7)
-        self.assertEqual(Tiling({(0,0): Tile.P, (0,1): Tile.INCREASING, (1,0): Tile.P}).rank(), 7)
-        self.assertEqual(Tiling({(0,0): Tile.DECREASING, (0,1): Tile.P, (1,0): Tile.P}).rank(), 7)
-        self.assertEqual(Tiling({(0,0): Tile.P, (0,1): Tile.P, (1,0): Tile.DECREASING}).rank(), 7)
+
+    def test_other_clashes(self):
+        self.assertEqual(Tiling({(0,0): Tile.DECREASING, (0,1): Tile.INCREASING, (1,0): Tile.INCREASING, (1,1): Tile.DECREASING}).rank(), 8)
+        self.assertEqual(Tiling({(0,0): Tile.DECREASING, (0,1): Tile.INCREASING, (1,0): Tile.INCREASING}).rank(), 8)
 
 
 
