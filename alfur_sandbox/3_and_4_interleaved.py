@@ -15,6 +15,7 @@ def all_sets_of_perms_of_set(perms):
             my_count += 1
             i //= 2
         all_sets.append(tuple(temp_set))
+    assert len(all_sets) == 2**len(all_perms)
     return sorted(set(all_sets))
 
 
@@ -32,11 +33,9 @@ def len_3_and_4_interleaved():
     len_3 = all_sets_of_perms_of_set(list(PermSet(3)))
     len_3 = sorted(set([lex_min(x) for x in len_3]))
     len_3.remove(())
-    print("Hello")
     len_4 = list(PermSet(4))
 
     for perms_3 in len_3:
-        print(perms_3)
         temp_len_4 = perms_not_covered_by(len_4, perms_3)
         for perms_4 in all_sets_of_perms_of_set(temp_len_4):
             if perms_4 == ():
