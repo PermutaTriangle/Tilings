@@ -1,8 +1,8 @@
 import unittest
 
-from permuta import Perm, PermSet
 from grids.Tiling import Tile, Tiling
-from parser import parse_log
+from grids.parser import parse_log
+from permuta import Perm, PermSet
 test_zero_str = '''Hennings-MacBook-Pro:classical_from_Kuszmaul ulfarsson$ python ex9.py
 [2016-09-20 16:18:11.110478] Generating permutations from input
 [2016-09-20 16:18:13.938951] Finished in 2.828s
