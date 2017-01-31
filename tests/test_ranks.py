@@ -1,5 +1,5 @@
 import pytest
-from Tiling import *
+from grids import *
 
     
 def test_empty():
