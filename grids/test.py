@@ -34,10 +34,11 @@ class TestTilingRank(unittest.TestCase):
         self.assertEqual(Tiling({(0,0): Tile.DECREASING, (0,1): Tile.P, (1,0): Tile.INCREASING}).rank(), 7)
         self.assertEqual(Tiling({(0,0): Tile.DECREASING, (0,1): Tile.INCREASING, (1,0): Tile.P}).rank(), 7)
 
-    def test_other_clashes(self):
-        self.assertEqual(Tiling({(0,0): Tile.DECREASING, (0,1): Tile.INCREASING, (1,0): Tile.INCREASING, (1,1): Tile.DECREASING}).rank(), 8)
+    def test_set_L_clash(self):
         self.assertEqual(Tiling({(0,0): Tile.DECREASING, (0,1): Tile.INCREASING, (1,0): Tile.INCREASING}).rank(), 8)
 
+    def test_set_square_clash(self):
+        self.assertEqual(Tiling({(0,0): Tile.DECREASING, (0,1): Tile.INCREASING, (1,0): Tile.INCREASING, (1,1): Tile.DECREASING}).rank(), 9)
 
 
 if __name__ == '__main__':
