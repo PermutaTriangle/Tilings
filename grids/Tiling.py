@@ -164,24 +164,33 @@ class Tiling(dict, Descriptor):
         rows = [0]*n
         cols = [0]*m
         sets = []
+        
+        #Checks for column or row interleaving
         for i,j in self:
             if self[(i,j)] is Block.point:
+                #Check for point-point or point-set interleaving
                 if rows[i] in (1,2):
                     rows[i] += 2
+                #Otherwise we use the max of the previous value and the rank of having only a point
                 else:
                     rows[i] = max(1, rows[i])
+                #Identical to above but for columns
                 if cols[j] in (1,2):
                     cols[j] += 2
                 else:
                     cols[j] = max(1, cols[j])
             else:
-                sets.append((i,j))
-                if rows[i] in (1,3):
+                sets.append((i,j)) #Store it as we need it to check for squares
+                #Checks for point-set interleaving
+                if rows[i] in (1,3): 
                     rows[i] = 4
+                #Checks for set-set interleaving
                 elif rows[i] in (2,4):
                     rows[i] = 7
+                #Otherwise we use the max of the previous value and the rank of having only a set
                 else:
                     rows[i] = max(2, rows[i])
+                #Identical to above but for rows
                 if cols[j] in (1,3):
                     cols[j] = 4
                 elif cols[j] in (2,4):
@@ -191,19 +200,26 @@ class Tiling(dict, Descriptor):
 
         res = max(max(rows), max(cols))
         
+        #Checks for L shaped interleaving
         for i,j in self:
             if self[(i,j)] is Block.point:
+                #Checks if there is an L shape consisting of only points
                 if rows[i] == 3 and cols[j] == 3:
                     res = max(res, 5)
+                #Checks if there is an L shape with points and sets mixed
                 elif rows[i] in (3,4) and cols[j] in (3,4):
                     res = max(res, 6) 
             else:
+                #Checks if there is an L shape with points and sets mixed
                 if rows[i] == 4 and cols[j] == 4:
                     res = max(res, 6)
+                #Checks if there is an L shape consisting only of sets
                 elif rows[i] == 7 and cols[j] == 7:
                     res = max(res, 8)
 
-        if res == 8:
+        if res == 8: #We only need to check if sets form a square if we already established L shape
+            #Checks if sets form a square. Picks 4 points and sorts them then it's enough to check
+            #that x_1 == x_2, y_1 == y_3, x_3 == x_4 and y_2 == y_4 to know if it's a square.
             for i, a in enumerate(sets):
                 for j, b in enumerate(sets[i+1:]):
                     for k, c in enumerate(sets[i+j+1:]):
