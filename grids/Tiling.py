@@ -2,34 +2,40 @@
 # TODO: Make python2.7 compatible once permuta is
 
 
-from copy import deepcopy
+import warnings
+
+from builtins import dict
+from collections import OrderedDict
 from itertools import product
+from operator import itemgetter
 from permuta import Perm
 from permuta import PermSet
 from permuta.misc import ordered_set_partitions, flatten
 from permuta.descriptors import Descriptor
-from permuta._perm_set.unbounded.described import PermSetDescribed
 
 
-#__all__ = ("Tile", "Tiling", "TilingPermSetDescriptor", "TilingPermSet")
+class Block(object):
+    """Different blocks for Tilings, for convenience."""
+    all = PermSet()
+    point = PermSet([Perm(0,)])  # TODO: Make a new optimized perm set if this is a bottleneck
+    increasing = PermSet.avoiding(Perm((1, 0)))
+    decreasing = PermSet.avoiding(Perm((0, 1)))
+    def __new__(_cls):
+        warnings.warn("Block class should not be instantiated")
 
 
-class Tile(object):
-    "An enum used to represent different tiles in tilings"
-    #INPUT_SET = X = "Input set"
-    I = INDEFINITE = 1  # pylint: disable=invalid-name
-    U = UNIVERSE = PermSet()  # pylint: disable=invalid-name
-    P = POINT = PermSet([Perm(0,)])  # pylint: disable=invalid-name
-    INCREASING = PermSet.avoiding(Perm((1, 0)))
-    DECREASING = PermSet.avoiding(Perm((0, 1)))
+class Tiling(dict, Descriptor):
+    """Tiling class.
 
+    Coordinates/cells are tuples of (i, j) which work in the traditional matrix way.
+    """
 
-class Tiling(dict):
+    __specified_labels = {}
+
     def __init__(self, tiles=()):
-        # Inefficient AF?
-        super(Tiling, self).__init__(tiles)
-        self._max_i = max(i for (i, _) in self) + 1 if self else 1
-        self._max_j = max(j for (_, j) in self) + 1 if self else 1
+        info = []
+        super(Tiling, self).__init__(self._init_helper(tiles, info))
+        self._hash, self._max_i, self._max_j, self._point_cells = info
         #for key, value in iteritems(tiles):
         #    print(key, value)
         #if isinstance(rule, list):
@@ -42,69 +48,124 @@ class Tiling(dict):
         #                 for ((i,j), s) in rule.items()
         #                 if s is not None}
 
+    def _init_helper(self, tiles, info):
+        point_perm_set = Block.point
+        point_cells = []
+        hash_sum = 0
+        max_i = 0
+        max_j = 0
+        for key_val in tiles.items():  # Builds the tuple in python2
+            hash_sum += hash(key_val)
+            cell, perm_set = key_val
+            if perm_set is point_perm_set:
+                point_cells.append(cell)
+            i, j = cell
+            max_i = max(max_i, i)
+            max_j = max(max_j, j)
+            yield key_val
+        info.append(hash(hash_sum))
+        info.append(max_i)
+        info.append(max_j)
+        info.append(point_cells)
+
+    @classmethod
+    def label(cls, block, label):
+        warnings.warn("Method signature may change", PendingDeprecationWarning)
+        cls.__specified_labels[block] = label
+
+    @property
+    def point_cells(self):
+        return self._point_cells
+
+    @property
+    def total_points(self):
+        return len(self._point_cells)
+
+    def get_row(number):
+        return {cell: block for cell, block in self.items() if cell[0] == number}
+
+    def get_col(number):
+        return {cell: block for cell, block in self.items() if cell[1] == number}
+
     def __hash__(self):
-        # TODO: Hash without using sum?
-        return hash(sum(hash((key, value)) for (key, value) in self.items()))
+        return self._hash
 
     def __repr__(self):
-        return "<A tiling with {} non-empty tiles>".format(len(self))
+        format_string = "<A tiling of {} non-empty tiles>"
+        return format_string.format(len(self))
 
     def __str__(self):
-        n = self._max_i
-        m = self._max_j
-        arr = [ [ ' ' for j in range(2*m+1) ] for i in range(2*n+1) ]
-        labels = {}
+        max_i = self._max_i
+        max_j = self._max_j
 
-        for i in range(2*n+1):
-            for j in range(2*m+1):
-                a = i % 2 == 0
-                b = j % 2 == 0
-                if a and b:
-                    arr[i][j] = '+'
-                elif a:
-                    arr[i][j] = '-'
-                elif b:
-                    arr[i][j] = '|'
+        result = []
 
-        for i,j in self:
-            #if type(self[(i,j)]) is Tile.INPUT_SET:
-            #    arr[2*i+1][2*j+1] = 'X'
-            #elif type(self[(i,j)]) is Tile.POINT:
-            #    arr[2*i+1][2*j+1] = 'o'
-            if type(self[(i,j)]) is Tile.POINT:
-                arr[2*i+1][2*j+1] = 'o'
+        # Create tiling lines
+        for i in range(2*max_i + 3):
+            for j in range(2*max_j + 3):
+                # Whether or not a vertical line and a horizontal line is present
+                vertical = j % 2 == 0
+                horizontal = i % 2 == 0
+                if vertical:
+                    if horizontal:
+                        result.append("+")
+                    else:
+                        result.append("|")
+                elif horizontal:
+                    result.append("-")
+                else:
+                    result.append(" ")
+            result.append("\n")
+
+        labels = OrderedDict()
+
+        # Put the sets in the tiles
+        row_width = 2*max_j + 4
+        for (i, j), perm_set in self.items():
+            # Check if label has been specified
+            specified_label = self.__specified_labels.get(perm_set)
+            if specified_label is None:
+                # Use generic label (could reuse specified label)
+                label = labels.get(perm_set)
+                if label is None:
+                    label = str(len(labels) + 1)
+                    labels[perm_set] = label
             else:
-                if self[(i,j)] not in labels:
-                    labels[self[(i,j)]] = str(len(labels) + 1)
+                # If label specified, then use it
+                label = specified_label
+            index = (2*i + 1)*row_width + 2*j + 1
+            result[index] = label
 
-                arr[2*i+1][2*j+1] = labels[self[(i,j)]]
+        # Legend at bottom
+        for perm_set, label in labels.items():
+            result.append(label)
+            result.append(": ")
+            result.append(str(perm_set))
+            result.append("\n")
 
-        out = '\n'.join( ''.join(row) for row in arr )
+        return "".join(result)
 
-        for k, v in sorted(labels.items(), key=lambda x: x[1]):
-            out += '\n{}: {!s}'.format(v, k)
-
-        return out
-    
-    '''
-        Ranks Tiling by difficulty.
+    def rank(self):
+        """Ranks Tiling by difficulty.
+        
         0 - Empty Tiling
         1 - Tiling consisting only of points where none interleave.
-        2 - Tiling consisting only of points and sets where none interleave.
-        3 - Tiling consisting only of points where they do interleave in a column or row.
+        2 - Tiling consisting of points and sets where none interleave.
+        3 - Tiling consisting of points and sets where points interleave in a column or row.
         4 - Tiling consisting of points and sets where a point and set interleave in a column or row.
-        5 - Tiling consisting of points that interleave in an L shape.
-        6 - Tiling consisting of sets that interleave.
-        7 - Tilings that make L or square shapes with points and sets mixed.
-    '''
-    def rank(self):
-        n = self._max_i
-        m = self._max_j
+        5 - Tiling consisting of points and sets where points interleave in an L or square shape.
+        6 - Tiling consisting of points and sets where sets and points interleave in an L  or square shape but no sets interleave in a column or row.
+        7 - Tiling consisting of points and sets where sets interleave in a column or row.
+        8 - Tiling consisting of points and sets where sets interleave in an L shape.
+        9 - Tiling consisting of points and sets where sets interleave in a square shape.
+        """
+        n = self._max_i + 1
+        m = self._max_j + 1
         rows = [0]*n
         cols = [0]*m
-
+        sets = []
         for i,j in self:
-            if self[(i,j)] is Tile.POINT:
+            if self[(i,j)] is Block.point:
                 if rows[i] in (1,2):
                     rows[i] += 2
                 else:
@@ -114,79 +175,62 @@ class Tiling(dict):
                 else:
                     cols[j] = max(1, cols[j])
             else:
+                sets.append((i,j))
                 if rows[i] in (1,3):
                     rows[i] = 4
                 elif rows[i] in (2,4):
-                    rows[i] = 6
+                    rows[i] = 7
                 else:
                     rows[i] = max(2, rows[i])
                 if cols[j] in (1,3):
                     cols[j] = 4
                 elif cols[j] in (2,4):
-                    cols[j] = 6
+                    cols[j] = 7
                 else:
                     cols[j] = max(2, cols[j])
-
 
         res = max(max(rows), max(cols))
         
         for i,j in self:
-            if self[(i,j)] is Tile.POINT:
+            if self[(i,j)] is Block.point:
                 if rows[i] == 3 and cols[j] == 3:
                     res = max(res, 5)
-                elif rows[i] in (3,4,6) and cols[j] in (3,4,6):
-                    res = 7
+                elif rows[i] in (3,4) and cols[j] in (3,4):
+                    res = max(res, 6) 
             else:
-                if rows[i] in (1,3) and cols[j] in (1,3):
-                    res = 7
-                elif rows[i] in (3,4,6) and cols[j] in (3,4,6):
-                    res = 7
+                if rows[i] == 4 and cols[j] == 4:
+                    res = max(res, 6)
+                elif rows[i] == 7 and cols[j] == 7:
+                    res = max(res, 8)
+
+        if res == 8:
+            for i, a in enumerate(sets):
+                for j, b in enumerate(sets[i+1:]):
+                    for k, c in enumerate(sets[i+j+1:]):
+                        for d in sets[i+j+k+1:]:
+                            x, y, z, w = sorted((a,b,c,d))
+                            if x[0] == y[0] and z[0] == w[0] and x[1] == z[1] and y[1] == w[1]:
+                                res = 9
 
         return res
 
 
-
-    
-
-class TilingPermSetDescriptor(Descriptor):
-    # TODO: Pluralize
-    def __init__(self, tile):
-        super(TilingPermSetDescriptor, self).__init__()
-        self.tile = tile
-
-    def __eq__(self, other):
-        return isinstance(other, TilingPermSetDescriptor) and self.tile == other.tile
-
-    def __hash__(self):
-        # TODO: Hash without using sum?
-        return hash(self.tile)
-
-    def __repr__(self):
-        return "<A descriptor subclass object for describing with a Tile>"
+Tiling.label(Block.increasing, "/")
+Tiling.label(Block.decreasing, "\\")
+Tiling.label(Block.point, "o")
 
 
-class TilingPermSet(PermSetDescribed):
-    """A permutation set containing all permutations generated by a generating rule."""
-
-    def __init__(self, descriptor):
-        PermSetDescribed.__init__(self, descriptor)
-        self.rule = descriptor.tile  # TODO: Don't be so hacky
-
-    def __contains__(self, item):
-        raise NotImplementedError
-
-    def __getitem__(self, key):
-        raise NotImplementedError
-
-    def __len__(self):
-        raise NotImplementedError
+class PermSetTiled(object):  # Really, it should be a described perm set
+    """A perm set containing all perms that can be generated with a tiling."""
+    def __init__(self, tiling):
+        self.tiling = tiling
 
     def of_length(self, n):
-    #def generate_of_length(self, n, input):
+        perms = set()
 
-        rule = list(self.rule.items())
-        h = max( k[0] for k,v in rule ) + 1 if rule else 1
-        w = max( k[1] for k,v in rule ) + 1 if rule else 1
+        tiling = list(self.tiling.items())
+        h = max( k[0] for k,v in tiling ) + 1 if tiling else 1
+        w = max( k[1] for k,v in tiling ) + 1 if tiling else 1
 
         def permute(arr, perm):
             res = [None] * len(arr)
@@ -196,10 +240,10 @@ class TilingPermSet(PermSetDescribed):
 
         def count_assignments(at, left):
 
-            if at == len(rule):
+            if at == len(tiling):
                 if left == 0:
                     yield []
-            elif rule[at][1] is Tile.P:
+            elif tiling[at][1] is Block.point:
                 # this doesn't need to be handled separately,
                 # it's just an optimization
                 if left > 0:
@@ -210,13 +254,12 @@ class TilingPermSet(PermSetDescribed):
                     for ass in count_assignments(at + 1, left - cur):
                         yield [cur] + ass
 
-        #print(list(count_assignments(0, n)))
         for count_ass in count_assignments(0, n):
 
             cntz = [ [ 0 for j in range(w) ] for i in range(h) ]
 
             for i, k in enumerate(count_ass):
-                cntz[rule[i][0][0]][rule[i][0][1]] = k
+                cntz[tiling[i][0][0]][tiling[i][0][1]] = k
 
             rowcnt = [ sum( cntz[row][col] for col in range(w) ) for row in range(h) ]
             colcnt = [ sum( cntz[row][col] for row in range(h) ) for col in range(w) ]
@@ -224,211 +267,20 @@ class TilingPermSet(PermSetDescribed):
             for colpart in product(*[ ordered_set_partitions(range(colcnt[col]), [ cntz[row][col] for row in range(h) ]) for col in range(w) ]):
                 scolpart = [ [ sorted(colpart[i][j]) for j in range(h) ] for i in range(w) ]
                 for rowpart in product(*[ ordered_set_partitions(range(rowcnt[row]), [ cntz[row][col] for col in range(w) ]) for row in range(h) ]):
-                    #print(rowpart)
                     srowpart = [ [ sorted(rowpart[i][j]) for j in range(w) ] for i in range(h) ]
-                    for perm_ass in product(*[ s[1].of_length(cnt) for cnt, s in zip(count_ass, rule) ]):
-                    #for perm_ass in product(*[ s[1].of_length(cnt) if s[1] is not Tile.P else s[1][0] for cnt, s in zip(count_ass, rule) ]):
-                    #for perm_ass in product(*[ s[1].generate_of_length(cnt, input) for cnt, s in zip(count_ass, rule) ]):
+                    for perm_ass in product(*[ s[1].of_length(cnt) for cnt, s in zip(count_ass, tiling) ]):
                         arr = [ [ [] for j in range(w) ] for i in range(h) ]
 
                         for i, perm in enumerate(perm_ass):
-                            arr[rule[i][0][0]][rule[i][0][1]] = perm
+                            arr[tiling[i][0][0]][tiling[i][0][1]] = perm
 
                         res = [ [None]*colcnt[col] for col in range(w) ]
 
                         cumul = 0
-                        #cumul = 1
                         for row in range(h-1,-1,-1):
                             for col in range(w):
-                                #for idx, val in zip(scolpart[col][row], arr[row][col].apply(srowpart[row][col])):
                                 for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):
                                     res[col][idx] = cumul + val
-
                             cumul += rowcnt[row]
-                        yield Perm(flatten(res))
-
-
-T = Tiling({(0, 1): Tile.P, (1,1): Tile.P, (2,0): Tile.P, (2,2): Tile.P})
-TD = TilingPermSetDescriptor(T)
-TPS = TilingPermSet(TD)
-
-
-
-
-#
-# Please ignore the code below, will be used later
-#
-
-
-POINT_PERM_SET = PermSet([Perm(0,)])
-
-
-class GeneratingRule(Descriptor):
-    """
-    When we implement generating_function, this is probably what it will
-    look like (this will not handle inputs in same row/col):
-    def generating_function(self):
-        gf = 1
-        for row in self.rule:
-            for s in row:
-                gf *= s.generating_function()
-        gf += 1
-        return gf
-    """
-    def __init__(self, rule):
-        # Store rules in a dictionary (check if list and convert), throw out None tiles
-        # TODO: store rules as a 2d array, and benchmark
-        if isinstance(rule, list):
-            self.rule = {(i, j): rule[i][j]
-                         for i in range(len(rule))
-                         for j in range(len(rule[i]))
-                         if rule[i][j] is not None}
-        else:
-            self.rule = {(i, j): s
-                         for ((i,j), s) in rule.items()
-                         if s is not None}
-
-    def __eq__(self, other):
-        return isinstance(other, Tiling) and self.rule == other.rule
-
-    def __hash__(self):
-        # TODO: Hash without using sum?
-        return sum(hash((k, v)) for k, v in self.rule.items())
-
-    def __repr__(self):
-        return "<A descriptor subclass object>"
-
-    def __str__(self):
-        n = max( i for i,j in self.rule )+1 if self.rule else 1
-        m = max( j for i,j in self.rule )+1 if self.rule else 1
-        arr = [ [ ' ' for j in range(2*m+1) ] for i in range(2*n+1) ]
-        labels = {}
-
-        for i in range(2*n+1):
-            for j in range(2*m+1):
-                a = i % 2 == 0
-                b = j % 2 == 0
-                if a and b:
-                    arr[i][j] = '+'
-                elif a:
-                    arr[i][j] = '-'
-                elif b:
-                    arr[i][j] = '|'
-
-        for i,j in self.rule:
-            #if type(self.rule[(i,j)]) is InputPermutationSet:
-            if type(self.rule[(i,j)]) is self:
-                arr[2*i+1][2*j+1] = 'X'
-            elif type(self.rule[(i,j)]) is POINT_PERM_SET:
-                arr[2*i+1][2*j+1] = 'o'
-            else:
-                if self.rule[(i,j)] not in labels:
-                    labels[self.rule[(i,j)]] = str(len(labels) + 1)
-
-                arr[2*i+1][2*j+1] = labels[self.rule[(i,j)]]
-
-        out = '\n'.join( ''.join(row) for row in arr )
-
-        for k, v in sorted(labels.items(), key=lambda x: x[1]):
-            out += '\n' + '%s: %s' % (v, k.description)
-
-        return out
-
-
-class GeneratingSet(PermSetDescribed):
-    """A permutation set containing all permutations generated by a generating rule."""
-
-    def __init__(self, descriptor):
-        PermSetDescribed.__init__(self, descriptor)
-        self.rule = descriptor.rule  # TODO: Don't be so hacky
-
-    def __contains__(self, item):
-        raise NotImplementedError
-
-    def __getitem__(self, key):
-        raise NotImplementedError
-
-    def of_length(self, n):
-    #def generate_of_length(self, n, input):
-
-        rule = list(self.rule.items())
-        h = max( k[0] for k,v in rule ) + 1 if rule else 1
-        w = max( k[1] for k,v in rule ) + 1 if rule else 1
-
-        #def permute(arr, perm):
-        #    res = [None] * len(arr)
-        #    for i in range(len(arr)):
-        #        res[i] = arr[perm[i] - 1]
-        #    return res
-
-        def count_assignments(at, left):
-
-            if at == len(rule):
-                if left == 0:
-                    yield []
-            elif type(rule[at][1]) is POINT_PERM_SET:
-                # this doesn't need to be handled separately,
-                # it's just an optimization
-                if left > 0:
-                    for ass in count_assignments(at + 1, left - 1):
-                        yield [1] + ass
-            else:
-                for cur in range(left+1):
-                    for ass in count_assignments(at + 1, left - cur):
-                        yield [cur] + ass
-
-        for count_ass in count_assignments(0, n):
-
-            cntz = [ [ 0 for j in range(w) ] for i in range(h) ]
-
-            for i, k in enumerate(count_ass):
-                cntz[rule[i][0][0]][rule[i][0][1]] = k
-
-            rowcnt = [ sum( cntz[row][col] for col in range(w) ) for row in range(h) ]
-            colcnt = [ sum( cntz[row][col] for row in range(h) ) for col in range(w) ]
-
-            for colpart in product(*[ ordered_set_partitions(range(colcnt[col]), [ cntz[row][col] for row in range(h) ]) for col in range(w) ]):
-                scolpart = [ [ sorted(colpart[i][j]) for j in range(h) ] for i in range(w) ]
-                for rowpart in product(*[ ordered_set_partitions(range(rowcnt[row]), [ cntz[row][col] for col in range(w) ]) for row in range(h) ]):
-                    srowpart = [ [ sorted(rowpart[i][j]) for j in range(w) ] for i in range(h) ]
-                    for perm_ass in product(*[ s[1].of_length(cnt) if s[1] is not Tile.P else s[1][0] for cnt, s in zip(count_ass, rule) ]):
-                    #for perm_ass in product(*[ s[1].of_length(cnt) for cnt, s in zip(count_ass, rule) ]):
-                    #for perm_ass in product(*[ s[1].generate_of_length(cnt, input) for cnt, s in zip(count_ass, rule) ]):
-                        arr = [ [ [] for j in range(w) ] for i in range(h) ]
-
-                        for i, perm in enumerate(perm_ass):
-                            arr[rule[i][0][0]][rule[i][0][1]] = perm
-
-                        res = [ [None]*colcnt[col] for col in range(w) ]
-
-                        cumul = 0
-                        #cumul = 1
-                        for row in range(h-1,-1,-1):
-                            for col in range(w):
-                                for idx, val in zip(scolpart[col][row], arr[row][col].apply(srowpart[row][col])):
-                                #for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):
-                                    res[col][idx] = cumul + val
-
-                            cumul += rowcnt[row]
-
-                        yield Perm(flatten(res))
-                        #yield Perm(element - 1 for element in flatten(res))
-
-
-    def to_static(self, max_n, input, description=None):
-
-        inp = deepcopy(input)
-
-        for n in range(max_n+1):
-            for perm in self.generate_of_length(n, inp):
-                inp.setdefault(n, [])
-                inp[n].append(perm)
-
-        try:
-            gf = self.generating_function()
-        except NotImplementedError:
-            gf = None
-
-        perms = [ p for ps in inp.values() for p in ps ]
-        return PermSet(perms)
-        #return StaticPermutationSet(perms, gf, description if description is not None else self.description)
+                        perms.add(Perm(flatten(res)))
+        return perms
