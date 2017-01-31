@@ -38,5 +38,11 @@ def len_3_and_4_interleaved():
 if __name__ == "__main__":
     print((powerset([Perm((1, 2, 0)), Perm((0, 1, 2)), Perm(())])))
     print(perms_not_covered_by([Perm((1, 2, 0)), Perm((0, 1, 2))], [Perm((1, 0))]))
-    #s = len_3_and_4_interleaved()
-    #print(len(s))
+    s = len_3_and_4_interleaved()
+    print(len(s))
+    my_count = 0
+    print("This may take a while...")
+    for x in s:
+        my_count += len(set([lex_min(i) for i in s[x]]))
+        print("...")
+    print("Total count: ", my_count)
