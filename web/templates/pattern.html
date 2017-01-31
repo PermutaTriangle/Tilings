@@ -1,21 +1,49 @@
-<!DOCTYPE html>
-<head>
- <script type="text/x-mathjax-config">
-  MathJax.Hub.Config({
-   tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
-  });
- </script>
- <script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
- <title>Av({{ val['avoid'] }})</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{% block container %}
+<div>
  <ul>
+  {% for idx, tiling in enumerate(val['tile']) %}
+    <li>
+      <table class="tiling">
+        {% for i in range(maxi[idx]) %}
+          <tr>
+          {% for j in range(maxj[idx]) %}
+            <td>
+              {% if (i, j) in tiling %}
+                {{ tiling.get((i, j)) }}
+              {% endif %}
+            </td>
+          {% endfor %}
+          </tr>
+        {% endfor %}
+      </table>
+    </li>
+  {% endfor %}
+  </li>
   <li>Avoid: {{ val['avoid'] }}</li>
   <li>Tile: {{ val['tile'] }}</li>
-  <li>Examples: {{ val['examples'] }} </li>
-  <li>Recurrence: {{ val['recurrence'] }} </li>
-  <li>Generating function: {{ val['genf'] }} </li>
-  <li>Solved generating function: {{ val['solved_genf'] }} </li>
-  <li>Coeffecients: {{ val['coeffs'] }} </li>
+  <li>Examples: {{ val['examples'] }}
+    {% for k, v in val['examples'] | dictsort %}
+      <p>
+        Permutations of length {{ k }}:
+        {{ v[0] }}{% for perm in v[1:] %}, {{ perm }}{% endfor %}
+      </p>
+    {% endfor %}
+  </li>
+  <li>Recurrence:
+    {% for k, v in val['recurrence'] | dictsort %}
+      <p>
+        $a_{{"{"}}{{ k }}{{"}"}}= {{ v }}$
+      </p>
+    {% endfor %}
+    {{ val['recurrence'] }}
+  </li>
+  <li>Generating function: ${{ val['genf'] }}$ </li>
+  <li>Solved generating function: ${{ val['solved_genf'] }}$ </li>
+  <li>
+    Coefficients:
+      {{ int(val['coeffs'][0]) }}{% for coeff in val['coeffs'][1:] %}, {{ int(coeff) }}{% endfor %}...
+  </li>
  </ul>
-</body>
+</div>
+{% endblock %}
