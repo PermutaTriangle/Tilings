@@ -90,19 +90,21 @@ class Tiling(dict):
         Ranks Tiling by difficulty.
         0 - Empty Tiling
         1 - Tiling consisting only of points where none interleave.
-        2 - Tiling consisting only of points and sets where none interleave.
-        3 - Tiling consisting only of points where they do interleave in a column or row.
+        2 - Tiling consisting of points and sets where none interleave.
+        3 - Tiling consisting of points and sets where points interleave in a column or row.
         4 - Tiling consisting of points and sets where a point and set interleave in a column or row.
-        5 - Tiling consisting of points that interleave in an L shape.
-        6 - Tiling consisting of sets that interleave.
-        7 - Tilings that make L or square shapes with points and sets mixed.
+        5 - Tiling consisting of points and sets where points interleave in an L or square shape.
+        6 - Tiling consisting of points and sets where sets and points interleave in an L  or square shape but no sets interleave in a column or row.
+        7 - Tiling consisting of points and sets where sets interleave in a column or row.
+        8 - Tiling consisting of points and sets where sets interleave in an L shape.
+        9 - Tiling consisting of points and sets where sets interleave in a square shape.
     '''
     def rank(self):
         n = self._max_i
         m = self._max_j
         rows = [0]*n
         cols = [0]*m
-
+        sets = []
         for i,j in self:
             if self[(i,j)] is Tile.POINT:
                 if rows[i] in (1,2):
@@ -114,16 +116,17 @@ class Tiling(dict):
                 else:
                     cols[j] = max(1, cols[j])
             else:
+                sets.append((i,j))
                 if rows[i] in (1,3):
                     rows[i] = 4
                 elif rows[i] in (2,4):
-                    rows[i] = 6
+                    rows[i] = 7
                 else:
                     rows[i] = max(2, rows[i])
                 if cols[j] in (1,3):
                     cols[j] = 4
                 elif cols[j] in (2,4):
-                    cols[j] = 6
+                    cols[j] = 7
                 else:
                     cols[j] = max(2, cols[j])
 
@@ -134,13 +137,22 @@ class Tiling(dict):
             if self[(i,j)] is Tile.POINT:
                 if rows[i] == 3 and cols[j] == 3:
                     res = max(res, 5)
-                elif rows[i] in (3,4,6) and cols[j] in (3,4,6):
-                    res = 7
+                elif rows[i] in (3,4) and cols[j] in (3,4):
+                    res = max(res, 6) 
             else:
-                if rows[i] in (1,3) and cols[j] in (1,3):
-                    res = 7
-                elif rows[i] in (3,4,6) and cols[j] in (3,4,6):
-                    res = 7
+                if rows[i] == 4 and cols[j] == 4:
+                    res = max(res, 6)
+                elif rows[i] == 7 and cols[j] == 7:
+                    res = max(res, 8)
+
+        if res == 8:
+            for i, a in enumerate(sets):
+                for j, b in enumerate(sets[i+1:]):
+                    for k, c in enumerate(sets[i+j+1:]):
+                        for d in sets[i+j+k+1:]:
+                            x, y, z, w = sorted((a,b,c,d))
+                            if x[0] == y[0] and z[0] == w[0] and x[1] == z[1] and y[1] == w[1]:
+                                res = 9
 
         return res
 
