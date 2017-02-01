@@ -147,7 +147,7 @@ class Tiling(dict, Descriptor):
 
     def rank(self):
         """Ranks Tiling by difficulty.
-        
+
         0 - Empty Tiling
         1 - Tiling consisting only of points where none interleave.
         2 - Tiling consisting of points and sets where none interleave.
@@ -164,7 +164,7 @@ class Tiling(dict, Descriptor):
         rows = [0]*n
         cols = [0]*m
         sets = []
-        
+
         #Checks for column or row interleaving
         for i,j in self:
             if self[(i,j)] is Block.point:
@@ -182,7 +182,7 @@ class Tiling(dict, Descriptor):
             else:
                 sets.append((i,j)) #Store it as we need it to check for squares
                 #Checks for point-set interleaving
-                if rows[i] in (1,3): 
+                if rows[i] in (1,3):
                     rows[i] = 4
                 #Checks for set-set interleaving
                 elif rows[i] in (2,4):
@@ -199,7 +199,7 @@ class Tiling(dict, Descriptor):
                     cols[j] = max(2, cols[j])
 
         res = max(max(rows), max(cols))
-        
+
         #Checks for L shaped interleaving
         for i,j in self:
             if self[(i,j)] is Block.point:
@@ -208,7 +208,7 @@ class Tiling(dict, Descriptor):
                     res = max(res, 5)
                 #Checks if there is an L shape with points and sets mixed
                 elif rows[i] in (3,4) and cols[j] in (3,4):
-                    res = max(res, 6) 
+                    res = max(res, 6)
             else:
                 #Checks if there is an L shape with points and sets mixed
                 if rows[i] == 4 and cols[j] == 4:
@@ -300,3 +300,64 @@ class PermSetTiled(object):  # Really, it should be a described perm set
                             cumul += rowcnt[row]
                         perms.add(Perm(flatten(res)))
         return perms
+
+    def of_length_with_positions(self, n):
+        perms_with_positions = []
+
+        tiling = list(self.tiling.items())
+        h = max( k[0] for k,v in tiling ) + 1 if tiling else 1
+        w = max( k[1] for k,v in tiling ) + 1 if tiling else 1
+
+        def permute(arr, perm):
+            res = [None] * len(arr)
+            for i in range(len(arr)):
+                res[i] = arr[perm[i]]
+            return res
+
+        def count_assignments(at, left):
+
+            if at == len(tiling):
+                if left == 0:
+                    yield []
+            elif tiling[at][1] is Block.point:
+                # this doesn't need to be handled separately,
+                # it's just an optimization
+                if left > 0:
+                    for ass in count_assignments(at + 1, left - 1):
+                        yield [1] + ass
+            else:
+                for cur in range(left+1):
+                    for ass in count_assignments(at + 1, left - cur):
+                        yield [cur] + ass
+
+        for count_ass in count_assignments(0, n):
+
+            cntz = [ [ 0 for j in range(w) ] for i in range(h) ]
+
+            for i, k in enumerate(count_ass):
+                cntz[tiling[i][0][0]][tiling[i][0][1]] = k
+
+            rowcnt = [ sum( cntz[row][col] for col in range(w) ) for row in range(h) ]
+            colcnt = [ sum( cntz[row][col] for row in range(h) ) for col in range(w) ]
+
+            for colpart in product(*[ ordered_set_partitions(range(colcnt[col]), [ cntz[row][col] for row in range(h) ]) for col in range(w) ]):
+                scolpart = [ [ sorted(colpart[i][j]) for j in range(h) ] for i in range(w) ]
+                for rowpart in product(*[ ordered_set_partitions(range(rowcnt[row]), [ cntz[row][col] for col in range(w) ]) for row in range(h) ]):
+                    srowpart = [ [ sorted(rowpart[i][j]) for j in range(w) ] for i in range(h) ]
+                    for perm_ass in product(*[ s[1].of_length(cnt) for cnt, s in zip(count_ass, tiling) ]):
+                        arr = [ [ [] for j in range(w) ] for i in range(h) ]
+
+                        for i, perm in enumerate(perm_ass):
+                            arr[tiling[i][0][0]][tiling[i][0][1]] = perm
+
+                        res = [ [None]*colcnt[col] for col in range(w) ]
+                        cumul = 0
+                        where = {}
+                        for row in range(h-1,-1,-1):
+                            for col in range(w):
+                                for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):
+                                    res[col][idx] = cumul + val
+                                    where[res[col][idx]] = (row,col)
+                            cumul += rowcnt[row]
+                        perms_with_positions.append(( Perm(flatten(res) ), where ))
+        return perms_with_positions
