@@ -1,6 +1,6 @@
 from re import split
 from pprint import pprint
-from grids.Tiling import Tile, Tiling, flatten
+from grids.Tiling import Block, Tiling
 from permuta import PermSet, Perm
 from permuta.misc import flatten
 
@@ -49,11 +49,11 @@ def parse_log(inp, file=False):
                 elif char.isnumeric():
                     rule[(i, j)] = permsets.get(char, None)
                 elif char == 'o':
-                    rule[(i, j)] = Tile.POINT
+                    rule[(i, j)] = Block.point
         tilings.append(Tiling(rule))
     return tilings
 
-def tiling_to_json(tiling):
+def tiling_to_json(tilings):
     example_json_structure = {
         "_id" : 'ObjectId("5882153c7e98af0c473a874e")',
         "avoid" : "o",
@@ -86,21 +86,26 @@ def tiling_to_json(tiling):
     }
     obj = {}
     tiles = []
-    for k, v in tiling.items():
-        tile = {}
-        tile['point'] = [*k]
-        tile['val'] = repr(v)
+    for tiling in tilings:
+        tile = []
+        for k, v in tiling.items():
+            point = {}
+            point['point'] = [*k]
+            point['val'] = repr(v)
+            tile.append(point)
         tiles.append(tile)
     obj['tile'] = tiles
 
     # Create examples
     examples = {}
     for i in range(6):
-        examples[str(i)] = flatten([ TilingPermSet(TilingPermSetDescriptor(T)).of_length(i) for T in e ])
+        examples[str(i)] = flatten([ PermSetTiled(T).of_length(i) for T in tilings ])
+
+    print(examples)
 
 
 
 
 if __name__ == '__main__':
-    print(tiling_to_json(Tiling({(0,3): Tile.POINT, (1,0): Tile.POINT, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Tile.POINT, (4,2): Tile.POINT })))
+    print(tiling_to_json(Tiling({(0,3): Block.point, (1,0): Block.point, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Block.point, (4,2): Block.point })))
     #print(parse_log('../Parse/ex9_output.txt', file=True))
