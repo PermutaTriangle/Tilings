@@ -1,4 +1,4 @@
-from re import split
+from re import split, search, M
 from pprint import pprint
 from Tiling import Block, Tiling, PermSetTiled
 from permuta import PermSet, Perm
@@ -10,7 +10,6 @@ def parse_log(inp, file=False):
     if file:
         with open(inp) as f:
             inp = f.read()
-
     # Split on 123124:\n0101010100110101010 to find all rule blocks on the form
     # +-+-+-+-+
     # | |o| | |
@@ -22,7 +21,8 @@ def parse_log(inp, file=False):
     # |o| | | |
     # +-+-+-+-+
     # 1: Av([[2, 1]])
-    for i, el in enumerate(split(r'\d+:\n[01]+', inp)[1:]):
+    for i, el in enumerate(split(r'\d+:\s?\n[01]+', inp)[1:]):
+        print("blaasdfadsfafsdadfsafdsadfsasdfadsfadsfadsfasfasfafsdsadfafsd", el)
         # We always take the first rule in a block, they are seperated by two newlines
         item = el.strip().split('\n\n')[0]
         table = []
@@ -113,6 +113,7 @@ def tiling_to_json(tilings):
 
 
 if __name__ == '__main__':
-    print(tiling_to_json([Tiling({ (0,0): PermSet.avoiding(Perm.one([1,2,3])) }),
-                          Tiling({ (0,3): Block.point, (1,0): Block.point, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Block.point, (4,2): Block.point })]))
-    #print(parse_log('../Parse/ex9_output.txt', file=True))
+    #print(tiling_to_json([Tiling({ (0,0): PermSet.avoiding(Perm.one([1,2,3])) }),
+    #                      Tiling({ (0,3): Block.point, (1,0): Block.point, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Block.point, (4,2): Block.point })]))
+    print(parse_log('../1234_1243_1324_1342_1423_1432_2134_2143_2314_2341_2413_2431_3124_3142_3214_3241_4123_4132_4213.txt', file=True))
+    #print(parse_log('../../Parse/ex9_output.txt', file=True))
