@@ -1,8 +1,9 @@
-import unittest
+import pytest
 
-from grids.Tiling import Tile, Tiling
-from grids.parser import parse_log
+from grids import Block, Tiling
+from grids.parser import *
 from permuta import Perm, PermSet
+from bson import *
 test_zero_str = '''Hennings-MacBook-Pro:classical_from_Kuszmaul ulfarsson$ python ex9.py
 [2016-09-20 16:18:11.110478] Generating permutations from input
 [2016-09-20 16:18:13.938951] Finished in 2.828s
@@ -558,13 +559,72 @@ Wrote result file '/var/folders/5c/0g9v9k4x76gcq3btks74_jpw0000gn/T/struct_tmpT7
 [2016-09-20 16:49:37.716839] Multiple covers, but only using one for verification
 [2016-09-20 16:50:49.762289] Cover verified up to length 10
 '''
-class TestParser(unittest.TestCase):
+class TestParser():
     def test_zero(self):
-        self.assertEqual([str( i ) for i in parse_log(test_zero_str)], [str( i ) for i in [Tiling({}), Tiling({(0,3): Tile.POINT, (1,0): Tile.POINT, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Tile.POINT, (4,2): Tile.POINT })]])
+        assert ([str( i ) for i in parse_log(test_zero_str)] == [str( i ) for i in [Tiling({}), Tiling({(0,3): Block.point, (1,0): Block.point, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Block.point, (4,2): Block.point })]])
 
     def test_one(self):
         self.maxDiff = 100000
-        self.assertEqual([ str( i ) for i in parse_log(test_one_str) ], [ str( i ) for i in [Tiling({}), Tiling({(0,3): Tile.POINT, (1,0): Tile.POINT, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Tile.POINT, (4,2): Tile.POINT }), Tiling({(0,3): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]])), (1,2): Tile.POINT, (2,1): Tile.POINT, (3,0): Tile.POINT}), Tiling({(0,0): 'input_set', (1,2): Tile.POINT, (2,1): Tile.POINT}), Tiling({(0,0): 'input_set', (1,1): Tile.POINT}), Tiling({(4,1): PermSet.avoiding(tuple([Perm.one(i) for i in [[1, 2]]])), (1,2): Tile.POINT, (2,3): Tile.POINT, (3,0): Tile.POINT, (0,4): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]]))}), Tiling({(0,2): Tile.POINT, (1,4): Tile.POINT, (2,3): Tile.POINT, (3,1): Tile.POINT, (4,0): Tile.POINT}), Tiling({(0,2): Tile.POINT, (1,4): Tile.POINT, (2,3): Tile.POINT, (3,0): Tile.POINT, (4,1): PermSet.avoiding(tuple([Perm.one(i) for i in [[1,2]]]))}), Tiling({(0,4): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]])), (1,3): Tile.POINT, (2,0): Tile.POINT, (3,1): Tile.POINT, (4,2): PermSet.avoiding([Perm.one(i) for i in [[1,2]]])}), Tiling({(0,4): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]])), (1,2): Tile.POINT, (2,3): Tile.POINT, (3,1): Tile.POINT, (4,0): Tile.POINT})] ])
+        assert ([ str( i ) for i in parse_log(test_one_str) ] == [ str( i ) for i in [Tiling({}), Tiling({(0,3): Block.point, (1,0): Block.point, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Block.point, (4,2): Block.point }), Tiling({(0,3): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]])), (1,2): Block.point, (2,1): Block.point, (3,0): Block.point}), Tiling({(0,0): 'input_set', (1,2): Block.point, (2,1): Block.point}), Tiling({(0,0): 'input_set', (1,1): Block.point}), Tiling({(4,1): PermSet.avoiding(tuple([Perm.one(i) for i in [[1, 2]]])), (1,2): Block.point, (2,3): Block.point, (3,0): Block.point, (0,4): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]]))}), Tiling({(0,2): Block.point, (1,4): Block.point, (2,3): Block.point, (3,1): Block.point, (4,0): Block.point}), Tiling({(0,2): Block.point, (1,4): Block.point, (2,3): Block.point, (3,0): Block.point, (4,1): PermSet.avoiding(tuple([Perm.one(i) for i in [[1,2]]]))}), Tiling({(0,4): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]])), (1,3): Block.point, (2,0): Block.point, (3,1): Block.point, (4,2): PermSet.avoiding([Perm.one(i) for i in [[1,2]]])}), Tiling({(0,4): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]])), (1,2): Block.point, (2,3): Block.point, (3,1): Block.point, (4,0): Block.point})] ])
+
+
+def test_json_to_tiling():
+    inp = [
+        {
+            "input":
+                {
+                    "tile": [[{"point": [0, 0], "val": "o"}]]
+                },
+            "output":
+                [{(0,0):Block.point}],
+        },
+        {
+            "input":
+                {
+                    "tile": [[]]
+                },
+            "output":
+                [{}],
+        },
+        {
+            "input":
+                {
+                    "tile": [
+                        [
+
+                        ],
+                        [
+                            {"point": [0, 1], "val": "o"},
+                            {"point": [1, 0], "val": "X"}
+                        ]
+                    ]
+                },
+            "output":
+                [{}, {(0, 1):Block.point, (1, 0):"input_set"}],
+        },
+        {
+            "input":
+                {
+                    "tile": [
+                        [
+                            {"point": [0, 0], "val": "o"}
+                        ],
+                        [
+                            {"point": [0, 1], "val": "o"},
+                            {"point": [1, 0], "val": "X"},
+                            {"point": [3, 3], "val": "increasing"}
+                        ]
+                    ]
+                },
+            "output":
+                [{(0, 0): Block.point}, {(0, 1): Block.point, (1, 0): "input_set", (3, 3): Block.increasing}],
+        }
+    ]
+
+    for item in inp:
+        assert [str(i) for i in json_to_tiling(item["input"])] == [str( Tiling(x) ) for x in item["output"]], "Expected output: %s" % [str(Tiling(x)) for x in item["output"]]
+        assert [str(i) for i in json_to_tiling(item["input"]["tile"])] == [str(Tiling(x)) for x in item["output"]], "Expected output: %s" % [str(Tiling(x)) for x in item["output"]]
+
 
 if __name__ == '__main__':
     """a = Tiling({})
@@ -585,4 +645,3 @@ if __name__ == '__main__':
     a = PermSet([Perm.one([1,2])])
     b = PermSet([Perm.one([1,2])])
     print(a == b)"""
-    unittest.main()

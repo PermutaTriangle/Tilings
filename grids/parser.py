@@ -1,6 +1,6 @@
 from re import split
 from pprint import pprint
-from Tiling import Block, Tiling, PermSetTiled
+from grids import Block, Tiling, PermSetTiled
 from permuta import PermSet, Perm
 from permuta.misc import flatten
 from collections import defaultdict
@@ -110,7 +110,29 @@ def tiling_to_json(tilings):
         print(i)
 
 
+def json_to_tiling(json_object):
+    if "tile" in json_object:
+        json_object = json_object["tile"]
 
+    tilings = []
+    for block in json_object:
+        tiling_dict = dict()
+        for item in block:
+            point = tuple(item["point"])
+            val = item["val"]
+
+            if val in ["point", "o", "p", "P"]:
+                val = Block.point
+            elif val in ["decreasing", "\\", "d", "D"]:
+                val = Block.decreasing
+            elif val in ["increasing", "/", "i", "I"]:
+                val = Block.increasing
+            elif val in ["self", "X", "x", "r", "R"]:
+                val = "input_set"
+
+            tiling_dict[point] = val
+        tilings.append(Tiling(tiling_dict))
+    return tilings
 
 if __name__ == '__main__':
     print(tiling_to_json([Tiling({ (0,0): PermSet.avoiding(Perm.one([1,2,3])) }),
