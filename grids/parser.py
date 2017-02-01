@@ -1,8 +1,9 @@
 from re import split
 from pprint import pprint
-from grids.Tiling import Block, Tiling
+from Tiling import Block, Tiling, PermSetTiled
 from permuta import PermSet, Perm
 from permuta.misc import flatten
+from collections import defaultdict
 
 def parse_log(inp, file=False):
     tilings = []
@@ -99,13 +100,19 @@ def tiling_to_json(tilings):
     # Create examples
     examples = {}
     for i in range(6):
-        examples[str(i)] = flatten([ PermSetTiled(T).of_length(i) for T in tilings ])
-
-    print(examples)
+        if not str(i) in examples:
+            # Set of all length i permutations
+            examples[str(i)] = set()
+        for T in tilings:
+            for perm in PermSetTiled(T).of_length(i):
+                examples[str(i)].add(perm)
+    for i in examples['4']:
+        print(i)
 
 
 
 
 if __name__ == '__main__':
-    print(tiling_to_json(Tiling({(0,3): Block.point, (1,0): Block.point, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Block.point, (4,2): Block.point })))
+    print(tiling_to_json([Tiling({ (0,0): PermSet.avoiding(Perm.one([1,2,3])) }),
+                          Tiling({ (0,3): Block.point, (1,0): Block.point, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Block.point, (4,2): Block.point })]))
     #print(parse_log('../Parse/ex9_output.txt', file=True))
