@@ -12,3 +12,13 @@ body {
   height: 20px;
   text-align: center;
 }
+
+.flex-row {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+}
+
+.margin-10 {
+  margin: 10px;
+}

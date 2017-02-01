@@ -1,49 +1,55 @@
 {% extends 'base.html' %}
 {% block container %}
-<div>
- <ul>
-  {% for idx, tiling in enumerate(val['tile']) %}
-    <li>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">Avoiding {{ val['avoid'] }}</h3>
+
+  </div>
+  <div class="panel-body">
+    <h4>Tiling</h4>
+    <div class="flex-row">
+
+      {% for idx, tiling in enumerate(val['tile']) %}
+      {% if idx != 0 %}
+      <span class="glyphicon glyphicon-plus margin-10" aria-hidden="true"></span>
+      {% endif %}
       <table class="tiling">
         {% for i in range(maxi[idx]) %}
-          <tr>
+        <tr>
           {% for j in range(maxj[idx]) %}
-            <td>
-              {% if (i, j) in tiling %}
-                {{ tiling.get((i, j)) }}
-              {% endif %}
-            </td>
+          <td>
+            {% if (i, j) in tiling %}
+            {{ tiling.get((i, j)) }}
+            {% endif %}
+          </td>
           {% endfor %}
-          </tr>
+        </tr>
         {% endfor %}
       </table>
-    </li>
-  {% endfor %}
-  </li>
-  <li>Avoid: {{ val['avoid'] }}</li>
-  <li>Tile: {{ val['tile'] }}</li>
-  <li>Examples: {{ val['examples'] }}
+      {% endfor %}
+    </div>
+    <h4>Permutation examples</h4>
     {% for k, v in val['examples'] | dictsort %}
-      <p>
-        Permutations of length {{ k }}:
-        {{ v[0] }}{% for perm in v[1:] %}, {{ perm }}{% endfor %}
-      </p>
+    <p>
+      length {{ k }}:
+      {{ v[0] }}{% for perm in v[1:] %}, {{ perm }}{% endfor %}
+    </p>
     {% endfor %}
-  </li>
-  <li>Recurrence:
+
+    <h4>Recurrence relation</h4>
     {% for k, v in val['recurrence'] | dictsort %}
-      <p>
-        $a_{{"{"}}{{ k }}{{"}"}}= {{ v }}$
-      </p>
+    <p>
+      $a_{{"{"}}{{ k }}{{"}"}}= {{ v }}$
+    </p>
     {% endfor %}
-    {{ val['recurrence'] }}
-  </li>
-  <li>Generating function: ${{ val['genf'] }}$ </li>
-  <li>Solved generating function: ${{ val['solved_genf'] }}$ </li>
-  <li>
-    Coefficients:
-      {{ int(val['coeffs'][0]) }}{% for coeff in val['coeffs'][1:] %}, {{ int(coeff) }}{% endfor %}...
-  </li>
- </ul>
+
+    <h4>Generating function</h4>
+    ${{ val['genf'] }}$
+    <h4>Solved generating function</h4>
+    ${{ val['solved_genf'] }}$
+    <h4>Coefficients</h4>
+    {{ int(val['coeffs'][0]) }}{% for coeff in val['coeffs'][1:] %}, {{ int(coeff) }}{% endfor %}...
+  </div>
+</div>
 </div>
 {% endblock %}
