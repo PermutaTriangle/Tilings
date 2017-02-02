@@ -23,10 +23,15 @@ def permset_to_av_string(permset):
     return 'Av({})'.format(str( arr ))
 
 
-def parse_log(inp, avoids=None, file=False):
+def parse_log(inp, avoids=None, file=True):
     if not file and not avoids:
         raise ValueError("When file argument is False, avoids must not be None")
     tilings = []
+
+    if not avoids:
+        avoids = findall(r'([0-9]+(_[0-9]+)*)', inp)[0][0]
+        avoids = [Perm(list(x)) for x in avoids.split("_")]
+
     if file:
         with open(inp) as f:
             inp = f.read()
