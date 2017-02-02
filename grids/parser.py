@@ -1,6 +1,6 @@
 from re import split, search, M, findall
 from pprint import pprint
-from grids import Block, Tiling, PermSetTiled
+from .Tiling import Block, Tiling, PermSetTiled
 from permuta import PermSet, Perm
 from permuta.misc import flatten
 from collections import defaultdict
@@ -17,7 +17,15 @@ def av_string_to_permset(av):
     return PermSet.avoiding([Perm.one(perm) for perm in avoids])
 
 
-def parse_log(inp, file=False):
+def permset_to_av_string(permset):
+    """Takes the basis of the PermSet, converts the Perms to one based then into lists"""
+    arr = [list([ i + 1 for i in perm ]) for perm in permset.basis]
+    return 'Av({})'.format(str( arr ))
+
+
+def parse_log(inp, avoids=None, file=False):
+    if not file and not avoids:
+        raise ValueError("When file argument is False, avoids must not be None")
     tilings = []
     if file:
         with open(inp) as f:
@@ -60,7 +68,7 @@ def parse_log(inp, file=False):
         tilings.append(Tiling(rule))
     return tilings
 
-def tiling_to_json(tilings):
+def tilings_to_json(tilings):
     example_json_structure = {
         "_id" : 'ObjectId("5882153c7e98af0c473a874e")',
         "avoid" : "o",
@@ -98,11 +106,18 @@ def tiling_to_json(tilings):
         for k, v in tiling.items():
             point = {}
             point['point'] = [k[0],k[1]]
-            point['val'] = repr(v)
+            if v == Basis.point:
+                point['val'] = 'o'
+            elif v == 'input_set':
+                # TODO: How do we know if a permset is the input set
+                point['val'] = 'input_set'
+            else:
+                point['val'] = permset_to_av_string(v)
             tile.append(point)
         tiles.append(tile)
-    obj['tile'] = tiles
+    return tiles
 
+    # Code that will be used later to generate examples
     # Create examples
     examples = {}
     for i in range(6):
@@ -149,5 +164,8 @@ def json_to_tiling(json_object):
 if __name__ == '__main__':
     #print(tiling_to_json([Tiling({ (0,0): PermSet.avoiding(Perm.one([1,2,3])) }),
     #                      Tiling({ (0,3): Block.point, (1,0): Block.point, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Block.point, (4,2): Block.point })]))
-    print(parse_log('/data/henningu/length19/1234_1243_1324_1342_1423_1432_2134_2143_2314_2341_2413_2431_3124_3142_3214_3241_4123_4132_4213.txt', file=True))
+    #print(parse_log('/data/henningu/length19/1234_1243_1324_1342_1423_1432_2134_2143_2314_2341_2413_2431_3124_3142_3214_3241_4123_4132_4213.txt', file=True))
     #print(parse_log('../../Parse/ex9_output.txt', file=True))
+
+    res = permset_to_av_string(PermSet.avoiding([ Perm.one([1,2,3,4]), Perm.one([4,3,2,1]), Perm.one([4,1,3,2]) ]))
+    print(res)
