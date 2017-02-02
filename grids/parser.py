@@ -1,9 +1,20 @@
-from re import split, search, M
+from re import split, search, M, findall
 from pprint import pprint
-from Tiling import Block, Tiling, PermSetTiled
+from .Tiling import Block, Tiling, PermSetTiled
 from permuta import PermSet, Perm
 from permuta.misc import flatten
 from collections import defaultdict
+
+
+def av_string_to_permset(av):
+    avoids = findall(r'(\[(\[[0-9 ,]*\](, \[[0-9 ,]*\])*)?\])', av)
+    if not avoids:
+        raise ValueError("Could not find double list in string av: {s}".format(av))
+    else:
+        avoids = avoids[0][0]
+
+    avoids = eval(avoids)
+    return PermSet.avoiding([Perm.one(perm) for perm in avoids])
 
 
 def permset_to_av_string(permset):
@@ -11,8 +22,16 @@ def permset_to_av_string(permset):
     arr = [list([ i + 1 for i in perm ]) for perm in permset.basis]
     return 'Av({})'.format(str( arr ))
 
-def parse_log(inp, avoids, file=False):
+
+def parse_log(inp, avoids=None, file=True):
+    if not file and not avoids:
+        raise ValueError("When file argument is False, avoids must not be None")
     tilings = []
+
+    if not avoids:
+        avoids = findall(r'([0-9]+(_[0-9]+)*)', inp)[0][0]
+        avoids = [Perm(list(x)) for x in avoids.split("_")]
+
     if file:
         with open(inp) as f:
             inp = f.read()
@@ -41,17 +60,12 @@ def parse_log(inp, avoids, file=False):
                 table.append( i.strip().split('|')[1:-1] )
             else:
                 num, avoids = i.split(': ')
-                # Remove "Av()"
-                avoids = avoids[3:-1]
-                # Get 2d array
-                avoids = eval(avoids)
-                avoids = PermSet.avoiding([ Perm.one(perm) for perm in avoids ])
-                permsets[num] = avoids
+                permsets[num] = av_string_to_permset(avoids)
         for i in range(len(table)):
             for j in range(len(table[i])):
                 char = table[i][j]
                 if char == 'X':
-                    rule[(i, j)] = input_set
+                    rule[(i, j)] = 'input_set'
                 elif char.isnumeric():
                     rule[(i, j)] = permsets.get(char, None)
                 elif char == 'o':
@@ -123,11 +137,15 @@ def tilings_to_json(tilings):
 
 
 def json_to_tiling(json_object):
-    if "tile" in json_object:
-        json_object = json_object["tile"]
+    if json_object["avoid"] == "e":
+        basis = [Perm(())]
+    elif json_object["avoid"] == "o":
+        basis = "o"
+    else:
+        basis = [Perm(list(x)) for x in json_object["avoid"].split("_")]
 
     tilings = []
-    for block in json_object:
+    for block in json_object["tile"]:
         tiling_dict = dict()
         for item in block:
             point = tuple(item["point"])
@@ -141,6 +159,8 @@ def json_to_tiling(json_object):
                 val = Block.increasing
             elif val in ["self", "X", "x", "r", "R"]:
                 val = "input_set"
+            elif val[:2] in ["Av", "av", "AV"]:
+                val = av_string_to_permset(val)
 
             tiling_dict[point] = val
         tilings.append(Tiling(tiling_dict))

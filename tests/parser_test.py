@@ -561,11 +561,11 @@ Wrote result file '/var/folders/5c/0g9v9k4x76gcq3btks74_jpw0000gn/T/struct_tmpT7
 '''
 class TestParser():
     def test_zero(self):
-        assert ([str( i ) for i in parse_log(test_zero_str)] == [str( i ) for i in [Tiling({}), Tiling({(0,3): Block.point, (1,0): Block.point, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Block.point, (4,2): Block.point })]])
+        assert ([str( i ) for i in parse_log(test_zero_str, avoids="123", file=False)] == [str( i ) for i in [Tiling({}), Tiling({(0,3): Block.point, (1,0): Block.point, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Block.point, (4,2): Block.point })]])
 
     def test_one(self):
         self.maxDiff = 100000
-        assert ([ str( i ) for i in parse_log(test_one_str) ] == [ str( i ) for i in [Tiling({}), Tiling({(0,3): Block.point, (1,0): Block.point, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Block.point, (4,2): Block.point }), Tiling({(0,3): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]])), (1,2): Block.point, (2,1): Block.point, (3,0): Block.point}), Tiling({(0,0): 'input_set', (1,2): Block.point, (2,1): Block.point}), Tiling({(0,0): 'input_set', (1,1): Block.point}), Tiling({(4,1): PermSet.avoiding(tuple([Perm.one(i) for i in [[1, 2]]])), (1,2): Block.point, (2,3): Block.point, (3,0): Block.point, (0,4): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]]))}), Tiling({(0,2): Block.point, (1,4): Block.point, (2,3): Block.point, (3,1): Block.point, (4,0): Block.point}), Tiling({(0,2): Block.point, (1,4): Block.point, (2,3): Block.point, (3,0): Block.point, (4,1): PermSet.avoiding(tuple([Perm.one(i) for i in [[1,2]]]))}), Tiling({(0,4): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]])), (1,3): Block.point, (2,0): Block.point, (3,1): Block.point, (4,2): PermSet.avoiding([Perm.one(i) for i in [[1,2]]])}), Tiling({(0,4): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]])), (1,2): Block.point, (2,3): Block.point, (3,1): Block.point, (4,0): Block.point})] ])
+        assert ([ str( i ) for i in parse_log(test_one_str, avoids="123", file=False) ] == [ str( i ) for i in [Tiling({}), Tiling({(0,3): Block.point, (1,0): Block.point, (2,1): PermSet.avoiding([Perm.one([1,2])]), (3,4): Block.point, (4,2): Block.point }), Tiling({(0,3): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]])), (1,2): Block.point, (2,1): Block.point, (3,0): Block.point}), Tiling({(0,0): 'input_set', (1,2): Block.point, (2,1): Block.point}), Tiling({(0,0): 'input_set', (1,1): Block.point}), Tiling({(4,1): PermSet.avoiding(tuple([Perm.one(i) for i in [[1, 2]]])), (1,2): Block.point, (2,3): Block.point, (3,0): Block.point, (0,4): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]]))}), Tiling({(0,2): Block.point, (1,4): Block.point, (2,3): Block.point, (3,1): Block.point, (4,0): Block.point}), Tiling({(0,2): Block.point, (1,4): Block.point, (2,3): Block.point, (3,0): Block.point, (4,1): PermSet.avoiding(tuple([Perm.one(i) for i in [[1,2]]]))}), Tiling({(0,4): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]])), (1,3): Block.point, (2,0): Block.point, (3,1): Block.point, (4,2): PermSet.avoiding([Perm.one(i) for i in [[1,2]]])}), Tiling({(0,4): PermSet.avoiding(tuple([Perm.one(i) for i in [[2, 3, 1], [3, 1, 2, 4], [3, 2, 1], [4, 1, 2, 3]]])), (1,2): Block.point, (2,3): Block.point, (3,1): Block.point, (4,0): Block.point})] ])
 
 
 def test_json_to_tiling():
@@ -573,7 +573,8 @@ def test_json_to_tiling():
         {
             "input":
                 {
-                    "tile": [[{"point": [0, 0], "val": "o"}]]
+                    "tile": [[{"point": [0, 0], "val": "o"}]],
+                    "avoid": "o"
                 },
             "output":
                 [{(0,0):Block.point}],
@@ -581,7 +582,8 @@ def test_json_to_tiling():
         {
             "input":
                 {
-                    "tile": [[]]
+                    "tile": [[]],
+                    "avoid": "e"
                 },
             "output":
                 [{}],
@@ -597,7 +599,8 @@ def test_json_to_tiling():
                             {"point": [0, 1], "val": "o"},
                             {"point": [1, 0], "val": "X"}
                         ]
-                    ]
+                    ],
+                    "avoid": "21"
                 },
             "output":
                 [{}, {(0, 1):Block.point, (1, 0):"input_set"}],
@@ -614,7 +617,8 @@ def test_json_to_tiling():
                             {"point": [1, 0], "val": "X"},
                             {"point": [3, 3], "val": "increasing"}
                         ]
-                    ]
+                    ],
+                    "avoid": "32415_51234"
                 },
             "output":
                 [{(0, 0): Block.point}, {(0, 1): Block.point, (1, 0): "input_set", (3, 3): Block.increasing}],
@@ -623,8 +627,6 @@ def test_json_to_tiling():
 
     for item in inp:
         assert [str(i) for i in json_to_tiling(item["input"])] == [str( Tiling(x) ) for x in item["output"]], "Expected output: %s" % [str(Tiling(x)) for x in item["output"]]
-        assert [str(i) for i in json_to_tiling(item["input"]["tile"])] == [str(Tiling(x)) for x in item["output"]], "Expected output: %s" % [str(Tiling(x)) for x in item["output"]]
-
 
 if __name__ == '__main__':
     """a = Tiling({})
