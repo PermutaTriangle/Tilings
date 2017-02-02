@@ -34,28 +34,12 @@ class Tiling(dict, Descriptor):
 
     def __init__(self, tiles={}):
         # Dumb cleanup
-        i_actual = j_actual = None
         if not tiles:
             i_max = j_max = 0
-            point_cells = ()
-            tiling_hash = hash(())
             new_tiling = ()
-            classes = ()
         else:
             i_set, j_set = map(set, zip(*tiles))
             i_list, j_list = sorted(i_set), sorted(j_set)
-
-            point_cells = tuple(sorted(cell
-                                       for cell, block
-                                       in tiles.items()
-                                       if block is Block.point))
-
-            classes = tuple(sorted(item
-                                   for item
-                                   in tiles.items()
-                                   if item[1] is not Block.point))
-
-            tiling_hash = hash(sum(hash(item) for item in tiles.items()))
 
             i_max = i_list[-1]
             j_max = j_list[-1]
@@ -79,14 +63,24 @@ class Tiling(dict, Descriptor):
             new_tiling = ((tuple(cell), block) for cell, block in new_tiling)
 
         super(Tiling, self).__init__(new_tiling)
+
+        point_cells = tuple(sorted(cell
+                                   for cell, block
+                                   in self.items()
+                                   if block is Block.point))
+
+        classes = tuple(sorted(item
+                               for item
+                               in self.items()
+                               if item[1] is not Block.point))
+
+        tiling_hash = hash(sum(hash(item) for item in tiles.items()))
+
         self._max_i = i_max
         self._max_j = j_max
         self._hash = tiling_hash
         self._point_cells = point_cells
-        self.i_actual = i_actual
-        self.j_actual = j_actual
         self._classes = classes
-        self.inn = dict(tiles)
 
     #def __init__(self, tiles=()):
     #    info = []
