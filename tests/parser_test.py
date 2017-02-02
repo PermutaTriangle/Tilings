@@ -573,7 +573,8 @@ def test_json_to_tiling():
         {
             "input":
                 {
-                    "tile": [[{"point": [0, 0], "val": "o"}]]
+                    "tile": [[{"point": [0, 0], "val": "o"}]],
+                    "avoid": "o"
                 },
             "output":
                 [{(0,0):Block.point}],
@@ -581,7 +582,8 @@ def test_json_to_tiling():
         {
             "input":
                 {
-                    "tile": [[]]
+                    "tile": [[]],
+                    "avoid": "e"
                 },
             "output":
                 [{}],
@@ -597,7 +599,8 @@ def test_json_to_tiling():
                             {"point": [0, 1], "val": "o"},
                             {"point": [1, 0], "val": "X"}
                         ]
-                    ]
+                    ],
+                    "avoid": "21"
                 },
             "output":
                 [{}, {(0, 1):Block.point, (1, 0):"input_set"}],
@@ -614,7 +617,8 @@ def test_json_to_tiling():
                             {"point": [1, 0], "val": "X"},
                             {"point": [3, 3], "val": "increasing"}
                         ]
-                    ]
+                    ],
+                    "avoid": "32415_51234"
                 },
             "output":
                 [{(0, 0): Block.point}, {(0, 1): Block.point, (1, 0): "input_set", (3, 3): Block.increasing}],
@@ -623,8 +627,6 @@ def test_json_to_tiling():
 
     for item in inp:
         assert [str(i) for i in json_to_tiling(item["input"])] == [str( Tiling(x) ) for x in item["output"]], "Expected output: %s" % [str(Tiling(x)) for x in item["output"]]
-        assert [str(i) for i in json_to_tiling(item["input"]["tile"])] == [str(Tiling(x)) for x in item["output"]], "Expected output: %s" % [str(Tiling(x)) for x in item["output"]]
-
 
 if __name__ == '__main__':
     """a = Tiling({})

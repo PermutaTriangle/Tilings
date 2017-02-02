@@ -1,9 +1,21 @@
-from re import split, search, M
+from re import split, search, M, findall
 from pprint import pprint
 from grids import Block, Tiling, PermSetTiled
 from permuta import PermSet, Perm
 from permuta.misc import flatten
 from collections import defaultdict
+
+
+def av_string_to_permset(av):
+    avoids = findall(r'(\[(\[[0-9 ,]*\](, \[[0-9 ,]*\])*)?\])', av)
+    if not avoids:
+        raise ValueError("Could not find double list in string av: {s}".format(av))
+    else:
+        avoids = avoids[0][0]
+
+    avoids = eval(avoids)
+    return PermSet.avoiding([Perm.one(perm) for perm in avoids])
+
 
 def parse_log(inp, file=False):
     tilings = []
@@ -35,12 +47,7 @@ def parse_log(inp, file=False):
                 table.append( i.strip().split('|')[1:-1] )
             else:
                 num, avoids = i.split(': ')
-                # Remove "Av()"
-                avoids = avoids[3:-1]
-                # Get 2d array
-                avoids = eval(avoids)
-                avoids = PermSet.avoiding([ Perm.one(perm) for perm in avoids ])
-                permsets[num] = avoids
+                permsets[num] = av_string_to_permset(avoids)
         for i in range(len(table)):
             for j in range(len(table[i])):
                 char = table[i][j]
@@ -110,11 +117,15 @@ def tiling_to_json(tilings):
 
 
 def json_to_tiling(json_object):
-    if "tile" in json_object:
-        json_object = json_object["tile"]
+    if json_object["avoid"] == "e":
+        basis = [Perm(())]
+    elif json_object["avoid"] == "o":
+        basis = "o"
+    else:
+        basis = [Perm(list(x)) for x in json_object["avoid"].split("_")]
 
     tilings = []
-    for block in json_object:
+    for block in json_object["tile"]:
         tiling_dict = dict()
         for item in block:
             point = tuple(item["point"])
@@ -128,6 +139,8 @@ def json_to_tiling(json_object):
                 val = Block.increasing
             elif val in ["self", "X", "x", "r", "R"]:
                 val = "input_set"
+            elif val[:2] in ["Av", "av", "AV"]:
+                val = av_string_to_permset(val)
 
             tiling_dict[point] = val
         tilings.append(Tiling(tiling_dict))
