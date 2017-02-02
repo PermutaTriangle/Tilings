@@ -74,7 +74,7 @@ class Tiling(dict, Descriptor):
                                in self.items()
                                if item[1] is not Block.point))
 
-        tiling_hash = hash(sum(hash(item) for item in tiles.items()))
+        tiling_hash = hash(sum(hash(item) for item in self.items()))
 
         self._max_i = i_max
         self._max_j = j_max
@@ -230,7 +230,7 @@ class Tiling(dict, Descriptor):
         return isinstance(other, Tiling) and hash(self) == hash(other) \
                                          and self.point_cells == other.point_cells \
                                          and self.classes == other.classes
-            
+
     def __hash__(self):
         return self._hash
 
