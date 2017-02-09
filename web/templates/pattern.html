@@ -1,21 +1,55 @@
-<!DOCTYPE html>
-<head>
- <script type="text/x-mathjax-config">
-  MathJax.Hub.Config({
-   tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
-  });
- </script>
- <script src='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
- <title>Av({{ val['avoid'] }})</title>
-</head>
-<body>
- <ul>
-  <li>Avoid: {{ val['avoid'] }}</li>
-  <li>Tile: {{ val['tile'] }}</li>
-  <li>Examples: {{ val['examples'] }} </li>
-  <li>Recurrence: {{ val['recurrence'] }} </li>
-  <li>Generating function: {{ val['genf'] }} </li>
-  <li>Solved generating function: {{ val['solved_genf'] }} </li>
-  <li>Coeffecients: {{ val['coeffs'] }} </li>
- </ul>
-</body>
+{% extends 'base.html' %}
+{% block container %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">Avoiding {{ val['avoid'] }}</h3>
+
+  </div>
+  <div class="panel-body">
+    <h4>Tiling</h4>
+    <div class="flex-row">
+
+      {% for idx, tiling in enumerate(val['tile']) %}
+      {% if idx != 0 %}
+      <span class="glyphicon glyphicon-plus margin-10" aria-hidden="true"></span>
+      {% endif %}
+      <table class="tiling">
+        {% for i in range(maxi[idx]) %}
+        <tr>
+          {% for j in range(maxj[idx]) %}
+          <td>
+            {% if (i, j) in tiling %}
+            {{ tiling.get((i, j)) }}
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </table>
+      {% endfor %}
+    </div>
+    <h4>Permutation examples</h4>
+    {% for k, v in val['examples'] | dictsort %}
+    <p>
+      length {{ k }}:
+      {{ v[0] }}{% for perm in v[1:] %}, {{ perm }}{% endfor %}
+    </p>
+    {% endfor %}
+
+    <h4>Recurrence relation</h4>
+    {% for k, v in val['recurrence'] | dictsort %}
+    <p>
+      $a_{{"{"}}{{ k }}{{"}"}}= {{ v }}$
+    </p>
+    {% endfor %}
+
+    <h4>Generating function</h4>
+    ${{ val['genf'] }}$
+    <h4>Solved generating function</h4>
+    ${{ val['solved_genf'] }}$
+    <h4>Coefficients</h4>
+    {{ int(val['coeffs'][0]) }}{% for coeff in val['coeffs'][1:] %}, {{ int(coeff) }}{% endfor %}...
+  </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+body {
+  font-family: monospace;
+}
+
+.tiling {
+  border: 1px solid black;
+}
+
+.tiling td {
+  border: 1px solid black;
+  width: 20px;
+  height: 20px;
+  text-align: center;
+}
+
+.flex-row {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+}
+
+.margin-10 {
+  margin: 10px;
+}
