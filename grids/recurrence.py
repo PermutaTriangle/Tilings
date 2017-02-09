@@ -3,6 +3,7 @@ from Tiling import Block, Tiling
 from permuta import *
 from pymongo import MongoClient
 from collections import defaultdict
+from math import factorial
 
 def find_recurrence(cover):
     minbase = 0
@@ -10,9 +11,12 @@ def find_recurrence(cover):
     static = [True]*len(cover)
     points = [0]*len(cover)
     sets = [[] for i in range(len(cover))]
+    maxi,maxj=1,1
     # find minimum base cases needed and mark non-recursive tilings
     for i,tiling in enumerate(cover):
         for k,v in tiling.items():
+            maxi = max(maxi, k[0]+1)
+            maxj = max(maxj, k[1]+1)
             if v == Block.point:
                 points[i] += 1
             else:
@@ -33,9 +37,31 @@ def find_recurrence(cover):
     for i,tiling in enumerate(cover): 
         if static[i]:
             continue
+        rows = [(0,False)]*maxi
+        columns = [(0,False)]*maxj
+        for k,v in tiling.items():
+            if v == Block.point:
+                rows[k[0]] = (rows[k[0]][0]+1, rows[k[0]][1])
+                columns[k[1]] = (columns[k[1]][0]+1, columns[k[1]][1])
+            else:
+                rows[k[0]] = (rows[k[0]][0], True)
+                columns[k[1]] = (columns[k[1]][0], True)
         c = ord('i')
         slist = []
         vlist = []
+        muli = 1
+        mull = []
+        for row in rows:
+            if row[1]:
+                pass
+            else:
+                muli *= factorial(row[0]) 
+        for col in columns:
+            if col[1]:
+                pass
+            else:
+                muli *= factorial(row[0])
+
         for s in sets[i]:
             # add unseen sets to dictionaries for lookup
             if s not in recav:
@@ -51,7 +77,7 @@ def find_recurrence(cover):
         slist.pop()
         # calculate the length the last set uses
         vlist[-1] = vlist[-1][:2] + "{" + "-".join(["n"] + [chr(j) for j in range(ord('i'), c-1)] + ([str(points[i])] if points[i] > 0 else [])) + "}"
-        rlist.append("".join(slist) + "".join(vlist))
+        rlist.append("".join(slist) + (str(muli) if muli != 1 else "") + "".join(vlist))
     latex = "+".join(rlist)
     return dict(basecases), latex, recav
 

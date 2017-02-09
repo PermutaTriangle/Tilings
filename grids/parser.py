@@ -4,11 +4,12 @@ from Tiling import Block, Tiling, PermSetTiled
 from Cover import Cover
 from permuta import PermSet, Perm
 from permuta.misc import flatten
+from recurrence import find_recurrence
+from os import sep as filesep
 
 import os
 from pymongo import MongoClient
-mongo = MongoClient('mongodb://localhost:27017/')
-
+mongo = MongoClient('mongodb://webapp:c73f12a3@localhost:27017/permsdb')
 def perm_to_one_str(perm):
     return "".join([str(1 + i) for i in list(perm)])
 
@@ -37,7 +38,7 @@ def parse_log(inp, avoids=None, file=True):
     tilings = []
 
     if not avoids:
-        avoids = findall(r'([0-9]+(_[0-9]+)*)', inp)[0][0]
+        avoids = findall(r'([0-9]+(_[0-9]+)*)', inp.split(filesep)[-1])[0][0]
         avoids = PermSet.avoiding([Perm.one([int(i) for i in list(perm)]) for perm in avoids.split("_")])
 
     if file:
@@ -146,11 +147,19 @@ def cover_to_json(cover):
                 examples[str(i)].add(perm_to_one_str(perm))
     for key in examples:
         examples[key] = list(examples[key])
+    rank = max(tiling.rank() for tiling in cover)
     obj["tile"] = tiles
     obj["examples"] = examples
-    obj["rank"] = max(tiling.rank() for tiling in cover)
+    obj["rank"] = rank
     obj["avoid"] = avoids_to_delimited(cover.input_set)
     obj["length"] = len(cover.input_set.basis)
+    basecases,latex,recav = find_recurrence(cover)
+    recurrence = {}
+    for k,v in basecases.items():
+        recurrence[str(k)] = str(v)
+    recurrence["n"] = latex
+    obj["recurrence"] = recurrence
+    # TODO add recurrence avoidance class map to json
     return obj
 
 def json_to_tiling(json_object):
