@@ -22,7 +22,7 @@ class Cover(list):
         """Accepts a list of Tilings"""
         list.__init__(self, tilings) 
         self.input_set = input_set
-        self.sort(key = lambda tiling: ((tiling._max_i+1)*(tiling._max_j+1), tiling.max_i), tiling.rank())
+        self.sort(key = lambda tiling: ((tiling._max_i+1)*(tiling._max_j+1), tiling.max_i, tiling.rank()))
 
 
     def __repr__(self):
