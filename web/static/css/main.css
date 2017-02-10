@@ -28,3 +28,11 @@ footer {
 .margin-10 {
   margin: 10px;
 }
+
+.panel-title {
+  overflow: scroll;
+}
+
+.cover {
+  overflow: scroll;
+}

@@ -8,7 +8,7 @@
   <div class="panel-body">
     {% if 'tile' in val %}
     <h4>Tiling</h4>
-    <div class="flex-row">
+    <div class="flex-row cover">
       <table class="tiling">
         <tr>
           <td>
@@ -18,38 +18,48 @@
       </table>
       $=$
       {% for idx, tiling in enumerate(val['tile']) %}
-      {% if idx != 0 %}
-      $\bigsqcup$
-      {% endif %}
-      <table class="tiling">
-        {% for i in range(maxi[idx]) %}
-        <tr>
-          {% for j in range(maxj[idx]) %}
-          <td>
-            {% if (i, j) in tiling %}
-             {% if 'revdepends' in val and tiling.get((i, j)) in val['revdepends'] %}
-               {{ "$\mathcal{"+val['revdepends'][tiling.get((i, j))].upper()+"}$" }}
-               {{ val['depends'][val['revdepends'][tilings.get((i, j))]] }}
-             {% else %}
-              {{ tiling.get((i, j)) }}
-             {% endif %}
-            {% endif %}
-          </td>
+        {% if idx != 0 %}
+          $\bigsqcup$
+        {% endif %}
+        <table class="tiling">
+          {% for i in range(maxi[idx]) %}
+          <tr>
+            {% for j in range(maxj[idx]) %}
+            <td>
+              {% if (i, j) in tiling %}
+               {% if tiling.get((i, j)) == "Av([[1, 2]])"%}
+                  {{ "\\" }}
+               {% elif tiling.get((i, j)) == "Av([[2, 1]])"%}
+                  {{ "/" }}
+               {% elif 'revdepends' in val and tiling.get((i, j)) in val['revdepends'] %}
+                 {{ "$\mathcal{"+val['revdepends'][tiling.get((i, j))].upper()+"}$" }}
+               {% else %}
+                  {{ tiling.get((i, j)) }}
+               {% endif %}
+              {% endif %}
+            </td>
+            {% endfor %}
+          </tr>
           {% endfor %}
-        </tr>
-        {% endfor %}
-      </table>
+        </table>
       {% endfor %}
     </div>
     {% endif %}
 
     {% if 'depends' in val %}
     <h4>Legend</h4>
-    {% for k, v in val['depends'] | dictsort %}
-    <p>
-        <a href="/perms/av/{{ v | av_list_to_url }}">{{"$\mathcal{"+k.upper()+"}$ = " + (v | av_list_to_str) }}</a>
-    </p>
-    {% endfor %}
+      {% for k, v in val['depends'] | dictsort %}
+        {% if v == "Av([[1, 2]])" %}
+          {% set extra = " \\ = " %}
+        {% elif v == "Av([[2, 1]])" %}
+          {% set extra = " / = " %}
+        {% else %}
+          {% set extra = "" %}
+        {% endif %}
+        <p>
+          <a href="/perms/av/{{ v | av_list_to_url }}">{{"$\mathcal{"+k.upper()+"}$ = " + extra + (v | av_list_to_str) }}</a>
+        </p>
+      {% endfor %}
     {% endif %}
     {% if 'examples' in val %}
     <h4>Permutation examples</h4>
