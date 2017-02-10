@@ -26,7 +26,7 @@ def index():
 
 @app.route("/perms/")
 def permsroot():
-    return "<h1>Welcome to the Online Permutation Attribute Library</h1><br/><h3>Made by: Arnar, Alfur, Sigurjon and Unnar</h3>"
+    return render_our('index.html')
 
 @app.route("/perms/random/")
 def randav():

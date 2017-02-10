@@ -29,6 +29,7 @@
             {% if (i, j) in tiling %}
              {% if 'revdepends' in val and tiling.get((i, j)) in val['revdepends'] %}
                {{ "$\mathcal{"+val['revdepends'][tiling.get((i, j))].upper()+"}$" }}
+               {{ val['depends'][val['revdepends'][tilings.get((i, j))]] }}
              {% else %}
               {{ tiling.get((i, j)) }}
              {% endif %}
