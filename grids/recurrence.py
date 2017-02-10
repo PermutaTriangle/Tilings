@@ -72,10 +72,13 @@ def find_recurrence(cover):
         blist = []
 
         for y in range(maxi):
+            print("row " + str(y))
             row = rows[y]
             if row[1] > 1:
+                print("yes")
                 sub = points[i] - row[0]
                 choices = [chr(j) for j in range(ord('i'), c)]
+                print(sub, choices)
                 for x in range(maxj):
                     try:
                         choices.remove(its[y][x])
@@ -84,17 +87,22 @@ def find_recurrence(cover):
                 if row[0]:
                     blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + str(row[0]) + "}")
                     sub += row[0]
-                for x in range(maxi):
+                print(sub, choices)
+                for x in range(maxj):
                     item = its[y][x]
                     if item == '':
                         continue
+                    print(y,x,item)
                     blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + item  + "}")
                     choices.append(item)
                     choices.sort()
+                    print(blist, choices)
             muli *= factorial(row[0]) 
         for x in range(maxj):
+            print("col " + str(x))
             col = columns[x]
             if col[1] > 1:
+                print("yes")
                 sub = points[i] - col[0]
                 choices = [chr(j) for j in range(ord('i'), c)]
                 for y in range(maxi):
@@ -113,6 +121,7 @@ def find_recurrence(cover):
                     choices.append(item)
                     choices.sort()
             muli *= factorial(col[0])
+
         if blist:
             blist.pop()
         # remove last sum
@@ -126,21 +135,26 @@ def find_recurrence(cover):
     return dict(basecases), latex, recav, avrec
 
 if __name__ == "__main__":
-    input_set = PermSet.avoiding([Perm.one([1,2])])
-    b = Tiling({})
-    c = Tiling({(0,0): Block.point, (1,1): input_set})
-    g = Cover(input_set, [b,c])
+    B = PermSet.avoiding([Perm.one([1,2])])
+    C = PermSet.avoiding([Perm.one([2,1])])
+    emptyTiling = Tiling({})
+    #c = Tiling({(0,0): Block.point, (1,1): input_set})
+    #g = Cover(input_set, [b,c])
 
-    input_set2 = PermSet.avoiding(Perm.one([1,3,2]))
-    d = Tiling({(1,0):Block.point, (0,1):input_set2, (2,2):input_set2})
-    f = Cover(input_set2, [b,d])
+    #input_set2 = PermSet.avoiding(Perm.one([1,3,2]))
+    #d = Tiling({(1,0):Block.point, (0,1):input_set2, (2,2):input_set2})
+    #f = Cover(input_set2, [b,d])
 
-    input_set3 = PermSet.avoiding(Perm.one([1,2,3,4]))
-    e = Cover(input_set3, [b,c,d])
+    #input_set3 = PermSet.avoiding(Perm.one([1,2,3,4]))
+    #e = Cover(input_set3, [b,c,d])
     
-    i = Tiling({(0,0): input_set3, (1,1): input_set3, (2,2): input_set2, (3,3): input_set})
-    h = Cover(input_set2, [i])
-    print(find_recurrence(g))
-    print(find_recurrence(f))
-    print(find_recurrence(e))
-    print(find_recurrence(h))
+    #i = Tiling({(0,0): input_set3, (1,1): input_set3, (2,2): input_set2, (3,3): input_set})
+    #h = Cover(input_set2, [i])
+    A = PermSet.avoiding([Perm.one([1,2,4,3]),Perm.one([1,3,2,4]),Perm.one([1,3,4,2]),Perm.one([1,4,2,3]),
+                            Perm.one([1,4,3,2]),Perm.one([2,1,4,3]),Perm.one([2,3,1,4]),Perm.one([2,3,4,1]), 
+                            Perm.one([2,4,1,3]), Perm.one([2,4,3,1]), Perm.one([3,1,4,2]),Perm.one([3,2,4,1]),
+                            Perm.one([3,4,1,2]), Perm.one([3,4,2,1]), Perm.one([4,1,3,2]), Perm.one([4,2,3,1])])
+    t1 = Tiling({(1,0): Block.point, (0,1): Block.point, (1,2):Block.point})
+    t2 = Tiling({(0,0): B, (1,1):Block.point, (0,2):C})
+    cov = Cover(A, [emptyTiling, t1, t2])
+    print(find_recurrence(cov)[1])
