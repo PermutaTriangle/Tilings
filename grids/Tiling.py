@@ -145,11 +145,11 @@ class Tiling(dict, Descriptor):
         """Ranks Tiling by difficulty.
 
         0 - Empty Tiling
-        1 - Tiling consisting only of points where none interleave.
+        1 - Tiling consisting only of points where they might be interleaving.
         2 - Tiling consisting of points and sets where none interleave.
-        3 - Tiling consisting of points and sets where points interleave in a column or row.
+        3 - Tiling consisting of points and at least one set where points interleave in a column or row.
         4 - Tiling consisting of points and sets where a point and set interleave in a column or row.
-        5 - Tiling consisting of points and sets where points interleave in an L or square shape.
+        5 - Tiling consisting of points and at least one set where points interleave in an L or square shape.
         6 - Tiling consisting of points and sets where sets and points interleave in an L  or square shape but no sets interleave in a column or row.
         7 - Tiling consisting of points and sets where sets interleave in a column or row.
         8 - Tiling consisting of points and sets where sets interleave in an L shape.
@@ -195,6 +195,10 @@ class Tiling(dict, Descriptor):
                     cols[j] = max(2, cols[j])
 
         res = max(max(rows), max(cols))
+       
+        #Check if the tiling consists only of points, then it gets rank 1 
+        if not sets:
+            return 1 if res else res
 
         #Checks for L shaped interleaving
         for i,j in self:
