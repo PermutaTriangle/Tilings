@@ -1,0 +1,38 @@
+body {
+  font-family: monospace;
+}
+
+footer {
+  display: flex;
+  justify-content: center;
+}
+
+.tiling {
+  border: 1px solid black;
+  margin: 1em;
+}
+
+.tiling td {
+  border: 1px solid black;
+  width: 20px;
+  height: 20px;
+  text-align: center;
+}
+
+.flex-row {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+}
+
+.margin-10 {
+  margin: 10px;
+}
+
+.panel-title {
+  overflow: scroll;
+}
+
+.cover {
+  overflow: scroll;
+}
