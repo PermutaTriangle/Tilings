@@ -14,14 +14,15 @@ from Tiling import PermSetTiled
 class Cover(list):
     """Cover class.
 
-    Tilings are stored in an array in the order they were initialized in.
+    Tilings are stored in an array in size order.
     """
 
     input_set = PermSet()
     def __init__(self, input_set, tilings=[]):
         """Accepts a list of Tilings"""
-        list.__init__(self, tilings)
+        list.__init__(self, tilings) 
         self.input_set = input_set
+        self.sort(key = lambda tiling: (tiling._max_i+1)*(tiling._max_j+1))
 
 
     def __repr__(self):
@@ -45,8 +46,9 @@ if __name__ == "__main__":
     from Tiling import Tiling, Block
     b = Tiling({(0,0): Block.point, (1,1): Block.point})
     c = Tiling({(0,1): Block.point, (1,0): Block.point})
+    d = Tiling({(0,0): Block.point, (1,1): Block.decreasing, (2,2): Block.increasing})
     from permuta import PermSet, Perm
-    g = Cover(PermSet.avoiding([Perm.one([1,4,3,2])]), [c])
+    g = Cover(PermSet.avoiding([Perm.one([1,4,3,2])]), [d, c])
 
     print(g.__repr__())
-    print(g.of_length(3))
+    print(g.of_length(2))

@@ -153,12 +153,20 @@ def cover_to_json(cover):
     obj["rank"] = rank
     obj["avoid"] = avoids_to_delimited(cover.input_set)
     obj["length"] = len(cover.input_set.basis)
-    basecases,latex,recav = find_recurrence(cover)
+    basecases,latex,recav,avrec = find_recurrence(cover)
     recurrence = {}
     for k,v in basecases.items():
         recurrence[str(k)] = str(v)
     recurrence["n"] = latex
     obj["recurrence"] = recurrence
+    depends = {}
+    for k,v in avrec.items():
+        depends[k] = permset_to_av_string(v)
+    obj["depends"] = depends
+    revdepends = {}
+    for k,v in recav.items():
+        revdepends[permset_to_av_string(k)] = v
+    obj["revdepends"] = revdepends
     # TODO add recurrence avoidance class map to json
     return obj
 

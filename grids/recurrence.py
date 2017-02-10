@@ -79,7 +79,7 @@ def find_recurrence(cover):
         vlist[-1] = vlist[-1][:2] + "{" + "-".join(["n"] + [chr(j) for j in range(ord('i'), c-1)] + ([str(points[i])] if points[i] > 0 else [])) + "}"
         rlist.append("".join(slist) + (str(muli) if muli != 1 else "") + "".join(vlist))
     latex = "+".join(rlist)
-    return dict(basecases), latex, recav
+    return dict(basecases), latex, recav, avrec
 
 if __name__ == "__main__":
     input_set = PermSet.avoiding([Perm.one([1,2])])
