@@ -59,7 +59,7 @@ def find_recurrence(cover):
             if col[1]:
                 pass
             else:
-                muli *= factorial(row[0])
+                muli *= factorial(col[0])
 
         for s in sets[i]:
             # add unseen sets to dictionaries for lookup
