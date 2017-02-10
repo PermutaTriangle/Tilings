@@ -4,6 +4,7 @@ body {
 
 .tiling {
   border: 1px solid black;
+  margin: 1em;
 }
 
 .tiling td {
