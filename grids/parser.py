@@ -167,6 +167,10 @@ def cover_to_json(cover):
     for k,v in recav.items():
         revdepends[permset_to_av_string(k)] = v
     obj["revdepends"] = revdepends
+    coeffs = []
+    for i in range(16):
+        coeffs.append(len(cover.of_length(i)))
+    obj["coefficients"] = coeffs
     # TODO add recurrence avoidance class map to json
     return obj
 
