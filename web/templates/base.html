@@ -20,7 +20,7 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="#">OPPAL</a>
+        <a class="navbar-brand" href="/">OPPAL</a>
         <p class="navbar-text hidden-sm hidden-md">Online Permutation Pattern Avoidance Library</p>
       </div>
 
@@ -40,6 +40,12 @@
   <div class="container">
     {% block container %}{% endblock %}
   </div>
+  
+  <footer>
+    <span>
+      Copyright &copy; 2017 - <a href="{{ url_for('randav') }}">Random entry</a>
+    </span>
+  </footer>
   <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
   <script type="text/x-mathjax-config">
