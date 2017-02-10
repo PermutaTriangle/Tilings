@@ -22,8 +22,7 @@ def find_recurrence(cover):
             else:
                 sets[i].append(v)
         static[i] = (len(sets[i]) == 0)
-        if static[i]:
-            minbase = max(minbase,points[i])
+        minbase = max(minbase,points[i])
     
     # set base cases by counting
     for i in range(minbase+1):
