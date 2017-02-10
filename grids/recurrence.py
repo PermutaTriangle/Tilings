@@ -36,32 +36,27 @@ def find_recurrence(cover):
     for i,tiling in enumerate(cover): 
         if static[i]:
             continue
-        rows = [(0,False)]*maxi
-        columns = [(0,False)]*maxj
+        rows = [(0,0)]*maxi
+        columns = [(0,0)]*maxj
         for k,v in tiling.items():
             if v == Block.point:
                 rows[k[0]] = (rows[k[0]][0]+1, rows[k[0]][1])
                 columns[k[1]] = (columns[k[1]][0]+1, columns[k[1]][1])
             else:
-                rows[k[0]] = (rows[k[0]][0], True)
-                columns[k[1]] = (columns[k[1]][0], True)
+                rows[k[0]] = (rows[k[0]][0], rows[k[0]][1]+1)
+                columns[k[1]] = (columns[k[1]][0], columns[k[1]][1]+1)
         c = ord('i')
         slist = []
         vlist = []
         muli = 1
         mull = []
-        for row in rows:
-            if row[1]:
-                pass
-            else:
-                muli *= factorial(row[0]) 
-        for col in columns:
-            if col[1]:
-                pass
-            else:
-                muli *= factorial(col[0])
+        
+        #table storing which iterator variable is used by which set (in respective cell)
+        its = [['' for j in range(maxj)] for i in range(maxi)]
 
-        for s in sets[i]:
+        for k,s in tiling.items():
+            if s == Block.point:
+                continue
             # add unseen sets to dictionaries for lookup
             if s not in recav:
                 avrec[chr(av)] = s
@@ -71,13 +66,63 @@ def find_recurrence(cover):
             # add the sum for this set
             slist.append("\\sum_{" + chr(c) + "=0}^{" + "-".join(["n"] + [chr(j) for j in range(ord('i'), c)] + ([str(points[i])] if points[i] > 0 else [])) + "}")
             vlist.append(setrec+"_{" + chr(c) + "}") 
+            its[k[0]][k[1]] = chr(c) 
             c += 1
+        
+        blist = []
+
+        for y in range(maxi):
+            row = rows[y]
+            if row[1] > 1:
+                sub = points[i] - row[0]
+                choices = [chr(j) for j in range(ord('i'), c)]
+                for x in range(maxj):
+                    try:
+                        choices.remove(its[y][x])
+                    except ValueError:
+                        pass
+                if row[0]:
+                    blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + str(row[0]) + "}")
+                    sub += row[0]
+                for x in range(maxi):
+                    item = its[y][x]
+                    if item == '':
+                        continue
+                    blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + item  + "}")
+                    choices.append(item)
+                    choices.sort()
+            muli *= factorial(row[0]) 
+        for x in range(maxj):
+            col = columns[x]
+            if col[1] > 1:
+                sub = points[i] - col[0]
+                choices = [chr(j) for j in range(ord('i'), c)]
+                for y in range(maxi):
+                    try:
+                        choices.remove(its[y][x])
+                    except ValueError:
+                        pass
+                if col[0]:
+                    blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + str(col[0]) + "}")
+                    sub += col[0]
+                for y in range(maxi):
+                    item = its[y][x]
+                    if item == '':
+                        continue
+                    blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + item  + "}")
+                    choices.append(item)
+                    choices.sort()
+            muli *= factorial(col[0])
+        if blist:
+            blist.pop()
         # remove last sum
-        slist.pop()
+        if slist:
+            slist.pop()
         # calculate the length the last set uses
-        vlist[-1] = vlist[-1][:2] + "{" + "-".join(["n"] + [chr(j) for j in range(ord('i'), c-1)] + ([str(points[i])] if points[i] > 0 else [])) + "}"
-        rlist.append("".join(slist) + (str(muli) if muli != 1 else "") + "".join(vlist))
-    latex = "+".join(rlist)
+        if vlist:
+            vlist[-1] = vlist[-1][:2] + "{" + "-".join(["n"] + [chr(j) for j in range(ord('i'), c-1)] + ([str(points[i])] if points[i] > 0 else [])) + "}"
+        rlist.append("".join(slist) + (str(muli) if muli != 1 else "") + "".join(vlist) + "".join(blist))
+        latex = "+".join(rlist)
     return dict(basecases), latex, recav, avrec
 
 if __name__ == "__main__":
