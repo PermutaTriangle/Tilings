@@ -73,10 +73,10 @@ def find_recurrence(cover):
             c += 1
         
         blist = []
-
+        removeFromBList = False
         for y in range(maxi):
             row = rows[y]
-            if row[1] > 1:
+            if row[1] > 0:
                 sub = points[i] - row[0]
                 choices = [chr(j) for j in range(ord('i'), c)]
                 for x in range(maxj):
@@ -87,17 +87,19 @@ def find_recurrence(cover):
                 if row[0]:
                     blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + str(row[0]) + "}")
                     sub += row[0]
-                for x in range(maxj):
-                    item = its[y][x]
-                    if item == '':
-                        continue
-                    blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + item  + "}")
-                    choices.append(item)
-                    choices.sort()
+                if row[1] > 1:
+                    for x in range(maxj):
+                        item = its[y][x]
+                        if item == '':
+                            continue
+                        blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + item  + "}")
+                        choices.append(item)
+                        choices.sort()
+                        removeFromBList = True
             muli *= factorial(row[0]) 
         for x in range(maxj):
             col = columns[x]
-            if col[1] > 1:
+            if col[1] > 0:
                 sub = points[i] - col[0]
                 choices = [chr(j) for j in range(ord('i'), c)]
                 for y in range(maxi):
@@ -108,16 +110,18 @@ def find_recurrence(cover):
                 if col[0]:
                     blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + str(col[0]) + "}")
                     sub += col[0]
-                for y in range(maxi):
-                    item = its[y][x]
-                    if item == '':
-                        continue
-                    blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + item  + "}")
-                    choices.append(item)
-                    choices.sort()
+                if col[1] > 1:    
+                    for y in range(maxi):
+                        item = its[y][x]
+                        if item == '':
+                            continue
+                        blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + item  + "}")
+                        choices.append(item)
+                        choices.sort()
+                        removeFromBList = True
             muli *= factorial(col[0])
 
-        if blist:
+        if removeFromBList and blist:
             blist.pop()
         # remove last sum
         if slist:
@@ -154,4 +158,10 @@ if __name__ == "__main__":
     t1 = Tiling({(1,0): Block.point, (0,1): Block.point, (1,2):Block.point})
     t2 = Tiling({(0,0): B, (1,1):Block.point, (0,2):C})
     cov = Cover(A, [emptyTiling, t1, t2])
+    
+    print(find_recurrence(cov)[1])
+    
+    t3 = Tiling({(0,0):B, (0,1):Block.point})
+    cov = Cover(A, [emptyTiling,t3])
+
     print(find_recurrence(cov)[1])
