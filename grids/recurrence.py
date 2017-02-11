@@ -33,6 +33,9 @@ def find_recurrence(cover):
     av = ord('b') 
     avrec = {'a':cover.input_set}
     recav = {cover.input_set:'a'}
+
+    if all(static):
+        return dict(basecases), "0", recav, avrec
     for i,tiling in enumerate(cover): 
         if static[i]:
             continue
@@ -72,13 +75,10 @@ def find_recurrence(cover):
         blist = []
 
         for y in range(maxi):
-            print("row " + str(y))
             row = rows[y]
             if row[1] > 1:
-                print("yes")
                 sub = points[i] - row[0]
                 choices = [chr(j) for j in range(ord('i'), c)]
-                print(sub, choices)
                 for x in range(maxj):
                     try:
                         choices.remove(its[y][x])
@@ -87,22 +87,17 @@ def find_recurrence(cover):
                 if row[0]:
                     blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + str(row[0]) + "}")
                     sub += row[0]
-                print(sub, choices)
                 for x in range(maxj):
                     item = its[y][x]
                     if item == '':
                         continue
-                    print(y,x,item)
                     blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + item  + "}")
                     choices.append(item)
                     choices.sort()
-                    print(blist, choices)
             muli *= factorial(row[0]) 
         for x in range(maxj):
-            print("col " + str(x))
             col = columns[x]
             if col[1] > 1:
-                print("yes")
                 sub = points[i] - col[0]
                 choices = [chr(j) for j in range(ord('i'), c)]
                 for y in range(maxi):
@@ -132,6 +127,8 @@ def find_recurrence(cover):
             vlist[-1] = vlist[-1][:2] + "{" + "-".join(["n"] + [chr(j) for j in range(ord('i'), c-1)] + ([str(points[i])] if points[i] > 0 else [])) + "}"
         rlist.append("".join(slist) + (str(muli) if muli != 1 else "") + "".join(vlist) + "".join(blist))
         latex = "+".join(rlist)
+        if not latex:
+            latex = "0"
     return dict(basecases), latex, recav, avrec
 
 if __name__ == "__main__":

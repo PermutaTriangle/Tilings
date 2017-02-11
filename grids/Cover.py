@@ -36,7 +36,7 @@ class Cover(list):
         # Create examples
         ret = []
         for T in self:
-            print(T)
+            #print(T)
             for perm in PermSetTiled(T).of_length(num):
                 ret.append(perm)
         return ret

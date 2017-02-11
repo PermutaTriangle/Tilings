@@ -40,14 +40,12 @@ def parse_log(inp, avoids=None, file=True):
     if not avoids:
         avoids = findall(r'([0-9]+(_[0-9]+)*)', inp.split(filesep)[-1])[0][0]
         avoids = PermSet.avoiding([Perm.one([int(i) for i in list(perm)]) for perm in avoids.split("_")])
-
     if file:
         with open(inp) as f:
             inp = f.read()
-
     # Only take the last cover found
-    inp = split(r'Found:\n', inp)[-1]
-
+    if "Found:\n" in inp:
+        inp = split(r'Found:\n', inp)[-1]
     # Split on 123124:\n0101010100110101010 to find all rule blocks on the form
     # +-+-+-+-+
     # | |o| | |
@@ -65,7 +63,6 @@ def parse_log(inp, avoids=None, file=True):
         table = []
         permsets = {}
         rule = {}
-
         # Parse each line
         for i in split('\n', item):
             if i.startswith('+'):
@@ -171,6 +168,7 @@ def cover_to_json(cover):
     for i in range(11):
         coeffs.append(len(cover.of_length(i)))
     obj["coeffs"] = coeffs
+    
     # TODO add recurrence avoidance class map to json
     return obj
 
@@ -207,6 +205,7 @@ def json_to_tiling(json_object):
 def process_folder(folder_name):
     for dirpath, dirnames, filenames in os.walk(folder_name):
         for filename in filenames:
+            #print("processing: ", filename)
             cover = parse_log(os.path.join(dirpath, filename), file=True)
             c = cover_to_json(cover)
             mongo.permsdb.perm.insert(c)
