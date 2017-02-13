@@ -56,9 +56,19 @@ def avget(patterns):
 
     return render_our('pattern.html', val=val, maxi=maxi, maxj=maxj)
 
+@app.route("/perms/rank/<val>")
+def list_by_rank(val):
+    try:
+        results = mongo.db.perm.find({"rank":int(val)})
+        results = [x["avoid"] for x in results]
+        return render_our("rank.html", results=results)
+    except ValueError:
+        abort(404)
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
+
 # set custom filters
 app.jinja_env.filters['av_list_to_url'] = av_list_to_url
 app.jinja_env.filters['av_list_to_str'] = av_list_to_str
