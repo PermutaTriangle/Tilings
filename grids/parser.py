@@ -6,6 +6,7 @@ from permuta import PermSet, Perm
 from permuta.misc import flatten
 from recurrence import find_recurrence
 from os import sep as filesep
+from tqdm import tqdm
 
 import os
 from pymongo import MongoClient
@@ -172,13 +173,13 @@ def cover_to_json(cover):
     # TODO add recurrence avoidance class map to json
     return obj
 
-def json_to_tiling(json_object):
+def json_to_cover(json_object):
     if json_object["avoid"] == "e":
         basis = [Perm(())]
     elif json_object["avoid"] == "o":
         basis = "o"
     else:
-        basis = [Perm(list(x)) for x in json_object["avoid"].split("_")]
+        basis = [Perm.one(list(map(int,x))) for x in json_object["avoid"].split("_")]
 
     tilings = []
     for block in json_object["tile"]:
@@ -200,15 +201,34 @@ def json_to_tiling(json_object):
 
             tiling_dict[point] = val
         tilings.append(Tiling(tiling_dict))
-    return tilings
+    return Cover(PermSet.avoiding(basis), tilings)
 
 def process_folder(folder_name):
-    for dirpath, dirnames, filenames in os.walk(folder_name):
-        for filename in filenames:
-            #print("processing: ", filename)
-            cover = parse_log(os.path.join(dirpath, filename), file=True)
-            c = cover_to_json(cover)
-            mongo.permsdb.perm.insert(c)
+    files = [os.path.join(dirpath,filename) for filename in filenames for dirpath, dirnames, filenames in os.walk(folder_name)]
+    for filename in tqdm(files):
+        #print("processing: ", filename)
+        cover = parse_log(filename, file=True)
+        c = cover_to_json(cover)
+        mongo.permsdb.perm.insert(c)
+
+def update_recurrences():
+    for obj in tqdm(mongo.permsdb.perm.find({}), total=mongo.permsdb.perm.count()):
+        cover = json_to_cover(obj)
+        basecases,latex,recav,avrec = find_recurrence(cover)
+        recurrence = {}
+        for k,v in basecases.items():
+            recurrence[str(k)] = str(v)
+        recurrence["n"] = latex
+        obj["recurrence"] = recurrence
+        depends = {}
+        for k,v in avrec.items():
+            depends[k] = permset_to_av_string(v)
+        obj["depends"] = depends
+        revdepends = {}
+        for k,v in recav.items():
+            revdepends[permset_to_av_string(k)] = v
+        obj["revdepends"] = revdepends
+        mongo.permsdb.perm.update({"avoid":obj["avoid"]}, obj)
 
 if __name__ == '__main__':
     #print(tiling_to_json([Tiling({ (0,0): PermSet.avoiding(Perm.one([1,2,3])) }),

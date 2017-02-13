@@ -33,6 +33,7 @@ def find_recurrence(cover):
     av = ord('b') 
     avrec = {'a':cover.input_set,'/':Block.increasing,'\\':Block.decreasing}
     recav = {cover.input_set:'a',Block.increasing:'/',Block.decreasing:'\\'}
+    inc,dec = False,False
 
     if all(static):
         return dict(basecases), "0", recav, avrec
@@ -68,8 +69,10 @@ def find_recurrence(cover):
             setrec = recav[s]
             # add the sum for this set
             slist.append("\\sum_{" + chr(c) + "=0}^{" + "-".join(["n"] + [chr(j) for j in range(ord('i'), c)] + ([str(points[i])] if points[i] > 0 else [])) + "}")
-            if s == Block.increasing or s == Block.decreasing:
-                pass
+            if s == Block.increasing:
+                inc = True
+            elif s == Block.decreasing:
+                dec = True
             else:
                 vlist.append(setrec+"_{" + chr(c) + "}") 
             its[k[0]][k[1]] = chr(c) 
@@ -132,10 +135,28 @@ def find_recurrence(cover):
         # calculate the length the last set uses
         if vlist:
             vlist[-1] = vlist[-1][:2] + "{" + "-".join(["n"] + [chr(j) for j in range(ord('i'), c-1)] + ([str(points[i])] if points[i] > 0 else [])) + "}"
-        rlist.append("".join(slist) + (str(muli) if not vlist or muli != 1 else "") + "".join(vlist) + "".join(blist))
+        rlist.append("".join(slist) + (str(muli) if (not vlist and not blist) or muli != 1 else "") + "".join(vlist) + "".join(blist))
         latex = "+".join(rlist)
         if not latex:
             latex = "0"
+    if not inc:
+        delkey = ""
+        for k,v in avrec.items():
+            if v == Block.increasing:
+                delkey = k
+                break
+        del avrec[delkey]
+        del recav[Block.increasing]
+
+    if not dec:
+        delkey = ""
+        for k,v in avrec.items():
+            if v == Block.decreasing:
+                delkey = k
+                break
+        del avrec[delkey]
+        del recav[Block.decreasing]
+
     return dict(basecases), latex, recav, avrec
 
 if __name__ == "__main__":
