@@ -4,11 +4,13 @@ from flask import abort, jsonify, redirect, url_for, render_template
 from flask_pymongo import PyMongo
 from jinja2 import Environment
 app = Flask(__name__)
+remote = True
 app.config['MONGO_DBNAME'] = 'permsdb'
-app.config['MONGO_HOST'] = 'localhost'
+app.config['MONGO_HOST'] = 'tagl.is' if remote else 'localhost'
 app.config['MONGO_PORT'] = '27017'
 app.config['MONGO_USERNAME'] = 'webapp'
 app.config['MONGO_PASSWORD'] = 'c73f12a3'
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 mongo = PyMongo(app)
 
 def render_our(*args, **kwargs):
@@ -33,6 +35,21 @@ def randav():
     sz = mongo.db.perm.count()
     n = randint(0,sz-1)
     return redirect(url_for("avget", patterns=mongo.db.perm.find().limit(-1).skip(n).next()["avoid"]))
+
+@app.route("/perms/stats/")
+def stats():
+    result = mongo.db.perm.aggregate([{
+      "$group": {
+        "_id": "$rank",
+        "count": { "$sum": 1 },
+      }
+    }])
+    ranks = {}
+    for item in result:
+        rank, count = item["_id"], item["count"]
+        ranks[rank] = count
+    return render_our("stats.html", ranks=ranks)
+
 
 @app.route("/perms/av/")
 def avroot():
