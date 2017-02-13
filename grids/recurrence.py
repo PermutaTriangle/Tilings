@@ -31,8 +31,8 @@ def find_recurrence(cover):
     # create latex for recurrence
     rlist = []
     av = ord('b') 
-    avrec = {'a':cover.input_set}
-    recav = {cover.input_set:'a'}
+    avrec = {'a':cover.input_set,'/':Block.increasing,'\\':Block.decreasing}
+    recav = {cover.input_set:'a',Block.increasing:'/',Block.decreasing:'\\'}
 
     if all(static):
         return dict(basecases), "0", recav, avrec
@@ -68,7 +68,10 @@ def find_recurrence(cover):
             setrec = recav[s]
             # add the sum for this set
             slist.append("\\sum_{" + chr(c) + "=0}^{" + "-".join(["n"] + [chr(j) for j in range(ord('i'), c)] + ([str(points[i])] if points[i] > 0 else [])) + "}")
-            vlist.append(setrec+"_{" + chr(c) + "}") 
+            if s == Block.increasing or s == Block.decreasing:
+                pass
+            else:
+                vlist.append(setrec+"_{" + chr(c) + "}") 
             its[k[0]][k[1]] = chr(c) 
             c += 1
         
@@ -129,7 +132,7 @@ def find_recurrence(cover):
         # calculate the length the last set uses
         if vlist:
             vlist[-1] = vlist[-1][:2] + "{" + "-".join(["n"] + [chr(j) for j in range(ord('i'), c-1)] + ([str(points[i])] if points[i] > 0 else [])) + "}"
-        rlist.append("".join(slist) + (str(muli) if muli != 1 else "") + "".join(vlist) + "".join(blist))
+        rlist.append("".join(slist) + (str(muli) if not vlist or muli != 1 else "") + "".join(vlist) + "".join(blist))
         latex = "+".join(rlist)
         if not latex:
             latex = "0"
