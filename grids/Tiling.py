@@ -2,6 +2,9 @@
 # TODO: Make python2.7 compatible once permuta is
 
 
+__all__ = ["Cell", "Block", "Tiling"]
+
+
 import warnings
 
 from builtins import dict
