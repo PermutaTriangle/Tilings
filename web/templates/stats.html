@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block container %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">Rank statistics</h3>
+  </div>
+  <table class="table table-striped">
+    <tr>
+      <th>
+        Rank
+      </th>
+      <th>
+        Count
+      </th>
+    </tr>
+      {% for rank, count in ranks.items() %}
+        <tr>
+          <td>
+            {{ rank }}
+          </td>
+          <td>
+            {{ count }}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+</div>
+{% endblock %}
