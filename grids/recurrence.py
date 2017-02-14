@@ -31,8 +31,11 @@ def find_recurrence(cover):
     # create latex for recurrence
     rlist = []
     av = ord('b') 
-    avrec = {'a':cover.input_set,'/':Block.increasing,'\\':Block.decreasing}
-    recav = {cover.input_set:'a',Block.increasing:'/',Block.decreasing:'\\'}
+    avrec = {'/':Block.increasing,'\\':Block.decreasing}
+    recav = {Block.increasing:'/',Block.decreasing:'\\'}
+    if cover.input_set != Block.increasing and cover.input_set != Block.decreasing:
+        avrec['a'] = cover.input_set
+        recav[cover.input_set] = 'a'
     inc,dec = False,False
 
     if all(static):
@@ -68,13 +71,13 @@ def find_recurrence(cover):
                 av += 1
             setrec = recav[s]
             # add the sum for this set
-            slist.append("\\sum_{" + chr(c) + "=0}^{" + "-".join(["n"] + [chr(j) for j in range(ord('i'), c)] + ([str(points[i])] if points[i] > 0 else [])) + "}")
+            slist.append( (chr(c) + "=0", "-".join( ["n"] + [chr(j) for j in range(ord('i'), c)] + ([str(points[i])] if points[i] > 0 else [] ) ) ) )
             if s == Block.increasing:
                 inc = True
             elif s == Block.decreasing:
                 dec = True
             else:
-                vlist.append(setrec+"_{" + chr(c) + "}") 
+                vlist.append((setrec,chr(c))) 
             its[k[0]][k[1]] = chr(c) 
             c += 1
         
@@ -91,14 +94,14 @@ def find_recurrence(cover):
                     except ValueError:
                         pass
                 if row[0]:
-                    blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + str(row[0]) + "}")
+                    blist.append( ('-'.join(['n']+choices+[str(sub)]), str(row[0])) )
                     sub += row[0]
                 if row[1] > 1:
                     for x in range(maxj):
                         item = its[y][x]
                         if item == '':
                             continue
-                        blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + item  + "}")
+                        blist.append(('-'.join(['n']+choices+[str(sub)]),  item))
                         choices.append(item)
                         choices.sort()
                         removeFromBList = True
@@ -114,14 +117,14 @@ def find_recurrence(cover):
                     except ValueError:
                         pass
                 if col[0]:
-                    blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + str(col[0]) + "}")
+                    blist.append(('-'.join(['n']+choices+[str(sub)]), str(col[0])))
                     sub += col[0]
                 if col[1] > 1:    
                     for y in range(maxi):
                         item = its[y][x]
                         if item == '':
                             continue
-                        blist.append("\\binom{" + '-'.join(['n']+choices+[str(sub)]) + "}{" + item  + "}")
+                        blist.append(('-'.join(['n']+choices+[str(sub)]), item))
                         choices.append(item)
                         choices.sort()
                         removeFromBList = True
@@ -134,30 +137,55 @@ def find_recurrence(cover):
             slist.pop()
         # calculate the length the last set uses
         if vlist:
-            vlist[-1] = vlist[-1][:2] + "{" + "-".join(["n"] + [chr(j) for j in range(ord('i'), c-1)] + ([str(points[i])] if points[i] > 0 else [])) + "}"
-        rlist.append("".join(slist) + (str(muli) if (not vlist and not blist) or muli != 1 else "") + "".join(vlist) + "".join(blist))
-        latex = "+".join(rlist)
-        if not latex:
-            latex = "0"
+            vlist[-1] = (vlist[-1][0],"-".join(["n"] + [chr(j) for j in range(ord('i'), c-1)] + ([str(points[i])] if points[i] > 0 else [])))
+        rlist.append(term(slist,vlist,blist,muli))
+   
+    addend = 0
+    latex = []
+    for it in rlist:
+        try:
+            addend += int(it)
+        except:
+            latex.append(it)
+
+    latex = "+".join(latex + ([str(addend)] if addend else []))
+    if not latex:
+        latex = "0"
+    
     if not inc:
-        delkey = ""
-        for k,v in avrec.items():
-            if v == Block.increasing:
-                delkey = k
-                break
-        del avrec[delkey]
+        del avrec['/']
         del recav[Block.increasing]
 
     if not dec:
-        delkey = ""
-        for k,v in avrec.items():
-            if v == Block.decreasing:
-                delkey = k
-                break
-        del avrec[delkey]
+        del avrec['\\']
         del recav[Block.decreasing]
 
     return dict(basecases), latex, recav, avrec
+
+
+def term(slist = [], vlist = [], blist = [], muli = 1):
+    if not slist and not vlist and not blist:
+        return str(muli)
+    elif len(slist) == 1 and not vlist and not blist:
+        i,n = slist[0]
+        sm = n + '+1'
+        if muli != 1:
+            sm = str(muli)+'('+sm+')'
+        return sm
+    elif len(slist) == 1 and not vlist and len(blist) == 1:
+        i,n1 = slist[0]
+        n,k = blist[0]
+        try:
+            ik = int(k)
+        except:
+            sm = '2^{' + n + '}'
+            if muli != 1:
+                sm = str(muli) + "\cdot" + sm
+            return sm
+    slist = ["\\sum_{"+a+"}^{"+b+"}" for a,b in slist]
+    vlist = [a+"_{"+b+"}" for a,b in vlist]
+    blist = ["\\binom{"+a+"}{"+b+"}" for a,b in blist]
+    return "".join(slist) + (str(muli) if (not vlist and not blist) or muli != 1 else "") + "".join(vlist) + "".join(blist)
 
 if __name__ == "__main__":
     B = PermSet.avoiding([Perm.one([1,2])])
@@ -185,7 +213,7 @@ if __name__ == "__main__":
     
     print(find_recurrence(cov)[1])
     
-    t3 = Tiling({(0,0):B, (0,1):Block.point})
+    t3 = Tiling({(0,0):B, (1,1):Block.point})
     cov = Cover(A, [emptyTiling,t3])
 
     print(find_recurrence(cov)[1])
