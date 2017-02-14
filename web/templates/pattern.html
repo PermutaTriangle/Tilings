@@ -50,14 +50,14 @@
     <h4>Legend</h4>
       {% for k, v in val['depends'] | dictsort %}
         {% if v == "Av([[1, 2]])" %}
-          {% set extra = " \\ = " %}
+          {% set extra = "\setminus" %}
         {% elif v == "Av([[2, 1]])" %}
-          {% set extra = " / = " %}
+          {% set extra = "/" %}
         {% else %}
-          {% set extra = "" %}
+          {% set extra = k.upper() %}
         {% endif %}
         <p>
-          <a href="/perms/av/{{ v | av_list_to_url }}">{{"$\mathcal{"+k.upper()+"}$ = " + extra + (v | av_list_to_str) }}</a>
+          <a href="/perms/av/{{ v | av_list_to_url }}">{{"$\mathcal{"+extra+"}$ = " + (v | av_list_to_str) }}</a>
         </p>
       {% endfor %}
     {% endif %}
