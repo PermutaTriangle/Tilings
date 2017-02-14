@@ -11,11 +11,7 @@ from tqdm import tqdm
 import os
 from pymongo import MongoClient
 mongo = MongoClient('mongodb://webapp:c73f12a3@localhost:27017/permsdb')
-def perm_to_one_str(perm):
-    return "".join([str(1 + i) for i in list(perm)])
 
-def avoids_to_delimited(permset, delim='_'):
-    return delim.join([perm_to_one_str(perm) for perm in permset.basis])
 
 def av_string_to_permset(av):
     avoids = findall(r'(\[(\[[0-9 ,]*\](, \[[0-9 ,]*\])*)?\])', av)
@@ -25,12 +21,6 @@ def av_string_to_permset(av):
         avoids = avoids[0][0]
     avoids = eval(avoids)
     return PermSet.avoiding([Perm.one(perm) for perm in avoids])
-
-
-def permset_to_av_string(permset):
-    """Takes the basis of the PermSet, converts the Perms to one based then into lists"""
-    arr = [list([ i + 1 for i in perm ]) for perm in permset.basis]
-    return 'Av({})'.format(str( arr ))
 
 
 def parse_log(inp, avoids=None, file=True):
@@ -86,92 +76,6 @@ def parse_log(inp, avoids=None, file=True):
         tilings.append(Tiling(rule))
     return Cover(avoids, tilings)
 
-def cover_to_json(cover):
-    example_json_structure = {
-        "_id" : 'ObjectId("5882153c7e98af0c473a874e")',
-        "avoid" : "o",
-        "length": 19, # Length of basis
-        "rank": 4, # The rank of the Cover
-        "tile" : [
-            [
-                {
-                    "point" : [
-                        0,
-                        0
-                    ],
-                    "val" : "o"
-                }
-            ]
-        ],
-        "examples" : {
-            "1" : [
-                "1"
-            ]
-        },
-        "recurrence" : {
-            "0" : "0",
-            "1" : "1",
-            "n" : "0"
-        },
-        "genf" : "F(x) = x",
-        "solved_genf" : "F(x) = x",
-        "coeffs" : [
-            0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-        ]
-    }
-    obj = {}
-    tiles = []
-    for tiling in cover:
-        tile = []
-        for k, v in tiling.items():
-            point = {}
-            point['point'] = [k[0],k[1]]
-            if v == Block.point:
-                point['val'] = 'o'
-            else:
-                point['val'] = permset_to_av_string(v)
-            tile.append(point)
-        tiles.append(tile)
-
-    # Code that will be used later to generate examples
-    # Create examples
-    examples = {}
-    for i in range(2, 6):
-        if not str(i) in examples:
-            # Set of all length i permutations
-            examples[str(i)] = set()
-        for T in cover:
-            for perm in PermSetTiled(T).of_length(i):
-                examples[str(i)].add(perm_to_one_str(perm))
-    for key in examples:
-        examples[key] = list(examples[key])
-    rank = max(tiling.rank() for tiling in cover)
-    obj["tile"] = tiles
-    obj["examples"] = examples
-    obj["rank"] = rank
-    obj["avoid"] = avoids_to_delimited(cover.input_set)
-    obj["length"] = len(cover.input_set.basis)
-    basecases,latex,recav,avrec = find_recurrence(cover)
-    recurrence = {}
-    for k,v in basecases.items():
-        recurrence[str(k)] = str(v)
-    recurrence["n"] = latex
-    obj["recurrence"] = recurrence
-    depends = {}
-    for k,v in avrec.items():
-        depends[k] = permset_to_av_string(v)
-    obj["depends"] = depends
-    revdepends = {}
-    for k,v in recav.items():
-        revdepends[permset_to_av_string(k)] = v
-    obj["revdepends"] = revdepends
-    coeffs = []
-    for i in range(11):
-        coeffs.append(len(cover.of_length(i)))
-    obj["coeffs"] = coeffs
-    
-    # TODO add recurrence avoidance class map to json
-    return obj
 
 def json_to_cover(json_object):
     if json_object["avoid"] == "e":
@@ -208,8 +112,7 @@ def process_folder(folder_name):
     for filename in tqdm(files):
         #print("processing: ", filename)
         cover = parse_log(filename, file=True)
-        c = cover_to_json(cover)
-        mongo.permsdb.perm.insert(c)
+        mongo.permsdb.perm.insert(cover.to_json())
 
 def update_recurrences():
     for obj in tqdm(mongo.permsdb.perm.find({}), total=mongo.permsdb.perm.count()):
