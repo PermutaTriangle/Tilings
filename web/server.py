@@ -3,6 +3,8 @@ from flask import Flask
 from flask import abort, jsonify, redirect, url_for, render_template
 from flask_pymongo import PyMongo
 from jinja2 import Environment
+# For javascript function declarations inside python
+from bson.code import Code
 app = Flask(__name__)
 remote = True
 app.config['MONGO_DBNAME'] = 'permsdb'
@@ -48,7 +50,25 @@ def stats():
     for item in result:
         rank, count = item["_id"], item["count"]
         ranks[rank] = count
-    return render_our("stats.html", ranks=ranks)
+
+    # How many patterns depend on each pattern
+    mapper = Code("""
+      function() {
+        for (var key in this.depends) {
+          // Skip self references
+          if (key === "a") continue;
+          if (this.depends.hasOwnProperty(key)) {
+            emit(this.depends[key], 1);
+          }
+        }
+       }""")
+    reducer = Code("function(key, values) { return values.length; }")
+
+    result = mongo.db.perm.map_reduce(mapper, reducer, "dependency_info").find().sort([ ("value", -1), ("_id", 1) ]).limit(100)
+
+    dependencies = { val["_id"]: -int(val["value"]) for val in result }
+    print(dependencies)
+    return render_our("stats.html", ranks=ranks, dependencies=dependencies)
 
 
 @app.route("/perms/av/")
