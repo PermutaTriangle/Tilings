@@ -181,7 +181,14 @@ class Cover(list):
         inc,dec = False,False
 
         if all(static):
+            del avrec['/']
+            del recav[Block.increasing]
+
+            del avrec['\\']
+            del recav[Block.decreasing]
+            
             return dict(basecases), "0", recav, avrec
+        
         for i,tiling in enumerate(self): 
             if static[i]:
                 continue
