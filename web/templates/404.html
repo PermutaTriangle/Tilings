@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block container %}
+<div class="container">
+  <div class="jumbotron">
+    <h1>OOPS!</h1>
+    <p>
+      We couldn't find the page you are looking for, or maybe we haven't thought enough about this pattern yet.
+    </p></p>
+    <div class="btn-group">
+      <a class="btn btn-primary btn-lg" href="{{ url_for('permsroot') }}" role="button">Front page</a>
+      <a class="btn btn-default btn-lg" href="{{ url_for('randav') }}" role="button">Random pattern</a>
+    </div>
+  </div
+</div>
+{% endblock %}
