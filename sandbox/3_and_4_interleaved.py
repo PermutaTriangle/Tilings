@@ -30,7 +30,7 @@ def len_3_and_4_interleaved_w_symmetry():
         for perms_4 in powerset(temp_len_4):
             if perms_4 == ():
                 continue
-            output_set[perms_3].add((*perms_3, *perms_4))
+            output_set[perms_3].add(lex_min((*perms_3, *perms_4)))
     return output_set
 
 
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     my_count = 0
     print("Sets, down to symmetry")
     for x in s:
-        t = len(set([lex_min(i) for i in s[x]]))
+        t = len(s[x])
         my_count += t
         print(x, ":", t)
     print("Total count: ", my_count)
