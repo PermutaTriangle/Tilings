@@ -10,8 +10,11 @@ from itertools import product
 from operator import itemgetter
 from permuta import Perm
 from permuta import PermSet
+from permuta import Av
 from permuta.misc import ordered_set_partitions, flatten
 from permuta.descriptors import Descriptor
+
+from .JsonAble import JsonAble
 
 
 class Block(object):
@@ -24,7 +27,7 @@ class Block(object):
         warnings.warn("Block class should not be instantiated")
 
 
-class Tiling(dict, Descriptor):
+class Tiling(dict, Descriptor, JsonAble):
     """Tiling class.
 
     Coordinates/cells are tuples of (i, j) which work in the traditional matrix way.
@@ -81,6 +84,15 @@ class Tiling(dict, Descriptor):
         self._hash = tiling_hash
         self._point_cells = point_cells
         self._classes = classes
+
+    @classmethod
+    def _prepare_attr_dict(cls, attr_dict):
+        # TODO: eval probably isn't the best way to do this
+        return {"tiles": {eval(cell): eval(block) for cell, block in attr_dict.items()}}
+
+    def _to_json(self):
+        return {str(cell): "Block.point" if block is Block.point else repr(block)
+                for cell, block in self.items()}
 
     #def __init__(self, tiles=()):
     #    info = []
