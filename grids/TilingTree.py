@@ -21,9 +21,9 @@ class TilingTreeNode(JsonAble):
                                     attr_dict["children"])
         return attr_dict
 
-    def _to_json(self, **kwargs):
-        attr_dict = super(TilingTreeNode, self)._to_json(**kwargs)
-        attr_dict["children"] = [child._to_json(**kwargs)
+    def _to_json(self):
+        attr_dict = super(TilingTreeNode, self)._to_json()
+        attr_dict["children"] = [child._to_json()
                                  for child
                                  in attr_dict["children"]]
         return attr_dict
@@ -32,14 +32,16 @@ class TilingTreeNode(JsonAble):
 class TilingTree(JsonAble):
     """A where tilings are the main value of the nodes."""
 
-    PRETTY_PRINT_DICT = dict(L="└─────", pipe="│     ", T="├─────", empty="      ")
+    __NODE_CLASS = TilingTreeNode
+    __PRETTY_PRINT_DICT = dict(L="└─────", pipe="│     ", T="├─────", empty="      ")
 
     def __init__(self, root):
         self.root = root
 
     @classmethod
     def _prepare_attr_dict(cls, attr_dict):
-        attr_dict["root"] = TilingTreeNode._from_attr_dict(attr_dict["root"])
+        Node = TilingTree.__NODE_CLASS
+        attr_dict["root"] = Node._from_attr_dict(attr_dict["root"])
         return attr_dict
 
     def pretty_print(self, file=sys.stdout):
@@ -54,10 +56,10 @@ class TilingTree(JsonAble):
             print(tiling, file=file)
 
     def _pretty_print(self, root, depth, legend, prefix="root: ", tail=False, file=sys.stdout):
-        tp_L = TilingTree.PRETTY_PRINT_DICT["L"]
-        tp_pipe = TilingTree.PRETTY_PRINT_DICT["pipe"]
-        tp_tee = TilingTree.PRETTY_PRINT_DICT["T"]
-        tp_empty = TilingTree.PRETTY_PRINT_DICT["empty"]
+        tp_L = TilingTree.__PRETTY_PRINT_DICT["L"]
+        tp_pipe = TilingTree.__PRETTY_PRINT_DICT["pipe"]
+        tp_tee = TilingTree.__PRETTY_PRINT_DICT["T"]
+        tp_empty = TilingTree.__PRETTY_PRINT_DICT["empty"]
         label_counter = legend[0][1]
         print(prefix, label_counter, sep="", file=file)
         legend.append([label_counter, root.tiling])
