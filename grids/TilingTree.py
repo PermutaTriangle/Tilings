@@ -17,7 +17,7 @@ class TilingTreeNode(JsonAble):
     @classmethod
     def _prepare_attr_dict(cls, attr_dict):
         attr_dict["tiling"] = Tiling._from_attr_dict(attr_dict["tiling"])
-        attr_dict["children"] = map(TilingTreeNode._from_attr_dict,
+        attr_dict["children"] = map(cls._from_attr_dict,
                                     attr_dict["children"])
         return attr_dict
 
@@ -32,7 +32,7 @@ class TilingTreeNode(JsonAble):
 class TilingTree(JsonAble):
     """A where tilings are the main value of the nodes."""
 
-    __NODE_CLASS = TilingTreeNode
+    _NODE_CLASS = TilingTreeNode
     __PRETTY_PRINT_DICT = dict(L="└─────", pipe="│     ", T="├─────", empty="      ")
 
     def __init__(self, root):
@@ -40,7 +40,7 @@ class TilingTree(JsonAble):
 
     @classmethod
     def _prepare_attr_dict(cls, attr_dict):
-        Node = TilingTree.__NODE_CLASS
+        Node = cls._NODE_CLASS
         attr_dict["root"] = Node._from_attr_dict(attr_dict["root"])
         return attr_dict
 

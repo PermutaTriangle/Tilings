@@ -88,7 +88,7 @@ class Tiling(dict, Descriptor, JsonAble):
     @classmethod
     def _prepare_attr_dict(cls, attr_dict):
         # TODO: eval probably isn't the best way to do this
-        return {"tiles": {eval(cell): eval(block) for cell, block in attr_dict.items()}}
+        return {"tiles": {eval(cell): eval("Av([" + block[3:-1] + "])" if block.startswith("Av") else block) for cell, block in attr_dict.items()}}
 
     def _to_json(self):
         return {str(cell): "Block.point" if block is Block.point else repr(block)
