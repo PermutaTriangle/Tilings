@@ -10,8 +10,8 @@ import warnings
 from builtins import dict
 from collections import OrderedDict
 from collections import namedtuple  # For Cell class
-from itertools import product
-from operator import itemgetter
+from itertools import product  # For old of_length code
+
 from permuta import Perm
 from permuta import PermSet
 from permuta import Av
@@ -69,6 +69,8 @@ class Tiling(JsonAble):
             i_actual = {i: actual for actual, i in enumerate(i_list)}
             j_actual = {j: actual for actual, j in enumerate(j_list)}
 
+            rows = [[]]*j_dimension
+            cols = [[]]*i_dimension
 
             for item in sorted(tiles.items()):
                 # Add hash to hash sum
@@ -82,7 +84,7 @@ class Tiling(JsonAble):
                 cols[actual_cell.i].append((actual_cell, block))
                 # Add to tiling
                 tiling[actual_cell] = block
-                # kk
+                # Add to caches
                 if block == Block.point:
                     point_cells.append(actual_cell)
                 else:
@@ -97,14 +99,22 @@ class Tiling(JsonAble):
         self._rows = rows
         self._cols = cols
 
+    #
+    # JsonAble interface
+    #
+
     @classmethod
     def _prepare_attr_dict(cls, attr_dict):
         # TODO: eval probably isn't the best way to do this
-        return {"tiles": {eval(cell): eval("Av([" + block[3:-1] + "])" if block.startswith("Av") else block) for cell, block in attr_dict.items()}}
+        return {"tiles": {Cell(*eval(cell)): eval("Av([" + block[3:-1] + "])" if block.startswith("Av") else block) for cell, block in attr_dict.items()}}
 
     def _to_json(self):
         return {str(cell): "Block.point" if block is Block.point else repr(block)
                 for cell, block in self.items()}
+
+    #
+    # Properties and getters
+    #
 
     @property
     def point_cells(self):
@@ -124,10 +134,15 @@ class Tiling(JsonAble):
     def get_col(number):
         return self._cols[number]
 
+    #
+    # Dunder methods
+    #
+
     def __eq__(self, other):
-        return isinstance(other, Tiling) and hash(self) == hash(other) \
-                                         and self.point_cells == other.point_cells \
-                                         and self.classes == other.classes
+        return isinstance(other, Tiling) \
+           and hash(self) == hash(other) \
+           and self.point_cells == other.point_cells \
+           and self.classes == other.classes
 
     def __hash__(self):
         return self._hash
@@ -187,16 +202,17 @@ class Tiling(JsonAble):
 
         return "".join(result)
 
+    #
+    # Terrible awful code ahead! Be warned!
+    #
 
-class PermSetTiled(object):  # Really, it should be a described perm set
-    """A perm set containing all perms that can be generated with a tiling."""
-    def __init__(self, tiling):
-        self.tiling = tiling
-
-    def of_length(self, n):
-        perms = set()
-
-        tiling = list(self.tiling.items())
+    def perms_of_length(self, n):
+        # TODO: Make not disgusting
+        dim_j = self._dimensions.j
+        tiling = list(((dim_j - 1 - cell.j, cell.i), block)
+                      for cell, block
+                      in self._dict.items())
+        print(tiling)
         h = max( k[0] for k,v in tiling ) + 1 if tiling else 1
         w = max( k[1] for k,v in tiling ) + 1 if tiling else 1
 
@@ -250,66 +266,4 @@ class PermSetTiled(object):  # Really, it should be a described perm set
                                 for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):
                                     res[col][idx] = cumul + val
                             cumul += rowcnt[row]
-                        perms.add(Perm(flatten(res)))
-        return perms
-
-    def of_length_with_positions(self, n):
-        perms_with_positions = []
-
-        tiling = list(self.tiling.items())
-        h = max( k[0] for k,v in tiling ) + 1 if tiling else 1
-        w = max( k[1] for k,v in tiling ) + 1 if tiling else 1
-
-        def permute(arr, perm):
-            res = [None] * len(arr)
-            for i in range(len(arr)):
-                res[i] = arr[perm[i]]
-            return res
-
-        def count_assignments(at, left):
-
-            if at == len(tiling):
-                if left == 0:
-                    yield []
-            elif tiling[at][1] is Block.point:
-                # this doesn't need to be handled separately,
-                # it's just an optimization
-                if left > 0:
-                    for ass in count_assignments(at + 1, left - 1):
-                        yield [1] + ass
-            else:
-                for cur in range(left+1):
-                    for ass in count_assignments(at + 1, left - cur):
-                        yield [cur] + ass
-
-        for count_ass in count_assignments(0, n):
-
-            cntz = [ [ 0 for j in range(w) ] for i in range(h) ]
-
-            for i, k in enumerate(count_ass):
-                cntz[tiling[i][0][0]][tiling[i][0][1]] = k
-
-            rowcnt = [ sum( cntz[row][col] for col in range(w) ) for row in range(h) ]
-            colcnt = [ sum( cntz[row][col] for row in range(h) ) for col in range(w) ]
-
-            for colpart in product(*[ ordered_set_partitions(range(colcnt[col]), [ cntz[row][col] for row in range(h) ]) for col in range(w) ]):
-                scolpart = [ [ sorted(colpart[i][j]) for j in range(h) ] for i in range(w) ]
-                for rowpart in product(*[ ordered_set_partitions(range(rowcnt[row]), [ cntz[row][col] for col in range(w) ]) for row in range(h) ]):
-                    srowpart = [ [ sorted(rowpart[i][j]) for j in range(w) ] for i in range(h) ]
-                    for perm_ass in product(*[ s[1].of_length(cnt) for cnt, s in zip(count_ass, tiling) ]):
-                        arr = [ [ [] for j in range(w) ] for i in range(h) ]
-
-                        for i, perm in enumerate(perm_ass):
-                            arr[tiling[i][0][0]][tiling[i][0][1]] = perm
-
-                        res = [ [None]*colcnt[col] for col in range(w) ]
-                        cumul = 0
-                        where = {}
-                        for row in range(h-1,-1,-1):
-                            for col in range(w):
-                                for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):
-                                    res[col][idx] = cumul + val
-                                    where[res[col][idx]] = (row,col)
-                            cumul += rowcnt[row]
-                        perms_with_positions.append(( Perm(flatten(res) ), where ))
-        return perms_with_positions
+                        yield Perm(flatten(res))
