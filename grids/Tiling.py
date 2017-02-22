@@ -152,8 +152,8 @@ class Tiling(JsonAble):
         return format_string.format(self.total_points, len(self.classes))
 
     def __str__(self):
-        max_i = self._max_i
-        max_j = self._max_j
+        max_i = self._dimensions.i - 1
+        max_j = self._dimensions.j - 1
 
         result = []
 
@@ -178,18 +178,22 @@ class Tiling(JsonAble):
 
         # Put the sets in the tiles
         row_width = 2*max_j + 4
-        for (i, j), perm_set in self.items():
+        for (i, j), perm_set in self._dict.items():
             # Check if label has been specified
-            specified_label = self.__specified_labels.get(perm_set)
-            if specified_label is None:
-                # Use generic label (could reuse specified label)
-                label = labels.get(perm_set)
-                if label is None:
-                    label = str(len(labels) + 1)
-                    labels[perm_set] = label
-            else:
-                # If label specified, then use it
-                label = specified_label
+            #specified_label = self.__specified_labels.get(perm_set)
+            #if specified_label is None:
+            #    # Use generic label (could reuse specified label)
+            #    label = labels.get(perm_set)
+            #    if label is None:
+            #        label = str(len(labels) + 1)
+            #        labels[perm_set] = label
+            #else:
+            #    # If label specified, then use it
+            #    label = specified_label
+            label = labels.get(perm_set)
+            if label is None:
+                label = str(len(labels) + 1)
+                labels[perm_set] = label
             index = (2*i + 1)*row_width + 2*j + 1
             result[index] = label
 
@@ -212,7 +216,6 @@ class Tiling(JsonAble):
         tiling = list(((dim_j - 1 - cell.j, cell.i), block)
                       for cell, block
                       in self._dict.items())
-        print(tiling)
         h = max( k[0] for k,v in tiling ) + 1 if tiling else 1
         w = max( k[1] for k,v in tiling ) + 1 if tiling else 1
 
