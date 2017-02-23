@@ -1,4 +1,5 @@
 import pytest
+import random
 
 from permuta import Perm
 from permuta import PermSet
@@ -6,6 +7,24 @@ from permuta import PermSet
 from grids import Cell
 from grids import Block
 from grids import Tiling
+
+
+#
+# Fixtures
+#
+
+
+@pytest.fixture(scope="module",
+        params=[{cell: random.choice([PermSet.avoiding(Perm.random(random.randint(0, 15))),
+                                      Block.point,
+                                      Block.increasing,
+                                      Block.decreasing])
+                 for cell in set((random.randint(0, 127),
+                                  random.randint(0, 127))
+                                  for _ in range(random.randint(0, 15)))}
+                for _ in range(32)] + [{}])
+def random_tiling_dict(request):
+    return request.param
 
 
 @pytest.fixture(scope="module",
@@ -84,7 +103,78 @@ def perm_class_and_tilings(request):
     return perm_class, tilings
 
 
+#
+# Tests
+#
+
+
+def test_tuple_cell_input(random_tiling_dict):
+    """Test that cells can be input as tuples."""
+    tiling = Tiling(random_tiling_dict)
+    for cell, _ in tiling:
+        assert isinstance(cell, Cell)
+
+
+def test_cell_cell_input(random_tiling_dict):
+    """Test that cells can be input as cells."""
+    tiling = Tiling({Cell(*cell): block
+                     for cell, block
+                     in random_tiling_dict.items()})
+    for cell, _ in tiling:
+        assert isinstance(cell, Cell)
+
+
+def test_tiling_cleanup(random_tiling_dict):
+    """Tests whether the cells of a Tiling are properly reduced."""
+    i_list = sorted(set(cell[0] for cell in random_tiling_dict))
+    j_list = sorted(set(cell[1] for cell in random_tiling_dict))
+    i_map = {}
+    for i_value in i_list:
+        i_map[i_value] = len(i_map)
+    j_map = {}
+    for j_value in j_list:
+        j_map[j_value] = len(j_map)
+    cleaned_tiling_dict = {Cell(i_map[i_value], j_map[j_value]): block
+                           for (i_value, j_value), block
+                           in random_tiling_dict.items()}
+    assert cleaned_tiling_dict == dict(Tiling(random_tiling_dict))
+
+
+def test_dimensions(random_tiling_dict):
+    """Tests whether the dimensions attribute works."""
+    i_total = len(set(cell[0] for cell in random_tiling_dict))
+    j_total = len(set(cell[1] for cell in random_tiling_dict))
+    if i_total == 0:
+        i_total = 1
+    if j_total == 0:
+        j_total = 1
+    tiling = Tiling(random_tiling_dict)
+    assert isinstance(tiling.dimensions, Cell)
+    assert i_total == tiling.dimensions.i
+    assert (i_total, j_total) == tiling.dimensions
+    assert Cell(i_total, j_total) == tiling.dimensions
+    if i_total != j_total:
+        assert (j_total, i_total) != tiling.dimensions
+        assert Cell(j_total, i_total) != tiling.dimensions
+
+
+def test_area(random_tiling_dict):
+    """Tests whether the area attribute works."""
+    tiling = Tiling(random_tiling_dict)
+    assert tiling.area == tiling.dimensions.i*tiling.dimensions.j
+
+
+def test_hash(random_tiling_dict):
+    """Test whether the hash is correctly calculated."""
+    tiling = Tiling(random_tiling_dict)
+    hash_sum = 0
+    for item in tiling:
+        hash_sum += hash(item)
+    assert hash(tiling) == hash(hash_sum)
+
+
 def test_perm_generation(perm_class_and_tilings):
+    """Test that the perm generation code generates the correct perms."""
     perm_class, tilings = perm_class_and_tilings
     for length in range(10):
         from_tiling = set()

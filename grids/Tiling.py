@@ -21,7 +21,7 @@ from permuta.descriptors import Descriptor
 from .JsonAble import JsonAble
 
 
-Cell = namedtuple("cell", ["i", "j"])
+Cell = namedtuple("Cell", ["i", "j"])
 
 
 class Block(object):
@@ -41,8 +41,8 @@ class Tiling(JsonAble):
     cell is the cell in the i-th column and j-th row.
     """
 
-    def __init__(self, tiles={}):
-        # The dictionary of tiles
+    def __init__(self, blocks={}):
+        # The dictionary of blocks
         tiling = {}
         # The horizontal and vertical dimensions, respectively
         i_dimension = j_dimension = 1
@@ -50,13 +50,13 @@ class Tiling(JsonAble):
         hash_sum = 0
         # A list of the cells that have points in them
         point_cells = []
-        classes = []
-        rows = []
-        cols = []
+        non_points = []
+        rows = [[]]
+        cols = [[]]
 
-        if tiles:
+        if blocks:
             # The set of all indices
-            i_set, j_set = map(set, zip(*tiles))
+            i_set, j_set = map(set, zip(*blocks))
 
             # The sorted list of all indices
             i_list, j_list = sorted(i_set), sorted(j_set)
@@ -69,35 +69,37 @@ class Tiling(JsonAble):
             i_actual = {i: actual for actual, i in enumerate(i_list)}
             j_actual = {j: actual for actual, j in enumerate(j_list)}
 
-            rows = [[]]*j_dimension
-            cols = [[]]*i_dimension
+            rows = [[] for _ in range(j_dimension)]
+            cols = [[] for _ in range(i_dimension)]
 
-            for item in sorted(tiles.items()):
-                # Add hash to hash sum
-                hash_sum += hash(item)
+            for item in sorted(blocks.items()):
                 # Unpack item
                 cell, block = item
                 # Calculate actual cell
-                actual_cell = Cell(i_actual[cell.i], j_actual[cell.j])
+                actual_cell = Cell(i_actual[cell[0]], j_actual[cell[1]])
+                # Create the new item
+                item = actual_cell, block
                 # Add to row and col cache
-                rows[actual_cell.j].append((actual_cell, block))
-                cols[actual_cell.i].append((actual_cell, block))
+                rows[actual_cell.j].append(item)
+                cols[actual_cell.i].append(item)
                 # Add to tiling
                 tiling[actual_cell] = block
+                # Add hash to hash sum
+                hash_sum += hash(item)
                 # Add to caches
                 if block == Block.point:
                     point_cells.append(actual_cell)
                 else:
-                    classes.append(item)
+                    non_points.append(item)
 
-        self._dict = tiling
+        self._blocks = tiling
 
         self._dimensions = Cell(i_dimension, j_dimension)
         self._hash = hash(hash_sum)
         self._point_cells = tuple(point_cells)
-        self._classes = tuple(classes)
-        self._rows = rows
-        self._cols = cols
+        self._non_points = tuple(non_points)
+        self._rows = tuple(map(tuple, rows))
+        self._cols = tuple(map(tuple, cols))
 
     #
     # JsonAble interface
@@ -125,18 +127,32 @@ class Tiling(JsonAble):
         return len(self._point_cells)
 
     @property
-    def classes(self):
-        return self._classes
+    def non_points(self):
+        return self._non_points
 
-    def get_row(number):
+    @property
+    def dimensions(self):
+        return self._dimensions
+
+    @property
+    def area(self):
+        return self._dimensions.i*self._dimensions.j
+
+    def get_row(self, number):
         return self._rows[number]
 
-    def get_col(number):
+    def get_col(self, number):
         return self._cols[number]
 
     #
     # Dunder methods
     #
+
+    def __iter__(self):
+        # TODO: Should return self
+        for row_number in range(self.dimensions.j):
+            for item in self.get_row(row_number):
+                yield item
 
     def __eq__(self, other):
         return isinstance(other, Tiling) \
@@ -178,7 +194,7 @@ class Tiling(JsonAble):
 
         # Put the sets in the tiles
         row_width = 2*max_j + 4
-        for (i, j), perm_set in self._dict.items():
+        for (i, j), perm_set in self._blocks.items():
             # Check if label has been specified
             #specified_label = self.__specified_labels.get(perm_set)
             #if specified_label is None:
@@ -215,7 +231,7 @@ class Tiling(JsonAble):
         dim_j = self._dimensions.j
         tiling = list(((dim_j - 1 - cell.j, cell.i), block)
                       for cell, block
-                      in self._dict.items())
+                      in self._blocks.items())
         h = max( k[0] for k,v in tiling ) + 1 if tiling else 1
         w = max( k[1] for k,v in tiling ) + 1 if tiling else 1
 
