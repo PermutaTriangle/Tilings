@@ -2,12 +2,16 @@
 # TODO: Make python2.7 compatible once permuta is
 
 
+__all__ = ["Cell", "Block", "Tiling"]
+
+
 import warnings
 
 from builtins import dict
 from collections import OrderedDict
-from itertools import product
-from operator import itemgetter
+from collections import namedtuple  # For Cell class
+from itertools import product  # For old of_length code
+
 from permuta import Perm
 from permuta import PermSet
 from permuta import Av
@@ -15,6 +19,10 @@ from permuta.misc import ordered_set_partitions, flatten
 from permuta.descriptors import Descriptor
 
 from .JsonAble import JsonAble
+from .PositiveClass import PositiveClass
+
+
+Cell = namedtuple("Cell", ["i", "j"])
 
 
 class Block(object):
@@ -24,116 +32,100 @@ class Block(object):
     increasing = PermSet.avoiding(Perm((1, 0)))
     decreasing = PermSet.avoiding(Perm((0, 1)))
     def __new__(_cls):
-        warnings.warn("Block class should not be instantiated")
+        raise RuntimeError("Block class should not be instantiated")
 
 
-class Tiling(dict, Descriptor, JsonAble):
+class Tiling(JsonAble):
     """Tiling class.
 
-    Coordinates/cells are tuples of (i, j) which work in the traditional matrix way.
+    Zero-indexed coordinates/cells from bottom left corner where the (i, j)
+    cell is the cell in the i-th column and j-th row.
     """
 
-    __specified_labels = {}
+    def __init__(self, blocks={}):
+        # The dictionary of blocks
+        tiling = {}
+        # The horizontal and vertical dimensions, respectively
+        i_dimension = j_dimension = 1
+        # The integer that is hashed to get the hash of the tiling
+        hash_sum = 0
+        # A list of the cells that have points in them
+        point_cells = []
+        non_points = []
+        classes = []
+        other = []
+        rows = [[]]
+        cols = [[]]
 
-    def __init__(self, tiles={}):
-        # Dumb cleanup
-        if not tiles:
-            i_max = j_max = 0
-            new_tiling = ()
-        else:
-            i_set, j_set = map(set, zip(*tiles))
+        if blocks:
+            # The set of all indices
+            i_set, j_set = map(set, zip(*blocks))
+
+            # The sorted list of all indices
             i_list, j_list = sorted(i_set), sorted(j_set)
 
-            i_max = i_list[-1]
-            j_max = j_list[-1]
+            # The i and j dimensions of the tiling
+            i_dimension = len(i_list)
+            j_dimension = len(j_list)
 
-            new_tiling = [[[i, j], block]
-                          for (i, j), block
-                          in sorted(tiles.items())]
-
+            # Mappings from indices to actual indices
             i_actual = {i: actual for actual, i in enumerate(i_list)}
             j_actual = {j: actual for actual, j in enumerate(j_list)}
 
-            for item in new_tiling:
-                i = item[0][0]
-                j = item[0][1]
-                item[0][0] = i_actual[i]
-                item[0][1] = j_actual[j]
+            rows = [[] for _ in range(j_dimension)]
+            cols = [[] for _ in range(i_dimension)]
 
-            i_max = len(i_list) - 1
-            j_max = len(j_list) - 1
+            for item in sorted(blocks.items()):
+                # Unpack item
+                cell, block = item
+                # Calculate actual cell
+                actual_cell = Cell(i_actual[cell[0]], j_actual[cell[1]])
+                # Create the new item
+                item = actual_cell, block
+                # Add to row and col cache
+                rows[actual_cell.j].append(item)
+                cols[actual_cell.i].append(item)
+                # Add to tiling
+                tiling[actual_cell] = block
+                # Add hash to hash sum
+                hash_sum += hash(item)
+                # Add to caches
+                if block == Block.point:
+                    point_cells.append(actual_cell)
+                else:
+                    non_points.append(item)
+                    if isinstance(block, PositiveClass):
+                        other.append(block)
+                    else:
+                        classes.append(block)
 
-            new_tiling = ((tuple(cell), block) for cell, block in new_tiling)
+        self._blocks = tiling
 
-        super(Tiling, self).__init__(new_tiling)
+        self._dimensions = Cell(i_dimension, j_dimension)
+        self._hash = hash(hash_sum)
+        self._point_cells = tuple(point_cells)
+        self._non_points = tuple(non_points)
+        self._classes = tuple(classes)
+        self._other = tuple(other)
+        self._rows = tuple(map(tuple, rows))
+        self._cols = tuple(map(tuple, cols))
 
-        point_cells = tuple(sorted(cell
-                                   for cell, block
-                                   in self.items()
-                                   if block is Block.point))
-
-        classes = tuple(sorted(item
-                               for item
-                               in self.items()
-                               if item[1] is not Block.point))
-
-        tiling_hash = hash(sum(hash(item) for item in self.items()))
-
-        self._max_i = i_max
-        self._max_j = j_max
-        self._hash = tiling_hash
-        self._point_cells = point_cells
-        self._classes = classes
+    #
+    # JsonAble interface
+    #
 
     @classmethod
     def _prepare_attr_dict(cls, attr_dict):
         # TODO: eval probably isn't the best way to do this
-        return {"tiles": {eval(cell): eval("Av([" + block[3:-1] + "])" if block.startswith("Av") else block) for cell, block in attr_dict.items()}}
+        return {"tiles": {Cell(*eval(cell)): eval("Av([" + block[3:-1] + "])" if block.startswith("Av") else block) for cell, block in attr_dict.items()}}
 
     def _to_json(self):
         return {str(cell): "Block.point" if block is Block.point else repr(block)
                 for cell, block in self.items()}
 
-    #def __init__(self, tiles=()):
-    #    info = []
-    #    super(Tiling, self).__init__(self._init_helper(tiles, info))
-    #    self._hash, self._max_i, self._max_j, self._point_cells = info
-    #    #for key, value in iteritems(tiles):
-    #    #    print(key, value)
-    #    #if isinstance(rule, list):
-    #    #    self.rule = {(i, j): rule[i][j]
-    #    #                 for i in range(len(rule))
-    #    #                 for j in range(len(rule[i]))
-    #    #                 if rule[i][j] is not None}
-    #    #else:
-    #    #    self.rule = {(i, j): s
-    #    #                 for ((i,j), s) in rule.items()
-    #    #                 if s is not None}
-
-    #def _init_helper(self, tiles, info):
-    #    point_perm_set = Block.point
-    #    point_cells = []
-    #    hash_sum = 0
-    #    max_i = 0
-    #    max_j = 0
-    #    for key_val in tiles.items():  # Builds the tuple in python2
-    #        hash_sum += hash(key_val)
-    #        cell, perm_set = key_val
-    #        if perm_set is point_perm_set:
-    #            point_cells.append(cell)
-    #        i, j = cell
-    #        max_i = max(max_i, i)
-    #        max_j = max(max_j, j)
-    #        yield key_val
-    #    info.append(hash(hash_sum))
-    #    info.append(max_i)
-    #    info.append(max_j)
-    #    info.append(point_cells)
-
-    @classmethod
-    def label(cls, block, label):
-        warnings.warn("Method signature may change", PendingDeprecationWarning)
-        cls.__specified_labels[block] = label
+    #
+    # Properties and getters
+    #
 
     @property
     def point_cells(self):
@@ -144,128 +136,71 @@ class Tiling(dict, Descriptor, JsonAble):
         return len(self._point_cells)
 
     @property
+    def non_points(self):
+        return self._non_points
+
+    @property
     def classes(self):
         return self._classes
 
-    def get_row(number):
-        return {cell: block for cell, block in self.items() if cell[0] == number}
+    @property
+    def other(self):
+        return self._other
 
-    def get_col(number):
-        return {cell: block for cell, block in self.items() if cell[1] == number}
+    @property
+    def dimensions(self):
+        return self._dimensions
 
-    def rank(self):
-        """Ranks Tiling by difficulty.
+    @property
+    def area(self):
+        return self._dimensions.i*self._dimensions.j
 
-        0 - Empty Tiling
-        1 - Tiling consisting only of points where they might be interleaving.
-        2 - Tiling consisting of points and sets where none interleave.
-        3 - Tiling consisting of points and at least one set where points interleave in a column or row.
-        4 - Tiling consisting of points and sets where a point and set interleave in a column or row.
-        5 - Tiling consisting of points and at least one set where points interleave in an L or square shape.
-        6 - Tiling consisting of points and sets where sets and points interleave in an L  or square shape but no sets interleave in a column or row.
-        7 - Tiling consisting of points and sets where sets interleave in a column or row.
-        8 - Tiling consisting of points and sets where sets interleave in an L shape.
-        9 - Tiling consisting of points and sets where sets interleave in a square shape.
-        """
-        n = self._max_i + 1
-        m = self._max_j + 1
-        rows = [0]*n
-        cols = [0]*m
-        sets = []
+    def get_row(self, number):
+        return self._rows[number]
 
-        #Checks for column or row interleaving
-        for i,j in self:
-            if self[(i,j)] is Block.point:
-                #Check for point-point or point-set interleaving
-                if rows[i] in (1,2):
-                    rows[i] += 2
-                #Otherwise we use the max of the previous value and the rank of having only a point
-                else:
-                    rows[i] = max(1, rows[i])
-                #Identical to above but for columns
-                if cols[j] in (1,2):
-                    cols[j] += 2
-                else:
-                    cols[j] = max(1, cols[j])
-            else:
-                sets.append((i,j)) #Store it as we need it to check for squares
-                #Checks for point-set interleaving
-                if rows[i] in (1,3):
-                    rows[i] = 4
-                #Checks for set-set interleaving
-                elif rows[i] in (2,4):
-                    rows[i] = 7
-                #Otherwise we use the max of the previous value and the rank of having only a set
-                else:
-                    rows[i] = max(2, rows[i])
-                #Identical to above but for rows
-                if cols[j] in (1,3):
-                    cols[j] = 4
-                elif cols[j] in (2,4):
-                    cols[j] = 7
-                else:
-                    cols[j] = max(2, cols[j])
+    def get_col(self, number):
+        return self._cols[number]
 
-        res = max(max(rows), max(cols))
-       
-        #Check if the tiling consists only of points, then it gets rank 1 
-        if not sets:
-            return 1 if res else res
+    #
+    # Dunder methods
+    #
 
-        #Checks for L shaped interleaving
-        for i,j in self:
-            if self[(i,j)] is Block.point:
-                #Checks if there is an L shape consisting of only points
-                if rows[i] == 3 and cols[j] == 3:
-                    res = max(res, 5)
-                #Checks if there is an L shape with points and sets mixed
-                elif rows[i] in (3,4) and cols[j] in (3,4):
-                    res = max(res, 6)
-            else:
-                #Checks if there is an L shape with points and sets mixed
-                if rows[i] == 4 and cols[j] == 4:
-                    res = max(res, 6)
-                #Checks if there is an L shape consisting only of sets
-                elif rows[i] == 7 and cols[j] == 7:
-                    res = max(res, 8)
+    def __contains__(self, item):
+        return item in self._blocks
 
-        if res == 8: #We only need to check if sets form a square if we already established L shape
-            #Checks if sets form a square. Picks 4 points and sorts them then it's enough to check
-            #that x_1 == x_2, y_1 == y_3, x_3 == x_4 and y_2 == y_4 to know if it's a square.
-            for i, a in enumerate(sets):
-                for j, b in enumerate(sets[i+1:]):
-                    for k, c in enumerate(sets[i+j+1:]):
-                        for d in sets[i+j+k+1:]:
-                            x, y, z, w = sorted((a,b,c,d))
-                            if x[0] == y[0] and z[0] == w[0] and x[1] == z[1] and y[1] == w[1]:
-                                res = 9
-
-        return res
+    def __iter__(self):
+        # TODO: Should return self
+        for row_number in range(self.dimensions.j):
+            for item in self.get_row(row_number):
+                yield item
 
     def __eq__(self, other):
-        return isinstance(other, Tiling) and hash(self) == hash(other) \
-                                         and self.point_cells == other.point_cells \
-                                         and self.classes == other.classes
+        return isinstance(other, Tiling) \
+           and hash(self) == hash(other) \
+           and self.point_cells == other.point_cells \
+           and self.non_points == other.non_points
+
+    def __getitem__(self, key):
+        return self._blocks[key]
 
     def __hash__(self):
         return self._hash
 
     def __repr__(self):
-        format_string = "<A tiling of {} non-empty tiles>"
-        return format_string.format(len(self))
+        format_string = "<A tiling of {} points and {} non-points>"
+        return format_string.format(self.total_points, len(self.non_points))
 
     def __str__(self):
-        max_i = self._max_i
-        max_j = self._max_j
+        dim_i, dim_j = self.dimensions
 
         result = []
 
         # Create tiling lines
-        for i in range(2*max_i + 3):
-            for j in range(2*max_j + 3):
+        for j in range(2*dim_j + 1):
+            for i in range(2*dim_i + 1):
                 # Whether or not a vertical line and a horizontal line is present
-                vertical = j % 2 == 0
-                horizontal = i % 2 == 0
+                vertical = i % 2 == 0
+                horizontal = j % 2 == 0
                 if vertical:
                     if horizontal:
                         result.append("+")
@@ -280,46 +215,54 @@ class Tiling(dict, Descriptor, JsonAble):
         labels = OrderedDict()
 
         # Put the sets in the tiles
-        row_width = 2*max_j + 4
-        for (i, j), perm_set in self.items():
-            # Check if label has been specified
-            specified_label = self.__specified_labels.get(perm_set)
-            if specified_label is None:
-                # Use generic label (could reuse specified label)
-                label = labels.get(perm_set)
-                if label is None:
-                    label = str(len(labels) + 1)
-                    labels[perm_set] = label
-            else:
-                # If label specified, then use it
-                label = specified_label
-            index = (2*i + 1)*row_width + 2*j + 1
+
+        # How many characters are in a row in the grid
+        row_width = 2*dim_i + 2
+        for cell, block in self:
+        #    # Check if label has been specified
+        #    #specified_label = self.__specified_labels.get(perm_set)
+        #    #if specified_label is None:
+        #    #    # Use generic label (could reuse specified label)
+        #    #    label = labels.get(perm_set)
+        #    #    if label is None:
+        #    #        label = str(len(labels) + 1)
+        #    #        labels[perm_set] = label
+        #    #else:
+        #    #    # If label specified, then use it
+        #    #    label = specified_label
+            label = labels.get(block)
+            if label is None:
+                label = str(len(labels) + 1)
+                labels[block] = label
+            row_index_from_top = dim_j - cell.j - 1
+            index = (2*row_index_from_top + 1)*row_width + 2*cell.i + 1
             result[index] = label
 
         # Legend at bottom
-        for perm_set, label in labels.items():
+        for block, label in labels.items():
             result.append(label)
             result.append(": ")
-            result.append(str(perm_set))
+            if block is Block.point:
+                result.append("point")
+            else:
+                result.append(repr(block))
             result.append("\n")
+
+        if len(labels) > 0:
+            result.pop()
 
         return "".join(result)
 
+    #
+    # Terrifying code ahead! Be warned!
+    #
 
-Tiling.label(Block.increasing, "/")
-Tiling.label(Block.decreasing, "\\")
-Tiling.label(Block.point, "o")
-
-
-class PermSetTiled(object):  # Really, it should be a described perm set
-    """A perm set containing all perms that can be generated with a tiling."""
-    def __init__(self, tiling):
-        self.tiling = tiling
-
-    def of_length(self, n):
-        perms = set()
-
-        tiling = list(self.tiling.items())
+    def perms_of_length(self, n):
+        # TODO: Make not disgusting
+        dim_j = self._dimensions.j
+        tiling = list(((dim_j - 1 - cell.j, cell.i), block)
+                      for cell, block
+                      in self._blocks.items())
         h = max( k[0] for k,v in tiling ) + 1 if tiling else 1
         w = max( k[1] for k,v in tiling ) + 1 if tiling else 1
 
@@ -373,13 +316,14 @@ class PermSetTiled(object):  # Really, it should be a described perm set
                                 for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):
                                     res[col][idx] = cumul + val
                             cumul += rowcnt[row]
-                        perms.add(Perm(flatten(res)))
-        return perms
+                        yield Perm(flatten(res))
 
-    def of_length_with_positions(self, n):
-        perms_with_positions = []
-
-        tiling = list(self.tiling.items())
+    def perms_of_length_with_source(self, n):
+        # TODO: Make not disgusting
+        dim_j = self._dimensions.j
+        tiling = list(((dim_j - 1 - cell.j, cell.i), block)
+                      for cell, block
+                      in self._blocks.items())
         h = max( k[0] for k,v in tiling ) + 1 if tiling else 1
         w = max( k[1] for k,v in tiling ) + 1 if tiling else 1
 
@@ -426,13 +370,15 @@ class PermSetTiled(object):  # Really, it should be a described perm set
                             arr[tiling[i][0][0]][tiling[i][0][1]] = perm
 
                         res = [ [None]*colcnt[col] for col in range(w) ]
+
                         cumul = 0
-                        where = {}
+                        components = {}
                         for row in range(h-1,-1,-1):
                             for col in range(w):
                                 for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):
                                     res[col][idx] = cumul + val
-                                    where[res[col][idx]] = (row,col)
+                                    cell = Cell(col, dim_j - row - 1)
+                                    if cell not in components:
+                                        components[cell] = arr[row][col]
                             cumul += rowcnt[row]
-                        perms_with_positions.append(( Perm(flatten(res) ), where ))
-        return perms_with_positions
+                        yield Perm(flatten(res)), components
