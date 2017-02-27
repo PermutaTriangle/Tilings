@@ -19,6 +19,7 @@ from permuta.misc import ordered_set_partitions, flatten
 from permuta.descriptors import Descriptor
 
 from .JsonAble import JsonAble
+from .PositiveClass import PositiveClass
 
 
 Cell = namedtuple("Cell", ["i", "j"])
@@ -51,6 +52,8 @@ class Tiling(JsonAble):
         # A list of the cells that have points in them
         point_cells = []
         non_points = []
+        classes = []
+        other = []
         rows = [[]]
         cols = [[]]
 
@@ -91,6 +94,10 @@ class Tiling(JsonAble):
                     point_cells.append(actual_cell)
                 else:
                     non_points.append(item)
+                    if isinstance(block, PositiveClass):
+                        other.append(block)
+                    else:
+                        classes.append(block)
 
         self._blocks = tiling
 
@@ -98,6 +105,8 @@ class Tiling(JsonAble):
         self._hash = hash(hash_sum)
         self._point_cells = tuple(point_cells)
         self._non_points = tuple(non_points)
+        self._classes = tuple(classes)
+        self._other = tuple(other)
         self._rows = tuple(map(tuple, rows))
         self._cols = tuple(map(tuple, cols))
 
@@ -131,6 +140,14 @@ class Tiling(JsonAble):
         return self._non_points
 
     @property
+    def classes(self):
+        return self._classes
+
+    @property
+    def other(self):
+        return self._other
+
+    @property
     def dimensions(self):
         return self._dimensions
 
@@ -161,7 +178,7 @@ class Tiling(JsonAble):
         return isinstance(other, Tiling) \
            and hash(self) == hash(other) \
            and self.point_cells == other.point_cells \
-           and self.classes == other.classes
+           and self.non_points == other.non_points
 
     def __getitem__(self, key):
         return self._blocks[key]
@@ -225,13 +242,19 @@ class Tiling(JsonAble):
         for block, label in labels.items():
             result.append(label)
             result.append(": ")
-            result.append(str(block))
+            if block is Block.point:
+                result.append("point")
+            else:
+                result.append(repr(block))
             result.append("\n")
+
+        if len(labels) > 0:
+            result.pop()
 
         return "".join(result)
 
     #
-    # Terrible awful code ahead! Be warned!
+    # Terrifying code ahead! Be warned!
     #
 
     def perms_of_length(self, n):
