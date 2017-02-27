@@ -164,21 +164,20 @@ class Tiling(JsonAble):
         return self._hash
 
     def __repr__(self):
-        format_string = "<A tiling of {} points and {} perm classes>"
-        return format_string.format(self.total_points, len(self.classes))
+        format_string = "<A tiling of {} points and {} non-points>"
+        return format_string.format(self.total_points, len(self.non_points))
 
     def __str__(self):
-        max_i = self._dimensions.i - 1
-        max_j = self._dimensions.j - 1
+        dim_i, dim_j = self.dimensions
 
         result = []
 
         # Create tiling lines
-        for i in range(2*max_i + 3):
-            for j in range(2*max_j + 3):
+        for j in range(2*dim_j + 1):
+            for i in range(2*dim_i + 1):
                 # Whether or not a vertical line and a horizontal line is present
-                vertical = j % 2 == 0
-                horizontal = i % 2 == 0
+                vertical = i % 2 == 0
+                horizontal = j % 2 == 0
                 if vertical:
                     if horizontal:
                         result.append("+")
@@ -193,31 +192,34 @@ class Tiling(JsonAble):
         labels = OrderedDict()
 
         # Put the sets in the tiles
-        row_width = 2*max_j + 4
-        for (i, j), perm_set in self._blocks.items():
-            # Check if label has been specified
-            #specified_label = self.__specified_labels.get(perm_set)
-            #if specified_label is None:
-            #    # Use generic label (could reuse specified label)
-            #    label = labels.get(perm_set)
-            #    if label is None:
-            #        label = str(len(labels) + 1)
-            #        labels[perm_set] = label
-            #else:
-            #    # If label specified, then use it
-            #    label = specified_label
-            label = labels.get(perm_set)
+
+        # How many characters are in a row in the grid
+        row_width = 2*dim_i + 2
+        for cell, block in self:
+        #    # Check if label has been specified
+        #    #specified_label = self.__specified_labels.get(perm_set)
+        #    #if specified_label is None:
+        #    #    # Use generic label (could reuse specified label)
+        #    #    label = labels.get(perm_set)
+        #    #    if label is None:
+        #    #        label = str(len(labels) + 1)
+        #    #        labels[perm_set] = label
+        #    #else:
+        #    #    # If label specified, then use it
+        #    #    label = specified_label
+            label = labels.get(block)
             if label is None:
                 label = str(len(labels) + 1)
-                labels[perm_set] = label
-            index = (2*i + 1)*row_width + 2*j + 1
+                labels[block] = label
+            row_index_from_top = dim_j - cell.j - 1
+            index = (2*row_index_from_top + 1)*row_width + 2*cell.i + 1
             result[index] = label
 
         # Legend at bottom
-        for perm_set, label in labels.items():
+        for block, label in labels.items():
             result.append(label)
             result.append(": ")
-            result.append(str(perm_set))
+            result.append(str(block))
             result.append("\n")
 
         return "".join(result)
