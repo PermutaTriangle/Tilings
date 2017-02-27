@@ -1,3 +1,4 @@
+import copy
 import pytest
 
 from grids import JsonAble
@@ -10,15 +11,13 @@ from grids import JsonAble
 
 @pytest.fixture
 def simple_json_able_object():
-    """A really simple JsonAble object where all attributes act nice in JSON."""
+    """A really simple JsonAble object where all attributes act nice in JSON.
+    
+    This fixture includes the object and its expected JSON string when sorting
+    the keys and using two spaces to indent.
+    """
     obj = JsonAble(foo="foo string", leet=1337, bar=["beer", "shots"])
-    return obj
-
-
-def test_simple_to_json(simple_json_able_object):
-    """Test if we get a correct JSON string from a simple JSON object."""
-    json_string = simple_json_able_object.to_json(indent="  ", sort_keys=True)
-    assert json_string == """{
+    expected_json_string = """{
   "bar": [
     "beer",
     "shots"
@@ -26,15 +25,32 @@ def test_simple_to_json(simple_json_able_object):
   "foo": "foo string",
   "leet": 1337
 }"""
+    return obj, expected_json_string
+
+
+def test_simle_eq(simple_json_able_object):
+    obj, _ = simple_json_able_object
+    # Default implementation compares by object identity
+    assert obj != 3
+    assert obj != "String"
+    assert obj == obj
+
+
+def test_simple_to_json(simple_json_able_object):
+    """Test if we get a correct JSON string from a simple JSON object."""
+    obj, expected_json_string = simple_json_able_object
+    json_string = obj.to_json(indent="  ", sort_keys=True)
+    assert json_string == expected_json_string
+    assert json_string != expected_json_string.replace("string", "attr")
 
 
 def test_simple_back_from_json(simple_json_able_object):
     """Test if we get the same attributes back."""
-    json_string = simple_json_able_object.to_json()
+    obj, json_string = simple_json_able_object
     obj_back_from_json = JsonAble.from_json(json_string)
-    assert obj_back_from_json.bar == simple_json_able_object.bar
-    assert obj_back_from_json.foo == simple_json_able_object.foo
-    assert obj_back_from_json.leet == simple_json_able_object.leet
+    assert obj_back_from_json.bar == obj.bar
+    assert obj_back_from_json.foo == obj.foo
+    assert obj_back_from_json.leet == obj.leet
 
 
 #
@@ -76,17 +92,15 @@ class ComplexJsonAble(JsonAble):
 
 @pytest.fixture
 def complex_json_able_object():
-    """Complex JSON able object with a rather hard-coded attributes."""
+    """Complex JSON able object with a rather hard-coded attributes.
+    
+    This fixture includes the object and its expected JSON string when sorting
+    the keys and using two spaces to indent.
+    """
     obj = ComplexJsonAble()
     obj.json_able_attribute = JsonAble(number=123, string="my_string")
     obj.hard_attribute = set(["Initial value"])
-    return obj
-
-
-def test_complex_to_json(complex_json_able_object):
-    """Test if we get a correct JSON string from a complex JSON object."""
-    json_string = complex_json_able_object.to_json(indent="  ", sort_keys=True)
-    assert json_string == """{
+    expected_json_string = """{
   "hard_attribute": [
     "Initial value"
   ],
@@ -95,11 +109,44 @@ def test_complex_to_json(complex_json_able_object):
     "string": "my_string"
   }
 }"""
+    return obj, expected_json_string
+
+
+def test_complex_eq(complex_json_able_object):
+    obj, _ = complex_json_able_object
+    with pytest.raises(TypeError):
+        assert obj != 3
+    with pytest.raises(TypeError):
+        assert obj != "String"
+    assert obj == obj
+    assert not obj != obj
+    obj1 = copy.deepcopy(obj)
+    obj2 = copy.deepcopy(obj)
+    obj3 = copy.deepcopy(obj)
+    assert obj == obj1
+    assert obj == obj2
+    assert obj == obj3
+    # Modify obj1 and compare
+    obj1.hard_attribute.add("pine cool aide")
+    assert obj != obj1
+    # Modify obj2 and compare
+    obj2.json_able_attribute.number += 1
+    assert obj != obj2
+    # Modify obj3 and compare
+    obj3.json_able_attribute.string += "moo"
+    assert obj != obj3
+
+
+def test_complex_to_json(complex_json_able_object):
+    """Test if we get a correct JSON string from a complex JSON object."""
+    obj, expected_json_string = complex_json_able_object
+    json_string = obj.to_json(indent="  ", sort_keys=True)
+    assert json_string == expected_json_string
 
 
 def test_complex_back_from_json(complex_json_able_object):
     """Test if we get the same attributes back for a complex object."""
-    json_string = complex_json_able_object.to_json()
+    obj, json_string = complex_json_able_object
     obj_back_from_json = ComplexJsonAble.from_json(json_string)
     assert isinstance(obj_back_from_json.hard_attribute, set)
-    assert obj_back_from_json == complex_json_able_object
+    assert obj_back_from_json == obj
