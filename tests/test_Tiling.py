@@ -29,6 +29,10 @@ def random_tiling_dict(request):
 
 @pytest.fixture(scope="module",
                 params=[
+                    dict(tilings=[Tiling({Cell(0, 0): PermSet.avoiding(Perm((1, 2, 0)))})],
+                         basis=[Perm((1, 2, 0))]),
+                    dict(tilings=[Tiling({Cell(0, 0): PermSet.avoiding(Perm((4, 0, 1, 2, 3)))})],
+                         basis=[Perm((4, 0, 1, 2, 3))]),
                     dict(tilings=[Tiling({Cell(0, 0): Block.increasing,
                                           Cell(1, 0): Block.increasing}),
                                  ],
@@ -87,6 +91,8 @@ def random_tiling_dict(request):
                                 Perm((3, 0, 1, 4, 2))]),
                 ],
                 ids=[
+                    "Av(120)",
+                    "Av(40123)",
                     "Av(10|10)",
                     "Av(01|10)",
                     "Atkinson (1999): Union",
