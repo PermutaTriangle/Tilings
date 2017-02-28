@@ -171,6 +171,41 @@ def test_area(random_tiling_dict):
     assert tiling.area == tiling.dimensions.i*tiling.dimensions.j
 
 
+def test_eq_positive(random_tiling_dict):
+    """Test whether equality operator returns True when it should."""
+    tiling = Tiling(random_tiling_dict)
+    increment_1 = random.randint(0, 127)
+    increment_2 = random.randint(0, 127)
+    shifted_tiling = Tiling({(i + increment_1, j + increment_2): block
+                             for (i, j), block
+                             in random_tiling_dict.items()})
+    assert tiling == shifted_tiling
+    assert shifted_tiling == tiling
+
+
+def test_eq_negative(random_tiling_dict):
+    """Test whether equality operator returns False when it should."""
+    if random_tiling_dict:
+        tiling = Tiling(random_tiling_dict)
+        modified_dict = dict(random_tiling_dict)
+        modified_dict.pop(random.sample(modified_dict.keys(), 1)[0])
+        modified_tiling = Tiling(modified_dict)
+        assert tiling != modified_tiling
+        assert modified_tiling != tiling
+
+
+def test_eq_empty(random_tiling_dict):
+    """Test whether equality operator returns correct value for empty tiling."""
+    empty_tiling = Tiling({})
+    tiling = Tiling(random_tiling_dict)
+    if random_tiling_dict:
+        assert tiling != empty_tiling
+        assert empty_tiling != tiling
+    else:
+        assert tiling == empty_tiling
+        assert empty_tiling == tiling
+
+
 def test_hash(random_tiling_dict):
     """Test whether the hash is correctly calculated."""
     tiling = Tiling(random_tiling_dict)
@@ -192,6 +227,7 @@ def test_perm_generation(perm_class_and_tilings):
 
 
 def test_perm_generation_with_source(random_tiling_dict):
+    """Test the perm generating code that gives source cells and perms as well."""
     tiling = Tiling(random_tiling_dict)
     for length in range(tiling.total_points + 4):  # Arbitrary 4
         perms = set()
