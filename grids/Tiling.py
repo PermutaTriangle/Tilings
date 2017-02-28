@@ -115,13 +115,28 @@ class Tiling(JsonAble):
     #
 
     @classmethod
-    def _prepare_attr_dict(cls, attr_dict):
+    def _from_attr_dict(cls, attr_dict):
         # TODO: eval probably isn't the best way to do this
-        return {"tiles": {Cell(*eval(cell)): eval("Av([" + block[3:-1] + "])" if block.startswith("Av") else block) for cell, block in attr_dict.items()}}
+        blocks = {}
+        for cell_string, block_string in attr_dict.items():
+            cell = Cell(*eval(cell_string))
+            if block_string == "point":
+                block = Block.point
+            elif block_string.startswith("Av+"):
+                perms = map(Perm, eval(block_string[3:-1] + ",)"))
+                av_class = PermSet.avoiding(perms)
+                block = PositiveClass(av_class)
+            elif block_string.startswith("Av"):
+                perms = map(Perm, eval(block_string[2:-1] + ",)"))
+                block = PermSet.avoiding(perms)
+            else:
+                raise RuntimeError("Unexpected block")
+            blocks[cell] = block
+        return cls(blocks)
 
-    def _to_json(self):
-        return {str(cell): "Block.point" if block is Block.point else repr(block)
-                for cell, block in self.items()}
+    def _get_attr_dict(self):
+        return {str(list(cell)): "point" if block is Block.point else repr(block)
+                for cell, block in self}
 
     #
     # Properties and getters
@@ -185,6 +200,9 @@ class Tiling(JsonAble):
 
     def __hash__(self):
         return self._hash
+
+    def __len__(self):
+        return len(self._blocks)
 
     def __repr__(self):
         format_string = "<A tiling of {} points and {} non-points>"
