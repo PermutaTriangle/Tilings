@@ -3,6 +3,7 @@ import random
 
 from permuta import Perm
 from permuta import PermSet
+from permuta.descriptors import Basis
 
 from grids import Cell
 from grids import Block
@@ -192,6 +193,7 @@ def test_perm_generation(perm_class_and_tilings):
 
 
 def test_perm_generation_with_source(random_tiling_dict):
+    # TODO: Doc
     tiling = Tiling(random_tiling_dict)
     for length in range(tiling.total_points + 4):  # Arbitrary 4
         perms = set()
@@ -204,3 +206,54 @@ def test_perm_generation_with_source(random_tiling_dict):
             assert total_length_of_components == len(perm)
             perms.add(perm)
         assert perms == set(tiling.perms_of_length(length))
+
+
+def test_basis_partitioning_negative(perm_class_and_tilings):
+    # TODO: doc
+    perm_class, tilings = perm_class_and_tilings
+    basis = perm_class.basis
+    for length in range(10):
+        perms = set()
+        for tiling in tilings:
+            bad_perms, good_perms = tiling.basis_partitioning(length, basis)
+            assert not bad_perms  # No bad perms
+            perms.update(good_perms.keys())
+        assert perms == set(perm_class.of_length(length))
+
+
+def test_basis_partitioning_positive(random_tiling_dict):
+    # TODO: doc
+    tiling = Tiling(random_tiling_dict)
+    population = set()
+    for length in range(2, 5):
+        population.update(PermSet(length))
+    sample_size = random.randint(1, 7)
+    basis_elements = random.sample(population, sample_size)
+    random_basis = Basis(basis_elements)
+    for length in range(6):
+        bad_perms, good_perms = tiling.basis_partitioning(length, random_basis)
+
+        for perm, cells in bad_perms.items():
+            assert not perm.avoids(*random_basis)
+            d = {}
+            for index, cell in enumerate(cells):
+                if cell not in d:
+                    d[cell] = []
+                d[cell].append(index)
+            for cell, indices in d.items():
+                p = Perm.to_standard(perm[index] for index in indices)
+                assert p in tiling[cell]
+
+        for perm, cells in good_perms.items():
+            assert perm.avoids(*random_basis)
+            d = {}
+            for index, cell in enumerate(cells):
+                if cell not in d:
+                    d[cell] = []
+                d[cell].append(index)
+            for cell, indices in d.items():
+                p = Perm.to_standard(perm[index] for index in indices)
+                assert p in tiling[cell]
+
+        assert len(good_perms) + len(bad_perms) == \
+               len(tiling.perms_of_length_with_source(length))

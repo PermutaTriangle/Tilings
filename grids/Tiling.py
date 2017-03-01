@@ -29,6 +29,7 @@ class Block(object):
     """Different blocks for Tilings, for convenience."""
     all = PermSet()
     point = PermSet([Perm(0,)])  # TODO: Make a new optimized perm set if this is a bottleneck
+    point_or_empty = PermSet.avoiding(PermSet(2))
     increasing = PermSet.avoiding(Perm((1, 0)))
     decreasing = PermSet.avoiding(Perm((0, 1)))
     def __new__(_cls):
@@ -160,6 +161,27 @@ class Tiling(JsonAble):
 
     def get_col(self, number):
         return self._cols[number]
+
+    #
+    # General methods
+    #
+
+    def basis_partitioning(self, length, basis):
+        point_or_empty_tiling = Tiling({cell: Block.point_or_empty \
+                                        if block is Block.point else block
+                                        for cell, block in self})
+
+        avoiding_perms = {}
+        containing_perms = {}
+
+        for perm, source in point_or_empty_tiling.perms_of_length_with_source(length):
+            belonging_partition = avoiding_perms if perm.avoids(*basis) else containing_perms
+            if perm not in belonging_partition:
+                belonging_partition[perm] = []
+            belonging_partition[perm].append(source)
+
+        return containing_perms, avoiding_perms
+
 
     #
     # Dunder methods
