@@ -224,36 +224,30 @@ def test_basis_partitioning_negative(perm_class_and_tilings):
 def test_basis_partitioning_positive(random_tiling_dict):
     # TODO: doc
     tiling = Tiling(random_tiling_dict)
+
+    point_or_empty_tiling = {}
+    for cell, block in random_tiling_dict.items():
+        point_or_empty_tiling[cell] = Block.point_or_empty \
+                                      if block is Block.point else block
+    point_or_empty_tiling = Tiling(point_or_empty_tiling)
+
     population = set()
     for length in range(2, 5):
         population.update(PermSet(length))
     sample_size = random.randint(1, 7)
     basis_elements = random.sample(population, sample_size)
     random_basis = Basis(basis_elements)
+
     for length in range(6):
         bad_perms, good_perms = tiling.basis_partitioning(length, random_basis)
 
-        for perm, cells in bad_perms.items():
+        for perm, _ in bad_perms.items():
             assert not perm.avoids(*random_basis)
-            d = {}
-            for index, cell in enumerate(cells):
-                if cell not in d:
-                    d[cell] = []
-                d[cell].append(index)
-            for cell, indices in d.items():
-                p = Perm.to_standard(perm[index] for index in indices)
-                assert p in tiling[cell]
+            
 
-        for perm, cells in good_perms.items():
+        for perm, _ in good_perms.items():
             assert perm.avoids(*random_basis)
-            d = {}
-            for index, cell in enumerate(cells):
-                if cell not in d:
-                    d[cell] = []
-                d[cell].append(index)
-            for cell, indices in d.items():
-                p = Perm.to_standard(perm[index] for index in indices)
-                assert p in tiling[cell]
 
-        assert len(good_perms) + len(bad_perms) == \
-               len(tiling.perms_of_length_with_source(length))
+        assert sum(map(len, good_perms.values())) + \
+               sum(map(len, bad_perms.values())) == \
+               sum(1 for _ in point_or_empty_tiling.perms_of_length_with_source(length))
