@@ -29,6 +29,7 @@ class Block(object):
     """Different blocks for Tilings, for convenience."""
     all = PermSet()
     point = PermSet([Perm(0,)])  # TODO: Make a new optimized perm set if this is a bottleneck
+    point_or_empty = PermSet.avoiding(PermSet(2))
     increasing = PermSet.avoiding(Perm((1, 0)))
     decreasing = PermSet.avoiding(Perm((0, 1)))
     def __new__(_cls):
@@ -177,6 +178,23 @@ class Tiling(JsonAble):
         return self._cols[number]
 
     #
+    # General methods
+    #
+
+    def basis_partitioning(self, length, basis):
+        """Partitions perms with cell info into containing and avoiding perms."""
+        avoiding_perms = {}
+        containing_perms = {}
+
+        for perm, cell_info in self.perms_of_length_with_cell_info(length):
+            belonging_partition = avoiding_perms if perm.avoids(*basis) \
+                                  else containing_perms
+            belonging_partition.setdefault(perm, []).append(cell_info)
+
+        return containing_perms, avoiding_perms
+
+
+    #
     # Dunder methods
     #
 
@@ -276,6 +294,7 @@ class Tiling(JsonAble):
     #
 
     def perms_of_length(self, n):
+        """Yield all possible (not necessarily unique) perms in tiling."""
         # TODO: Make not disgusting
         dim_j = self._dimensions.j
         tiling = list(((dim_j - 1 - cell.j, cell.i), block)
@@ -336,7 +355,15 @@ class Tiling(JsonAble):
                             cumul += rowcnt[row]
                         yield Perm(flatten(res))
 
-    def perms_of_length_with_source(self, n):
+    def perms_of_length_with_cell_info(self, n):
+        """Yield tuples of perms with their respective cell info.
+ 
+        The cell info of a perm is a dictionary of cells to 3-tuples
+        consisting of:
+            - the standardized perm in the cell (the cell perm),
+            - the values of the cell perm with regards to the perm, and
+            - the indices of the cell perm with regards to the perm.
+        """
         # TODO: Make not disgusting
         dim_j = self._dimensions.j
         tiling = list(((dim_j - 1 - cell.j, cell.i), block)
@@ -390,13 +417,21 @@ class Tiling(JsonAble):
                         res = [ [None]*colcnt[col] for col in range(w) ]
 
                         cumul = 0
-                        components = {}
+                        cell_info = {}
                         for row in range(h-1,-1,-1):
-                            for col in range(w):
-                                for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):
-                                    res[col][idx] = cumul + val
-                                    cell = Cell(col, dim_j - row - 1)
-                                    if cell not in components:
-                                        components[cell] = arr[row][col]
-                            cumul += rowcnt[row]
-                        yield Perm(flatten(res)), components
+                            cumul_col = 0  # This records the current index inside the perm being created
+                            for col in range(w):  # We're still building from left to right and bottom to top
+                                unmixed = []  # The un-standardized perm inside the current cell we're working on
+                                my_indices = []  # The indices of the current cell we're working on with regards to the final perm we're working on
+                                for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):  # Magic
+                                    res[col][idx] = cumul + val  # I am within a single cell and we read from left to right and we get the next value to add
+                                    unmixed.append(cumul + val)  # Samesies as one line above, but for us to keep later
+                                    my_indices.append(idx + cumul_col)  # Reading left to right within a cell placing the index
+                                if arr[row][col]:  # Cell is not empty
+                                    cell = Cell(col, dim_j - row - 1)  # Getting the bottom left indexed cell back from the old indexing
+                                    if cell not in cell_info:  # Not needed? But for sanity
+                                        # We add cell information gathered to our dictionary
+                                        cell_info[cell] = arr[row][col], tuple(unmixed), tuple(my_indices)
+                                cumul_col += colcnt[col]  # Assuming colcnt[col] is the number of points in the column numbered 'col', this adds that amount to our total points of the permutation already placed when reading left to right
+                            cumul += rowcnt[row]  # Similar to the cumul_col thing
+                        yield Perm(flatten(res)), cell_info  # Yield the results, flatten here only removes brackets, e.g. [[0], [1]] becomes [0, 1] so it is ready to become the perm 01
