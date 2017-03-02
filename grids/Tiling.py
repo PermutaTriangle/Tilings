@@ -167,15 +167,12 @@ class Tiling(JsonAble):
     #
 
     def basis_partitioning(self, length, basis):
-        point_or_empty_tiling = Tiling({cell: Block.point_or_empty \
-                                        if block is Block.point else block
-                                        for cell, block in self})
-
         avoiding_perms = {}
         containing_perms = {}
 
-        for perm, source in point_or_empty_tiling.perms_of_length_with_source(length):
-            belonging_partition = avoiding_perms if perm.avoids(*basis) else containing_perms
+        for perm, source in self.perms_of_length_with_source(length):
+            belonging_partition = avoiding_perms if perm.avoids(*basis) \
+                                  else containing_perms
             if perm not in belonging_partition:
                 belonging_partition[perm] = []
             belonging_partition[perm].append(source)
@@ -340,7 +337,7 @@ class Tiling(JsonAble):
                             cumul += rowcnt[row]
                         yield Perm(flatten(res))
 
-    def perms_of_length_with_source(self, n):
+    def perms_of_length_with_cell_info(self, n):
         # TODO: Make not disgusting
         dim_j = self._dimensions.j
         tiling = list(((dim_j - 1 - cell.j, cell.i), block)
@@ -396,11 +393,18 @@ class Tiling(JsonAble):
                         cumul = 0
                         components = {}
                         for row in range(h-1,-1,-1):
+                            cumul_col = 0
                             for col in range(w):
+                                unmixed = []
+                                my_indices = []
                                 for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):
                                     res[col][idx] = cumul + val
-                                    cell = Cell(col, dim_j - row - 1)
-                                    if cell not in components:
-                                        components[cell] = arr[row][col]
+                                    unmixed.append(cumul + val)
+                                    my_indices.append(idx + cumul_col)
+                                cell = Cell(col, dim_j - row - 1)
+                                if cell not in components and arr[row][col]:
+                                    components[cell] = arr[row][col], tuple(unmixed), tuple(my_indices)
+                                cumul_col += colcnt[col]
+                                print(cumul_col)
                             cumul += rowcnt[row]
                         yield Perm(flatten(res)), components

@@ -181,7 +181,7 @@ def test_hash(random_tiling_dict):
     assert hash(tiling) == hash(hash_sum)
 
 
-def test_perm_generation(perm_class_and_tilings):
+def test_perms_of_length(perm_class_and_tilings):
     """Test that the perm generation code generates the correct perms."""
     perm_class, tilings = perm_class_and_tilings
     for length in range(10):
@@ -192,18 +192,22 @@ def test_perm_generation(perm_class_and_tilings):
         assert from_tiling == from_perm_class
 
 
-def test_perm_generation_with_source(random_tiling_dict):
-    # TODO: Doc
+def test_perms_of_length_with_cell_info(random_tiling_dict):
+    """Test that the number of permutations is equal"""  # TODO
     tiling = Tiling(random_tiling_dict)
     for length in range(tiling.total_points + 4):  # Arbitrary 4
         perms = set()
-        for perm, source in tiling.perms_of_length_with_source(length):
-            total_length_of_components = 0
-            for cell, component_perm in source.items():
+        for perm, cell_info in tiling.perms_of_length_with_cell_info(length):
+            total_length_of_cell_perms = 0
+            for cell, info in cell_info.items():
                 assert cell in tiling
-                assert component_perm in tiling[cell]
-                total_length_of_components += len(component_perm)
-            assert total_length_of_components == len(perm)
+                cell_perm, cell_values, cell_indices = info
+                assert cell_perm in tiling[cell]
+                assert Perm.to_standard(cell_values) == cell_perm
+                for value, index in zip(cell_values, cell_indices):
+                    assert perm[index] == value
+                total_length_of_cell_perms += len(cell_perm)
+            assert total_length_of_cell_perms == len(perm)
             perms.add(perm)
         assert perms == set(tiling.perms_of_length(length))
 
