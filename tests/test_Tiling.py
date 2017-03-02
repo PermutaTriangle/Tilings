@@ -258,6 +258,11 @@ def test_hash(random_tiling_dict):
     assert hash(tiling) == hash(hash_sum)
 
 
+# TODO: perms_of_length_* methods need to be tested the other way around as
+#       well; i.e., we need to take perms and see how they fit into the tilings,
+#       then see
+
+
 def test_perms_of_length(perm_class_and_tilings):
     """Test that the perm generation code generates the correct perms."""
     perm_class, tilings = perm_class_and_tilings
