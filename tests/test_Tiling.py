@@ -8,6 +8,7 @@ from permuta.descriptors import Basis
 from grids import Cell
 from grids import Block
 from grids import Tiling
+from grids import PositiveClass
 
 
 #
@@ -17,6 +18,7 @@ from grids import Tiling
 
 @pytest.fixture(scope="module",
         params=[{cell: random.choice([PermSet.avoiding(Perm.random(random.randint(0, 7))),  # A principal class of a random permutations
+                                      PositiveClass(PermSet.avoiding(Perm.random(random.randint(1, 7)))),  # ... or similarly a positive class
                                       Block.point,  # ... or a point
                                       Block.increasing,  # ... or a increasing permutation
                                       Block.decreasing])  # ... or a decreasing permutation
@@ -70,7 +72,6 @@ def random_tiling_dict(request):
                                 Perm((3, 2, 0, 1))]),
                     dict(tilings=[Tiling({Cell(0, 0): PermSet.avoiding(Perm((1, 2, 0))),
                                           Cell(1, 0): PermSet.avoiding(Perm((0, 1)))}),
-
                                  ],
                          basis=[Perm((1, 2, 0, 3)),
                                 Perm((1, 3, 0, 2)),
@@ -134,7 +135,7 @@ def test_cell_cell_input(random_tiling_dict):
 
 
 def test_tiling_cleanup(random_tiling_dict):
-    """Tests whether the cells of a Tiling are properly reduced."""
+    """Test whether the cells of a Tiling are properly reduced."""
     i_list = sorted(set(cell[0] for cell in random_tiling_dict))
     j_list = sorted(set(cell[1] for cell in random_tiling_dict))
     i_map = {}
@@ -150,7 +151,7 @@ def test_tiling_cleanup(random_tiling_dict):
 
 
 def test_dimensions(random_tiling_dict):
-    """Tests whether the dimensions attribute works."""
+    """Test whether the dimensions attribute works."""
     i_total = len(set(cell[0] for cell in random_tiling_dict))
     j_total = len(set(cell[1] for cell in random_tiling_dict))
     if i_total == 0:
@@ -168,9 +169,84 @@ def test_dimensions(random_tiling_dict):
 
 
 def test_area(random_tiling_dict):
-    """Tests whether the area attribute works."""
+    """Test whether the area attribute works."""
     tiling = Tiling(random_tiling_dict)
     assert tiling.area == tiling.dimensions.i*tiling.dimensions.j
+
+
+def test_to_json(random_tiling_dict):
+    """Test whether the to_json method returns the expected JSON."""
+    tiling = Tiling(random_tiling_dict)
+    json_string = tiling.to_json(indent="  ", sort_keys=True)
+    result = ["{"]  # Expected JSON Components
+    block_processed = []
+    # When JSON sorts its keys, it treats them as strings
+    for cell, block in tiling:
+        cell_string = str(list(cell))
+        if block is Block.point:
+            block_string = "point"
+        elif isinstance(block, PositiveClass):
+            block_string = repr(block)  # TODO: Do differently
+        else:
+            # Assume block is Av class
+            block_string = repr(block)  # TODO: Do differently
+        block_processed.append((cell_string, block_string))
+    block_processed.sort()
+    for cell_string, block_string in block_processed:
+        result.extend(["\n  \"", cell_string, "\": \"", block_string, "\"", ","])
+    if len(tiling) > 0:
+        result.pop()  # No comma after last one in dictionary
+        result.append("\n")
+    result.append("}")
+    assert json_string == "".join(result)
+
+
+def test_from_json(random_tiling_dict):
+    """Test whether the expected tiling is returned from a JSON string.
+
+    This test assumes the to_json method of Tiling is working as intended.
+    """
+    tiling = Tiling(random_tiling_dict)
+    json_string = tiling.to_json()
+    tiling_back_from_json = Tiling.from_json(json_string)
+    assert tiling.total_points == tiling_back_from_json.total_points
+    assert tiling.non_points == tiling_back_from_json.non_points
+    assert tiling_back_from_json == tiling
+
+
+def test_eq_positive(random_tiling_dict):
+    """Test whether equality operator returns True when it should."""
+    tiling = Tiling(random_tiling_dict)
+    increment_1 = random.randint(0, 127)
+    increment_2 = random.randint(0, 127)
+    shifted_tiling = Tiling({(i + increment_1, j + increment_2): block
+                             for (i, j), block
+                             in random_tiling_dict.items()})
+    assert tiling == shifted_tiling
+    assert shifted_tiling == tiling
+
+
+def test_eq_negative(random_tiling_dict):
+    """Test whether equality operator returns False when it should."""
+    if random_tiling_dict:
+        tiling = Tiling(random_tiling_dict)
+        modified_dict = dict(random_tiling_dict)
+        modified_dict.pop(random.sample(modified_dict.keys(), 1)[0])
+        modified_tiling = Tiling(modified_dict)
+        assert tiling != modified_tiling
+        assert modified_tiling != tiling
+
+
+def test_eq_empty(random_tiling_dict):
+    """Test whether equality operator returns correct value for empty tiling."""
+    empty_tiling = Tiling({})
+    tiling = Tiling(random_tiling_dict)
+    if random_tiling_dict:
+        assert tiling != empty_tiling
+        assert empty_tiling != tiling
+    else:
+        assert tiling == empty_tiling
+        assert empty_tiling == tiling
 
 
 def test_hash(random_tiling_dict):
