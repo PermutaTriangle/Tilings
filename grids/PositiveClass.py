@@ -6,6 +6,10 @@ class PositiveClass(object):
             raise TypeError("Perm set does not contain empty perm")
         self._perm_class = perm_class
 
+    @property
+    def basis(self):
+        return self._perm_class.basis
+
     def of_length(self, length):
         if length == 0:
             return set()
