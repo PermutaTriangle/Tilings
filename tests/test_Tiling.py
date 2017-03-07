@@ -183,6 +183,13 @@ def test_back_map_via_order(random_tiling_dict):
         assert tiling.back_map(new_cell) == old_cell
 
 
+def test_cell_map(random_tiling_dict):
+    """Test cell map via back map, since they are each other inverses."""
+    tiling = Tiling(random_tiling_dict)
+    for cell in random_tiling_dict:
+        assert tiling.back_map(tiling.cell_map(cell)) == cell
+
+
 def test_dimensions(random_tiling_dict):
     """Test whether the dimensions attribute works."""
     i_total = len(set(cell[0] for cell in random_tiling_dict))
