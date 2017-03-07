@@ -57,6 +57,8 @@ class Tiling(JsonAble):
         other = []
         rows = [[]]
         cols = [[]]
+        # A map from the new values of the cells to the old
+        back_map = {}
 
         if blocks:
             # The set of all indices
@@ -81,6 +83,8 @@ class Tiling(JsonAble):
                 cell, block = item
                 # Calculate actual cell
                 actual_cell = Cell(i_actual[cell[0]], j_actual[cell[1]])
+                # Add to back map
+                back_map[actual_cell] = Cell(*cell)  # Make sure is Cell
                 # Create the new item
                 item = actual_cell, block
                 # Add to row and col cache
@@ -110,6 +114,7 @@ class Tiling(JsonAble):
         self._other = tuple(other)
         self._rows = tuple(map(tuple, rows))
         self._cols = tuple(map(tuple, cols))
+        self._back_map = back_map
 
     #
     # JsonAble interface
@@ -176,6 +181,9 @@ class Tiling(JsonAble):
 
     def get_col(self, number):
         return self._cols[number]
+
+    def back_map(self, cell):
+        return self._back_map[cell]
 
     #
     # General methods

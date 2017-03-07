@@ -135,7 +135,7 @@ def test_cell_cell_input(random_tiling_dict):
 
 
 def test_tiling_cleanup(random_tiling_dict):
-    """Test whether the cells of a Tiling are properly reduced."""
+    """Test whether the cells of a tiling are properly reduced."""
     i_list = sorted(set(cell[0] for cell in random_tiling_dict))
     j_list = sorted(set(cell[1] for cell in random_tiling_dict))
     i_map = {}
@@ -148,6 +148,39 @@ def test_tiling_cleanup(random_tiling_dict):
                            for (i_value, j_value), block
                            in random_tiling_dict.items()}
     assert cleaned_tiling_dict == dict(Tiling(random_tiling_dict))
+
+
+def test_tiling_cleanup_via_order(random_tiling_dict):
+    """Test cell reduction of tilings by checking appearance order."""
+    tiling = Tiling(random_tiling_dict)
+    for sub_case in zip(sorted(tiling), sorted(random_tiling_dict.items())):
+        (_, resulting_block), (_, expected_block) = sub_case
+        assert resulting_block == expected_block
+
+
+def test_back_map(random_tiling_dict):
+    """Test whether the back map correctly remembers the old cells."""
+    i_list = sorted(set(cell[0] for cell in random_tiling_dict))
+    j_list = sorted(set(cell[1] for cell in random_tiling_dict))
+    i_map = {}
+    for i_value in i_list:
+        i_map[i_value] = len(i_map)
+    j_map = {}
+    for j_value in j_list:
+        j_map[j_value] = len(j_map)
+    tiling = Tiling(random_tiling_dict)
+    for cell in random_tiling_dict:
+        i_value, j_value = cell
+        expected_cell = Cell(i_map[i_value], j_map[j_value])
+        assert tiling.back_map(expected_cell) == cell
+
+
+def test_back_map_via_order(random_tiling_dict):
+    """Test back map by checking appearance order."""
+    tiling = Tiling(random_tiling_dict)
+    for sub_case in zip(sorted(tiling), sorted(random_tiling_dict.items())):
+        (new_cell, _), (old_cell, _) = sub_case
+        assert tiling.back_map(new_cell) == old_cell
 
 
 def test_dimensions(random_tiling_dict):
