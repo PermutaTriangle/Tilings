@@ -208,7 +208,6 @@ class Tiling(JsonAble):
 
         return containing_perms, avoiding_perms
 
-
     #
     # Dunder methods
     #
