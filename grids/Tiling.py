@@ -103,9 +103,9 @@ class Tiling(JsonAble):
                 else:
                     non_points.append(item)
                     if isinstance(block, PositiveClass):
-                        other.append(block)
+                        other.append((actual_cell, block))
                     else:
-                        classes.append(block)
+                        classes.append((actual_cell, block))
 
         self._blocks = tiling
 
