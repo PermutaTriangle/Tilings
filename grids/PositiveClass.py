@@ -10,6 +10,10 @@ class PositiveClass(object):
     def basis(self):
         return self._perm_class.basis
 
+    @property
+    def perm_class(self):
+        return self._perm_class
+
     def of_length(self, length):
         if length == 0:
             return set()
