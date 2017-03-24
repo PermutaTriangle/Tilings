@@ -15,17 +15,16 @@ class TilingTreeNode(JsonAble):
         self.children = list(children)
 
     @classmethod
-    def _prepare_attr_dict(cls, attr_dict):
-        attr_dict["tiling"] = Tiling._from_attr_dict(attr_dict["tiling"])
-        attr_dict["children"] = map(cls._from_attr_dict,
-                                    attr_dict["children"])
-        return attr_dict
+    def _from_attr_dict(cls, attr_dict):
+        tiling = Tiling._from_attr_dict(attr_dict["tiling"])
+        children = map(cls._from_attr_dict,
+                       attr_dict["children"])
+        return cls(tiling, children)
 
-    def _to_json(self):
-        attr_dict = super(TilingTreeNode, self)._to_json()
-        attr_dict["children"] = [child._to_json()
-                                 for child
-                                 in attr_dict["children"]]
+    def _get_attr_dict(self):
+        attr_dict = {}
+        attr_dict["tiling"] = self.tiling._get_attr_dict()
+        attr_dict["children"] = [child._get_attr_dict() for child in self.children]
         return attr_dict
 
 
@@ -39,9 +38,13 @@ class TilingTree(JsonAble):
         self.root = root
 
     @classmethod
-    def _prepare_attr_dict(cls, attr_dict):
-        Node = cls._NODE_CLASS
-        attr_dict["root"] = Node._from_attr_dict(attr_dict["root"])
+    def _from_attr_dict(cls, attr_dict):
+        root = cls._NODE_CLASS._from_attr_dict(attr_dict["root"])
+        return cls(root)
+
+    def _get_attr_dict(self):
+        attr_dict = {}
+        attr_dict["root"] = self.root._get_attr_dict()
         return attr_dict
 
     def pretty_print(self, file=sys.stdout):
