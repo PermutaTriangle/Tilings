@@ -173,6 +173,10 @@ class Tiling(JsonAble):
         return self._other
 
     @property
+    def total_other(self):
+        return len(self._other)
+
+    @property
     def dimensions(self):
         return self._dimensions
 
@@ -371,7 +375,7 @@ class Tiling(JsonAble):
 
     def perms_of_length_with_cell_info(self, n):
         """Yield tuples of perms with their respective cell info.
- 
+
         The cell info of a perm is a dictionary of cells to 3-tuples
         consisting of:
             - the standardized perm in the cell (the cell perm),
