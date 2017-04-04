@@ -2,7 +2,7 @@
 # TODO: Make python2.7 compatible once permuta is
 
 
-__all__ = ["Cell", "Block", "Tiling"]
+__all__ = ["Cell", "Tiling"]
 
 
 import warnings
@@ -20,20 +20,10 @@ from permuta.descriptors import Descriptor
 
 from .JsonAble import JsonAble
 from .PositiveClass import PositiveClass
+from .Block import Block
 
 
 Cell = namedtuple("Cell", ["i", "j"])
-
-
-class Block(object):
-    """Different blocks for Tilings, for convenience."""
-    all = PermSet()
-    point = PermSet([Perm(0,)])  # TODO: Make a new optimized perm set if this is a bottleneck
-    point_or_empty = PermSet.avoiding(PermSet(2))
-    increasing = PermSet.avoiding(Perm((1, 0)))
-    decreasing = PermSet.avoiding(Perm((0, 1)))
-    def __new__(_cls):
-        raise RuntimeError("Block class should not be instantiated")
 
 
 class Tiling(JsonAble):

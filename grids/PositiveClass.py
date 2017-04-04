@@ -1,4 +1,14 @@
 class PositiveClass(object):
+    __INSTANCE_CACHE = {}
+
+    def __new__(cls, perm_class):
+        basis = perm_class.basis
+        instance = PositiveClass.__INSTANCE_CACHE.get(basis)
+        if instance is None:
+            instance = super(PositiveClass, cls).__new__(cls)
+            PositiveClass.__INSTANCE_CACHE[basis] = instance
+        return instance
+
     def __init__(self, perm_class):
         if isinstance(perm_class, PositiveClass):
             raise TypeError("Perm set already positive")
@@ -25,13 +35,6 @@ class PositiveClass(object):
             return False
         else:
             return item in self._perm_class
-
-    def __eq__(self, other):
-        return isinstance(other, PositiveClass) \
-           and self._perm_class == other._perm_class
-
-    def __hash__(self):
-        return hash(hash(self._perm_class) + 4)  # Totally arbitrary
 
     def __repr__(self):
         return "Av+" + repr(self._perm_class)[2:]
