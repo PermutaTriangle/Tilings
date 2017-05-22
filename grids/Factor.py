@@ -313,7 +313,7 @@ class Factor():
 
         # How many characters are in a row in the grid
         row_width = 2*dim_i + 2
-        for cell, block in self.factor.items():
+        for cell, block in sorted(self.factor.items()):
         #    # Check if label has been specified
         #    #specified_label = self.__specified_labels.get(perm_set)
         #    #if specified_label is None:
