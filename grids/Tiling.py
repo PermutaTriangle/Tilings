@@ -9,6 +9,7 @@ import warnings
 
 from builtins import dict
 from collections import OrderedDict
+from collections import defaultdict
 from collections import namedtuple  # For Cell class
 from itertools import product  # For old of_length code
 
@@ -21,7 +22,7 @@ from permuta.descriptors import Descriptor
 from .JsonAble import JsonAble
 from .PositiveClass import PositiveClass
 from .Block import Block
-
+from .Factor import Factor
 
 Cell = namedtuple("Cell", ["i", "j"])
 
@@ -443,3 +444,38 @@ class Tiling(JsonAble):
                                 cumul_col += colcnt[col]  # Assuming colcnt[col] is the number of points in the column numbered 'col', this adds that amount to our total points of the permutation already placed when reading left to right
                             cumul += rowcnt[row]  # Similar to the cumul_col thing
                         yield Perm(flatten(res)), cell_info  # Yield the results, flatten here only removes brackets, e.g. [[0], [1]] becomes [0, 1] so it is ready to become the perm 01
+                        
+    def find_factors(self):
+        block_points = set(self._blocks.keys())
+        points_by_rows, points_by_cols = defaultdict(set), defaultdict(set)
+
+        for point in block_points:
+            i, j = point
+            points_by_rows[i].add(point)
+            points_by_cols[j].add(point)
+
+        factors = []
+
+        for point in block_points:
+            if any([point in x for x in factors]):
+                continue
+            factor = {point}
+            queue = {point}
+
+            while queue:
+                i, j = queue.pop()
+                for search_point in points_by_rows[i]:
+                    if search_point not in factor:
+                        factor.add(search_point)
+                        queue.add(search_point)
+
+                for search_point in points_by_cols[j]:
+                    if search_point not in factor:
+                        factor.add(search_point)
+                        queue.add(search_point)
+
+            factors.append(factor)
+
+        return [Factor(dict([(point, self._blocks[point]) for point in factor])) for factor in factors]
+
+
