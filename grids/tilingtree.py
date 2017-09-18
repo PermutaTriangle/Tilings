@@ -1,12 +1,7 @@
 import sys
 
-from permuta import Perm, PermSet
-
-from .JsonAble import JsonAble
-from .Tiling import Tiling
-
-
-__all__ = ["TilingTree", "TilingTreeNode"]
+from .jsonable import JsonAble
+from .tiling import Tiling
 
 
 class TilingTreeNode(JsonAble):

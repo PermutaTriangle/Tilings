@@ -1,6 +1,6 @@
-from .Block import *
-from .Tiling import *
-from .Factor import *
-from .JsonAble import *
-from .TilingTree import *
-from .PositiveClass import *
+from .elementaryblocks import *
+from .tiling import Cell, Tiling
+from .factor import Factor
+from .jsonable import JsonAble
+from .tilingtree import TilingTree
+from .positiveclass import PositiveClass

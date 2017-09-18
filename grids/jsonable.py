@@ -1,9 +1,6 @@
 import json
 
 
-__all__ = ["JsonAble"]
-
-
 class JsonAble(object):
     def __init__(self, attr_dict={}, **kwargs):
         """Initialize the dictionary of the object."""
@@ -39,7 +36,8 @@ class JsonAble(object):
 
         This base implementation takes the attr dict and uses it as the sole
         argument to the class' constructor.
-        This is something to override because you need to process the attr dict.
+        This is something to override because you need to process the attr
+        dict.
         """
         return cls(attr_dict)
 
@@ -58,7 +56,7 @@ class JsonAble(object):
         JsonAble, otherwise it uses the unmodified value.
         This method should be overridden.
         """
-        return {attr_name: value._get_attr_dict() \
-                if isinstance(value, JsonAble) \
+        return {attr_name: value._get_attr_dict()
+                if isinstance(value, JsonAble)
                 else value
                 for attr_name, value in self.__dict__.items()}

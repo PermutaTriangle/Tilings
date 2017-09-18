@@ -1,10 +1,9 @@
 from .misc import compress_dict
-from permuta.permutils import *
-from permuta import Av
+from permuta.permutils import lex_min
+from permuta import Av, Perm
 from collections import OrderedDict, defaultdict
-from .Block import Block
-from .PositiveClass import PositiveClass
-
+from . import elementaryblocks as eb
+from .positiveclass import PositiveClass
 
 
 class Factor():
@@ -14,15 +13,15 @@ class Factor():
         blocks = compress_dict(blocks)
         hash_sum = 0
         for cell, block in blocks.items():
-            if block is not Block.point:
+            if block is not eb.point:
                 if isinstance(block, PositiveClass):
                     blocks[cell] = PositiveClass(Av(lex_min(list(block.basis))))
                 else:
                     blocks[cell] = Av(lex_min(list(block.basis)))
             hash_sum += hash((cell, blocks[cell]))
-        dim_i = max(i for i,_ in blocks)+1
-        dim_j = max(j for _,j in blocks)+1
-        
+        dim_i = max(i for i, _ in blocks)+1
+        dim_j = max(j for _, j in blocks)+1
+
         g = defaultdict(set)
         row = defaultdict(set)
         column = defaultdict(set)
@@ -35,7 +34,7 @@ class Factor():
             row[cell[1]].add(v)
             column[cell[0]].add(v)
             rev[v] = block
-        
+
         queue = [0]
         visited = {0}
         while queue:
@@ -46,7 +45,8 @@ class Factor():
                 visited.add(u)
                 queue.append(u)
         if len(visited) != len(blocks):
-            raise ValueError('Underlying graph of input dictionary is not connected and thus not a Factor')
+            raise ValueError(str('Underlying graph of input dictionary is not '
+                                 'connected and thus not a Factor'))
 
         self.factor = OrderedDict(blocks)
         self.dimensions = dim_i, dim_j
@@ -99,7 +99,7 @@ class Factor():
 
         for vertex, neighbors in self_g.items():
             candidates = set()
-            for other_vertex , other_neighbors in other_g.items():
+            for other_vertex, other_neighbors in other_g.items():
                 if len(neighbors) == len(other_neighbors) and self_rev[vertex] == other_rev[other_vertex]:
                     candidates.add(other_vertex)
             if len(candidates) == 0:
@@ -131,13 +131,21 @@ class Factor():
         0 - Empty Tiling
         1 - Tiling consisting only of points with no interleaving.
         2 - Tiling consisting of points and sets where none interleave.
-        3 - Tiling consisting of points and at least one set where points interleave in a column or row.
-        4 - Tiling consisting of points and sets where a point and set interleave in a column or row.
-        5 - Tiling consisting of points and at least one set where points interleave in an L or square shape.
-        6 - Tiling consisting of points and sets where sets and points interleave in an L  or square shape but no sets interleave in a column or row.
-        7 - Tiling consisting of points and sets where sets interleave in a column or row.
-        8 - Tiling consisting of points and sets where sets interleave in an L shape.
-        9 - Tiling consisting of points and sets where sets interleave in a square shape.
+        3 - Tiling consisting of points and at least one set where points
+        interleave in a column or row.
+        4 - Tiling consisting of points and sets where a point and set
+        interleave in a column or row.
+        5 - Tiling consisting of points and at least one set where points
+        interleave in an L or square shape.
+        6 - Tiling consisting of points and sets where sets and points
+        interleave in an L  or square shape but no sets interleave in a column
+        or row.
+        7 - Tiling consisting of points and sets where sets interleave in a
+        column or row.
+        8 - Tiling consisting of points and sets where sets interleave in an L
+        shape.
+        9 - Tiling consisting of points and sets where sets interleave in a
+        square shape.
         """
         n, m = self.dimensions
         rows = [0] * n
@@ -146,11 +154,12 @@ class Factor():
 
         # Checks for column or row interleaving
         for i, j in self.factor:
-            if self.factor[(i, j)] is Block.point:
+            if self.factor[(i, j)] is eb.point:
                 # Check for point-point or point-set interleaving
                 if rows[i] in (1, 2):
                     rows[i] += 2
-                # Otherwise we use the max of the previous value and the rank of having only a point
+                # Otherwise we use the max of the previous value and the rank
+                # of having only a point
                 else:
                     rows[i] = max(1, rows[i])
                 # Identical to above but for columns
@@ -159,14 +168,16 @@ class Factor():
                 else:
                     cols[j] = max(1, cols[j])
             else:
-                sets.append((i, j))  # Store it as we need it to check for squares
+                # Store it as we need it to check for squares
+                sets.append((i, j))
                 # Checks for point-set interleaving
                 if rows[i] in (1, 3):
                     rows[i] = 4
                 # Checks for set-set interleaving
                 elif rows[i] in (2, 4):
                     rows[i] = 7
-                # Otherwise we use the max of the previous value and the rank of having only a set
+                # Otherwise we use the max of the previous value and the rank
+                # of having only a set
                 else:
                     rows[i] = max(2, rows[i])
                 # Identical to above but for rows
@@ -181,7 +192,7 @@ class Factor():
 
         # Checks for L shaped interleaving
         for i, j in self.factor:
-            if self.factor[(i, j)] is Block.point:
+            if self.factor[(i, j)] is eb.point:
                 # Checks if there is an L shape consisting of only points
                 if rows[i] == 3 and cols[j] == 3:
                     res = max(res, 5)
@@ -196,14 +207,17 @@ class Factor():
                 elif rows[i] == 7 and cols[j] == 7:
                     res = max(res, 8)
 
-        if res == 8:  # We only need to check if sets form a square if we already established L shape
-            # Checks if sets form a square. Picks 4 points and sorts them then it's enough to check
-            # that x_1 == x_2, y_1 == y_3, x_3 == x_4 and y_2 == y_4 to know if it's a square.
+        if res == 8:
+            # We only need to check if sets form a square if we already
+            # established L shape Checks if sets form a square. Picks 4 points
+            # and sorts them then it's enough to check that x_1 == x_2, y_1 ==
+            # y_3, x_3 == x_4 and y_2 == y_4 to know if it's a square.
             for i, a in enumerate(sets):
                 for j, b in enumerate(sets[i + 1:]):
                     for k, c in enumerate(sets[i + j + 1:]):
                         for d in sets[i + j + k + 1:]:
                             x, y, z, w = sorted((a, b, c, d))
+                            # if (x[0], x[1], y[1], z[0]) == (y[0], z[1], w[1], w[0]):
                             if x[0] == y[0] and z[0] == w[0] and x[1] == z[1] and y[1] == w[1]:
                                 res = 9
 
@@ -229,9 +243,9 @@ class Factor():
                     return True
                 if other_val == Av(Perm((0,))):
                     return False
-                if self_val == Block.point:
+                if self_val == eb.point:
                     return True
-                if other_val == Block.point:
+                if other_val == eb.point:
                     return False
                 return self.factor[key].basis < other.factor[key].basis
         return False
@@ -287,13 +301,13 @@ class Factor():
 
     def __str__(self):
         dim_i, dim_j = self.dimensions
-        
         result = []
 
         # Create tiling lines
         for j in range(2*dim_j + 1):
             for i in range(2*dim_i + 1):
-                # Whether or not a vertical line and a horizontal line is present
+                # Whether or not a vertical line and a horizontal line is
+                # present
                 vertical = i % 2 == 0
                 horizontal = j % 2 == 0
                 if vertical:
@@ -314,17 +328,17 @@ class Factor():
         # How many characters are in a row in the grid
         row_width = 2*dim_i + 2
         for cell, block in sorted(self.factor.items()):
-        #    # Check if label has been specified
-        #    #specified_label = self.__specified_labels.get(perm_set)
-        #    #if specified_label is None:
-        #    #    # Use generic label (could reuse specified label)
-        #    #    label = labels.get(perm_set)
-        #    #    if label is None:
-        #    #        label = str(len(labels) + 1)
-        #    #        labels[perm_set] = label
-        #    #else:
-        #    #    # If label specified, then use it
-        #    #    label = specified_label
+            # Check if label has been specified
+            # specified_label = self.__specified_labels.get(perm_set)
+            # if specified_label is None:
+            #    # Use generic label (could reuse specified label)
+            #    label = labels.get(perm_set)
+            #    if label is None:
+            #        label = str(len(labels) + 1)
+            #        labels[perm_set] = label
+            # else:
+            #    # If label specified, then use it
+            #    label = specified_label
             label = labels.get(block)
             if label is None:
                 label = str(len(labels) + 1)
@@ -337,7 +351,7 @@ class Factor():
         for block, label in labels.items():
             result.append(label)
             result.append(": ")
-            if block is Block.point:
+            if block is eb.point:
                 result.append("point")
             else:
                 result.append(repr(block))
@@ -347,5 +361,3 @@ class Factor():
             result.pop()
 
         return "".join(result)
-   
-

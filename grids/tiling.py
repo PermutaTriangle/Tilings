@@ -1,28 +1,17 @@
 # TODO: Docstring
 # TODO: Make python2.7 compatible once permuta is
-
-
-__all__ = ["Cell", "Tiling"]
-
-
-import warnings
-
-from builtins import dict
-from collections import OrderedDict
-from collections import defaultdict
-from collections import namedtuple  # For Cell class
+from collections import OrderedDict, defaultdict, namedtuple
 from itertools import product  # For old of_length code
 
-from permuta import Perm
-from permuta import PermSet
-from permuta import Av
-from permuta.misc import ordered_set_partitions, flatten
-from permuta.descriptors import Descriptor
+from permuta import Perm, PermSet
+from permuta.misc import flatten, ordered_set_partitions
 
-from .JsonAble import JsonAble
-from .PositiveClass import PositiveClass
-from .Block import Block
-from .Factor import Factor
+from . import elementaryblocks as eb
+from .factor import Factor
+from .jsonable import JsonAble
+from .positiveclass import PositiveClass
+
+__all__ = ["Cell", "Tiling"]
 
 Cell = namedtuple("Cell", ["i", "j"])
 
@@ -89,7 +78,7 @@ class Tiling(JsonAble):
                 # Add hash to hash sum
                 hash_sum += hash(item)
                 # Add to caches
-                if block == Block.point:
+                if block == eb.point:
                     point_cells.append(actual_cell)
                 else:
                     non_points.append(item)
@@ -122,7 +111,7 @@ class Tiling(JsonAble):
         for cell_string, block_string in attr_dict.items():
             cell = Cell(*eval(cell_string))
             if block_string == "point":
-                block = Block.point
+                block = eb.point
             elif block_string.startswith("Av+"):
                 perms = map(Perm, eval(block_string[3:-1] + ",)"))
                 av_class = PermSet.avoiding(perms)
@@ -136,8 +125,8 @@ class Tiling(JsonAble):
         return cls(blocks)
 
     def _get_attr_dict(self):
-        return {str(list(cell)): "point" if block is Block.point else repr(block)
-                for cell, block in self}
+        return {str(list(cell)): "point" if block is eb.point
+                else repr(block) for cell, block in self}
 
     #
     # Properties and getters
@@ -192,7 +181,8 @@ class Tiling(JsonAble):
     #
 
     def basis_partitioning(self, length, basis):
-        """Partitions perms with cell info into containing and avoiding perms."""
+        """Partitions perms with cell info into containing and avoiding
+        perms."""
         avoiding_perms = {}
         containing_perms = {}
 
@@ -243,7 +233,8 @@ class Tiling(JsonAble):
         # Create tiling lines
         for j in range(2*dim_j + 1):
             for i in range(2*dim_i + 1):
-                # Whether or not a vertical line and a horizontal line is present
+                # Whether or not a vertical line and a horizontal line is
+                # present
                 vertical = i % 2 == 0
                 horizontal = j % 2 == 0
                 if vertical:
@@ -264,17 +255,17 @@ class Tiling(JsonAble):
         # How many characters are in a row in the grid
         row_width = 2*dim_i + 2
         for cell, block in self:
-        #    # Check if label has been specified
-        #    #specified_label = self.__specified_labels.get(perm_set)
-        #    #if specified_label is None:
-        #    #    # Use generic label (could reuse specified label)
-        #    #    label = labels.get(perm_set)
-        #    #    if label is None:
-        #    #        label = str(len(labels) + 1)
-        #    #        labels[perm_set] = label
-        #    #else:
-        #    #    # If label specified, then use it
-        #    #    label = specified_label
+            # Check if label has been specified
+            # specified_label = self.__specified_labels.get(perm_set)
+            # if specified_label is None:
+                # # Use generic label (could reuse specified label)
+                # label = labels.get(perm_set)
+                # if label is None:
+                    # label = str(len(labels) + 1)
+                    # labels[perm_set] = label
+                # else:
+                    # # If label specified, then use it
+                    # label = specified_label
             label = labels.get(block)
             if label is None:
                 label = str(len(labels) + 1)
@@ -287,7 +278,7 @@ class Tiling(JsonAble):
         for block, label in labels.items():
             result.append(label)
             result.append(": ")
-            if block is Block.point:
+            if block is eb.point:
                 result.append("point")
             else:
                 result.append(repr(block))
@@ -309,8 +300,8 @@ class Tiling(JsonAble):
         tiling = list(((dim_j - 1 - cell.j, cell.i), block)
                       for cell, block
                       in self._blocks.items())
-        h = max( k[0] for k,v in tiling ) + 1 if tiling else 1
-        w = max( k[1] for k,v in tiling ) + 1 if tiling else 1
+        h = max(k[0] for k, v in tiling) + 1 if tiling else 1
+        w = max(k[1] for k, v in tiling) + 1 if tiling else 1
 
         def permute(arr, perm):
             res = [None] * len(arr)
@@ -323,7 +314,7 @@ class Tiling(JsonAble):
             if at == len(tiling):
                 if left == 0:
                     yield []
-            elif tiling[at][1] is Block.point:
+            elif tiling[at][1] is eb.point:
                 # this doesn't need to be handled separately,
                 # it's just an optimization
                 if left > 0:
@@ -378,8 +369,8 @@ class Tiling(JsonAble):
         tiling = list(((dim_j - 1 - cell.j, cell.i), block)
                       for cell, block
                       in self._blocks.items())
-        h = max( k[0] for k,v in tiling ) + 1 if tiling else 1
-        w = max( k[1] for k,v in tiling ) + 1 if tiling else 1
+        h = max(k[0] for k, v in tiling) + 1 if tiling else 1
+        w = max(k[1] for k, v in tiling) + 1 if tiling else 1
 
         def permute(arr, perm):
             res = [None] * len(arr)
@@ -392,7 +383,7 @@ class Tiling(JsonAble):
             if at == len(tiling):
                 if left == 0:
                     yield []
-            elif tiling[at][1] is Block.point:
+            elif tiling[at][1] is eb.point:
                 # this doesn't need to be handled separately,
                 # it's just an optimization
                 if left > 0:
@@ -444,7 +435,7 @@ class Tiling(JsonAble):
                                 cumul_col += colcnt[col]  # Assuming colcnt[col] is the number of points in the column numbered 'col', this adds that amount to our total points of the permutation already placed when reading left to right
                             cumul += rowcnt[row]  # Similar to the cumul_col thing
                         yield Perm(flatten(res)), cell_info  # Yield the results, flatten here only removes brackets, e.g. [[0], [1]] becomes [0, 1] so it is ready to become the perm 01
-                        
+
     def find_factors(self):
         block_points = set(self._blocks.keys())
         points_by_rows, points_by_cols = defaultdict(set), defaultdict(set)
@@ -476,6 +467,5 @@ class Tiling(JsonAble):
 
             factors.append(factor)
 
-        return [Factor(dict([(point, self._blocks[point]) for point in factor])) for factor in factors]
-
-
+        return [Factor(dict([(point, self._blocks[point]) for point in factor])
+                       ) for factor in factors]
