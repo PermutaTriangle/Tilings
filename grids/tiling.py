@@ -23,23 +23,21 @@ class Tiling(JsonAble):
     cell is the cell in the i-th column and j-th row.
     """
 
-    def __init__(self, blocks={}):
-        # The dictionary of blocks
-        tiling = {}
+    def __init__(self, obstructions=list()):
+        # List of obstructions
+        obstructions = list()
+
         # The horizontal and vertical dimensions, respectively
-        i_dimension = j_dimension = 1
+        width = height = 1
+
         # The integer that is hashed to get the hash of the tiling
         hash_sum = 0
+
         # A list of the cells that have points in them
-        point_cells = []
-        non_points = []
-        classes = []
-        other = []
-        rows = [[]]
-        cols = [[]]
-        # A map from the new values of the cells to the old, and vice-versa
-        back_map = {}
-        cell_map = {}
+        point_cells = frozenset()
+        # List of cells that are positive
+        positive_cells = frozenset()
+        obstruction_mapping = frozenset()
 
         if blocks:
             # The set of all indices
@@ -99,34 +97,6 @@ class Tiling(JsonAble):
         self._cols = tuple(map(tuple, cols))
         self._back_map = back_map
         self._cell_map = cell_map
-
-    #
-    # JsonAble interface
-    #
-
-    @classmethod
-    def _from_attr_dict(cls, attr_dict):
-        # TODO: eval probably isn't the best way to do this
-        blocks = {}
-        for cell_string, block_string in attr_dict.items():
-            cell = Cell(*eval(cell_string))
-            if block_string == "point":
-                block = eb.point
-            elif block_string.startswith("Av+"):
-                perms = map(Perm, eval(block_string[3:-1] + ",)"))
-                av_class = PermSet.avoiding(perms)
-                block = PositiveClass(av_class)
-            elif block_string.startswith("Av"):
-                perms = map(Perm, eval(block_string[2:-1] + ",)"))
-                block = PermSet.avoiding(perms)
-            else:
-                raise RuntimeError("Unexpected block")
-            blocks[cell] = block
-        return cls(blocks)
-
-    def _get_attr_dict(self):
-        return {str(list(cell)): "point" if block is eb.point
-                else repr(block) for cell, block in self}
 
     #
     # Properties and getters
@@ -224,248 +194,3 @@ class Tiling(JsonAble):
     def __repr__(self):
         format_string = "<A tiling of {} points and {} non-points>"
         return format_string.format(self.total_points, len(self.non_points))
-
-    def __str__(self):
-        dim_i, dim_j = self.dimensions
-
-        result = []
-
-        # Create tiling lines
-        for j in range(2*dim_j + 1):
-            for i in range(2*dim_i + 1):
-                # Whether or not a vertical line and a horizontal line is
-                # present
-                vertical = i % 2 == 0
-                horizontal = j % 2 == 0
-                if vertical:
-                    if horizontal:
-                        result.append("+")
-                    else:
-                        result.append("|")
-                elif horizontal:
-                    result.append("-")
-                else:
-                    result.append(" ")
-            result.append("\n")
-
-        labels = OrderedDict()
-
-        # Put the sets in the tiles
-
-        # How many characters are in a row in the grid
-        row_width = 2*dim_i + 2
-        for cell, block in self:
-            # Check if label has been specified
-            # specified_label = self.__specified_labels.get(perm_set)
-            # if specified_label is None:
-                # # Use generic label (could reuse specified label)
-                # label = labels.get(perm_set)
-                # if label is None:
-                    # label = str(len(labels) + 1)
-                    # labels[perm_set] = label
-                # else:
-                    # # If label specified, then use it
-                    # label = specified_label
-            label = labels.get(block)
-            if label is None:
-                label = str(len(labels) + 1)
-                labels[block] = label
-            row_index_from_top = dim_j - cell.j - 1
-            index = (2*row_index_from_top + 1)*row_width + 2*cell.i + 1
-            result[index] = label
-
-        # Legend at bottom
-        for block, label in labels.items():
-            result.append(label)
-            result.append(": ")
-            if block is eb.point:
-                result.append("point")
-            else:
-                result.append(repr(block))
-            result.append("\n")
-
-        if len(labels) > 0:
-            result.pop()
-
-        return "".join(result)
-
-    #
-    # Terrifying code ahead! Be warned!
-    #
-
-    def perms_of_length(self, n):
-        """Yield all possible (not necessarily unique) perms in tiling."""
-        # TODO: Make not disgusting
-        dim_j = self._dimensions.j
-        tiling = list(((dim_j - 1 - cell.j, cell.i), block)
-                      for cell, block
-                      in self._blocks.items())
-        h = max(k[0] for k, v in tiling) + 1 if tiling else 1
-        w = max(k[1] for k, v in tiling) + 1 if tiling else 1
-
-        def permute(arr, perm):
-            res = [None] * len(arr)
-            for i in range(len(arr)):
-                res[i] = arr[perm[i]]
-            return res
-
-        def count_assignments(at, left):
-
-            if at == len(tiling):
-                if left == 0:
-                    yield []
-            elif tiling[at][1] is eb.point:
-                # this doesn't need to be handled separately,
-                # it's just an optimization
-                if left > 0:
-                    for ass in count_assignments(at + 1, left - 1):
-                        yield [1] + ass
-            else:
-                for cur in range(left+1):
-                    for ass in count_assignments(at + 1, left - cur):
-                        yield [cur] + ass
-
-        for count_ass in count_assignments(0, n):
-
-            cntz = [ [ 0 for j in range(w) ] for i in range(h) ]
-
-            for i, k in enumerate(count_ass):
-                cntz[tiling[i][0][0]][tiling[i][0][1]] = k
-
-            rowcnt = [ sum( cntz[row][col] for col in range(w) ) for row in range(h) ]
-            colcnt = [ sum( cntz[row][col] for row in range(h) ) for col in range(w) ]
-
-            for colpart in product(*[ ordered_set_partitions(range(colcnt[col]), [ cntz[row][col] for row in range(h) ]) for col in range(w) ]):
-                scolpart = [ [ sorted(colpart[i][j]) for j in range(h) ] for i in range(w) ]
-                for rowpart in product(*[ ordered_set_partitions(range(rowcnt[row]), [ cntz[row][col] for col in range(w) ]) for row in range(h) ]):
-                    srowpart = [ [ sorted(rowpart[i][j]) for j in range(w) ] for i in range(h) ]
-                    for perm_ass in product(*[ s[1].of_length(cnt) for cnt, s in zip(count_ass, tiling) ]):
-                        arr = [ [ [] for j in range(w) ] for i in range(h) ]
-
-                        for i, perm in enumerate(perm_ass):
-                            arr[tiling[i][0][0]][tiling[i][0][1]] = perm
-
-                        res = [ [None]*colcnt[col] for col in range(w) ]
-
-                        cumul = 0
-                        for row in range(h-1,-1,-1):
-                            for col in range(w):
-                                for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):
-                                    res[col][idx] = cumul + val
-                            cumul += rowcnt[row]
-                        yield Perm(flatten(res))
-
-    def perms_of_length_with_cell_info(self, n):
-        """Yield tuples of perms with their respective cell info.
-
-        The cell info of a perm is a dictionary of cells to 3-tuples
-        consisting of:
-            - the standardized perm in the cell (the cell perm),
-            - the values of the cell perm with regards to the perm, and
-            - the indices of the cell perm with regards to the perm.
-        """
-        # TODO: Make not disgusting
-        dim_j = self._dimensions.j
-        tiling = list(((dim_j - 1 - cell.j, cell.i), block)
-                      for cell, block
-                      in self._blocks.items())
-        h = max(k[0] for k, v in tiling) + 1 if tiling else 1
-        w = max(k[1] for k, v in tiling) + 1 if tiling else 1
-
-        def permute(arr, perm):
-            res = [None] * len(arr)
-            for i in range(len(arr)):
-                res[i] = arr[perm[i]]
-            return res
-
-        def count_assignments(at, left):
-
-            if at == len(tiling):
-                if left == 0:
-                    yield []
-            elif tiling[at][1] is eb.point:
-                # this doesn't need to be handled separately,
-                # it's just an optimization
-                if left > 0:
-                    for ass in count_assignments(at + 1, left - 1):
-                        yield [1] + ass
-            else:
-                for cur in range(left+1):
-                    for ass in count_assignments(at + 1, left - cur):
-                        yield [cur] + ass
-
-        for count_ass in count_assignments(0, n):
-
-            cntz = [ [ 0 for j in range(w) ] for i in range(h) ]
-
-            for i, k in enumerate(count_ass):
-                cntz[tiling[i][0][0]][tiling[i][0][1]] = k
-
-            rowcnt = [ sum( cntz[row][col] for col in range(w) ) for row in range(h) ]
-            colcnt = [ sum( cntz[row][col] for row in range(h) ) for col in range(w) ]
-
-            for colpart in product(*[ ordered_set_partitions(range(colcnt[col]), [ cntz[row][col] for row in range(h) ]) for col in range(w) ]):
-                scolpart = [ [ sorted(colpart[i][j]) for j in range(h) ] for i in range(w) ]
-                for rowpart in product(*[ ordered_set_partitions(range(rowcnt[row]), [ cntz[row][col] for col in range(w) ]) for row in range(h) ]):
-                    srowpart = [ [ sorted(rowpart[i][j]) for j in range(w) ] for i in range(h) ]
-                    for perm_ass in product(*[ s[1].of_length(cnt) for cnt, s in zip(count_ass, tiling) ]):
-                        arr = [ [ [] for j in range(w) ] for i in range(h) ]
-
-                        for i, perm in enumerate(perm_ass):
-                            arr[tiling[i][0][0]][tiling[i][0][1]] = perm
-
-                        res = [ [None]*colcnt[col] for col in range(w) ]
-
-                        cumul = 0
-                        cell_info = {}
-                        for row in range(h-1,-1,-1):
-                            cumul_col = 0  # This records the current index inside the perm being created
-                            for col in range(w):  # We're still building from left to right and bottom to top
-                                unmixed = []  # The un-standardized perm inside the current cell we're working on
-                                my_indices = []  # The indices of the current cell we're working on with regards to the final perm we're working on
-                                for idx, val in zip(scolpart[col][row], permute(srowpart[row][col], arr[row][col])):  # Magic
-                                    res[col][idx] = cumul + val  # I am within a single cell and we read from left to right and we get the next value to add
-                                    unmixed.append(cumul + val)  # Samesies as one line above, but for us to keep later
-                                    my_indices.append(idx + cumul_col)  # Reading left to right within a cell placing the index
-                                if arr[row][col]:  # Cell is not empty
-                                    cell = Cell(col, dim_j - row - 1)  # Getting the bottom left indexed cell back from the old indexing
-                                    if cell not in cell_info:  # Not needed? But for sanity
-                                        # We add cell information gathered to our dictionary
-                                        cell_info[cell] = arr[row][col], tuple(unmixed), tuple(my_indices)
-                                cumul_col += colcnt[col]  # Assuming colcnt[col] is the number of points in the column numbered 'col', this adds that amount to our total points of the permutation already placed when reading left to right
-                            cumul += rowcnt[row]  # Similar to the cumul_col thing
-                        yield Perm(flatten(res)), cell_info  # Yield the results, flatten here only removes brackets, e.g. [[0], [1]] becomes [0, 1] so it is ready to become the perm 01
-
-    def find_factors(self):
-        block_points = set(self._blocks.keys())
-        points_by_rows, points_by_cols = defaultdict(set), defaultdict(set)
-
-        for point in block_points:
-            i, j = point
-            points_by_rows[i].add(point)
-            points_by_cols[j].add(point)
-
-        factors = []
-
-        for point in block_points:
-            if any([point in x for x in factors]):
-                continue
-            factor = {point}
-            queue = {point}
-
-            while queue:
-                i, j = queue.pop()
-                for search_point in points_by_rows[i]:
-                    if search_point not in factor:
-                        factor.add(search_point)
-                        queue.add(search_point)
-
-                for search_point in points_by_cols[j]:
-                    if search_point not in factor:
-                        factor.add(search_point)
-                        queue.add(search_point)
-
-            factors.append(factor)
-
-        return [Factor(dict([(point, self._blocks[point]) for point in factor])
-                       ) for factor in factors]
