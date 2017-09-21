@@ -1,8 +1,0 @@
-{% extends 'base.html' %}
-{% block container %}
-<ul>
-{% for result in results | sort %}
-    <li><a href="/perms/av/{{result}}">{{ result }}</a></li>
-{% endfor %} 
-</ul>
-{% endblock %} 
