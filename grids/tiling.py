@@ -1,102 +1,113 @@
 # TODO: Docstring
 # TODO: Make python2.7 compatible once permuta is
-from collections import OrderedDict, defaultdict, namedtuple
-from itertools import product  # For old of_length code
+from functools import partial
+from .obstruction import Obstruction
+from .misc import map_cell
 
-from permuta import Perm, PermSet
-from permuta.misc import flatten, ordered_set_partitions
-
-from . import elementaryblocks as eb
-from .factor import Factor
-from .jsonable import JsonAble
-from .positiveclass import PositiveClass
-
-__all__ = ["Cell", "Tiling"]
-
-Cell = namedtuple("Cell", ["i", "j"])
+__all__ = ("Tiling")
 
 
-class Tiling(JsonAble):
+class Tiling():
     """Tiling class.
 
-    Zero-indexed coordinates/cells from bottom left corner where the (i, j)
-    cell is the cell in the i-th column and j-th row.
+    Zero-indexed coordinates/cells from bottom left corner where the (x, y)
+    cell is the cell in the x-th column and y-th row.
     """
 
-    def __init__(self, obstructions=list()):
-        # List of obstructions
-        obstructions = list()
+    def __init__(self, point_cells=list(), positive_cells=list(),
+                 possibly_empty=list(), obstructions=list()):
+        # Set of the cells that have points in them
+        self._point_cells = frozenset(point_cells)
+        # Set of the cells that are positive, i.e. contain a point
+        self._positive_cells = frozenset(positive_cells)
+        # Set of possibly empty cells
+        self._possibly_empty = frozenset(possibly_empty)
+        # Set of obstructions
+        self._obstructions = tuple(sorted(obstructions))
+        # TODO: Check if positive_cells and possibly_empty cells cover the
+        # indices of the obstructions. They should also be disjoint.
 
         # The horizontal and vertical dimensions, respectively
         width = height = 1
+        self._dimensions = (width, height)
 
-        # The integer that is hashed to get the hash of the tiling
-        hash_sum = 0
+        # self._hash = hash(hash_sum)
+        self._minimize()
 
-        # A list of the cells that have points in them
-        point_cells = frozenset()
-        # List of cells that are positive
-        positive_cells = frozenset()
-        obstruction_mapping = frozenset()
+    def _minimize(self):
+        """Minimizes the set of obstructions and for each single-point
+        obstruction, removes the corresponding cell from the possibly empty
+        set. Finally, removes all empty rows and columns and updates
+        obstructions.
+        """
+        # Minimize the set of obstructions
+        cleanobs = self._clean_obs()
+        # Compute the single-point obstructions
+        empty_cells = set(ob.single_point()
+                          for ob in cleanobs if ob.single_point())
+        # Produce the mapping between the two tilings
+        self._col_mapping, self._row_mapping = self._minimize_mapping()
+        cell_map = partial(map_cell, self._col_mapping, self._row_mapping)
 
-        if blocks:
-            # The set of all indices
-            i_set, j_set = map(set, zip(*blocks))
+        # TODO: check if empty_cells intersects with point_cells or
+        # positive_cells, think about the old is_empty
+        self._point_cells = frozenset(map(cell_map, self._point_cells))
+        self._positive_cells = frozenset(map(cell_map, self._positive_cells))
+        self._possibly_empty = frozenset(map(
+            cell_map, self._possibly_empty - empty_cells))
 
-            # The sorted list of all indices
-            i_list, j_list = sorted(i_set), sorted(j_set)
+        self._obstructions = tuple(ob.minimize(cell_map) for ob in cleanobs
+                                   if ob.single_point() is None)
 
-            # The i and j dimensions of the tiling
-            i_dimension = len(i_list)
-            j_dimension = len(j_list)
+    def _minimize_mapping(self):
+        """Returns a pair of dictionaries, that map rows/columns to an
+        equivalent set of rows/columns where empty ones have been removed. """
+        col_set, row_set = map(set, zip(*(self._positive_cells |
+                                          self._possibly_empty |
+                                          self._point_cells)))
 
-            # Mappings from indices to actual indices
-            i_actual = {i: actual for actual, i in enumerate(i_list)}
-            j_actual = {j: actual for actual, j in enumerate(j_list)}
+        col_list, row_list = sorted(col_set), sorted(row_set)
+        col_mapping = {x: actual for actual, x in enumerate(col_list)}
+        row_mapping = {y: actual for actual, y in enumerate(row_list)}
+        return (col_mapping, row_mapping)
 
-            rows = [[] for _ in range(j_dimension)]
-            cols = [[] for _ in range(i_dimension)]
+    def _clean_isolated(self, obstruction):
+        remove = [cell for cell in obstruction.isolated_cells()
+                  if (cell in self._point_cells or
+                      cell in self._positive_cells)]
+        return obstruction.remove_cells(remove)
 
-            for item in sorted(blocks.items()):
-                # Unpack item
-                cell, block = item
-                # Calculate actual cell
-                actual_cell = Cell(i_actual[cell[0]], j_actual[cell[1]])
-                # Add to back map and cell map
-                the_cell = Cell(*cell)  # Make sure is Cell
-                back_map[actual_cell] = the_cell
-                cell_map[the_cell] = actual_cell
-                # Create the new item
-                item = actual_cell, block
-                # Add to row and col cache
-                rows[actual_cell.j].append(item)
-                cols[actual_cell.i].append(item)
-                # Add to tiling
-                tiling[actual_cell] = block
-                # Add hash to hash sum
-                hash_sum += hash(item)
-                # Add to caches
-                if block == eb.point:
-                    point_cells.append(actual_cell)
-                else:
-                    non_points.append(item)
-                    if isinstance(block, PositiveClass):
-                        other.append((actual_cell, block))
-                    else:
-                        classes.append((actual_cell, block))
+    def _clean_obs(self):
+        """Returns a new list of minimal obstructions from the obstruction set
+        of self."""
+        cleanobs = list()
+        for ob in sorted(map(self._clean_isolated, self._obstructions)):
+            add = True
+            for co in cleanobs:
+                if ob in cleanobs:
+                    add = False
+                    break
+            if add:
+                cleanobs.append(ob)
+        return cleanobs
 
-        self._blocks = tiling
+    def delete_cell(self, cell):
+        if cell not in self._possibly_empty:
+            raise ValueError("Cell {} is not deletable.".format(cell))
+        newobs = [ob for ob in self._obstructions if not ob.occupies(cell)]
+        return Obstruction(self._point_cells,
+                           self._positive_cells,
+                           self._possible_empty - {cell},
+                           newobs)
 
-        self._dimensions = Cell(i_dimension, j_dimension)
-        self._hash = hash(hash_sum)
-        self._point_cells = tuple(point_cells)
-        self._non_points = tuple(non_points)
-        self._classes = tuple(classes)
-        self._other = tuple(other)
-        self._rows = tuple(map(tuple, rows))
-        self._cols = tuple(map(tuple, cols))
-        self._back_map = back_map
-        self._cell_map = cell_map
+    def insert_cell(self, cell):
+        if cell not in self._possibly_empty:
+            raise ValueError(
+                "Cell {} is positive or not in the tiling.".format(cell))
+        return Obstruction(self._point_cells,
+                           self._positive_cells | {cell},
+                           self._possibly_empty - {cell},
+                           self._obstructions)
 
     #
     # Properties and getters
@@ -111,64 +122,33 @@ class Tiling(JsonAble):
         return len(self._point_cells)
 
     @property
-    def non_points(self):
-        return self._non_points
+    def positive_cells(self):
+        return self._positive_cells
 
     @property
-    def classes(self):
-        return self._classes
+    def total_positive(self):
+        return len(self._positive_cells)
 
     @property
-    def other(self):
-        return self._other
+    def obstructions(self):
+        return self._obstructions
 
     @property
-    def total_other(self):
-        return len(self._other)
+    def total_obstructions(self):
+        return len(self._obstructions)
 
     @property
     def dimensions(self):
         return self._dimensions
-
-    @property
-    def area(self):
-        return self._dimensions.i*self._dimensions.j
-
-    def get_row(self, number):
-        return self._rows[number]
-
-    def get_col(self, number):
-        return self._cols[number]
-
-    def back_map(self, cell):
-        return self._back_map[cell]
-
-    def cell_map(self, cell):
-        return self._cell_map[cell]
-
-    #
-    # General methods
-    #
-
-    def basis_partitioning(self, length, basis):
-        """Partitions perms with cell info into containing and avoiding
-        perms."""
-        avoiding_perms = {}
-        containing_perms = {}
-
-        for perm, cell_info in self.perms_of_length_with_cell_info(length):
-            belonging_partition = avoiding_perms if perm.avoids(*basis) \
-                                  else containing_perms
-            belonging_partition.setdefault(perm, []).append(cell_info)
-
-        return containing_perms, avoiding_perms
 
     #
     # Dunder methods
     #
 
     def __contains__(self, item):
-        return item in self._blocks
+        if isinstance(item, Obstruction):
+            return item in self._obstructions
+        return False
 
     def __iter__(self):
         # TODO: Should return self
@@ -176,21 +156,16 @@ class Tiling(JsonAble):
             for item in self.get_row(row_number):
                 yield item
 
-    def __eq__(self, other):
-        return isinstance(other, Tiling) \
-           and hash(self) == hash(other) \
-           and self.point_cells == other.point_cells \
-           and self.non_points == other.non_points
-
-    def __getitem__(self, key):
-        return self._blocks[key]
-
-    def __hash__(self):
-        return self._hash
-
     def __len__(self):
-        return len(self._blocks)
+        return len(self._obstructions)
 
     def __repr__(self):
-        format_string = "<A tiling of {} points and {} non-points>"
-        return format_string.format(self.total_points, len(self.non_points))
+        format_string = "<A tiling of {} points and {} obstructions>"
+        return format_string.format(self.total_points, self.total_obstructions)
+
+    def __str__(self):
+        return "\n".join([
+            "Point cells: " + str(self._point_cells),
+            "Positive cells: " + str(self._positive_cells),
+            "Possibly empty cells: " + str(self._possibly_empty),
+            "Obstructions: " + ", ".join(list(map(str, self._obstructions)))])
