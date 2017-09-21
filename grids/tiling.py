@@ -150,11 +150,13 @@ class Tiling():
             return item in self._obstructions
         return False
 
+    def __hash__(self):
+        return (hash(self._point_cells) ^ hash(self._possibly_empty) ^
+                hash(self._positive_cells) ^ hash(self._obstructions))
+
     def __iter__(self):
-        # TODO: Should return self
-        for row_number in range(self.dimensions.j):
-            for item in self.get_row(row_number):
-                yield item
+        for ob in self._obstructions:
+            yield ob
 
     def __len__(self):
         return len(self._obstructions)
