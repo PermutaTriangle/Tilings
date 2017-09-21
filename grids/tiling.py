@@ -1,8 +1,7 @@
-# TODO: Docstring
-# TODO: Make python2.7 compatible once permuta is
 from functools import partial
-from .obstruction import Obstruction
+
 from .misc import map_cell
+from .obstruction import Obstruction
 
 __all__ = ("Tiling")
 

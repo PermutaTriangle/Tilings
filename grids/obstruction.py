@@ -1,5 +1,5 @@
 from permuta import Perm
-from permuta.misc import DIR_EAST, DIR_NORTH, DIR_WEST, DIR_SOUTH  # , DIRS
+from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST  # , DIRS
 
 
 class Obstruction():
