@@ -222,8 +222,7 @@ class Obstruction():
         return "Obstruction({}, {})".format(self.patt, self.pos)
 
     def __hash__(self):
-        # TODO: Why not use some random prime?
-        return hash(hash(self.patt) * 91283 + hash(self.pos))
+        return hash(self.patt) ^ hash(self.pos)
 
     def __eq__(self, other):
         return self.patt == other.patt and self.pos == other.pos
