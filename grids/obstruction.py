@@ -1,13 +1,5 @@
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_WEST, DIR_SOUTH  # , DIRS
-# from permuta.interfaces import Patt
-
-
-# def cell_translation(cell, row, col):
-#     x = cell[0] + 1 if cell[0] > insert_loc[0] else cell[0]
-#     y = cell[1] + 1 if cell[1] > insert_loc[1] else cell[1]
-#     return (x, y)
-
 
 
 class Obstruction():
@@ -55,28 +47,30 @@ class Obstruction():
     def occurs_in(self, other):
         return any(self.occurrences_in(other))
 
-    def remove_row(self, row):
-        raise NotImplementedError()
-
-    def remove_column(self, row):
-        raise NotImplementedError()
-
-    def remove_rows(self, rows):
-        raise NotImplementedError()
-
-    def remove_columns(self, columns):
-        raise NotImplementedError()
-
-    def remove_rows_columns(self, rows, columns):
-        raise NotImplementedError()
-
-    def insert_row(self, row):
-        raise NotImplementedError()
+    def remove_cells(self, cells):
+        remaining = [i for i in range(len(self)) if self.pos[i] not in cells]
+        return Obstruction(Perm.to_standard(self.patt[i] for i in remaining),
+                           (self.pos[i] for i in remaining))
 
     def points_in_cell(self, cell):
         for i in range(len(self)):
             if self.pos[i] == cell:
                 yield i
+
+    def isolated_cells(self):
+        res = []
+        for i in range(len(self)):
+            isolated = True
+            for j in range(len(self)):
+                if i == j:
+                    continue
+                if (self.pos[i][0] == self.pos[j][0]
+                        or self.pos[i][1] == self.pos[j][1]):
+                    isolated = False
+                    break
+            if isolated:
+                res.append(self.pos[i])
+        return res
 
     def forced_point_index(self, cell, direction):
         """Search in the cell given for the point with the strongest force with
@@ -209,6 +203,15 @@ class Obstruction():
 
         return res
 
+    def minimize(self, cell_mapping):
+        return Obstruction(self.patt,
+                           [cell_mapping(cell) for cell in self.pos])
+
+    def single_point(self):
+        if len(self) == 1:
+            return self._pos[0]
+        return None
+
     def __len__(self):
         return len(self.patt)
 
@@ -217,3 +220,16 @@ class Obstruction():
 
     def __str__(self):
         return "Obstruction({}, {})".format(self.patt, self.pos)
+
+    def __hash__(self):
+        # TODO: Why not use some random prime?
+        return hash(hash(self.patt) * 91283 + hash(self.pos))
+
+    def __eq__(self, other):
+        return self.patt == other.patt and self.pos == other.pos
+
+    def __lt__(self, other):
+        return (self.patt, self.pos) < (other.patt, other.pos)
+
+    def __contains__(self, other):
+        return bool(other.occurrences_in(self))
