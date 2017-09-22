@@ -1,7 +1,7 @@
 from functools import partial, reduce
 
-from .misc import map_cell
-from .obstruction import Obstruction
+from misc import map_cell
+from obstruction import Obstruction
 
 __all__ = ("Tiling")
 
@@ -26,7 +26,7 @@ class Tiling():
 
         # The cell sets should all be disjoint
         all_obstruction_cells = reduce(
-            set.__or__, (set(ob.pos) for ob in self._obstructions), {})
+            set.__or__, (set(ob.pos) for ob in self._obstructions), set())
         if self._positive_cells & self._possibly_empty:
             raise ValueError(("The set of positive cells and the set of "
                               "possibly empty cells should be disjoint."))
@@ -63,8 +63,8 @@ class Tiling():
         # Minimize the set of obstructions
         cleanobs = self._clean_obs()
         # Compute the single-point obstructions
-        empty_cells = set(ob.single_point()
-                          for ob in cleanobs if ob.single_point())
+        empty_cells = set(ob.point_cell()
+                          for ob in cleanobs if ob.point_cell())
         # Produce the mapping between the two tilings
         self._col_mapping, self._row_mapping = self._minimize_mapping()
         cell_map = partial(map_cell, self._col_mapping, self._row_mapping)
@@ -77,7 +77,7 @@ class Tiling():
             cell_map, self._possibly_empty - empty_cells))
 
         self._obstructions = tuple(ob.minimize(cell_map) for ob in cleanobs
-                                   if ob.single_point() is None)
+                                   if ob.point_cell() is None)
 
     def _minimize_mapping(self):
         """Returns a pair of dictionaries, that map rows/columns to an
