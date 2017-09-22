@@ -47,10 +47,6 @@ class Tiling():
                               "possibly empty cells should cover the cells "
                               "of the obstructios."))
 
-        # The horizontal and vertical dimensions, respectively
-        width = height = 1
-        self._dimensions = (width, height)
-
         # self._hash = hash(hash_sum)
         self._minimize()
 
@@ -165,6 +161,14 @@ class Tiling():
 
     @property
     def dimensions(self):
+        if self._dimensions is None:
+            all_cells = (self._positive_cells |
+                         self._possibly_empty |
+                         self._point_cells)
+            rows = set(x for (x, y) in all_cells)
+            cols = set(y for (x, y) in all_cells)
+            self._dimensions = (max(rows) - min(rows) + 1,
+                                max(cols) - min(cols) + 1)
         return self._dimensions
 
     #
