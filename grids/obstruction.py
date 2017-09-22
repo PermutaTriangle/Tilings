@@ -160,15 +160,20 @@ class Obstruction():
                   for p in range(len(self))]
         return Obstruction(self.patt, newpos)
 
-    def place_point(self, cell, direction):
+    def place_point(self, cell, direction, skip_redundant=True):
         """Places a point furthest to the direction 'direction' into a cell,
         returns the same obstruction if the obstruction does not span the rows
         or columns of the cell. Otherwise returns a list of new obstructions
         that are constructed from self by splitting it over the row and column
-        of the cell, in every possible way.  If the obstruction occupies the
-        cell, the placed point will use one of the points of the obstruction
-        that occupies the cell and construct a new obstruction which has that
-        point removed.
+        of the cell, in every possible way.
+
+        If the obstruction occupies the cell, the placed point will use one of
+        the points of the obstruction that occupies the cell and construct a
+        new obstruction which has that point removed.
+
+        When generating the obstructions, any obstruction that contains the
+        obstruction with removed point (placed point) is skipped if the
+        `skip_redundant` is True.
         """
         # If the obstruction does not span the cell, the resulting list of new
         # obstructions would contain only the obstruction itself.
@@ -198,6 +203,8 @@ class Obstruction():
             elif direction == DIR_SOUTH:
                 maxval = self.patt[forced_index]
         for i in range(mindex, maxdex + 1):
+            if skip_redundant and (i in (forced_index, forced_index + 1)):
+                continue
             for j in range(minval, maxval + 1):
                 res.append(self.stretch_obstruction((i, j), direction))
 
@@ -208,6 +215,7 @@ class Obstruction():
                            [cell_mapping(cell) for cell in self.pos])
 
     def single_point(self):
+        # TODO: Rename this
         if len(self) == 1:
             return self._pos[0]
         return None
