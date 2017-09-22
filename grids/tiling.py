@@ -69,8 +69,6 @@ class Tiling():
         self._col_mapping, self._row_mapping = self._minimize_mapping()
         cell_map = partial(map_cell, self._col_mapping, self._row_mapping)
 
-        # TODO: check if empty_cells intersects with point_cells or
-        # positive_cells, think about the old is_empty
         self._point_cells = frozenset(map(cell_map, self._point_cells))
         self._positive_cells = frozenset(map(cell_map, self._positive_cells))
         self._possibly_empty = frozenset(map(
