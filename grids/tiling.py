@@ -92,6 +92,8 @@ class Tiling():
         return (col_mapping, row_mapping)
 
     def _clean_isolated(self, obstruction):
+        """Remove the isolated cells that are point cells or positive cells
+        from all obstructions."""
         remove = [cell for cell in obstruction.isolated_cells()
                   if (cell in self._point_cells or
                       cell in self._positive_cells)]
@@ -112,6 +114,8 @@ class Tiling():
         return cleanobs
 
     def delete_cell(self, cell):
+        """Deletes a cell from every obstruction and returns a new tiling. The
+        cell must be in the set of possibly empty cells."""
         if cell not in self._possibly_empty:
             raise ValueError("Cell {} is not deletable.".format(cell))
         newobs = [ob for ob in self._obstructions if not ob.occupies(cell)]
@@ -121,6 +125,8 @@ class Tiling():
                            newobs)
 
     def insert_cell(self, cell):
+        """Inserts a cell into every obstruction and returns a new tiling. The
+        cell must be in the set of possibly empty cells."""
         if cell not in self._possibly_empty:
             raise ValueError(
                 "Cell {} is positive or not in the tiling.".format(cell))
