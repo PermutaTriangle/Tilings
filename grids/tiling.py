@@ -1,4 +1,4 @@
-from functools import partial
+from functools import partial, reduce
 
 from .misc import map_cell
 from .obstruction import Obstruction
@@ -23,8 +23,29 @@ class Tiling():
         self._possibly_empty = frozenset(possibly_empty)
         # Set of obstructions
         self._obstructions = tuple(sorted(obstructions))
-        # TODO: Check if positive_cells and possibly_empty cells cover the
-        # indices of the obstructions. They should also be disjoint.
+
+        # The cell sets should all be disjoint
+        all_obstruction_cells = reduce(
+            set.__or__, (set(ob.pos) for ob in self._obstructions), {})
+        if self._positive_cells & self._possibly_empty:
+            raise ValueError(("The set of positive cells and the set of "
+                              "possibly empty cells should be disjoint."))
+        if self._positive_cells & self._point_cells:
+            raise ValueError(("The set of positive cells and the set of point"
+                              " cells should be disjoint."))
+        if self._possibly_empty & self._point_cells:
+            raise ValueError(("The set of possibly empty cells and the set of "
+                              "point cells should be disjoint."))
+
+        # Check if positive_cells and possibly_empty cells cover the indices of
+        # the obstructions.
+        all_cells = (self._positive_cells |
+                     self._possibly_empty |
+                     self._point_cells)
+        if not all_obstruction_cells <= all_cells:
+            raise ValueError(("The set of positive cells and the set of "
+                              "possibly empty cells should cover the cells "
+                              "of the obstructios."))
 
         # The horizontal and vertical dimensions, respectively
         width = height = 1
@@ -61,9 +82,11 @@ class Tiling():
     def _minimize_mapping(self):
         """Returns a pair of dictionaries, that map rows/columns to an
         equivalent set of rows/columns where empty ones have been removed. """
-        col_set, row_set = map(set, zip(*(self._positive_cells |
-                                          self._possibly_empty |
-                                          self._point_cells)))
+        all_cells = (self._positive_cells |
+                     self._possibly_empty |
+                     self._point_cells)
+
+        col_set, row_set = map(set, zip(*all_cells))
 
         col_list, row_list = sorted(col_set), sorted(row_set)
         col_mapping = {x: actual for actual, x in enumerate(col_list)}
