@@ -1,7 +1,7 @@
 from functools import partial, reduce
 
-from misc import map_cell
-from obstruction import Obstruction
+from .misc import map_cell
+from .obstruction import Obstruction
 
 __all__ = ("Tiling")
 
