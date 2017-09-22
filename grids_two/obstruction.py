@@ -6,15 +6,19 @@ class Obstruction():
     def __init__(self, pattern, positions):
         # TODO: Write check to verify obstruction makes sense, that is, pattern
         # can be mapped on the positions given.
-        if len(pattern) != len(positions):
-            raise ValueError("Pattern and position list have unequal lengths.")
+
         if not isinstance(pattern, Perm):
             raise ValueError("Pattern should be a Perm")
+
         # Pattern should be a Perm of course
         self.patt = pattern
         # Position is a tuple of (x, y) coordinates, where the ith (x, y)
         # corresponds to the i-th point in the pattern.
         self.pos = tuple(positions)
+
+        if len(self.patt) != len(self.pos):
+            raise ValueError("Pattern and position list have unequal lengths.")
+
         # Immutable set of cells which the obstruction spans.
         self._cells = frozenset(self.pos)
         self._rows = (min(x for x, _ in self.pos),
