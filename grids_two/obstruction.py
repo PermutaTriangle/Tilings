@@ -28,53 +28,62 @@ class Obstruction():
 
     @classmethod
     def single_cell(cls, pattern, cell):
+        """Construct an obstruction where the cells are all located in a single
+        cell."""
         return cls(pattern, [cell for _ in range(len(pattern))])
 
     def spans_cell(self, cell):
-        return self.spans_row(cell[1]) and self.spans_column(cell[1])
+        """Checks if the boundaries of the obstruction spans the cell."""
+        return self.spans_column(cell[0]) and self.spans_row(cell[1])
 
     def spans_column(self, column):
+        """Checks if the obstruction has a point in the given column."""
         return self._columns[0] <= column <= self._columns[1]
 
     def spans_row(self, row):
+        """Checks if the obstruction has a point in the given row."""
         return self._rows[0] <= row <= self._rows[1]
 
     def occupies(self, cell):
+        """Checks if the obstruction has a point in the given cell."""
         return cell in self._cells
 
     def occurrences_in(self, other):
         """Returns all occurrences of self in other."""
-        for occ in self.patt.occurrences_in(other.pattern):
-            if all(self.pos[ind] == other.positions[ind] for ind in occ):
+        for occ in self.patt.occurrences_in(other.patt):
+            print(occ)
+            if all(self.pos[i] == other.pos[occ[i]] for i in range(len(occ))):
                 yield occ
 
     def occurs_in(self, other):
+        """Checks if self occurs in other."""
         return any(self.occurrences_in(other))
 
     def remove_cells(self, cells):
+        """Remove any points in the cell given and return a new obstruction."""
         remaining = [i for i in range(len(self)) if self.pos[i] not in cells]
         return Obstruction(Perm.to_standard(self.patt[i] for i in remaining),
                            (self.pos[i] for i in remaining))
 
     def points_in_cell(self, cell):
+        """Yields the indices of the points in the cell given."""
         for i in range(len(self)):
             if self.pos[i] == cell:
                 yield i
 
     def isolated_cells(self):
-        res = []
+        """Yields the cells that contain only one point of the obstruction."""
         for i in range(len(self)):
             isolated = True
             for j in range(len(self)):
                 if i == j:
                     continue
                 if (self.pos[i][0] == self.pos[j][0]
-                        or self.pos[i][1] == self.pos[j][1]):
+                        and self.pos[i][1] == self.pos[j][1]):
                     isolated = False
                     break
             if isolated:
-                res.append(self.pos[i])
-        return res
+                yield self.pos[i]
 
     def forced_point_index(self, cell, direction):
         """Search in the cell given for the point with the strongest force with
@@ -93,39 +102,51 @@ class Obstruction():
                 raise ValueError("You're lost, no valid direction")
 
     def get_points_col(self, col):
-        return [(i, self.patt[i]) for i in range(len(self))
-                if self.pos[i][0] == col]
+        """Yields all points of the obstruction in the column col."""
+        for i in range(len(self)):
+            if self.pos[i][0] == col:
+                yield (i, self.patt[i])
 
     def get_points_row(self, row):
-        return [(i, self.patt[i]) for i in range(len(self))
-                if self.pos[i][1] == row]
+        """Yields all points of the obstruction in the row."""
+        for i in range(len(self)):
+            if self.pos[i][1] == row:
+                yield (i, self.patt[i])
 
     def get_points_below_row(self, row):
-        return [(i, self.patt[i]) for i in range(len(self))
-                if self.pos[i][1] < row]
+        """Yields all points of the obstruction below the row."""
+        for i in range(len(self)):
+            if self.pos[i][1] < row:
+                yield (i, self.patt[i])
 
     def get_points_above_row(self, row):
-        return [(i, self.patt[i]) for i in range(len(self))
-                if self.pos[i][1] > row]
+        """Yields all points of the obstruction above the row."""
+        for i in range(len(self)):
+            if self.pos[i][1] > row:
+                yield (i, self.patt[i])
 
     def get_points_left_col(self, col):
-        return [(i, self.patt[i]) for i in range(len(self))
-                if self.pos[i][0] < col]
+        """Yields all points of the obstruction left of column col."""
+        for i in range(len(self)):
+            if self.pos[i][0] < col:
+                yield (i, self.patt[i])
 
     def get_points_right_col(self, col):
-        return [(i, self.patt[i]) for i in range(len(self))
-                if self.pos[i][0] > col]
+        """Yields all points of the obstruction right of column col."""
+        for i in range(len(self)):
+            if self.pos[i][0] > col:
+                yield (i, self.patt[i])
 
     def get_bounding_box(self, cell):
-        row = self.get_points_row(cell[1])
-        col = self.get_points_col(cell[0])
+        row = list(self.get_points_row(cell[1]))
+        col = list(self.get_points_col(cell[0]))
         if not row:
-            above = self.get_points_above_row(cell[1])
+            above = list(self.get_points_above_row(cell[1]))
             if not above:
                 maxval = len(self)
             else:
                 maxval = min(p[1] for p in above)
-            below = self.get_points_below_row(cell[1])
+            below = list(self.get_points_below_row(cell[1]))
             if not below:
                 minval = 0
             else:
@@ -134,12 +155,12 @@ class Obstruction():
             maxval = max(p[1] for p in row) + 1
             minval = min(p[1] for p in row)
         if not col:
-            right = self.get_points_right_col(cell[0])
+            right = list(self.get_points_right_col(cell[0]))
             if not right:
                 maxdex = len(self)
             else:
                 maxdex = min(p[0] for p in right)
-            left = self.get_points_left_col(cell[0])
+            left = list(self.get_points_left_col(cell[0]))
             if not left:
                 mindex = 0
             else:
@@ -226,6 +247,11 @@ class Obstruction():
         # TODO: Rename this
         if len(self) == 1:
             return self._pos[0]
+        return None
+
+    def is_single_cell(self):
+        if len(set(self.pos)) == 1:
+            return self.pos[0]
         return None
 
     def __len__(self):
