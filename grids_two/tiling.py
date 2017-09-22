@@ -119,10 +119,10 @@ class Tiling():
         if cell not in self._possibly_empty:
             raise ValueError("Cell {} is not deletable.".format(cell))
         newobs = [ob for ob in self._obstructions if not ob.occupies(cell)]
-        return Obstruction(self._point_cells,
-                           self._positive_cells,
-                           self._possible_empty - {cell},
-                           newobs)
+        return Tiling(self._point_cells,
+                      self._positive_cells,
+                      self._possible_empty - {cell},
+                      newobs)
 
     def insert_cell(self, cell):
         """Inserts a cell into every obstruction and returns a new tiling. The
@@ -130,10 +130,10 @@ class Tiling():
         if cell not in self._possibly_empty:
             raise ValueError(
                 "Cell {} is positive or not in the tiling.".format(cell))
-        return Obstruction(self._point_cells,
-                           self._positive_cells | {cell},
-                           self._possibly_empty - {cell},
-                           self._obstructions)
+        return Tiling(self._point_cells,
+                      self._positive_cells | {cell},
+                      self._possibly_empty - {cell},
+                      self._obstructions)
 
     #
     # Properties and getters

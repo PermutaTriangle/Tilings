@@ -146,8 +146,11 @@ class Obstruction():
         return (mindex, maxdex, minval, maxval)
 
     def point_translation(self, point, insert_point, direction):
-        diffx = 1 if direction == DIR_EAST or direction == DIR_WEST else 2
-        diffy = 1 if direction == DIR_NORTH or direction == DIR_SOUTH else 2
+        # TODO: TOOOOODOOOOOOOOOOOOOOOOOOO
+        # diffx = 1 if direction == DIR_EAST or direction == DIR_WEST else 2
+        # diffy = 1 if direction == DIR_NORTH or direction == DIR_SOUTH else 2
+        diffx = 2
+        diffy = 2
         newx, newy = self.pos[point]
         if point >= insert_point[0]:
             newx += diffx
@@ -203,8 +206,9 @@ class Obstruction():
             elif direction == DIR_SOUTH:
                 maxval = self.patt[forced_index]
         for i in range(mindex, maxdex + 1):
-            if skip_redundant and (i in (forced_index, forced_index + 1)):
-                continue
+            if skip_redundant and forced_index is not None:
+                if i == forced_index or i == forced_index + 1:
+                    continue
             for j in range(minval, maxval + 1):
                 res.append(self.stretch_obstruction((i, j), direction))
 
@@ -214,7 +218,7 @@ class Obstruction():
         return Obstruction(self.patt,
                            [cell_mapping(cell) for cell in self.pos])
 
-    def single_point(self):
+    def point_cell(self):
         # TODO: Rename this
         if len(self) == 1:
             return self._pos[0]
