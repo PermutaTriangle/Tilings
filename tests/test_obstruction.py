@@ -121,5 +121,47 @@ def test_stretch_obstruction(typicalob):
 
 
 def test_place_point(typicalob):
-    for ob in typicalob.place_point((1, 0), DIR_WEST):
-        print(ob)
+    ob12 = Obstruction.single_cell(Perm((0, 1)), (0, 0))
+    assert (list(ob12.place_point((0, 0), DIR_NORTH)) ==
+            [Obstruction(Perm((0,)), ((0, 0),)),
+             Obstruction(Perm((0, 1)), ((2, 0), (2, 0)))])
+    assert (list(ob12.place_point((0, 0), DIR_EAST)) ==
+            [Obstruction(Perm((0,)), ((0, 0),)),
+             Obstruction(Perm((0, 1)), ((0, 2), (0, 2)))])
+    assert (list(ob12.place_point((0, 0), DIR_SOUTH)) ==
+            [Obstruction(Perm((0,)), ((2, 2),)),
+             Obstruction(Perm((0, 1)), ((0, 2), (0, 2)))])
+    assert (list(ob12.place_point((0, 0), DIR_WEST)) ==
+            [Obstruction(Perm((0,)), ((2, 2),)),
+             Obstruction(Perm((0, 1)), ((2, 0), (2, 0)))])
+
+    assert (list(typicalob.place_point((0, 1), DIR_WEST)) ==
+            [Obstruction(Perm((1, 0, 2, 4, 3)),
+                         ((2, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
+             Obstruction(Perm((1, 0, 2, 4, 3)),
+                         ((2, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
+             Obstruction(Perm((1, 0, 2, 4, 3)),
+                         ((2, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
+             Obstruction(Perm((1, 0, 2, 4, 3)),
+                         ((0, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
+             Obstruction(Perm((1, 0, 2, 4, 3)),
+                         ((0, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
+             Obstruction(Perm((1, 0, 2, 4, 3)),
+                         ((0, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
+             Obstruction(Perm((1, 0, 2, 4, 3)),
+                         ((0, 0), (0, 0), (3, 0), (3, 3), (3, 3))),
+             Obstruction(Perm((1, 0, 2, 4, 3)),
+                         ((0, 0), (0, 0), (3, 0), (3, 3), (3, 1))),
+             Obstruction(Perm((1, 0, 2, 4, 3)),
+                         ((0, 0), (0, 0), (3, 0), (3, 1), (3, 1)))])
+    assert (list(Obstruction(Perm((2, 1, 0, 4, 3)),
+                             ((0, 1), (0, 1), (1, 0), (2, 1), (2, 1))
+                             ).place_point((2, 1), DIR_SOUTH)) ==
+            [Obstruction(Perm((2, 1, 0, 3)),
+                         ((0, 1), (0, 1), (1, 0), (2, 3))),
+             Obstruction(Perm((2, 1, 0, 4, 3)),
+                         ((0, 3), (0, 3), (1, 0), (4, 3), (4, 3))),
+             Obstruction(Perm((2, 1, 0, 4, 3)),
+                         ((0, 3), (0, 1), (1, 0), (4, 3), (4, 3))),
+             Obstruction(Perm((2, 1, 0, 4, 3)),
+                         ((0, 1), (0, 1), (1, 0), (4, 3), (4, 3)))])
