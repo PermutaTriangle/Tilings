@@ -1,7 +1,7 @@
 import copy
 import pytest
 
-from grids import JsonAble
+from grids_two import JsonAble
 
 
 #
