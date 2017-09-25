@@ -51,7 +51,6 @@ class Obstruction():
     def occurrences_in(self, other):
         """Returns all occurrences of self in other."""
         for occ in self.patt.occurrences_in(other.patt):
-            print(occ)
             if all(self.pos[i] == other.pos[occ[i]] for i in range(len(occ))):
                 yield occ
 
@@ -272,4 +271,4 @@ class Obstruction():
         return (self.patt, self.pos) < (other.patt, other.pos)
 
     def __contains__(self, other):
-        return bool(other.occurrences_in(self))
+        return bool(list(other.occurrences_in(self)))
