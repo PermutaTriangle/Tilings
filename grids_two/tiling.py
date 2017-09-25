@@ -59,8 +59,8 @@ class Tiling():
         # Minimize the set of obstructions
         cleanobs = self._clean_obs()
         # Compute the single-point obstructions
-        empty_cells = set(ob.point_cell()
-                          for ob in cleanobs if ob.point_cell())
+        empty_cells = set(ob.is_point_obstr()
+                          for ob in cleanobs if ob.is_point_obstr())
         # Produce the mapping between the two tilings
         self._col_mapping, self._row_mapping = self._minimize_mapping()
         cell_map = partial(map_cell, self._col_mapping, self._row_mapping)
@@ -71,7 +71,7 @@ class Tiling():
             cell_map, self._possibly_empty - empty_cells))
 
         self._obstructions = tuple(ob.minimize(cell_map) for ob in cleanobs
-                                   if ob.point_cell() is None)
+                                   if ob.is_point_obstr() is None)
 
     def _minimize_mapping(self):
         """Returns a pair of dictionaries, that map rows/columns to an
