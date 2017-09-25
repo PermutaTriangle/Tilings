@@ -210,11 +210,11 @@ class Obstruction():
         forced_index = None
         if self.occupies(cell):
             forced_index = self.forced_point_index(cell, direction)
+            forced_val = self.patt[forced_index]
             newpatt = Perm.to_standard(
                 self.patt[i] for i in range(len(self)) if i != forced_index)
             newposition = [
-                self.point_translation(p,
-                                       (forced_index, self.patt[forced_index]))
+                self.point_translation(p, (forced_index, forced_val))
                 for p in range(len(self)) if p != forced_index]
             res.append(Obstruction(newpatt, newposition))
         # Obstruction spans the cell, find the bounding box of all the possible
@@ -224,16 +224,21 @@ class Obstruction():
             if direction == DIR_EAST:
                 mindex = forced_index + 1
             elif direction == DIR_NORTH:
-                minval = self.patt[forced_index] + 1
+                minval = forced_val + 1
             elif direction == DIR_WEST:
                 maxdex = forced_index
             elif direction == DIR_SOUTH:
-                maxval = self.patt[forced_index]
+                maxval = forced_val
         for i in range(mindex, maxdex + 1):
             if skip_redundant and forced_index is not None:
-                if i == forced_index or i == forced_index + 1:
+                if ((direction == DIR_SOUTH or direction == DIR_NORTH) and
+                        (i == forced_index + 1 or i == forced_index)):
                     continue
             for j in range(minval, maxval + 1):
+                if skip_redundant and forced_index is not None:
+                    if ((direction == DIR_WEST or direction == DIR_EAST) and
+                            (j == forced_val + 1 or j == forced_val)):
+                        continue
                 res.append(self.stretch_obstruction((i, j)))
 
         return res
