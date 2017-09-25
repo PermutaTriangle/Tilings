@@ -54,6 +54,7 @@ class Tiling():
 
         # self._hash = hash(hash_sum)
         self._minimize()
+        self.dimensions
 
     def _minimize(self):
         """Minimizes the set of obstructions and for each single-point
@@ -208,8 +209,10 @@ class Tiling():
             all_cells = (self._positive_cells |
                          self._possibly_empty |
                          self._point_cells)
-            rows = set(x for (x, y) in all_cells)
-            cols = set(y for (x, y) in all_cells)
+            all_obstruction_cells = reduce(
+                set.__or__, (set(ob.pos) for ob in self._obstructions), set())
+            rows = set(x for (x, y) in all_cells | all_obstruction_cells)
+            cols = set(y for (x, y) in all_cells | all_obstruction_cells)
             self._dimensions = (max(rows) - min(rows) + 1,
                                 max(cols) - min(cols) + 1)
         return self._dimensions
