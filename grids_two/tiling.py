@@ -115,7 +115,7 @@ class Tiling():
         for ob in sorted(map(self._clean_isolated, self._obstructions)):
             add = True
             for co in cleanobs:
-                if ob in co:
+                if co in ob:
                     add = False
                     break
             if add:
