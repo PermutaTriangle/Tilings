@@ -1,4 +1,9 @@
+import sys
+from collections import defaultdict
 from functools import partial, reduce
+from itertools import chain
+
+from permuta import PermSet
 
 from .misc import map_cell
 from .obstruction import Obstruction
@@ -25,8 +30,6 @@ class Tiling():
         self._obstructions = tuple(sorted(obstructions))
 
         # The cell sets should all be disjoint
-        all_obstruction_cells = reduce(
-            set.__or__, (set(ob.pos) for ob in self._obstructions), set())
         if self._positive_cells & self._possibly_empty:
             raise ValueError(("The set of positive cells and the set of "
                               "possibly empty cells should be disjoint."))
@@ -42,6 +45,8 @@ class Tiling():
         all_cells = (self._positive_cells |
                      self._possibly_empty |
                      self._point_cells)
+        all_obstruction_cells = reduce(
+            set.__or__, (set(ob.pos) for ob in self._obstructions), set())
         if not all_obstruction_cells <= all_cells:
             raise ValueError(("The set of positive cells and the set of "
                               "possibly empty cells should cover the cells "
@@ -109,6 +114,24 @@ class Tiling():
                 cleanobs.append(ob)
         return cleanobs
 
+    def to_old_tiling(self):
+        if 'grids' not in sys.modules:
+            import grids
+        basi = defaultdict(list)
+        for ob in self._obstructions:
+            cell = ob.is_single_cell()
+            if cell is not None:
+                basi[cell].append(ob.patt)
+        blocks = dict()
+        for cell in self._point_cells:
+            blocks[cell] = grids.Block.point
+        for (cell, basis) in basi.items():
+            if cell in self._positive_cells:
+                blocks[cell] = grids.PositiveClass(PermSet.avoiding(basis))
+            else:
+                blocks[cell] = PermSet.avoiding(basis)
+        return grids.Tiling(blocks)
+
     def delete_cell(self, cell):
         """Deletes a cell from every obstruction and returns a new tiling. The
         cell must be in the set of possibly empty cells."""
@@ -131,6 +154,17 @@ class Tiling():
                       self._possibly_empty - {cell},
                       self._obstructions)
 
+    def only_positive_in_row_and_column(self, cell):
+        if cell not in self._positive_cells or cell not in self._point_cells:
+            return False
+        inrow = sum(1 for (x, y) in
+                    chain(self._point_cells, self._positive_cells)
+                    if x == cell[0])
+        incol = sum(1 for (x, y) in
+                    chain(self._point_cells, self._positive_cells)
+                    if y == cell[1])
+        return (inrow == 1 and incol == 1)
+
     #
     # Properties and getters
     #
@@ -142,6 +176,10 @@ class Tiling():
     @property
     def total_points(self):
         return len(self._point_cells)
+
+    @property
+    def possibly_empty(self):
+        return self._possibly_empty
 
     @property
     def positive_cells(self):

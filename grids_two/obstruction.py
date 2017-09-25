@@ -242,7 +242,7 @@ class Obstruction():
         return Obstruction(self.patt,
                            [cell_mapping(cell) for cell in self.pos])
 
-    def is_point_cell(self):
+    def is_point_obstr(self):
         if len(self) == 1:
             return self._pos[0]
         return None
