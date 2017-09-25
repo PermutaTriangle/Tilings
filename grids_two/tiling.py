@@ -85,6 +85,11 @@ class Tiling():
                      self._possibly_empty |
                      self._point_cells)
 
+        if not all_cells:
+            (i, j) = self.dimensions
+            return ({x: x for x in range(i)},
+                    {y: y for y in range(j)})
+
         col_set, row_set = map(set, zip(*all_cells))
 
         col_list, row_list = sorted(col_set), sorted(row_set)
