@@ -165,3 +165,17 @@ def test_place_point(typicalob):
                          ((0, 3), (0, 1), (1, 0), (4, 3), (4, 3))),
              Obstruction(Perm((2, 1, 0, 4, 3)),
                          ((0, 1), (0, 1), (1, 0), (4, 3), (4, 3)))])
+
+
+def test_is_point_obstr(typicalob, singlecellob):
+    assert typicalob.is_point_obstr() is None
+    assert singlecellob.is_point_obstr() is None
+    assert Obstruction(Perm((0,)), ((0, 0),)).is_point_obstr() == (0, 0)
+    assert Obstruction(Perm((0,)), ((3, 2),)).is_point_obstr() == (3, 2)
+    assert Obstruction(Perm((0,)), ((100, 10),)).is_point_obstr() == (100, 10)
+
+
+def test_is_single_cell(typicalob, simpleob, singlecellob):
+    assert typicalob.is_single_cell() is None
+    assert simpleob.is_single_cell() is None
+    assert singlecellob.is_single_cell() == (2, 2)
