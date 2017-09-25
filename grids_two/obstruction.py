@@ -9,7 +9,7 @@ class Obstruction():
 
         if not isinstance(pattern, Perm):
             raise ValueError("Pattern should be a Perm")
-        if len(pattern):
+        if not len(pattern):
             raise ValueError("Trying to construct an empty obstruction.")
 
         # Pattern should be a Perm of course
@@ -80,7 +80,7 @@ class Obstruction():
                 if i == j:
                     continue
                 if (self.pos[i][0] == self.pos[j][0]
-                        and self.pos[i][1] == self.pos[j][1]):
+                        or self.pos[i][1] == self.pos[j][1]):
                     isolated = False
                     break
             if isolated:
