@@ -29,6 +29,8 @@ class Tiling():
         # Set of obstructions
         self._obstructions = tuple(sorted(obstructions))
 
+        self._dimensions = None
+
         # The cell sets should all be disjoint
         if self._positive_cells & self._possibly_empty:
             raise ValueError(("The set of positive cells and the set of "
@@ -121,8 +123,7 @@ class Tiling():
         return cleanobs
 
     def to_old_tiling(self):
-        if 'grids' not in sys.modules:
-            import grids
+        import grids
         basi = defaultdict(list)
         for ob in self._obstructions:
             cell = ob.is_single_cell()
@@ -146,7 +147,7 @@ class Tiling():
         newobs = [ob for ob in self._obstructions if not ob.occupies(cell)]
         return Tiling(self._point_cells,
                       self._positive_cells,
-                      self._possible_empty - {cell},
+                      self._possibly_empty - {cell},
                       newobs)
 
     def insert_cell(self, cell):
@@ -161,7 +162,7 @@ class Tiling():
                       self._obstructions)
 
     def only_positive_in_row_and_column(self, cell):
-        if cell not in self._positive_cells or cell not in self._point_cells:
+        if cell not in self._positive_cells and cell not in self._point_cells:
             return False
         inrow = sum(1 for (x, y) in
                     chain(self._point_cells, self._positive_cells)
@@ -209,10 +210,12 @@ class Tiling():
             all_cells = (self._positive_cells |
                          self._possibly_empty |
                          self._point_cells)
-            all_obstruction_cells = reduce(
-                set.__or__, (set(ob.pos) for ob in self._obstructions), set())
-            rows = set(x for (x, y) in all_cells | all_obstruction_cells)
-            cols = set(y for (x, y) in all_cells | all_obstruction_cells)
+
+            rows = set(x for (x, y) in all_cells | all_cells)
+            cols = set(y for (x, y) in all_cells | all_cells)
+            if not rows and not cols:
+                self._dimensions = (1,1)
+                return self._dimensions
             self._dimensions = (max(rows) - min(rows) + 1,
                                 max(cols) - min(cols) + 1)
         return self._dimensions
