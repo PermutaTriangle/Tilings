@@ -170,18 +170,14 @@ class Obstruction():
             mindex = min(p[0] for p in col)
         return (mindex, maxdex, minval, maxval)
 
-    def point_translation(self, point, insert_point):
-        # TODO: TOOOOODOOOOOOOOOOOOOOOOOOO
-        # diffx = 1 if direction == DIR_EAST or direction == DIR_WEST else 2
-        # diffy = 1 if direction == DIR_NORTH or direction == DIR_SOUTH else 2
-        diffx = 2
-        diffy = 2
-        newx, newy = self.pos[point]
-        if point >= insert_point[0]:
-            newx += diffx
-        if self.patt[point] >= insert_point[1]:
-            newy += diffy
-        return (newx, newy)
+    def point_translation(self, index, insert_point):
+        """Given an index of a point in the obstruction and an insert location,
+        compute the transformation of the point. The translation assumes that a
+        new row and a new column is inserted in to the location.
+        """
+        x, y = self.pos[index]
+        return (x + 2 if index >= insert_point[0] else x,
+                y + 2 if self.patt[index] >= insert_point[1] else y)
 
     def stretch_obstruction(self, insert_point):
         newpos = [self.point_translation(p, insert_point)
