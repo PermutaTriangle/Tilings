@@ -166,11 +166,11 @@ class Obstruction():
             else:
                 mindex = max(p[0] for p in left) + 1
         else:
-            maxdex = max(p[0] for p in row) + 1
-            mindex = min(p[0] for p in row)
+            maxdex = max(p[0] for p in col) + 1
+            mindex = min(p[0] for p in col)
         return (mindex, maxdex, minval, maxval)
 
-    def point_translation(self, point, insert_point, direction):
+    def point_translation(self, point, insert_point):
         # TODO: TOOOOODOOOOOOOOOOOOOOOOOOO
         # diffx = 1 if direction == DIR_EAST or direction == DIR_WEST else 2
         # diffy = 1 if direction == DIR_NORTH or direction == DIR_SOUTH else 2
@@ -183,8 +183,8 @@ class Obstruction():
             newy += diffy
         return (newx, newy)
 
-    def stretch_obstruction(self, insert_point, direction):
-        newpos = [self.point_translation(p, insert_point, direction)
+    def stretch_obstruction(self, insert_point):
+        newpos = [self.point_translation(p, insert_point)
                   for p in range(len(self))]
         return Obstruction(self.patt, newpos)
 
@@ -214,8 +214,7 @@ class Obstruction():
                 self.patt[i] for i in range(len(self)) if i != forced_index)
             newposition = [
                 self.point_translation(p,
-                                       (forced_index, self.patt[forced_index]),
-                                       direction)
+                                       (forced_index, self.patt[forced_index]))
                 for p in range(len(self)) if p != forced_index]
             res.append(Obstruction(newpatt, newposition))
         # Obstruction spans the cell, find the bounding box of all the possible
@@ -235,7 +234,7 @@ class Obstruction():
                 if i == forced_index or i == forced_index + 1:
                     continue
             for j in range(minval, maxval + 1):
-                res.append(self.stretch_obstruction((i, j), direction))
+                res.append(self.stretch_obstruction((i, j)))
 
         return res
 
