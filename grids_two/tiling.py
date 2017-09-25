@@ -52,7 +52,7 @@ class Tiling():
         if not all_obstruction_cells <= all_cells:
             raise ValueError(("The set of positive cells and the set of "
                               "possibly empty cells should cover the cells "
-                              "of the obstructios."))
+                              "of the obstructions."))
 
         # self._hash = hash(hash_sum)
         self._minimize()
