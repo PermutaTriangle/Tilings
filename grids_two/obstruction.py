@@ -9,6 +9,8 @@ class Obstruction():
 
         if not isinstance(pattern, Perm):
             raise ValueError("Pattern should be a Perm")
+        if len(pattern):
+            raise ValueError("Trying to construct an empty obstruction.")
 
         # Pattern should be a Perm of course
         self.patt = pattern
