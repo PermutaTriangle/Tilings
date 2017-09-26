@@ -1,4 +1,3 @@
-import sys
 from collections import defaultdict
 from functools import partial, reduce
 from itertools import chain
@@ -54,8 +53,10 @@ class Tiling():
                               "possibly empty cells should cover the cells "
                               "of the obstructions."))
 
+        # print(self._obstructions)
         # self._hash = hash(hash_sum)
         self._minimize()
+        # print(self._obstructions)
         self.dimensions
 
     def _minimize(self):
@@ -66,6 +67,7 @@ class Tiling():
         """
         # Minimize the set of obstructions
         cleanobs = self._clean_obs()
+        # print(cleanobs)
         # Compute the single-point obstructions
         empty_cells = set(ob.is_point_obstr()
                           for ob in cleanobs if ob.is_point_obstr())
@@ -232,6 +234,12 @@ class Tiling():
     def __hash__(self):
         return (hash(self._point_cells) ^ hash(self._possibly_empty) ^
                 hash(self._positive_cells) ^ hash(self._obstructions))
+
+    def __eq__(self, other):
+        return (self.point_cells == other.point_cells and
+                self.possibly_empty == other.possibly_empty and
+                self.positive_cells == other.positive_cells and
+                self.obstructions == other.obstructions)
 
     def __iter__(self):
         for ob in self._obstructions:
