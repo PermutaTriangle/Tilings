@@ -267,6 +267,8 @@ class Obstruction():
         return hash(self.patt) ^ hash(self.pos)
 
     def __eq__(self, other):
+        if not isinstance(other, Obstruction):
+            return False
         return self.patt == other.patt and self.pos == other.pos
 
     def __lt__(self, other):
