@@ -29,6 +29,7 @@ class Tiling():
         self._obstructions = tuple(sorted(obstructions))
 
         self._dimensions = None
+        self.back_map = None
 
         # The cell sets should all be disjoint
         if self._positive_cells & self._possibly_empty:
@@ -71,6 +72,7 @@ class Tiling():
         # Produce the mapping between the two tilings
         self._col_mapping, self._row_mapping = self._minimize_mapping()
         cell_map = partial(map_cell, self._col_mapping, self._row_mapping)
+        self.back_map = {cell_map(cell):cell for cell in self._point_cells.union(self._possibly_empty).union(self._positive_cells)}
 
         self._point_cells = frozenset(map(cell_map, self._point_cells))
         self._positive_cells = frozenset(map(cell_map, self._positive_cells))
