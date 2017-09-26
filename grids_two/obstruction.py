@@ -10,23 +10,27 @@ class Obstruction():
         if not isinstance(pattern, Perm):
             raise ValueError("Pattern should be a Perm")
         if not len(pattern):
-            raise ValueError("Trying to construct an empty obstruction.")
+            self.patt = pattern
+            self.pos = tuple(positions)
+            self._cells = frozenset()
+            self._rows = 1
+            self._columns = 1
+        else:
+            # Pattern should be a Perm of course
+            self.patt = pattern
+            # Position is a tuple of (x, y) coordinates, where the ith (x, y)
+            # corresponds to the i-th point in the pattern.
+            self.pos = tuple(positions)
 
-        # Pattern should be a Perm of course
-        self.patt = pattern
-        # Position is a tuple of (x, y) coordinates, where the ith (x, y)
-        # corresponds to the i-th point in the pattern.
-        self.pos = tuple(positions)
+            if len(self.patt) != len(self.pos):
+                raise ValueError("Pattern and position list have unequal lengths.")
 
-        if len(self.patt) != len(self.pos):
-            raise ValueError("Pattern and position list have unequal lengths.")
-
-        # Immutable set of cells which the obstruction spans.
-        self._cells = frozenset(self.pos)
-        self._rows = (min(x for x, _ in self.pos),
-                      max(x for x, _ in self.pos))
-        self._columns = (min(y for _, y in self.pos),
-                         max(y for _, y in self.pos))
+            # Immutable set of cells which the obstruction spans.
+            self._cells = frozenset(self.pos)
+            self._rows = (min(x for x, _ in self.pos),
+                          max(x for x, _ in self.pos))
+            self._columns = (min(y for _, y in self.pos),
+                             max(y for _, y in self.pos))
 
     @classmethod
     def single_cell(cls, pattern, cell):
@@ -185,7 +189,7 @@ class Obstruction():
                   for p in range(len(self))]
         return Obstruction(self.patt, newpos)
 
-    def place_point(self, cell, direction, skip_redundant=True):
+    def place_point(self, cell, direction, skip_redundant=False):
         """Places a point furthest to the direction 'direction' into a cell,
         returns the same obstruction if the obstruction does not span the rows
         or columns of the cell. Otherwise returns a list of new obstructions
@@ -253,6 +257,9 @@ class Obstruction():
         if len(set(self.pos)) == 1:
             return self.pos[0]
         return None
+
+    def is_empty(self):
+        return not bool(self.patt)
 
     def __len__(self):
         return len(self.patt)

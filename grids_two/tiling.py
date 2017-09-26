@@ -175,6 +175,9 @@ class Tiling():
     # Properties and getters
     #
 
+    def is_empty(self):
+        return any(ob.is_empty() for ob in self)
+
     @property
     def point_cells(self):
         return self._point_cells
