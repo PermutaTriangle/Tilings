@@ -53,10 +53,7 @@ class Tiling():
                               "possibly empty cells should cover the cells "
                               "of the obstructions."))
 
-        # print(self._obstructions)
-        # self._hash = hash(hash_sum)
         self._minimize()
-        # print(self._obstructions)
         self.dimensions
 
     def _minimize(self):
