@@ -2,7 +2,7 @@ import pytest
 
 from grids_two import Obstruction
 from permuta import Perm
-from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST  # , DIRS
+from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_NONE
 
 
 @pytest.fixture
@@ -28,6 +28,12 @@ def everycellob():
 def typicalob():
     return Obstruction(Perm((1, 0, 2, 4, 3)),
                        ((0, 0), (0, 0), (1, 0), (1, 1), (1, 1)))
+
+
+@pytest.fixture
+def isolatedob():
+    return Obstruction(Perm((0, 1, 2)),
+                       ((0, 0), (1, 1), (2, 2)))
 
 
 def test_spans_cell(simpleob):
@@ -79,8 +85,9 @@ def test_points_in_cell(simpleob):
     assert list(simpleob.points_in_cell((0, 1))) == []
 
 
-def test_isolated_cells(simpleob):
-    assert list(simpleob.isolated_cells()) == [(2, 2), (2, 1)]
+def test_isolated_cells(simpleob, isolatedob):
+    assert list(simpleob.isolated_cells()) == []
+    assert list(isolatedob.isolated_cells()) == [(0, 0), (1, 1), (2, 2)]
 
 
 def test_forced_point_index(singlecellob):
@@ -122,41 +129,42 @@ def test_stretch_obstruction(typicalob):
 
 def test_place_point(typicalob):
     ob12 = Obstruction.single_cell(Perm((0, 1)), (0, 0))
-    assert (list(ob12.place_point((0, 0), DIR_NORTH)) ==
+    assert (list(ob12.place_point((0, 0), DIR_NORTH, skip_redundant=True)) ==
             [Obstruction(Perm((0,)), ((0, 0),)),
              Obstruction(Perm((0, 1)), ((2, 0), (2, 0)))])
-    assert (list(ob12.place_point((0, 0), DIR_EAST)) ==
+    assert (list(ob12.place_point((0, 0), DIR_EAST, skip_redundant=True)) ==
             [Obstruction(Perm((0,)), ((0, 0),)),
              Obstruction(Perm((0, 1)), ((0, 2), (0, 2)))])
-    assert (list(ob12.place_point((0, 0), DIR_SOUTH)) ==
+    assert (list(ob12.place_point((0, 0), DIR_SOUTH, skip_redundant=True)) ==
             [Obstruction(Perm((0,)), ((2, 2),)),
              Obstruction(Perm((0, 1)), ((0, 2), (0, 2)))])
-    assert (list(ob12.place_point((0, 0), DIR_WEST)) ==
+    assert (list(ob12.place_point((0, 0), DIR_WEST, skip_redundant=True)) ==
             [Obstruction(Perm((0,)), ((2, 2),)),
              Obstruction(Perm((0, 1)), ((2, 0), (2, 0)))])
 
-    assert (list(typicalob.place_point((0, 1), DIR_WEST)) ==
-            [Obstruction(Perm((1, 0, 2, 4, 3)),
-                         ((2, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
-             Obstruction(Perm((1, 0, 2, 4, 3)),
-                         ((2, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
-             Obstruction(Perm((1, 0, 2, 4, 3)),
-                         ((2, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
-             Obstruction(Perm((1, 0, 2, 4, 3)),
-                         ((0, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
-             Obstruction(Perm((1, 0, 2, 4, 3)),
-                         ((0, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
-             Obstruction(Perm((1, 0, 2, 4, 3)),
-                         ((0, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
-             Obstruction(Perm((1, 0, 2, 4, 3)),
-                         ((0, 0), (0, 0), (3, 0), (3, 3), (3, 3))),
-             Obstruction(Perm((1, 0, 2, 4, 3)),
-                         ((0, 0), (0, 0), (3, 0), (3, 3), (3, 1))),
-             Obstruction(Perm((1, 0, 2, 4, 3)),
-                         ((0, 0), (0, 0), (3, 0), (3, 1), (3, 1)))])
+    assert (list(typicalob.place_point((0, 1), DIR_WEST, skip_redundant=True))
+            == [Obstruction(Perm((1, 0, 2, 4, 3)),
+                            ((2, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
+                Obstruction(Perm((1, 0, 2, 4, 3)),
+                            ((2, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
+                Obstruction(Perm((1, 0, 2, 4, 3)),
+                            ((2, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
+                Obstruction(Perm((1, 0, 2, 4, 3)),
+                            ((0, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
+                Obstruction(Perm((1, 0, 2, 4, 3)),
+                            ((0, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
+                Obstruction(Perm((1, 0, 2, 4, 3)),
+                            ((0, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
+                Obstruction(Perm((1, 0, 2, 4, 3)),
+                            ((0, 0), (0, 0), (3, 0), (3, 3), (3, 3))),
+                Obstruction(Perm((1, 0, 2, 4, 3)),
+                            ((0, 0), (0, 0), (3, 0), (3, 3), (3, 1))),
+                Obstruction(Perm((1, 0, 2, 4, 3)),
+                            ((0, 0), (0, 0), (3, 0), (3, 1), (3, 1)))])
     assert (list(Obstruction(Perm((2, 1, 0, 4, 3)),
                              ((0, 1), (0, 1), (1, 0), (2, 1), (2, 1))
-                             ).place_point((2, 1), DIR_SOUTH)) ==
+                             ).place_point(
+                                 (2, 1), DIR_SOUTH, skip_redundant=True)) ==
             [Obstruction(Perm((2, 1, 0, 3)),
                          ((0, 1), (0, 1), (1, 0), (2, 3))),
              Obstruction(Perm((2, 1, 0, 4, 3)),
@@ -165,6 +173,34 @@ def test_place_point(typicalob):
                          ((0, 3), (0, 1), (1, 0), (4, 3), (4, 3))),
              Obstruction(Perm((2, 1, 0, 4, 3)),
                          ((0, 1), (0, 1), (1, 0), (4, 3), (4, 3)))])
+
+    def minimize(obba):
+        obba = sorted(obba)
+        res = list()
+        last = None
+        for ob in obba:
+            if ob == last:
+                continue
+            add = True
+            for m in res:
+                if m in ob:
+                    add = False
+                    break
+            if add:
+                res.append(ob)
+        return res
+
+    obs = minimize(Obstruction.single_cell(
+        Perm((0, 1, 2)), (0, 0)).place_point((0, 0), DIR_NONE))
+    assert (obs == [Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+                    Obstruction(Perm((0, 1)), ((0, 0), (2, 2))),
+                    Obstruction(Perm((0, 1)), ((2, 2), (2, 2))),
+                    Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 2), (0, 2))),
+                    Obstruction(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0))),
+                    Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 2), (0, 2))),
+                    Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 2), (2, 2))),
+                    Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
+                    Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 2)))])
 
 
 def test_is_point_obstr(typicalob, singlecellob):
