@@ -72,7 +72,14 @@ class Tiling():
         # Produce the mapping between the two tilings
         self._col_mapping, self._row_mapping = self._minimize_mapping()
         cell_map = partial(map_cell, self._col_mapping, self._row_mapping)
-        self.back_map = {Cell(*cell_map(cell)):Cell(*cell) for cell in self._point_cells.union(self._possibly_empty).union(self._positive_cells)}
+
+        # For backwards compatability only, will be removed in future.
+        # TODO: Not use Cell, and convert the dictionary to Cell dictionary
+        # when needed.
+        self.back_map = {Cell(*cell_map(cell)): Cell(*cell)
+                         for cell in (self.point_cells |
+                                      self.possibly_empty |
+                                      self._positive_cells)}
 
         self._point_cells = frozenset(map(cell_map, self._point_cells))
         self._positive_cells = frozenset(map(cell_map, self._positive_cells))
