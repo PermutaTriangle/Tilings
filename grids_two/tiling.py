@@ -18,7 +18,8 @@ class Tiling():
     """
 
     def __init__(self, point_cells=list(), positive_cells=list(),
-                 possibly_empty=list(), obstructions=list()):
+                 possibly_empty=list(), obstructions=list(),
+                 remove_empty=True):
         # Set of the cells that have points in them
         self._point_cells = frozenset(point_cells)
         # Set of the cells that are positive, i.e. contain a point
@@ -54,10 +55,10 @@ class Tiling():
                               "possibly empty cells should cover the cells "
                               "of the obstructions."))
 
-        self._minimize()
+        self._minimize(remove_empty)
         self.dimensions
 
-    def _minimize(self):
+    def _minimize(self, remove_empty):
         """Minimizes the set of obstructions and for each single-point
         obstruction, removes the corresponding cell from the possibly empty
         set. Finally, removes all empty rows and columns and updates
@@ -65,13 +66,16 @@ class Tiling():
         """
         # Minimize the set of obstructions
         cleanobs = self._clean_obs()
-        # print(cleanobs)
-        # Compute the single-point obstructions
-        empty_cells = set(ob.is_point_obstr()
-                          for ob in cleanobs if ob.is_point_obstr())
-        # Produce the mapping between the two tilings
-        self._col_mapping, self._row_mapping = self._minimize_mapping()
-        cell_map = partial(map_cell, self._col_mapping, self._row_mapping)
+        if remove_empty:
+            # Compute the single-point obstructions
+            empty_cells = set(ob.is_point_obstr()
+                              for ob in cleanobs if ob.is_point_obstr())
+            # Produce the mapping between the two tilings
+            self._col_mapping, self._row_mapping = self._minimize_mapping()
+            cell_map = partial(map_cell, self._col_mapping, self._row_mapping)
+        else:
+            def cell_map(x):
+                x
 
         # For backwards compatability only, will be removed in future.
         # TODO: Not use Cell, and convert the dictionary to Cell dictionary
