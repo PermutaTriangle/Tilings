@@ -1,5 +1,5 @@
 from permuta import Perm
-from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST  # , DIRS
+from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_NONE
 
 
 class Obstruction():
@@ -23,7 +23,8 @@ class Obstruction():
             self.pos = tuple(positions)
 
             if len(self.patt) != len(self.pos):
-                raise ValueError("Pattern and position list have unequal lengths.")
+                raise ValueError(("Pattern and position list have unequal"
+                                  "lengths."))
 
             # Immutable set of cells which the obstruction spans.
             self._cells = frozenset(self.pos)
@@ -77,7 +78,8 @@ class Obstruction():
                 yield i
 
     def isolated_cells(self):
-        """Yields the cells that contain only one point of the obstruction."""
+        """Yields the cells that contain only one point of the obstruction and
+        are in their own row and column."""
         for i in range(len(self)):
             isolated = True
             for j in range(len(self)):
@@ -208,20 +210,29 @@ class Obstruction():
         # obstructions would contain only the obstruction itself.
         res = list()
         # If the obstruction contains a point in the cell (occupies)
+        mindex, maxdex, minval, maxval = self.get_bounding_box(cell)
         forced_index = None
         if self.occupies(cell):
-            forced_index = self.forced_point_index(cell, direction)
-            forced_val = self.patt[forced_index]
-            newpatt = Perm.to_standard(
-                self.patt[i] for i in range(len(self)) if i != forced_index)
-            newposition = [
-                self.point_translation(p, (forced_index, forced_val))
-                for p in range(len(self)) if p != forced_index]
-            res.append(Obstruction(newpatt, newposition))
+            if direction != DIR_NONE:
+                forced_index = self.forced_point_index(cell, direction)
+                forced_val = self.patt[forced_index]
+                newpatt = Perm.to_standard(
+                    self.patt[i] for i in range(len(self))
+                    if i != forced_index)
+                newposition = [
+                    self.point_translation(p, (forced_index, forced_val))
+                    for p in range(len(self)) if p != forced_index]
+                res.append(Obstruction(newpatt, newposition))
+            else:
+                for index in self.points_in_cell(cell):
+                    newpatt = Perm.to_standard(
+                        self.patt[i] for i in range(len(self)) if i != index)
+                    newposition = [
+                        self.point_translation(p, (index, self.patt[index]))
+                        for p in range(len(self)) if p != index]
+                    res.append(Obstruction(newpatt, newposition))
         # Obstruction spans the cell, find the bounding box of all the possible
         # locations for the placed point in relation to the pattern.
-        mindex, maxdex, minval, maxval = self.get_bounding_box(cell)
-        if forced_index is not None:
             if direction == DIR_EAST:
                 mindex = forced_index + 1
             elif direction == DIR_NORTH:
