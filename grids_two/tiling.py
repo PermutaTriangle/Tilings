@@ -66,16 +66,15 @@ class Tiling():
         """
         # Minimize the set of obstructions
         cleanobs = self._clean_obs()
-        if remove_empty:
-            # Compute the single-point obstructions
-            empty_cells = set(ob.is_point_obstr()
-                              for ob in cleanobs if ob.is_point_obstr())
-            # Produce the mapping between the two tilings
-            self._col_mapping, self._row_mapping = self._minimize_mapping()
-            cell_map = partial(map_cell, self._col_mapping, self._row_mapping)
-        else:
-            def cell_map(x):
-                x
+        # Compute the single-point obstructions
+        empty_cells = set(ob.is_point_obstr()
+                          for ob in cleanobs if ob.is_point_obstr())
+
+        # Remove the empty cells
+        self._possibly_empty = frozenset(self._possibly_empty - empty_cells)
+        # Produce the mapping between the two tilings
+        self._col_mapping, self._row_mapping = self._minimize_mapping()
+        cell_map = partial(map_cell, self._col_mapping, self._row_mapping)
 
         # For backwards compatability only, will be removed in future.
         # TODO: Not use Cell, and convert the dictionary to Cell dictionary
@@ -85,13 +84,18 @@ class Tiling():
                                       self.possibly_empty |
                                       self._positive_cells)}
 
-        self._point_cells = frozenset(map(cell_map, self._point_cells))
-        self._positive_cells = frozenset(map(cell_map, self._positive_cells))
-        self._possibly_empty = frozenset(map(
-            cell_map, self._possibly_empty - empty_cells))
-
-        self._obstructions = tuple(ob.minimize(cell_map) for ob in cleanobs
-                                   if ob.is_point_obstr() is None)
+        if remove_empty:
+            self._obstructions = tuple(ob.minimize(cell_map) for ob in cleanobs
+                                       if ob.is_point_obstr() is None)
+            self._point_cells = frozenset(map(cell_map,
+                                              self._point_cells))
+            self._positive_cells = frozenset(map(cell_map,
+                                                 self._positive_cells))
+            self._possibly_empty = frozenset(map(cell_map,
+                                                 self._possibly_empty))
+        else:
+            self._obstructions = tuple(ob for ob in cleanobs
+                                       if ob.is_point_obstr() is None)
 
     def _minimize_mapping(self):
         """Returns a pair of dictionaries, that map rows/columns to an
@@ -102,8 +106,8 @@ class Tiling():
 
         if not all_cells:
             (i, j) = self.dimensions
-            return ({x: x for x in range(i)},
-                    {y: y for y in range(j)})
+            return ({x: 0 for x in range(i)},
+                    {y: 0 for y in range(j)})
 
         col_set, row_set = map(set, zip(*all_cells))
 
