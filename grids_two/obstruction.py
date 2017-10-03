@@ -255,6 +255,14 @@ class Obstruction():
 
         return res
 
+    def insert_point(self, cell):
+        mindex, maxdex, minval, maxval = self.get_bounding_box(cell)
+        print(mindex, maxdex, minval, maxval)
+        for idx in range(mindex, maxdex + 1):
+            for val in range(minval, maxval + 1):
+                yield Obstruction(self.patt.insert(idx, val),
+                                  self.pos[:idx] + (cell,) + self.pos[idx:])
+
     def minimize(self, cell_mapping):
         return Obstruction(self.patt,
                            [cell_mapping(cell) for cell in self.pos])
