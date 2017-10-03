@@ -262,7 +262,6 @@ class Obstruction():
         Yields all obstruction where the point has been mixed into the points
         in the cell."""
         mindex, maxdex, minval, maxval = self.get_bounding_box(cell)
-        print(mindex, maxdex, minval, maxval)
         for idx in range(mindex, maxdex + 1):
             for val in range(minval, maxval + 1):
                 yield Obstruction(self.patt.insert(idx, val),

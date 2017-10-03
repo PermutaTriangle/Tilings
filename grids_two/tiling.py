@@ -148,6 +148,12 @@ class Tiling():
         blocks = dict()
         for cell in self._point_cells:
             blocks[cell] = grids.Block.point
+        for cell in self._possibly_empty:
+            if cell not in basi:
+                blocks[cell] = PermSet.avoiding(())
+        for cell in self._positive_cells:
+            if cell not in basi:
+                blocks[cell] = grids.PositiveClass(PermSet.avoiding(()))
         for (cell, basis) in basi.items():
             if cell in self._positive_cells:
                 blocks[cell] = grids.PositiveClass(PermSet.avoiding(basis))
