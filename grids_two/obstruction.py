@@ -1,5 +1,6 @@
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_NONE
+from itertools import combinations
 
 
 class Obstruction():
@@ -256,12 +257,24 @@ class Obstruction():
         return res
 
     def insert_point(self, cell):
+        """Insert a new point into cell of the obstruction, such that the point
+        is added to the underlying pattern with the position at the cell.
+        Yields all obstruction where the point has been mixed into the points
+        in the cell."""
         mindex, maxdex, minval, maxval = self.get_bounding_box(cell)
         print(mindex, maxdex, minval, maxval)
         for idx in range(mindex, maxdex + 1):
             for val in range(minval, maxval + 1):
                 yield Obstruction(self.patt.insert(idx, val),
                                   self.pos[:idx] + (cell,) + self.pos[idx:])
+
+    def all_subobs(self):
+        """Yields all subobstructions."""
+        for r in range(len(self)):
+            for subidx in combinations(range(len(self)), r):
+                yield Obstruction(
+                    Perm.to_standard(self.patt[i] for i in subidx),
+                    (self.pos[i] for i in subidx))
 
     def minimize(self, cell_mapping):
         return Obstruction(self.patt,
