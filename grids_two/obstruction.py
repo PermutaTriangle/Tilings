@@ -40,6 +40,11 @@ class Obstruction():
         cell."""
         return cls(pattern, [cell for _ in range(len(pattern))])
 
+    @classmethod
+    def empty_obstruction(cls):
+        """Construct the empty obstruction."""
+        return cls(Perm(tuple()), tuple())
+
     def spans_cell(self, cell):
         """Checks if the boundaries of the obstruction spans the cell."""
         return self.spans_column(cell[0]) and self.spans_row(cell[1])
