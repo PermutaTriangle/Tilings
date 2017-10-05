@@ -72,6 +72,10 @@ class Tiling():
 
         # Remove the empty cells
         self._possibly_empty = frozenset(self._possibly_empty - empty_cells)
+        if (self._positive_cells & empty_cells or
+                self._point_cells & empty_cells):
+            cleanobs.append(Obstruction.empty_obstruction)
+
         # Produce the mapping between the two tilings
         self._col_mapping, self._row_mapping = self._minimize_mapping()
         cell_map = partial(map_cell, self._col_mapping, self._row_mapping)
@@ -85,8 +89,9 @@ class Tiling():
                                       self._positive_cells)}
 
         if remove_empty:
-            self._obstructions = tuple(ob.minimize(cell_map) for ob in cleanobs
-                                       if ob.is_point_obstr() is None)
+            self._obstructions = tuple(
+                sorted(ob.minimize(cell_map) for ob in cleanobs
+                       if ob.is_point_obstr() is None))
             self._point_cells = frozenset(map(cell_map,
                                               self._point_cells))
             self._positive_cells = frozenset(map(cell_map,
@@ -233,7 +238,7 @@ class Tiling():
             rows = set(x for (x, y) in all_cells | all_cells)
             cols = set(y for (x, y) in all_cells | all_cells)
             if not rows and not cols:
-                self._dimensions = (1,1)
+                self._dimensions = (1, 1)
                 return self._dimensions
             self._dimensions = (max(rows) - min(rows) + 1,
                                 max(cols) - min(cols) + 1)
