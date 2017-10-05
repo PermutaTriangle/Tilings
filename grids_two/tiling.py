@@ -188,12 +188,29 @@ class Tiling():
             return False
         inrow = sum(1 for (x, y) in
                     chain(self._point_cells, self._positive_cells)
-                    if x == cell[0])
+                    if y == cell[1])
         incol = sum(1 for (x, y) in
                     chain(self._point_cells, self._positive_cells)
-                    if y == cell[1])
+                    if x == cell[0])
         return (inrow == 1 and incol == 1)
 
+    def only_positive_in_row(self, cell):
+        inrow = sum(1 for (x, y) in
+                    chain(self._point_cells, self._positive_cells)
+                    if y == cell[1])
+        return inrow == 1
+
+    def only_positive_in_col(self, cell):
+        incol = sum(1 for (x, y) in
+                    chain(self._point_cells, self._positive_cells)
+                    if x == cell[0])
+        return incol == 1
+
+    def get_cells_in_row(self, row):
+        return [(x, y) for (x, y) in chain(self._point_cells, self._positive_cells, self._possibly_empty) if y == row]
+
+    def get_cells_in_col(self, col):
+        return [(x, y) for (x, y) in chain(self._point_cells, self._positive_cells, self._possibly_empty) if x == col]
     #
     # Properties and getters
     #
