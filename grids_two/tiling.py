@@ -212,10 +212,14 @@ class Tiling():
         return incol == 1
 
     def get_cells_in_row(self, row):
-        return [(x, y) for (x, y) in chain(self._point_cells, self._positive_cells, self._possibly_empty) if y == row]
+        return [(x, y) for (x, y) in chain(self._point_cells,
+                                           self._positive_cells,
+                                           self._possibly_empty) if y == row]
 
     def get_cells_in_col(self, col):
-        return [(x, y) for (x, y) in chain(self._point_cells, self._positive_cells, self._possibly_empty) if x == col]
+        return [(x, y) for (x, y) in chain(self._point_cells,
+                                           self._positive_cells,
+                                           self._possibly_empty) if x == col]
     #
     # Properties and getters
     #
