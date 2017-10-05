@@ -189,6 +189,7 @@ class Tiling():
                       self._obstructions)
 
     def only_positive_in_row_and_column(self, cell):
+        """Check if the cell is the only positive cell in row and column."""
         if cell not in self._positive_cells and cell not in self._point_cells:
             return False
         inrow = sum(1 for (x, y) in
@@ -200,23 +201,27 @@ class Tiling():
         return (inrow == 1 and incol == 1)
 
     def only_positive_in_row(self, cell):
+        """Check if the cell is the only positive cell in row."""
         inrow = sum(1 for (x, y) in
                     chain(self._point_cells, self._positive_cells)
                     if y == cell[1])
         return inrow == 1
 
     def only_positive_in_col(self, cell):
+        """Check if the cell is the only positive cell in column."""
         incol = sum(1 for (x, y) in
                     chain(self._point_cells, self._positive_cells)
                     if x == cell[0])
         return incol == 1
 
-    def get_cells_in_row(self, row):
+    def cells_in_row(self, row):
+        """Return all point, positive and possibly empty cells in row."""
         return [(x, y) for (x, y) in chain(self._point_cells,
                                            self._positive_cells,
                                            self._possibly_empty) if y == row]
 
-    def get_cells_in_col(self, col):
+    def cells_in_col(self, col):
+        """Return all point, positive and possibly empty cells in column."""
         return [(x, y) for (x, y) in chain(self._point_cells,
                                            self._positive_cells,
                                            self._possibly_empty) if x == col]
