@@ -1,6 +1,7 @@
+from itertools import chain, combinations
+
 from permuta import Perm
-from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_NONE
-from itertools import combinations
+from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST
 
 
 class Obstruction():
@@ -296,6 +297,17 @@ class Obstruction():
 
     def is_empty(self):
         return not bool(self.patt)
+
+    def compress(self, patthash):
+        array = [patthash[self.patt]]
+        array.extend(chain.from_iterable(self.pos))
+        return array
+
+    @classmethod
+    def decompress(self, array, patthash):
+        patt = patthash[array[0]]
+        pos = zip(array[1::2], array[2::2])
+        return Obstruction(patt, pos)
 
     def __len__(self):
         return len(self.patt)

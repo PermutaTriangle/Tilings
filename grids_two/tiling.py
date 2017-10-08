@@ -1,6 +1,9 @@
 from collections import defaultdict
 from functools import partial, reduce
 from itertools import chain
+
+import numpy as np
+
 from grids import Cell
 from permuta import PermSet
 
@@ -165,6 +168,49 @@ class Tiling():
             else:
                 blocks[cell] = PermSet.avoiding(basis)
         return grids.Tiling(blocks)
+
+    def compress(self, patthash):
+        """Compresses the tiling by flattening the sets of cells into lists of
+        integers which are concatenated together, every list preceeded by its
+        size. The obstructions are compressed and concatenated to the list."""
+        result = []
+        result.append(len(self.point_cells))
+        result.extend(chain.from_iterable(self.point_cells))
+        result.append(len(self.positive_cells))
+        result.extend(chain.from_iterable(self.positive_cells))
+        result.append(len(self.possibly_empty))
+        result.extend(chain.from_iterable(self.possibly_empty))
+        result.append(len(self.obstructions))
+        result.extend(chain.from_iterable(ob.compress(patthash)
+                                          for ob in self.obstructions))
+
+        return np.array(result, dtype=np.uint8)
+
+    @classmethod
+    def decompress(cls, array, patts):
+        """Given a compressed tiling in the form of a numpy array, decompress
+        it and return a tiling."""
+        array = array.tolist()
+        offset = 1
+        point_cells = [(array[offset + 2*i], array[offset + 2*i + 1]) for i in range(0, array[offset - 1])]
+        offset += 2 * array[offset - 1] + 1
+        positive_cells = [(array[offset + 2*i], array[offset + 2*i + 1]) for i in range(array[offset - 1])]
+        offset += 2 * array[offset - 1] + 1
+        possibly_empty = [(array[offset + 2*i], array[offset + 2*i + 1]) for i in range(array[offset - 1])]
+        offset += 2 * array[offset - 1] + 1
+        obsarr = array[offset:]
+        obstructions = []
+        i = 0
+        while i < len(obsarr):
+            patt = patts[obsarr[i]]
+            obstructions.append(Obstruction.decompress(obsarr[i:i + 2*(len(patt)) + 1], patts))
+            i += 2 * len(patt) + 1
+        return cls(point_cells=point_cells,
+                   positive_cells=positive_cells,
+                   possibly_empty=possibly_empty,
+                   obstructions=obstructions)
+
+    # Cell methods
 
     def delete_cell(self, cell):
         """Deletes a cell from every obstruction and returns a new tiling. The

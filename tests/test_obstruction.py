@@ -245,3 +245,26 @@ def test_insert_point():
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
         Obstruction(Perm((0, 4, 1, 2, 3, 5, 6)),
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)))]
+
+
+def test_compression(simpleob, singlecellob, everycellob, typicalob,
+                     isolatedob):
+    patthash = {Perm((1, 0, 3, 2)): 0,
+                Perm((0, 3, 6, 1, 4, 7, 2, 5, 8)): 1,
+                Perm((1, 0, 2, 4, 3)): 4,
+                Perm((0, 1, 2)): 17}
+    revhash = {0: Perm((1, 0, 3, 2)),
+               1: Perm((0, 3, 6, 1, 4, 7, 2, 5, 8)),
+               4: Perm((1, 0, 2, 4, 3)),
+               17: Perm((0, 1, 2))}
+
+    assert (Obstruction.decompress(simpleob.compress(patthash), revhash)
+            == simpleob)
+    assert (Obstruction.decompress(singlecellob.compress(patthash), revhash)
+            == singlecellob)
+    assert (Obstruction.decompress(everycellob.compress(patthash), revhash)
+            == everycellob)
+    assert (Obstruction.decompress(typicalob.compress(patthash), revhash)
+            == typicalob)
+    assert (Obstruction.decompress(isolatedob.compress(patthash), revhash)
+            == isolatedob)
