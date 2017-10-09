@@ -297,9 +297,9 @@ class Obstruction():
                 return
             lo, hi = points[0], points[-1] + 1
             if direction == DIR_WEST:
-                hi -= 1
+                hi = points[0] + 1
             else:
-                lo += 1
+                lo = points[-1]
             for i in range(lo, hi + 1):
                 yield Obstruction(self.patt,
                                   [self.pos[j] if j < i
@@ -320,9 +320,9 @@ class Obstruction():
             vals = sorted([self.patt[i] for i in points])
             lo, hi = vals[0], vals[-1] + 1
             if direction == DIR_SOUTH:
-                hi -= 1
+                hi = vals[0] + 1
             else:
-                lo += 1
+                lo = vals[-1]
             for i in range(lo, hi + 1):
                 yield Obstruction(self.patt,
                                   [self.pos[j] if self.patt[j] < i

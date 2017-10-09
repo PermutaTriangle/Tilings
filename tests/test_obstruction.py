@@ -251,20 +251,25 @@ def test_point_seperation():
     ob = Obstruction.single_cell(Perm((0, 2, 1)), (0, 0))
     assert list(ob.point_separation((0, 0), DIR_WEST)) == [
         Obstruction(Perm((0, 2, 1)), [(1, 0), (1, 0), (1, 0)]),
-        Obstruction(Perm((0, 2, 1)), [(0, 0), (1, 0), (1, 0)]),
-        Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 0), (1, 0)])]
+        Obstruction(Perm((0, 2, 1)), [(0, 0), (1, 0), (1, 0)])]
     assert list(ob.point_separation((0, 0), DIR_EAST)) == [
-        Obstruction(Perm((0, 2, 1)), [(0, 0), (1, 0), (1, 0)]),
         Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 0), (1, 0)]),
         Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)])]
     assert list(ob.point_separation((0, 0), DIR_NORTH)) == [
-        Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 1), (0, 1)]),
         Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 1), (0, 0)]),
         Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)])]
     assert list(ob.point_separation((0, 0), DIR_SOUTH)) == [
         Obstruction(Perm((0, 2, 1)), [(0, 1), (0, 1), (0, 1)]),
-        Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 1), (0, 1)]),
-        Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 1), (0, 0)])]
+        Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 1), (0, 1)])]
+
+    ob = Obstruction.single_cell(Perm((0, 2, 1, 3)), (0, 0))
+    assert list(ob.point_separation((0, 0), DIR_WEST)) == [
+        Obstruction(Perm((0, 2, 1, 3)), [(1, 0), (1, 0), (1, 0), (1, 0)]),
+        Obstruction(Perm((0, 2, 1, 3)), [(0, 0), (1, 0), (1, 0), (1, 0)])]
+
+    assert list(ob.point_separation((0, 0), DIR_NORTH)) == [
+        Obstruction(Perm((0, 2, 1, 3)), [(0, 0), (0, 0), (0, 0), (0, 1)]),
+        Obstruction(Perm((0, 2, 1, 3)), [(0, 0), (0, 0), (0, 0), (0, 0)])]
 
     ob = Obstruction(Perm((0, 2, 1, 3)),
                      [(0, 0), (1, 1), (1, 1), (2, 2)])
