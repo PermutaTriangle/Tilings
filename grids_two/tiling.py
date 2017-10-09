@@ -1,8 +1,7 @@
 from collections import defaultdict
 from functools import partial, reduce
 from itertools import chain
-
-import numpy as np
+from array import array
 
 from grids import Cell
 from permuta import PermSet
@@ -183,27 +182,31 @@ class Tiling():
         result.append(len(self.obstructions))
         result.extend(chain.from_iterable(ob.compress(patthash)
                                           for ob in self.obstructions))
-
-        return np.array(result, dtype=np.uint8)
+        res = array.array('B', result)
+        return res.tobytes()
 
     @classmethod
-    def decompress(cls, array, patts):
+    def decompress(cls, arrbytes, patts):
         """Given a compressed tiling in the form of a numpy array, decompress
         it and return a tiling."""
-        array = array.tolist()
+        arr = array.frombytes(arrbytes)
         offset = 1
-        point_cells = [(array[offset + 2*i], array[offset + 2*i + 1]) for i in range(0, array[offset - 1])]
-        offset += 2 * array[offset - 1] + 1
-        positive_cells = [(array[offset + 2*i], array[offset + 2*i + 1]) for i in range(array[offset - 1])]
-        offset += 2 * array[offset - 1] + 1
-        possibly_empty = [(array[offset + 2*i], array[offset + 2*i + 1]) for i in range(array[offset - 1])]
-        offset += 2 * array[offset - 1] + 1
-        obsarr = array[offset:]
+        point_cells = [(arr[offset + 2*i], arr[offset + 2*i + 1])
+                       for i in range(0, arr[offset - 1])]
+        offset += 2 * arr[offset - 1] + 1
+        positive_cells = [(arr[offset + 2*i], arr[offset + 2*i + 1])
+                          for i in range(arr[offset - 1])]
+        offset += 2 * arr[offset - 1] + 1
+        possibly_empty = [(arr[offset + 2*i], arr[offset + 2*i + 1])
+                          for i in range(arr[offset - 1])]
+        offset += 2 * arr[offset - 1] + 1
+        obsarr = arr[offset:]
         obstructions = []
         i = 0
         while i < len(obsarr):
             patt = patts[obsarr[i]]
-            obstructions.append(Obstruction.decompress(obsarr[i:i + 2*(len(patt)) + 1], patts))
+            obstructions.append(Obstruction.decompress(
+                obsarr[i:i + 2*(len(patt)) + 1], patts))
             i += 2 * len(patt) + 1
         return cls(point_cells=point_cells,
                    positive_cells=positive_cells,
