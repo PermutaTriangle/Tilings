@@ -298,14 +298,26 @@ class Obstruction():
     def is_empty(self):
         return not bool(self.patt)
 
-    def compress(self, patthash):
-        array = [patthash[self.patt]]
+    def compress(self, patthash=None):
+        """Compresses the obstruction into a list of integers. The first
+        element in the list is the rank of the permutation, if the patthash
+        dictionary is given the permutations value in the dictionary is used.
+        The rest is the list of positions flattened."""
+        if patthash:
+            array = [patthash[self.patt]]
+        else:
+            array = [self.patt.rank()]
         array.extend(chain.from_iterable(self.pos))
         return array
 
     @classmethod
-    def decompress(self, array, patthash):
-        patt = patthash[array[0]]
+    def decompress(self, array, patthash=None):
+        """Decompresses a list of integers in the form outputted by the
+        compress method and constructns an Obstruction."""
+        if patthash:
+            patt = patthash[array[0]]
+        else:
+            patt = Perm.unrank(array[0])
         pos = zip(array[1::2], array[2::2])
         return Obstruction(patt, pos)
 
