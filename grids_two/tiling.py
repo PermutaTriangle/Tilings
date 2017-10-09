@@ -169,7 +169,7 @@ class Tiling():
                 blocks[cell] = PermSet.avoiding(basis)
         return grids.Tiling(blocks)
 
-    def compress(self, patthash):
+    def compress(self, patthash=None):
         """Compresses the tiling by flattening the sets of cells into lists of
         integers which are concatenated together, every list preceeded by its
         size. The obstructions are compressed and concatenated to the list."""
