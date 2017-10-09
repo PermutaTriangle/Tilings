@@ -214,6 +214,18 @@ class Tiling():
                     if x == cell[0])
         return incol == 1
 
+    def only_cell_in_col(self, cell):
+        incol = sum(1 for (x, y) in
+                    chain(self._point_cells, self._positive_cells, self._possibly_empty)
+                    if x == cell[0])
+        return incol == 1
+
+    def only_cell_in_row(self, cell):
+        inrow = sum(1 for (x, y) in
+                    chain(self._point_cells, self._positive_cells, self._possibly_empty)
+                    if y == cell[1])
+        return inrow == 1
+    
     def cells_in_row(self, row):
         """Return all point, positive and possibly empty cells in row."""
         return [(x, y) for (x, y) in chain(self._point_cells,
