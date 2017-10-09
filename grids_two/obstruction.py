@@ -280,6 +280,58 @@ class Obstruction():
                     Perm.to_standard(self.patt[i] for i in subidx),
                     (self.pos[i] for i in subidx))
 
+    def point_separation(self, cell, direction):
+        """Performs point separation on cell and assumes point is placed in the
+        cell of given direction of the two resulting cells."""
+        points = list(self.points_in_cell(cell))
+        if direction == DIR_WEST or direction == DIR_EAST:
+            for p in self.pos:
+                if p[0] == cell[0] and p[1] != cell[1]:
+                    raise ValueError(("Obstruction occupies cell in the same "
+                                      "column as point separation cell {}"
+                                      ).format(cell))
+            if not points:
+                yield Obstruction(self.patt,
+                                  [p if p[0] < cell[0] else (p[0] + 1, p[1])
+                                   for p in self.pos])
+                return
+            lo, hi = points[0], points[-1] + 1
+            if direction == DIR_WEST:
+                hi = points[0] + 1
+            else:
+                lo = points[-1]
+            for i in range(lo, hi + 1):
+                yield Obstruction(self.patt,
+                                  [self.pos[j] if j < i
+                                   else (self.pos[j][0] + 1, self.pos[j][1])
+                                   for j in range(len(self))])
+
+        elif direction == DIR_NORTH or direction == DIR_SOUTH:
+            for p in self.pos:
+                if p[0] != cell[0] and p[1] == cell[1]:
+                    raise ValueError(("Obstruction occupies cell in the same "
+                                      "row as point separation cell {}"
+                                      ).format(cell))
+            if not points:
+                yield Obstruction(self.patt,
+                                  [p if p[1] < cell[1] else (p[0], p[1] + 1)
+                                   for p in self.pos])
+                return
+            vals = sorted([self.patt[i] for i in points])
+            lo, hi = vals[0], vals[-1] + 1
+            if direction == DIR_SOUTH:
+                hi = vals[0] + 1
+            else:
+                lo = vals[-1]
+            for i in range(lo, hi + 1):
+                yield Obstruction(self.patt,
+                                  [self.pos[j] if self.patt[j] < i
+                                   else (self.pos[j][0], self.pos[j][1] + 1)
+                                   for j in range(len(self))])
+        else:
+            raise ValueError(("Invalid direction {} for point separation."
+                              ).format(direction))
+
     def minimize(self, cell_mapping):
         return Obstruction(self.patt,
                            [cell_mapping(cell) for cell in self.pos])
