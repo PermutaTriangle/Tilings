@@ -182,14 +182,14 @@ class Tiling():
         result.append(len(self.obstructions))
         result.extend(chain.from_iterable(ob.compress(patthash)
                                           for ob in self.obstructions))
-        res = array('B', result)
+        res = array('H', result)
         return res.tobytes()
 
     @classmethod
     def decompress(cls, arrbytes, patts=None):
         """Given a compressed tiling in the form of a numpy array, decompress
         it and return a tiling."""
-        arr = array('B', arrbytes)
+        arr = array('H', arrbytes)
         offset = 1
         point_cells = [(arr[offset + 2*i], arr[offset + 2*i + 1])
                        for i in range(0, arr[offset - 1])]
