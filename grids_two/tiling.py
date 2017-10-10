@@ -4,7 +4,7 @@ from itertools import chain
 from array import array
 
 from grids import Cell
-from permuta import PermSet
+from permuta import PermSet, Perm
 
 from .misc import map_cell
 from .obstruction import Obstruction
@@ -182,14 +182,14 @@ class Tiling():
         result.append(len(self.obstructions))
         result.extend(chain.from_iterable(ob.compress(patthash)
                                           for ob in self.obstructions))
-        res = array.array('B', result)
+        res = array('B', result)
         return res.tobytes()
 
     @classmethod
-    def decompress(cls, arrbytes, patts):
+    def decompress(cls, arrbytes, patts=None):
         """Given a compressed tiling in the form of a numpy array, decompress
         it and return a tiling."""
-        arr = array.frombytes(arrbytes)
+        arr = array('B', arrbytes)
         offset = 1
         point_cells = [(arr[offset + 2*i], arr[offset + 2*i + 1])
                        for i in range(0, arr[offset - 1])]
@@ -204,7 +204,11 @@ class Tiling():
         obstructions = []
         i = 0
         while i < len(obsarr):
-            patt = patts[obsarr[i]]
+            if patts:
+                patt = patts[obsarr[i]]
+            else:
+                patt = Perm.unrank(obsarr[i])
+
             obstructions.append(Obstruction.decompress(
                 obsarr[i:i + 2*(len(patt)) + 1], patts))
             i += 2 * len(patt) + 1
