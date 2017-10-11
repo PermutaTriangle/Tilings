@@ -391,20 +391,20 @@ class Obstruction():
         """ /
         Flip over the diagonal"""
         flipped = self.patt.inverse()
-        pos = self.patt.inverse().compose(flipped).apply(self.pos)
+        pos = self.patt.inverse().apply(self.pos)
         return Obstruction(flipped, map(transf, pos))
 
     def antidiagonal(self, transf):
         """ \\
         Flip over the diagonal"""
         flipped = self.patt.flip_antidiagonal()
-        pos = self.patt.inverse().compose(flipped).apply(self.pos)
+        pos = self.patt._rotate_left().apply(self.pos)
         return Obstruction(flipped, map(transf, pos))
 
     def rotate270(self, transf):
         """Rotate 270 degrees"""
         rotated = self.patt._rotate_left()
-        pos = self.patt.inverse().compose(rotated).apply(self.pos)
+        pos = rotated.apply(self.pos)
         return Obstruction(rotated, map(transf, pos))
 
     def rotate180(self, transf):
