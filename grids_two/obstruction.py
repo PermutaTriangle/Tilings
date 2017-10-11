@@ -379,7 +379,7 @@ class Obstruction():
         Reverses the tiling within its boundary. Every cell and obstruction
         gets flipped over the vertical middle axis."""
         return Obstruction(self.patt.reverse(),
-                           reversed(map(transf, self.pos)))
+                           reversed(list(map(transf, self.pos))))
 
     def complement(self, transf):
         """ -
@@ -410,7 +410,7 @@ class Obstruction():
     def rotate180(self, transf):
         """Rotate 180 degrees"""
         return Obstruction(self.patt._rotate_180(),
-                           reversed(map(transf, self.pos)))
+                           reversed(list(map(transf, self.pos))))
 
     def rotate90(self, transf):
         """Rotate 90 degrees"""

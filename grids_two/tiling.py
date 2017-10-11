@@ -325,7 +325,7 @@ class Tiling():
         """ /
         Flip over the diagonal"""
         def inverse_cell(cell):
-            return (cell[1], cell[0]),
+            return (cell[1], cell[0])
         return self._transform(
             inverse_cell,
             lambda ob: ob.inverse(inverse_cell))
