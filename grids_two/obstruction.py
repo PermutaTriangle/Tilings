@@ -373,6 +373,50 @@ class Obstruction():
         pos = zip(array[1::2], array[2::2])
         return Obstruction(patt, pos)
 
+    # Symmetries
+    def reverse(self, transf):
+        """ |
+        Reverses the tiling within its boundary. Every cell and obstruction
+        gets flipped over the vertical middle axis."""
+        return Obstruction(self.patt.reverse(),
+                           reversed(map(transf, self.pos)))
+
+    def complement(self, transf):
+        """ -
+        Flip over the horizontal axis.  """
+        return Obstruction(self.patt.complement(),
+                           map(transf, self.pos))
+
+    def inverse(self, transf):
+        """ /
+        Flip over the diagonal"""
+        flipped = self.patt.inverse()
+        pos = self.patt.inverse().compose(flipped).apply(self.pos)
+        return Obstruction(flipped, map(transf, pos))
+
+    def antidiagonal(self, transf):
+        """ \\
+        Flip over the diagonal"""
+        flipped = self.patt.flip_antidiagonal()
+        pos = self.patt.inverse().compose(flipped).apply(self.pos)
+        return Obstruction(flipped, map(transf, pos))
+
+    def rotate270(self, transf):
+        """Rotate 270 degrees"""
+        rotated = self.patt._rotate_left()
+        pos = self.patt.inverse().compose(rotated).apply(self.pos)
+        return Obstruction(rotated, map(transf, pos))
+
+    def rotate180(self, transf):
+        """Rotate 180 degrees"""
+        return Obstruction(self.patt._rotate_180(),
+                           reversed(map(transf, self.pos)))
+
+    def rotate90(self, transf):
+        """Rotate 90 degrees"""
+        return Obstruction(self.patt._rotate_right(),
+                           map(transf, self.patt.inverse().apply(self.pos)))
+
     def __len__(self):
         return len(self.patt)
 
