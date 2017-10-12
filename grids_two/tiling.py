@@ -269,16 +269,20 @@ class Tiling():
 
     def only_cell_in_col(self, cell):
         incol = sum(1 for (x, y) in
-                    chain(self._point_cells, self._positive_cells, self._possibly_empty)
+                    chain(self._point_cells,
+                          self._positive_cells,
+                          self._possibly_empty)
                     if x == cell[0])
         return incol == 1
 
     def only_cell_in_row(self, cell):
         inrow = sum(1 for (x, y) in
-                    chain(self._point_cells, self._positive_cells, self._possibly_empty)
+                    chain(self._point_cells,
+                          self._positive_cells,
+                          self._possibly_empty)
                     if y == cell[1])
         return inrow == 1
-    
+
     def cells_in_row(self, row):
         """Return all point, positive and possibly empty cells in row."""
         return [(x, y) for (x, y) in chain(self._point_cells,
@@ -290,6 +294,79 @@ class Tiling():
         return [(x, y) for (x, y) in chain(self._point_cells,
                                            self._positive_cells,
                                            self._possibly_empty) if x == col]
+
+    # Symmetries
+    def _transform(self, transf, obtransf):
+        return Tiling(point_cells=map(transf, self.point_cells),
+                      positive_cells=map(transf, self.positive_cells),
+                      possibly_empty=map(transf, self.possibly_empty),
+                      obstructions=(obtransf(ob) for ob in self.obstructions))
+
+    def reverse(self):
+        """ |
+        Reverses the tiling within its boundary. Every cell and obstruction
+        gets flipped over the vertical middle axis."""
+        def reverse_cell(cell):
+            return (self.dimensions[0] - cell[0] - 1, cell[1])
+        return self._transform(
+            reverse_cell,
+            lambda ob: ob.reverse(reverse_cell))
+
+    def complement(self):
+        """ -
+        Flip over the horizontal axis.  """
+        def complement_cell(cell):
+            return (cell[0], self.dimensions[1] - cell[1] - 1)
+        return self._transform(
+            complement_cell,
+            lambda ob: ob.complement(complement_cell))
+
+    def inverse(self):
+        """ /
+        Flip over the diagonal"""
+        def inverse_cell(cell):
+            return (cell[1], cell[0])
+        return self._transform(
+            inverse_cell,
+            lambda ob: ob.inverse(inverse_cell))
+
+    def antidiagonal(self):
+        """ \\
+        Flip over the anti-diagonal"""
+        def antidiagonal_cell(cell):
+            return (self.dimensions[1] - cell[1] - 1,
+                    self.dimensions[0] - cell[0] - 1)
+        return self._transform(
+            antidiagonal_cell,
+            lambda ob: ob.antidiagonal(antidiagonal_cell))
+
+    def rotate270(self):
+        """Rotate 270 degrees"""
+        def rotate270_cell(cell):
+            return (self.dimensions[1] - cell[1] - 1,
+                    cell[0])
+        return self._transform(
+            rotate270_cell,
+            lambda ob: ob.rotate270(rotate270_cell))
+
+    def rotate180(self):
+        """Rotate 180 degrees"""
+        def rotate180_cell(cell):
+            return (self.dimensions[0] - cell[0] - 1,
+                    self.dimensions[1] - cell[1] - 1)
+        return self._transform(
+            rotate180_cell,
+            lambda ob: ob.rotate180(rotate180_cell))
+
+    def rotate90(self):
+        """Rotate 90 degrees"""
+        def rotate90_cell(cell):
+            return (cell[1],
+                    self.dimensions[0] - cell[0] - 1)
+        return self._transform(
+            rotate90_cell,
+            lambda ob: ob.rotate90(rotate90_cell))
+
     #
     # Properties and getters
     #

@@ -13,7 +13,7 @@ def random_tiling():
     dimensions = (random.randint(3, 15), random.randint(3, 15))
     if dimensions[0] > dimensions[1]:
         dimensions = (dimensions[1], dimensions[0])
-    nobs = random.randint(3, dimensions[0] * dimensions[1])
+    nobs = random.randint(3, 10)
     possibly_empty = set()
     positive_cells = set()
     point_cells = set()
@@ -22,19 +22,9 @@ def random_tiling():
         length = random.randint(2, 5)
         ob = random_obstruction(length, *dimensions)
         for p in ob.pos:
-            if p not in possibly_empty and p not in positive_cells:
-                choice = random.randint(0, 1)
-                if choice:
-                    possibly_empty.add(p)
-                else:
-                    positive_cells.add(p)
+            if p not in possibly_empty:
+                possibly_empty.add(p)
         obstructions.append(ob)
-    for i in range(dimensions[0]):
-        for j in range(dimensions[1]):
-            if (i, j) not in positive_cells and (i, j) not in possibly_empty:
-                choice = random.randint(0, 3)
-                if not choice:
-                    point_cells.add((i, j))
     return Tiling(possibly_empty=possibly_empty,
                   positive_cells=positive_cells,
                   point_cells=point_cells,
@@ -63,5 +53,5 @@ while True:
     cnt += 1
 
     # if not cnt % 1000000:
-    if not cnt % 1000000:
+    if not cnt % 10000:
         print(cnt)
