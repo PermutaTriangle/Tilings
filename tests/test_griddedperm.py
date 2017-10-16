@@ -1,24 +1,24 @@
 import pytest
 
-from grids_two import Obstruction
+from grids_two import GriddedPerm
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_NONE
 
 
 @pytest.fixture
 def simpleob():
-    return Obstruction(Perm((1, 0, 3, 2)),
+    return GriddedPerm(Perm((1, 0, 3, 2)),
                        ((0, 0), (0, 0), (2, 2), (2, 1)))
 
 
 @pytest.fixture
 def singlecellob():
-    return Obstruction.single_cell(Perm((1, 0, 3, 2)), (2, 2))
+    return GriddedPerm.single_cell(Perm((1, 0, 3, 2)), (2, 2))
 
 
 @pytest.fixture
 def everycellob():
-    return Obstruction(Perm((0, 3, 6, 1, 4, 7, 2, 5, 8)),
+    return GriddedPerm(Perm((0, 3, 6, 1, 4, 7, 2, 5, 8)),
                        ((0, 0), (0, 1), (0, 2),
                         (1, 0), (1, 1), (1, 2),
                         (2, 0), (2, 1), (2, 2)))
@@ -26,13 +26,13 @@ def everycellob():
 
 @pytest.fixture
 def typicalob():
-    return Obstruction(Perm((1, 0, 2, 4, 3)),
+    return GriddedPerm(Perm((1, 0, 2, 4, 3)),
                        ((0, 0), (0, 0), (1, 0), (1, 1), (1, 1)))
 
 
 @pytest.fixture
 def isolatedob():
-    return Obstruction(Perm((0, 1, 2)),
+    return GriddedPerm(Perm((0, 1, 2)),
                        ((0, 0), (1, 1), (2, 2)))
 
 
@@ -56,27 +56,27 @@ def test_occupies_cell(simpleob):
 
 
 def test_occurrences_in(simpleob):
-    ob = Obstruction(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1)))
+    ob = GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1)))
     assert list(ob.occurrences_in(simpleob)) == [(0, 2, 3), (1, 2, 3)]
 
-    ob = Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 1)))
+    ob = GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 1)))
     assert list(ob.occurrences_in(simpleob)) == [(0, 1, 3)]
 
-    ob = Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 2)))
+    ob = GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 2)))
     assert list(ob.occurrences_in(simpleob)) == [(0, 1, 2)]
 
-    ob = Obstruction(Perm((0, 1, 2)), ((0, 0), (2, 2), (2, 1)))
+    ob = GriddedPerm(Perm((0, 1, 2)), ((0, 0), (2, 2), (2, 1)))
     assert not any(ob.occurrences_in(simpleob))
 
-    ob = Obstruction(Perm((1, 0, 2)), ((0, 0), (2, 2), (2, 2)))
+    ob = GriddedPerm(Perm((1, 0, 2)), ((0, 0), (2, 2), (2, 2)))
     assert not ob.occurs_in(simpleob)
 
 
 def test_remove_cells(simpleob):
     assert (simpleob.remove_cells([(0, 0)]) ==
-            Obstruction(Perm((1, 0)), ((2, 2), (2, 1))))
+            GriddedPerm(Perm((1, 0)), ((2, 2), (2, 1))))
     assert (simpleob.remove_cells([(0, 0), (2, 2)]) ==
-            Obstruction(Perm((0,)), ((2, 1),)))
+            GriddedPerm(Perm((0,)), ((2, 1),)))
     assert simpleob.remove_cells([(0, 1), (1, 2)]) == simpleob
 
 
@@ -115,63 +115,63 @@ def test_get_bounding_box(typicalob):
     assert typicalob.get_bounding_box((2, 2)) == (5, 5, 5, 5)
 
 
-def test_stretch_obstruction(typicalob):
-    assert (typicalob.stretch_obstruction((2, 1)) ==
-            Obstruction(Perm((1, 0, 2, 4, 3)),
+def test_stretch_gridding(typicalob):
+    assert (typicalob.stretch_gridding((2, 1)) ==
+            GriddedPerm(Perm((1, 0, 2, 4, 3)),
                         ((0, 2), (0, 0), (3, 2), (3, 3), (3, 3))))
-    assert (typicalob.stretch_obstruction((3, 2)) ==
-            Obstruction(Perm((1, 0, 2, 4, 3)),
+    assert (typicalob.stretch_gridding((3, 2)) ==
+            GriddedPerm(Perm((1, 0, 2, 4, 3)),
                         ((0, 0), (0, 0), (1, 2), (3, 3), (3, 3))))
-    assert (typicalob.stretch_obstruction((4, 0)) ==
-            Obstruction(Perm((1, 0, 2, 4, 3)),
+    assert (typicalob.stretch_gridding((4, 0)) ==
+            GriddedPerm(Perm((1, 0, 2, 4, 3)),
                         ((0, 2), (0, 2), (1, 2), (1, 3), (3, 3))))
 
 
 def test_place_point(typicalob):
-    ob12 = Obstruction.single_cell(Perm((0, 1)), (0, 0))
+    ob12 = GriddedPerm.single_cell(Perm((0, 1)), (0, 0))
     assert (list(ob12.place_point((0, 0), DIR_NORTH, skip_redundant=True)) ==
-            [Obstruction(Perm((0,)), ((0, 0),)),
-             Obstruction(Perm((0, 1)), ((2, 0), (2, 0)))])
+            [GriddedPerm(Perm((0,)), ((0, 0),)),
+             GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0)))])
     assert (list(ob12.place_point((0, 0), DIR_EAST, skip_redundant=True)) ==
-            [Obstruction(Perm((0,)), ((0, 0),)),
-             Obstruction(Perm((0, 1)), ((0, 2), (0, 2)))])
+            [GriddedPerm(Perm((0,)), ((0, 0),)),
+             GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2)))])
     assert (list(ob12.place_point((0, 0), DIR_SOUTH, skip_redundant=True)) ==
-            [Obstruction(Perm((0,)), ((2, 2),)),
-             Obstruction(Perm((0, 1)), ((0, 2), (0, 2)))])
+            [GriddedPerm(Perm((0,)), ((2, 2),)),
+             GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2)))])
     assert (list(ob12.place_point((0, 0), DIR_WEST, skip_redundant=True)) ==
-            [Obstruction(Perm((0,)), ((2, 2),)),
-             Obstruction(Perm((0, 1)), ((2, 0), (2, 0)))])
+            [GriddedPerm(Perm((0,)), ((2, 2),)),
+             GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0)))])
 
     assert (list(typicalob.place_point((0, 1), DIR_WEST, skip_redundant=True))
-            == [Obstruction(Perm((1, 0, 2, 4, 3)),
+            == [GriddedPerm(Perm((1, 0, 2, 4, 3)),
                             ((2, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
-                Obstruction(Perm((1, 0, 2, 4, 3)),
+                GriddedPerm(Perm((1, 0, 2, 4, 3)),
                             ((2, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
-                Obstruction(Perm((1, 0, 2, 4, 3)),
+                GriddedPerm(Perm((1, 0, 2, 4, 3)),
                             ((2, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
-                Obstruction(Perm((1, 0, 2, 4, 3)),
+                GriddedPerm(Perm((1, 0, 2, 4, 3)),
                             ((0, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
-                Obstruction(Perm((1, 0, 2, 4, 3)),
+                GriddedPerm(Perm((1, 0, 2, 4, 3)),
                             ((0, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
-                Obstruction(Perm((1, 0, 2, 4, 3)),
+                GriddedPerm(Perm((1, 0, 2, 4, 3)),
                             ((0, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
-                Obstruction(Perm((1, 0, 2, 4, 3)),
+                GriddedPerm(Perm((1, 0, 2, 4, 3)),
                             ((0, 0), (0, 0), (3, 0), (3, 3), (3, 3))),
-                Obstruction(Perm((1, 0, 2, 4, 3)),
+                GriddedPerm(Perm((1, 0, 2, 4, 3)),
                             ((0, 0), (0, 0), (3, 0), (3, 3), (3, 1))),
-                Obstruction(Perm((1, 0, 2, 4, 3)),
+                GriddedPerm(Perm((1, 0, 2, 4, 3)),
                             ((0, 0), (0, 0), (3, 0), (3, 1), (3, 1)))])
-    assert (list(Obstruction(Perm((2, 1, 0, 4, 3)),
+    assert (list(GriddedPerm(Perm((2, 1, 0, 4, 3)),
                              ((0, 1), (0, 1), (1, 0), (2, 1), (2, 1))
                              ).place_point(
                                  (2, 1), DIR_SOUTH, skip_redundant=True)) ==
-            [Obstruction(Perm((2, 1, 0, 3)),
+            [GriddedPerm(Perm((2, 1, 0, 3)),
                          ((0, 1), (0, 1), (1, 0), (2, 3))),
-             Obstruction(Perm((2, 1, 0, 4, 3)),
+             GriddedPerm(Perm((2, 1, 0, 4, 3)),
                          ((0, 3), (0, 3), (1, 0), (4, 3), (4, 3))),
-             Obstruction(Perm((2, 1, 0, 4, 3)),
+             GriddedPerm(Perm((2, 1, 0, 4, 3)),
                          ((0, 3), (0, 1), (1, 0), (4, 3), (4, 3))),
-             Obstruction(Perm((2, 1, 0, 4, 3)),
+             GriddedPerm(Perm((2, 1, 0, 4, 3)),
                          ((0, 1), (0, 1), (1, 0), (4, 3), (4, 3)))])
 
     def minimize(obba):
@@ -190,25 +190,25 @@ def test_place_point(typicalob):
                 res.append(ob)
         return res
 
-    obs = minimize(Obstruction.single_cell(
+    obs = minimize(GriddedPerm.single_cell(
         Perm((0, 1, 2)), (0, 0)).place_point((0, 0), DIR_NONE))
-    assert (obs == [Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-                    Obstruction(Perm((0, 1)), ((0, 0), (2, 2))),
-                    Obstruction(Perm((0, 1)), ((2, 2), (2, 2))),
-                    Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 2), (0, 2))),
-                    Obstruction(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0))),
-                    Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 2), (2, 2))),
-                    Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
-                    Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 2)))])
+    assert (obs == [GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
+                    GriddedPerm(Perm((0, 1)), ((2, 2), (2, 2))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 2), (0, 2), (2, 2))),
+                    GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
+                    GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 2)))])
 
 
-def test_is_point_obstr(typicalob, singlecellob):
-    assert typicalob.is_point_obstr() is None
-    assert singlecellob.is_point_obstr() is None
-    assert Obstruction(Perm((0,)), ((0, 0),)).is_point_obstr() == (0, 0)
-    assert Obstruction(Perm((0,)), ((3, 2),)).is_point_obstr() == (3, 2)
-    assert Obstruction(Perm((0,)), ((100, 10),)).is_point_obstr() == (100, 10)
+def test_is_point_perm(typicalob, singlecellob):
+    assert typicalob.is_point_perm() is None
+    assert singlecellob.is_point_perm() is None
+    assert GriddedPerm(Perm((0,)), ((0, 0),)).is_point_perm() == (0, 0)
+    assert GriddedPerm(Perm((0,)), ((3, 2),)).is_point_perm() == (3, 2)
+    assert GriddedPerm(Perm((0,)), ((100, 10),)).is_point_perm() == (100, 10)
 
 
 def test_is_single_cell(typicalob, simpleob, singlecellob):
@@ -218,34 +218,33 @@ def test_is_single_cell(typicalob, simpleob, singlecellob):
 
 
 def test_insert_point():
-    ob = Obstruction(Perm((0, 4, 1, 2, 3, 5)),
+    ob = GriddedPerm(Perm((0, 4, 1, 2, 3, 5)),
                      [(0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (2, 2)])
     assert list(ob.insert_point((1, 1))) == [
-        Obstruction(Perm((0, 5, 1, 2, 3, 4, 6)),
+        GriddedPerm(Perm((0, 5, 1, 2, 3, 4, 6)),
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        Obstruction(Perm((0, 5, 1, 3, 2, 4, 6)),
+        GriddedPerm(Perm((0, 5, 1, 3, 2, 4, 6)),
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        Obstruction(Perm((0, 5, 1, 4, 2, 3, 6)),
+        GriddedPerm(Perm((0, 5, 1, 4, 2, 3, 6)),
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        Obstruction(Perm((0, 4, 1, 5, 2, 3, 6)),
+        GriddedPerm(Perm((0, 4, 1, 5, 2, 3, 6)),
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        Obstruction(Perm((0, 5, 1, 3, 2, 4, 6)),
+        GriddedPerm(Perm((0, 5, 1, 3, 2, 4, 6)),
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        Obstruction(Perm((0, 5, 1, 2, 3, 4, 6)),
+        GriddedPerm(Perm((0, 5, 1, 2, 3, 4, 6)),
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        Obstruction(Perm((0, 5, 1, 2, 4, 3, 6)),
+        GriddedPerm(Perm((0, 5, 1, 2, 4, 3, 6)),
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        Obstruction(Perm((0, 4, 1, 2, 5, 3, 6)),
+        GriddedPerm(Perm((0, 4, 1, 2, 5, 3, 6)),
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        Obstruction(Perm((0, 5, 1, 3, 4, 2, 6)),
+        GriddedPerm(Perm((0, 5, 1, 3, 4, 2, 6)),
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        Obstruction(Perm((0, 5, 1, 2, 4, 3, 6)),
+        GriddedPerm(Perm((0, 5, 1, 2, 4, 3, 6)),
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        Obstruction(Perm((0, 5, 1, 2, 3, 4, 6)),
+        GriddedPerm(Perm((0, 5, 1, 2, 3, 4, 6)),
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        Obstruction(Perm((0, 4, 1, 2, 3, 5, 6)),
+        GriddedPerm(Perm((0, 4, 1, 2, 3, 5, 6)),
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)))]
-
 
 
 def test_compression(simpleob, singlecellob, everycellob, typicalob,
@@ -259,70 +258,71 @@ def test_compression(simpleob, singlecellob, everycellob, typicalob,
                4: Perm((1, 0, 2, 4, 3)),
                17: Perm((0, 1, 2))}
 
-    assert (Obstruction.decompress(simpleob.compress(patthash), revhash)
+    assert (GriddedPerm.decompress(simpleob.compress(patthash), revhash)
             == simpleob)
-    assert (Obstruction.decompress(singlecellob.compress(patthash), revhash)
+    assert (GriddedPerm.decompress(singlecellob.compress(patthash), revhash)
             == singlecellob)
-    assert (Obstruction.decompress(everycellob.compress(patthash), revhash)
+    assert (GriddedPerm.decompress(everycellob.compress(patthash), revhash)
             == everycellob)
-    assert (Obstruction.decompress(typicalob.compress(patthash), revhash)
+    assert (GriddedPerm.decompress(typicalob.compress(patthash), revhash)
             == typicalob)
-    assert (Obstruction.decompress(isolatedob.compress(patthash), revhash)
+    assert (GriddedPerm.decompress(isolatedob.compress(patthash), revhash)
             == isolatedob)
 
-    assert (Obstruction.decompress(simpleob.compress())
+    assert (GriddedPerm.decompress(simpleob.compress())
             == simpleob)
-    assert (Obstruction.decompress(singlecellob.compress())
+    assert (GriddedPerm.decompress(singlecellob.compress())
             == singlecellob)
-    assert (Obstruction.decompress(everycellob.compress())
+    assert (GriddedPerm.decompress(everycellob.compress())
             == everycellob)
-    assert (Obstruction.decompress(typicalob.compress())
+    assert (GriddedPerm.decompress(typicalob.compress())
             == typicalob)
-    assert (Obstruction.decompress(isolatedob.compress())
+    assert (GriddedPerm.decompress(isolatedob.compress())
             == isolatedob)
+
 
 def test_point_seperation():
-    ob = Obstruction.single_cell(Perm((0, 2, 1)), (0, 0))
+    ob = GriddedPerm.single_cell(Perm((0, 2, 1)), (0, 0))
     assert list(ob.point_separation((0, 0), DIR_WEST)) == [
-        Obstruction(Perm((0, 2, 1)), [(1, 0), (1, 0), (1, 0)]),
-        Obstruction(Perm((0, 2, 1)), [(0, 0), (1, 0), (1, 0)])]
+        GriddedPerm(Perm((0, 2, 1)), [(1, 0), (1, 0), (1, 0)]),
+        GriddedPerm(Perm((0, 2, 1)), [(0, 0), (1, 0), (1, 0)])]
     assert list(ob.point_separation((0, 0), DIR_EAST)) == [
-        Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 0), (1, 0)]),
-        Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)])]
+        GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 0), (1, 0)]),
+        GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)])]
     assert list(ob.point_separation((0, 0), DIR_NORTH)) == [
-        Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 1), (0, 0)]),
-        Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)])]
+        GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 1), (0, 0)]),
+        GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)])]
     assert list(ob.point_separation((0, 0), DIR_SOUTH)) == [
-        Obstruction(Perm((0, 2, 1)), [(0, 1), (0, 1), (0, 1)]),
-        Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 1), (0, 1)])]
+        GriddedPerm(Perm((0, 2, 1)), [(0, 1), (0, 1), (0, 1)]),
+        GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 1), (0, 1)])]
 
-    ob = Obstruction.single_cell(Perm((0, 2, 1, 3)), (0, 0))
+    ob = GriddedPerm.single_cell(Perm((0, 2, 1, 3)), (0, 0))
     assert list(ob.point_separation((0, 0), DIR_WEST)) == [
-        Obstruction(Perm((0, 2, 1, 3)), [(1, 0), (1, 0), (1, 0), (1, 0)]),
-        Obstruction(Perm((0, 2, 1, 3)), [(0, 0), (1, 0), (1, 0), (1, 0)])]
+        GriddedPerm(Perm((0, 2, 1, 3)), [(1, 0), (1, 0), (1, 0), (1, 0)]),
+        GriddedPerm(Perm((0, 2, 1, 3)), [(0, 0), (1, 0), (1, 0), (1, 0)])]
 
     assert list(ob.point_separation((0, 0), DIR_NORTH)) == [
-        Obstruction(Perm((0, 2, 1, 3)), [(0, 0), (0, 0), (0, 0), (0, 1)]),
-        Obstruction(Perm((0, 2, 1, 3)), [(0, 0), (0, 0), (0, 0), (0, 0)])]
+        GriddedPerm(Perm((0, 2, 1, 3)), [(0, 0), (0, 0), (0, 0), (0, 1)]),
+        GriddedPerm(Perm((0, 2, 1, 3)), [(0, 0), (0, 0), (0, 0), (0, 0)])]
 
-    ob = Obstruction(Perm((0, 2, 1, 3)),
+    ob = GriddedPerm(Perm((0, 2, 1, 3)),
                      [(0, 0), (1, 1), (1, 1), (2, 2)])
     assert list(ob.point_separation((1, 1), DIR_WEST)) == [
-        Obstruction(Perm((0, 2, 1, 3)),
+        GriddedPerm(Perm((0, 2, 1, 3)),
                     [(0, 0), (2, 1), (2, 1), (3, 2)]),
-        Obstruction(Perm((0, 2, 1, 3)),
+        GriddedPerm(Perm((0, 2, 1, 3)),
                     [(0, 0), (1, 1), (2, 1), (3, 2)])]
     assert list(ob.point_separation((1, 1), DIR_NORTH)) == [
-        Obstruction(Perm((0, 2, 1, 3)),
+        GriddedPerm(Perm((0, 2, 1, 3)),
                     [(0, 0), (1, 2), (1, 1), (2, 3)]),
-        Obstruction(Perm((0, 2, 1, 3)),
+        GriddedPerm(Perm((0, 2, 1, 3)),
                     [(0, 0), (1, 1), (1, 1), (2, 3)])]
 
-    ob = Obstruction(Perm((0, 1, 2)),
+    ob = GriddedPerm(Perm((0, 1, 2)),
                      [(0, 0), (2, 2), (2, 2)])
     assert list(ob.point_separation((1, 1), DIR_EAST)) == [
-        Obstruction(Perm((0, 1, 2)),
+        GriddedPerm(Perm((0, 1, 2)),
                     [(0, 0), (3, 2), (3, 2)])]
     assert list(ob.point_separation((1, 1), DIR_SOUTH)) == [
-        Obstruction(Perm((0, 1, 2)),
+        GriddedPerm(Perm((0, 1, 2)),
                     [(0, 0), (2, 3), (2, 3)])]
