@@ -273,7 +273,9 @@ class Obstruction():
                 yield Obstruction(self.patt.insert(idx, val),
                                   self.pos[:idx] + (cell,) + self.pos[idx:])
 
-    def isolate_point(self, cell, row=True):
+    def _isolate_point(self, cell, row=True):
+        """Isolates point in the given cell within the row or column, depending
+        on the `row` flag."""
         pos = self.pos
         if self.occupies(cell):
             point = tuple(self.points_in_cell(cell))[0]
@@ -313,10 +315,12 @@ class Obstruction():
                                        for (j, (x, y)) in enumerate(pos)))
 
     def isolate_point_row(self, cell):
-        return self.isolate_point(cell)
+        """Isolates point in the given cell within the row."""
+        return self._isolate_point(cell)
 
     def isolate_point_col(self, cell):
-        return self.isolate_point(cell, False)
+        """Isolates point in the given cell within the column."""
+        return self._isolate_point(cell, False)
 
     def all_subobs(self):
         """Yields all subobstructions."""
