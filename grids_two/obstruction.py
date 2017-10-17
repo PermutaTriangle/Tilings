@@ -273,6 +273,51 @@ class Obstruction():
                 yield Obstruction(self.patt.insert(idx, val),
                                   self.pos[:idx] + (cell,) + self.pos[idx:])
 
+    def isolate_point(self, cell, row=True):
+        pos = self.pos
+        if self.occupies(cell):
+            point = tuple(self.points_in_cell(cell))[0]
+            if row:
+                pos = [(x, y) if self.patt[i] < self.patt[point] else
+                       (x, y + 2) if self.patt[i] > self.patt[point] else
+                       (x, y + 1) for (i, (x, y)) in enumerate(pos)]
+            else:
+                pos = [(x, y) if i < point else
+                       (x + 2, y) if i > point else
+                       (x + 1, y) for (i, (x, y)) in enumerate(pos)]
+            yield Obstruction(self.patt, pos)
+        else:
+            if row:
+                rowpoints = sorted(self.get_points_row(cell[1]),
+                                   key=lambda x: x[1])
+                if not rowpoints:
+                    yield Obstruction(self.patt,
+                                      ((x, y) if y < cell[1] else (x, y + 2)
+                                       for (x, y) in pos))
+                    return
+                for p in range(rowpoints[0][1], rowpoints[-1][1] + 2):
+                    yield Obstruction(
+                        self.patt,
+                        ((x, y) if self.patt[j] < p else (x, y + 2)
+                         for (j, (x, y)) in enumerate(pos)))
+            else:
+                colpoints = list(self.get_points_col(cell[0]))
+                if not colpoints:
+                    yield Obstruction(self.patt,
+                                      ((x, y) if x < cell[0] else (x + 2, y)
+                                       for (x, y) in pos))
+                    return
+                for i in range(colpoints[0][0], colpoints[-1][0] + 2):
+                    yield Obstruction(self.patt,
+                                      ((x, y) if j < i else (x + 2, y)
+                                       for (j, (x, y)) in enumerate(pos)))
+
+    def isolate_point_row(self, cell):
+        return self.isolate_point(cell)
+
+    def isolate_point_col(self, cell):
+        return self.isolate_point(cell, False)
+
     def all_subobs(self):
         """Yields all subobstructions."""
         for r in range(len(self)):
