@@ -21,7 +21,7 @@ class Tiling():
 
     def __init__(self, point_cells=list(), positive_cells=list(),
                  possibly_empty=list(), obstructions=list(),
-                 remove_empty=True):
+                 requirements=list(), remove_empty=True):
         # Set of the cells that have points in them
         self._point_cells = frozenset(point_cells)
         # Set of the cells that are positive, i.e. contain a point
@@ -30,6 +30,8 @@ class Tiling():
         self._possibly_empty = frozenset(possibly_empty)
         # Set of obstructions
         self._obstructions = tuple(sorted(obstructions))
+        # Set of requirement lists
+        self._requirements = tuple(sorted(list(map(sorted, requirements))))
 
         self._dimensions = None
         self.back_map = None
@@ -56,6 +58,11 @@ class Tiling():
             raise ValueError(("The set of positive cells and the set of "
                               "possibly empty cells should cover the cells "
                               "of the obstructions."))
+        if not all(any(set(req.pos) for req in reqlist)
+                   for reqlist in self._requirements):
+            raise ValueError(("The set of positive cells and the set of "
+                              "possibly empty cells should cover at least one"
+                              "requirement in each requirement list."))
 
         self._minimize(remove_empty)
         self.dimensions
@@ -67,16 +74,22 @@ class Tiling():
         obstructions.
         """
         # Minimize the set of obstructions
-        cleanobs = self._clean_obs()
+        minimalobs = self._minimal_obs()
+        # Minimize the set of requiriments
+        minimalreqs = self._minimal_reqs()
         # Compute the single-point obstructions
         empty_cells = set(ob.is_point_obstr()
-                          for ob in cleanobs if ob.is_point_obstr())
+                          for ob in minimalobs if ob.is_point_obstr())
+        # Compute the required points from the set of requirement lists
+        #  required_points = set(chain.from_iterable(
+        #      reduce(set.__and__, (set(req.pos) for req in reqlist))
+        #      for reqlist in minimalreqs))
 
         # Remove the empty cells
         self._possibly_empty = frozenset(self._possibly_empty - empty_cells)
         if (self._positive_cells & empty_cells or
                 self._point_cells & empty_cells):
-            cleanobs.append(Obstruction.empty_obstruction)
+            minimalobs.append(Obstruction.empty_obstruction)
 
         # Produce the mapping between the two tilings
         self._col_mapping, self._row_mapping = self._minimize_mapping()
@@ -92,8 +105,11 @@ class Tiling():
 
         if remove_empty:
             self._obstructions = tuple(
-                sorted(ob.minimize(cell_map) for ob in cleanobs
+                sorted(ob.minimize(cell_map) for ob in minimalobs
                        if ob.is_point_obstr() is None))
+            self._requirements = tuple(
+                tuple(sorted(req.minimize(cell_map) for req in reqlist)
+                      for reqlist in minimalreqs))
             self._point_cells = frozenset(map(cell_map,
                                               self._point_cells))
             self._positive_cells = frozenset(map(cell_map,
@@ -101,8 +117,11 @@ class Tiling():
             self._possibly_empty = frozenset(map(cell_map,
                                                  self._possibly_empty))
         else:
-            self._obstructions = tuple(ob for ob in cleanobs
+            self._obstructions = tuple(ob for ob in minimalobs
                                        if ob.is_point_obstr() is None)
+            self._requirements = tuple(
+                tuple(sorted(req.minimize(cell_map) for req in reqlist)
+                      for reqlist in minimalreqs))
 
     def _minimize_mapping(self):
         """Returns a pair of dictionaries, that map rows/columns to an
@@ -131,7 +150,7 @@ class Tiling():
                       cell in self._positive_cells)]
         return obstruction.remove_cells(remove)
 
-    def _clean_obs(self):
+    def _minimal_obs(self):
         """Returns a new list of minimal obstructions from the obstruction set
         of self."""
         cleanobs = list()
@@ -144,6 +163,11 @@ class Tiling():
             if add:
                 cleanobs.append(ob)
         return cleanobs
+
+    def _minimal_reqs(self):
+        """Returns a new set of minimal lists of requirements from the
+        requirement set of self."""
+        return self._requirements
 
     def to_old_tiling(self):
         import grids
@@ -403,6 +427,14 @@ class Tiling():
         return len(self._obstructions)
 
     @property
+    def requirements(self):
+        return self._requirements
+
+    @property
+    def total_requirements(self):
+        return len(self._requirements)
+
+    @property
     def dimensions(self):
         if self._dimensions is None:
             all_cells = (self._positive_cells |
@@ -445,12 +477,19 @@ class Tiling():
         return len(self._obstructions)
 
     def __repr__(self):
-        format_string = "<A tiling of {} points and {} obstructions>"
-        return format_string.format(self.total_points, self.total_obstructions)
+        format_string = ("<Tiling with {} points, "
+                         "{} obstructions, "
+                         "{} requirement lists>")
+        return format_string.format(self.total_points,
+                                    self.total_obstructions,
+                                    self.total_requirements)
 
     def __str__(self):
         return "\n".join([
             "Point cells: " + str(self._point_cells),
             "Positive cells: " + str(self._positive_cells),
             "Possibly empty cells: " + str(self._possibly_empty),
-            "Obstructions: " + ", ".join(list(map(str, self._obstructions)))])
+            "Obstructions: " + ", ".join(list(map(str, self._obstructions))),
+            "Requirements: [[" + "], [".join(
+                list(map(lambda x: ", ".join(list(map(str, x))),
+                         self._requirements))) + "]]"])
