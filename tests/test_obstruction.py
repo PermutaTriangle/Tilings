@@ -291,6 +291,45 @@ def test_compression(simpleob, singlecellob, everycellob, typicalob,
             == isolatedob)
 
 
+def test_isolated_point():
+    ob = Obstruction(Perm((0, 1, 2)),
+                     [(0, 1), (1, 1), (1, 2)])
+    assert (list(ob.isolate_point_row((1, 1))) ==
+            [Obstruction(Perm((0, 1, 2)),
+                         [(0, 1), (1, 2), (1, 4)])])
+    assert (list(ob.isolate_point_col((1, 1))) ==
+            [Obstruction(Perm((0, 1, 2)),
+                         [(0, 1), (2, 1), (3, 2)])])
+    ob = Obstruction(Perm((0, 1)),
+                     [(1, 2), (1, 2)])
+    assert (sorted(ob.isolate_point_col((1, 1))) ==
+            [Obstruction(Perm((0, 1)),
+                         [(1, 2), (1, 2)]),
+             Obstruction(Perm((0, 1)),
+                         [(1, 2), (3, 2)]),
+             Obstruction(Perm((0, 1)),
+                         [(3, 2), (3, 2)])])
+    assert (sorted(ob.isolate_point_row((1, 1))) ==
+            [Obstruction(Perm((0, 1)),
+                         [(1, 4), (1, 4)])])
+    ob = Obstruction(Perm((3, 2, 0, 1)),
+                     [(0, 1), (0, 1), (1, 0), (2, 1)])
+    assert (sorted(ob.isolate_point_col((1, 1))) ==
+            [Obstruction(Perm((3, 2, 0, 1)),
+                         [(0, 1), (0, 1), (1, 0), (4, 1)]),
+             Obstruction(Perm((3, 2, 0, 1)),
+                         [(0, 1), (0, 1), (3, 0), (4, 1)])])
+    assert (sorted(ob.isolate_point_row((1, 1))) ==
+            [Obstruction(Perm((3, 2, 0, 1)),
+                         [(0, 1), (0, 1), (1, 0), (2, 1)]),
+             Obstruction(Perm((3, 2, 0, 1)),
+                         [(0, 3), (0, 1), (1, 0), (2, 1)]),
+             Obstruction(Perm((3, 2, 0, 1)),
+                         [(0, 3), (0, 3), (1, 0), (2, 1)]),
+             Obstruction(Perm((3, 2, 0, 1)),
+                         [(0, 3), (0, 3), (1, 0), (2, 3)])])
+
+
 def test_point_seperation():
     ob = Obstruction.single_cell(Perm((0, 2, 1)), (0, 0))
     assert list(ob.point_separation((0, 0), DIR_WEST)) == [
