@@ -8,6 +8,7 @@ from permuta import PermSet, Perm
 
 from .misc import map_cell
 from .obstruction import Obstruction
+from .requirement import Requirement
 
 __all__ = ("Tiling")
 
@@ -206,6 +207,11 @@ class Tiling():
         result.append(len(self.obstructions))
         result.extend(chain.from_iterable(ob.compress(patthash)
                                           for ob in self.obstructions))
+        result.append(len(self.requirements))
+        for reqlist in self.requirements:
+            result.append(len(reqlist))
+            result.extend(chain.from_iterable(req.compress(patthash)
+                                              for req in reqlist))
         res = array('H', result)
         return res.tobytes()
 
@@ -224,22 +230,43 @@ class Tiling():
         possibly_empty = [(arr[offset + 2*i], arr[offset + 2*i + 1])
                           for i in range(arr[offset - 1])]
         offset += 2 * arr[offset - 1] + 1
-        obsarr = arr[offset:]
+        nobs = arr[offset - 1]
         obstructions = []
-        i = 0
-        while i < len(obsarr):
+        for i in range(nobs):
             if patts:
-                patt = patts[obsarr[i]]
+                patt = patts[arr[offset]]
             else:
-                patt = Perm.unrank(obsarr[i])
-
+                patt = Perm.unrank(arr[offset])
             obstructions.append(Obstruction.decompress(
-                obsarr[i:i + 2*(len(patt)) + 1], patts))
-            i += 2 * len(patt) + 1
+                arr[offset:offset + 2*(len(patt)) + 1], patts))
+            offset += 2 * len(patt) + 1
+
+        nreqs = arr[offset]
+        offset += 1
+        requirements = []
+        for i in range(nreqs):
+            reqlistlen = arr[offset]
+            offset += 1
+            reqlist = []
+            for j in range(reqlistlen):
+                if patts:
+                    patt = patts[arr[offset]]
+                else:
+                    patt = Perm.unrank(arr[offset])
+                reqlist.append(Requirement.decompress(
+                    arr[offset:offset + 2*(len(patt)) + 1], patts))
+                offset += 2 * len(patt) + 1
+            requirements.append(reqlist)
+
         return cls(point_cells=point_cells,
                    positive_cells=positive_cells,
                    possibly_empty=possibly_empty,
-                   obstructions=obstructions)
+                   obstructions=obstructions,
+                   requirements=requirements)
+    print("AAAA")
+    print("AAAA")
+    print("AAAA")
+    print("AAAA")
 
     # Cell methods
 
