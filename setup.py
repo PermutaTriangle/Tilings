@@ -8,11 +8,19 @@ def read(fname):
 
 
 setup(
-    name = "grids_two",
-    version = "0.0.1",
-    author = "Henning Ulfarsson",
-    author_email = "henningu@ru.is",
-    url = "https://github.com/PermutaTriangle/grids_two",
+    name="grids_two",
+    version="0.0.1",
+    author="Henning Ulfarsson",
+    author_email="henningu@ru.is",
+    url="https://github.com/PermutaTriangle/grids_two",
     packages=find_packages(),
     long_description=read("README.md"),
+    dependency_links=[
+        'git+https://github.com/PermutaTriangle/Permuta#egg=permuta-0.0.1',
+        'git+https://github.com/PermutaTriangle/grids#egg=grids-0.0.1'],
+    install_requires=['permuta',
+                      'grids'],
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest',
+                   'permuta']
 )
