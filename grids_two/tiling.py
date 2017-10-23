@@ -32,7 +32,7 @@ class Tiling():
         # Set of obstructions
         self._obstructions = tuple(sorted(obstructions))
         # Set of requirement lists
-        self._requirements = tuple(sorted(list(map(sorted, requirements))))
+        self._requirements = Tiling.sort_requirements(requirements)
 
         self._dimensions = None
         self.back_map = None
@@ -108,9 +108,9 @@ class Tiling():
             self._obstructions = tuple(
                 sorted(ob.minimize(cell_map) for ob in minimalobs
                        if ob.is_point_obstr() is None))
-            self._requirements = tuple(
-                tuple(sorted(req.minimize(cell_map) for req in reqlist)
-                      for reqlist in minimalreqs))
+            self._requirements = tuple(sorted(
+                tuple(sorted(req.minimize(cell_map) for req in reqlist))
+                for reqlist in minimalreqs))
             self._point_cells = frozenset(map(cell_map,
                                               self._point_cells))
             self._positive_cells = frozenset(map(cell_map,
@@ -196,7 +196,8 @@ class Tiling():
     def compress(self, patthash=None):
         """Compresses the tiling by flattening the sets of cells into lists of
         integers which are concatenated together, every list preceeded by its
-        size. The obstructions are compressed and concatenated to the list."""
+        size. The obstructions are compressed and concatenated to the list, as
+        are the requirement lists."""
         result = []
         result.append(len(self.point_cells))
         result.extend(chain.from_iterable(self.point_cells))
@@ -217,7 +218,7 @@ class Tiling():
 
     @classmethod
     def decompress(cls, arrbytes, patts=None):
-        """Given a compressed tiling in the form of a numpy array, decompress
+        """Given a compressed tiling in the form of an 2-byte array, decompress
         it and return a tiling."""
         arr = array('H', arrbytes)
         offset = 1
@@ -275,7 +276,8 @@ class Tiling():
         return Tiling(self._point_cells,
                       self._positive_cells,
                       self._possibly_empty - {cell},
-                      newobs)
+                      newobs,
+                      self._requirements)
 
     def insert_cell(self, cell):
         """Inserts a cell into every obstruction and returns a new tiling. The
@@ -286,7 +288,8 @@ class Tiling():
         return Tiling(self._point_cells,
                       self._positive_cells | {cell},
                       self._possibly_empty - {cell},
-                      self._obstructions)
+                      self._obstructions,
+                      self._requirements)
 
     def only_positive_in_row_and_column(self, cell):
         """Check if the cell is the only positive cell in row and column."""
@@ -342,12 +345,19 @@ class Tiling():
                                            self._positive_cells,
                                            self._possibly_empty) if x == col]
 
+    @staticmethod
+    def sort_requirements(requirements):
+        return tuple(sorted(tuple(sorted(reqlist))
+                            for reqlist in requirements))
+
     # Symmetries
-    def _transform(self, transf, obtransf):
+    def _transform(self, transf, gptransf):
         return Tiling(point_cells=map(transf, self.point_cells),
                       positive_cells=map(transf, self.positive_cells),
                       possibly_empty=map(transf, self.possibly_empty),
-                      obstructions=(obtransf(ob) for ob in self.obstructions))
+                      obstructions=(gptransf(ob) for ob in self.obstructions),
+                      requirements=([gptransf(req) for req in reqlist]
+                                    for reqlist in self.requirements))
 
     def reverse(self):
         """ |
@@ -477,24 +487,17 @@ class Tiling():
     # Dunder methods
     #
 
-    def __contains__(self, item):
-        if isinstance(item, Obstruction):
-            return item in self._obstructions
-        return False
-
     def __hash__(self):
         return (hash(self._point_cells) ^ hash(self._possibly_empty) ^
-                hash(self._positive_cells) ^ hash(self._obstructions))
+                hash(self._positive_cells) ^ hash(self._obstructions) ^
+                hash(self._requirements))
 
     def __eq__(self, other):
         return (self.point_cells == other.point_cells and
                 self.possibly_empty == other.possibly_empty and
                 self.positive_cells == other.positive_cells and
-                self.obstructions == other.obstructions)
-
-    def __iter__(self):
-        for ob in self._obstructions:
-            yield ob
+                self.obstructions == other.obstructions,
+                self.requirements == other.requirements)
 
     def __len__(self):
         return len(self._obstructions)
