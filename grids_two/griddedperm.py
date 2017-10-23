@@ -477,12 +477,12 @@ class GriddedPerm():
         return len(self.patt)
 
     def __repr__(self):
-        return "<An {} with pattern {}>".format(self.__class__.__name__,
-                                                str(self.patt))
-
-    def __str__(self):
         return "{}({}, {})".format(self.__class__.__name__,
                                    self.patt, self.pos)
+
+    def __str__(self):
+        return "<{} with {}>".format(self.__class__.__name__,
+                                     str(self.patt))
 
     def __hash__(self):
         return hash(self.patt) ^ hash(self.pos)

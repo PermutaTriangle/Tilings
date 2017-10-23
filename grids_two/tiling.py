@@ -477,19 +477,23 @@ class Tiling():
         return len(self._obstructions)
 
     def __repr__(self):
-        format_string = ("<Tiling with {} points, "
-                         "{} obstructions, "
-                         "{} requirement lists>")
-        return format_string.format(self.total_points,
-                                    self.total_obstructions,
-                                    self.total_requirements)
+        format_string = ("Tiling(point_cells={}, "
+                         "positive_cells={}, "
+                         "possibly_empty={}, "
+                         "obstructions={}, "
+                         "requirements={})")
+        return format_string.format(self.point_cells,
+                                    self.positive_cells,
+                                    self.possibly_empty,
+                                    self.obstructions,
+                                    self.requirements)
 
     def __str__(self):
         return "\n".join([
             "Point cells: " + str(self._point_cells),
             "Positive cells: " + str(self._positive_cells),
             "Possibly empty cells: " + str(self._possibly_empty),
-            "Obstructions: " + ", ".join(list(map(str, self._obstructions))),
+            "Obstructions: " + ", ".join(list(map(repr, self._obstructions))),
             "Requirements: [[" + "], [".join(
-                list(map(lambda x: ", ".join(list(map(str, x))),
+                list(map(lambda x: ", ".join(list(map(repr, x))),
                          self._requirements))) + "]]"])
