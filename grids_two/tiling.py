@@ -263,10 +263,6 @@ class Tiling():
                    possibly_empty=possibly_empty,
                    obstructions=obstructions,
                    requirements=requirements)
-    print("AAAA")
-    print("AAAA")
-    print("AAAA")
-    print("AAAA")
 
     # Cell methods
 
