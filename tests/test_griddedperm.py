@@ -3,7 +3,6 @@ import pytest
 from grids_two import GriddedPerm
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_NONE
-from functools import partial
 
 
 @pytest.fixture
@@ -35,14 +34,6 @@ def typicalob():
 def isolatedob():
     return GriddedPerm(Perm((0, 1, 2)),
                        ((0, 0), (1, 1), (2, 2)))
-
-
-@pytest.fixture
-def bigob():
-    # Placed on a 17 by 21 tiling
-    return GriddedPerm(Perm((3, 1, 6, 8, 0, 2, 9, 5, 7, 4)),
-                       [(7, 4), (8, 2), (9, 7), (10, 9), (11, 1), (12, 2),
-                        (13, 10), (13, 6), (14, 8), (15, 6)])
 
 
 def test_spans_cell(simpleob):
@@ -290,45 +281,6 @@ def test_compression(simpleob, singlecellob, everycellob, typicalob,
             == isolatedob)
 
 
-def test_isolated_point():
-    ob = GriddedPerm(Perm((0, 1, 2)),
-                     [(0, 1), (1, 1), (1, 2)])
-    assert (list(ob.isolate_point_row((1, 1))) ==
-            [GriddedPerm(Perm((0, 1, 2)),
-                         [(0, 1), (1, 2), (1, 4)])])
-    assert (list(ob.isolate_point_col((1, 1))) ==
-            [GriddedPerm(Perm((0, 1, 2)),
-                         [(0, 1), (2, 1), (3, 2)])])
-    ob = GriddedPerm(Perm((0, 1)),
-                     [(1, 2), (1, 2)])
-    assert (sorted(ob.isolate_point_col((1, 1))) ==
-            [GriddedPerm(Perm((0, 1)),
-                         [(1, 2), (1, 2)]),
-             GriddedPerm(Perm((0, 1)),
-                         [(1, 2), (3, 2)]),
-             GriddedPerm(Perm((0, 1)),
-                         [(3, 2), (3, 2)])])
-    assert (sorted(ob.isolate_point_row((1, 1))) ==
-            [GriddedPerm(Perm((0, 1)),
-                         [(1, 4), (1, 4)])])
-    ob = GriddedPerm(Perm((3, 2, 0, 1)),
-                     [(0, 1), (0, 1), (1, 0), (2, 1)])
-    assert (sorted(ob.isolate_point_col((1, 1))) ==
-            [GriddedPerm(Perm((3, 2, 0, 1)),
-                         [(0, 1), (0, 1), (1, 0), (4, 1)]),
-             GriddedPerm(Perm((3, 2, 0, 1)),
-                         [(0, 1), (0, 1), (3, 0), (4, 1)])])
-    assert (sorted(ob.isolate_point_row((1, 1))) ==
-            [GriddedPerm(Perm((3, 2, 0, 1)),
-                         [(0, 1), (0, 1), (1, 0), (2, 1)]),
-             GriddedPerm(Perm((3, 2, 0, 1)),
-                         [(0, 3), (0, 1), (1, 0), (2, 1)]),
-             GriddedPerm(Perm((3, 2, 0, 1)),
-                         [(0, 3), (0, 3), (1, 0), (2, 1)]),
-             GriddedPerm(Perm((3, 2, 0, 1)),
-                         [(0, 3), (0, 3), (1, 0), (2, 3)])])
-
-
 def test_point_seperation():
     ob = GriddedPerm.single_cell(Perm((0, 2, 1)), (0, 0))
     assert list(ob.point_separation((0, 0), DIR_WEST)) == [
@@ -374,67 +326,3 @@ def test_point_seperation():
     assert list(ob.point_separation((1, 1), DIR_SOUTH)) == [
         GriddedPerm(Perm((0, 1, 2)),
                     [(0, 0), (2, 3), (2, 3)])]
-
-
-def test_rotatation(bigob):
-
-    def rotate90_cell(cols, cell):
-        return (cell[1],
-                cols - cell[0] - 1)
-
-    def rotate180_cell(cols, rows, cell):
-        return (cols - cell[0] - 1,
-                rows - cell[1] - 1)
-
-    def rotate270_cell(rows, cell):
-        return (rows - cell[1] - 1,
-                cell[0])
-
-    assert bigob.rotate90(partial(rotate90_cell, 17)) == GriddedPerm(
-        Perm((5, 8, 4, 9, 0, 2, 7, 1, 6, 3)),
-        [(1, 5), (2, 8), (2, 4), (4, 9), (6, 1),
-         (6, 3), (7, 7), (8, 2), (9, 6), (10, 3)])
-
-    assert bigob.rotate90(partial(rotate90_cell, 17)).rotate90(
-        partial(rotate90_cell, 21)) == bigob.rotate180(
-            partial(rotate180_cell, 17, 21))
-
-    assert bigob.rotate90(partial(rotate90_cell, 17)).rotate90(
-        partial(rotate90_cell, 21)).rotate90(
-            partial(rotate90_cell, 17)) == bigob.rotate270(
-                partial(rotate270_cell, 21))
-
-
-def test_inverse(bigob):
-
-    def inverse_cell(cell):
-        return (cell[1], cell[0])
-
-    assert bigob.inverse(inverse_cell) == GriddedPerm(
-        Perm((4, 1, 5, 0, 9, 7, 2, 8, 3, 6)),
-        [(1, 11), (2, 8), (2, 12), (4, 7), (6, 15),
-         (6, 13), (7, 9), (8, 14), (9, 10), (10, 13)])
-
-    assert bigob.inverse(inverse_cell).inverse(inverse_cell) == bigob
-
-
-def test_complement(bigob):
-
-    def complement_cell(cell):
-        return (cell[0], 21 - cell[1] - 1)
-
-    assert bigob.complement(complement_cell) == GriddedPerm(
-        Perm((6, 8, 3, 1, 9, 7, 0, 4, 2, 5)),
-        [(7, 16), (8, 18), (9, 13), (10, 11), (11, 19),
-         (12, 18), (13, 10), (13, 14), (14, 12), (15, 14)])
-
-
-def test_reverse(bigob):
-
-    def reverse_cell(cell):
-        return (17 - cell[0] - 1, cell[1])
-
-    assert bigob.reverse(reverse_cell) == GriddedPerm(
-        Perm((4, 7, 5, 9, 2, 0, 8, 6, 1, 3)),
-        [(1, 6), (2, 8), (3, 6), (3, 10), (4, 2),
-         (5, 1), (6, 9), (7, 7), (8, 2), (9, 4)])
