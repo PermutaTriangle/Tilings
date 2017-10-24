@@ -487,6 +487,10 @@ class Tiling():
     # Dunder methods
     #
 
+    def __iter__(self):
+        for ob in self.obstructions:
+            yield ob
+
     def __hash__(self):
         return (hash(self._point_cells) ^ hash(self._possibly_empty) ^
                 hash(self._positive_cells) ^ hash(self._obstructions) ^
