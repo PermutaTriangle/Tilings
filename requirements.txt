@@ -1,0 +1,4 @@
+git+https://github.com/PermutaTriangle/Permuta#egg=permuta
+git+https://github.com/PermutaTriangle/grids#egg=grids
+
+.
