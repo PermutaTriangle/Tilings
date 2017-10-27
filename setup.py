@@ -22,5 +22,6 @@ setup(
                       'grids'],
     setup_requires=['pytest-runner'],
     tests_require=['pytest',
-                   'permuta']
+                   'permuta',
+                   'pytest-pep8']
 )
