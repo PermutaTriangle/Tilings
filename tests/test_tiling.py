@@ -56,17 +56,17 @@ def test_compression():
             Obstruction(Perm((2, 1, 0)), ((2, 0), (2, 0), (3, 0)))],
         requirements=[
             [Requirement(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 2))),
-             Requirement(Perm((0, 2, 2)), ((0, 0), (1, 0), (2, 2))),
+             Requirement(Perm((1, 0, 2)), ((0, 0), (1, 0), (2, 2))),
              Requirement(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 3))),
              Requirement(Perm((0, 1, 2)), ((0, 1), (1, 0), (2, 2)))],
             [Requirement(Perm((0, 1, 2)), ((2, 2), (2, 2), (2, 2))),
-             Requirement(Perm((0, 2, 2)), ((0, 0), (0, 0), (0, 0))),
+             Requirement(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
              Requirement(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0)))],
-            [Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
-             Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-             Obstruction(Perm((0, 1)), ((2, 0), (3, 0)))],
-            [Obstruction(Perm((1, 0)), ((3, 1), (3, 0))),
-             Obstruction(Perm((1, 0)), ((3, 1), (3, 1)))]])
+            [Requirement(Perm((0, 1)), ((1, 0), (3, 0))),
+             Requirement(Perm((0, 1)), ((2, 0), (2, 0))),
+             Requirement(Perm((0, 1)), ((2, 0), (3, 0)))],
+            [Requirement(Perm((1, 0)), ((3, 1), (3, 0))),
+             Requirement(Perm((1, 0)), ((3, 1), (3, 1)))]])
 
     assert tiling == Tiling.decompress(tiling.compress())
 

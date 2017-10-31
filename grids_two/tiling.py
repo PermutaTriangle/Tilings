@@ -500,7 +500,7 @@ class Tiling():
         return (self.point_cells == other.point_cells and
                 self.possibly_empty == other.possibly_empty and
                 self.positive_cells == other.positive_cells and
-                self.obstructions == other.obstructions,
+                self.obstructions == other.obstructions and
                 self.requirements == other.requirements)
 
     def __len__(self):
