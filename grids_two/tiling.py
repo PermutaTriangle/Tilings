@@ -8,6 +8,7 @@ from permuta import PermSet, Perm
 
 from .misc import map_cell
 from .obstruction import Obstruction
+from .requirement import Requirement
 
 __all__ = ("Tiling")
 
@@ -21,7 +22,7 @@ class Tiling():
 
     def __init__(self, point_cells=list(), positive_cells=list(),
                  possibly_empty=list(), obstructions=list(),
-                 remove_empty=True):
+                 requirements=list(), remove_empty=True):
         # Set of the cells that have points in them
         self._point_cells = frozenset(point_cells)
         # Set of the cells that are positive, i.e. contain a point
@@ -30,6 +31,8 @@ class Tiling():
         self._possibly_empty = frozenset(possibly_empty)
         # Set of obstructions
         self._obstructions = tuple(sorted(obstructions))
+        # Set of requirement lists
+        self._requirements = Tiling.sort_requirements(requirements)
 
         self._dimensions = None
         self.back_map = None
@@ -56,6 +59,11 @@ class Tiling():
             raise ValueError(("The set of positive cells and the set of "
                               "possibly empty cells should cover the cells "
                               "of the obstructions."))
+        if not all(any(set(req.pos) for req in reqlist)
+                   for reqlist in self._requirements):
+            raise ValueError(("The set of positive cells and the set of "
+                              "possibly empty cells should cover at least one"
+                              "requirement in each requirement list."))
 
         self._minimize(remove_empty)
         self.dimensions
@@ -67,16 +75,22 @@ class Tiling():
         obstructions.
         """
         # Minimize the set of obstructions
-        cleanobs = self._clean_obs()
+        minimalobs = self._minimal_obs()
+        # Minimize the set of requiriments
+        minimalreqs = self._minimal_reqs()
         # Compute the single-point obstructions
         empty_cells = set(ob.is_point_obstr()
-                          for ob in cleanobs if ob.is_point_obstr())
+                          for ob in minimalobs if ob.is_point_obstr())
+        # Compute the required points from the set of requirement lists
+        #  required_points = set(chain.from_iterable(
+        #      reduce(set.__and__, (set(req.pos) for req in reqlist))
+        #      for reqlist in minimalreqs))
 
         # Remove the empty cells
         self._possibly_empty = frozenset(self._possibly_empty - empty_cells)
         if (self._positive_cells & empty_cells or
                 self._point_cells & empty_cells):
-            cleanobs.append(Obstruction.empty_obstruction)
+            minimalobs.append(Obstruction.empty_obstruction)
 
         # Produce the mapping between the two tilings
         self._col_mapping, self._row_mapping = self._minimize_mapping()
@@ -92,8 +106,11 @@ class Tiling():
 
         if remove_empty:
             self._obstructions = tuple(
-                sorted(ob.minimize(cell_map) for ob in cleanobs
+                sorted(ob.minimize(cell_map) for ob in minimalobs
                        if ob.is_point_obstr() is None))
+            self._requirements = tuple(sorted(
+                tuple(sorted(req.minimize(cell_map) for req in reqlist))
+                for reqlist in minimalreqs))
             self._point_cells = frozenset(map(cell_map,
                                               self._point_cells))
             self._positive_cells = frozenset(map(cell_map,
@@ -101,8 +118,11 @@ class Tiling():
             self._possibly_empty = frozenset(map(cell_map,
                                                  self._possibly_empty))
         else:
-            self._obstructions = tuple(ob for ob in cleanobs
+            self._obstructions = tuple(ob for ob in minimalobs
                                        if ob.is_point_obstr() is None)
+            self._requirements = tuple(
+                tuple(sorted(req.minimize(cell_map) for req in reqlist)
+                      for reqlist in minimalreqs))
 
     def _minimize_mapping(self):
         """Returns a pair of dictionaries, that map rows/columns to an
@@ -131,7 +151,7 @@ class Tiling():
                       cell in self._positive_cells)]
         return obstruction.remove_cells(remove)
 
-    def _clean_obs(self):
+    def _minimal_obs(self):
         """Returns a new list of minimal obstructions from the obstruction set
         of self."""
         cleanobs = list()
@@ -144,6 +164,11 @@ class Tiling():
             if add:
                 cleanobs.append(ob)
         return cleanobs
+
+    def _minimal_reqs(self):
+        """Returns a new set of minimal lists of requirements from the
+        requirement set of self."""
+        return self._requirements
 
     def to_old_tiling(self):
         import grids
@@ -171,7 +196,8 @@ class Tiling():
     def compress(self, patthash=None):
         """Compresses the tiling by flattening the sets of cells into lists of
         integers which are concatenated together, every list preceeded by its
-        size. The obstructions are compressed and concatenated to the list."""
+        size. The obstructions are compressed and concatenated to the list, as
+        are the requirement lists."""
         result = []
         result.append(len(self.point_cells))
         result.extend(chain.from_iterable(self.point_cells))
@@ -182,12 +208,17 @@ class Tiling():
         result.append(len(self.obstructions))
         result.extend(chain.from_iterable(ob.compress(patthash)
                                           for ob in self.obstructions))
+        result.append(len(self.requirements))
+        for reqlist in self.requirements:
+            result.append(len(reqlist))
+            result.extend(chain.from_iterable(req.compress(patthash)
+                                              for req in reqlist))
         res = array('H', result)
         return res.tobytes()
 
     @classmethod
     def decompress(cls, arrbytes, patts=None):
-        """Given a compressed tiling in the form of a numpy array, decompress
+        """Given a compressed tiling in the form of an 2-byte array, decompress
         it and return a tiling."""
         arr = array('H', arrbytes)
         offset = 1
@@ -200,22 +231,39 @@ class Tiling():
         possibly_empty = [(arr[offset + 2*i], arr[offset + 2*i + 1])
                           for i in range(arr[offset - 1])]
         offset += 2 * arr[offset - 1] + 1
-        obsarr = arr[offset:]
+        nobs = arr[offset - 1]
         obstructions = []
-        i = 0
-        while i < len(obsarr):
+        for i in range(nobs):
             if patts:
-                patt = patts[obsarr[i]]
+                patt = patts[arr[offset]]
             else:
-                patt = Perm.unrank(obsarr[i])
-
+                patt = Perm.unrank(arr[offset])
             obstructions.append(Obstruction.decompress(
-                obsarr[i:i + 2*(len(patt)) + 1], patts))
-            i += 2 * len(patt) + 1
+                arr[offset:offset + 2*(len(patt)) + 1], patts))
+            offset += 2 * len(patt) + 1
+
+        nreqs = arr[offset]
+        offset += 1
+        requirements = []
+        for i in range(nreqs):
+            reqlistlen = arr[offset]
+            offset += 1
+            reqlist = []
+            for j in range(reqlistlen):
+                if patts:
+                    patt = patts[arr[offset]]
+                else:
+                    patt = Perm.unrank(arr[offset])
+                reqlist.append(Requirement.decompress(
+                    arr[offset:offset + 2*(len(patt)) + 1], patts))
+                offset += 2 * len(patt) + 1
+            requirements.append(reqlist)
+
         return cls(point_cells=point_cells,
                    positive_cells=positive_cells,
                    possibly_empty=possibly_empty,
-                   obstructions=obstructions)
+                   obstructions=obstructions,
+                   requirements=requirements)
 
     # Cell methods
 
@@ -228,7 +276,8 @@ class Tiling():
         return Tiling(self._point_cells,
                       self._positive_cells,
                       self._possibly_empty - {cell},
-                      newobs)
+                      newobs,
+                      self._requirements)
 
     def insert_cell(self, cell):
         """Inserts a cell into every obstruction and returns a new tiling. The
@@ -239,7 +288,8 @@ class Tiling():
         return Tiling(self._point_cells,
                       self._positive_cells | {cell},
                       self._possibly_empty - {cell},
-                      self._obstructions)
+                      self._obstructions,
+                      self._requirements)
 
     def only_positive_in_row_and_column(self, cell):
         """Check if the cell is the only positive cell in row and column."""
@@ -295,12 +345,19 @@ class Tiling():
                                            self._positive_cells,
                                            self._possibly_empty) if x == col]
 
+    @staticmethod
+    def sort_requirements(requirements):
+        return tuple(sorted(tuple(sorted(reqlist))
+                            for reqlist in requirements))
+
     # Symmetries
-    def _transform(self, transf, obtransf):
+    def _transform(self, transf, gptransf):
         return Tiling(point_cells=map(transf, self.point_cells),
                       positive_cells=map(transf, self.positive_cells),
                       possibly_empty=map(transf, self.possibly_empty),
-                      obstructions=(obtransf(ob) for ob in self.obstructions))
+                      obstructions=(gptransf(ob) for ob in self.obstructions),
+                      requirements=([gptransf(req) for req in reqlist]
+                                    for reqlist in self.requirements))
 
     def reverse(self):
         """ |
@@ -403,6 +460,14 @@ class Tiling():
         return len(self._obstructions)
 
     @property
+    def requirements(self):
+        return self._requirements
+
+    @property
+    def total_requirements(self):
+        return len(self._requirements)
+
+    @property
     def dimensions(self):
         if self._dimensions is None:
             all_cells = (self._positive_cells |
@@ -422,35 +487,43 @@ class Tiling():
     # Dunder methods
     #
 
-    def __contains__(self, item):
-        if isinstance(item, Obstruction):
-            return item in self._obstructions
-        return False
+    def __iter__(self):
+        for ob in self.obstructions:
+            yield ob
 
     def __hash__(self):
         return (hash(self._point_cells) ^ hash(self._possibly_empty) ^
-                hash(self._positive_cells) ^ hash(self._obstructions))
+                hash(self._positive_cells) ^ hash(self._obstructions) ^
+                hash(self._requirements))
 
     def __eq__(self, other):
         return (self.point_cells == other.point_cells and
                 self.possibly_empty == other.possibly_empty and
                 self.positive_cells == other.positive_cells and
-                self.obstructions == other.obstructions)
-
-    def __iter__(self):
-        for ob in self._obstructions:
-            yield ob
+                self.obstructions == other.obstructions,
+                self.requirements == other.requirements)
 
     def __len__(self):
         return len(self._obstructions)
 
     def __repr__(self):
-        format_string = "<A tiling of {} points and {} obstructions>"
-        return format_string.format(self.total_points, self.total_obstructions)
+        format_string = ("Tiling(point_cells={}, "
+                         "positive_cells={}, "
+                         "possibly_empty={}, "
+                         "obstructions={}, "
+                         "requirements={})")
+        return format_string.format(self.point_cells,
+                                    self.positive_cells,
+                                    self.possibly_empty,
+                                    self.obstructions,
+                                    self.requirements)
 
     def __str__(self):
         return "\n".join([
             "Point cells: " + str(self._point_cells),
             "Positive cells: " + str(self._positive_cells),
             "Possibly empty cells: " + str(self._possibly_empty),
-            "Obstructions: " + ", ".join(list(map(str, self._obstructions)))])
+            "Obstructions: " + ", ".join(list(map(repr, self._obstructions))),
+            "Requirements: [[" + "], [".join(
+                list(map(lambda x: ", ".join(list(map(repr, x))),
+                         self._requirements))) + "]]"])
