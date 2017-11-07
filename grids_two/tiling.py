@@ -22,7 +22,7 @@ class Tiling():
 
     def __init__(self, point_cells=list(), positive_cells=list(),
                  possibly_empty=list(), obstructions=list(),
-                 requirements=list(), remove_empty=True):
+                 requirements=list(), remove_empty=True, point_infer=True):
         # Set of the cells that have points in them
         self._point_cells = frozenset(point_cells)
         # Set of the cells that are positive, i.e. contain a point
@@ -56,17 +56,21 @@ class Tiling():
         all_obstruction_cells = reduce(
             set.__or__, (set(ob.pos) for ob in self._obstructions), set())
         if not all_obstruction_cells <= all_cells:
-            raise ValueError(("The set of positive cells and the set of "
-                              "possibly empty cells should cover the cells "
-                              "of the obstructions."))
+            raise ValueError(("The set of point, positive and possibly empty "
+                              "cells should cover the cells of the "
+                              "obstructions."))
         if not all(any(set(req.pos) for req in reqlist)
                    for reqlist in self._requirements):
-            raise ValueError(("The set of positive cells and the set of "
-                              "possibly empty cells should cover at least one"
+            raise ValueError(("The set of point, positive and possibly empty "
+                              "cells should cover at least one"
                               "requirement in each requirement list."))
 
         self._minimize(remove_empty)
         self.dimensions
+        if point_infer:
+            self._point_inferral()
+
+    # Minimization and inferral
 
     def _minimize(self, remove_empty):
         """Minimizes the set of obstructions and for each single-point
@@ -170,6 +174,28 @@ class Tiling():
         requirement set of self."""
         return self._requirements
 
+    def _point_inferral(self):
+        """Changes the positive cells with a 12 and 21 obstructions into point
+        cells."""
+        single_cells = defaultdict(list)
+        rest = list()
+        for ob in self.obstructions:
+            cell = ob.is_single_cell()
+            if cell and len(ob.patt) == 2:
+                single_cells[cell].append(ob)
+            else:
+                rest.append(ob)
+        point_cells = set()
+        for cell, oblist in single_cells.items():
+            if (set(ob.patt for ob in oblist) == {Perm((0, 1)), Perm((1, 0))}
+                    and cell in self.positive_cells):
+                point_cells.add(cell)
+            else:
+                rest.extend(oblist)
+        self._obstructions = tuple(sorted(rest))
+        self._positive_cells = self._positive_cells - point_cells
+        self._point_cells = self._point_cells | point_cells
+
     def to_old_tiling(self):
         import grids
         basi = defaultdict(list)
@@ -192,6 +218,8 @@ class Tiling():
             else:
                 blocks[cell] = PermSet.avoiding(basis)
         return grids.Tiling(blocks)
+
+    # Compression
 
     def compress(self, patthash=None):
         """Compresses the tiling by flattening the sets of cells into lists of
@@ -497,6 +525,8 @@ class Tiling():
                 hash(self._requirements))
 
     def __eq__(self, other):
+        if not isinstance(other, Tiling):
+            return False
         return (self.point_cells == other.point_cells and
                 self.possibly_empty == other.possibly_empty and
                 self.positive_cells == other.positive_cells and
