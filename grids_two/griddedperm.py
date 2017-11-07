@@ -96,8 +96,8 @@ class GriddedPerm():
             for j in range(len(self)):
                 if i == j:
                     continue
-                if (self.pos[i][0] == self.pos[j][0]
-                        or self.pos[i][1] == self.pos[j][1]):
+                if (self.pos[i][0] == self.pos[j][0] or
+                        self.pos[i][1] == self.pos[j][1]):
                     isolated = False
                     break
             if isolated:

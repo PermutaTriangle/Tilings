@@ -1,6 +1,7 @@
-from permuta import Perm
-from grids_two import Obstruction, Tiling
 import random
+
+from grids_two import Obstruction, Tiling
+from permuta import Perm
 
 
 def random_obstruction(length, i, j):
