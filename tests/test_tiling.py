@@ -4,6 +4,67 @@ from grids_two import Obstruction, Requirement, Tiling
 from permuta import Perm
 
 
+def test_point_inferral():
+    tiling = Tiling(
+        positive_cells=frozenset({(0, 0)}),
+        possibly_empty=frozenset(),
+        obstructions=[
+            Obstruction.single_cell(Perm((0, 1)), (0, 0)),
+            Obstruction.single_cell(Perm((1, 0)), (0, 0))])
+    tiling._point_inferral()
+    assert tiling == Tiling(point_cells=frozenset({(0, 0)}),
+                            point_infer=False)
+
+    tiling = Tiling(
+        positive_cells=frozenset({(2, 0), (1, 0), (2, 1)}),
+        possibly_empty=frozenset({(3, 0), (3, 1), (0, 0)}),
+        obstructions=[
+            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+            Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
+            Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
+            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
+            Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
+            Obstruction(Perm((0, 1)), ((3, 1), (3, 1))),
+            Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
+            Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
+            Obstruction(Perm((1, 0)), ((2, 1), (2, 0))),
+            Obstruction(Perm((1, 0)), ((3, 0), (3, 0))),
+            Obstruction(Perm((1, 0)), ((3, 1), (3, 0))),
+            Obstruction(Perm((1, 0)), ((3, 1), (3, 1))),
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 1))),
+            Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
+            Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 1))),
+            Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
+            Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
+            Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (3, 0))),
+            Obstruction(Perm((2, 1, 0)), ((1, 0), (2, 0), (2, 0))),
+            Obstruction(Perm((2, 1, 0)), ((1, 0), (2, 0), (3, 0))),
+            Obstruction(Perm((2, 1, 0)), ((2, 0), (2, 0), (2, 0))),
+            Obstruction(Perm((2, 1, 0)), ((2, 0), (2, 0), (3, 0)))],
+        point_infer=False)
+    tiling._point_inferral()
+    inferred = Tiling(
+        point_cells=frozenset({(2, 0), (1, 0)}),
+        positive_cells=frozenset({(2, 1)}),
+        possibly_empty=frozenset({(3, 0), (3, 1), (0, 0)}),
+        obstructions=[
+            Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
+            Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
+            Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
+            Obstruction(Perm((0, 1)), ((3, 1), (3, 1))),
+            Obstruction(Perm((1, 0)), ((2, 1), (2, 0))),
+            Obstruction(Perm((1, 0)), ((3, 0), (3, 0))),
+            Obstruction(Perm((1, 0)), ((3, 1), (3, 0))),
+            Obstruction(Perm((1, 0)), ((3, 1), (3, 1))),
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 1))),
+            Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
+            Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 1))),
+            Obstruction(Perm((2, 1, 0)), ((1, 0), (2, 0), (3, 0)))],
+        point_infer=False)
+
+    assert tiling == inferred
+
+
 def test_compression_noreq():
     tiling = Tiling(
         positive_cells=frozenset({(2, 0), (1, 0), (3, 1)}),
