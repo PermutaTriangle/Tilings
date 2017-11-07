@@ -2,7 +2,7 @@ import pytest
 
 from grids_two import GriddedPerm
 from permuta import Perm
-from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_NONE
+from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST
 
 
 @pytest.fixture
@@ -142,25 +142,26 @@ def test_place_point(typicalob):
             [GriddedPerm(Perm((0,)), ((2, 2),)),
              GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0)))])
 
-    assert (list(typicalob.place_point((0, 1), DIR_WEST, skip_redundant=True))
-            == [GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                            ((2, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
-                GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                            ((2, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
-                GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                            ((2, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
-                GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                            ((0, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
-                GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                            ((0, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
-                GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                            ((0, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
-                GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                            ((0, 0), (0, 0), (3, 0), (3, 3), (3, 3))),
-                GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                            ((0, 0), (0, 0), (3, 0), (3, 3), (3, 1))),
-                GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                            ((0, 0), (0, 0), (3, 0), (3, 1), (3, 1)))])
+    assert (
+        list(typicalob.place_point((0, 1), DIR_WEST, skip_redundant=True)) ==
+        [GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((2, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((2, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((2, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((0, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((0, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((0, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((0, 0), (0, 0), (3, 0), (3, 3), (3, 3))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((0, 0), (0, 0), (3, 0), (3, 3), (3, 1))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((0, 0), (0, 0), (3, 0), (3, 1), (3, 1)))])
     assert (list(GriddedPerm(Perm((2, 1, 0, 4, 3)),
                              ((0, 1), (0, 1), (1, 0), (2, 1), (2, 1))
                              ).place_point(
@@ -258,27 +259,27 @@ def test_compression(simpleob, singlecellob, everycellob, typicalob,
                4: Perm((1, 0, 2, 4, 3)),
                17: Perm((0, 1, 2))}
 
-    assert (GriddedPerm.decompress(simpleob.compress(patthash), revhash)
-            == simpleob)
-    assert (GriddedPerm.decompress(singlecellob.compress(patthash), revhash)
-            == singlecellob)
-    assert (GriddedPerm.decompress(everycellob.compress(patthash), revhash)
-            == everycellob)
-    assert (GriddedPerm.decompress(typicalob.compress(patthash), revhash)
-            == typicalob)
-    assert (GriddedPerm.decompress(isolatedob.compress(patthash), revhash)
-            == isolatedob)
+    assert (simpleob ==
+            GriddedPerm.decompress(simpleob.compress(patthash), revhash))
+    assert (singlecellob ==
+            GriddedPerm.decompress(singlecellob.compress(patthash), revhash))
+    assert (everycellob ==
+            GriddedPerm.decompress(everycellob.compress(patthash), revhash))
+    assert (typicalob ==
+            GriddedPerm.decompress(typicalob.compress(patthash), revhash))
+    assert (isolatedob ==
+            GriddedPerm.decompress(isolatedob.compress(patthash), revhash))
 
-    assert (GriddedPerm.decompress(simpleob.compress())
-            == simpleob)
-    assert (GriddedPerm.decompress(singlecellob.compress())
-            == singlecellob)
-    assert (GriddedPerm.decompress(everycellob.compress())
-            == everycellob)
-    assert (GriddedPerm.decompress(typicalob.compress())
-            == typicalob)
-    assert (GriddedPerm.decompress(isolatedob.compress())
-            == isolatedob)
+    assert (simpleob ==
+            GriddedPerm.decompress(simpleob.compress()))
+    assert (singlecellob ==
+            GriddedPerm.decompress(singlecellob.compress()))
+    assert (everycellob ==
+            GriddedPerm.decompress(everycellob.compress()))
+    assert (typicalob ==
+            GriddedPerm.decompress(typicalob.compress()))
+    assert (isolatedob ==
+            GriddedPerm.decompress(isolatedob.compress()))
 
 
 def test_point_seperation():

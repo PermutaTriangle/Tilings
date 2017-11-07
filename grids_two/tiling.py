@@ -1,10 +1,10 @@
+from array import array
 from collections import defaultdict
 from functools import partial, reduce
 from itertools import chain
-from array import array
 
 from grids import Cell
-from permuta import PermSet, Perm
+from permuta import Perm, PermSet
 
 from .misc import map_cell
 from .obstruction import Obstruction
