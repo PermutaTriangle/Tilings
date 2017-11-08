@@ -329,7 +329,7 @@ class GriddedPerm():
         """Isolates point in the given cell within the column."""
         return self._isolate_point(cell, False)
 
-    def all_subpermss(self):
+    def all_subperms(self):
         """Yields all gridded subpermutations."""
         for r in range(len(self)):
             for subidx in combinations(range(len(self)), r):
