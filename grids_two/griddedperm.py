@@ -406,6 +406,19 @@ class GriddedPerm():
     def is_empty(self):
         return not bool(self.patt)
 
+    def is_interleaving(self):
+        seen = []
+        for cell in self.pos:
+            for seen_cell in seen:
+                if cell[0] == seen_cell[0]:
+                    if cell[1] != seen_cell[1]:
+                        return True
+                else:
+                    if cell[1] == seen_cell[1]:
+                        return True
+            seen.append(cell)
+        return False
+
     def compress(self, patthash=None):
         """Compresses the gridded permutation into a list of integers. The
         first element in the list is the rank of the permutation, if the
