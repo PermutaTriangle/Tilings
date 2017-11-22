@@ -9,6 +9,7 @@ from permuta import Perm, PermSet
 from .misc import map_cell
 from .obstruction import Obstruction
 from .requirement import Requirement
+from .griddedperm import GriddedPerm
 
 __all__ = ("Tiling")
 
@@ -377,6 +378,21 @@ class Tiling():
     def sort_requirements(requirements):
         return tuple(sorted(tuple(sorted(reqlist))
                             for reqlist in requirements))
+
+    def gridded_perms_of_length(self, length):
+        old_tiling = self.to_old_tiling()
+        for perm, cell_info in old_tiling.perms_of_length_with_cell_info(length):
+            index_perm = []
+            cells = []
+            for cell, (_, _, indices) in cell_info.items():
+                index_perm.extend(indices)
+                cells.extend((cell.i, cell.j) for _ in index_perm)
+            gridded_perm = GriddedPerm(perm, [cells[i] for i in Perm(index_perm).inverse()])
+            if any(ob in gridded_perm for ob in self.obstructions):
+                continue
+            if any(all(req not in gridded_perm for req in reqs) for reqs in self.requirements):
+                continue
+            yield gridded_perm
 
     # Symmetries
     def _transform(self, transf, gptransf):
