@@ -386,9 +386,10 @@ class Tiling():
             cells = []
             for cell, (_, _, indices) in cell_info.items():
                 index_perm.extend(indices)
-                cells.extend((cell.i, cell.j) for _ in index_perm)
-            gridded_perm = GriddedPerm(perm, [cells[i] for i in Perm(index_perm).inverse()])
-            if any(ob in gridded_perm for ob in self.obstructions):
+                cells.extend((cell.i, cell.j) for _ in indices)
+
+            gridded_perm = GriddedPerm(perm, Perm(index_perm).inverse().apply(cells))
+            if any(ob in gridded_perm for ob in self.obstructions if not ob.is_single_cell()):
                 continue
             if any(all(req not in gridded_perm for req in reqs) for reqs in self.requirements):
                 continue
