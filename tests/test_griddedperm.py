@@ -36,15 +36,6 @@ def isolatedob():
                        ((0, 0), (1, 1), (2, 2)))
 
 
-def test_spans_cell(simpleob):
-    assert simpleob.spans_cell((1, 1))
-    assert simpleob.spans_cell((0, 2))
-    assert simpleob.spans_cell((2, 2))
-
-    assert not simpleob.spans_cell((3, 2))
-    assert not simpleob.spans_cell((0, 3))
-
-
 def test_occupies_cell(simpleob):
     assert simpleob.occupies((0, 0))
     assert simpleob.occupies((2, 1))

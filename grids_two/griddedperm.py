@@ -30,10 +30,6 @@ class GriddedPerm():
 
             # Immutable set of cells which the gridded permutation spans.
             self._cells = frozenset(self.pos)
-            self._rows = (min(x for x, _ in self.pos),
-                          max(x for x, _ in self.pos))
-            self._columns = (min(y for _, y in self.pos),
-                             max(y for _, y in self.pos))
 
     @classmethod
     def single_cell(cls, pattern, cell):
@@ -45,20 +41,6 @@ class GriddedPerm():
     def empty_perm(cls):
         """Construct the empty gridded permutation."""
         return cls(Perm(tuple()), tuple())
-
-    def spans_cell(self, cell):
-        """Checks if the boundaries of the gridded permutation spans the
-        cell."""
-        return self.spans_column(cell[0]) and self.spans_row(cell[1])
-
-    def spans_column(self, column):
-        """Checks if the gridded permutation has a point in the given
-        column."""
-        return self._columns[0] <= column <= self._columns[1]
-
-    def spans_row(self, row):
-        """Checks if the gridded permutation has a point in the given row."""
-        return self._rows[0] <= row <= self._rows[1]
 
     def occupies(self, cell):
         """Checks if the gridded permutation has a point in the given cell."""
