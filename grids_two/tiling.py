@@ -1,15 +1,15 @@
+import json
 from array import array
 from collections import defaultdict
 from functools import partial, reduce
 from itertools import chain
 
-from grids import Cell
 from permuta import Perm, PermSet
 
+from .griddedperm import GriddedPerm
 from .misc import map_cell
 from .obstruction import Obstruction
 from .requirement import Requirement
-from .griddedperm import GriddedPerm
 
 __all__ = ("Tiling")
 
@@ -78,9 +78,7 @@ class Tiling():
         cell_map = partial(map_cell, self._col_mapping, self._row_mapping)
 
         # For backwards compatability only, will be removed in future.
-        # TODO: Not use Cell, and convert the dictionary to Cell dictionary
-        # when needed.
-        self.back_map = {Cell(*cell_map(cell)): Cell(*cell)
+        self.back_map = {cell_map(cell): cell
                          for cell in (self.point_cells |
                                       self.possibly_empty |
                                       self._positive_cells)}
@@ -293,6 +291,46 @@ class Tiling():
                 offset += 2 * len(patt) + 1
             requirements.append(reqlist)
 
+        return cls(point_cells=point_cells,
+                   positive_cells=positive_cells,
+                   possibly_empty=possibly_empty,
+                   obstructions=obstructions,
+                   requirements=requirements)
+
+    # JSON methods
+    def to_jsonable(self):
+        """Returns a dictionary object which is JSON serializable which
+        represents a Tiling."""
+        output = dict()
+        output['positive_cells'] = list(self.positive_cells)
+        output['point_cells'] = list(self.point_cells)
+        output['possibly_empty'] = list(self.possibly_empty)
+        output['obstructions'] = list(map(lambda x: x.to_jsonable(),
+                                      self.obstructions))
+        output['requirements'] = list(map(lambda x:
+                                          list(map(lambda y: y.to_jsonable(),
+                                                   x)),
+                                      self.requirements))
+        return output
+
+    @classmethod
+    def from_json(cls, jsonstr):
+        """Returns a Tiling object from JSON string."""
+        jsondict = json.loads(jsonstr)
+        return cls.from_dict(jsondict)
+
+    @classmethod
+    def from_dict(cls, jsondict):
+        """Returns a Tiling object from a dictionary loaded from a JSON
+        serialized Tiling object."""
+        point_cells = map(tuple, jsondict['point_cells'])
+        positive_cells = map(tuple, jsondict['positive_cells'])
+        possibly_empty = map(tuple, jsondict['possibly_empty'])
+        obstructions = map(lambda x: Obstruction.from_dict(x),
+                           jsondict['obstructions'])
+        requirements = map(lambda x:
+                           map(lambda y: Requirement.from_dict(y), x),
+                           jsondict['requirements'])
         return cls(point_cells=point_cells,
                    positive_cells=positive_cells,
                    possibly_empty=possibly_empty,
