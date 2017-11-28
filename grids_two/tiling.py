@@ -4,7 +4,6 @@ from collections import defaultdict
 from functools import partial, reduce
 from itertools import chain
 
-from grids import Cell
 from permuta import Perm, PermSet
 
 from .griddedperm import GriddedPerm
@@ -79,9 +78,7 @@ class Tiling():
         cell_map = partial(map_cell, self._col_mapping, self._row_mapping)
 
         # For backwards compatability only, will be removed in future.
-        # TODO: Not use Cell, and convert the dictionary to Cell dictionary
-        # when needed.
-        self.back_map = {Cell(*cell_map(cell)): Cell(*cell)
+        self.back_map = {cell_map(cell): cell
                          for cell in (self.point_cells |
                                       self.possibly_empty |
                                       self._positive_cells)}
