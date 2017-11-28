@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from grids_two import Obstruction, Requirement, Tiling
@@ -92,8 +94,9 @@ def test_compression_noreq():
     assert tiling == Tiling.decompress(tiling.compress())
 
 
-def test_compression():
-    tiling = Tiling(
+@pytest.fixture
+def compresstil():
+    return Tiling(
         positive_cells=frozenset({(2, 0), (1, 0), (3, 1)}),
         possibly_empty=frozenset({(3, 0), (2, 2), (2, 3), (0, 1)}),
         obstructions=[
@@ -129,7 +132,14 @@ def test_compression():
             [Requirement(Perm((1, 0)), ((3, 1), (3, 0))),
              Requirement(Perm((1, 0)), ((3, 1), (3, 1)))]])
 
-    assert tiling == Tiling.decompress(tiling.compress())
+
+def test_compression(compresstil):
+    assert compresstil == Tiling.decompress(compresstil.compress())
+
+
+def test_json(compresstil):
+    assert compresstil == Tiling.from_json(
+        json.dumps(compresstil.to_jsonable()))
 
 
 @pytest.fixture

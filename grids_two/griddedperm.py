@@ -1,3 +1,4 @@
+import json
 from itertools import chain, combinations
 
 from permuta import Perm
@@ -467,6 +468,26 @@ class GriddedPerm():
         """Rotate 90 degrees"""
         return self.__class__(self.patt._rotate_right(),
                               map(transf, self.patt.inverse().apply(self.pos)))
+
+    def to_jsonable(self):
+        """Returns a dictionary object which is JSON serializable representing
+        a GriddedPerm."""
+        output = dict()
+        output['patt'] = self.patt
+        output['pos'] = self.pos
+        return output
+
+    @classmethod
+    def from_json(cls, jsonstr):
+        """Returns a GriddedPerm object from JSON string."""
+        jsondict = json.loads(jsonstr)
+        return cls.from_dict(jsondict)
+
+    @classmethod
+    def from_dict(cls, jsondict):
+        """Returns a GriddedPerm object from a dictionary loaded from a JSON
+        serialized GriddedPerm object."""
+        return cls(Perm(jsondict['patt']), map(tuple, jsondict['pos']))
 
     def __len__(self):
         return len(self.patt)
