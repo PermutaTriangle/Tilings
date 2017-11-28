@@ -23,7 +23,8 @@ class Tiling():
 
     def __init__(self, point_cells=list(), positive_cells=list(),
                  possibly_empty=list(), obstructions=list(),
-                 requirements=list(), remove_empty=True, point_infer=True):
+                 requirements=list(), remove_empty=True, point_infer=True,
+                 integrity_check=False):
         # Set of the cells that have points in them
         self._point_cells = frozenset(point_cells)
         # Set of the cells that are positive, i.e. contain a point
@@ -38,33 +39,8 @@ class Tiling():
         self._dimensions = None
         self.back_map = None
 
-        # The cell sets should all be disjoint
-        if self._positive_cells & self._possibly_empty:
-            raise ValueError(("The set of positive cells and the set of "
-                              "possibly empty cells should be disjoint."))
-        if self._positive_cells & self._point_cells:
-            raise ValueError(("The set of positive cells and the set of point"
-                              " cells should be disjoint."))
-        if self._possibly_empty & self._point_cells:
-            raise ValueError(("The set of possibly empty cells and the set of "
-                              "point cells should be disjoint."))
-
-        # Check if positive_cells and possibly_empty cells cover the indices of
-        # the obstructions.
-        all_cells = (self._positive_cells |
-                     self._possibly_empty |
-                     self._point_cells)
-        all_obstruction_cells = reduce(
-            set.__or__, (set(ob.pos) for ob in self._obstructions), set())
-        if not all_obstruction_cells <= all_cells:
-            raise ValueError(("The set of point, positive and possibly empty "
-                              "cells should cover the cells of the "
-                              "obstructions."))
-        if not all(any(set(req.pos) for req in reqlist)
-                   for reqlist in self._requirements):
-            raise ValueError(("The set of point, positive and possibly empty "
-                              "cells should cover at least one"
-                              "requirement in each requirement list."))
+        if integrity_check:
+            self._integrity_check()
 
         self._minimize(remove_empty)
         self.dimensions
@@ -196,6 +172,35 @@ class Tiling():
         self._obstructions = tuple(sorted(rest))
         self._positive_cells = self._positive_cells - point_cells
         self._point_cells = self._point_cells | point_cells
+
+    def _integrity_check(self):
+        # The cell sets should all be disjoint
+        if self._positive_cells & self._possibly_empty:
+            raise ValueError(("The set of positive cells and the set of "
+                              "possibly empty cells should be disjoint."))
+        if self._positive_cells & self._point_cells:
+            raise ValueError(("The set of positive cells and the set of point"
+                              " cells should be disjoint."))
+        if self._possibly_empty & self._point_cells:
+            raise ValueError(("The set of possibly empty cells and the set of "
+                              "point cells should be disjoint."))
+
+        # Check if positive_cells and possibly_empty cells cover the indices of
+        # the obstructions.
+        all_cells = (self._positive_cells |
+                     self._possibly_empty |
+                     self._point_cells)
+        all_obstruction_cells = reduce(
+            set.__or__, (set(ob.pos) for ob in self._obstructions), set())
+        if not all_obstruction_cells <= all_cells:
+            raise ValueError(("The set of point, positive and possibly empty "
+                              "cells should cover the cells of the "
+                              "obstructions."))
+        if not all(any(set(req.pos) for req in reqlist)
+                   for reqlist in self._requirements):
+            raise ValueError(("The set of point, positive and possibly empty "
+                              "cells should cover at least one"
+                              "requirement in each requirement list."))
 
     def to_old_tiling(self):
         import grids
