@@ -152,16 +152,16 @@ class Tiling():
             redundant = set()
             reqs = sorted(reqs)
             for i in range(len(reqs)):
-                for j in range(len(i+1, reqs)):
+                for j in range(i+1, len(reqs)):
                     if reqs[i] in reqs[j]:
-                        redundant.insert(reqs[j])
+                        redundant.add(reqs[j])
                 for ob in self:
                     if ob in reqs[i]:
-                        redundant.insert(reqs[i])
+                        redundant.add(reqs[i])
                         break
             tmp = [req for req in reqs if req not in redundant]
             if len(tmp) == 0:
-                self._obstructions.prepend(Obstruction.empty_perm())
+                self._obstructions = (Obstruction.empty_perm(),) + self._obstructions
                 return []
             cleanreqs.append([req for req in reqs if req not in redundant])
 
@@ -175,7 +175,7 @@ class Tiling():
                 if j in ind_to_remove:
                     continue
                 if all(any(r2 in r1 for r2 in reqs2) for r1 in reqs):
-                    ind_to_remove.insert(j)
+                    ind_to_remove.add(j)
 
         return sorted([sorted(reqs) for i, reqs in enumerate(cleanreqs) if i not in ind_to_remove])
 
@@ -405,7 +405,7 @@ class Tiling():
                       self._positive_cells,
                       self._possibly_empty,
                       self._obstructions,
-                      self._requirements + (Requirement.single_cell(patt, cell),))
+                      self._requirements + ([Requirement.single_cell(patt, cell)],))
 
     def only_positive_in_row_and_column(self, cell):
         """Check if the cell is the only positive cell in row and column."""
