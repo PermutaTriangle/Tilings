@@ -176,7 +176,7 @@ class Tiling():
                     continue
                 if all(any(r2 in r1 for r2 in reqs2) for r1 in reqs):
                     ind_to_remove.insert(j)
-                
+
         return sorted([sorted(reqs) for i, reqs in enumerate(cleanreqs) if i not in ind_to_remove])
 
     def _point_inferral(self):
@@ -396,16 +396,16 @@ class Tiling():
     def add_single_cell_obstruction(self, cell, patt):
         return Tiling(self._point_cells,
                       self._positive_cells,
-                      self._possibly_emtpy,
+                      self._possibly_empty,
                       self._obstructions + (Obstruction.single_cell(patt, cell),),
                       self._requirements)
 
     def add_single_cell_requirement(self, cell, patt):
         return Tiling(self._point_cells,
                       self._positive_cells,
-                      self._possibly_emtpy,
+                      self._possibly_empty,
                       self._obstructions,
-                      self._requirements + (Requirement.single_cell(patt, cell)),)
+                      self._requirements + (Requirement.single_cell(patt, cell),))
 
     def only_positive_in_row_and_column(self, cell):
         """Check if the cell is the only positive cell in row and column."""
