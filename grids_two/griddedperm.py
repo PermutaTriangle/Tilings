@@ -11,7 +11,7 @@ class GriddedPerm():
         # pattern can be mapped on the positions given.
 
         if not isinstance(pattern, Perm):
-            raise ValueError("Pattern should be a instance of permuat.Perm")
+            raise ValueError("Pattern should be a instance of permuta.Perm")
         if not len(pattern):
             self.patt = pattern
             self.pos = tuple(positions)

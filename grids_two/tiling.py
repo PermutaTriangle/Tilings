@@ -147,7 +147,37 @@ class Tiling():
     def _minimal_reqs(self):
         """Returns a new set of minimal lists of requirements from the
         requirement set of self."""
-        return self._requirements
+        cleanreqs = list()
+        for reqs in self._requirements:
+            redundant = set()
+            reqs = sorted(reqs)
+            for i in range(len(reqs)):
+                for j in range(len(i+1, reqs)):
+                    if reqs[i] in reqs[j]:
+                        redundant.insert(reqs[j])
+                for ob in self:
+                    if ob in reqs[i]:
+                        redundant.insert(reqs[i])
+                        break
+            tmp = [req for req in reqs if req not in redundant]
+            if len(tmp) == 0:
+                self._obstructions.prepend(Obstruction.empty_perm())
+                return []
+            cleanreqs.append([req for req in reqs if req not in redundant])
+
+        ind_to_remove = set()
+        for i, reqs in enumerate(cleanreqs):
+            if i in ind_to_remove:
+                continue
+            for j, reqs2 in enumerate(cleanreqs):
+                if i == j:
+                    continue
+                if j in ind_to_remove:
+                    continue
+                if all(any(r2 in r1 for r2 in reqs2) for r1 in reqs):
+                    ind_to_remove.insert(j)
+                
+        return sorted([sorted(reqs) for i, reqs in enumerate(cleanreqs) if i not in ind_to_remove])
 
     def _point_inferral(self):
         """Changes the positive cells with a 12 and 21 obstructions into point
@@ -362,6 +392,20 @@ class Tiling():
                       self._possibly_empty - {cell},
                       self._obstructions,
                       self._requirements)
+
+    def add_single_cell_obstruction(self, cell, patt):
+        return Tiling(self._point_cells,
+                      self._positive_cells,
+                      self._possibly_emtpy,
+                      self._obstructions + (Obstruction.single_cell(patt, cell),),
+                      self._requirements)
+
+    def add_single_cell_requirement(self, cell, patt):
+        return Tiling(self._point_cells,
+                      self._positive_cells,
+                      self._possibly_emtpy,
+                      self._obstructions,
+                      self._requirements + (Requirement.single_cell(patt, cell)),)
 
     def only_positive_in_row_and_column(self, cell):
         """Check if the cell is the only positive cell in row and column."""
