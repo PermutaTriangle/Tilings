@@ -24,7 +24,7 @@ class Tiling():
     def __init__(self, point_cells=list(), positive_cells=list(),
                  possibly_empty=list(), obstructions=list(),
                  requirements=list(), remove_empty=True, point_infer=True,
-                 integrity_check=False):
+                 integrity_check=True):
         # Set of the cells that have points in them
         self._point_cells = frozenset(point_cells)
         # Set of the cells that are positive, i.e. contain a point
@@ -149,6 +149,8 @@ class Tiling():
         requirement set of self."""
         cleanreqs = list()
         for reqs in self._requirements:
+            if any(len(r) == 0 for r in reqs):
+                continue
             redundant = set()
             reqs = sorted(reqs)
             for i in range(len(reqs)):
@@ -224,11 +226,13 @@ class Tiling():
             raise ValueError(("The set of point, positive and possibly empty "
                               "cells should cover the cells of the "
                               "obstructions."))
-        if not all(any(set(req.pos) for req in reqlist)
-                   for reqlist in self._requirements):
-            raise ValueError(("The set of point, positive and possibly empty "
-                              "cells should cover at least one"
-                              "requirement in each requirement list."))
+        for req_list in self._requirements:
+            requirement_cells = reduce(
+                set.__or__, (set(req.pos) for req in req_list), set())
+            if not requirement_cells <= all_cells:
+                raise ValueError(("The set of point, positive and possibly empty "
+                                  "cells should cover at least one"
+                                  "requirement in each requirement list."))
 
     def to_old_tiling(self):
         import grids
