@@ -86,6 +86,17 @@ class GriddedPerm():
             if isolated:
                 yield self.pos[i]
 
+    def is_isolated(self, indices):
+        """Checks if the cells at the indices do not share a row or column with
+        any other cell in the gridded permutation."""
+        for i in range(len(self)):
+            if i in indices:
+                continue
+            if any((self.pos[i][0] == self.pos[j][0]
+                    or self.pos[i][1] == self.pos[j][1]) for j in indices):
+                return False
+        return True
+
     def forced_point_index(self, cell, direction):
         """Search in the cell given for the point with the strongest force with
         respect to the given force."""

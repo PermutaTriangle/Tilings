@@ -55,10 +55,12 @@ class Tiling():
         set. Finally, removes all empty rows and columns and updates
         obstructions.
         """
+
         # Minimize the set of obstructions
         minimalobs = self._minimal_obs()
         # Minimize the set of requiriments
-        minimalreqs = self._minimal_reqs()
+        minimalobs, minimalreqs = self._minimal_reqs(minimalobs)
+
         # Compute the single-point obstructions
         empty_cells = set(ob.is_point_obstr()
                           for ob in minimalobs if ob.is_point_obstr())
@@ -128,7 +130,16 @@ class Tiling():
         remove = [cell for cell in obstruction.isolated_cells()
                   if (cell in self._point_cells or
                       cell in self._positive_cells)]
-        return obstruction.remove_cells(remove)
+        obstruction = obstruction.remove_cells(remove)
+        for req_list in self._requirements:
+            if len(req_list) == 1:
+                req = req_list[0]
+                occs = list(req.occurrences_in(obstruction))
+                if len(occs) == 1:
+                    occ = occs[0]
+                    if obstruction.is_isolated(occ):
+                        obstruction = obstruction.remove_cells(req.pos)
+        return obstruction
 
     def _minimal_obs(self):
         """Returns a new list of minimal obstructions from the obstruction set
@@ -144,9 +155,9 @@ class Tiling():
                 cleanobs.append(ob)
         return cleanobs
 
-    def _minimal_reqs(self):
+    def _minimal_reqs(self, obstructions):
         """Returns a new set of minimal lists of requirements from the
-        requirement set of self."""
+        requirement set of self, and a list of further reduced obstructions."""
         cleanreqs = list()
         for reqs in self._requirements:
             if any(len(r) == 0 for r in reqs):
@@ -157,14 +168,14 @@ class Tiling():
                 for j in range(i+1, len(reqs)):
                     if reqs[i] in reqs[j]:
                         redundant.add(reqs[j])
-                for ob in self:
+                for ob in obstructions:
                     if ob in reqs[i]:
                         redundant.add(reqs[i])
                         break
             tmp = [req for req in reqs if req not in redundant]
             if len(tmp) == 0:
-                self._obstructions = (Obstruction.empty_perm(),) + self._obstructions
-                return []
+
+                return [Obstruction.empty_perm()], []
             cleanreqs.append([req for req in reqs if req not in redundant])
 
         ind_to_remove = set()
@@ -179,7 +190,8 @@ class Tiling():
                 if all(any(r2 in r1 for r2 in reqs2) for r1 in reqs):
                     ind_to_remove.add(j)
 
-        return sorted([sorted(reqs) for i, reqs in enumerate(cleanreqs) if i not in ind_to_remove])
+        return obstructions, sorted([sorted(reqs) for i, reqs in enumerate(cleanreqs)
+                                     if i not in ind_to_remove])
 
     def _point_inferral(self):
         """Changes the positive cells with a 12 and 21 obstructions into point
