@@ -42,16 +42,7 @@ class Requirement(GriddedPerm):
                 req_list.append(self.__class__(newpatt, newposition))
             else:
                 raise ValueError("Must apply some force!")
-                # for index in self.points_in_cell(cell):
-                #     newpatt = Perm.to_standard(
-                #         self.patt[i] for i in range(len(self))
-                #         if i != index)
-                #     newposition = [
-                #         self.point_translation(p, (index, self.patt[index]))
-                #         for p in range(len(self)) if p != index]
-                #     req_list.append(self.__class__(newpatt, newposition))
-        # Gridded permutation spans the cell, find the bounding box of all the
-        # possible locations for the placed point in relation to the pattern.
+                
             if direction == DIR_EAST:
                 mindex = forced_index + 1
             elif direction == DIR_NORTH:
