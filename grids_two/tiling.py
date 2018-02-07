@@ -172,11 +172,10 @@ class Tiling():
                     if ob in reqs[i]:
                         redundant.add(reqs[i])
                         break
-            tmp = [req for req in reqs if req not in redundant]
-            if len(tmp) == 0:
-
+            cleanreq = [req for req in reqs if req not in redundant]
+            if len(cleanreq) == 0:
                 return [Obstruction.empty_perm()], []
-            cleanreqs.append([req for req in reqs if req not in redundant])
+            cleanreqs.append(cleanreq)
 
         ind_to_remove = set()
         for i, reqs in enumerate(cleanreqs):
