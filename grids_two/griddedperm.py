@@ -11,7 +11,7 @@ class GriddedPerm():
         # pattern can be mapped on the positions given.
 
         if not isinstance(pattern, Perm):
-            raise ValueError("Pattern should be a instance of permuat.Perm")
+            raise ValueError("Pattern should be a instance of permuta.Perm")
         if not len(pattern):
             self.patt = pattern
             self.pos = tuple(positions)
@@ -85,6 +85,17 @@ class GriddedPerm():
                     break
             if isolated:
                 yield self.pos[i]
+
+    def is_isolated(self, indices):
+        """Checks if the cells at the indices do not share a row or column with
+        any other cell in the gridded permutation."""
+        for i in range(len(self)):
+            if i in indices:
+                continue
+            if any((self.pos[i][0] == self.pos[j][0]
+                    or self.pos[i][1] == self.pos[j][1]) for j in indices):
+                return False
+        return True
 
     def forced_point_index(self, cell, direction):
         """Search in the cell given for the point with the strongest force with

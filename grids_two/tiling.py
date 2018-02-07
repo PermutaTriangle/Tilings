@@ -24,7 +24,7 @@ class Tiling():
     def __init__(self, point_cells=list(), positive_cells=list(),
                  possibly_empty=list(), obstructions=list(),
                  requirements=list(), remove_empty=True, point_infer=True,
-                 integrity_check=False):
+                 integrity_check=True):
         # Set of the cells that have points in them
         self._point_cells = frozenset(point_cells)
         # Set of the cells that are positive, i.e. contain a point
@@ -55,10 +55,12 @@ class Tiling():
         set. Finally, removes all empty rows and columns and updates
         obstructions.
         """
+
         # Minimize the set of obstructions
         minimalobs = self._minimal_obs()
         # Minimize the set of requiriments
-        minimalreqs = self._minimal_reqs()
+        minimalobs, minimalreqs = self._minimal_reqs(minimalobs)
+
         # Compute the single-point obstructions
         empty_cells = set(ob.is_point_obstr()
                           for ob in minimalobs if ob.is_point_obstr())
@@ -128,7 +130,16 @@ class Tiling():
         remove = [cell for cell in obstruction.isolated_cells()
                   if (cell in self._point_cells or
                       cell in self._positive_cells)]
-        return obstruction.remove_cells(remove)
+        obstruction = obstruction.remove_cells(remove)
+        for req_list in self._requirements:
+            if len(req_list) == 1:
+                req = req_list[0]
+                occs = list(req.occurrences_in(obstruction))
+                if len(occs) == 1:
+                    occ = occs[0]
+                    if obstruction.is_isolated(occ):
+                        obstruction = obstruction.remove_cells(req.pos)
+        return obstruction
 
     def _minimal_obs(self):
         """Returns a new list of minimal obstructions from the obstruction set
@@ -144,10 +155,42 @@ class Tiling():
                 cleanobs.append(ob)
         return cleanobs
 
-    def _minimal_reqs(self):
+    def _minimal_reqs(self, obstructions):
         """Returns a new set of minimal lists of requirements from the
-        requirement set of self."""
-        return self._requirements
+        requirement set of self, and a list of further reduced obstructions."""
+        cleanreqs = list()
+        for reqs in self._requirements:
+            if any(len(r) == 0 for r in reqs):
+                continue
+            redundant = set()
+            reqs = sorted(reqs)
+            for i in range(len(reqs)):
+                for j in range(i+1, len(reqs)):
+                    if reqs[i] in reqs[j]:
+                        redundant.add(reqs[j])
+                for ob in obstructions:
+                    if ob in reqs[i]:
+                        redundant.add(reqs[i])
+                        break
+            cleanreq = [req for req in reqs if req not in redundant]
+            if len(cleanreq) == 0:
+                return [Obstruction.empty_perm()], []
+            cleanreqs.append(cleanreq)
+
+        ind_to_remove = set()
+        for i, reqs in enumerate(cleanreqs):
+            if i in ind_to_remove:
+                continue
+            for j, reqs2 in enumerate(cleanreqs):
+                if i == j:
+                    continue
+                if j in ind_to_remove:
+                    continue
+                if all(any(r2 in r1 for r2 in reqs2) for r1 in reqs):
+                    ind_to_remove.add(j)
+
+        return obstructions, sorted([sorted(reqs) for i, reqs in enumerate(cleanreqs)
+                                     if i not in ind_to_remove])
 
     def _point_inferral(self):
         """Changes the positive cells with a 12 and 21 obstructions into point
@@ -194,11 +237,13 @@ class Tiling():
             raise ValueError(("The set of point, positive and possibly empty "
                               "cells should cover the cells of the "
                               "obstructions."))
-        if not all(any(set(req.pos) for req in reqlist)
-                   for reqlist in self._requirements):
-            raise ValueError(("The set of point, positive and possibly empty "
-                              "cells should cover at least one"
-                              "requirement in each requirement list."))
+        for req_list in self._requirements:
+            requirement_cells = reduce(
+                set.__or__, (set(req.pos) for req in req_list), set())
+            if not requirement_cells <= all_cells:
+                raise ValueError(("The set of point, positive and possibly empty "
+                                  "cells should cover at least one"
+                                  "requirement in each requirement list."))
 
     def to_old_tiling(self):
         import grids
@@ -362,6 +407,20 @@ class Tiling():
                       self._possibly_empty - {cell},
                       self._obstructions,
                       self._requirements)
+
+    def add_single_cell_obstruction(self, cell, patt):
+        return Tiling(self._point_cells,
+                      self._positive_cells,
+                      self._possibly_empty,
+                      self._obstructions + (Obstruction.single_cell(patt, cell),),
+                      self._requirements)
+
+    def add_single_cell_requirement(self, cell, patt):
+        return Tiling(self._point_cells,
+                      self._positive_cells,
+                      self._possibly_empty,
+                      self._obstructions,
+                      self._requirements + ([Requirement.single_cell(patt, cell)],))
 
     def only_positive_in_row_and_column(self, cell):
         """Check if the cell is the only positive cell in row and column."""
