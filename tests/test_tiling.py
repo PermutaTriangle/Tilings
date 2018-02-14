@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from grids_two import Obstruction, Requirement, Tiling
+from grids_three import Obstruction, Requirement, Tiling
 from permuta import Perm
 
 

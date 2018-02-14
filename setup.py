@@ -9,11 +9,13 @@ def read(fname):
 
 
 setup(
-    name="grids_two",
+    name="grids_three",
     version="0.0.1",
     author="Henning Ulfarsson",
     author_email="henningu@ru.is",
-    url="https://github.com/PermutaTriangle/grids_two",
+    maintainer="Christian Nathaniel Bean",
+    maintainer_email="christianbean@ru.is",
+    url="https://github.com/PermutaTriangle/grids_three",
     packages=find_packages(),
     long_description=read("README.md"),
     dependency_links=[

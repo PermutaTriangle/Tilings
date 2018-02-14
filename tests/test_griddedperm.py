@@ -1,6 +1,6 @@
 import pytest
 
-from grids_two import GriddedPerm
+from grids_three import GriddedPerm
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST
 

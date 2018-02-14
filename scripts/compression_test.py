@@ -1,6 +1,6 @@
 import random
 
-from grids_two import Obstruction, Tiling
+from grids_three import Obstruction, Tiling
 from permuta import Perm
 
 
