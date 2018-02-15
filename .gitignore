@@ -93,3 +93,5 @@ ENV/
 *.iml
 
 devtest.py
+
+.pytest_cache
