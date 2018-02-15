@@ -150,6 +150,8 @@ class GriddedPerm():
                 yield (i, self.patt[i])
 
     def get_bounding_box(self, cell):
+        """Determines the indices and values of the gridded permutation in
+        which a point that is being inserted into the cell given."""
         row = list(self.get_points_row(cell[1]))
         col = list(self.get_points_col(cell[0]))
         if not row:
@@ -384,23 +386,34 @@ class GriddedPerm():
                               ).format(direction))
 
     def minimize(self, cell_mapping):
+        """Map the coordinates to a new list of coordinates according to the
+        cell_mapping given."""
         return self.__class__(self.patt,
                               [cell_mapping(cell) for cell in self.pos])
 
     def is_point_perm(self):
+        """Checks if the gridded permutation is of length 1."""
         if len(self) == 1:
             return self.pos[0]
         return None
 
+    def is_localized(self):
+        """Check if the gridded permutation occupies only a single cell."""
+        return self.is_single_cell()
+
     def is_single_cell(self):
+        """Check if the gridded permutation occupies only a single cell."""
         if len(set(self.pos)) == 1:
             return self.pos[0]
         return None
 
     def is_empty(self):
+        """Check if the gridded permutation is the gridded permutation."""
         return not bool(self.patt)
 
     def is_interleaving(self):
+        """Check if the gridded permutation occupies two cells that are in the
+        same row or column."""
         seen = []
         for cell in self.pos:
             for seen_cell in seen:
