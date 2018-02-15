@@ -25,7 +25,7 @@ class Requirement(GriddedPerm):
         # If the gridded permutation does not span the cell, the resulting list
         # of new obstructions would contain only the gridded permutation
         # itself.
-        cell = self.pos[forced_index]
+        cell = self._pos[forced_index]
         obstruction_list = []
         req_list = []
         # If the gridded permutation contains a point in the cell (occupies)
