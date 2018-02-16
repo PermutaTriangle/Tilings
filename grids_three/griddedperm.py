@@ -92,8 +92,8 @@ class GriddedPerm():
         for i in range(len(self)):
             if i in indices:
                 continue
-            if any((self._pos[i][0] == self._pos[j][0]
-                    or self._pos[i][1] == self._pos[j][1]) for j in indices):
+            if any((self._pos[i][0] == self._pos[j][0] or
+                    self._pos[i][1] == self._pos[j][1]) for j in indices):
                 return False
         return True
 
@@ -273,8 +273,9 @@ class GriddedPerm():
         mindex, maxdex, minval, maxval = self.get_bounding_box(cell)
         for idx in range(mindex, maxdex + 1):
             for val in range(minval, maxval + 1):
-                yield self.__class__(self._patt.insert(idx, val),
-                                     self._pos[:idx] + (cell,) + self._pos[idx:])
+                yield self.__class__(
+                    self._patt.insert(idx, val),
+                    self._pos[:idx] + (cell,) + self._pos[idx:])
 
     def _isolate_point(self, cell, row=True):
         """Isolates point in the given cell within the row or column, depending
@@ -354,10 +355,11 @@ class GriddedPerm():
             else:
                 lo = points[-1]
             for i in range(lo, hi + 1):
-                yield self.__class__(self._patt,
-                                     [self._pos[j] if j < i
-                                      else (self._pos[j][0] + 1, self._pos[j][1])
-                                      for j in range(len(self))])
+                yield self.__class__(
+                    self._patt,
+                    [self._pos[j] if j < i
+                     else (self._pos[j][0] + 1, self._pos[j][1])
+                     for j in range(len(self))])
 
         elif direction == DIR_NORTH or direction == DIR_SOUTH:
             for p in self._pos:
@@ -377,10 +379,11 @@ class GriddedPerm():
             else:
                 lo = vals[-1]
             for i in range(lo, hi + 1):
-                yield self.__class__(self._patt,
-                                     [self._pos[j] if self._patt[j] < i
-                                      else (self._pos[j][0], self._pos[j][1] + 1)
-                                      for j in range(len(self))])
+                yield self.__class__(
+                    self._patt,
+                    [self._pos[j] if self._patt[j] < i
+                     else (self._pos[j][0], self._pos[j][1] + 1)
+                     for j in range(len(self))])
         else:
             raise ValueError(("Invalid direction {} for point separation."
                               ).format(direction))
@@ -490,8 +493,9 @@ class GriddedPerm():
 
     def rotate90(self, transf):
         """Rotate 90 degrees"""
-        return self.__class__(self._patt._rotate_right(),
-                              map(transf, self._patt.inverse().apply(self._pos)))
+        return self.__class__(
+            self._patt._rotate_right(),
+            map(transf, self._patt.inverse().apply(self._pos)))
 
     def to_jsonable(self):
         """Returns a dictionary object which is JSON serializable representing
