@@ -49,7 +49,8 @@ class Tiling():
         (i, j) = self.dimensions
         for x in range(i):
             for y in range(j):
-                if (x, y) not in self.active_cells:
+                if ((x, y) not in self.active_cells and
+                        (x, y) not in self.empty_cells):
                     add.append(Obstruction.single_cell(Perm((0,)), (x, y)))
         self._obstructions = tuple(sorted(tuple(add) + self._obstructions))
 
@@ -60,8 +61,6 @@ class Tiling():
         respective lists. If any requirement list is empty, then the tiling is
         empty.
         """
-        # TODO: test
-
         # Minimize the set of obstructions
         minimalobs = self._minimal_obs()
         # Minimize the set of requiriments
@@ -92,7 +91,6 @@ class Tiling():
     def _minimize_mapping(self):
         """Returns a pair of dictionaries, that map rows/columns to an
         equivalent set of rows/columns where empty ones have been removed. """
-        # TODO: test
         active_cells = (union_reduce(ob.pos for ob in self._obstructions
                                      if not ob.is_point_obstr()) |
                         union_reduce(union_reduce(req.pos for req in reqs)
@@ -113,7 +111,6 @@ class Tiling():
     def _clean_isolated(self, obstruction, positive_cells):
         """Remove the isolated cells that are point cells or positive cells
         from all obstructions."""
-        # TODO: test
         remove = [cell for cell in obstruction.isolated_cells()
                   if cell in positive_cells]
         obstruction = obstruction.remove_cells(remove)
@@ -165,7 +162,7 @@ class Tiling():
                         break
             cleanreq = [req for req in reqs if req not in redundant]
             if len(cleanreq) == 0:
-                return [Obstruction.empty_perm()], []
+                return (Obstruction.empty_perm(),), tuple()
             cleanreqs.append(cleanreq)
 
         ind_to_remove = set()
@@ -181,8 +178,8 @@ class Tiling():
                     ind_to_remove.add(j)
 
         return obstructions, sorted(
-            [sorted(reqs) for i, reqs in enumerate(cleanreqs)
-             if i not in ind_to_remove])
+            tuple(tuple(reqs) for i, reqs in enumerate(cleanreqs)
+                  if i not in ind_to_remove))
 
     def to_old_tiling(self):
         import grids
@@ -197,11 +194,11 @@ class Tiling():
         for cell in self._possibly_empty:
             if cell not in basi:
                 blocks[cell] = PermSet.avoiding(())
-        for cell in self._positive_cells:
+        for cell in self.positive_cells:
             if cell not in basi:
                 blocks[cell] = grids.PositiveClass(PermSet.avoiding(()))
         for (cell, basis) in basi.items():
-            if cell in self._positive_cells:
+            if cell in self.positive_cells:
                 blocks[cell] = grids.PositiveClass(PermSet.avoiding(basis))
             else:
                 blocks[cell] = PermSet.avoiding(basis)
@@ -298,88 +295,88 @@ class Tiling():
     # Cell methods
 
     def cell_within_bounds(self, cell):
-        # TODO: TEST
         """Checks if a cell is within the bounds of the tiling."""
         (i, j) = self.dimensions
         return cell[0] >= 0 and cell[0] < i and cell[1] >= 0 and cell[1] < j
 
     def empty_cell(self, cell):
-        # TODO: TEST
         """Empties a cell in the tiling by adding a point obstruction into the
         cell.
         """
         if not self.cell_within_bounds(cell):
             raise ValueError(
                 "Cell {} is not within the bounds of the tiling.".format(cell))
-        return self.add_single_cell_obstruction(cell, Perm((0,)))
+        return self.add_single_cell_obstruction(Perm((0,)), cell)
 
     def insert_cell(self, cell):
-        # TODO: TEST
-        """Inserts a cell into every obstruction and returns a new tiling. The
-        cell must be in the set of possibly empty cells."""
+        """Performs 'cell insertion', adds a point requirement into the given
+        cell. Cell should be active.
+
+        TODO: Given a requirement list that contains the requirement
+            Requirement(Perm((0, 1)), [(x_0, y_0), (x_1, y_1))
+        and a requirement that does not occupy (x_0, y_0), consider what
+        happens to this requirement when cell insertion is performed on (x_0,
+        y_0). This is a case of a subrequirement contained in every requirement
+        of some list, which then another requirement in another list contains.
+        Since the first requirement list guarantees that the subrequirement is
+        placed, the second requirement could remove the subrequirement from
+        itself.
+        """
         if not self.cell_within_bounds(cell):
             raise ValueError(
                 "Cell {} is not within the bounds of the tiling.".format(cell))
-        return self.add_single_cell_requirement(cell, Perm((0,)))
+        return self.add_single_cell_requirement(Perm((0,)), cell)
 
-    def add_single_cell_obstruction(self, cell, patt):
-        # TODO: TEST
+    def add_single_cell_obstruction(self, patt, cell):
+        """Returns a new tiling with the single cell obstruction of the pattern
+        patt in the given cell."""
         return Tiling(self._obstructions + (
                           Obstruction.single_cell(patt, cell),),
                       self._requirements)
 
-    def add_single_cell_requirement(self, cell, patt):
-        # TODO: TEST
+    def add_single_cell_requirement(self, patt, cell):
+        """Returns a new tiling with the single cell requirement of the pattern
+        patt in the given cell."""
         return Tiling(self._obstructions,
                       self._requirements + (
                           [Requirement.single_cell(patt, cell)],))
 
-    def only_positive_in_row_and_column(self, cell):
-        # TODO
+    def only_positive_in_row_and_col(self, cell):
         """Check if the cell is the only positive cell in row and column."""
-        if cell not in self._positive_cells and cell not in self._point_cells:
-            return False
-        inrow = sum(1 for (x, y) in
-                    chain(self._point_cells, self._positive_cells)
-                    if y == cell[1])
-        incol = sum(1 for (x, y) in
-                    chain(self._point_cells, self._positive_cells)
-                    if x == cell[0])
-        return (inrow == 1 and incol == 1)
+        return (self.only_positive_in_row(cell) and
+                self.only_positive_in_col(cell))
 
     def only_positive_in_row(self, cell):
-        # TODO
         """Check if the cell is the only positive cell in row."""
-        inrow = sum(1 for (x, y) in
-                    chain(self._point_cells, self._positive_cells)
+        if cell not in self.positive_cells:
+            return False
+        inrow = sum(1 for (x, y) in self.positive_cells
                     if y == cell[1])
         return inrow == 1
 
     def only_positive_in_col(self, cell):
-        # TODO
         """Check if the cell is the only positive cell in column."""
-        incol = sum(1 for (x, y) in
-                    chain(self._point_cells, self._positive_cells)
+        if cell not in self.positive_cells:
+            return False
+        incol = sum(1 for (x, y) in self.positive_cells
                     if x == cell[0])
         return incol == 1
 
     def only_cell_in_col(self, cell):
-        # TODO: test
+        """Checks if the cell is the only active cell in the column."""
         return sum(1 for (x, y) in self.active_cells if x == cell[0]) == 1
 
     def only_cell_in_row(self, cell):
-        # TODO: test
+        """Checks if the cell is the only active cell in the row."""
         return sum(1 for (x, y) in self.active_cells if y == cell[1]) == 1
 
     def cells_in_row(self, row):
-        """Return all point, positive and possibly empty cells in row."""
-        # TODO: test
-        return [(x, y) for (x, y) in self.active_cells if y == row]
+        """Return all active cells in row."""
+        return frozenset((x, y) for (x, y) in self.active_cells if y == row)
 
     def cells_in_col(self, col):
-        """Return all point, positive and possibly empty cells in column."""
-        # TODO: test
-        return [(x, y) for (x, y) in self.active_cells if x == col]
+        """Return all active cells in column."""
+        return frozenset((x, y) for (x, y) in self.active_cells if x == col)
 
     @staticmethod
     def sort_requirements(requirements):
@@ -423,7 +420,7 @@ class Tiling():
             return (self.dimensions[0] - cell[0] - 1, cell[1])
         return self._transform(
             reverse_cell,
-            lambda ob: ob.reverse(reverse_cell))
+            lambda gp: gp.reverse(reverse_cell))
 
     def complement(self):
         """ -
@@ -432,7 +429,7 @@ class Tiling():
             return (cell[0], self.dimensions[1] - cell[1] - 1)
         return self._transform(
             complement_cell,
-            lambda ob: ob.complement(complement_cell))
+            lambda gp: gp.complement(complement_cell))
 
     def inverse(self):
         """ /
@@ -441,7 +438,7 @@ class Tiling():
             return (cell[1], cell[0])
         return self._transform(
             inverse_cell,
-            lambda ob: ob.inverse(inverse_cell))
+            lambda gp: gp.inverse(inverse_cell))
 
     def antidiagonal(self):
         """ \\
@@ -451,7 +448,7 @@ class Tiling():
                     self.dimensions[0] - cell[0] - 1)
         return self._transform(
             antidiagonal_cell,
-            lambda ob: ob.antidiagonal(antidiagonal_cell))
+            lambda gp: gp.antidiagonal(antidiagonal_cell))
 
     def rotate270(self):
         """Rotate 270 degrees"""
@@ -460,7 +457,7 @@ class Tiling():
                     cell[0])
         return self._transform(
             rotate270_cell,
-            lambda ob: ob.rotate270(rotate270_cell))
+            lambda gp: gp.rotate270(rotate270_cell))
 
     def rotate180(self):
         """Rotate 180 degrees"""
@@ -469,7 +466,7 @@ class Tiling():
                     self.dimensions[1] - cell[1] - 1)
         return self._transform(
             rotate180_cell,
-            lambda ob: ob.rotate180(rotate180_cell))
+            lambda gp: gp.rotate180(rotate180_cell))
 
     def rotate90(self):
         """Rotate 90 degrees"""
@@ -478,7 +475,7 @@ class Tiling():
                     self.dimensions[0] - cell[0] - 1)
         return self._transform(
             rotate90_cell,
-            lambda ob: ob.rotate90(rotate90_cell))
+            lambda gp: gp.rotate90(rotate90_cell))
 
     #
     # Properties and getters
@@ -502,18 +499,6 @@ class Tiling():
     @property
     def total_points(self):
         return len(self.point_cells)
-
-    @property
-    def possibly_empty(self):
-        # TODO: test
-        if not hasattr(self, "_possibly_empty"):
-            pointobs = set(ob.is_single_cell() for ob in self._obstructions
-                           if ob.is_single_cell())
-            (i, j) = self.dimensions
-            self._possibly_empty = frozenset(
-                (x, y) for x in range(i) for y in range(j)
-                if (x, y) not in pointobs)
-        return self._possibly_empty
 
     @property
     def positive_cells(self):
@@ -550,30 +535,21 @@ class Tiling():
         """Returns a set of all cells that contain a point obstruction, i.e.,
         are empty.
         """
-        # TODO: test
-        if not hasattr(self, "_empty_cells"):
-            self._empty_cells = frozenset(
-                filter(None, map(lambda x: x.is_point_obstr(),
-                                 self._obstructions)))
-        return self._empty_cells
+        return frozenset(filter(None, map(lambda x: x.is_point_obstr(),
+                                          self._obstructions)))
 
     @property
     def active_cells(self):
         """Returns a set of all cells that do not contain a point obstruction,
         i.e., not empty.
         """
-        # TODO: test
-        if not hasattr(self, "_active_cells"):
-            self._active_cells = (
-                union_reduce(ob.pos for ob in self._obstructions
+        return (union_reduce(ob.pos for ob in self._obstructions
                              if not ob.is_point_obstr()) |
                 union_reduce(union_reduce(req.pos for req in reqs)
                              for reqs in self._requirements))
-        return self._active_cells
 
     @property
     def dimensions(self):
-        # TODO: test
         if not hasattr(self, "_dimensions"):
             obcells = union_reduce(ob.pos for ob in self._obstructions)
             reqcells = union_reduce(union_reduce(req.pos for req in reqlist)
