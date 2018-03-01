@@ -95,6 +95,7 @@ def typical_redundant_requirements():
          Requirement(Perm((1, 0)), ((3, 1), (3, 0)))]]
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_constructor_no_requirements(typical_redundant_obstructions):
     """Tests the constructor of Tiling, thereby the minimization methods used
     in the constructor with different options for remove_empty and
@@ -220,6 +221,7 @@ def test_constructor_with_requirements(typical_redundant_obstructions,
     assert tiling == tiling2
 
 
+@pytest.mark.filterwarnings('ignore::UserWarning')
 def test_compression_noreq(typical_redundant_obstructions):
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
