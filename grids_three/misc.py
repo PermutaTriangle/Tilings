@@ -12,4 +12,7 @@ def union_reduce(iterable):
 
 def intersection_reduce(iterable):
     """Returns the intersection of the iterables."""
-    return reduce(set.__and__, map(set, iterable), set())
+    try:
+        return reduce(set.__and__, map(set, iterable))
+    except Exception:
+        return set()
