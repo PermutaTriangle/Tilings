@@ -486,7 +486,6 @@ class Tiling():
 
     @property
     def point_cells(self):
-        # TODO: test
         if not hasattr(self, "_point_cells"):
             local_length2_obcells = Counter(
                 ob.pos[0] for ob in self._obstructions
@@ -502,7 +501,6 @@ class Tiling():
 
     @property
     def positive_cells(self):
-        # TODO: test
         if not hasattr(self, "_positive_cells"):
             self._positive_cells = frozenset(union_reduce(
                 intersection_reduce(req.pos for req in reqs)
@@ -514,20 +512,16 @@ class Tiling():
 
     @property
     def obstructions(self):
-        # CHECK
         return self._obstructions
 
     def total_obstructions(self):
-        # CHECK
         return len(self._obstructions)
 
     @property
     def requirements(self):
-        # CHECK
         return self._requirements
 
     def total_requirements(self):
-        # CHECK
         return len(self._requirements)
 
     @property
