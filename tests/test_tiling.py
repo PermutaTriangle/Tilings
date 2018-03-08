@@ -483,6 +483,31 @@ def test_cells_in_row_col(typical_redundant_obstructions,
     assert col4 == set()
 
 
+def test_cell_basis(typical_redundant_obstructions,
+                    typical_redundant_requirements):
+    tiling = Tiling(
+        obstructions=[Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)]),
+                      Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 1), (1, 1)]),
+                      Obstruction(Perm((0, 2, 1)), [(0, 0), (1, 1), (1, 0)]),
+                      Obstruction(Perm((0, 2, 1)), [(1, 1), (1, 1), (1, 1)]),
+                      Obstruction(Perm((1, 0)), [(1, 0), (1, 0)]),
+                      Obstruction(Perm((2, 0, 1)), [(0, 1), (0, 1), (0, 1)])])
+    bdict = tiling.cell_basis()
+    assert len(bdict) == 4
+    basis = bdict[(0, 0)]
+    assert len(basis[1]) == 0
+    assert set(basis[0]) == {Perm((0, 2, 1))}
+    basis = bdict[(0, 1)]
+    assert len(basis[1]) == 0
+    assert set(basis[0]) == {Perm((2, 0, 1))}
+    basis = bdict[(1, 0)]
+    assert len(basis[1]) == 0
+    assert set(basis[0]) == {Perm((1, 0))}
+    basis = bdict[(1, 1)]
+    assert len(basis[1]) == 0
+    assert set(basis[0]) == {Perm((0, 2, 1))}
+
+
 @pytest.fixture
 def christian_til():
     return Tiling(

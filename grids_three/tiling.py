@@ -16,6 +16,9 @@ __all__ = ("Tiling")
 
 
 class Tiling():
+    # TODO:
+    #   - Intersection of requirements
+    #   - Basis at cell
     """Tiling class.
 
     Zero-indexed coordinates/cells from bottom left corner where the (x, y)
@@ -378,6 +381,25 @@ class Tiling():
         """Return all active cells in column."""
         return frozenset((x, y) for (x, y) in self.active_cells if x == col)
 
+    def cell_basis(self):
+        """Returns a dictionary from cells to basis.
+
+        The basis for each cell is a tuple of two lists of permutations.  The
+        first list contains the patterns of the obstructions localized in the
+        cell and the second contains the intersections of requirement lists
+        that are localized in the cell.
+        """
+        obdict = defaultdict(list)
+        reqdict = defaultdict(list)
+        for ob in self.obstructions:
+            if ob.is_localized():
+                obdict[ob.is_localized()].append(ob.patt)
+        # TODO: Implement this for the intersection of requirements
+        resdict = dict()
+        for cell in chain(obdict.keys(), reqdict.keys()):
+            resdict[cell] = (obdict[cell], reqdict[cell])
+        return resdict
+
     @staticmethod
     def sort_requirements(requirements):
         return tuple(sorted(tuple(sorted(reqlist))
@@ -572,8 +594,14 @@ class Tiling():
     def __eq__(self, other):
         if not isinstance(other, Tiling):
             return False
-        return (self._obstructions == other.obstructions and
-                self._requirements == other.requirements)
+        return ((self.obstructions == other.obstructions) and
+                (self.requirements == other.requirements))
+
+    def __ne__(self, other):
+        if not isinstance(other, Tiling):
+            return True
+        return ((self.obstructions != other.obstructions) or
+                (self.requirements != other.requirements))
 
     def __repr__(self):
         format_string = "Tiling(obstructions={}, requirements={})"
