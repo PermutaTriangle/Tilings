@@ -506,6 +506,10 @@ def test_cell_basis(typical_redundant_obstructions,
     basis = bdict[(1, 1)]
     assert len(basis[1]) == 0
     assert set(basis[0]) == {Perm((0, 2, 1))}
+    basis = bdict[(3, 3)]
+    assert len(basis) == 2
+    assert basis[0] == []
+    assert basis[1] == []
 
 
 @pytest.fixture

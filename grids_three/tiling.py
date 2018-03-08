@@ -65,9 +65,11 @@ class Tiling():
         empty.
         """
         # Minimize the set of obstructions
-        minimalobs = self._minimal_obs()
+        self._obstructions = self._minimal_obs()
         # Minimize the set of requiriments
-        self._obstructions, self._requirements = self._minimal_reqs(minimalobs)
+        self._requirements = self._minimal_reqs(self._obstructions)
+        # Minimize the set of obstructions again
+        self._obstructions = self._minimal_obs()
 
     def _minimize_tiling(self):
         # Produce the mapping between the two tilings
@@ -149,6 +151,9 @@ class Tiling():
     def _minimal_reqs(self, obstructions):
         """Returns a new set of minimal lists of requirements from the
         requirement set of self, and a list of further reduced obstructions."""
+        # TODO:
+        #   - Factor requirements
+        #   - Remove intersections of requirements from obstructions
         cleanreqs = list()
         for reqs in self._requirements:
             if any(len(r) == 0 for r in reqs):
@@ -180,9 +185,8 @@ class Tiling():
                 if all(any(r2 in r1 for r2 in reqs2) for r1 in reqs):
                     ind_to_remove.add(j)
 
-        return obstructions, sorted(
-            tuple(tuple(reqs) for i, reqs in enumerate(cleanreqs)
-                  if i not in ind_to_remove))
+        return sorted(tuple(tuple(reqs) for i, reqs in enumerate(cleanreqs)
+                            if i not in ind_to_remove))
 
     def to_old_tiling(self):
         import grids
@@ -333,16 +337,16 @@ class Tiling():
     def add_single_cell_obstruction(self, patt, cell):
         """Returns a new tiling with the single cell obstruction of the pattern
         patt in the given cell."""
-        return Tiling(self._obstructions + (
-                          Obstruction.single_cell(patt, cell),),
-                      self._requirements)
+        return Tiling(
+            self._obstructions + (Obstruction.single_cell(patt, cell),),
+            self._requirements)
 
     def add_single_cell_requirement(self, patt, cell):
         """Returns a new tiling with the single cell requirement of the pattern
         patt in the given cell."""
-        return Tiling(self._obstructions,
-                      self._requirements + (
-                          [Requirement.single_cell(patt, cell)],))
+        return Tiling(
+            self._obstructions,
+            self._requirements + ([Requirement.single_cell(patt, cell)],))
 
     def only_positive_in_row_and_col(self, cell):
         """Check if the cell is the only positive cell in row and column."""
@@ -395,7 +399,7 @@ class Tiling():
             if ob.is_localized():
                 obdict[ob.is_localized()].append(ob.patt)
         # TODO: Implement this for the intersection of requirements
-        resdict = dict()
+        resdict = defaultdict(lambda: ([], []))
         for cell in chain(obdict.keys(), reqdict.keys()):
             resdict[cell] = (obdict[cell], reqdict[cell])
         return resdict
