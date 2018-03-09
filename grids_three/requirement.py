@@ -23,35 +23,45 @@ class Requirement(GriddedPerm):
 
         Returns two lists, the remaining requirement and a list of obstructions
         that were created."""
+        if direction == DIR_NONE:
+            raise ValueError("Must apply some force!")
         # If the gridded permutation does not span the cell, the resulting list
         # of new obstructions would contain only the gridded permutation
         # itself.
         cell = self._pos[forced_index]
         obstruction_list = []
         req_list = []
-        # If the gridded permutation contains a point in the cell (occupies)
         mindex, maxdex, minval, maxval = self.get_bounding_box(cell)
-        if self.occupies(cell):
-            if direction != DIR_NONE:
-                forced_val = self.patt[forced_index]
-                newpatt = Perm.to_standard(
-                    self.patt[i] for i in range(len(self))
-                    if i != forced_index)
-                newposition = [
-                    self.point_translation(p, (forced_index, forced_val))
-                    for p in range(len(self)) if p != forced_index]
-                req_list.append(self.__class__(newpatt, newposition))
-            else:
-                raise ValueError("Must apply some force!")
 
-            if direction == DIR_WEST:
-                mindex = forced_index + 1
-            elif direction == DIR_SOUTH:
-                minval = forced_val + 1
-            elif direction == DIR_EAST:
-                maxdex = forced_index
-            elif direction == DIR_NORTH:
-                maxval = forced_val
+        # Construct the requirement that remains after using the point
+        forced_val = self.patt[forced_index]
+        newpatt = Perm.to_standard(
+            self.patt[i] for i in range(len(self))
+            if i != forced_index)
+        newposition = [
+            self.point_translation(i, (forced_index, forced_val))
+            for i in range(len(self)) if i != forced_index]
+        req_list.append(self.__class__(newpatt, newposition))
+
+        if direction == DIR_WEST:
+            mindex = forced_index + 1
+        elif direction == DIR_SOUTH:
+            minval = forced_val + 1
+        elif direction == DIR_EAST:
+            maxdex = forced_index
+        elif direction == DIR_NORTH:
+            maxval = forced_val
+
+        # Try to use the placed point as each of the points in the requirement
+        for p in range(mindex, maxdex):
+            if self.patt[p] >= minval and self.patt[p] < maxval:
+                newpatt = Perm.to_standard(
+                    self.patt[i] for i in range(len(self)) if i != p)
+                newposition = [
+                    self.point_translation(i, (p, self.patt[p]))
+                    for i in range(len(self)) if i != p]
+                obstruction_list.append(Obstruction(newpatt, newposition))
+
         for i in range(mindex, maxdex + 1):
             for j in range(minval, maxval + 1):
                 grid = self.stretch_gridding((i, j))
