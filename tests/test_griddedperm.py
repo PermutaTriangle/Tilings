@@ -239,6 +239,37 @@ def test_insert_point():
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)))]
 
 
+def test_remove_point(typicalob, simpleob, singlecellob):
+    assert simpleob.remove_point(0) == GriddedPerm(
+        Perm((0, 2, 1)), [(0, 0), (2, 2), (2, 1)])
+    assert simpleob.remove_point(1) == GriddedPerm(
+        Perm((0, 2, 1)), [(0, 0), (2, 2), (2, 1)])
+    assert simpleob.remove_point(2) == GriddedPerm(
+        Perm((1, 0, 2)), [(0, 0), (0, 0), (2, 1)])
+    assert simpleob.remove_point(3) == GriddedPerm(
+        Perm((1, 0, 2)), [(0, 0), (0, 0), (2, 2)])
+
+    assert typicalob.remove_point(0) == GriddedPerm(
+        Perm((0, 1, 3, 2)), [(0, 0), (1, 0), (1, 1), (1, 1)])
+    assert typicalob.remove_point(1) == GriddedPerm(
+        Perm((0, 1, 3, 2)), [(0, 0), (1, 0), (1, 1), (1, 1)])
+    assert typicalob.remove_point(2) == GriddedPerm(
+        Perm((1, 0, 3, 2)), [(0, 0), (0, 0), (1, 1), (1, 1)])
+    assert typicalob.remove_point(3) == GriddedPerm(
+        Perm((1, 0, 2, 3)), [(0, 0), (0, 0), (1, 0), (1, 1)])
+    assert typicalob.remove_point(4) == GriddedPerm(
+        Perm((1, 0, 2, 3)), [(0, 0), (0, 0), (1, 0), (1, 1)])
+
+    assert singlecellob.remove_point(0) == GriddedPerm(
+        Perm((0, 2, 1)), [(2, 2), (2, 2), (2, 2)])
+    assert singlecellob.remove_point(1) == GriddedPerm(
+        Perm((0, 2, 1)), [(2, 2), (2, 2), (2, 2)])
+    assert singlecellob.remove_point(2) == GriddedPerm(
+        Perm((1, 0, 2)), [(2, 2), (2, 2), (2, 2)])
+    assert singlecellob.remove_point(3) == GriddedPerm(
+        Perm((1, 0, 2)), [(2, 2), (2, 2), (2, 2)])
+
+
 def test_compression(simpleob, singlecellob, everycellob, typicalob,
                      isolatedob):
     patthash = {Perm((1, 0, 3, 2)): 0,

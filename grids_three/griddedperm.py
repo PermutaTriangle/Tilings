@@ -6,6 +6,7 @@ from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST
 
 
 class GriddedPerm():
+    # TODO: Intersection of griddedperms
     def __init__(self, pattern, positions):
         # TODO: Write check to verify gridded permutation makes sense, that is,
         # pattern can be mapped on the positions given.
@@ -276,6 +277,12 @@ class GriddedPerm():
                 yield self.__class__(
                     self._patt.insert(idx, val),
                     self._pos[:idx] + (cell,) + self._pos[idx:])
+
+    def remove_point(self, index):
+        """Remove the point at index from the gridded permutation."""
+        patt = Perm.to_standard(self.patt[:index] + self.patt[index + 1:])
+        pos = self.pos[:index] + self.pos[index + 1:]
+        return self.__class__(patt, pos)
 
     def _isolate_point(self, cell, row=True):
         """Isolates point in the given cell within the row or column, depending
