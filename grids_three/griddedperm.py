@@ -44,6 +44,26 @@ class GriddedPerm():
         """Construct the empty gridded permutation."""
         return cls(Perm(tuple()), tuple())
 
+    def contradictory(self):
+        """Checks if the points of the griddedperm contradict the permutation.
+
+        Checks if for every 0 <= i < j < n
+            patt[i] <= patt[j]
+            if patt[i] < patt[j] then pos[i] <= pos[j]
+            if patt[i] > patt[j] then pos[i] >= pos[j]
+        """
+        for i in range(len(self)):
+            for j in range(i + 1, len(self)):
+                if self.pos[i][0] > self.pos[j][0]:
+                    return True
+                if (self.patt[i] < self.patt[j] and
+                        self.pos[i][1] > self.pos[j][1]):
+                    return True
+                if (self.patt[i] > self.patt[j] and
+                        self.pos[i][1] < self.pos[j][1]):
+                    return True
+        return False
+
     def occupies(self, cell):
         """Checks if the gridded permutation has a point in the given cell."""
         return cell in self._cells

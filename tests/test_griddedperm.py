@@ -36,6 +36,16 @@ def isolatedob():
                        ((0, 0), (1, 1), (2, 2)))
 
 
+def test_contradictory(simpleob, singlecellob, everycellob):
+    assert not simpleob.contradictory()
+    assert not singlecellob.contradictory()
+    assert not everycellob.contradictory()
+    gp = GriddedPerm(Perm((0, 1)), [(0, 1), (1, 0)])
+    assert gp.contradictory()
+    gp = GriddedPerm(Perm((0, 1)), [(1, 0), (0, 0)])
+    assert gp.contradictory()
+
+
 def test_occupies_cell(simpleob):
     assert simpleob.occupies((0, 0))
     assert simpleob.occupies((2, 1))
