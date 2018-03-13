@@ -67,7 +67,8 @@ class Tiling():
         # Minimize the set of obstructions
         self._obstructions = self._minimal_obs()
         # Minimize the set of requiriments
-        self._requirements = self._minimal_reqs(self._obstructions)
+        self._obstructions, self._requirements = self._minimal_reqs(
+            self._obstructions)
         # Minimize the set of obstructions again
         self._obstructions = self._minimal_obs()
 
@@ -185,8 +186,9 @@ class Tiling():
                 if all(any(r2 in r1 for r2 in reqs2) for r1 in reqs):
                     ind_to_remove.add(j)
 
-        return sorted(tuple(tuple(reqs) for i, reqs in enumerate(cleanreqs)
-                            if i not in ind_to_remove))
+        return (obstructions,
+                sorted(tuple(tuple(reqs) for i, reqs in enumerate(cleanreqs)
+                             if i not in ind_to_remove)))
 
     def to_old_tiling(self):
         import grids
@@ -406,7 +408,7 @@ class Tiling():
 
     @staticmethod
     def sort_requirements(requirements):
-        return tuple(sorted(tuple(sorted(reqlist))
+        return tuple(sorted(tuple(sorted(set(reqlist)))
                             for reqlist in requirements))
 
     def gridded_perms_of_length(self, length):
@@ -508,7 +510,7 @@ class Tiling():
     #
 
     def is_empty(self):
-        return any(ob.is_empty() for ob in self)
+        return any(ob.is_empty() for ob in self.obstructions)
 
     @property
     def point_cells(self):
