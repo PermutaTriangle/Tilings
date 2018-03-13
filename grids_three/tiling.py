@@ -539,6 +539,11 @@ class Tiling():
         return len(self.positive_cells)
 
     @property
+    def possibly_empty(self):
+        """Computes the set of possibly empty cells on the tiling."""
+        return self.active_cells - self.positive_cells
+
+    @property
     def obstructions(self):
         return self._obstructions
 
