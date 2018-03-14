@@ -78,9 +78,9 @@ class Tiling():
         cell_map = partial(map_cell, col_mapping, row_mapping)
 
         # For backwards compatability only, will be removed in future.
-        self.back_map = partial(map_cell,
-                                {v: k for k, v in col_mapping.items()},
-                                {v: k for k, v in row_mapping.items()})
+        self.back_map = {(v_x, v_y): (k_x, k_y)
+                         for k_x, v_x in col_mapping.items()
+                         for k_y, v_y in row_mapping.items()}
         new_obs = []
         for ob in self._obstructions:
             cell = ob.is_point_obstr()
@@ -198,9 +198,9 @@ class Tiling():
             if cell is not None:
                 basi[cell].append(ob.patt)
         blocks = dict()
-        for cell in self._point_cells:
+        for cell in self.point_cells:
             blocks[cell] = grids.Block.point
-        for cell in self._possibly_empty:
+        for cell in self.possibly_empty:
             if cell not in basi:
                 blocks[cell] = PermSet.avoiding(())
         for cell in self.positive_cells:
