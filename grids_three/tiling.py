@@ -18,7 +18,6 @@ __all__ = ("Tiling")
 class Tiling():
     # TODO:
     #   - Intersection of requirements
-    #   - Basis at cell
     """Tiling class.
 
     Zero-indexed coordinates/cells from bottom left corner where the (x, y)
@@ -411,24 +410,24 @@ class Tiling():
         return tuple(sorted(tuple(sorted(set(reqlist)))
                             for reqlist in requirements))
 
-    def gridded_perms_of_length(self, length):
-        old_til = self.to_old_tiling()
-        for perm, cell_info in old_til.perms_of_length_with_cell_info(length):
-            index_perm = []
-            cells = []
-            for cell, (_, _, indices) in cell_info.items():
-                index_perm.extend(indices)
-                cells.extend((cell.i, cell.j) for _ in indices)
+    # def gridded_perms_of_length(self, length):
+    #     old_til = self.to_old_tiling()
+    #    for perm, cell_info in old_til.perms_of_length_with_cell_info(length):
+    #         index_perm = []
+    #         cells = []
+    #         for cell, (_, _, indices) in cell_info.items():
+    #             index_perm.extend(indices)
+    #             cells.extend((cell.i, cell.j) for _ in indices)
 
-            gridded_perm = GriddedPerm(perm,
-                                       Perm(index_perm).inverse().apply(cells))
-            if any(ob in gridded_perm for ob in self.obstructions
-                   if not ob.is_single_cell()):
-                continue
-            if any(all(req not in gridded_perm for req in reqs)
-                   for reqs in self.requirements):
-                continue
-            yield gridded_perm
+    #         gridded_perm = GriddedPerm(perm,
+    #                                    Perm(index_perm).inverse().apply(cells))
+    #         if any(ob in gridded_perm for ob in self.obstructions
+    #                if not ob.is_single_cell()):
+    #             continue
+    #         if any(all(req not in gridded_perm for req in reqs)
+    #                for reqs in self.requirements):
+    #             continue
+    #         yield gridded_perm
 
     # Symmetries
     def _transform(self, transf, gptransf):
@@ -509,8 +508,77 @@ class Tiling():
     # Properties and getters
     #
 
+    def maximum_length_of_minimum_gridded_perm(self):
+        """Returns the maximum length of the minimum gridded permutation that
+        can be gridded on the tiling.
+        """
+        return sum(max(map(len, reqs)) for reqs in self.requirements)
+
     def is_empty(self):
-        return any(ob.is_empty() for ob in self.obstructions)
+        """Checks if the tiling is empty.
+
+        Tiling is empty if it has been inferred to be contradictory due to
+        contradicting requirements and obstructions or no gridded permutation
+        can be gridded on the tiling.
+        """
+        return (any(ob.is_empty() for ob in self.obstructions) or
+                not any(self.gridded_perms()))
+
+    def gridded_perms(self, maxlen=None):
+        """Returns all gridded permutations griddable on the tiling.
+
+        The gridded permutations are up to length of the longest minimum
+        gridded permutations that is griddable on the tiling.
+        """
+        if maxlen is None:
+            maxlen = self.maximum_length_of_minimum_gridded_perm()
+
+        def insert_next_point(gp, col):
+            for cell in self.active_cells:
+                if cell[0] != col:
+                    continue
+                mindex, maxdex, minval, maxval = gp.get_bounding_box(cell)
+                for val in range(minval, maxval + 1):
+                    yield gp.__class__(
+                        gp._patt.insert(new_element=val), gp._pos + (cell,))
+
+        def can_satisfy(gp, col, req):
+            return req.get_subperm_left_col(col) in gp
+
+        def can_satisfy_all(gp, col, reqs):
+            return all(any(can_satisfy(gp, col, req) for req in reqlist)
+                       for reqlist in reqs)
+
+        def satisfies(gp, reqlist):
+            return any(req in gp for req in reqlist)
+        forbidden = satisfies
+
+        def bt(curgp, curcol, reqs, yielded=False):
+            # If all requirements have been satisfied, then yield
+            if len(reqs) == 0 and not yielded:
+                yield curgp
+                yielded = True
+            # If maximum length reached, then bail
+            if len(curgp) >= maxlen or curcol >= self.dimensions[0]:
+                return
+            # Prune away unsatisfiable requirements and remove lists that have
+            # already been satisfied
+            satisfiable = [
+                [req for req in reqlist if can_satisfy(curgp, curcol, req)]
+                for reqlist in reqs if not satisfies(curgp, reqlist)]
+            if any(len(reqlist) == 0 for reqlist in satisfiable):
+                return
+
+            if can_satisfy_all(curgp, curcol + 1, satisfiable):
+                yield from bt(curgp, curcol + 1, satisfiable, yielded)
+
+            for nextgp in insert_next_point(curgp, curcol):
+                if not forbidden(nextgp, self.obstructions):
+                    yield from bt(nextgp, curcol,
+                                  [reqlist for reqlist in reqs
+                                   if not satisfies(nextgp, reqlist)])
+
+        yield from bt(GriddedPerm.empty_perm(), 0, self.requirements)
 
     @property
     def point_cells(self):

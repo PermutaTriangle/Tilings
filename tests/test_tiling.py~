@@ -2,7 +2,6 @@ import json
 from itertools import chain
 
 import pytest
-
 from grids_three import GriddedPerm, Obstruction, Requirement, Tiling
 from permuta import Perm
 
@@ -568,20 +567,20 @@ def test_gridded_perms():
         requirements=[[Requirement(Perm((0,)), [(0, 0)])],
                       [Requirement(Perm((0,)), [(1, 0)])]])
     assert len(list(tiling.gridded_perms(maxlen=5))) == 0
-    assert tiling.is_empty()
 
     tiling = Tiling(
         obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
                       Obstruction(Perm((1, 0)), [(0, 0), (1, 0)])])
     griddable = sorted(list(tiling.gridded_perms(maxlen=2)))
     assert griddable == [
-        GriddedPerm(Perm(), []),
+        GriddedPerm(tuple(), []),
         GriddedPerm(Perm((0,)), [(0, 0)]),
         GriddedPerm(Perm((0,)), [(1, 0)]),
         GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)]),
-        GriddedPerm(Perm((0, 1)), [(1, 0), (1, 0)]),
         GriddedPerm(Perm((1, 0)), [(0, 0), (0, 0)]),
-        GriddedPerm(Perm((1, 0)), [(1, 0), (1, 0)])]
+        GriddedPerm(Perm((0, 1)), [(1, 0), (1, 0)]),
+        GriddedPerm(Perm((1, 0)), [(1, 0), (1, 0)]),
+    ]
 
 
 def test_cell_basis(typical_redundant_obstructions,
