@@ -164,6 +164,13 @@ class GriddedPerm():
             if self._pos[i][0] < col:
                 yield (i, self._patt[i])
 
+    def get_subperm_left_col(self, col):
+        """Returns the gridded subpermutation of points left of column col."""
+        return self.__class__(
+            Perm.to_standard(self.patt[i] for i in range(len(self))
+                             if self.pos[i][0] < col),
+            (self.pos[i] for i in range(len(self)) if self.pos[i][0] < col))
+
     def get_points_right_col(self, col):
         """Yields all points of the gridded permutation right of column col."""
         for i in range(len(self)):
