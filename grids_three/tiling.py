@@ -524,6 +524,11 @@ class Tiling():
         return (any(ob.is_empty() for ob in self.obstructions) or
                 not any(self.gridded_perms()))
 
+    def gridded_perms_of_length(self, length):
+        for gp in self.gridded_perms(maxlen=length):
+            if len(gp) == length:
+                yield gp
+
     def gridded_perms(self, maxlen=None):
         """Returns all gridded permutations griddable on the tiling.
 
@@ -531,7 +536,7 @@ class Tiling():
         gridded permutations that is griddable on the tiling.
         """
         if maxlen is None:
-            maxlen = self.maximum_length_of_minimum_gridded_perm()
+            maxlen = max(self.maximum_length_of_minimum_gridded_perm(), 1)
 
         def insert_next_point(gp, col):
             for cell in self.active_cells:
