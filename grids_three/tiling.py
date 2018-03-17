@@ -521,8 +521,13 @@ class Tiling():
         contradicting requirements and obstructions or no gridded permutation
         can be gridded on the tiling.
         """
-        return (any(ob.is_empty() for ob in self.obstructions) or
-                not any(self.gridded_perms()))
+        if any(ob.is_empty() for ob in self.obstructions):
+            return True
+        try:
+            next(self.gridded_perms())
+            return False
+        except StopIteration:
+            return True
 
     def gridded_perms_of_length(self, length):
         for gp in self.gridded_perms(maxlen=length):
