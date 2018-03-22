@@ -276,7 +276,6 @@ class GriddedPerm():
 
         return res
 
-
     def place_point(self, cell, direction, skip_redundant=False):
         """Places a point furthest to the direction 'direction' into a cell,
         returns the same gridded permutation if the gridded permutation does
