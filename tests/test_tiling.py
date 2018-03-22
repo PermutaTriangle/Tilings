@@ -2,7 +2,6 @@ import json
 from itertools import chain
 
 import pytest
-
 from grids_three import GriddedPerm, Obstruction, Requirement, Tiling
 from permuta import Perm
 
