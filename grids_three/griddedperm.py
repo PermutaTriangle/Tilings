@@ -228,6 +228,54 @@ class GriddedPerm():
                   for p in range(len(self))]
         return self.__class__(self._patt, newpos)
 
+    def insertion_encoding(self, cell):
+        """Places the minimum point in a row in the given cellself.
+
+        If the gridded perm occupies the cell then considers if the minimum in
+        the row can use the points. It will also yield all of the gridded
+        permutation split across the cells.
+
+        An assumption is made that there are never cells in the same column.
+        """
+        res = []
+        if self.occupies(cell):
+            forced_index = self.forced_point_index(cell, DIR_SOUTH)
+            if forced_index == min(self.get_points_row(cell[1]),
+                                   key=lambda x: x[1])[0]:
+                pos = []
+                for ind, (x, y) in enumerate(self.pos):
+                    if ind == forced_index:
+                        continue
+                    if ind > forced_index:
+                        x += 2
+                    if y >= cell[1]:
+                        y += 1
+                    pos.append((x, y))
+                patt = Perm.to_standard(self.patt[i] for i in range(len(self))
+                                        if i != forced_index)
+                res.append(self.__class__(patt, pos))
+
+            for ind in self.points_in_cell(cell):
+                pos = []
+                for i, (x, y) in enumerate(self.pos):
+                    if i >= ind:
+                        x += 2
+                    if y >= cell[1]:
+                        y += 1
+                    pos.append((x, y))
+
+                res.append(self.__class__(self.patt, pos))
+        pos = []
+        for (x, y) in self.pos:
+            if x > cell[0]:
+                x += 2
+            if y >= cell[1]:
+                y += 1
+            pos.append((x, y))
+        res.append(self.__class__(self.patt, pos))
+
+        return res
+
     def place_point(self, cell, direction, skip_redundant=False):
         """Places a point furthest to the direction 'direction' into a cell,
         returns the same gridded permutation if the gridded permutation does
