@@ -259,7 +259,7 @@ class GriddedPerm():
                                         if i != forced_index)
                 res.append(self.__class__(patt, pos))
             for ind in self.points_in_cell(cell):
-                pos = self.split_around_index(self.pos, ind, skip=False)
+                pos = split_around_index(self.pos, ind, skip=False)
                 res.append(self.__class__(self.patt, pos))
         pos = []
         for (x, y) in self.pos:
