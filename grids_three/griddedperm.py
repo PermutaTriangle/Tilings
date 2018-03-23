@@ -242,28 +242,13 @@ class GriddedPerm():
             forced_index = self.forced_point_index(cell, DIR_SOUTH)
             if forced_index == min(self.get_points_row(cell[1]),
                                    key=lambda x: x[1])[0]:
-                pos = []
-                for ind, (x, y) in enumerate(self.pos):
-                    if ind == forced_index:
-                        continue
-                    if ind > forced_index:
-                        x += 2
-                    if y >= cell[1]:
-                        y += 1
-                    pos.append((x, y))
+                pos = self.split_around_index(forced_index, skip=True)
                 patt = Perm.to_standard(self.patt[i] for i in range(len(self))
                                         if i != forced_index)
                 res.append(self.__class__(patt, pos))
 
             for ind in self.points_in_cell(cell):
-                pos = []
-                for i, (x, y) in enumerate(self.pos):
-                    if i >= ind:
-                        x += 2
-                    if y >= cell[1]:
-                        y += 1
-                    pos.append((x, y))
-
+                pos = self.split_around_index(ind, skip=False)
                 res.append(self.__class__(self.patt, pos))
         pos = []
         for (x, y) in self.pos:
@@ -274,7 +259,25 @@ class GriddedPerm():
             pos.append((x, y))
         res.append(self.__class__(self.patt, pos))
 
-        return res
+        return res        
+
+    def split_around_index(self, index, skip=False):
+        """Split the position into two lists around the cell at index.
+
+        Those to the right have x-coordinate moved by 2, those above or equal to
+        the value of the point at index will have y-coordinate increased by
+        1."""
+        pos = []
+        for ind, (x, y) in enumerate(self.pos):
+            if skip and ind == index:
+                continue
+            if ind >= index:
+                x += 2
+            if y >= self.pos[index][1]:
+                y += 1
+            pos.append((x, y))
+        return pos
+
 
     def place_point(self, cell, direction, skip_redundant=False):
         """Places a point furthest to the direction 'direction' into a cell,
