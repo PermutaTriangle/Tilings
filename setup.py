@@ -10,7 +10,7 @@ def read(fname):
 
 setup(
     name="grids_three",
-    version="0.0.1",
+    version="0.1.0",
     author="Henning Ulfarsson",
     author_email="henningu@ru.is",
     maintainer="Christian Nathaniel Bean",
@@ -18,11 +18,7 @@ setup(
     url="https://github.com/PermutaTriangle/grids_three",
     packages=find_packages(),
     long_description=read("README.md"),
-    dependency_links=[
-        'git+https://github.com/PermutaTriangle/Permuta#egg=permuta-0.0.1',
-        'git+https://github.com/PermutaTriangle/grids#egg=grids-0.0.1'],
-    install_requires=['permuta',
-                      'grids'],
+    install_requires=['permuta'],
     setup_requires=['pytest-runner'],
     tests_require=['pytest',
                    'permuta',

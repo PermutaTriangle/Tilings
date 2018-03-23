@@ -1,0 +1,13 @@
+language: python
+python:
+  - "3.4"
+  - "3.5"
+  - "3.6"
+  - "nightly"
+  - "pypy3"
+install:
+  - pip install -e .
+before_script:
+  - pip install -r test_requirements.txt
+script:
+  - pytest
