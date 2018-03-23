@@ -259,13 +259,13 @@ class GriddedPerm():
             pos.append((x, y))
         res.append(self.__class__(self.patt, pos))
 
-        return res        
+        return res
 
     def split_around_index(self, index, skip=False):
         """Split the position into two lists around the cell at index.
 
-        Those to the right have x-coordinate moved by 2, those above or equal to
-        the value of the point at index will have y-coordinate increased by
+        Those to the right have x-coordinate moved by 2, those above or equal
+        to the value of the point at index will have y-coordinate increased by
         1."""
         pos = []
         for ind, (x, y) in enumerate(self.pos):
