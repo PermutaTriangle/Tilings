@@ -237,33 +237,29 @@ class GriddedPerm():
 
         An assumption is made that there are never cells in the same column.
         """
+        def split_around_index(pos, index, skip=False):
+            new_pos = []
+            for ind, (x, y) in enumerate(pos):
+                if skip and ind == index:
+                    continue
+                if ind >= index:
+                    x += 2
+                if y >= self.pos[index][1]:
+                    y += 1
+                new_pos.append((x, y))
+            return new_pos
+
         res = []
         if self.occupies(cell):
             forced_index = self.forced_point_index(cell, DIR_SOUTH)
             if forced_index == min(self.get_points_row(cell[1]),
                                    key=lambda x: x[1])[0]:
-                pos = []
-                for ind, (x, y) in enumerate(self.pos):
-                    if ind == forced_index:
-                        continue
-                    if ind > forced_index:
-                        x += 2
-                    if y >= cell[1]:
-                        y += 1
-                    pos.append((x, y))
+                pos = split_around_index(self.pos, forced_index, skip=True)
                 patt = Perm.to_standard(self.patt[i] for i in range(len(self))
                                         if i != forced_index)
                 res.append(self.__class__(patt, pos))
-
             for ind in self.points_in_cell(cell):
-                pos = []
-                for i, (x, y) in enumerate(self.pos):
-                    if i >= ind:
-                        x += 2
-                    if y >= cell[1]:
-                        y += 1
-                    pos.append((x, y))
-
+                pos = split_around_index(self.pos, ind, skip=False)
                 res.append(self.__class__(self.patt, pos))
         pos = []
         for (x, y) in self.pos:
@@ -273,7 +269,6 @@ class GriddedPerm():
                 y += 1
             pos.append((x, y))
         res.append(self.__class__(self.patt, pos))
-
         return res
 
     def place_point(self, cell, direction, skip_redundant=False):
