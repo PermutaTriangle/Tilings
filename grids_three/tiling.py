@@ -399,6 +399,11 @@ class Tiling():
         for ob in self.obstructions:
             if ob.is_localized():
                 obdict[ob.is_localized()].append(ob.patt)
+        for req_list in self.requirements:
+            if len(req_list) == 1:
+                req = req_list[0]
+                if req.is_localized():
+                    reqdict[req.is_localized()].append(req.patt)
         # TODO: Implement this for the intersection of requirements
         resdict = defaultdict(lambda: ([], []))
         for cell in chain(obdict.keys(), reqdict.keys()):
