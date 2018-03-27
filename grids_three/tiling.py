@@ -349,6 +349,17 @@ class Tiling():
             self._obstructions,
             self._requirements + ([Requirement.single_cell(patt, cell)],))
 
+    def fully_isolated(self):
+        """Check if all cells are isolated on their rows and columns."""
+        seen_row = []
+        seen_col = []
+        for i, j in self.active_cells:
+            if i in seen_col or j in seen_row:
+                return False
+            seen_col.append(i)
+            seen_row.append(j)
+        return True
+
     def only_positive_in_row_and_col(self, cell):
         """Check if the cell is the only positive cell in row and column."""
         return (self.only_positive_in_row(cell) and
