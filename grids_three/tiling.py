@@ -1,4 +1,5 @@
 import json
+import sympy.abc
 from array import array
 from collections import Counter, defaultdict
 from functools import partial
@@ -6,6 +7,8 @@ from itertools import chain
 from warnings import warn
 
 from permuta import Perm, PermSet
+
+from comb_spec_searcher import CombinatorialClass
 
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
@@ -15,7 +18,7 @@ from .requirement import Requirement
 __all__ = ("Tiling")
 
 
-class Tiling():
+class Tiling(CombinatorialClass):
     # TODO:
     #   - Intersection of requirements
     """Tiling class.
@@ -426,25 +429,6 @@ class Tiling():
         return tuple(sorted(tuple(sorted(set(reqlist)))
                             for reqlist in requirements))
 
-    # def gridded_perms_of_length(self, length):
-    #     old_til = self.to_old_tiling()
-    #    for perm, cell_info in old_til.perms_of_length_with_cell_info(length):
-    #         index_perm = []
-    #         cells = []
-    #         for cell, (_, _, indices) in cell_info.items():
-    #             index_perm.extend(indices)
-    #             cells.extend((cell.i, cell.j) for _ in indices)
-
-    #         gridded_perm = GriddedPerm(perm,
-    #                                    Perm(index_perm).inverse().apply(cells))
-    #         if any(ob in gridded_perm for ob in self.obstructions
-    #                if not ob.is_single_cell()):
-    #             continue
-    #         if any(all(req not in gridded_perm for req in reqs)
-    #                for reqs in self.requirements):
-    #             continue
-    #         yield gridded_perm
-
     # Symmetries
     def _transform(self, transf, gptransf):
         """ Transforms the tiling according to the two transformation functions
@@ -544,6 +528,9 @@ class Tiling():
             return False
         except StopIteration:
             return True
+
+    def objects_of_length(self, length):
+        yield from self.gridded_perms_of_length(length)
 
     def gridded_perms_of_length(self, length):
         for gp in self.gridded_perms(maxlen=length):
@@ -688,6 +675,26 @@ class Tiling():
                 self._dimensions = (max(rows) + 1,
                                     max(cols) + 1)
         return self._dimensions
+
+    def get_genf(self, *args, **kwargs):
+        """
+        Return generating function of a tiling.
+
+        Currently works only for the point tiling and the empty tiling.
+        """
+        if self.dimensions == (1, 1):
+            if (not self.requirements and len(self.obstructions) == 1 and
+                    len(self.obstructions[0]) == 1):
+                return 1
+            if (len(self.obstructions) == 2 and
+                    all(len(ob) == 2 for ob in self.obstructions) and
+                    len(self.requirements) == 1 and
+                    len(self.requirements[0]) == 1 and
+                    len(self.requirements[0][0]) == 1):
+                return sympy.abc.x
+        else:
+            raise NotImplementedError("""Only find generating function for
+                                         points and empty tiling.""")
 
     #
     # Dunder methods
