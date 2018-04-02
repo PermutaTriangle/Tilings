@@ -1,14 +1,14 @@
 import json
-import sympy.abc
 from array import array
 from collections import Counter, defaultdict
 from functools import partial
 from itertools import chain
 from warnings import warn
 
-from permuta import Perm, PermSet
+import sympy.abc
 
 from comb_spec_searcher import CombinatorialClass
+from permuta import Perm, PermSet
 
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
