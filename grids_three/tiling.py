@@ -7,15 +7,18 @@ from warnings import warn
 
 from permuta import Perm, PermSet
 
+from rut.misc import CID_KEY, Compressible
+
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
 from .obstruction import Obstruction
 from .requirement import Requirement
 
-__all__ = ("Tiling")
+
+__all__ = ("Tiling",)
 
 
-class Tiling():
+class Tiling(Compressible):
     # TODO:
     #   - Intersection of requirements
     """Tiling class.
@@ -214,11 +217,12 @@ class Tiling():
 
     # Compression
 
-    def compress(self, patthash=None):
+    def compress(self, patthash=None, *, cid=True):
         """Compresses the tiling by flattening the sets of cells into lists of
         integers which are concatenated together, every list preceeded by its
         size. The obstructions are compressed and concatenated to the list, as
         are the requirement lists."""
+        comp_dict = super().compress(cid=cid)
         result = []
         result.append(len(self.obstructions))
         result.extend(chain.from_iterable(ob.compress(patthash)
@@ -229,13 +233,14 @@ class Tiling():
             result.extend(chain.from_iterable(req.compress(patthash)
                                               for req in reqlist))
         res = array('H', result)
-        return res.tobytes()
+        comp_dict["tiling_bytes"] = res.tobytes().decode("utf-8")
+        return comp_dict
 
-    @classmethod
-    def decompress(cls, arrbytes, patts=None,
+    def _decompress(self, comp_dict, patts=None,
                    remove_empty=True, assume_empty=True):
         """Given a compressed tiling in the form of an 2-byte array, decompress
         it and return a tiling."""
+        arrbytes = comp_dict["tiling_bytes"].encode()
         arr = array('H', arrbytes)
         offset = 1
         nobs = arr[offset - 1]
@@ -266,8 +271,12 @@ class Tiling():
                 offset += 2 * len(patt) + 1
             requirements.append(reqlist)
 
-        return cls(obstructions=obstructions, requirements=requirements,
-                   remove_empty=remove_empty, assume_empty=assume_empty)
+        self.__init__(
+            obstructions=obstructions,
+            requirements=requirements,
+            remove_empty=remove_empty,
+            assume_empty=assume_empty,
+        )
 
     # JSON methods
     def to_jsonable(self):
@@ -707,3 +716,6 @@ class Tiling():
             "Requirements: [[" + "], [".join(
                 list(map(lambda x: ", ".join(list(map(repr, x))),
                          self._requirements))) + "]]"])
+
+
+setattr(Tiling, CID_KEY, "grids_three.Tiling")
