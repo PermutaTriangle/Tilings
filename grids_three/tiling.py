@@ -1,14 +1,16 @@
 import json
 from array import array
 from collections import Counter, defaultdict
-from functools import partial
+from functools import partial, reduce
 from itertools import chain
+from operator import mul
 from warnings import warn
 
-import sympy.abc
+import sympy
 
 from comb_spec_searcher import CombinatorialClass
 from permuta import Perm, PermSet
+from permuta.misc import UnionFind
 
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
@@ -338,6 +340,20 @@ class Tiling(CombinatorialClass):
                 "Cell {} is not within the bounds of the tiling.".format(cell))
         return self.add_single_cell_requirement(Perm((0,)), cell)
 
+    def add_obstruction(self, patt, pos):
+        """Returns a new tiling with the obstruction of the pattern
+        patt with positionp pos."""
+        return Tiling(
+            self._obstructions + (Obstruction(patt, pos),),
+            self._requirements)
+
+    def add_requirement(self, patt, pos):
+        """Returns a new tiling with the requirement of the pattern
+        patt with position pos."""
+        return Tiling(
+            self._obstructions,
+            self._requirements + ([Requirement(patt, pos)],))
+
     def add_single_cell_obstruction(self, patt, cell):
         """Returns a new tiling with the single cell obstruction of the pattern
         patt in the given cell."""
@@ -529,6 +545,21 @@ class Tiling(CombinatorialClass):
         except StopIteration:
             return True
 
+    def is_finite(self):
+        """Returns True if all active cells have finite basis."""
+        increasing = set()
+        decreasing = set()
+        for ob in self.obstructions:
+            if ob.is_single_cell():
+                if ob.patt.is_increasing():
+                    increasing.add(ob.pos[0])
+                if ob.patt.is_decreasing():
+                    decreasing.add(ob.pos[0])
+        return all(cell in increasing and cell in decreasing
+                   for cell in self.active_cells)
+
+
+
     def objects_of_length(self, length):
         yield from self.gridded_perms_of_length(length)
 
@@ -676,25 +707,132 @@ class Tiling(CombinatorialClass):
                                     max(cols) + 1)
         return self._dimensions
 
+    def find_factors(self):
+        """
+        Return the factors of the tiling.
+
+        Two non-empty cells are in the same factor if they are in the same row
+        or colum, or they share an obstruction or requirement.
+        """
+        n, m = self.dimensions
+        cells = list(self.active_cells)
+        uf = UnionFind(n * m)
+
+        def cell_to_int(cell):
+            return cell[0] * m + cell[1]
+
+        def int_to_cell(i):
+            return (i // m, i % m)
+
+        def unite_list(iterable, same_row_or_col=False):
+            for i in range(len(iterable)):
+                for j in range(i+1, len(iterable)):
+                    c1 = iterable[i]
+                    c2 = iterable[j]
+                    if not same_row_or_col or c1[0] == c2[0] or c1[1] == c2[1]:
+                        uf.unite(cell_to_int(c1),
+                                 cell_to_int(c2))
+
+        # Unite if share an obstruction or requirement
+        for ob in self.obstructions:
+            unite_list(ob.pos)
+        for req_list in self.requirements:
+            unite_list(union_reduce(req.pos for req in req_list))
+        # Unite if same row or column
+        unite_list(cells, same_row_or_col=True)
+
+        # Collect the connected components of the cells
+        all_components = {}
+        for cell in cells:
+            i = uf.find(cell_to_int(cell))
+            if i in all_components:
+                all_components[i].append(cell)
+            else:
+                all_components[i] = [cell]
+        component_cells = list(set(cells) for cells in all_components.values())
+
+        # Collect the factors of the tiling
+        factors = []
+        for cell_component in component_cells:
+            obstructions = [ob for ob in self.obstructions
+                            if ob.pos[0] in cell_component]
+            requirements = [req for req in self.requirements
+                            if req[0].pos[0] in cell_component]
+
+            if obstructions or requirements:
+                factors.append(Tiling(obstructions=obstructions,
+                                       requirements=requirements))
+
+        return factors
+
+
     def get_genf(self, *args, **kwargs):
         """
         Return generating function of a tiling.
 
         Currently works only for the point tiling and the empty tiling.
         """
+        # If root has been given a function, return it if you see the root
+        if (kwargs.get('root_func') is not None and
+            self == kwargs.get('root_object')):
+            return kwargs['root_func']
+
+        # Reduce tiling by multiplying together the factors.
+        if kwargs.get('factored') is None:
+            return reduce(mul, [factor.get_genf(factored=True)
+                                for factor in self.find_factors()], 1)
+
+        # Reduce requirements list by either containing or avoiding the first
+        # requirement in the list
+        for req_list in self.requirements:
+            if len(req_list) > 1:
+                req = req_list[0]
+                return (self.add_obstruction(req.patt, req.pos).get_genf() +
+                        self.add_requirement(req.patt, req.pos))
+
+        # At this stage, all requirement lists are length 1. Can count by
+        # counting the tiling with the requirement removed and subtracting the
+        # tiling with it added as an obstruction.
+        if len(self.requirements) > 1:
+            ignore = Tiling(obstructions=self.obstructions,
+                            requirements=self.requirements[1:])
+            req = self.requirements[0]
+            return (ignore.get_genf() -
+                    ignore.add_obstruction(req.patt, req.pos).get_genf())
+
+        # Reduce factorable obstruction by either containing or avoiding
+        # localized subobstruction
+        for ob in self.obstructions:
+            if not ob.is_single_cell():
+                assert not ob.is_interleaving()
+                patt = Perm.to_standard([i for i in ob.patt
+                                         if ob.pos[i] == ob.pos[0]])
+                return (self.add_single_cell_obstruction(patt,
+                                             ob.pos[0]).get_genf() +
+                        self.add_single_cell_requirement(patt,
+                                             ob.pos[0]).get_genf())
+
+        # some special cases with one by one tilings
         if self.dimensions == (1, 1):
+            # The empty tiling has exactly one gridded permutation of length 0
             if (not self.requirements and len(self.obstructions) == 1 and
                     len(self.obstructions[0]) == 1):
-                return 1
+                return sympy.sympify(1)
+            # The point tiling has exactly one gridded permutation of length 1
             if (len(self.obstructions) == 2 and
                     all(len(ob) == 2 for ob in self.obstructions) and
                     len(self.requirements) == 1 and
                     len(self.requirements[0]) == 1 and
                     len(self.requirements[0][0]) == 1):
                 return sympy.abc.x
-        else:
-            raise NotImplementedError("""Only find generating function for
-                                         points and empty tiling.""")
+        if self.is_empty():
+            return sympify(0)
+
+        import grids_two
+        return grids_two.Tiling(possibly_empty=[(0,0)],
+                                obstructions=self.obstructions,
+                                requirements=self.requirements).get_genf()
+
 
     #
     # Dunder methods
