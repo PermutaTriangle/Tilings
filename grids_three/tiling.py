@@ -779,38 +779,43 @@ class Tiling(CombinatorialClass):
 
         # Reduce tiling by multiplying together the factors.
         if kwargs.get('factored') is None:
-            return reduce(mul, [factor.get_genf(factored=True)
+            return reduce(mul, [factor.get_genf(factored=True, *args, **kwargs)
                                 for factor in self.find_factors()], 1)
-
+        del kwargs['factored']
         # Reduce requirements list by either containing or avoiding the first
         # requirement in the list
         for req_list in self.requirements:
             if len(req_list) > 1:
                 req = req_list[0]
-                return (self.add_obstruction(req.patt, req.pos).get_genf() +
-                        self.add_requirement(req.patt, req.pos))
+                return (self.add_obstruction(req.patt,
+                                         req.pos).get_genf(*args, **kwargs) +
+                        self.add_requirement(req.patt,
+                                         req.pos).get_genf(*args, **kwargs))
 
         # At this stage, all requirement lists are length 1. Can count by
         # counting the tiling with the requirement removed and subtracting the
         # tiling with it added as an obstruction.
-        if len(self.requirements) > 1:
+        if len(self.requirements) > 0:
             ignore = Tiling(obstructions=self.obstructions,
                             requirements=self.requirements[1:])
-            req = self.requirements[0]
-            return (ignore.get_genf() -
-                    ignore.add_obstruction(req.patt, req.pos).get_genf())
+            req = self.requirements[0][0]
+            return (ignore.get_genf(*args, **kwargs) -
+                    ignore.add_obstruction(req.patt,
+                                           req.pos).get_genf(*args, **kwargs))
 
         # Reduce factorable obstruction by either containing or avoiding
         # localized subobstruction
         for ob in self.obstructions:
             if not ob.is_single_cell():
                 assert not ob.is_interleaving()
-                patt = Perm.to_standard([i for i in ob.patt
+                print("HERE")
+                patt = Perm.to_standard([v for i, v in enumerate(ob.patt)
                                          if ob.pos[i] == ob.pos[0]])
+                print(patt)
                 return (self.add_single_cell_obstruction(patt,
-                                             ob.pos[0]).get_genf() +
+                                         ob.pos[0]).get_genf(*args, **kwargs) +
                         self.add_single_cell_requirement(patt,
-                                             ob.pos[0]).get_genf())
+                                         ob.pos[0]).get_genf(*args, **kwargs))
 
         # some special cases with one by one tilings
         if self.dimensions == (1, 1):
@@ -829,7 +834,7 @@ class Tiling(CombinatorialClass):
             return sympify(0)
 
         import grids_two
-        return grids_two.Tiling(possibly_empty=[(0,0)],
+        return grids_two.Tiling(possibly_empty=self.active_cells,
                                 obstructions=self.obstructions,
                                 requirements=self.requirements).get_genf()
 
