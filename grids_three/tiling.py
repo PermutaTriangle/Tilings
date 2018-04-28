@@ -737,7 +737,7 @@ class Tiling(CombinatorialClass):
         for ob in self.obstructions:
             unite_list(ob.pos)
         for req_list in self.requirements:
-            unite_list(union_reduce(req.pos for req in req_list))
+            unite_list(list(union_reduce(req.pos for req in req_list)))
         # Unite if same row or column
         unite_list(cells, same_row_or_col=True)
 
@@ -808,10 +808,8 @@ class Tiling(CombinatorialClass):
         for ob in self.obstructions:
             if not ob.is_single_cell():
                 assert not ob.is_interleaving()
-                print("HERE")
                 patt = Perm.to_standard([v for i, v in enumerate(ob.patt)
                                          if ob.pos[i] == ob.pos[0]])
-                print(patt)
                 return (self.add_single_cell_obstruction(patt,
                                          ob.pos[0]).get_genf(*args, **kwargs) +
                         self.add_single_cell_requirement(patt,
