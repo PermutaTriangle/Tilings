@@ -776,6 +776,11 @@ class Tiling(CombinatorialClass):
         if (kwargs.get('root_func') is not None and
             self == kwargs.get('root_object')):
             return kwargs['root_func']
+        if kwargs.get('substitutions'):
+            if kwargs.get('subs') is None:
+                kwargs['subs'] = {}
+            if kwargs.get('symbols') is None:
+                kwargs['symbols'] = {}
 
         # Reduce tiling by multiplying together the factors.
         if kwargs.get('factored') is None:
@@ -831,10 +836,26 @@ class Tiling(CombinatorialClass):
         if self.is_empty():
             return sympify(0)
 
+        if kwargs.get('substitutions'):
+            symbols = kwargs.get('symbols')
+            symbol = symbols.get(self)
+            if symbol is None:
+                symbol = sympy.Function('C_' + str(len(symbols)))(sympy.abc.x)
+                symbols[self] = symbol
+            subs = kwargs.get('subs')
+            if symbol not in subs:
+                import grids_two
+                subs[symbol] = grids_two.Tiling(
+                                    possibly_empty=self.active_cells,
+                                    obstructions=self.obstructions,
+                                    requirements=self.requirements,
+                                    integrity_check=False).get_genf()
+            return symbol
         import grids_two
         return grids_two.Tiling(possibly_empty=self.active_cells,
                                 obstructions=self.obstructions,
-                                requirements=self.requirements).get_genf()
+                                requirements=self.requirements,
+                                integrity_check=False).get_genf()
 
 
     #
