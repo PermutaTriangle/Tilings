@@ -781,7 +781,8 @@ class Tiling(CombinatorialClass):
                 kwargs['subs'] = {}
             if kwargs.get('symbols') is None:
                 kwargs['symbols'] = {}
-
+        if self.is_empty():
+            return sympify(0)
         # Reduce tiling by multiplying together the factors.
         if kwargs.get('factored') is None:
             return reduce(mul, [factor.get_genf(factored=True, *args, **kwargs)
@@ -833,8 +834,6 @@ class Tiling(CombinatorialClass):
                     len(self.requirements[0]) == 1 and
                     len(self.requirements[0][0]) == 1):
                 return sympy.abc.x
-        if self.is_empty():
-            return sympify(0)
 
         if kwargs.get('substitutions'):
             symbols = kwargs.get('symbols')
