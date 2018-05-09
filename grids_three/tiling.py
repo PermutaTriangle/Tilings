@@ -812,8 +812,7 @@ class Tiling(CombinatorialClass):
         # Reduce factorable obstruction by either containing or avoiding
         # localized subobstruction
         for ob in self.obstructions:
-            if not ob.is_single_cell():
-                assert not ob.is_interleaving()
+            if not ob.is_single_cell() and not ob.is_interleaving():
                 patt = Perm.to_standard([v for i, v in enumerate(ob.patt)
                                          if ob.pos[i] == ob.pos[0]])
                 return (self.add_single_cell_obstruction(patt,
