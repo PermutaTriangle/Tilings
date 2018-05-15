@@ -68,13 +68,19 @@ class Tiling(CombinatorialClass):
         respective lists. If any requirement list is empty, then the tiling is
         empty.
         """
-        # Minimize the set of obstructions
-        self._obstructions = self._minimal_obs()
-        # Minimize the set of requiriments
-        self._obstructions, self._requirements = self._minimal_reqs(
-            self._obstructions)
-        # Minimize the set of obstructions again
-        self._obstructions = self._minimal_obs()
+        while True:
+            # Minimize the set of obstructions
+            minimized_obs = self._minimal_obs()
+            # Minimize the set of requiriments
+            minimized_obs, minimized_reqs = self._minimal_reqs(minimized_obs)
+            if (self._obstructions == minimized_obs and
+                    self._requirements == minimized_reqs):
+                break
+            else:
+                self._obstructions = minimized_obs
+                self._requirements = minimized_reqs
+        # # Minimize the set of obstructions again
+        # self._obstructions = self._minimal_obs()
 
     def _minimize_tiling(self):
         # Produce the mapping between the two tilings
@@ -199,7 +205,7 @@ class Tiling(CombinatorialClass):
         basi = defaultdict(list)
         for ob in self._obstructions:
             cell = ob.is_single_cell()
-            if cell is not None:
+            if cell is not None and len(ob) > 1:
                 basi[cell].append(ob.patt)
         blocks = dict()
         for cell in self.point_cells:
@@ -849,13 +855,12 @@ class Tiling(CombinatorialClass):
                                     requirements=self.requirements,
                                     integrity_check=False).get_genf()
             return symbol
+
         import grids_two
         return grids_two.Tiling(possibly_empty=self.active_cells,
                                 obstructions=self.obstructions,
                                 requirements=self.requirements,
                                 integrity_check=False).get_genf()
-
-
     #
     # Dunder methods
     #
