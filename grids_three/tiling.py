@@ -780,7 +780,7 @@ class Tiling(CombinatorialClass):
         """
         # If root has been given a function, return it if you see the root
         if (kwargs.get('root_func') is not None and
-            self == kwargs.get('root_object')):
+            self == kwargs.get('root_class')):
             return kwargs['root_func']
         if kwargs.get('substitutions'):
             if kwargs.get('subs') is None:
