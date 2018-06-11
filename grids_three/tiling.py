@@ -4,7 +4,6 @@ from collections import Counter, defaultdict
 from functools import partial, reduce
 from itertools import chain
 from operator import mul
-from warnings import warn
 
 import sympy
 
@@ -712,10 +711,6 @@ class Tiling(CombinatorialClass):
             if not rows and not cols:
                 self._dimensions = (1, 1)
             else:
-                if min(rows) > 0 or min(cols) > 0:
-                    warn(("Rows or columns are not right adjusted. "
-                          "First row starts at {} and first col at {}"
-                          ).format(min(rows), min(cols)))
                 self._dimensions = (max(rows) + 1,
                                     max(cols) + 1)
         return self._dimensions
