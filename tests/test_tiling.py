@@ -407,6 +407,31 @@ def test_add_single_cell_requirement(typical_redundant_obstructions,
             tiling2)
 
 
+@pytest.fixture
+def isolated_tiling():
+    return Tiling(
+        obstructions=[
+          Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 2))),
+          Obstruction(Perm((0, 1, 3, 2)), ((0, 0), (0, 0), (1, 2), (2, 1))),
+          Obstruction(Perm((0, 2, 1, 3)), ((0, 0), (0, 0), (0, 0), (1, 2)))],
+        requirements=[
+          [Requirement(Perm((0, )), ((2, 1),)),
+           Requirement(Perm((1, 0)), ((1, 2), (1, 2)))],
+          [Requirement(Perm((1, 2, 0)), ((1, 2), (1, 2), (2, 1)))]]
+    )
+
+
+def test_fully_isolated(typical_redundant_obstructions,
+                        typical_redundant_requirements,
+                        isolated_tiling):
+    tiling = Tiling(
+        obstructions=typical_redundant_obstructions,
+        requirements=typical_redundant_requirements)
+
+    assert not tiling.fully_isolated()
+    assert isolated_tiling.fully_isolated()
+
+
 def test_only_positive_in_row_and_col(typical_redundant_obstructions,
                                       typical_redundant_requirements):
     tiling = Tiling(
