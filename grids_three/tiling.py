@@ -280,6 +280,13 @@ class Tiling(CombinatorialClass):
         return cls(obstructions=obstructions, requirements=requirements,
                    remove_empty=remove_empty, assume_empty=assume_empty)
 
+    @classmethod
+    def from_string(cls, string):
+        """Return a 1x1 tiling from string of form 'p1_p2'"""
+        basis = [Obstruction.single_cell(Perm.to_standard(p), (0, 0))
+                 for p in string.split('_')]
+        return cls(obstructions=basis)
+
     # JSON methods
     def to_jsonable(self):
         """Returns a dictionary object which is JSON serializable which
