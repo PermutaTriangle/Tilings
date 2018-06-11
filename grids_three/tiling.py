@@ -570,8 +570,6 @@ class Tiling(CombinatorialClass):
         return all(cell in increasing and cell in decreasing
                    for cell in self.active_cells)
 
-
-
     def objects_of_length(self, length):
         yield from self.gridded_perms_of_length(length)
 
@@ -769,10 +767,9 @@ class Tiling(CombinatorialClass):
 
             if obstructions or requirements:
                 factors.append(Tiling(obstructions=obstructions,
-                                       requirements=requirements))
+                                      requirements=requirements))
 
         return factors
-
 
     def get_genf(self, *args, **kwargs):
         """
@@ -782,7 +779,7 @@ class Tiling(CombinatorialClass):
         """
         # If root has been given a function, return it if you see the root
         if (kwargs.get('root_func') is not None and
-            self == kwargs.get('root_class')):
+                self == kwargs.get('root_class')):
             return kwargs['root_func']
         if kwargs.get('substitutions'):
             if kwargs.get('subs') is None:
@@ -801,10 +798,10 @@ class Tiling(CombinatorialClass):
         for req_list in self.requirements:
             if len(req_list) > 1:
                 req = req_list[0]
-                return (self.add_obstruction(req.patt,
-                                         req.pos).get_genf(*args, **kwargs) +
-                        self.add_requirement(req.patt,
-                                         req.pos).get_genf(*args, **kwargs))
+                return (self.add_obstruction(
+                                req.patt, req.pos).get_genf(*args, **kwargs) +
+                        self.add_requirement(
+                                req.patt, req.pos).get_genf(*args, **kwargs))
 
         # At this stage, all requirement lists are length 1. Can count by
         # counting the tiling with the requirement removed and subtracting the
@@ -823,10 +820,10 @@ class Tiling(CombinatorialClass):
             if not ob.is_single_cell() and not ob.is_interleaving():
                 patt = Perm.to_standard([v for i, v in enumerate(ob.patt)
                                          if ob.pos[i] == ob.pos[0]])
-                return (self.add_single_cell_obstruction(patt,
-                                         ob.pos[0]).get_genf(*args, **kwargs) +
-                        self.add_single_cell_requirement(patt,
-                                         ob.pos[0]).get_genf(*args, **kwargs))
+                return (self.add_single_cell_obstruction(
+                                patt, ob.pos[0]).get_genf(*args, **kwargs) +
+                        self.add_single_cell_requirement(
+                                patt, ob.pos[0]).get_genf(*args, **kwargs))
 
         # some special cases with one by one tilings
         if self.dimensions == (1, 1):
