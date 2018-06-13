@@ -11,6 +11,7 @@ from comb_spec_searcher import CombinatorialClass
 from permuta import Perm, PermSet
 from permuta.misc import UnionFind
 
+from .db_conf import check_database
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
 from .obstruction import Obstruction
@@ -854,12 +855,12 @@ class Tiling(CombinatorialClass):
                                     requirements=self.requirements,
                                     integrity_check=False).get_genf()
             return symbol
-
-        import grids_two
-        return grids_two.Tiling(possibly_empty=self.active_cells,
-                                obstructions=self.obstructions,
-                                requirements=self.requirements,
-                                integrity_check=False).get_genf()
+        # Check the database
+        try:
+            genf = check_database(self)
+        except Exception as e:
+            raise ValueError("Tiling not in database:\n" + repr(self))
+        return genf
     #
     # Dunder methods
     #
