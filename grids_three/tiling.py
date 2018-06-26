@@ -453,6 +453,22 @@ class Tiling(CombinatorialClass):
             resdict[cell] = (obdict[cell], reqdict[cell])
         return resdict
 
+    def cell_graph(self):
+        """
+        Return the set of edges in the cell graph of the tiling.
+        """
+        edges = list()
+        cells = sorted(self.active_cells)
+        for c1, c2 in zip(cells[:-1], cells[1:]):
+            if c1[0] == c2[0]:
+                edges.append((c1, c2))
+        cells = sorted(self.active_cells, key=lambda x: (x[1], x[0]))
+        for c1, c2 in zip(cells[:-1], cells[1:]):
+            if c1[1] == c2[1]:
+                edges.append((c1, c2))
+        return edges
+
+
     @staticmethod
     def sort_requirements(requirements):
         return tuple(sorted(tuple(sorted(set(reqlist)))
@@ -716,7 +732,7 @@ class Tiling(CombinatorialClass):
 
     def find_factors(self):
         """
-        Return the factors of the tiling.
+        Return list with the factors of the tiling.
 
         Two non-empty cells are in the same factor if they are in the same row
         or colum, or they share an obstruction or requirement.
