@@ -14,14 +14,20 @@ mongo = MongoClient('mongodb://localhost:27017/permsdb_three')
 
 def taylor_expand(genf, n=10):
     """Return a list of the first n coefficients of genf's taylor expansion."""
-    num, den = genf.as_numer_denom()
-    num = num.expand()
-    den = den.expand()
-    genf = num/den
+    genf = simplify(genf)
     ser = Poly(genf.series(n=n+1).removeO(), abc.x)
     res = ser.all_coeffs()
     res = res[::-1] + [0]*(n+1-len(res))
     return res
+
+
+def simplify(genf):
+    """Try to write genf as a fraction and then simplify."""
+    num, den = genf.as_numer_denom()
+    num = num.expand()
+    den = den.expand()
+    genf = num/den
+    return genf.simplify()
 
 
 def tiling_symmetries(tiling):
@@ -155,21 +161,19 @@ def enumerate_tree_factor_helper(basis_array, cell_graph, genf,
                 queue.append((cell, not row))
             y = variables[cell[0]][cell[1]]
             substitutions = {v: v/(1 - y) for v in row_vars if v != y}
-            genf = genf.subs(substitutions)/(1 - y)
+            genf = simplify((genf.subs(substitutions)/(1 - y)))
             if len(basis) != 1:
                 # We have a finite cell, so want the y^0, y^1, ..., y^k terms.
+
                 max_length = max(len(p) for p in basis)
                 new_genf = 0
                 temp_genf = genf
                 for i in range(max_length):
                     new_genf += temp_genf.subs({y:0}) * y ** i
-                    temp_genf = ((genf - new_genf)/y**(i + 1)).simplify()
+                    temp_genf = ((genf - new_genf)/y**(i + 1))
+                    temp_genf = simplify(temp_genf)
                 genf = new_genf
     genf = (genf.subs({v: abc.x for vs in variables for v in vs})).simplify()
     # make it look a little bit nice
-    num, den = genf.as_numer_denom()
-    num = num.expand()
-    den = den.expand()
-    genf = num/den
-    print(genf)
+
     return genf
