@@ -20,7 +20,9 @@ def intersection_reduce(iterable):
 
 def is_tree(edges):
     """
-    Return True if the undirected graph has a cycle.
+    Return True if the undirected graph is a tree.
+
+    That is, it is has no cycles and is connected.
     """
     adj_table = adjacency_table(edges)
     return len(edges) + 1 == len(adj_table) and is_connected(adj_table)

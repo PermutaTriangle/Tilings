@@ -68,12 +68,14 @@ def check_database(tiling, update=True):
         error = "Tiling not in database."
         if update:
             if len(tiling.find_factors()) > 1:
-                error = " Try factoring tiling first."
+                error += " Try factoring tiling first."
             elif tiling.requirements:
-                error = " Try special casing requirements first."
+                error += " Try special casing requirements first."
             elif any(not ob.is_single_cell() for ob in tiling.obstructions):
-                error = (" Current methods to enumerate factors can't handle "
-                         "non-local obstructions.")
+                error += (" Current methods to enumerate factors can't handle "
+                          "non-local obstructions.")
+            elif tiling.dimensions == (1, 1):
+                error += " Try running the tilescope."
             else:
                 f = enumerate_tree_factor(tiling)
                 update_database(tiling, f, None)
@@ -169,11 +171,11 @@ def enumerate_tree_factor_helper(basis_array, cell_graph, genf,
                 new_genf = 0
                 temp_genf = genf
                 for i in range(max_length):
-                    new_genf += temp_genf.subs({y:0}) * y ** i
+                    new_genf += temp_genf.subs({y: 0}) * y ** i
                     temp_genf = ((genf - new_genf)/y**(i + 1))
                     temp_genf = simplify(temp_genf)
                 genf = new_genf
-    genf = (genf.subs({v: abc.x for vs in variables for v in vs})).simplify()
+    genf = simplify(genf.subs({v: abc.x for vs in variables for v in vs}))
     # make it look a little bit nice
 
     return genf
