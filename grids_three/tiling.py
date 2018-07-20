@@ -87,10 +87,10 @@ class Tiling(CombinatorialClass):
         col_mapping, row_mapping = self._minimize_mapping()
         cell_map = partial(map_cell, col_mapping, row_mapping)
 
-        # For backwards compatability only, will be removed in future.
-        self.back_map = {(v_x, v_y): (k_x, k_y)
-                         for k_x, v_x in col_mapping.items()
-                         for k_y, v_y in row_mapping.items()}
+        # For tracking regions.
+        self.forward_map = {(k_x, k_y): (v_x, v_y)
+                            for k_x, v_x in col_mapping.items()
+                            for k_y, v_y in row_mapping.items()}
         new_obs = []
         for ob in self._obstructions:
             cell = ob.is_point_obstr()
@@ -730,7 +730,7 @@ class Tiling(CombinatorialClass):
                                     max(cols) + 1)
         return self._dimensions
 
-    def find_factors(self):
+    def find_factors(self, **kwargs):
         """
         Return list with the factors of the tiling.
 
@@ -786,6 +786,16 @@ class Tiling(CombinatorialClass):
                 factors.append(Tiling(obstructions=obstructions,
                                       requirements=requirements))
 
+        if kwargs.get('regions', False):
+            def cell_map(cell_component, factor):
+                map = factor.forward_map
+                return {c: set([map[c]]) for c in cell_component
+                        if (c in map and
+                            map[c] in factor.active_cells)}
+            return (factors,
+                    [cell_map(cell_component, factor)
+                     for cell_component, factor in zip(component_cells,
+                                                        factors)])
         return factors
 
     def get_genf(self, *args, **kwargs):
@@ -798,6 +808,18 @@ class Tiling(CombinatorialClass):
         if (kwargs.get('root_func') is not None and
                 self == kwargs.get('root_class')):
             return kwargs['root_func']
+
+        if (kwargs.get('root_func') is not None and kwargs.get('root_class') is not None and
+                (self == kwargs.get('root_class') or
+                 self == kwargs.get('root_class').reverse() or
+                 self == kwargs.get('root_class').inverse() or
+                 self == kwargs.get('root_class').rotate90() or
+                 self == kwargs.get('root_class').rotate180() or
+                 self == kwargs.get('root_class').rotate270() or
+                 self == kwargs.get('root_class').antidiagonal() or
+                 self == kwargs.get('root_class').complement())):
+            return kwargs['root_func']
+
         if kwargs.get('substitutions'):
             if kwargs.get('subs') is None:
                 kwargs['subs'] = {}
@@ -864,12 +886,7 @@ class Tiling(CombinatorialClass):
                 symbols[self] = symbol
             subs = kwargs.get('subs')
             if symbol not in subs:
-                import grids_two
-                subs[symbol] = grids_two.Tiling(
-                                    possibly_empty=self.active_cells,
-                                    obstructions=self.obstructions,
-                                    requirements=self.requirements,
-                                    integrity_check=False).get_genf()
+                subs[symbol] = check_database(self)
             return symbol
         # Check the database
         try:

@@ -45,6 +45,9 @@ def update_database(tiling, genf, tree):
     The generating function is verified to be correct up to length 10.
     Each database entry has three things: tiling, genf, tree.
     """
+    info = mongo.permsdb_three.factordb.find_one({'key': tiling.compress()})
+    if info is not None:
+        return
     if isinstance(genf, str):
         genf = sympify(genf)
     count = [len(list(tiling.objects_of_length(i))) for i in range(11)]
@@ -84,7 +87,7 @@ def check_database(tiling, update=True):
     return sympify(info['genf'])
 
 
-def enumerate_tree_factor(tiling):
+def enumerate_tree_factor(tiling, **kwargs):
     """
     Return generating function of a factor whose cell graph is a treeself.
 
@@ -126,11 +129,12 @@ def enumerate_tree_factor(tiling):
                            for p in basis[0]]).get_genf().subs({abc.x: y})
     return enumerate_tree_factor_helper(basis_array, cell_graph, initial_genf,
                                         variables, {start},
-                                        [(start, True), (start, False)])
+                                        [(start, True), (start, False)],
+                                        **kwargs)
 
 
 def enumerate_tree_factor_helper(basis_array, cell_graph, genf,
-                                 variables, visited, queue):
+                                 variables, visited, queue, **kwargs):
     """
     The heart of factor enumeration function.
 
@@ -166,7 +170,6 @@ def enumerate_tree_factor_helper(basis_array, cell_graph, genf,
             genf = simplify((genf.subs(substitutions)/(1 - y)))
             if len(basis) != 1:
                 # We have a finite cell, so want the y^0, y^1, ..., y^k terms.
-
                 max_length = max(len(p) for p in basis)
                 new_genf = 0
                 temp_genf = genf
@@ -175,7 +178,11 @@ def enumerate_tree_factor_helper(basis_array, cell_graph, genf,
                     temp_genf = ((genf - new_genf)/y**(i + 1))
                     temp_genf = simplify(temp_genf)
                 genf = new_genf
-    genf = simplify(genf.subs({v: abc.x for vs in variables for v in vs}))
-    # make it look a little bit nice
 
+    subs = kwargs.get('substitute', True)
+    # make it look a little bit nice
+    if subs:
+        genf = simplify(genf.subs({v: abc.x for vs in variables for v in vs}))
+    else:
+        genf = simplify(genf), variables
     return genf
