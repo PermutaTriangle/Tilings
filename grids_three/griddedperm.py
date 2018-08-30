@@ -3,6 +3,8 @@ from itertools import chain, combinations
 
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST
+from permuta.misc import UnionFind
+
 
 
 class GriddedPerm():
@@ -176,6 +178,13 @@ class GriddedPerm():
         for i in range(len(self)):
             if self._pos[i][0] > col:
                 yield (i, self._patt[i])
+
+    def get_gridded_perm_in_cells(self, cells):
+        """Returns the subgridded permutation of points in cells."""
+        return self.__class__(
+            Perm.to_standard(self.patt[i] for i in range(len(self))
+                             if self.pos[i] in cells),
+            (self.pos[i] for i in range(len(self)) if self.pos[i] in cells))
 
     def get_bounding_box(self, cell):
         """Determines the indices and values of the gridded permutation in
@@ -505,7 +514,29 @@ class GriddedPerm():
                         return True
             seen.append(cell)
         return False
-
+    
+    def factors(self):
+        """Return a list containing the factors of a gridded permutation.
+        A factor is a sub gridded permutation that is isolated on its own rows
+        and columns.""" 
+        uf = UnionFind(len(self.pos))
+        for i in range(len(self.pos)):
+            for j in range(i+1, len(self.pos)):
+                c1, c2 = self.pos[i], self.pos[j]
+                if c1[0] == c2[0] or c1[1] == c2[1]:
+                    uf.unite(i, j)
+        # Collect the connected factors of the cells
+        all_factors = {}
+        for i, cell in enumerate(self.pos):
+            x = uf.find(i)
+            if x in all_factors:
+                all_factors[x].append(cell)
+            else:
+                all_factors[x] = [cell]
+        factor_cells = list(set(cells) for cells in all_factors.values())
+        return [self.get_gridded_perm_in_cells(comp) 
+                for comp in factor_cells]
+        
     def compress(self, patthash=None):
         """Compresses the gridded permutation into a list of integers. The
         first element in the list is the rank of the permutation, if the

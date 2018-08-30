@@ -79,8 +79,6 @@ class Tiling(CombinatorialClass):
             else:
                 self._obstructions = minimized_obs
                 self._requirements = minimized_reqs
-        # # Minimize the set of obstructions again
-        # self._obstructions = self._minimal_obs()
 
     def _minimize_tiling(self):
         # Produce the mapping between the two tilings
@@ -124,32 +122,22 @@ class Tiling(CombinatorialClass):
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
         return (col_mapping, row_mapping)
 
-    def _clean_isolated(self, obstruction, positive_cells):
-        """Remove the isolated cells that are point cells or positive cells
+    def _clean_isolated(self, obstruction):
+        """Remove the isolated factors that are implied by requirements
         from all obstructions."""
-        remove = [cell for cell in obstruction.isolated_cells()
-                  if cell in positive_cells]
-        obstruction = obstruction.remove_cells(remove)
         for req_list in self._requirements:
-            if len(req_list) == 1:
-                req = req_list[0]
-                occs = list(req.occurrences_in(obstruction))
-                if len(occs) == 1:
-                    occ = occs[0]
-                    if obstruction.is_isolated(occ):
-                        obstruction = obstruction.remove_cells(req.pos)
+            for factor in obstruction.factors():
+                if all(factor in req for req in req_list):   
+                    obstruction = obstruction.remove_cells(factor.pos)
         return obstruction
 
     def _minimal_obs(self):
         """Returns a new list of minimal obstructions from the obstruction set
         of self. Every obstruction in the new list will have any isolated
         points in positive cells removed."""
-        positive_cells = union_reduce(
-            intersection_reduce(req.pos for req in reqlist)
-            for reqlist in self._requirements)
         cleanobs = list()
         for ob in sorted(self._obstructions):
-            cleanob = self._clean_isolated(ob, positive_cells)
+            cleanob = self._clean_isolated(ob)
             add = True
             for co in cleanobs:
                 if co in cleanob:
@@ -251,7 +239,7 @@ class Tiling(CombinatorialClass):
         offset = 1
         nobs = arr[offset - 1]
         obstructions = []
-        for i in range(nobs):
+        for _ in range(nobs):
             if patts:
                 patt = patts[arr[offset]]
             else:
@@ -263,11 +251,11 @@ class Tiling(CombinatorialClass):
         nreqs = arr[offset]
         offset += 1
         requirements = []
-        for i in range(nreqs):
+        for _ in range(nreqs):
             reqlistlen = arr[offset]
             offset += 1
             reqlist = []
-            for j in range(reqlistlen):
+            for _ in range(reqlistlen):
                 if patts:
                     patt = patts[arr[offset]]
                 else:
@@ -608,7 +596,7 @@ class Tiling(CombinatorialClass):
             for cell in self.active_cells:
                 if cell[0] != col:
                     continue
-                mindex, maxdex, minval, maxval = gp.get_bounding_box(cell)
+                _, _, minval, maxval = gp.get_bounding_box(cell)
                 for val in range(minval, maxval + 1):
                     yield gp.__class__(
                         gp._patt.insert(new_element=val), gp._pos + (cell,))
@@ -744,9 +732,6 @@ class Tiling(CombinatorialClass):
         def cell_to_int(cell):
             return cell[0] * m + cell[1]
 
-        def int_to_cell(i):
-            return (i // m, i % m)
-
         def unite_list(iterable, same_row_or_col=False):
             for i in range(len(iterable)):
                 for j in range(i+1, len(iterable)):
@@ -820,6 +805,10 @@ class Tiling(CombinatorialClass):
                  self == kwargs.get('root_class').complement())):
             return kwargs['root_func']
 
+        # Remove once fusion specifications are added to the database.
+        if self == Tiling([Obstruction.single_cell(Perm((0, 1, 2)), (0, 0))]):
+            return sympy.sympify('-1/2*(sqrt(-4*x + 1) - 1)/x')
+
         if kwargs.get('substitutions'):
             if kwargs.get('subs') is None:
                 kwargs['subs'] = {}
@@ -891,7 +880,7 @@ class Tiling(CombinatorialClass):
         # Check the database
         try:
             genf = check_database(self)
-        except Exception as e:
+        except Exception:
             raise ValueError("Tiling not in database:\n" + repr(self))
         return genf
     #
