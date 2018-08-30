@@ -239,7 +239,7 @@ class Tiling(CombinatorialClass):
         offset = 1
         nobs = arr[offset - 1]
         obstructions = []
-        for i in range(nobs):
+        for _ in range(nobs):
             if patts:
                 patt = patts[arr[offset]]
             else:
@@ -251,11 +251,11 @@ class Tiling(CombinatorialClass):
         nreqs = arr[offset]
         offset += 1
         requirements = []
-        for i in range(nreqs):
+        for _ in range(nreqs):
             reqlistlen = arr[offset]
             offset += 1
             reqlist = []
-            for j in range(reqlistlen):
+            for _ in range(reqlistlen):
                 if patts:
                     patt = patts[arr[offset]]
                 else:
@@ -596,7 +596,7 @@ class Tiling(CombinatorialClass):
             for cell in self.active_cells:
                 if cell[0] != col:
                     continue
-                mindex, maxdex, minval, maxval = gp.get_bounding_box(cell)
+                _, _, minval, maxval = gp.get_bounding_box(cell)
                 for val in range(minval, maxval + 1):
                     yield gp.__class__(
                         gp._patt.insert(new_element=val), gp._pos + (cell,))
@@ -731,9 +731,6 @@ class Tiling(CombinatorialClass):
 
         def cell_to_int(cell):
             return cell[0] * m + cell[1]
-
-        def int_to_cell(i):
-            return (i // m, i % m)
 
         def unite_list(iterable, same_row_or_col=False):
             for i in range(len(iterable)):
@@ -883,7 +880,7 @@ class Tiling(CombinatorialClass):
         # Check the database
         try:
             genf = check_database(self)
-        except Exception as e:
+        except Exception:
             raise ValueError("Tiling not in database:\n" + repr(self))
         return genf
     #
