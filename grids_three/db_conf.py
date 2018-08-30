@@ -7,6 +7,8 @@ from pymongo import MongoClient
 
 from permuta import Perm
 
+from comb_spec_searcher import ProofTree
+
 from .misc import is_tree
 
 mongo = MongoClient('mongodb://localhost:27017/permsdb_three')
@@ -50,6 +52,8 @@ def update_database(tiling, genf, tree):
         return
     if isinstance(genf, str):
         genf = sympify(genf)
+    assert isinstance(tree, ProofTree) or tree is None
+
     count = [len(list(tiling.objects_of_length(i))) for i in range(11)]
     if taylor_expand(sympify(genf), 10) != count:
         raise ValueError("Incorrect generating function.")
