@@ -211,6 +211,14 @@ class Tiling(CombinatorialClass):
                 blocks[cell] = PermSet.avoiding(basis)
         return grids.Tiling(blocks)
 
+    def pretty_print(self):
+        print(self.to_old_tiling())
+        for ob in self.obstructions:
+            if not ob.is_single_cell():
+                print(repr(ob))
+        if self.requirements:
+            print(self.requirements)
+
     # Compression
 
     def compress(self, patthash=None):
