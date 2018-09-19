@@ -19,7 +19,7 @@ class Requirement(GriddedPerm):
         In a gridded permutation satisfying the requirement, the placed point
         will correspond to a point in an occurrence of the requirement, such
         that the point at the index in the occurrence is forced to the
-        direction given.  in an occurrence of the requirement
+        direction given.
 
         Returns two lists, the remaining requirement and a list of obstructions
         that were created."""
@@ -67,3 +67,20 @@ class Requirement(GriddedPerm):
                 grid = self.stretch_gridding((i, j))
                 obstruction_list.append(Obstruction(grid.patt, grid.pos))
         return req_list, obstruction_list
+
+    def other_req_forced_point(req, cell, direction):
+        """Return the set of obstructions to ensure that there is no occurrence
+        of req with any points further in the direction assuming a point was 
+        placed in cell."""
+        def farther_in_direction(gp):
+            if direction == DIR_WEST:
+                return any(c[0] < cell[0] + 1 for c in gp.pos)
+            elif direction == DIR_EAST:
+                return any(c[0] > cell[0] + 1 for c in gp.pos)
+            elif direction == DIR_SOUTH:
+                return any(c[1] < cell[1] + 1 for c in gp.pos)
+            elif direction == DIR_NORTH:
+                return any(c[1] > cell[1] + 1 for c in gp.pos)
+        possible_obstructions = [Obstruction(r.patt, r.pos) 
+                                 for r in req.place_point(cell, DIR_NONE)]
+        return [ob for ob in possible_obstructions if farther_in_direction(ob)]
