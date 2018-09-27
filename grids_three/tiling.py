@@ -82,6 +82,11 @@ class Tiling(CombinatorialClass):
 
     def _minimize_tiling(self):
         # Produce the mapping between the two tilings
+        if not self.active_cells:
+            self._obstructions = (Obstruction.single_cell(Perm((0,)), (0, 0)),)
+            self._requirements = tuple()
+            self._dimensions = (1, 1)
+            return
         col_mapping, row_mapping = self._minimize_mapping()
         cell_map = partial(map_cell, col_mapping, row_mapping)
 
@@ -105,15 +110,8 @@ class Tiling(CombinatorialClass):
     def _minimize_mapping(self):
         """Returns a pair of dictionaries, that map rows/columns to an
         equivalent set of rows/columns where empty ones have been removed. """
-        active_cells = (union_reduce(ob.pos for ob in self._obstructions
-                                     if not ob.is_point_obstr()) |
-                        union_reduce(union_reduce(req.pos for req in reqs)
-                                     for reqs in self._requirements))
-
-        if not active_cells:
-            (i, j) = self.dimensions
-            return ({x: 0 for x in range(i)},
-                    {y: 0 for y in range(j)})
+        active_cells = self.active_cells
+        assert active_cells
 
         col_set, row_set = map(set, zip(*active_cells))
 
@@ -216,8 +214,8 @@ class Tiling(CombinatorialClass):
         for ob in self.obstructions:
             if not ob.is_single_cell():
                 print(repr(ob))
-        if self.requirements:
-            print(self.requirements)
+        for req in self.requirements:
+            print(req)
 
     # Compression
 
@@ -647,6 +645,29 @@ class Tiling(CombinatorialClass):
 
         yield from bt(GriddedPerm.empty_perm(), 0, self.requirements)
 
+    def merge(self):
+        """Return an equivalent tiling with a single requirement list."""
+        if len(self.requirements) <= 1:
+            return self
+        reqs = sorted(self.requirements, key=len)
+        req1 = reqs[0]
+        req2 = reqs[1]
+        reqs = reqs[2:]
+        new_req = []
+        for gp1 in req1:
+            for gp2 in req2:
+                # TODO: Do this step independent of tilings.
+                temp_tiling = Tiling(self.obstructions, [[gp1], [gp2]], 
+                                     remove_empty=False)
+                new_req.extend(Requirement(gp.patt, gp.pos) 
+                               for gp in temp_tiling.gridded_perms(
+                                                  maxlen=len(gp1) + len(gp2)))
+        return Tiling(self.obstructions, reqs + [new_req])
+
+        
+        
+        
+        
     @property
     def point_cells(self):
         if not hasattr(self, "_point_cells"):
@@ -815,6 +836,8 @@ class Tiling(CombinatorialClass):
 
         # Remove once fusion specifications are added to the database.
         if self == Tiling([Obstruction.single_cell(Perm((0, 1, 2)), (0, 0))]):
+            return sympy.sympify('-1/2*(sqrt(-4*x + 1) - 1)/x')
+        if self == Tiling([Obstruction.single_cell(Perm((2, 1, 0)), (0, 0))]):
             return sympy.sympify('-1/2*(sqrt(-4*x + 1) - 1)/x')
 
         if kwargs.get('substitutions'):
