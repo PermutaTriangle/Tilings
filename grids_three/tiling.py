@@ -42,13 +42,15 @@ class Tiling(CombinatorialClass):
         # Minimize the set of obstructions and the set of requirement lists
         self._minimize_griddedperms()
 
-        # If assuming the non-active cells are empty, then add the obstructions
-        if assume_empty:
-            self._fill_empty()
+        if not any(ob.is_empty() for ob in self.obstructions):
+            # If assuming the non-active cells are empty, then add the obstructions
+            if assume_empty:
+                self._fill_empty()
 
-        # Remove empty rows and empty columns
-        if remove_empty:
-            self._minimize_tiling()
+            # Remove empty rows and empty columns
+            if remove_empty:
+                self._minimize_tiling()
+
 
     # Minimization and inferral
     def _fill_empty(self):
@@ -183,7 +185,8 @@ class Tiling(CombinatorialClass):
                     ind_to_remove.add(j)
 
         return (obstructions,
-                sorted(tuple(tuple(reqs) for i, reqs in enumerate(cleanreqs)
+                tuple(sorted(tuple(sorted(reqs)) 
+                             for i, reqs in enumerate(cleanreqs)
                              if i not in ind_to_remove)))
 
     def to_old_tiling(self):
@@ -359,7 +362,7 @@ class Tiling(CombinatorialClass):
         patt with position pos."""
         return Tiling(
             self._obstructions,
-            self._requirements + ([Requirement(patt, pos)],))
+            self._requirements + ((Requirement(patt, pos),),))
 
     def add_single_cell_obstruction(self, patt, cell):
         """Returns a new tiling with the single cell obstruction of the pattern
@@ -645,7 +648,7 @@ class Tiling(CombinatorialClass):
 
         yield from bt(GriddedPerm.empty_perm(), 0, self.requirements)
 
-    def merge(self):
+    def merge(self, remove_empty=True):
         """Return an equivalent tiling with a single requirement list."""
         if len(self.requirements) <= 1:
             return self
@@ -662,11 +665,9 @@ class Tiling(CombinatorialClass):
                 new_req.extend(Requirement(gp.patt, gp.pos) 
                                for gp in temp_tiling.gridded_perms(
                                                   maxlen=len(gp1) + len(gp2)))
-        return Tiling(self.obstructions, reqs + [new_req])
-
-        
-        
-        
+        merged_tiling = Tiling(self.obstructions, reqs + [new_req], 
+                               remove_empty=remove_empty)
+        return merged_tiling
         
     @property
     def point_cells(self):
