@@ -5,41 +5,50 @@ from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST
 from permuta.misc import UnionFind
 
+from pprint import pprint
 
 
 class GriddedPerm():
     # TODO: Intersection of griddedperms
-    def __init__(self, pattern, positions):
+    def __init__(self, pattern, positions, safe=False):
         # TODO: Write check to verify gridded permutation makes sense, that is,
         # pattern can be mapped on the positions given.
-
-        if not isinstance(pattern, Perm):
-            raise ValueError("Pattern should be a instance of permuta.Perm")
-        if not len(pattern):
+        if safe:
             self._patt = pattern
-            self._pos = tuple(positions)
-            self._cells = frozenset()
-            self._rows = 1
-            self._columns = 1
-        else:
-            # Pattern should be a Perm of course
-            self._patt = pattern
-            # Position is a tuple of (x, y) coordinates, where the ith (x, y)
-            # corresponds to the i-th point in the pattern.
-            self._pos = tuple(positions)
-
-            if len(self._patt) != len(self._pos):
-                raise ValueError(("Pattern and position list have unequal"
-                                  "lengths."))
-
-            # Immutable set of cells which the gridded permutation spans.
+            self._pos = positions
             self._cells = frozenset(self._pos)
+
+        else:
+            pattern = Perm(pattern)
+            positions = tuple(positions)
+
+            if not isinstance(pattern, Perm):
+                raise ValueError("Pattern should be a instance of permuta.Perm")
+            if not len(pattern):
+                self._patt = pattern
+                self._pos = tuple(positions)
+                self._cells = frozenset()
+                self._rows = 1
+                self._columns = 1
+            else:
+                # Pattern should be a Perm of course
+                self._patt = pattern
+                # Position is a tuple of (x, y) coordinates, where the ith (x, y)
+                # corresponds to the i-th point in the pattern.
+                self._pos = tuple(positions)
+
+                if len(self._patt) != len(self._pos):
+                    raise ValueError(("Pattern and position list have unequal"
+                                      "lengths."))
+
+                # Immutable set of cells which the gridded permutation spans.
+                self._cells = frozenset(self._pos)
 
     @classmethod
     def single_cell(cls, pattern, cell):
         """Construct a gridded permutation where the cells are all located in a
         single cell."""
-        return cls(pattern, [cell for _ in range(len(pattern))])
+        return cls(pattern, tuple(cell for _ in range(len(pattern))))
 
     @classmethod
     def empty_perm(cls):
@@ -86,7 +95,7 @@ class GriddedPerm():
         remaining = [i for i in range(len(self)) if self._pos[i] not in cells]
         return self.__class__(
             Perm.to_standard(self._patt[i] for i in remaining),
-            (self._pos[i] for i in remaining))
+            tuple(self._pos[i] for i in remaining))
 
     def points_in_cell(self, cell):
         """Yields the indices of the points in the cell given."""
@@ -171,7 +180,7 @@ class GriddedPerm():
         return self.__class__(
             Perm.to_standard(self.patt[i] for i in range(len(self))
                              if self.pos[i][0] < col),
-            (self.pos[i] for i in range(len(self)) if self.pos[i][0] < col))
+           tuple(self.pos[i] for i in range(len(self)) if self.pos[i][0] < col))
 
     def get_points_right_col(self, col):
         """Yields all points of the gridded permutation right of column col."""
@@ -184,7 +193,7 @@ class GriddedPerm():
         return self.__class__(
             Perm.to_standard(self.patt[i] for i in range(len(self))
                              if self.pos[i] in cells),
-            (self.pos[i] for i in range(len(self)) if self.pos[i] in cells))
+            tuple(self.pos[i] for i in range(len(self)) if self.pos[i] in cells))
 
     def get_bounding_box(self, cell):
         """Determines the indices and values of the gridded permutation in
@@ -245,7 +254,7 @@ class GriddedPerm():
         permutation as when a point is inserted into the cell."""
         newpos = [self.point_translation(p, insert_point)
                   for p in range(len(self))]
-        return self.__class__(self._patt, newpos)
+        return self.__class__(self._patt, tuple(newpos))
 
     def partial_stretch_gridding(self, insert_point, row=True):
         """Given an cell location, translate all the points of the gridded
@@ -254,7 +263,7 @@ class GriddedPerm():
         is added."""
         newpos = [self.partial_point_translation(p, insert_point, row)
                   for p in range(len(self))]
-        return self.__class__(self._patt, newpos)
+        return self.__class__(self._patt, tuple(newpos))
 
     def insertion_encoding(self, cell):
         """Places the minimum point in a row in the given cellself.
@@ -359,7 +368,7 @@ class GriddedPerm():
                             self.point_translation(
                                             p, (index, self._patt[index]))
                             for p in range(len(self)) if p != index]
-                    res.append(self.__class__(newpatt, newposition))
+                    res.append(self.__class__(newpatt, tuple(newposition)))
         # Gridded permutation spans the cell, find the bounding box of all the
         # possible locations for the placed point in relation to the pattern.
             if direction == DIR_EAST:
@@ -511,7 +520,7 @@ class GriddedPerm():
         """Map the coordinates to a new list of coordinates according to the
         cell_mapping given."""
         return self.__class__(self._patt,
-                              [cell_mapping(cell) for cell in self._pos])
+                              tuple([cell_mapping(cell) for cell in self._pos]))
 
     def is_point_perm(self):
         """Checks if the gridded permutation is of length 1."""
@@ -656,7 +665,7 @@ class GriddedPerm():
     def from_dict(cls, jsondict):
         """Returns a GriddedPerm object from a dictionary loaded from a JSON
         serialized GriddedPerm object."""
-        return cls(Perm(jsondict['patt']), map(tuple, jsondict['pos']))
+        return cls(Perm(jsondict['patt'],safe=True), map(tuple, jsondict['pos']))
 
     @property
     def patt(self):

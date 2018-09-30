@@ -1,4 +1,4 @@
-import json
+import json, zlib
 from array import array
 from collections import Counter, defaultdict
 from functools import partial, reduce
@@ -19,7 +19,6 @@ from .requirement import Requirement
 
 __all__ = ("Tiling")
 
-
 class Tiling(CombinatorialClass):
     # TODO:
     #   - Intersection of requirements
@@ -32,25 +31,35 @@ class Tiling(CombinatorialClass):
     cells and the active cells.
     """
 
-    def __init__(self, obstructions=list(), requirements=list(),
-                 remove_empty=True, assume_empty=True):
-        # Set of obstructions
-        self._obstructions = tuple(sorted(obstructions))
-        # Set of requirement lists
-        self._requirements = Tiling.sort_requirements(requirements)
+    def __init__(self, obstructions=tuple(), requirements=tuple(),
+                 remove_empty=True, assume_empty=True, safe=False):
+        
+        if safe:
+            self._obstructions = obstructions
+            self._requirements = requirements
+            self._dimensions = dimensions
 
-        # Minimize the set of obstructions and the set of requirement lists
-        self._minimize_griddedperms()
+        else:
+            # Set of obstructions
+            self._obstructions = tuple(sorted(obstructions))
+            # Set of requirement lists
+            self._requirements = Tiling.sort_requirements(requirements)
 
-        if not any(ob.is_empty() for ob in self.obstructions):
-            # If assuming the non-active cells are empty, then add the obstructions
-            if assume_empty:
-                self._fill_empty()
+            # Minimize the set of obstructions and the set of requirement lists
+            self._minimize_griddedperms()
 
-            # Remove empty rows and empty columns
-            if remove_empty:
-                self._minimize_tiling()
+            if not any(ob.is_empty() for ob in self.obstructions):
+                # If assuming the non-active cells are empty, then add the obstructions
+                if assume_empty:
+                    self._fill_empty()
 
+                # Remove empty rows and empty columns
+                if remove_empty:
+                    self._minimize_tiling()
+
+            self._obstructions = tuple(self._obstructions)
+            self._requirements = tuple(tuple(tuple(req for req in reqs)) for reqs in self._requirements)
+            
 
     # Minimization and inferral
     def _fill_empty(self):
@@ -223,59 +232,13 @@ class Tiling(CombinatorialClass):
     # Compression
 
     def compress(self, patthash=None):
-        """Compresses the tiling by flattening the sets of cells into lists of
-        integers which are concatenated together, every list preceeded by its
-        size. The obstructions are compressed and concatenated to the list, as
-        are the requirement lists."""
-        result = []
-        result.append(len(self.obstructions))
-        result.extend(chain.from_iterable(ob.compress(patthash)
-                                          for ob in self.obstructions))
-        result.append(len(self.requirements))
-        for reqlist in self.requirements:
-            result.append(len(reqlist))
-            result.extend(chain.from_iterable(req.compress(patthash)
-                                              for req in reqlist))
-        res = array('H', result)
-        return res.tobytes()
+        """Compresses the tiling by using zlib to compress the json representation."""
+        return zlib.compress(json.dumps(self.to_jsonable().encode()))
 
     @classmethod
-    def decompress(cls, arrbytes, patts=None,
-                   remove_empty=True, assume_empty=True):
-        """Given a compressed tiling in the form of an 2-byte array, decompress
-        it and return a tiling."""
-        arr = array('H', arrbytes)
-        offset = 1
-        nobs = arr[offset - 1]
-        obstructions = []
-        for _ in range(nobs):
-            if patts:
-                patt = patts[arr[offset]]
-            else:
-                patt = Perm.unrank(arr[offset])
-            obstructions.append(Obstruction.decompress(
-                arr[offset:offset + 2*(len(patt)) + 1], patts))
-            offset += 2 * len(patt) + 1
-
-        nreqs = arr[offset]
-        offset += 1
-        requirements = []
-        for _ in range(nreqs):
-            reqlistlen = arr[offset]
-            offset += 1
-            reqlist = []
-            for _ in range(reqlistlen):
-                if patts:
-                    patt = patts[arr[offset]]
-                else:
-                    patt = Perm.unrank(arr[offset])
-                reqlist.append(Requirement.decompress(
-                    arr[offset:offset + 2*(len(patt)) + 1], patts))
-                offset += 2 * len(patt) + 1
-            requirements.append(reqlist)
-
-        return cls(obstructions=obstructions, requirements=requirements,
-                   remove_empty=remove_empty, assume_empty=assume_empty)
+    def decompress(cls, compressed):
+        """Decompress a tiling from its compressed json representation."""
+        return cls.from_json(zlib.decompress(compressed).decode())
 
     @classmethod
     def from_string(cls, string):
@@ -295,6 +258,7 @@ class Tiling(CombinatorialClass):
                                           list(map(lambda y: y.to_jsonable(),
                                                    x)),
                                       self.requirements))
+        output['dimensions'] = self.dimensions
         return output
 
     @classmethod
@@ -307,16 +271,18 @@ class Tiling(CombinatorialClass):
     def from_dict(cls, jsondict):
         """Returns a Tiling object from a dictionary loaded from a JSON
         serialized Tiling object."""
-        obstructions = map(lambda x: Obstruction.from_dict(x),
-                           jsondict['obstructions'])
-        requirements = map(lambda x:
-                           map(lambda y: Requirement.from_dict(y), x),
-                           jsondict['requirements'])
+        obstructions = tuple(map(lambda x: Obstruction.from_dict(x),
+                           jsondict['obstructions']))
+        requirements = tuple(map(lambda x:
+                           tuple(map(lambda y: Requirement.from_dict(y), x)),
+                           jsondict['requirements']))
+        dimensions = jsondict['dimensions']
         return cls(obstructions=obstructions,
-                   requirements=requirements)
+                   requirements=requirements,
+                   dimensions=dimensions,
+                   safe=True)
 
     # Cell methods
-
     def cell_within_bounds(self, cell):
         """Checks if a cell is within the bounds of the tiling."""
         (i, j) = self.dimensions
@@ -935,8 +901,8 @@ class Tiling(CombinatorialClass):
                 (self.requirements != other.requirements))
 
     def __repr__(self):
-        format_string = "Tiling(obstructions={}, requirements={})"
-        return format_string.format(self.obstructions, self.requirements)
+        format_string = "Tiling(obstructions={}, requirements={}, dimensions={})"
+        return format_string.format(self.obstructions, self.requirements, self.dimensions)
 
     def __str__(self):
         return "\n".join([

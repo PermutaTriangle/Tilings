@@ -6,8 +6,8 @@ from .obstruction import Obstruction
 
 
 class Requirement(GriddedPerm):
-    def __init__(self, pattern, positions):
-        super(Requirement, self).__init__(pattern, positions)
+    def __init__(self, pattern, positions, safe=False):
+        super(Requirement, self).__init__(pattern, positions, safe)
 
     def forced_point(self, cell, direction, forced_index):
         return self.place_forced_point(forced_index, cell)
@@ -39,7 +39,7 @@ class Requirement(GriddedPerm):
         newposition = [
             self.point_translation(i, (forced_index, forced_val))
             for i in range(len(self)) if i != forced_index]
-        req_list.append(self.__class__(newpatt, newposition))
+        req_list.append(self.__class__(newpatt, tuple(newposition)))
 
         if direction == DIR_WEST:
             mindex = forced_index + 1
@@ -103,7 +103,7 @@ class Requirement(GriddedPerm):
             self.partial_point_translation(i, (forced_index, forced_val), row) 
             if i != forced_index else point_cell
                        for i in range(len(self))]
-        req_list.append(self.__class__(newpatt, newposition))
+        req_list.append(self.__class__(newpatt, tuple(newposition)))
 
         if direction == DIR_WEST:
             mindex = forced_index + 1
