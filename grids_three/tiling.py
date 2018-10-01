@@ -31,13 +31,14 @@ class Tiling(CombinatorialClass):
     cells and the active cells.
     """
 
-    def __init__(self, obstructions=tuple(), requirements=tuple(),
+    def __init__(self, obstructions=tuple(), requirements=tuple(), dimensions=None,
                  remove_empty=True, assume_empty=True, safe=False):
         
         if safe:
             self._obstructions = obstructions
             self._requirements = requirements
-            self._dimensions = dimensions
+            if dimensions is not None:
+                self._dimensions = dimensions
 
         else:
             # Set of obstructions
@@ -233,7 +234,7 @@ class Tiling(CombinatorialClass):
 
     def compress(self, patthash=None):
         """Compresses the tiling by using zlib to compress the json representation."""
-        return zlib.compress(json.dumps(self.to_jsonable().encode()))
+        return zlib.compress(json.dumps(self.to_jsonable()).encode())
 
     @classmethod
     def decompress(cls, compressed):
