@@ -395,9 +395,9 @@ class GriddedPerm():
         pos = self.pos[:index] + self.pos[index + 1:]
         return self.__class__(patt, pos)
 
-    def all_subperms(self, proper=False):
+    def all_subperms(self, proper=True):
         """Yields all gridded subpermutations."""
-        for r in range(len(self) - 1 if proper else len(self)):
+        for r in range(len(self) if proper else len(self) + 1):
             for subidx in combinations(range(len(self)), r):
                 yield self.__class__(
                     Perm.to_standard(self._patt[i] for i in subidx),

@@ -405,8 +405,6 @@ def test_insert_point():
 
 
 def test_all_subperms(simpleob):
-    print(list(sorted(simpleob.all_subperms())))
-
     assert (list(sorted(simpleob.all_subperms())) ==
             [GriddedPerm(Perm(()), ()),
              GriddedPerm(Perm((0, )), ((0, 0),)),
@@ -422,8 +420,25 @@ def test_all_subperms(simpleob):
              GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
              GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
              GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 1))),
+             GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 2)))])
+    assert (list(sorted(simpleob.all_subperms(proper=False))) ==
+            [GriddedPerm(Perm(()), ()),
+             GriddedPerm(Perm((0, )), ((0, 0),)),
+             GriddedPerm(Perm((0, )), ((0, 0),)),
+             GriddedPerm(Perm((0, )), ((2, 1),)),
+             GriddedPerm(Perm((0, )), ((2, 2),)),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 1))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 1))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
+             GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+             GriddedPerm(Perm((1, 0)), ((2, 2), (2, 1))),
+             GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
+             GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
+             GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 1))),
              GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 2))),
-             GriddedPerm(Perm((1, 0, 3, 2)), ((0, 0), (0, 0), (2, 2), (2, 1)))])
+             GriddedPerm(Perm((1, 0, 3, 2)),
+                         ((0, 0), (0, 0), (2, 2), (2, 1)))])
 
 
 def test_remove_point(typicalob, simpleob, singlecellob):
