@@ -2,9 +2,8 @@ import json
 from itertools import chain, combinations
 
 from permuta import Perm
-from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST
-from permuta.misc import UnionFind
-
+from permuta.misc import (DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST,
+                          UnionFind)
 
 
 class GriddedPerm():
@@ -233,7 +232,7 @@ class GriddedPerm():
     def partial_point_translation(self, index, insert_point, row=True):
         """Given an index of a point in the gridded permutation and an insert
         location, compute the transformation of the point. The translation
-        assumes that a new row is inserted. If row=False, it assumes a new 
+        assumes that a new row is inserted. If row=False, it assumes a new
         column is inserted.
         """
         x, y = self._pos[index]
@@ -249,8 +248,8 @@ class GriddedPerm():
 
     def partial_stretch_gridding(self, insert_point, row=True):
         """Given an cell location, translate all the points of the gridded
-        permutation as when a point is inserted into the cell. If row=True it 
-        is assumed a new row is added. If row=False it is assumed a new column 
+        permutation as when a point is inserted into the cell. If row=True it
+        is assumed a new row is added. If row=False it is assumed a new column
         is added."""
         newpos = [self.partial_point_translation(p, insert_point, row)
                   for p in range(len(self))]
@@ -310,8 +309,8 @@ class GriddedPerm():
         one of the points of the gridded permutation that occupies the cell and
         construct a new gridded permutation which has that point removed.
 
-        If partial=True then it will partially place onto its own row. 
-        If partial=True and row=False it will partially place onto its own 
+        If partial=True then it will partially place onto its own row.
+        If partial=True and row=False it will partially place onto its own
         column.
         """
         # If the gridded permutation does not span the cell, the resulting list
@@ -334,10 +333,10 @@ class GriddedPerm():
                     if partial or i != forced_index)
                 if partial:
                     newposition = [
-                        self.partial_point_translation(p, 
-                                            (forced_index, forced_val), row) 
+                        self.partial_point_translation(
+                                        p, (forced_index, forced_val), row)
                         if p != forced_index else point_cell
-                            for p in range(len(self)) ]
+                        for p in range(len(self))]
                 else:
                     newposition = [
                         self.point_translation(p, (forced_index, forced_val))
@@ -346,14 +345,14 @@ class GriddedPerm():
             else:
                 for index in self.points_in_cell(cell):
                     newpatt = Perm.to_standard(
-                        self._patt[i] for i in range(len(self)) 
-                            if partial or i != index)
+                        self._patt[i] for i in range(len(self))
+                        if partial or i != index)
                     if partial:
                         newposition = [
-                            self.partial_point_translation(p, 
-                                            (index, self._patt[index]), row) 
+                            self.partial_point_translation(
+                                        p, (index, self._patt[index]), row)
                             if p != index else point_cell
-                                for p in range(len(self))]
+                            for p in range(len(self))]
                     else:
                         newposition = [
                             self.point_translation(
@@ -547,11 +546,11 @@ class GriddedPerm():
                         return True
             seen.append(cell)
         return False
-    
+
     def factors(self):
         """Return a list containing the factors of a gridded permutation.
         A factor is a sub gridded permutation that is isolated on its own rows
-        and columns.""" 
+        and columns."""
         uf = UnionFind(len(self.pos))
         for i in range(len(self.pos)):
             for j in range(i+1, len(self.pos)):
@@ -567,9 +566,9 @@ class GriddedPerm():
             else:
                 all_factors[x] = [cell]
         factor_cells = list(set(cells) for cells in all_factors.values())
-        return [self.get_gridded_perm_in_cells(comp) 
+        return [self.get_gridded_perm_in_cells(comp)
                 for comp in factor_cells]
-        
+
     def compress(self, patthash=None):
         """Compresses the gridded permutation into a list of integers. The
         first element in the list is the rank of the permutation, if the

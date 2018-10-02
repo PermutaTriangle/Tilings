@@ -1,13 +1,11 @@
-"""Miscelanneous functions."""
+"""Functions for adding and removing from database."""
 import json
 
-from sympy import sympify, Poly, abc, var
-
 from pymongo import MongoClient
-
-from permuta import Perm
+from sympy import Poly, abc, sympify, var
 
 from comb_spec_searcher import ProofTree
+from permuta import Perm
 
 from .misc import is_tree
 

@@ -43,7 +43,8 @@ class Tiling(CombinatorialClass):
         self._minimize_griddedperms()
 
         if not any(ob.is_empty() for ob in self.obstructions):
-            # If assuming the non-active cells are empty, then add the obstructions
+            # If assuming the non-active cells are empty, then add the
+            # obstructions
             if assume_empty:
                 self._fill_empty()
 
@@ -51,8 +52,6 @@ class Tiling(CombinatorialClass):
             if remove_empty:
                 self._minimize_tiling()
 
-
-    # Minimization and inferral
     def _fill_empty(self):
         add = []
         (i, j) = self.dimensions
@@ -103,9 +102,9 @@ class Tiling(CombinatorialClass):
                                 cell[1] in row_mapping):
                 new_obs.append(ob.minimize(cell_map))
         self._obstructions = tuple(sorted(new_obs))
-        self._requirements = Tiling.sort_requirements([req.minimize(cell_map) 
-                                                        for req in reqlist]
-                                            for reqlist in self._requirements)
+        self._requirements = Tiling.sort_requirements(
+                                    [req.minimize(cell_map) for req in reqlist]
+                                    for reqlist in self._requirements)
         self._dimensions = (max(col_mapping.values()) + 1,
                             max(row_mapping.values()) + 1)
 
@@ -127,7 +126,7 @@ class Tiling(CombinatorialClass):
         from all obstructions."""
         for req_list in self._requirements:
             for factor in obstruction.factors():
-                if all(factor in req for req in req_list):   
+                if all(factor in req for req in req_list):
                     obstruction = obstruction.remove_cells(factor.pos)
         return obstruction
 
@@ -185,8 +184,8 @@ class Tiling(CombinatorialClass):
                     ind_to_remove.add(j)
 
         return (obstructions,
-                Tiling.sort_requirements(reqs 
-                                         for i, reqs in enumerate(cleanreqs) 
+                Tiling.sort_requirements(reqs
+                                         for i, reqs in enumerate(cleanreqs)
                                          if i not in ind_to_remove))
 
     def to_old_tiling(self):
@@ -465,7 +464,6 @@ class Tiling(CombinatorialClass):
                 edges.append((c1, c2))
         return edges
 
-
     @staticmethod
     def sort_requirements(requirements):
         return tuple(sorted(tuple(sorted(set(reqlist)))
@@ -660,15 +658,15 @@ class Tiling(CombinatorialClass):
         for gp1 in req1:
             for gp2 in req2:
                 # TODO: Do this step independent of tilings.
-                temp_tiling = Tiling(self.obstructions, [[gp1], [gp2]], 
+                temp_tiling = Tiling(self.obstructions, [[gp1], [gp2]],
                                      remove_empty=False)
-                new_req.extend(Requirement(gp.patt, gp.pos) 
+                new_req.extend(Requirement(gp.patt, gp.pos)
                                for gp in temp_tiling.gridded_perms(
                                                   maxlen=len(gp1) + len(gp2)))
-        merged_tiling = Tiling(self.obstructions, reqs + [new_req], 
+        merged_tiling = Tiling(self.obstructions, reqs + [new_req],
                                remove_empty=remove_empty)
         return merged_tiling
-        
+
     @property
     def point_cells(self):
         if not hasattr(self, "_point_cells"):
@@ -810,7 +808,7 @@ class Tiling(CombinatorialClass):
             return (factors,
                     [cell_map(cell_component, factor)
                      for cell_component, factor in zip(component_cells,
-                                                        factors)])
+                                                       factors)])
         return factors
 
     def get_genf(self, *args, **kwargs):
@@ -824,7 +822,8 @@ class Tiling(CombinatorialClass):
                 self == kwargs.get('root_class')):
             return kwargs['root_func']
 
-        if (kwargs.get('root_func') is not None and kwargs.get('root_class') is not None and
+        if (kwargs.get('root_func') is not None and
+            kwargs.get('root_class') is not None and
                 (self == kwargs.get('root_class') or
                  self == kwargs.get('root_class').reverse() or
                  self == kwargs.get('root_class').inverse() or

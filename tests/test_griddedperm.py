@@ -139,7 +139,6 @@ def test_get_rowcol(everycellob, simpleob, typicalob):
     assert list(simpleob.get_points_col(0)) == [(0, 1), (1, 0)]
     assert list(simpleob.get_points_col(1)) == []
     assert list(simpleob.get_points_col(2)) == [(2, 3), (3, 2)]
-    
 
     assert list(typicalob.get_points_col(0)) == [(0, 1), (1, 0)]
     assert list(typicalob.get_points_col(1)) == [(2, 2), (3, 4), (4, 3)]
@@ -226,13 +225,11 @@ def test_place_point(typicalob):
          GriddedPerm(Perm((1, 0, 2, 4, 3)),
                      ((2, 0), (2, 0), (3, 0), (3, 3), (3, 3)))])
     print((list(sorted(GriddedPerm(Perm((2, 1, 0, 4, 3)),
-                             ((0, 1), (0, 1), (1, 0), (2, 1), (2, 1))
-                             ).place_point(
-                                 (2, 1), DIR_SOUTH)))))
+                                   ((0, 1), (0, 1), (1, 0), (2, 1), (2, 1))
+                                   ).place_point((2, 1), DIR_SOUTH)))))
     assert (list(sorted(GriddedPerm(Perm((2, 1, 0, 4, 3)),
-                             ((0, 1), (0, 1), (1, 0), (2, 1), (2, 1))
-                             ).place_point(
-                                 (2, 1), DIR_SOUTH))) ==
+                                    ((0, 1), (0, 1), (1, 0), (2, 1), (2, 1))
+                                    ).place_point((2, 1), DIR_SOUTH))) ==
             [GriddedPerm(Perm((2, 1, 0, 3)),
                          ((0, 1), (0, 1), (1, 0), (2, 3))),
              GriddedPerm(Perm((2, 1, 0, 4, 3)),
