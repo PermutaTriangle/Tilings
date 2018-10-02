@@ -103,9 +103,9 @@ class Tiling(CombinatorialClass):
                                 cell[1] in row_mapping):
                 new_obs.append(ob.minimize(cell_map))
         self._obstructions = tuple(sorted(new_obs))
-        self._requirements = tuple(sorted(
-            tuple(sorted(req.minimize(cell_map) for req in reqlist))
-            for reqlist in self._requirements))
+        self._requirements = Tiling.sort_requirements([req.minimize(cell_map) 
+                                                        for req in reqlist]
+                                            for reqlist in self._requirements)
         self._dimensions = (max(col_mapping.values()) + 1,
                             max(row_mapping.values()) + 1)
 
@@ -185,9 +185,9 @@ class Tiling(CombinatorialClass):
                     ind_to_remove.add(j)
 
         return (obstructions,
-                tuple(sorted(tuple(sorted(reqs)) 
-                             for i, reqs in enumerate(cleanreqs)
-                             if i not in ind_to_remove)))
+                Tiling.sort_requirements(reqs 
+                                         for i, reqs in enumerate(cleanreqs) 
+                                         if i not in ind_to_remove))
 
     def to_old_tiling(self):
         import grids

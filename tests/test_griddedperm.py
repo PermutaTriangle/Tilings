@@ -130,43 +130,51 @@ def test_stretch_gridding(typicalob):
 
 def test_place_point(typicalob):
     ob12 = GriddedPerm.single_cell(Perm((0, 1)), (0, 0))
-    assert (list(ob12.place_point((0, 0), DIR_NORTH, skip_redundant=True)) ==
+    assert (list(sorted(ob12.place_point((0, 0), DIR_NORTH))) ==
             [GriddedPerm(Perm((0,)), ((0, 0),)),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 0))),
              GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0)))])
-    assert (list(ob12.place_point((0, 0), DIR_EAST, skip_redundant=True)) ==
+    assert (list(sorted(ob12.place_point((0, 0), DIR_EAST))) ==
             [GriddedPerm(Perm((0,)), ((0, 0),)),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (0, 2))),
              GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2)))])
-    assert (list(ob12.place_point((0, 0), DIR_SOUTH, skip_redundant=True)) ==
+    assert (list(sorted(ob12.place_point((0, 0), DIR_SOUTH))) ==
             [GriddedPerm(Perm((0,)), ((2, 2),)),
-             GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2)))])
-    assert (list(ob12.place_point((0, 0), DIR_WEST, skip_redundant=True)) ==
+             GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2))),
+             GriddedPerm(Perm((0, 1)), ((0, 2), (2, 2))),
+             GriddedPerm(Perm((0, 1)), ((2, 2), (2, 2)))])
+    assert (list(sorted(ob12.place_point((0, 0), DIR_WEST))) ==
             [GriddedPerm(Perm((0,)), ((2, 2),)),
-             GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0)))])
-
+             GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+             GriddedPerm(Perm((0, 1)), ((2, 0), (2, 2))),
+             GriddedPerm(Perm((0, 1)), ((2, 2), (2, 2)))])
+    print(typicalob)
     assert (
-        list(typicalob.place_point((0, 1), DIR_WEST, skip_redundant=True)) ==
+        list(sorted(typicalob.place_point((0, 1), DIR_WEST))) ==
         [GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                     ((2, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
-         GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                     ((2, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
-         GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                     ((2, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
-         GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                     ((0, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
-         GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                     ((0, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
-         GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                     ((0, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
-         GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                     ((0, 0), (0, 0), (3, 0), (3, 3), (3, 3))),
+                     ((0, 0), (0, 0), (3, 0), (3, 1), (3, 1))),
          GriddedPerm(Perm((1, 0, 2, 4, 3)),
                      ((0, 0), (0, 0), (3, 0), (3, 3), (3, 1))),
          GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                     ((0, 0), (0, 0), (3, 0), (3, 1), (3, 1)))])
+                     ((0, 0), (0, 0), (3, 0), (3, 3), (3, 3))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((0, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((0, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((0, 0), (2, 0), (3, 0), (3, 3), (3, 3))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((2, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((2, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((2, 0), (2, 0), (3, 0), (3, 3), (3, 3)))])
     assert (list(GriddedPerm(Perm((2, 1, 0, 4, 3)),
                              ((0, 1), (0, 1), (1, 0), (2, 1), (2, 1))
                              ).place_point(
-                                 (2, 1), DIR_SOUTH, skip_redundant=True)) ==
+                                 (2, 1), DIR_SOUTH)) ==
             [GriddedPerm(Perm((2, 1, 0, 3)),
                          ((0, 1), (0, 1), (1, 0), (2, 3))),
              GriddedPerm(Perm((2, 1, 0, 4, 3)),
