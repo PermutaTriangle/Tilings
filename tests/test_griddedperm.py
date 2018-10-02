@@ -164,9 +164,67 @@ def test_get_rowcol(everycellob, simpleob, typicalob):
     assert list(everycellob.get_points_left_col(1)) == [(0, 0), (1, 3), (2, 6)]
 
 
+def test_get_subperm_left_col(everycellob, simpleob, typicalob):
+    assert (everycellob.get_subperm_left_col(0) == GriddedPerm(Perm(()), ()))
+    assert (everycellob.get_subperm_left_col(1) ==
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 1), (0, 2))))
+    assert (everycellob.get_subperm_left_col(2) ==
+            GriddedPerm(Perm((0, 2, 4, 1, 3, 5)),
+                        ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2))))
+    assert everycellob.get_subperm_left_col(3) == everycellob
+
+    assert simpleob.get_subperm_left_col(1) == GriddedPerm(Perm((1, 0)),
+                                                           ((0, 0), (0, 0)))
+    assert simpleob.get_subperm_left_col(10) == simpleob
+
+    assert typicalob.get_subperm_left_col(1) == GriddedPerm(Perm((1, 0)),
+                                                            ((0, 0), (0, 0)))
+    assert typicalob.get_subperm_left_col(100) == typicalob
+
+
 def test_get_bounding_box(typicalob):
     assert typicalob.get_bounding_box((1, 0)) == (2, 5, 0, 3)
     assert typicalob.get_bounding_box((2, 2)) == (5, 5, 5, 5)
+
+
+def test_point_translation(typicalob):
+    assert typicalob.point_translation(0, (1, 1)) == (0, 2)
+    assert typicalob.point_translation(1, (1, 1)) == (2, 0)
+    assert typicalob.point_translation(2, (1, 1)) == (3, 2)
+    assert typicalob.point_translation(3, (1, 1)) == (3, 3)
+    assert typicalob.point_translation(4, (1, 1)) == (3, 3)
+
+    assert typicalob.point_translation(0, (2, 3)) == (0, 0)
+    assert typicalob.point_translation(1, (2, 3)) == (0, 0)
+    assert typicalob.point_translation(2, (2, 3)) == (3, 0)
+    assert typicalob.point_translation(3, (2, 3)) == (3, 3)
+    assert typicalob.point_translation(4, (2, 3)) == (3, 3)
+
+
+def test_partial_point_translation(typicalob):
+    assert typicalob.partial_point_translation(0, (1, 1), True) == (0, 2)
+    assert typicalob.partial_point_translation(1, (1, 1), True) == (0, 0)
+    assert typicalob.partial_point_translation(2, (1, 1), True) == (1, 2)
+    assert typicalob.partial_point_translation(3, (1, 1), True) == (1, 3)
+    assert typicalob.partial_point_translation(4, (1, 1), True) == (1, 3)
+
+    assert typicalob.partial_point_translation(0, (2, 3), True) == (0, 0)
+    assert typicalob.partial_point_translation(1, (2, 3), True) == (0, 0)
+    assert typicalob.partial_point_translation(2, (2, 3), True) == (1, 0)
+    assert typicalob.partial_point_translation(3, (2, 3), True) == (1, 3)
+    assert typicalob.partial_point_translation(4, (2, 3), True) == (1, 3)
+
+    assert typicalob.partial_point_translation(0, (1, 1), False) == (0, 0)
+    assert typicalob.partial_point_translation(1, (1, 1), False) == (2, 0)
+    assert typicalob.partial_point_translation(2, (1, 1), False) == (3, 0)
+    assert typicalob.partial_point_translation(3, (1, 1), False) == (3, 1)
+    assert typicalob.partial_point_translation(4, (1, 1), False) == (3, 1)
+
+    assert typicalob.partial_point_translation(0, (2, 3), False) == (0, 0)
+    assert typicalob.partial_point_translation(1, (2, 3), False) == (0, 0)
+    assert typicalob.partial_point_translation(2, (2, 3), False) == (3, 0)
+    assert typicalob.partial_point_translation(3, (2, 3), False) == (3, 1)
+    assert typicalob.partial_point_translation(4, (2, 3), False) == (3, 1)
 
 
 def test_stretch_gridding(typicalob):
@@ -179,6 +237,28 @@ def test_stretch_gridding(typicalob):
     assert (typicalob.stretch_gridding((4, 0)) ==
             GriddedPerm(Perm((1, 0, 2, 4, 3)),
                         ((0, 2), (0, 2), (1, 2), (1, 3), (3, 3))))
+
+
+def test_partial_stretch_gridding(typicalob):
+    assert (typicalob.partial_stretch_gridding((2, 1), True) ==
+            GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                        ((0, 2), (0, 0), (1, 2), (1, 3), (1, 3))))
+    assert (typicalob.partial_stretch_gridding((3, 2), True) ==
+            GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                        ((0, 0), (0, 0), (1, 2), (1, 3), (1, 3))))
+    assert (typicalob.partial_stretch_gridding((4, 0), True) ==
+            GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                        ((0, 2), (0, 2), (1, 2), (1, 3), (1, 3))))
+
+    assert (typicalob.partial_stretch_gridding((2, 1), False) ==
+            GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                        ((0, 0), (0, 0), (3, 0), (3, 1), (3, 1))))
+    assert (typicalob.partial_stretch_gridding((3, 2), False) ==
+            GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                        ((0, 0), (0, 0), (1, 0), (3, 1), (3, 1))))
+    assert (typicalob.partial_stretch_gridding((4, 0), False) ==
+            GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                        ((0, 0), (0, 0), (1, 0), (1, 1), (3, 1))))
 
 
 def test_place_point(typicalob):
@@ -324,6 +404,28 @@ def test_insert_point():
                     ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)))]
 
 
+def test_all_subperms(simpleob):
+    print(list(sorted(simpleob.all_subperms())))
+
+    assert (list(sorted(simpleob.all_subperms())) ==
+            [GriddedPerm(Perm(()), ()),
+             GriddedPerm(Perm((0, )), ((0, 0),)),
+             GriddedPerm(Perm((0, )), ((0, 0),)),
+             GriddedPerm(Perm((0, )), ((2, 1),)),
+             GriddedPerm(Perm((0, )), ((2, 2),)),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 1))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 1))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
+             GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+             GriddedPerm(Perm((1, 0)), ((2, 2), (2, 1))),
+             GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
+             GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
+             GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 1))),
+             GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 2))),
+             GriddedPerm(Perm((1, 0, 3, 2)), ((0, 0), (0, 0), (2, 2), (2, 1)))])
+
+
 def test_remove_point(typicalob, simpleob, singlecellob):
     assert simpleob.remove_point(0) == GriddedPerm(
         Perm((0, 2, 1)), [(0, 0), (2, 2), (2, 1)])
@@ -387,50 +489,3 @@ def test_compression(simpleob, singlecellob, everycellob, typicalob,
             GriddedPerm.decompress(typicalob.compress()))
     assert (isolatedob ==
             GriddedPerm.decompress(isolatedob.compress()))
-
-
-def test_point_seperation():
-    ob = GriddedPerm.single_cell(Perm((0, 2, 1)), (0, 0))
-    assert list(ob.point_separation((0, 0), DIR_WEST)) == [
-        GriddedPerm(Perm((0, 2, 1)), [(1, 0), (1, 0), (1, 0)]),
-        GriddedPerm(Perm((0, 2, 1)), [(0, 0), (1, 0), (1, 0)])]
-    assert list(ob.point_separation((0, 0), DIR_EAST)) == [
-        GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 0), (1, 0)]),
-        GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)])]
-    assert list(ob.point_separation((0, 0), DIR_NORTH)) == [
-        GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 1), (0, 0)]),
-        GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)])]
-    assert list(ob.point_separation((0, 0), DIR_SOUTH)) == [
-        GriddedPerm(Perm((0, 2, 1)), [(0, 1), (0, 1), (0, 1)]),
-        GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 1), (0, 1)])]
-
-    ob = GriddedPerm.single_cell(Perm((0, 2, 1, 3)), (0, 0))
-    assert list(ob.point_separation((0, 0), DIR_WEST)) == [
-        GriddedPerm(Perm((0, 2, 1, 3)), [(1, 0), (1, 0), (1, 0), (1, 0)]),
-        GriddedPerm(Perm((0, 2, 1, 3)), [(0, 0), (1, 0), (1, 0), (1, 0)])]
-
-    assert list(ob.point_separation((0, 0), DIR_NORTH)) == [
-        GriddedPerm(Perm((0, 2, 1, 3)), [(0, 0), (0, 0), (0, 0), (0, 1)]),
-        GriddedPerm(Perm((0, 2, 1, 3)), [(0, 0), (0, 0), (0, 0), (0, 0)])]
-
-    ob = GriddedPerm(Perm((0, 2, 1, 3)),
-                     [(0, 0), (1, 1), (1, 1), (2, 2)])
-    assert list(ob.point_separation((1, 1), DIR_WEST)) == [
-        GriddedPerm(Perm((0, 2, 1, 3)),
-                    [(0, 0), (2, 1), (2, 1), (3, 2)]),
-        GriddedPerm(Perm((0, 2, 1, 3)),
-                    [(0, 0), (1, 1), (2, 1), (3, 2)])]
-    assert list(ob.point_separation((1, 1), DIR_NORTH)) == [
-        GriddedPerm(Perm((0, 2, 1, 3)),
-                    [(0, 0), (1, 2), (1, 1), (2, 3)]),
-        GriddedPerm(Perm((0, 2, 1, 3)),
-                    [(0, 0), (1, 1), (1, 1), (2, 3)])]
-
-    ob = GriddedPerm(Perm((0, 1, 2)),
-                     [(0, 0), (2, 2), (2, 2)])
-    assert list(ob.point_separation((1, 1), DIR_EAST)) == [
-        GriddedPerm(Perm((0, 1, 2)),
-                    [(0, 0), (3, 2), (3, 2)])]
-    assert list(ob.point_separation((1, 1), DIR_SOUTH)) == [
-        GriddedPerm(Perm((0, 1, 2)),
-                    [(0, 0), (2, 3), (2, 3)])]

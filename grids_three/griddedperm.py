@@ -231,9 +231,9 @@ class GriddedPerm():
 
     def partial_point_translation(self, index, insert_point, row=True):
         """Given an index of a point in the gridded permutation and an insert
-        location, compute the transformation of the point. The translation
-        assumes that a new row is inserted. If row=False, it assumes a new
-        column is inserted.
+        location, compute the transformation of the point. If row=True, the
+        translation assumes that a new row is inserted. If row=False, it
+        assumes a new column is inserted.
         """
         x, y = self._pos[index]
         return (x + 2 if not row and index >= insert_point[0] else x,
@@ -395,55 +395,6 @@ class GriddedPerm():
         pos = self.pos[:index] + self.pos[index + 1:]
         return self.__class__(patt, pos)
 
-    def _isolate_point(self, cell, row=True):
-        """Isolates point in the given cell within the row or column, depending
-        on the `row` flag."""
-        pos = self._pos
-        if self.occupies(cell):
-            point = tuple(self.points_in_cell(cell))[0]
-            if row:
-                pos = [(x, y) if self._patt[i] < self._patt[point] else
-                       (x, y + 2) if self._patt[i] > self._patt[point] else
-                       (x, y + 1) for (i, (x, y)) in enumerate(pos)]
-            else:
-                pos = [(x, y) if i < point else
-                       (x + 2, y) if i > point else
-                       (x + 1, y) for (i, (x, y)) in enumerate(pos)]
-            yield self.__class__(self._patt, pos)
-        else:
-            if row:
-                rowpoints = sorted(self.get_points_row(cell[1]),
-                                   key=lambda x: x[1])
-                if not rowpoints:
-                    yield self.__class__(self._patt,
-                                         ((x, y) if y < cell[1] else (x, y + 2)
-                                          for (x, y) in pos))
-                    return
-                for p in range(rowpoints[0][1], rowpoints[-1][1] + 2):
-                    yield self.__class__(
-                        self._patt,
-                        ((x, y) if self._patt[j] < p else (x, y + 2)
-                         for (j, (x, y)) in enumerate(pos)))
-            else:
-                colpoints = list(self.get_points_col(cell[0]))
-                if not colpoints:
-                    yield self.__class__(self._patt,
-                                         ((x, y) if x < cell[0] else (x + 2, y)
-                                          for (x, y) in pos))
-                    return
-                for i in range(colpoints[0][0], colpoints[-1][0] + 2):
-                    yield self.__class__(self._patt,
-                                         ((x, y) if j < i else (x + 2, y)
-                                          for (j, (x, y)) in enumerate(pos)))
-
-    def isolate_point_row(self, cell):
-        """Isolates point in the given cell within the row."""
-        return self._isolate_point(cell)
-
-    def isolate_point_col(self, cell):
-        """Isolates point in the given cell within the column."""
-        return self._isolate_point(cell, False)
-
     def all_subperms(self, proper=False):
         """Yields all gridded subpermutations."""
         for r in range(len(self) - 1 if proper else len(self)):
@@ -451,60 +402,6 @@ class GriddedPerm():
                 yield self.__class__(
                     Perm.to_standard(self._patt[i] for i in subidx),
                     (self._pos[i] for i in subidx))
-
-    def point_separation(self, cell, direction):
-        """Performs point separation on cell and assumes point is placed in the
-        cell of given direction of the two resulting cells."""
-        points = list(self.points_in_cell(cell))
-        if direction == DIR_WEST or direction == DIR_EAST:
-            for p in self._pos:
-                if p[0] == cell[0] and p[1] != cell[1]:
-                    raise ValueError(("Obstruction occupies cell in the same "
-                                      "column as point separation cell {}"
-                                      ).format(cell))
-            if not points:
-                yield self.__class__(self._patt,
-                                     [p if p[0] < cell[0] else (p[0] + 1, p[1])
-                                      for p in self._pos])
-                return
-            lo, hi = points[0], points[-1] + 1
-            if direction == DIR_WEST:
-                hi = points[0] + 1
-            else:
-                lo = points[-1]
-            for i in range(lo, hi + 1):
-                yield self.__class__(
-                    self._patt,
-                    [self._pos[j] if j < i
-                     else (self._pos[j][0] + 1, self._pos[j][1])
-                     for j in range(len(self))])
-
-        elif direction == DIR_NORTH or direction == DIR_SOUTH:
-            for p in self._pos:
-                if p[0] != cell[0] and p[1] == cell[1]:
-                    raise ValueError(("Obstruction occupies cell in the same "
-                                      "row as point separation cell {}"
-                                      ).format(cell))
-            if not points:
-                yield self.__class__(self._patt,
-                                     [p if p[1] < cell[1] else (p[0], p[1] + 1)
-                                      for p in self._pos])
-                return
-            vals = sorted([self._patt[i] for i in points])
-            lo, hi = vals[0], vals[-1] + 1
-            if direction == DIR_SOUTH:
-                hi = vals[0] + 1
-            else:
-                lo = vals[-1]
-            for i in range(lo, hi + 1):
-                yield self.__class__(
-                    self._patt,
-                    [self._pos[j] if self._patt[j] < i
-                     else (self._pos[j][0], self._pos[j][1] + 1)
-                     for j in range(len(self))])
-        else:
-            raise ValueError(("Invalid direction {} for point separation."
-                              ).format(direction))
 
     def minimize(self, cell_mapping):
         """Map the coordinates to a new list of coordinates according to the
