@@ -33,14 +33,17 @@ class Tiling(CombinatorialClass):
     """
 
     def __init__(self, obstructions=list(), requirements=list(),
-                 remove_empty=True, assume_empty=True):
+                 remove_empty=True, assume_empty=True, minimize=True,
+                 sort=True):
+
         # Set of obstructions
-        self._obstructions = tuple(sorted(obstructions))
+        self._obstructions = tuple(obstructions)
         # Set of requirement lists
-        self._requirements = Tiling.sort_requirements(requirements)
+        self._requirements = tuple(tuple(r) for r in requirements)
 
         # Minimize the set of obstructions and the set of requirement lists
-        self._minimize_griddedperms()
+        if minimize:
+            self._minimize_griddedperms()
 
         if not any(ob.is_empty() for ob in self.obstructions):
             # If assuming the non-active cells are empty, then add the
@@ -51,6 +54,12 @@ class Tiling(CombinatorialClass):
             # Remove empty rows and empty columns
             if remove_empty:
                 self._minimize_tiling()
+
+        if sort:
+             # Set of obstructions
+            self._obstructions = tuple(sorted(self._obstructions))
+            # Set of requirement lists
+            self._requirements = Tiling.sort_requirements(self._requirements)
 
     def _fill_empty(self):
         add = []
@@ -135,7 +144,7 @@ class Tiling(CombinatorialClass):
         of self. Every obstruction in the new list will have any isolated
         points in positive cells removed."""
         cleanobs = list()
-        for ob in sorted(self._obstructions):
+        for ob in sorted(self._obstructions, key=len):
             cleanob = self._clean_isolated(ob)
             add = True
             for co in cleanobs:
@@ -154,20 +163,27 @@ class Tiling(CombinatorialClass):
         #   - Remove intersections of requirements from obstructions
         cleanreqs = list()
         for reqs in self._requirements:
-            if any(len(r) == 0 for r in reqs):
+            # If any gridded permutation in list is empty then you vacuously
+            # contain this requirement
+            if not all(reqs):
                 continue
             redundant = set()
-            reqs = sorted(reqs)
+            reqs = sorted(reqs, key=len)
             for i in range(len(reqs)):
                 for j in range(i+1, len(reqs)):
-                    if reqs[i] in reqs[j]:
-                        redundant.add(reqs[j])
-                for ob in obstructions:
-                    if ob in reqs[i]:
-                        redundant.add(reqs[i])
-                        break
-            cleanreq = [req for req in reqs if req not in redundant]
-            if len(cleanreq) == 0:
+                    if j not in redundant:
+                        if reqs[i] in reqs[j]:
+                            redundant.add(j)
+                if i not in redundant:
+                    for ob in obstructions:
+                        if ob in reqs[i]:
+                            redundant.add(i)
+                            break
+            cleanreq = [req for i, req in enumerate(reqs)
+                        if i not in redundant]
+            # If cleanreq is empty, then can not contain this requirement so
+            # the tiling is empty.
+            if not cleanreq:
                 return (Obstruction.empty_perm(),), tuple()
             cleanreqs.append(cleanreq)
 

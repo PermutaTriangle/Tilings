@@ -472,6 +472,10 @@ def test_remove_point(typicalob, simpleob, singlecellob):
         Perm((1, 0, 2)), [(2, 2), (2, 2), (2, 2)])
 
 
+def test_minimize():
+    pass #TODO
+
+
 def test_compression(simpleob, singlecellob, everycellob, typicalob,
                      isolatedob):
     patthash = {Perm((1, 0, 3, 2)): 0,
