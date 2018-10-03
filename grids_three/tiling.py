@@ -17,6 +17,8 @@ from .misc import intersection_reduce, map_cell, union_reduce
 from .obstruction import Obstruction
 from .requirement import Requirement
 
+import time
+
 __all__ = ("Tiling")
 
 class Tiling(CombinatorialClass):
@@ -31,24 +33,36 @@ class Tiling(CombinatorialClass):
     cells and the active cells.
     """
 
+    minimize_time = 0
+    all_other = 0
+    num_safe_calls = 0
+    num_unsafe_calls = 0
+
     def __init__(self, obstructions=tuple(), requirements=tuple(), dimensions=None,
                  remove_empty=True, assume_empty=True, safe=False):
         
         if safe:
+            Tiling.num_safe_calls += 1
             self._obstructions = obstructions
             self._requirements = requirements
             if dimensions is not None:
                 self._dimensions = dimensions
 
         else:
+            Tiling.num_unsafe_calls += 1
             # Set of obstructions
+            tt = time.time()
             self._obstructions = tuple(sorted(obstructions))
             # Set of requirement lists
             self._requirements = Tiling.sort_requirements(requirements)
+            Tiling.all_other += time.time()-tt
 
             # Minimize the set of obstructions and the set of requirement lists
+            tt = time.time()
             self._minimize_griddedperms()
+            Tiling.minimize_time += time.time()-tt
 
+            tt = time.time()
             if not any(ob.is_empty() for ob in self.obstructions):
                 # If assuming the non-active cells are empty, then add the obstructions
                 if assume_empty:
@@ -60,7 +74,7 @@ class Tiling(CombinatorialClass):
 
             self._obstructions = tuple(self._obstructions)
             self._requirements = tuple(tuple(tuple(req for req in reqs)) for reqs in self._requirements)
-            
+            Tiling.all_other += time.time()-tt
 
     # Minimization and inferral
     def _fill_empty(self):
@@ -106,6 +120,7 @@ class Tiling(CombinatorialClass):
         self.forward_map = {(k_x, k_y): (v_x, v_y)
                             for k_x, v_x in col_mapping.items()
                             for k_y, v_y in row_mapping.items()}
+
         new_obs = []
         for ob in self._obstructions:
             cell = ob.is_point_obstr()
@@ -444,9 +459,9 @@ class Tiling(CombinatorialClass):
         given. The first transf is mapping of cells while gptransf is a
         transformation of GriddedPerm that calls some internal method.
         """
-        return Tiling(obstructions=(gptransf(ob) for ob in self.obstructions),
-                      requirements=([gptransf(req) for req in reqlist]
-                                    for reqlist in self.requirements))
+        return Tiling(obstructions=tuple(gptransf(ob) for ob in self.obstructions),
+                      requirements=tuple(tuple(gptransf(req) for req in reqlist)
+                                    for reqlist in self.requirements), safe=True)
 
     def reverse(self):
         """ |

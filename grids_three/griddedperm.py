@@ -8,39 +8,32 @@ from permuta.misc import UnionFind
 
 class GriddedPerm():
     # TODO: Intersection of griddedperms
-    def __init__(self, pattern, positions, safe=False):
+    def __init__(self, pattern, positions):
         # TODO: Write check to verify gridded permutation makes sense, that is,
         # pattern can be mapped on the positions given.
-        if safe:
+
+        if not isinstance(pattern, Perm):
+            raise ValueError("Pattern should be a instance of permuta.Perm")
+        if not len(pattern):
             self._patt = pattern
-            self._pos = positions
-            self._cells = frozenset(self._pos)
-
+            self._pos = tuple(positions)
+            self._cells = frozenset()
+            self._rows = 1
+            self._columns = 1
         else:
-            pattern = Perm(pattern)
-            positions = tuple(positions)
+            # Pattern should be a Perm of course
+            # we make another copy to deference
+            self._patt = Perm(pattern)
+            # Position is a tuple of (x, y) coordinates, where the ith (x, y)
+            # corresponds to the i-th point in the pattern.
+            self._pos = tuple(positions)
 
-            if not isinstance(pattern, Perm):
-                raise ValueError("Pattern should be a instance of permuta.Perm")
-            if not len(pattern):
-                self._patt = pattern
-                self._pos = tuple(positions)
-                self._cells = frozenset()
-                self._rows = 1
-                self._columns = 1
-            else:
-                # Pattern should be a Perm of course
-                self._patt = pattern
-                # Position is a tuple of (x, y) coordinates, where the ith (x, y)
-                # corresponds to the i-th point in the pattern.
-                self._pos = tuple(positions)
+            if len(self._patt) != len(self._pos):
+                raise ValueError(("Pattern and position list have unequal"
+                                  "lengths."))
 
-                if len(self._patt) != len(self._pos):
-                    raise ValueError(("Pattern and position list have unequal"
-                                      "lengths."))
-
-                # Immutable set of cells which the gridded permutation spans.
-                self._cells = frozenset(self._pos)
+            # Immutable set of cells which the gridded permutation spans.
+            self._cells = frozenset(self._pos)
 
     @classmethod
     def single_cell(cls, pattern, cell):
@@ -518,7 +511,7 @@ class GriddedPerm():
         """Map the coordinates to a new list of coordinates according to the
         cell_mapping given."""
         return self.__class__(self._patt,
-                              tuple([cell_mapping(cell) for cell in self._pos]))
+                              tuple(cell_mapping(cell) for cell in self._pos))
 
     def is_point_perm(self):
         """Checks if the gridded permutation is of length 1."""
@@ -696,4 +689,9 @@ class GriddedPerm():
         return (self._patt, self._pos) < (other.patt, other.pos)
 
     def __contains__(self, other):
-        return bool(list(other.occurrences_in(self)))
+        # try:
+        #     next(other.occurrences_in(self))
+        #     return True
+        # except StopIteration:
+        #     return False
+         return bool(list(other.occurrences_in(self)))
