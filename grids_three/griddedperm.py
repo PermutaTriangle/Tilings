@@ -689,9 +689,9 @@ class GriddedPerm():
         return (self._patt, self._pos) < (other.patt, other.pos)
 
     def __contains__(self, other):
-        # try:
-        #     next(other.occurrences_in(self))
-        #     return True
-        # except StopIteration:
-        #     return False
-         return bool(list(other.occurrences_in(self)))
+        try:
+            next(other.occurrences_in(self))
+            return True
+        except StopIteration:
+            return False
+            

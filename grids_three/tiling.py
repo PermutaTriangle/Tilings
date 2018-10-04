@@ -1,4 +1,6 @@
-import json, zlib
+import json
+import time
+import zlib
 from array import array
 from collections import Counter, defaultdict
 from functools import partial, reduce
@@ -17,9 +19,8 @@ from .misc import intersection_reduce, map_cell, union_reduce
 from .obstruction import Obstruction
 from .requirement import Requirement
 
-import time
-
 __all__ = ("Tiling")
+
 
 class Tiling(CombinatorialClass):
     # TODO:
@@ -34,47 +35,51 @@ class Tiling(CombinatorialClass):
     """
 
     minimize_time = 0
-    all_other = 0
-    num_safe_calls = 0
-    num_unsafe_calls = 0
+    sort_time = 0
+    cast_time = 0
+    other_time = 0
 
-    def __init__(self, obstructions=tuple(), requirements=tuple(), dimensions=None,
-                 remove_empty=True, assume_empty=True, safe=False):
-        
-        if safe:
-            Tiling.num_safe_calls += 1
-            self._obstructions = obstructions
-            self._requirements = requirements
-            if dimensions is not None:
-                self._dimensions = dimensions
+    def __init__(self, obstructions=tuple(), requirements=tuple(),
+                 remove_empty=True,
+                 derive_empty=True,
+                 minimize=True,
+                 sort=True):
 
-        else:
-            Tiling.num_unsafe_calls += 1
-            # Set of obstructions
-            tt = time.time()
-            self._obstructions = tuple(sorted(obstructions))
-            # Set of requirement lists
-            self._requirements = Tiling.sort_requirements(requirements)
-            Tiling.all_other += time.time()-tt
+        # Set of obstructions
+        tt = time.time()
+        self._obstructions = tuple(obstructions)
+        # Set of requirement lists
+        self._requirements = tuple(tuple(r) for r in requirements)
+        Tiling.cast_time += time.time()-tt
 
-            # Minimize the set of obstructions and the set of requirement lists
-            tt = time.time()
+        # Minimize the set of obstructions and the set of requirement lists
+        tt = time.time()
+        if minimize:
             self._minimize_griddedperms()
-            Tiling.minimize_time += time.time()-tt
+        Tiling.minimize_time += time.time()-tt
 
+        if not any(ob.is_empty() for ob in self.obstructions):
+            # If assuming the non-active cells are empty, then add
+            #   the obstructions
             tt = time.time()
-            if not any(ob.is_empty() for ob in self.obstructions):
-                # If assuming the non-active cells are empty, then add the obstructions
-                if assume_empty:
-                    self._fill_empty()
+            if derive_empty:
+                self._fill_empty()
 
-                # Remove empty rows and empty columns
-                if remove_empty:
-                    self._minimize_tiling()
+            # Remove empty rows and empty columns
+            tt2 = time.time()
+            if remove_empty:
+                self._minimize_tiling()
+                Tiling.minimize_time += time.time() - tt2
+            Tiling.other_time += tt2 - tt
 
-            self._obstructions = tuple(self._obstructions)
-            self._requirements = tuple(tuple(tuple(req for req in reqs)) for reqs in self._requirements)
-            Tiling.all_other += time.time()-tt
+        tt = time.time()
+        if sort:
+            # Set of obstructions
+            self._obstructions = tuple(sorted(self._obstructions))
+            # Set of requirement lists
+            self._requirements = Tiling.sort_requirements(self._requirements)
+
+        Tiling.sort_time += time.time()-tt
 
     # Minimization and inferral
     def _fill_empty(self):
@@ -152,7 +157,7 @@ class Tiling(CombinatorialClass):
         from all obstructions."""
         for req_list in self._requirements:
             for factor in obstruction.factors():
-                if all(factor in req for req in req_list):   
+                if all(factor in req for req in req_list):
                     obstruction = obstruction.remove_cells(factor.pos)
         return obstruction
 
@@ -161,7 +166,7 @@ class Tiling(CombinatorialClass):
         of self. Every obstruction in the new list will have any isolated
         points in positive cells removed."""
         cleanobs = list()
-        for ob in sorted(self._obstructions):
+        for ob in sorted(self._obstructions, key=len):
             cleanob = self._clean_isolated(ob)
             add = True
             for co in cleanobs:
@@ -180,20 +185,25 @@ class Tiling(CombinatorialClass):
         #   - Remove intersections of requirements from obstructions
         cleanreqs = list()
         for reqs in self._requirements:
-            if any(len(r) == 0 for r in reqs):
+            if not all(reqs):
                 continue
             redundant = set()
             reqs = sorted(reqs)
             for i in range(len(reqs)):
                 for j in range(i+1, len(reqs)):
-                    if reqs[i] in reqs[j]:
-                        redundant.add(reqs[j])
-                for ob in obstructions:
-                    if ob in reqs[i]:
-                        redundant.add(reqs[i])
-                        break
-            cleanreq = [req for req in reqs if req not in redundant]
-            if len(cleanreq) == 0:
+                    if j not in redundant:
+                        if reqs[i] in reqs[j]:
+                            redundant.add(j)
+                if i not in redundant:
+                    for ob in obstructions:
+                        if ob in reqs[i]:
+                            redundant.add(i)
+                            break
+            cleanreq = [req for i, req in enumerate(reqs)
+                        if i not in redundant]
+            # If cleanreq is empty, then can not contain this requirement so
+            # the tiling is empty.
+            if not cleanreq:
                 return (Obstruction.empty_perm(),), tuple()
             cleanreqs.append(cleanreq)
 
@@ -210,7 +220,7 @@ class Tiling(CombinatorialClass):
                     ind_to_remove.add(j)
 
         return (obstructions,
-                tuple(sorted(tuple(sorted(reqs)) 
+                tuple(sorted(tuple(sorted(reqs))
                              for i, reqs in enumerate(cleanreqs)
                              if i not in ind_to_remove)))
 
@@ -248,7 +258,8 @@ class Tiling(CombinatorialClass):
     # Compression
 
     def compress(self, patthash=None):
-        """Compresses the tiling by using zlib to compress the json representation."""
+        """Compresses the tiling by using zlib to compress
+        the json representation."""
         return zlib.compress(json.dumps(self.to_jsonable()).encode())
 
     @classmethod
@@ -274,7 +285,6 @@ class Tiling(CombinatorialClass):
                                           list(map(lambda y: y.to_jsonable(),
                                                    x)),
                                       self.requirements))
-        output['dimensions'] = self.dimensions
         return output
 
     @classmethod
@@ -288,15 +298,16 @@ class Tiling(CombinatorialClass):
         """Returns a Tiling object from a dictionary loaded from a JSON
         serialized Tiling object."""
         obstructions = tuple(map(lambda x: Obstruction.from_dict(x),
-                           jsondict['obstructions']))
+                                jsondict['obstructions']))
         requirements = tuple(map(lambda x:
-                           tuple(map(lambda y: Requirement.from_dict(y), x)),
-                           jsondict['requirements']))
-        dimensions = jsondict['dimensions']
+                                tuple(map(lambda y: Requirement.from_dict(y), x)),
+                                jsondict['requirements']))
         return cls(obstructions=obstructions,
                    requirements=requirements,
-                   dimensions=dimensions,
-                   safe=True)
+                   remove_empty=False,
+                   derive_empty=False,
+                   minimize=False,
+                   sort=False)
 
     # Cell methods
     def cell_within_bounds(self, cell):
