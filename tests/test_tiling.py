@@ -99,14 +99,14 @@ def typical_redundant_requirements():
 def test_constructor_no_requirements(typical_redundant_obstructions):
     """Tests the constructor of Tiling, thereby the minimization methods used
     in the constructor with different options for remove_empty and
-    assume_empty. Proper update of the dimensions of the tiling and proper
+    derive_empty. Proper update of the dimensions of the tiling and proper
     computation of empty and active cells.
 
     Tests without any requirements.
     """
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=False, assume_empty=False)
+        remove_empty=False, derive_empty=False)
     assert len(tiling._obstructions) == 18
     assert len(tiling._requirements) == 0
     (i, j) = tiling.dimensions
@@ -115,7 +115,7 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=False, assume_empty=True)
+        remove_empty=False, derive_empty=True)
 
     assert len(tiling._obstructions) == 22
     assert len(tiling._requirements) == 0
@@ -127,7 +127,7 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=True, assume_empty=True)
+        remove_empty=True, derive_empty=True)
 
     (i, j) = tiling.dimensions
     assert i == 3
@@ -158,7 +158,7 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
             Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
             Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
         ],
-        remove_empty=True, assume_empty=True)
+        remove_empty=True, derive_empty=True)
 
     assert tiling == tiling2
 
@@ -168,7 +168,7 @@ def test_constructor_with_requirements(typical_redundant_obstructions,
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
         requirements=typical_redundant_requirements,
-        remove_empty=False, assume_empty=False)
+        remove_empty=False, derive_empty=False)
     assert len(tiling._obstructions) == 18
     assert len(tiling._requirements) == 4
     (i, j) = tiling.dimensions
@@ -178,7 +178,7 @@ def test_constructor_with_requirements(typical_redundant_obstructions,
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
         requirements=typical_redundant_requirements,
-        remove_empty=False, assume_empty=True)
+        remove_empty=False, derive_empty=True)
 
     assert len(tiling._obstructions) == 29
     assert len(tiling._requirements) == 4
@@ -194,7 +194,7 @@ def test_constructor_with_requirements(typical_redundant_obstructions,
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
         requirements=typical_redundant_requirements,
-        remove_empty=True, assume_empty=True)
+        remove_empty=True, derive_empty=True)
 
     (i, j) = tiling.dimensions
     assert i == 4
@@ -217,7 +217,7 @@ def test_constructor_with_requirements(typical_redundant_obstructions,
              Requirement(Perm((1, 0, 2)), [(0, 1), (1, 0), (2, 2)])],
             [Requirement(Perm((0, 1, 2)), [(2, 2), (2, 2), (2, 2)]),
              Requirement(Perm((1, 0, 2)), [(0, 0), (0, 0), (0, 0)])]],
-        remove_empty=True, assume_empty=True)
+        remove_empty=True, derive_empty=True)
     assert tiling == tiling2
 
 
@@ -225,26 +225,26 @@ def test_constructor_with_requirements(typical_redundant_obstructions,
 def test_compression_noreq(typical_redundant_obstructions):
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=False, assume_empty=False)
+        remove_empty=False, derive_empty=False)
 
     assert tiling == Tiling.decompress(tiling.compress(),
                                        remove_empty=False,
-                                       assume_empty=False)
+                                       derive_empty=False)
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=False, assume_empty=True)
+        remove_empty=False, derive_empty=True)
 
     assert tiling == Tiling.decompress(tiling.compress(),
                                        remove_empty=False,
-                                       assume_empty=True)
+                                       derive_empty=True)
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=True, assume_empty=True)
+        remove_empty=True, derive_empty=True)
     assert tiling == Tiling.decompress(tiling.compress(),
                                        remove_empty=True,
-                                       assume_empty=True)
+                                       derive_empty=True)
 
 
 def test_compression(compresstil):
@@ -261,7 +261,7 @@ def test_cell_within_bounds(typical_redundant_obstructions,
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
         requirements=typical_redundant_requirements,
-        remove_empty=False, assume_empty=False)
+        remove_empty=False, derive_empty=False)
     for i in range(4):
         for j in range(5):
             assert tiling.cell_within_bounds((i, j))
@@ -272,7 +272,7 @@ def test_cell_within_bounds(typical_redundant_obstructions,
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
         requirements=typical_redundant_requirements,
-        remove_empty=True, assume_empty=True)
+        remove_empty=True, derive_empty=True)
 
     for i in range(4):
         for j in range(4):

@@ -472,8 +472,15 @@ def test_remove_point(typicalob, simpleob, singlecellob):
         Perm((1, 0, 2)), [(2, 2), (2, 2), (2, 2)])
 
 
-def test_minimize():
-    pass #TODO
+def test_minimize(typicalob, simpleob):
+    def cell_mapping(x):
+        return (x[0] + 1, x[1] + 2)
+    assert (typicalob.minimize(cell_mapping) ==
+            GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                        ((1, 2), (1, 2), (2, 2), (2, 3), (2, 3))))
+    assert (simpleob.minimize(cell_mapping) ==
+            GriddedPerm(Perm((1, 0, 3, 2)),
+                        ((1, 2), (1, 2), (3, 4), (3, 3))))
 
 
 def test_compression(simpleob, singlecellob, everycellob, typicalob,

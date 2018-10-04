@@ -33,7 +33,7 @@ class Tiling(CombinatorialClass):
     """
 
     def __init__(self, obstructions=list(), requirements=list(),
-                 remove_empty=True, assume_empty=True, minimize=True,
+                 remove_empty=True, derive_empty=True, minimize=True,
                  sort=True):
 
         # Set of obstructions
@@ -48,7 +48,7 @@ class Tiling(CombinatorialClass):
         if not any(ob.is_empty() for ob in self.obstructions):
             # If assuming the non-active cells are empty, then add the
             # obstructions
-            if assume_empty:
+            if derive_empty:
                 self._fill_empty()
 
             # Remove empty rows and empty columns
@@ -56,7 +56,7 @@ class Tiling(CombinatorialClass):
                 self._minimize_tiling()
 
         if sort:
-             # Set of obstructions
+            # Set of obstructions
             self._obstructions = tuple(sorted(self._obstructions))
             # Set of requirement lists
             self._requirements = Tiling.sort_requirements(self._requirements)
@@ -175,10 +175,8 @@ class Tiling(CombinatorialClass):
                         if reqs[i] in reqs[j]:
                             redundant.add(j)
                 if i not in redundant:
-                    for ob in obstructions:
-                        if ob in reqs[i]:
-                            redundant.add(i)
-                            break
+                    if any(ob in reqs[i] for ob in obstructions):
+                        redundant.add(i)
             cleanreq = [req for i, req in enumerate(reqs)
                         if i not in redundant]
             # If cleanreq is empty, then can not contain this requirement so
@@ -189,20 +187,15 @@ class Tiling(CombinatorialClass):
 
         ind_to_remove = set()
         for i, reqs in enumerate(cleanreqs):
-            if i in ind_to_remove:
-                continue
-            for j, reqs2 in enumerate(cleanreqs):
-                if i == j:
-                    continue
-                if j in ind_to_remove:
-                    continue
-                if all(any(r2 in r1 for r2 in reqs2) for r1 in reqs):
-                    ind_to_remove.add(j)
+            if i not in ind_to_remove:
+                for j, reqs2 in enumerate(cleanreqs):
+                    if i != j and j not in ind_to_remove:
+                        if all(any(r2 in r1 for r2 in reqs2) for r1 in reqs):
+                            ind_to_remove.add(j)
 
         return (obstructions,
-                Tiling.sort_requirements(reqs
-                                         for i, reqs in enumerate(cleanreqs)
-                                         if i not in ind_to_remove))
+                tuple(reqs for i, reqs in enumerate(cleanreqs)
+                      if i not in ind_to_remove))
 
     def to_old_tiling(self):
         import grids
@@ -256,7 +249,7 @@ class Tiling(CombinatorialClass):
 
     @classmethod
     def decompress(cls, arrbytes, patts=None,
-                   remove_empty=True, assume_empty=True):
+                   remove_empty=True, derive_empty=True):
         """Given a compressed tiling in the form of an 2-byte array, decompress
         it and return a tiling."""
         arr = array('H', arrbytes)
@@ -290,7 +283,7 @@ class Tiling(CombinatorialClass):
             requirements.append(reqlist)
 
         return cls(obstructions=obstructions, requirements=requirements,
-                   remove_empty=remove_empty, assume_empty=assume_empty)
+                   remove_empty=remove_empty, derive_empty=derive_empty)
 
     @classmethod
     def from_string(cls, string):
