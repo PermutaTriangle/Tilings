@@ -124,10 +124,17 @@ class Requirement(GriddedPerm):
                     for i in range(len(self))]
                 obstruction_list.append(Obstruction(newpatt, newposition))
 
-        for i in range(mindex, maxdex + 1):
+        if row:
+            i = mindex
             for j in range(minval, maxval + 1):
                 grid = self.partial_stretch_gridding((i, j), row)
                 obstruction_list.append(Obstruction(grid.patt, grid.pos))
+        else:
+            j = mindex
+            for i in range(mindex, maxdex + 1):
+                grid = self.partial_stretch_gridding((i, j), row)
+                obstruction_list.append(Obstruction(grid.patt, grid.pos))
+
         return req_list, obstruction_list
 
     def other_req_forced_point(req, cell, direction):
