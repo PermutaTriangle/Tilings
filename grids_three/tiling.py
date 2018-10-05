@@ -143,9 +143,10 @@ class Tiling(CombinatorialClass):
         """Returns a new list of minimal obstructions from the obstruction set
         of self. Every obstruction in the new list will have any isolated
         points in positive cells removed."""
+        clean_ones = sorted((self._clean_isolated(co)
+                            for co in self._obstructions), key=len)
         cleanobs = list()
-        for ob in sorted(self._obstructions, key=len):
-            cleanob = self._clean_isolated(ob)
+        for cleanob in clean_ones:
             add = True
             for co in cleanobs:
                 if co in cleanob:
