@@ -942,6 +942,7 @@ class Tiling(CombinatorialClass):
 
         # How many characters are in a row in the grid
         row_width = 2*dim_i + 2
+        curr_label = 1
         for cell, gridded_perms in sorted(self.cell_basis().items()):
             obstructions, _ = gridded_perms
             basis = list(sorted(obstructions))
@@ -961,14 +962,15 @@ class Tiling(CombinatorialClass):
                 elif basis == [Perm((1, 0))]:
                     label = '/'
                 else:
-                    label = str(len(labels) + 1)
+                    label = str(curr_label)
+                    curr_label += 1
                 labels[block] = label
             row_index_from_top = dim_j - cell[1] - 1
             index = (2*row_index_from_top + 1)*row_width + 2*cell[0] + 1
             result[index] = label
 
         # Legend at bottom
-        for block, label in sorted(labels.items()):
+        for block, label in sorted(labels.items(), key=lambda x: x[1]):
             basis, positive = block
             result.append(label)
             result.append(": ")
