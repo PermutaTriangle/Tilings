@@ -283,7 +283,42 @@ def test_place_point(typicalob):
              GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
              GriddedPerm(Perm((0, 1)), ((2, 0), (2, 2))),
              GriddedPerm(Perm((0, 1)), ((2, 2), (2, 2)))])
-    print(typicalob)
+
+    assert (list(sorted(ob12.place_point((0, 0), DIR_NORTH,
+                        partial=True, row=True))) ==
+            [GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1)))])
+    assert (list(sorted(ob12.place_point((0, 0), DIR_EAST,
+                        partial=True, row=False))) ==
+            [GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0)))])
+    assert (list(sorted(ob12.place_point((0, 0), DIR_SOUTH,
+                        partial=True, row=True))) ==
+            [GriddedPerm(Perm((0, 1)), ((0, 1), (0, 2))),
+             GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2)))])
+    assert (list(sorted(ob12.place_point((0, 0), DIR_WEST,
+                        partial=True, row=False))) ==
+            [GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0))),
+             GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0)))])
+    assert (list(sorted(ob12.place_point((0, 0), DIR_NONE,
+                        partial=True, row=True))) ==
+            [GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (0, 2))),
+             GriddedPerm(Perm((0, 1)), ((0, 1), (0, 2))),
+             GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2)))])
+    assert (list(sorted(ob12.place_point((0, 0), DIR_NONE,
+                        partial=True, row=False))) ==
+            [GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 0))),
+             GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0))),
+             GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0)))])
+
+    # print(typicalob)
+    # def typicalob():
+    # return GriddedPerm(Perm((1, 0, 2, 4, 3)),
+    #                    ((0, 0), (0, 0), (1, 0), (1, 1), (1, 1)))
     assert (
         list(sorted(typicalob.place_point((0, 1), DIR_WEST))) ==
         [GriddedPerm(Perm((1, 0, 2, 4, 3)),
@@ -304,9 +339,16 @@ def test_place_point(typicalob):
                      ((2, 0), (2, 0), (3, 0), (3, 3), (3, 1))),
          GriddedPerm(Perm((1, 0, 2, 4, 3)),
                      ((2, 0), (2, 0), (3, 0), (3, 3), (3, 3)))])
-    print((list(sorted(GriddedPerm(Perm((2, 1, 0, 4, 3)),
-                                   ((0, 1), (0, 1), (1, 0), (2, 1), (2, 1))
-                                   ).place_point((2, 1), DIR_SOUTH)))))
+    assert (
+        list(sorted(typicalob.place_point((0, 1), DIR_EAST,
+                                          partial=True, row=False))) ==
+        [GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((0, 0), (0, 0), (3, 0), (3, 1), (3, 1))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((0, 0), (2, 0), (3, 0), (3, 1), (3, 1))),
+         GriddedPerm(Perm((1, 0, 2, 4, 3)),
+                     ((2, 0), (2, 0), (3, 0), (3, 1), (3, 1)))])
+
     assert (list(sorted(GriddedPerm(Perm((2, 1, 0, 4, 3)),
                                     ((0, 1), (0, 1), (1, 0), (2, 1), (2, 1))
                                     ).place_point((2, 1), DIR_SOUTH))) ==
@@ -330,6 +372,18 @@ def test_place_point(typicalob):
                          ((0, 3), (0, 3), (1, 0), (2, 3), (4, 3))),
              GriddedPerm(Perm((2, 1, 0, 4, 3)),
                          ((0, 3), (0, 3), (1, 0), (4, 3), (4, 3)))])
+    assert (list(sorted(GriddedPerm(Perm((2, 1, 0, 4, 3)),
+                                    ((0, 1), (0, 1), (1, 0), (2, 1), (2, 1))
+                                    ).place_point((2, 1), DIR_SOUTH,
+                                                  partial=True, row=True))) ==
+            [GriddedPerm(Perm((2, 1, 0, 4, 3)),
+                         ((0, 1), (0, 1), (1, 0), (2, 3), (2, 2))),
+             GriddedPerm(Perm((2, 1, 0, 4, 3)),
+                         ((0, 1), (0, 1), (1, 0), (2, 3), (2, 3))),
+             GriddedPerm(Perm((2, 1, 0, 4, 3)),
+                         ((0, 3), (0, 1), (1, 0), (2, 3), (2, 3))),
+             GriddedPerm(Perm((2, 1, 0, 4, 3)),
+                         ((0, 3), (0, 3), (1, 0), (2, 3), (2, 3)))])
 
     def minimize(obba):
         obba = sorted(obba)
@@ -347,8 +401,8 @@ def test_place_point(typicalob):
                 res.append(ob)
         return res
 
-    obs = minimize(GriddedPerm.single_cell(
-        Perm((0, 1, 2)), (0, 0)).place_point((0, 0), DIR_NONE))
+    ob = GriddedPerm.single_cell(Perm((0, 1, 2)), (0, 0))
+    obs = minimize(ob.place_point((0, 0), DIR_NONE))
     assert (obs == [GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
                     GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
                     GriddedPerm(Perm((0, 1)), ((2, 2), (2, 2))),
@@ -358,6 +412,24 @@ def test_place_point(typicalob):
                     GriddedPerm(Perm((0, 1, 2)), ((0, 2), (0, 2), (2, 2))),
                     GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
                     GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 2)))])
+    assert (list(sorted(ob.place_point((0, 0), DIR_NONE,
+                                       partial=True, row=True))) ==
+            [GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+             GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 1))),
+             GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 2))),
+             GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 1), (0, 2))),
+             GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 2), (0, 2))),
+             GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 2), (0, 2))),
+             GriddedPerm(Perm((0, 1, 2)), ((0, 2), (0, 2), (0, 2)))])
+    assert (list(sorted(ob.place_point((0, 0), DIR_NONE,
+                                       partial=True, row=False))) ==
+            [GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+             GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
+             GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
+             GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+             GriddedPerm(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0))),
+             GriddedPerm(Perm((0, 1, 2)), ((1, 0), (2, 0), (2, 0))),
+             GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0)))])
 
 
 def test_is_point_perm(typicalob, singlecellob):

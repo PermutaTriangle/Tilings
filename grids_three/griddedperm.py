@@ -323,8 +323,8 @@ class GriddedPerm():
             # New indices of the point.
             point_cell = (cell[0] if row else cell[0] + 1,
                           cell[1] + 1 if row else cell[1])
-            assert row == (direction == DIR_NORTH or direction == DIR_SOUTH or
-                           direction == DIR_NONE)
+            assert (direction == DIR_NONE or (row == (direction == DIR_NORTH or
+                                                      direction == DIR_SOUTH)))
         forced_index = None
         if self.occupies(cell):
             if direction != DIR_NONE:
@@ -374,13 +374,17 @@ class GriddedPerm():
 
         if partial:
             if row:
-                maxdex = mindex + 1
+                maxdex = mindex
             else:
-                maxval = minval + 1
+                maxval = minval
 
+        print()
+        print(res)
         for i in range(mindex, maxdex + 1):
             for j in range(minval, maxval + 1):
                 if partial:
+                    print(i, j)
+                    print(repr(self.partial_stretch_gridding((i, j), row)))
                     res.append(self.partial_stretch_gridding((i, j), row))
                 else:
                     res.append(self.stretch_gridding((i, j)))
