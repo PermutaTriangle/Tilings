@@ -806,16 +806,35 @@ def test_merge(compresstil, finite_tiling, empty_tiling):
     assert empty_tiling.merge() == Tiling((Obstruction(Perm(()), ()),))
 
 
-def test_point_cells():
-    pass
+def test_point_cells(compresstil, finite_tiling, empty_tiling, christian_til,
+                     typical_redundant_obstructions,
+                     typical_redundant_requirements):
+    assert Tiling(typical_redundant_obstructions,
+                  typical_redundant_requirements).point_cells == set([(3, 1)])
+    assert compresstil.point_cells == set()
+    assert finite_tiling.point_cells == set()
+    assert empty_tiling.point_cells == set()
+    tiling = compresstil.add_single_cell_requirement(Perm((0, )), (1, 1))
+    assert tiling.point_cells == set([(1, 1)])
+    tiling = compresstil.add_single_cell_requirement(Perm((0, )), (2, 0))
+    assert tiling.point_cells == set([(1, 0)])
+    assert christian_til.point_cells == set([(1, 0), (2, 1)])
 
 
-def test_positive_cells():
-    pass
+def test_positive_cells(compresstil, empty_tiling, finite_tiling,
+                        christian_til):
+    assert compresstil.positive_cells == set([(0, 0)])
+    assert finite_tiling.positive_cells == set([(0, 0)])
+    assert empty_tiling.positive_cells == set([(0, 0), (0, 1)])
+    assert christian_til.positive_cells == set([(1, 0), (0, 2), (0, 1),
+                                                (2, 0), (2, 1)])
 
 
-def test_dimensions():
-    pass
+def test_dimensions(compresstil, empty_tiling, finite_tiling, christian_til):
+    assert empty_tiling.dimensions == (1, 2)
+    assert finite_tiling.dimensions == (1, 2)
+    assert compresstil.dimensions == (3, 2)
+    assert christian_til.dimensions == (3, 3)
 
 
 def test_find_factors():
