@@ -247,8 +247,31 @@ def test_compression_noreq(typical_redundant_obstructions):
                                        derive_empty=True)
 
 
+def test_from_string():
+    string = "123_231_45321"
+    assert (Tiling.from_string(string) ==
+            Tiling([Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+                    Obstruction(Perm((1, 2, 0)), ((0, 0), (0, 0), (0, 0))),
+                    Obstruction(Perm((3, 4, 2, 1, 0)),
+                                ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0)))]))
+    string = "3201_1032"
+    assert (Tiling.from_string(string) ==
+            Tiling([Obstruction(Perm((3, 2, 0, 1)),
+                                ((0, 0), (0, 0), (0, 0), (0, 0))),
+                    Obstruction(Perm((1, 0, 3, 2)),
+                                ((0, 0), (0, 0), (0, 0), (0, 0)))]))
+    string = "3142"
+    assert (Tiling.from_string(string) ==
+            Tiling([Obstruction(Perm((2, 0, 3, 1)),
+                                ((0, 0), (0, 0), (0, 0), (0, 0)))]))
+
+
 def test_compression(compresstil):
     assert compresstil == Tiling.decompress(compresstil.compress())
+    assert compresstil.compress() == compresstil.compress()
+    assert (compresstil.compress() ==
+            Tiling(compresstil.obstructions,
+                   compresstil.requirements).compress())
 
 
 def test_json(compresstil):
@@ -335,6 +358,14 @@ def test_insert_cell(typical_redundant_obstructions,
     assert tiling1 == Tiling(
         obstructions=typical_redundant_obstructions,
         requirements=requirements + [[Requirement(Perm((0,)), [(2, 1)])]])
+
+
+def test_add_obstruction():
+    pass
+
+
+def test_add_requirement():
+    pass
 
 
 def test_add_single_cell_obstruction(typical_redundant_obstructions,
@@ -508,6 +539,43 @@ def test_cells_in_row_col(typical_redundant_obstructions,
     assert col4 == set()
 
 
+def test_cell_basis(typical_redundant_obstructions,
+                    typical_redundant_requirements):
+    tiling = Tiling(
+        obstructions=[Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)]),
+                      Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 1), (1, 1)]),
+                      Obstruction(Perm((0, 2, 1)), [(0, 0), (1, 1), (1, 0)]),
+                      Obstruction(Perm((0, 2, 1)), [(1, 1), (1, 1), (1, 1)]),
+                      Obstruction(Perm((1, 0)), [(1, 0), (1, 0)]),
+                      Obstruction(Perm((2, 0, 1)), [(0, 1), (0, 1), (0, 1)])])
+    bdict = tiling.cell_basis()
+    assert len(bdict) == 4
+    basis = bdict[(0, 0)]
+    assert len(basis[1]) == 0
+    assert set(basis[0]) == {Perm((0, 2, 1))}
+    basis = bdict[(0, 1)]
+    assert len(basis[1]) == 0
+    assert set(basis[0]) == {Perm((2, 0, 1))}
+    basis = bdict[(1, 0)]
+    assert len(basis[1]) == 0
+    assert set(basis[0]) == {Perm((1, 0))}
+    basis = bdict[(1, 1)]
+    assert len(basis[1]) == 0
+    assert set(basis[0]) == {Perm((0, 2, 1))}
+    basis = bdict[(3, 3)]
+    assert len(basis) == 2
+    assert basis[0] == []
+    assert basis[1] == []
+
+
+def test_cell_graph():
+    pass
+
+
+def test_sort_requirements():
+    pass
+
+
 def test_gridded_perms():
     tiling = Tiling()
     assert len(list(tiling.gridded_perms())) == 1
@@ -609,35 +677,6 @@ def test_gridded_perms():
         GriddedPerm(Perm((1, 0)), [(1, 0), (1, 0)])]
 
 
-def test_cell_basis(typical_redundant_obstructions,
-                    typical_redundant_requirements):
-    tiling = Tiling(
-        obstructions=[Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)]),
-                      Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 1), (1, 1)]),
-                      Obstruction(Perm((0, 2, 1)), [(0, 0), (1, 1), (1, 0)]),
-                      Obstruction(Perm((0, 2, 1)), [(1, 1), (1, 1), (1, 1)]),
-                      Obstruction(Perm((1, 0)), [(1, 0), (1, 0)]),
-                      Obstruction(Perm((2, 0, 1)), [(0, 1), (0, 1), (0, 1)])])
-    bdict = tiling.cell_basis()
-    assert len(bdict) == 4
-    basis = bdict[(0, 0)]
-    assert len(basis[1]) == 0
-    assert set(basis[0]) == {Perm((0, 2, 1))}
-    basis = bdict[(0, 1)]
-    assert len(basis[1]) == 0
-    assert set(basis[0]) == {Perm((2, 0, 1))}
-    basis = bdict[(1, 0)]
-    assert len(basis[1]) == 0
-    assert set(basis[0]) == {Perm((1, 0))}
-    basis = bdict[(1, 1)]
-    assert len(basis[1]) == 0
-    assert set(basis[0]) == {Perm((0, 2, 1))}
-    basis = bdict[(3, 3)]
-    assert len(basis) == 2
-    assert basis[0] == []
-    assert basis[1] == []
-
-
 @pytest.fixture
 def christian_til():
     return Tiling(
@@ -713,3 +752,35 @@ def test_symmetries(christian_til):
 
     assert christian_til.rotate180().reverse() == christian_til.complement()
     assert christian_til.rotate90().reverse() == christian_til.antidiagonal()
+
+
+def test_is_empty():
+    pass
+
+
+def test_is_finite():
+    pass
+
+
+def test_merge():
+    pass
+
+
+def test_point_cells():
+    pass
+
+
+def test_positive_cells():
+    pass
+
+
+def test_dimensions():
+    pass
+
+
+def test_find_factors():
+    pass
+
+
+def test_get_genf():
+    pass

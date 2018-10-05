@@ -922,7 +922,8 @@ class Tiling(CombinatorialClass):
         # Create tiling lines
         for j in range(2*dim_j + 1):
             for i in range(2*dim_i + 1):
-                # Whether or not a vertical line and a horizontal line is present
+                # Whether or not a vertical line and a horizontal line is
+                # present
                 vertical = i % 2 == 0
                 horizontal = j % 2 == 0
                 if vertical:
@@ -980,8 +981,8 @@ class Tiling(CombinatorialClass):
 
                 result.append("Av{}({})".format("+" if positive else "",
                                                 ", ".join("".join(str(i + 1)
-                                                                for i in p)
-                                                        for p in basis)))
+                                                                  for i in p)
+                                                          for p in basis)))
             result.append("\n")
 
         def gp_string(gp):
