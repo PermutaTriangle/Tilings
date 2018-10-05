@@ -144,7 +144,7 @@ class Tiling(CombinatorialClass):
         of self. Every obstruction in the new list will have any isolated
         points in positive cells removed."""
         clean_ones = sorted((self._clean_isolated(co)
-                            for co in self._obstructions), key=len)
+                             for co in self._obstructions), key=len)
         cleanobs = list()
         for cleanob in clean_ones:
             add = True
@@ -197,37 +197,6 @@ class Tiling(CombinatorialClass):
         return (obstructions,
                 tuple(reqs for i, reqs in enumerate(cleanreqs)
                       if i not in ind_to_remove))
-
-    def to_old_tiling(self):
-        import grids
-        basi = defaultdict(list)
-        for ob in self._obstructions:
-            cell = ob.is_single_cell()
-            if cell is not None and len(ob) > 1:
-                basi[cell].append(ob.patt)
-        blocks = dict()
-        for cell in self.point_cells:
-            blocks[cell] = grids.Block.point
-        for cell in self.possibly_empty:
-            if cell not in basi:
-                blocks[cell] = PermSet.avoiding(())
-        for cell in self.positive_cells:
-            if cell not in basi:
-                blocks[cell] = grids.PositiveClass(PermSet.avoiding(()))
-        for (cell, basis) in basi.items():
-            if cell in self.positive_cells:
-                blocks[cell] = grids.PositiveClass(PermSet.avoiding(basis))
-            else:
-                blocks[cell] = PermSet.avoiding(basis)
-        return grids.Tiling(blocks)
-
-    def pretty_print(self):
-        print(self.to_old_tiling())
-        for ob in self.obstructions:
-            if not ob.is_single_cell():
-                print(repr(ob))
-        for req in self.requirements:
-            print(req)
 
     # Compression
 
@@ -948,8 +917,82 @@ class Tiling(CombinatorialClass):
         return format_string.format(self.obstructions, self.requirements)
 
     def __str__(self):
-        return "\n".join([
-            "Obstructions: " + ", ".join(list(map(repr, self._obstructions))),
-            "Requirements: [[" + "], [".join(
-                list(map(lambda x: ", ".join(list(map(repr, x))),
-                         self._requirements))) + "]]"])
+        dim_i, dim_j = self.dimensions
+        result = []
+        # Create tiling lines
+        for j in range(2*dim_j + 1):
+            for i in range(2*dim_i + 1):
+                # Whether or not a vertical line and a horizontal line is present
+                vertical = i % 2 == 0
+                horizontal = j % 2 == 0
+                if vertical:
+                    if horizontal:
+                        result.append("+")
+                    else:
+                        result.append("|")
+                elif horizontal:
+                    result.append("-")
+                else:
+                    result.append(" ")
+            result.append("\n")
+
+        labels = dict()
+
+        # Put the sets in the tiles
+
+        # How many characters are in a row in the grid
+        row_width = 2*dim_i + 2
+        for cell, gridded_perms in sorted(self.cell_basis().items()):
+            obstructions, _ = gridded_perms
+            basis = list(sorted(obstructions))
+            if basis == [Perm((0, ))]:
+                continue
+            # the block, is the basis and whether or not positive
+            block = (tuple(basis), cell in self.positive_cells)
+            label = labels.get(block)
+            if label is None:
+                if basis == [Perm((0, 1)), Perm((1, 0))]:
+                    if cell in self.positive_cells:
+                        label = '\u25cf'
+                    else:
+                        label = '\u25cb'
+                elif basis == [Perm((0, 1))]:
+                    label = '\\'
+                elif basis == [Perm((1, 0))]:
+                    label = '/'
+                else:
+                    label = str(len(labels) + 1)
+                labels[block] = label
+            row_index_from_top = dim_j - cell[1] - 1
+            index = (2*row_index_from_top + 1)*row_width + 2*cell[0] + 1
+            result[index] = label
+
+        # Legend at bottom
+        for block, label in sorted(labels.items()):
+            basis, positive = block
+            result.append(label)
+            result.append(": ")
+            if basis == (Perm((0, 1)), Perm((1, 0))) and positive:
+                result.append("point")
+            else:
+
+                result.append("Av{}({})".format("+" if positive else "",
+                                                ", ".join("".join(str(i + 1)
+                                                                for i in p)
+                                                        for p in basis)))
+            result.append("\n")
+
+        def gp_string(gp):
+            return "{}: {}\n".format("".join(str(i + 1) for i in gp.patt),
+                                     ", ".join(str(x) for x in gp.pos))
+
+        result.append("Crossing obstructions:\n")
+        for ob in self.obstructions:
+            if not ob.is_single_cell():
+                result.append(gp_string(ob))
+        for i, req in enumerate(self.requirements):
+            result.append("Requirement {}:\n".format(str(i)))
+            for r in req:
+                result.append(gp_string(r))
+
+        return "".join(result)
