@@ -315,10 +315,6 @@ def test_place_point(typicalob):
              GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0))),
              GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0)))])
 
-    # print(typicalob)
-    # def typicalob():
-    # return GriddedPerm(Perm((1, 0, 2, 4, 3)),
-    #                    ((0, 0), (0, 0), (1, 0), (1, 1), (1, 1)))
     assert (
         list(sorted(typicalob.place_point((0, 1), DIR_WEST))) ==
         [GriddedPerm(Perm((1, 0, 2, 4, 3)),

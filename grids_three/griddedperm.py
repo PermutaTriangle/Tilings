@@ -378,13 +378,9 @@ class GriddedPerm():
             else:
                 maxval = minval
 
-        print()
-        print(res)
         for i in range(mindex, maxdex + 1):
             for j in range(minval, maxval + 1):
                 if partial:
-                    print(i, j)
-                    print(repr(self.partial_stretch_gridding((i, j), row)))
                     res.append(self.partial_stretch_gridding((i, j), row))
                 else:
                     res.append(self.stretch_gridding((i, j)))

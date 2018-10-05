@@ -48,8 +48,6 @@ def test_partial_place_forced_point(simple_req):
     ]
 
     reqs, obs = simple_req.partial_place_forced_point(1, DIR_NORTH)
-    for ob in obs:
-        print(repr(ob))
     assert reqs == [Requirement(Perm((0, 2, 1)), ((0, 1), (1, 2), (1, 1)))]
     assert sorted(obs) == [
         Obstruction(Perm((0, 2, 1)), ((0, 1), (1, 3), (1, 1))),
