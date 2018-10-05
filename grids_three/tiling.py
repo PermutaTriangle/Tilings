@@ -978,7 +978,6 @@ class Tiling(CombinatorialClass):
             if basis == (Perm((0, 1)), Perm((1, 0))) and positive:
                 result.append("point")
             else:
-
                 result.append("Av{}({})".format("+" if positive else "",
                                                 ", ".join("".join(str(i + 1)
                                                                   for i in p)

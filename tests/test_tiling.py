@@ -11,40 +11,62 @@ from permuta import Perm
 def compresstil():
     """Returns a tiling that has both obstructions and requirements. For
     testing compression and json."""
-    return Tiling(
-        obstructions=[
-            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-            Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
-            Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
-            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-            Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
-            Obstruction(Perm((0, 1)), ((3, 1), (3, 1))),
-            Obstruction(Perm((1, 0)), ((3, 0), (3, 0))),
-            Obstruction(Perm((1, 0)), ((3, 1), (3, 0))),
-            Obstruction(Perm((1, 0)), ((3, 1), (3, 1))),
-            Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
-            Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 1))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (3, 0))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (2, 0), (2, 0))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (2, 0), (3, 0))),
-            Obstruction(Perm((2, 1, 0)), ((2, 0), (2, 0), (2, 0))),
-            Obstruction(Perm((2, 1, 0)), ((2, 0), (2, 0), (3, 0)))
-        ],
-        requirements=[
-            [Requirement(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 2))),
-             Requirement(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 3))),
-             Requirement(Perm((1, 0, 2)), ((0, 0), (1, 0), (2, 2))),
-             Requirement(Perm((1, 0, 2)), ((0, 1), (1, 0), (2, 2)))],
-            [Requirement(Perm((0, 1, 2)), ((2, 2), (2, 2), (2, 2))),
-             Requirement(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
-             Requirement(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0)))],
-            [Requirement(Perm((0, 1)), ((1, 0), (3, 0))),
-             Requirement(Perm((0, 1)), ((2, 0), (2, 0))),
-             Requirement(Perm((0, 1)), ((2, 0), (3, 0)))],
-            [Requirement(Perm((1, 0)), ((3, 1), (3, 0))),
-             Requirement(Perm((1, 0)), ((3, 1), (3, 1)))]])
+    return Tiling(obstructions=(
+                    Obstruction(Perm((0,)), ((1, 0),)),
+                    Obstruction(Perm((0,)), ((2, 1),)),
+                    Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
+                    Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
+                    Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
+                    Obstruction(Perm((1, 0)), ((1, 1), (2, 0))),
+                    Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
+                    Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 1))),
+                    Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
+                    Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 1), (0, 1))),
+                    Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 1), (1, 1))),
+                    Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
+                    Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (2, 0))),
+                    Obstruction(Perm((1, 0, 2)), ((0, 1), (0, 0), (1, 1))),
+                    Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
+                    Obstruction(Perm((0, 1, 3, 2)),
+                                ((0, 1), (0, 1), (0, 1), (0, 1))),
+                    Obstruction(Perm((0, 1, 3, 2)),
+                                ((0, 1), (0, 1), (0, 1), (1, 1))),
+                    Obstruction(Perm((0, 2, 1, 3)),
+                                ((0, 1), (0, 1), (0, 1), (0, 1))),
+                    Obstruction(Perm((0, 2, 1, 3)),
+                                ((0, 1), (0, 1), (0, 1), (1, 1))),
+                    Obstruction(Perm((0, 2, 3, 1)),
+                                ((0, 1), (0, 1), (0, 1), (0, 1))),
+                    Obstruction(Perm((0, 2, 3, 1)),
+                                ((0, 1), (0, 1), (0, 1), (1, 1))),
+                    Obstruction(Perm((2, 0, 1, 3)),
+                                ((0, 1), (0, 1), (0, 1), (0, 1))),
+                    Obstruction(Perm((2, 0, 1, 3)),
+                                ((0, 1), (0, 1), (0, 1), (1, 1)))),
+                  requirements=(
+                    (Requirement(Perm((0,)), ((1, 1),)),
+                     Requirement(Perm((0,)), ((2, 0),))),
+                    (Requirement(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),)))
+
+
+@pytest.fixture
+def empty_tiling():
+    return Tiling(obstructions=(Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+                                Obstruction(Perm((1, 0)), ((0, 1), (0, 0)))),
+                  requirements=((Requirement(Perm((0,)), ((0, 0),)),),
+                                (Requirement(Perm((0,)), ((0, 1),)),)))
+
+
+@pytest.fixture
+def finite_tiling():
+    return Tiling(obstructions=(
+                        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+                        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+                        Obstruction(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
+                        Obstruction(Perm((2, 1, 0)), ((0, 1), (0, 1), (0, 1))),
+                        Obstruction(Perm((3, 2, 1, 0)),
+                                    ((0, 1), (0, 1), (0, 0), (0, 0)))),
+                  requirements=((Requirement(Perm((0,)), ((0, 0),)),),))
 
 
 @pytest.fixture
@@ -754,16 +776,34 @@ def test_symmetries(christian_til):
     assert christian_til.rotate90().reverse() == christian_til.antidiagonal()
 
 
-def test_is_empty():
-    pass
+def test_is_empty(compresstil, empty_tiling, finite_tiling):
+    assert not compresstil.is_empty()
+    assert not finite_tiling.is_empty()
+    assert empty_tiling.is_empty()
 
 
-def test_is_finite():
-    pass
+def test_is_finite(compresstil, empty_tiling, finite_tiling):
+    assert not compresstil.is_finite()
+    assert finite_tiling.is_finite()
 
 
-def test_merge():
-    pass
+def test_merge(compresstil, finite_tiling, empty_tiling):
+    assert finite_tiling.merge() == finite_tiling
+    print(compresstil.merge().requirements)
+    assert (compresstil.merge() ==
+            Tiling(obstructions=compresstil.obstructions,
+                   requirements=(
+                       (Requirement(Perm((1, 0, 2, 3)),
+                                    ((0, 0), (0, 0), (0, 0), (1, 1))),
+                        Requirement(Perm((1, 0, 2, 3)),
+                                    ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        Requirement(Perm((1, 0, 3, 2)),
+                                    ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        Requirement(Perm((2, 0, 3, 1)),
+                                    ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        Requirement(Perm((2, 1, 3, 0)),
+                                    ((0, 0), (0, 0), (0, 0), (2, 0)))),)))
+    assert empty_tiling.merge() == Tiling((Obstruction(Perm(()), ()),))
 
 
 def test_point_cells():
