@@ -70,6 +70,45 @@ def finite_tiling():
 
 
 @pytest.fixture
+def factorable_tiling():
+    return Tiling(obstructions=(
+                        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+                        Obstruction(Perm((0, 1)), ((0, 4), (0, 4))),
+                        Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
+                        Obstruction(Perm((0, 1)), ((4, 2), (4, 2))),
+                        Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
+                        Obstruction(Perm((1, 0)), ((3, 0), (3, 0))),
+                        Obstruction(Perm((1, 0)), ((4, 2), (4, 2))),
+                        Obstruction(Perm((0, 1, 2)), ((0, 0), (2, 3), (2, 3))),
+                        Obstruction(Perm((0, 1, 2)), ((0, 0), (3, 0), (3, 0))),
+                        Obstruction(Perm((0, 1, 2)), ((2, 3), (2, 3), (2, 3))),
+                        Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
+                        Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 4))),
+                        Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 3))),
+                        Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (3, 0))),
+                        Obstruction(Perm((1, 2, 0)), ((2, 3), (2, 3), (3, 0))),
+                        Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (3, 0))),
+                        Obstruction(Perm((2, 0, 1)), ((0, 0), (3, 0), (3, 0))),
+                        Obstruction(Perm((2, 0, 1)), ((2, 3), (3, 0), (3, 0))),
+                        Obstruction(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
+                        Obstruction(Perm((2, 1, 0)), ((0, 0), (0, 0), (3, 0))),
+                        Obstruction(Perm((1, 0, 3, 2)),
+                                    ((2, 3), (2, 3), (2, 3), (2, 3))),
+                        Obstruction(Perm((2, 0, 3, 1)),
+                                    ((2, 3), (2, 3), (2, 3), (2, 3))),
+                        Obstruction(Perm((2, 1, 0, 3)),
+                                    ((2, 3), (2, 3), (2, 3), (2, 3))),
+                        Obstruction(Perm((2, 3, 0, 1)),
+                                    ((2, 3), (2, 3), (2, 3), (2, 3)))),
+                  requirements=((Requirement(Perm((0,)), ((0, 0),)),
+                                 Requirement(Perm((0,)), ((3, 0),))),
+                                (Requirement(Perm((0,)), ((0, 4),)),
+                                 Requirement(Perm((0,)), ((2, 3),))),
+                                (Requirement(Perm((0,)), ((1, 1),)),),
+                                (Requirement(Perm((0,)), ((4, 2),)),)))
+
+
+@pytest.fixture
 def typical_redundant_obstructions():
     """Returns a very typical list of obstructions clustered together in a
     corner of a tiling.  """
@@ -837,9 +876,47 @@ def test_dimensions(compresstil, empty_tiling, finite_tiling, christian_til):
     assert christian_til.dimensions == (3, 3)
 
 
-def test_find_factors():
-    pass
+def test_find_factors(compresstil, factorable_tiling):
+    factors = compresstil.find_factors()
+    assert len(factors) == 1
+    assert factors[0] == compresstil
 
-
-def test_get_genf():
-    pass
+    factors = factorable_tiling.find_factors()
+    actual_factors = [
+        Tiling(obstructions=(
+                        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+                        Obstruction(Perm((0, 1)), ((0, 4), (0, 4))),
+                        Obstruction(Perm((1, 0)), ((3, 0), (3, 0))),
+                        Obstruction(Perm((0, 1, 2)), ((0, 0), (2, 3), (2, 3))),
+                        Obstruction(Perm((0, 1, 2)), ((0, 0), (3, 0), (3, 0))),
+                        Obstruction(Perm((0, 1, 2)), ((2, 3), (2, 3), (2, 3))),
+                        Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
+                        Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 4))),
+                        Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 3))),
+                        Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (3, 0))),
+                        Obstruction(Perm((1, 2, 0)), ((2, 3), (2, 3), (3, 0))),
+                        Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (3, 0))),
+                        Obstruction(Perm((2, 0, 1)), ((0, 0), (3, 0), (3, 0))),
+                        Obstruction(Perm((2, 0, 1)), ((2, 3), (3, 0), (3, 0))),
+                        Obstruction(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
+                        Obstruction(Perm((2, 1, 0)), ((0, 0), (0, 0), (3, 0))),
+                        Obstruction(Perm((1, 0, 3, 2)),
+                                    ((2, 3), (2, 3), (2, 3), (2, 3))),
+                        Obstruction(Perm((2, 0, 3, 1)),
+                                    ((2, 3), (2, 3), (2, 3), (2, 3))),
+                        Obstruction(Perm((2, 1, 0, 3)),
+                                    ((2, 3), (2, 3), (2, 3), (2, 3))),
+                        Obstruction(Perm((2, 3, 0, 1)),
+                                    ((2, 3), (2, 3), (2, 3), (2, 3)))),
+               requirements=((Requirement(Perm((0,)), ((0, 0),)),
+                              Requirement(Perm((0,)), ((3, 0),))),
+                             (Requirement(Perm((0,)), ((0, 4),)),
+                              Requirement(Perm((0,)), ((2, 3),))))),
+        Tiling(obstructions=(Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
+                             Obstruction(Perm((1, 0)), ((1, 1), (1, 1)))),
+               requirements=((Requirement(Perm((0,)), ((1, 1),)),),)),
+        Tiling(obstructions=(Obstruction(Perm((0, 1)), ((4, 2), (4, 2))),
+                             Obstruction(Perm((1, 0)), ((4, 2), (4, 2)))),
+               requirements=((Requirement(Perm((0,)), ((4, 2),)),),))]
+    assert len(factors) == len(actual_factors)
+    assert all(f in factors for f in actual_factors)
