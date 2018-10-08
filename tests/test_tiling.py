@@ -149,7 +149,16 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
     """
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=False, derive_empty=False)
+        remove_empty=False, derive_empty=False, minimize=False)
+    assert len(tiling._obstructions) == 20
+    assert len(tiling._requirements) == 0
+    (i, j) = tiling.dimensions
+    assert i == 4
+    assert j == 2
+
+    tiling = Tiling(
+        obstructions=typical_redundant_obstructions,
+        remove_empty=False, derive_empty=False, minimize=True)
     assert len(tiling._obstructions) == 18
     assert len(tiling._requirements) == 0
     (i, j) = tiling.dimensions
@@ -158,7 +167,20 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=False, derive_empty=True)
+        remove_empty=False, derive_empty=True, minimize=False)
+
+    assert len(tiling._obstructions) == 22
+    assert len(tiling._requirements) == 0
+    (i, j) = tiling.dimensions
+    assert i == 4
+    assert j == 2
+    assert tiling.empty_cells == {(0, 0), (0, 1)}
+    assert tiling.active_cells == {(1, 0), (1, 1), (2, 0),
+                                   (2, 1), (3, 0), (3, 1)}
+
+    tiling = Tiling(
+        obstructions=typical_redundant_obstructions,
+        remove_empty=False, derive_empty=True, minimize=True)
 
     assert len(tiling._obstructions) == 22
     assert len(tiling._requirements) == 0
@@ -170,7 +192,20 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=True, derive_empty=True)
+        remove_empty=True, derive_empty=True, minimize=False)
+
+    (i, j) = tiling.dimensions
+    assert i == 3
+    assert j == 2
+    assert tiling.empty_cells == set()
+    assert tiling.active_cells == {(0, 0), (0, 1), (1, 0),
+                                   (1, 1), (2, 0), (2, 1)}
+    assert len(tiling._obstructions) == 20
+    assert len(tiling._requirements) == 0
+
+    tiling = Tiling(
+        obstructions=typical_redundant_obstructions,
+        remove_empty=True, derive_empty=True, minimize=True)
 
     (i, j) = tiling.dimensions
     assert i == 3
@@ -201,7 +236,7 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
             Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
             Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
         ],
-        remove_empty=True, derive_empty=True)
+        remove_empty=True, derive_empty=True, minimize=True)
 
     assert tiling == tiling2
 
