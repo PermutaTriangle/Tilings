@@ -1,4 +1,5 @@
 import json
+import time
 from itertools import chain, combinations
 
 from permuta import Perm
@@ -6,7 +7,10 @@ from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST
 from permuta.misc import UnionFind
 
 
+
 class GriddedPerm():
+    containtime = 0
+
     # TODO: Intersection of griddedperms
     def __init__(self, pattern, positions):
         # TODO: Write check to verify gridded permutation makes sense, that is,
@@ -656,7 +660,7 @@ class GriddedPerm():
     def from_dict(cls, jsondict):
         """Returns a GriddedPerm object from a dictionary loaded from a JSON
         serialized GriddedPerm object."""
-        return cls(Perm(jsondict['patt'],safe=True), map(tuple, jsondict['pos']))
+        return cls(Perm(jsondict['patt']), map(tuple, jsondict['pos']))
 
     @property
     def patt(self):
@@ -674,8 +678,8 @@ class GriddedPerm():
                                    self._patt, self._pos)
 
     def __str__(self):
-        return "<{} with {}>".format(self.__class__.__name__,
-                                     str(self._patt))
+        return "<{} with {} at {}>".format(self.__class__.__name__,
+                                     str(self._patt), str(self._pos))
 
     def __hash__(self):
         return hash(self._patt) ^ hash(self._pos)
@@ -689,9 +693,12 @@ class GriddedPerm():
         return (self._patt, self._pos) < (other.patt, other.pos)
 
     def __contains__(self, other):
+        tt = time.time()
         try:
             next(other.occurrences_in(self))
+            GriddedPerm.containtime += time.time()-tt
             return True
         except StopIteration:
+            GriddedPerm.containtime += time.time()-tt
             return False
             

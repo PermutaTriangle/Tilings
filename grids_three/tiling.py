@@ -34,10 +34,20 @@ class Tiling(CombinatorialClass):
     cells and the active cells.
     """
 
-    minimize_time = 0
+    minimize_time_1 = 0
+    minimize_time_2 = 0
+    minimize_time_obs = 0
+    minimize_time_reqs = 0
+    clean_sort_time = 0
+    clean_time = 0
     sort_time = 0
     cast_time = 0
     other_time = 0
+    wtf_time = 0
+    num_total = 0
+    num_breaks = 0
+
+    gp = GriddedPerm
 
     def __init__(self, obstructions=tuple(), requirements=tuple(),
                  remove_empty=True,
@@ -56,7 +66,7 @@ class Tiling(CombinatorialClass):
         tt = time.time()
         if minimize:
             self._minimize_griddedperms()
-        Tiling.minimize_time += time.time()-tt
+        Tiling.minimize_time_1 += time.time()-tt
 
         if not any(ob.is_empty() for ob in self.obstructions):
             # If assuming the non-active cells are empty, then add
@@ -69,7 +79,7 @@ class Tiling(CombinatorialClass):
             tt2 = time.time()
             if remove_empty:
                 self._minimize_tiling()
-                Tiling.minimize_time += time.time() - tt2
+                Tiling.minimize_time_2 += time.time() - tt2
             Tiling.other_time += tt2 - tt
 
         tt = time.time()
@@ -101,9 +111,13 @@ class Tiling(CombinatorialClass):
         """
         while True:
             # Minimize the set of obstructions
+            tt = time.time()
             minimized_obs = self._minimal_obs()
+            Tiling.minimize_time_obs += time.time()-tt
             # Minimize the set of requiriments
+            tt = time.time()
             minimized_obs, minimized_reqs = self._minimal_reqs(minimized_obs)
+            Tiling.minimize_time_reqs += time.time()-tt
             if (self._obstructions == minimized_obs and
                     self._requirements == minimized_reqs):
                 break
@@ -122,9 +136,9 @@ class Tiling(CombinatorialClass):
         cell_map = partial(map_cell, col_mapping, row_mapping)
 
         # For tracking regions.
-        self.forward_map = {(k_x, k_y): (v_x, v_y)
-                            for k_x, v_x in col_mapping.items()
-                            for k_y, v_y in row_mapping.items()}
+        # self.forward_map = {(k_x, k_y): (v_x, v_y)
+                            # for k/_x, v_x in col_mapping.items()
+                            # for k_y, v_y in row_mapping.items()}
 
         new_obs = []
         for ob in self._obstructions:
@@ -166,15 +180,25 @@ class Tiling(CombinatorialClass):
         of self. Every obstruction in the new list will have any isolated
         points in positive cells removed."""
         cleanobs = list()
-        for ob in sorted(self._obstructions, key=len):
-            cleanob = self._clean_isolated(ob)
+
+        tt = time.time()
+        clean_ones = sorted((self._clean_isolated(co) for co in self._obstructions), key=len)
+        Tiling.clean_sort_time += time.time()-tt
+
+        for cleanob in clean_ones:
+            Tiling.num_total += 1
             add = True
             for co in cleanobs:
-                if co in cleanob:
+                tt = time.time()
+                isit = co in cleanob
+                Tiling.wtf_time += time.time()-tt    
+                if isit:
                     add = False
+                    Tiling.num_breaks += 1
                     break
             if add:
                 cleanobs.append(cleanob)
+            
         return tuple(cleanobs)
 
     def _minimal_reqs(self, obstructions):
