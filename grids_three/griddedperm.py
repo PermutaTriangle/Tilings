@@ -656,7 +656,7 @@ class GriddedPerm():
     def from_dict(cls, jsondict):
         """Returns a GriddedPerm object from a dictionary loaded from a JSON
         serialized GriddedPerm object."""
-        return cls(Perm(jsondict['patt'],safe=True), map(tuple, jsondict['pos']))
+        return cls(Perm(jsondict['patt']), map(tuple, jsondict['pos']))
 
     @property
     def patt(self):
