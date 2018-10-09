@@ -438,12 +438,70 @@ def test_insert_cell(typical_redundant_obstructions,
         requirements=requirements + [[Requirement(Perm((0,)), [(2, 1)])]])
 
 
-def test_add_obstruction():
-    pass
+def test_add_obstruction(compresstil):
+    assert (compresstil.add_obstruction(Perm((0, 1)), ((0, 0), (0, 1))) ==
+            Tiling(obstructions=(
+                    Obstruction(Perm((0,)), ((1, 0),)),
+                    Obstruction(Perm((0,)), ((2, 1),)),
+                    Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+                    Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
+                    Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
+                    Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
+                    Obstruction(Perm((1, 0)), ((1, 1), (2, 0))),
+                    Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
+                    Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
+                    Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
+                    Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (2, 0))),
+                    Obstruction(Perm((1, 0, 2)), ((0, 1), (0, 0), (1, 1))),
+                    Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
+                    Obstruction(Perm((0, 1, 3, 2)),
+                                ((0, 1), (0, 1), (0, 1), (0, 1))),
+                    Obstruction(Perm((0, 1, 3, 2)),
+                                ((0, 1), (0, 1), (0, 1), (1, 1))),
+                    Obstruction(Perm((0, 2, 1, 3)),
+                                ((0, 1), (0, 1), (0, 1), (0, 1))),
+                    Obstruction(Perm((0, 2, 1, 3)),
+                                ((0, 1), (0, 1), (0, 1), (1, 1))),
+                    Obstruction(Perm((0, 2, 3, 1)),
+                                ((0, 1), (0, 1), (0, 1), (0, 1))),
+                    Obstruction(Perm((0, 2, 3, 1)),
+                                ((0, 1), (0, 1), (0, 1), (1, 1))),
+                    Obstruction(Perm((2, 0, 1, 3)),
+                                ((0, 1), (0, 1), (0, 1), (0, 1))),
+                    Obstruction(Perm((2, 0, 1, 3)),
+                                ((0, 1), (0, 1), (0, 1), (1, 1)))),
+                   requirements=(
+                (Requirement(Perm((0,)), ((1, 1),)),
+                    Requirement(Perm((0,)), ((2, 0),))),
+                (Requirement(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),))))
+    assert (compresstil.add_obstruction(Perm((1, 0, 2)),
+                                        ((0, 1), (0, 0), (1, 1))) ==
+            compresstil)
 
 
-def test_add_requirement():
-    pass
+def test_add_requirement(compresstil, factorable_tiling):
+    assert (compresstil.add_requirement(Perm((1, 0)), ((1, 1), (2, 0))) ==
+            Tiling(obstructions=(Obstruction(Perm(), ()),)))
+    assert (factorable_tiling.add_requirement(Perm((0, 1)),
+                                              ((0, 0), (5, 3))) ==
+            Tiling(obstructions=[
+                        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+                        Obstruction(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
+                        Obstruction(Perm((2, 1, 0)), ((2, 2), (2, 2), (2, 2))),
+                        Obstruction(Perm((2, 0, 1)), ((2, 3), (2, 3), (2, 3))),
+                        Obstruction(Perm((1, 0, 2)), ((5, 4), (5, 4), (5, 4))),
+                        Obstruction(Perm((2, 0, 1)), ((5, 4), (5, 4), (5, 4))),
+                        Obstruction(Perm((1, 2, 0)), ((4, 6), (4, 6), (4, 6))),
+                        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 2))),
+                        Obstruction(Perm((0, 2, 1, 3)),
+                                    ((2, 2), (2, 2), (2, 3), (2, 3))),
+                        Obstruction(Perm((0, 1)), ((6, 4), (6, 4))),
+                        Obstruction(Perm((1, 0)), ((6, 4), (6, 4))),
+                        Obstruction(Perm((0, 1)), ((7, 7), (7, 7)))],
+                   requirements=[[Requirement(Perm((0, 1)), ((0, 0), (6, 4)))],
+                                 [Requirement(Perm((0, 1)), ((0, 0), (0, 0))),
+                                  Requirement(Perm((1, 0)), ((4, 6), (4, 6)))],
+                                 [Requirement(Perm((0,)), ((6, 4),))]]))
 
 
 def test_add_single_cell_obstruction(typical_redundant_obstructions,
@@ -646,12 +704,36 @@ def test_cell_basis(typical_redundant_obstructions,
     assert basis[1] == []
 
 
-def test_cell_graph():
-    pass
+def test_cell_graph(factorable_tiling, compresstil,
+                    typical_redundant_obstructions):
+    cell_graph = factorable_tiling.cell_graph()
+    assert (list(sorted(cell_graph)) ==
+            [((0, 0), (1, 0)), ((2, 1), (2, 2)), ((4, 3), (5, 3))])
+    cell_graph = compresstil.cell_graph()
+    assert (list(sorted(cell_graph)) ==
+            [((0, 0), (0, 1)), ((0, 0), (2, 0)), ((0, 1), (1, 1))])
+    tiling = Tiling(typical_redundant_obstructions)
+    cell_graph = tiling.cell_graph()
+    assert (list(sorted(cell_graph)) ==
+            [((0, 0), (1, 0)), ((1, 0), (2, 0)), ((2, 0), (2, 1))])
 
 
-def test_sort_requirements():
-    pass
+def test_sort_requirements(typical_redundant_requirements):
+    assert (Tiling.sort_requirements(typical_redundant_requirements) ==
+            ((Requirement(Perm((0, 1)), ((1, 0), (3, 0))),
+              Requirement(Perm((0, 1)), ((2, 0), (2, 0))),
+              Requirement(Perm((0, 1)), ((2, 0), (3, 0))),
+              Requirement(Perm((0, 1)), ((2, 0), (3, 1)))),
+             (Requirement(Perm((1, 0)), ((3, 1), (3, 0))),
+              Requirement(Perm((1, 0)), ((3, 1), (3, 1))),
+              Requirement(Perm((1, 0)), ((3, 3), (3, 1)))),
+             (Requirement(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 3))),
+              Requirement(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 4))),
+              Requirement(Perm((1, 0, 2)), ((0, 0), (1, 0), (2, 3))),
+              Requirement(Perm((1, 0, 2)), ((0, 1), (1, 0), (2, 3)))),
+             (Requirement(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
+              Requirement(Perm((0, 1, 2)), ((2, 3), (2, 3), (2, 3))),
+              Requirement(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))))))
 
 
 def test_gridded_perms():
