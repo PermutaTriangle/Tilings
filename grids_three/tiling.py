@@ -34,12 +34,19 @@ class Tiling(CombinatorialClass):
 
     def __init__(self, obstructions=list(), requirements=list(),
                  remove_empty=True, derive_empty=True, minimize=True,
-                 sort=True):
+                 sorted_input=False):
+        if sorted_input:
+            # Set of obstructions
+            self._obstructions = tuple(obstructions)
+            # Set of requirement lists
+            self._requirements = tuple(tuple(r) for r in requirements)
+        else:
+            # Sorted set of obstructions
+            self._obstructions = tuple(sorted(obstructions))
+            # Sorted set of requirement lists
+            self._requirements = Tiling.sort_requirements(
+                                                    r for r in requirements)
 
-        # Set of obstructions
-        self._obstructions = tuple(obstructions)
-        # Set of requirement lists
-        self._requirements = tuple(tuple(r) for r in requirements)
 
         # Minimize the set of obstructions and the set of requirement lists
         if minimize:
@@ -54,12 +61,6 @@ class Tiling(CombinatorialClass):
             # Remove empty rows and empty columns
             if remove_empty:
                 self._minimize_tiling()
-
-        if sort:
-            # Set of obstructions
-            self._obstructions = tuple(sorted(self._obstructions))
-            # Set of requirement lists
-            self._requirements = Tiling.sort_requirements(self._requirements)
 
     def _fill_empty(self):
         add = []
@@ -110,7 +111,7 @@ class Tiling(CombinatorialClass):
             if cell is None or (cell[0] in col_mapping and
                                 cell[1] in row_mapping):
                 new_obs.append(ob.minimize(cell_map))
-        self._obstructions = tuple(sorted(new_obs))
+        self._obstructions = tuple(new_obs)
         self._requirements = tuple(tuple(req.minimize(cell_map)
                                          for req in reqlist)
                                    for reqlist in self._requirements)
@@ -143,8 +144,8 @@ class Tiling(CombinatorialClass):
         """Returns a new list of minimal obstructions from the obstruction set
         of self. Every obstruction in the new list will have any isolated
         points in positive cells removed."""
-        clean_ones = sorted((self._clean_isolated(co)
-                             for co in self._obstructions), key=len)
+        clean_ones = sorted(self._clean_isolated(co)
+                            for co in self._obstructions)
         cleanobs = list()
         for cleanob in clean_ones:
             add = True
@@ -169,7 +170,6 @@ class Tiling(CombinatorialClass):
             if not all(reqs):
                 continue
             redundant = set()
-            reqs = sorted(reqs, key=len)
             for i in range(len(reqs)):
                 for j in range(i+1, len(reqs)):
                     if j not in redundant:
@@ -195,8 +195,9 @@ class Tiling(CombinatorialClass):
                             ind_to_remove.add(j)
 
         return (obstructions,
-                tuple(reqs for i, reqs in enumerate(cleanreqs)
-                      if i not in ind_to_remove))
+                Tiling.sort_requirements(reqs
+                                         for i, reqs in enumerate(cleanreqs)
+                                         if i not in ind_to_remove))
 
     # Compression
 

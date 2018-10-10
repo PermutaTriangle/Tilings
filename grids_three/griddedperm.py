@@ -15,14 +15,14 @@ class GriddedPerm():
         if not isinstance(pattern, Perm):
             raise ValueError("Pattern should be a instance of permuta.Perm")
         if not len(pattern):
-            self._patt = Perm(pattern)
+            self._patt = pattern
             self._pos = tuple(positions)
             self._cells = frozenset()
             self._rows = 1
             self._columns = 1
         else:
             # Pattern should be a Perm of course
-            self._patt = Perm(pattern)
+            self._patt = pattern
             # Position is a tuple of (x, y) coordinates, where the ith (x, y)
             # corresponds to the i-th point in the pattern.
             self._pos = tuple(positions)
