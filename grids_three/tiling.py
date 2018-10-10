@@ -47,7 +47,6 @@ class Tiling(CombinatorialClass):
             self._requirements = Tiling.sort_requirements(
                                                     r for r in requirements)
 
-
         # Minimize the set of obstructions and the set of requirement lists
         if minimize:
             self._minimize_griddedperms()
@@ -220,7 +219,7 @@ class Tiling(CombinatorialClass):
 
     @classmethod
     def decompress(cls, arrbytes, patts=None,
-                   remove_empty=True, derive_empty=True):
+                   remove_empty=False, derive_empty=False, sorted_input=True):
         """Given a compressed tiling in the form of an 2-byte array, decompress
         it and return a tiling."""
         arr = array('H', arrbytes)
