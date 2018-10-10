@@ -35,7 +35,6 @@ class Tiling(CombinatorialClass):
     def __init__(self, obstructions=list(), requirements=list(),
                  remove_empty=True, derive_empty=True, minimize=True,
                  sorted_input=False):
-
         if sorted_input:
             # Set of obstructions
             self._obstructions = tuple(obstructions)
@@ -143,8 +142,8 @@ class Tiling(CombinatorialClass):
         """Returns a new list of minimal obstructions from the obstruction set
         of self. Every obstruction in the new list will have any isolated
         points in positive cells removed."""
-        clean_ones = sorted((self._clean_isolated(co)
-                             for co in self._obstructions))
+        clean_ones = sorted(self._clean_isolated(co)
+                            for co in self._obstructions)
         cleanobs = list()
         for cleanob in clean_ones:
             add = True
@@ -194,8 +193,9 @@ class Tiling(CombinatorialClass):
                             ind_to_remove.add(j)
 
         return (obstructions,
-                Tiling.sort_requirements(reqs for i, reqs in enumerate(cleanreqs)
-                      if i not in ind_to_remove))
+                Tiling.sort_requirements(reqs
+                                         for i, reqs in enumerate(cleanreqs)
+                                         if i not in ind_to_remove))
 
     # Compression
 
@@ -217,8 +217,8 @@ class Tiling(CombinatorialClass):
         return res.tobytes()
 
     @classmethod
-    def decompress(cls, arrbytes, patts=None,
-                   remove_empty=False, derive_empty=False, sorted_input=True, minimize=False):
+    def decompress(cls, arrbytes, patts=None, remove_empty=False,
+                   derive_empty=False, minimize=False, sorted_input=True):
         """Given a compressed tiling in the form of an 2-byte array, decompress
         it and return a tiling."""
         arr = array('H', arrbytes)
@@ -252,7 +252,8 @@ class Tiling(CombinatorialClass):
             requirements.append(reqlist)
 
         return cls(obstructions=obstructions, requirements=requirements,
-                   remove_empty=remove_empty, derive_empty=derive_empty, sorted_input=sorted_input, minimize=minimize)
+                   remove_empty=remove_empty, derive_empty=derive_empty,
+                   minimize=minimize, sorted_input=sorted_input)
 
     @classmethod
     def from_string(cls, string):
