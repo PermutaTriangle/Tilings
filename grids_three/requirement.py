@@ -66,10 +66,9 @@ class Requirement(GriddedPerm):
                 obstruction_list.append(Obstruction(grid.patt, grid.pos))
         return req_list, obstruction_list
 
-
     def partial_place_forced_point(self, forced_index, direction):
-        """Partially places the point at forced_index in the requirement with 
-        the given direction of force onto its own row or column, depending on 
+        """Partially places the point at forced_index in the requirement with
+        the given direction of force onto its own row or column, depending on
         the direction given.
 
         In a gridded permutation satisfying the requirement, the placed point
@@ -87,9 +86,9 @@ class Requirement(GriddedPerm):
         cell = self._pos[forced_index]
         obstruction_list = []
         req_list = []
-        # Determine the minimum value and maximum value of the points in the 
-        # row. If row=False, then it is the minimum index and maximum index of 
-        # the point in the column. 
+        # Determine the minimum value and maximum value of the points in the
+        # row. If row=False, then it is the minimum index and maximum index of
+        # the point in the column.
         mindex, maxdex, minval, maxval = self.get_bounding_box(cell)
 
         # New indices of the point.
@@ -100,9 +99,9 @@ class Requirement(GriddedPerm):
         forced_val = self.patt[forced_index]
         newpatt = Perm.to_standard(self.patt[i] for i in range(len(self)))
         newposition = [
-            self.partial_point_translation(i, (forced_index, forced_val), row) 
+            self.partial_point_translation(i, (forced_index, forced_val), row)
             if i != forced_index else point_cell
-                       for i in range(len(self))]
+            for i in range(len(self))]
         req_list.append(self.__class__(newpatt, newposition))
 
         if direction == DIR_WEST:
@@ -120,20 +119,27 @@ class Requirement(GriddedPerm):
                 newpatt = Perm.to_standard(
                     self.patt[i] for i in range(len(self)))
                 newposition = [
-                    self.partial_point_translation(i, (p, self.patt[p]), row) if i != p else point_cell
+                    self.partial_point_translation(i, (p, self.patt[p]), row)
+                    if i != p else point_cell
                     for i in range(len(self))]
                 obstruction_list.append(Obstruction(newpatt, newposition))
 
-        for i in range(mindex, maxdex + 1):
+        if row:
+            i = mindex
             for j in range(minval, maxval + 1):
                 grid = self.partial_stretch_gridding((i, j), row)
                 obstruction_list.append(Obstruction(grid.patt, grid.pos))
-        return req_list, obstruction_list
+        else:
+            j = mindex
+            for i in range(mindex, maxdex + 1):
+                grid = self.partial_stretch_gridding((i, j), row)
+                obstruction_list.append(Obstruction(grid.patt, grid.pos))
 
+        return req_list, obstruction_list
 
     def other_req_forced_point(req, cell, direction):
         """Return the set of obstructions to ensure that there is no occurrence
-        of req with any points further in the direction assuming a point was 
+        of req with any points further in the direction assuming a point was
         placed in cell."""
         def farther_in_direction(gp):
             if direction == DIR_WEST:
@@ -144,6 +150,6 @@ class Requirement(GriddedPerm):
                 return any(c[1] < cell[1] + 1 for c in gp.pos)
             elif direction == DIR_NORTH:
                 return any(c[1] > cell[1] + 1 for c in gp.pos)
-        possible_obstructions = [Obstruction(r.patt, r.pos) 
+        possible_obstructions = [Obstruction(r.patt, r.pos)
                                  for r in req.place_point(cell, DIR_NONE)]
         return [ob for ob in possible_obstructions if farther_in_direction(ob)]

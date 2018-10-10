@@ -18,6 +18,7 @@ def intersection_reduce(iterable):
     except Exception:
         return set()
 
+
 def is_tree(edges):
     """
     Return True if the undirected graph is a tree.
@@ -27,6 +28,7 @@ def is_tree(edges):
     adj_table = adjacency_table(edges)
     return len(edges) + 1 == len(adj_table) and is_connected(adj_table)
 
+
 def adjacency_table(edges):
     """Return adjacency table of edges."""
     adj_table = defaultdict(set)
@@ -35,12 +37,17 @@ def adjacency_table(edges):
         adj_table[c2].add(c1)
     return adj_table
 
+
 def is_connected(adj_table):
     """Return True if graph with adjacency table is connected."""
     if not adj_table:
         return True
     visited = {cell: False for cell in adj_table}
-    for start in adj_table: break # pick some start vertex
+
+    # pick some start vertex
+    for start in adj_table:
+        break
+
     queue = [start]
     while queue:
         curr = queue.pop()
