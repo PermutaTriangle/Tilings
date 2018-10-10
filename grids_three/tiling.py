@@ -218,7 +218,7 @@ class Tiling(CombinatorialClass):
 
     @classmethod
     def decompress(cls, arrbytes, patts=None,
-                   remove_empty=True, derive_empty=True):
+                   remove_empty=False, derive_empty=False, sorted_input=True, minimize=False):
         """Given a compressed tiling in the form of an 2-byte array, decompress
         it and return a tiling."""
         arr = array('H', arrbytes)
@@ -252,7 +252,7 @@ class Tiling(CombinatorialClass):
             requirements.append(reqlist)
 
         return cls(obstructions=obstructions, requirements=requirements,
-                   remove_empty=remove_empty, derive_empty=derive_empty)
+                   remove_empty=remove_empty, derive_empty=derive_empty, sorted_input=sorted_input, minimize=minimize)
 
     @classmethod
     def from_string(cls, string):
