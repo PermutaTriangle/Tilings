@@ -69,7 +69,7 @@ class Tiling(CombinatorialClass):
                 if ((x, y) not in self.active_cells and
                         (x, y) not in self.empty_cells):
                     add.append(Obstruction.single_cell(Perm((0,)), (x, y)))
-        self._obstructions = tuple(sorted(tuple(add) + self._obstructions))
+        self._obstructions = tuple(tuple(add) + self._obstructions)
 
     def _minimize_griddedperms(self):
         """Minimizes the set of obstructions and the set of requirement lists.
@@ -110,7 +110,7 @@ class Tiling(CombinatorialClass):
             if cell is None or (cell[0] in col_mapping and
                                 cell[1] in row_mapping):
                 new_obs.append(ob.minimize(cell_map))
-        self._obstructions = tuple(sorted(new_obs))
+        self._obstructions = tuple(new_obs)
         self._requirements = tuple(tuple(req.minimize(cell_map)
                                          for req in reqlist)
                                    for reqlist in self._requirements)
