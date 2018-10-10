@@ -3,9 +3,8 @@ import time
 from itertools import chain, combinations
 
 from permuta import Perm
-from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST
-from permuta.misc import UnionFind
-
+from permuta.misc import (DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST,
+                          UnionFind)
 
 
 class GriddedPerm():
@@ -27,7 +26,7 @@ class GriddedPerm():
         else:
             # Pattern should be a Perm of course
             # we make another copy to deference
-            self._patt = Perm(pattern)
+            self._patt = pattern
             # Position is a tuple of (x, y) coordinates, where the ith (x, y)
             # corresponds to the i-th point in the pattern.
             self._pos = tuple(positions)
@@ -236,9 +235,9 @@ class GriddedPerm():
 
     def partial_point_translation(self, index, insert_point, row=True):
         """Given an index of a point in the gridded permutation and an insert
-        location, compute the transformation of the point. The translation
-        assumes that a new row is inserted. If row=False, it assumes a new 
-        column is inserted.
+        location, compute the transformation of the point. If row=True, the
+        translation assumes that a new row is inserted. If row=False, it
+        assumes a new column is inserted.
         """
         x, y = self._pos[index]
         return (x + 2 if not row and index >= insert_point[0] else x,
@@ -253,8 +252,8 @@ class GriddedPerm():
 
     def partial_stretch_gridding(self, insert_point, row=True):
         """Given an cell location, translate all the points of the gridded
-        permutation as when a point is inserted into the cell. If row=True it 
-        is assumed a new row is added. If row=False it is assumed a new column 
+        permutation as when a point is inserted into the cell. If row=True it
+        is assumed a new row is added. If row=False it is assumed a new column
         is added."""
         newpos = [self.partial_point_translation(p, insert_point, row)
                   for p in range(len(self))]
@@ -314,8 +313,8 @@ class GriddedPerm():
         one of the points of the gridded permutation that occupies the cell and
         construct a new gridded permutation which has that point removed.
 
-        If partial=True then it will partially place onto its own row. 
-        If partial=True and row=False it will partially place onto its own 
+        If partial=True then it will partially place onto its own row.
+        If partial=True and row=False it will partially place onto its own
         column.
         """
         # If the gridded permutation does not span the cell, the resulting list
@@ -328,6 +327,8 @@ class GriddedPerm():
             # New indices of the point.
             point_cell = (cell[0] if row else cell[0] + 1,
                           cell[1] + 1 if row else cell[1])
+            assert (direction == DIR_NONE or (row == (direction == DIR_NORTH or
+                                                      direction == DIR_SOUTH)))
         forced_index = None
         if self.occupies(cell):
             if direction != DIR_NONE:
@@ -338,10 +339,10 @@ class GriddedPerm():
                     if partial or i != forced_index)
                 if partial:
                     newposition = [
-                        self.partial_point_translation(p, 
-                                            (forced_index, forced_val), row) 
+                        self.partial_point_translation(
+                                        p, (forced_index, forced_val), row)
                         if p != forced_index else point_cell
-                            for p in range(len(self)) ]
+                        for p in range(len(self))]
                 else:
                     newposition = [
                         self.point_translation(p, (forced_index, forced_val))
@@ -350,14 +351,14 @@ class GriddedPerm():
             else:
                 for index in self.points_in_cell(cell):
                     newpatt = Perm.to_standard(
-                        self._patt[i] for i in range(len(self)) 
-                            if partial or i != index)
+                        self._patt[i] for i in range(len(self))
+                        if partial or i != index)
                     if partial:
                         newposition = [
-                            self.partial_point_translation(p, 
-                                            (index, self._patt[index]), row) 
+                            self.partial_point_translation(
+                                        p, (index, self._patt[index]), row)
                             if p != index else point_cell
-                                for p in range(len(self))]
+                            for p in range(len(self))]
                     else:
                         newposition = [
                             self.point_translation(
@@ -374,6 +375,13 @@ class GriddedPerm():
                 maxdex = forced_index
             elif direction == DIR_SOUTH:
                 maxval = forced_val
+
+        if partial:
+            if row:
+                maxdex = mindex
+            else:
+                maxval = minval
+
         for i in range(mindex, maxdex + 1):
             for j in range(minval, maxval + 1):
                 if partial:
@@ -400,116 +408,13 @@ class GriddedPerm():
         pos = self.pos[:index] + self.pos[index + 1:]
         return self.__class__(patt, pos)
 
-    def _isolate_point(self, cell, row=True):
-        """Isolates point in the given cell within the row or column, depending
-        on the `row` flag."""
-        pos = self._pos
-        if self.occupies(cell):
-            point = tuple(self.points_in_cell(cell))[0]
-            if row:
-                pos = [(x, y) if self._patt[i] < self._patt[point] else
-                       (x, y + 2) if self._patt[i] > self._patt[point] else
-                       (x, y + 1) for (i, (x, y)) in enumerate(pos)]
-            else:
-                pos = [(x, y) if i < point else
-                       (x + 2, y) if i > point else
-                       (x + 1, y) for (i, (x, y)) in enumerate(pos)]
-            yield self.__class__(self._patt, pos)
-        else:
-            if row:
-                rowpoints = sorted(self.get_points_row(cell[1]),
-                                   key=lambda x: x[1])
-                if not rowpoints:
-                    yield self.__class__(self._patt,
-                                         ((x, y) if y < cell[1] else (x, y + 2)
-                                          for (x, y) in pos))
-                    return
-                for p in range(rowpoints[0][1], rowpoints[-1][1] + 2):
-                    yield self.__class__(
-                        self._patt,
-                        ((x, y) if self._patt[j] < p else (x, y + 2)
-                         for (j, (x, y)) in enumerate(pos)))
-            else:
-                colpoints = list(self.get_points_col(cell[0]))
-                if not colpoints:
-                    yield self.__class__(self._patt,
-                                         ((x, y) if x < cell[0] else (x + 2, y)
-                                          for (x, y) in pos))
-                    return
-                for i in range(colpoints[0][0], colpoints[-1][0] + 2):
-                    yield self.__class__(self._patt,
-                                         ((x, y) if j < i else (x + 2, y)
-                                          for (j, (x, y)) in enumerate(pos)))
-
-    def isolate_point_row(self, cell):
-        """Isolates point in the given cell within the row."""
-        return self._isolate_point(cell)
-
-    def isolate_point_col(self, cell):
-        """Isolates point in the given cell within the column."""
-        return self._isolate_point(cell, False)
-
-    def all_subperms(self, proper=False):
+    def all_subperms(self, proper=True):
         """Yields all gridded subpermutations."""
-        for r in range(len(self) - 1 if proper else len(self)):
+        for r in range(len(self) if proper else len(self) + 1):
             for subidx in combinations(range(len(self)), r):
                 yield self.__class__(
                     Perm.to_standard(self._patt[i] for i in subidx),
                     (self._pos[i] for i in subidx))
-
-    def point_separation(self, cell, direction):
-        """Performs point separation on cell and assumes point is placed in the
-        cell of given direction of the two resulting cells."""
-        points = list(self.points_in_cell(cell))
-        if direction == DIR_WEST or direction == DIR_EAST:
-            for p in self._pos:
-                if p[0] == cell[0] and p[1] != cell[1]:
-                    raise ValueError(("Obstruction occupies cell in the same "
-                                      "column as point separation cell {}"
-                                      ).format(cell))
-            if not points:
-                yield self.__class__(self._patt,
-                                     [p if p[0] < cell[0] else (p[0] + 1, p[1])
-                                      for p in self._pos])
-                return
-            lo, hi = points[0], points[-1] + 1
-            if direction == DIR_WEST:
-                hi = points[0] + 1
-            else:
-                lo = points[-1]
-            for i in range(lo, hi + 1):
-                yield self.__class__(
-                    self._patt,
-                    [self._pos[j] if j < i
-                     else (self._pos[j][0] + 1, self._pos[j][1])
-                     for j in range(len(self))])
-
-        elif direction == DIR_NORTH or direction == DIR_SOUTH:
-            for p in self._pos:
-                if p[0] != cell[0] and p[1] == cell[1]:
-                    raise ValueError(("Obstruction occupies cell in the same "
-                                      "row as point separation cell {}"
-                                      ).format(cell))
-            if not points:
-                yield self.__class__(self._patt,
-                                     [p if p[1] < cell[1] else (p[0], p[1] + 1)
-                                      for p in self._pos])
-                return
-            vals = sorted([self._patt[i] for i in points])
-            lo, hi = vals[0], vals[-1] + 1
-            if direction == DIR_SOUTH:
-                hi = vals[0] + 1
-            else:
-                lo = vals[-1]
-            for i in range(lo, hi + 1):
-                yield self.__class__(
-                    self._patt,
-                    [self._pos[j] if self._patt[j] < i
-                     else (self._pos[j][0], self._pos[j][1] + 1)
-                     for j in range(len(self))])
-        else:
-            raise ValueError(("Invalid direction {} for point separation."
-                              ).format(direction))
 
     def minimize(self, cell_mapping):
         """Map the coordinates to a new list of coordinates according to the
@@ -551,11 +456,11 @@ class GriddedPerm():
                         return True
             seen.append(cell)
         return False
-    
+
     def factors(self):
         """Return a list containing the factors of a gridded permutation.
         A factor is a sub gridded permutation that is isolated on its own rows
-        and columns.""" 
+        and columns."""
         uf = UnionFind(len(self.pos))
         for i in range(len(self.pos)):
             for j in range(i+1, len(self.pos)):
@@ -571,9 +476,9 @@ class GriddedPerm():
             else:
                 all_factors[x] = [cell]
         factor_cells = list(set(cells) for cells in all_factors.values())
-        return [self.get_gridded_perm_in_cells(comp) 
+        return [self.get_gridded_perm_in_cells(comp)
                 for comp in factor_cells]
-        
+
     def compress(self, patthash=None):
         """Compresses the gridded permutation into a list of integers. The
         first element in the list is the rank of the permutation, if the
@@ -701,4 +606,4 @@ class GriddedPerm():
         except StopIteration:
             GriddedPerm.containtime += time.time()-tt
             return False
-            
+
