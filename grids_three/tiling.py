@@ -61,12 +61,6 @@ class Tiling(CombinatorialClass):
             if remove_empty:
                 self._minimize_tiling()
 
-        # if sort:
-        #     # Set of obstructions
-        #     self._obstructions = tuple(sorted(self._obstructions))
-        #     # Set of requirement lists
-        #     self._requirements = Tiling.sort_requirements(self._requirements)
-
     def _fill_empty(self):
         add = []
         (i, j) = self.dimensions
@@ -75,7 +69,7 @@ class Tiling(CombinatorialClass):
                 if ((x, y) not in self.active_cells and
                         (x, y) not in self.empty_cells):
                     add.append(Obstruction.single_cell(Perm((0,)), (x, y)))
-        self._obstructions = tuple(tuple(add) + self._obstructions)
+        self._obstructions = tuple(sorted(tuple(add) + self._obstructions))
 
     def _minimize_griddedperms(self):
         """Minimizes the set of obstructions and the set of requirement lists.
