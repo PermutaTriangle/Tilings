@@ -542,7 +542,8 @@ class Tiling(CombinatorialClass):
         """
         if any(ob.is_empty() for ob in self.obstructions):
             return True
-        if len(self.requirements) <= 1: return False
+        if len(self.requirements) <= 1:
+            return False
         try:
             next(self.gridded_perms())
             return False
