@@ -576,7 +576,7 @@ class GriddedPerm():
 
     def __repr__(self):
         return "{}({}, {})".format(self.__class__.__name__,
-                                   self._patt, self._pos)
+                                   repr(self._patt), self._pos)
 
     def __str__(self):
         return "{}: {}".format(str(self._patt), ", ".join(str(c)
