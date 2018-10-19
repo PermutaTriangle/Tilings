@@ -579,8 +579,8 @@ class GriddedPerm():
                                    self._patt, self._pos)
 
     def __str__(self):
-        return "<{} with {}>".format(self.__class__.__name__,
-                                     str(self._patt))
+        return "{}: {}".format(str(self._patt), ", ".join(str(c)
+                                                          for c in self.pos))
 
     def __hash__(self):
         return hash(self._patt) ^ hash(self._pos)

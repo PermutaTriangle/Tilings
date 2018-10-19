@@ -542,6 +542,8 @@ class Tiling(CombinatorialClass):
         """
         if any(ob.is_empty() for ob in self.obstructions):
             return True
+        if len(self.requirements) <= 1:
+            return False
         try:
             next(self.gridded_perms())
             return False
@@ -979,22 +981,21 @@ class Tiling(CombinatorialClass):
                 result.append("point")
             else:
                 result.append("Av{}({})".format("+" if positive else "",
-                                                ", ".join("".join(str(i + 1)
-                                                                  for i in p)
+                                                ", ".join(str(p)
                                                           for p in basis)))
             result.append("\n")
-
-        def gp_string(gp):
-            return "{}: {}\n".format("".join(str(i + 1) for i in gp.patt),
-                                     ", ".join(str(x) for x in gp.pos))
 
         result.append("Crossing obstructions:\n")
         for ob in self.obstructions:
             if not ob.is_single_cell():
-                result.append(gp_string(ob))
+                result.append(str(ob))
+                result.append("\n")
         for i, req in enumerate(self.requirements):
             result.append("Requirement {}:\n".format(str(i)))
             for r in req:
-                result.append(gp_string(r))
+                result.append(str(r))
+                result.append("\n")
+        if self.requirements:
+            result = result[:-1]
 
         return "".join(result)
