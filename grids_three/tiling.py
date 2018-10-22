@@ -199,40 +199,38 @@ class Tiling(CombinatorialClass):
 
     # Compression
 
-    def compress(self, patthash=None):
+    def compress(self):
         """Compresses the tiling by flattening the sets of cells into lists of
         integers which are concatenated together, every list preceeded by its
         size. The obstructions are compressed and concatenated to the list, as
         are the requirement lists."""
         result = []
         result.append(len(self.obstructions))
-        result.extend(chain.from_iterable(ob.compress(patthash)
+        result.extend(chain.from_iterable([len(ob)]+ob.compress()
                                           for ob in self.obstructions))
         result.append(len(self.requirements))
         for reqlist in self.requirements:
             result.append(len(reqlist))
-            result.extend(chain.from_iterable(req.compress(patthash)
+            result.extend(chain.from_iterable([len(req)]+req.compress()
                                               for req in reqlist))
-        res = array('H', result)
+        res = array('B', result)
         return res.tobytes()
 
     @classmethod
-    def decompress(cls, arrbytes, patts=None, remove_empty=False,
-                   derive_empty=False, minimize=False, sorted_input=True):
-        """Given a compressed tiling in the form of an 2-byte array, decompress
+    def decompress(cls, arrbytes, remove_empty=False, derive_empty=False,
+                   minimize=False, sorted_input=True):
+        """Given a compressed tiling in the form of an 1-by1e array, decompress
         it and return a tiling."""
-        arr = array('H', arrbytes)
+        arr = array('B', arrbytes)
         offset = 1
         nobs = arr[offset - 1]
         obstructions = []
         for _ in range(nobs):
-            if patts:
-                patt = patts[arr[offset]]
-            else:
-                patt = Perm.unrank(arr[offset])
+            pattlen = arr[offset]
+            offset += 1
             obstructions.append(Obstruction.decompress(
-                arr[offset:offset + 2*(len(patt)) + 1], patts))
-            offset += 2 * len(patt) + 1
+                arr[offset:offset+3*pattlen]))
+            offset += 3*pattlen
 
         nreqs = arr[offset]
         offset += 1
@@ -242,13 +240,11 @@ class Tiling(CombinatorialClass):
             offset += 1
             reqlist = []
             for _ in range(reqlistlen):
-                if patts:
-                    patt = patts[arr[offset]]
-                else:
-                    patt = Perm.unrank(arr[offset])
+                pattlen = arr[offset]
+                offset += 1
                 reqlist.append(Requirement.decompress(
-                    arr[offset:offset + 2*(len(patt)) + 1], patts))
-                offset += 2 * len(patt) + 1
+                    arr[offset:offset+3*pattlen]))
+                offset += 3*pattlen
             requirements.append(reqlist)
 
         return cls(obstructions=obstructions, requirements=requirements,
