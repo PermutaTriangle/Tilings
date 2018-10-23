@@ -219,7 +219,7 @@ class Tiling(CombinatorialClass):
     @classmethod
     def decompress(cls, arrbytes, remove_empty=False, derive_empty=False,
                    minimize=False, sorted_input=True):
-        """Given a compressed tiling in the form of an 1-by1e array, decompress
+        """Given a compressed tiling in the form of an 1-byte array, decompress
         it and return a tiling."""
         arr = array('B', arrbytes)
         offset = 1
