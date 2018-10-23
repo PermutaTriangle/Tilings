@@ -792,6 +792,23 @@ class Tiling(CombinatorialClass):
                                                        factors)])
         return factors
 
+    def get_min_poly(self, root_func, root_class):
+        """Return the minimum polynomial of the generating function implied by
+        the tiling."""
+        import tilescopethree as t
+        if self == Tiling(obstructions=(Obstruction(Perm((0,)), ((0, 0),)),),
+                          requirements=()):
+            return sympy.sympify("F_0(x) - 1")
+        if self ==  Tiling(obstructions=(Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+                                         Obstruction(Perm((1, 0)), ((0, 0), (0, 0)))),
+                           requirements=((Requirement(Perm((0,)), ((0, 0),)),),)):
+            return sympy.sympify("F_0(x) - x")
+
+        pack = t.strategy_packs.point_placements_one_by_one
+        searcher = t.TileScopeTHREE(self, pack)
+        tree = searcher.auto_search(verbose=False)
+        return tree.get_min_poly()
+
     def get_genf(self, *args, **kwargs):
         """
         Return generating function of a tiling.
