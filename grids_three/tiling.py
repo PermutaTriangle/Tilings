@@ -3,7 +3,7 @@ from array import array
 from collections import Counter, defaultdict
 from functools import partial, reduce
 from itertools import chain
-from operator import mul
+from operator import add, mul
 
 import sympy
 
@@ -792,22 +792,111 @@ class Tiling(CombinatorialClass):
                                                        factors)])
         return factors
 
-    def get_min_poly(self, root_func, root_class):
+    def get_min_poly(self, root_func=None, root_class=None):
         """Return the minimum polynomial of the generating function implied by
         the tiling."""
-        import tilescopethree as t
-        if self == Tiling(obstructions=(Obstruction(Perm((0,)), ((0, 0),)),),
-                          requirements=()):
-            return sympy.sympify("F_0(x) - 1")
-        if self ==  Tiling(obstructions=(Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-                                         Obstruction(Perm((1, 0)), ((0, 0), (0, 0)))),
-                           requirements=((Requirement(Perm((0,)), ((0, 0),)),),)):
-            return sympy.sympify("F_0(x) - x")
+        if root_func == self:
+            return 0
 
-        pack = t.strategy_packs.point_placements_one_by_one
-        searcher = t.TileScopeTHREE(self, pack)
-        tree = searcher.auto_search(verbose=False)
-        return tree.get_min_poly()
+        def base_cases(tiling):
+            if tiling == Tiling(obstructions=(Obstruction(Perm((0,)), ((0, 0),)),)):
+                return sympy.sympify("{} - 1".format(get_function(tiling)))
+            if tiling ==  Tiling(obstructions=(Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+                                               Obstruction(Perm((1, 0)), ((0, 0), (0, 0))))):
+                return sympy.sympify("{} - x - 1".format(get_function(tiling)))
+
+        funcs = {root_class: root_func}
+        def get_function(tiling):
+            func = funcs.get(tiling)
+            if func is None:
+                label = len(funcs)
+                func = sympy.Function("F_{}".format(label))(sympy.abc.x)
+                funcs[tiling] = func
+            return func
+
+        def get_equations(tiling):
+            if root_class == tiling:
+                return []
+            factors = tiling.find_factors()
+            lhs = get_function(tiling)
+            if len(factors) > 1:
+                rhs = reduce(mul,
+                             [get_function(factor) for factor in factors],
+                             1)
+                return ([sympy.Eq(lhs, rhs)] +
+                        list(chain.from_iterable(get_equations(factor)
+                                                 for factor in factors)))
+            if tiling.requirements:
+                req = tiling.requirements[0]
+                newreqs = tiling.requirements[1:]
+                newobs = (tiling.obstructions +
+                          tuple(Obstruction(r.patt, r.pos) for r in req))
+                avoids = Tiling(newobs, newreqs)
+                without = Tiling(tiling.obstructions, newreqs)
+                rhs = get_function(without) - get_function(avoids)
+                return ([sympy.Eq(lhs, rhs)] +
+                        get_equations(avoids) + get_equations(without))
+
+            if tiling.dimensions == (1, 1) and not tiling.requirements:
+                min_poly = None # check_database(self)
+                if min_poly is None:
+                    min_poly = base_cases(tiling)
+                if min_poly is None:
+                    import tilescopethree as t
+                    pack = t.strategy_packs.point_placements_subset_verified
+                    print("Starting a tilescope run.")
+                    searcher = t.TileScopeTHREE(tiling, pack)
+                    tree = searcher.auto_search(verbose=False)
+                    F = sympy.Function("F")(sympy.abc.x)
+                    min_poly = tree.get_min_poly().subs({F: lhs})
+                return [sympy.Eq(min_poly, 0)]
+            error = "Can't handle tiling.\n{}".format(tiling)
+            raise NotImplementedError(error)
+
+        def check_poly(min_poly, initial, root_initial):
+            """Return True if this is a minimum polynomial for the generating
+            function F of self."""
+            verification = min_poly.subs({get_function(self): initial})
+            if root_initial is not None:
+                verification = verification.subs({root_func: root_initial})
+            verification = verification.expand()
+            verification = verification + sympy.O(sympy.abc.x**verify)
+            verification = verification.removeO()
+            return verification == 0
+
+        eqs = get_equations(self)
+        class_func = get_function(self)
+        all_funcs = set(x for eq in eqs for x in eq.atoms(sympy.Function)
+                        if x!= class_func and x != root_func)
+        basis = sympy.groebner(eqs, *all_funcs, root_func, class_func,
+                                wrt=[sympy.abc.x, root_func], order='grevlex')
+
+
+        # Compute some initial conditions to length verify.
+        verify = 5
+        if basis.polys:
+            initial = 0
+            root_initial = None
+            if root_class is not None:
+                root_initial = 0
+            for i in range(verify + 1):
+                class_coeff = len(list(self.objects_of_length(i)))
+                initial += class_coeff * sympy.abc.x ** i
+                if root_class is not None:
+                    root_coeff = len(list(root_class.objects_of_length(i)))
+                    root_initial += root_coeff * sympy.abc.x ** i
+
+        # Check that a polynomial is actually a min poly for the class by
+        # plugging in initial conditions.
+        for poly in basis.polys:
+            if (poly.atoms(sympy.Function) == {class_func} or
+                    poly.atoms(sympy.Function) == {class_func, root_func}):
+                eq = poly.as_expr()
+                if check_poly(eq, initial, root_initial):
+                    F = sympy.Function("F")(sympy.abc.x)
+                    return eq.subs({class_func: F})
+
+        raise RuntimeError(("Incorrect minimum polynomial:\n" + str(self)))
 
     def get_genf(self, *args, **kwargs):
         """
