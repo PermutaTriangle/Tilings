@@ -204,13 +204,18 @@ class Tiling(CombinatorialClass):
         integers which are concatenated together, every list preceeded by its
         size. The obstructions are compressed and concatenated to the list, as
         are the requirement lists."""
+        def split_16bit(n):
+            """Takes a 16 bit integer and splits it into
+               [lower 8bits, upper 8bits]"""
+            return (n & 0xFF, (n >> 8) & 0xFF)
         result = []
-        result.append(len(self.obstructions))
+        nobs = len(self.obstructions)
+        result.extend(split_16bit(len(self.obstructions)))
         result.extend(chain.from_iterable([len(ob)]+ob.compress()
                                           for ob in self.obstructions))
-        result.append(len(self.requirements))
+        result.extend(split_16bit(len(self.requirements)))
         for reqlist in self.requirements:
-            result.append(len(reqlist))
+            result.extend(split_16bit(len(reqlist)))
             result.extend(chain.from_iterable([len(req)]+req.compress()
                                               for req in reqlist))
         res = array('B', result)
@@ -221,9 +226,14 @@ class Tiling(CombinatorialClass):
                    minimize=False, sorted_input=True):
         """Given a compressed tiling in the form of an 1-byte array, decompress
         it and return a tiling."""
+        def merge_8bit(lh, uh):
+            """Takes two 16 bit integers and merges them into
+               one 16 bit integer assuming lh is lower half and
+               uh is the upper half."""
+            return lh | (uh << 8)
         arr = array('B', arrbytes)
-        offset = 1
-        nobs = arr[offset - 1]
+        offset = 2
+        nobs = merge_8bit(arr[offset - 2], arr[offset-1])
         obstructions = []
         for _ in range(nobs):
             pattlen = arr[offset]
@@ -232,12 +242,12 @@ class Tiling(CombinatorialClass):
                 arr[offset:offset+3*pattlen]))
             offset += 3*pattlen
 
-        nreqs = arr[offset]
-        offset += 1
+        nreqs = merge_8bit(arr[offset], arr[offset + 1])
+        offset += 2
         requirements = []
         for _ in range(nreqs):
-            reqlistlen = arr[offset]
-            offset += 1
+            reqlistlen = merge_8bit(arr[offset], arr[offset + 1])
+            offset += 2
             reqlist = []
             for _ in range(reqlistlen):
                 pattlen = arr[offset]
