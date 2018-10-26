@@ -206,10 +206,9 @@ class Tiling(CombinatorialClass):
         are the requirement lists."""
         def split_16bit(n):
             """Takes a 16 bit integer and splits it into
-               [lower 8bits, upper 8bits]"""
+               (lower 8bits, upper 8bits)"""
             return (n & 0xFF, (n >> 8) & 0xFF)
         result = []
-        nobs = len(self.obstructions)
         result.extend(split_16bit(len(self.obstructions)))
         result.extend(chain.from_iterable([len(ob)]+ob.compress()
                                           for ob in self.obstructions))
