@@ -480,9 +480,6 @@ class GriddedPerm():
         with a list of the values in the permutation. The rest is the list of
         positions flattened."""
         array = [p for p in self._patt]
-        if self._pos and (max(max(p for p in self._pos))) > 255:
-            print("Dimension of a gridded perm is greater than 255!")
-            print(self)
         array.extend(chain.from_iterable(self._pos))
         return array
 
