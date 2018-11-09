@@ -475,7 +475,7 @@ class GriddedPerm():
         return [self.get_gridded_perm_in_cells(comp)
                 for comp in factor_cells]
 
-    def compress(self, patthash=None):
+    def compress(self):
         """Compresses the gridded permutation into a list of integers. It starts
         with a list of the values in the permutation. The rest is the list of
         positions flattened."""
@@ -484,7 +484,7 @@ class GriddedPerm():
         return array
 
     @classmethod
-    def decompress(cls, array, patthash=None):
+    def decompress(cls, array):
         """Decompresses a list of integers in the form outputted by the
         compress method and constructs an Obstruction."""
         n = len(array)
