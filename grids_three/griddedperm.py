@@ -5,8 +5,10 @@ from permuta import Perm
 from permuta.misc import (DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST,
                           UnionFind)
 
+from rut.misc import Compressible
 
-class GriddedPerm():
+
+class GriddedPerm(Compressible):
     # TODO: Intersection of griddedperms
     def __init__(self, pattern, positions):
         # TODO: Write check to verify gridded permutation makes sense, that is,

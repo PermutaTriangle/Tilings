@@ -1,5 +1,5 @@
+import base64
 import json
-from array import array
 from collections import Counter, defaultdict
 from functools import partial, reduce
 from itertools import chain
@@ -18,6 +18,11 @@ from .obstruction import Obstruction
 from .requirement import Requirement
 
 __all__ = ("Tiling")
+
+
+def split_16bit(n):
+    """Split a 16 bit integer into (lower 8bits, upper 8bits)."""
+    return (n & 0xFF, (n >> 8) & 0xFF)
 
 
 class Tiling(CombinatorialClass):
@@ -204,11 +209,7 @@ class Tiling(CombinatorialClass):
         integers which are concatenated together, every list preceeded by its
         size. The obstructions are compressed and concatenated to the list, as
         are the requirement lists."""
-        def split_16bit(n):
-            """Takes a 16 bit integer and splits it into
-               (lower 8bits, upper 8bits)"""
-            return (n & 0xFF, (n >> 8) & 0xFF)
-        result = []
+        result = byte
         result.extend(split_16bit(len(self.obstructions)))
         result.extend(chain.from_iterable([len(ob)]+ob.compress()
                                           for ob in self.obstructions))
@@ -218,7 +219,7 @@ class Tiling(CombinatorialClass):
             result.extend(chain.from_iterable([len(req)]+req.compress()
                                               for req in reqlist))
         res = array('B', result)
-        return res.tobytes()
+        return base64.standard_b64encode(res.tobytes())
 
     @classmethod
     def decompress(cls, arrbytes, remove_empty=False, derive_empty=False,
@@ -259,6 +260,9 @@ class Tiling(CombinatorialClass):
         return cls(obstructions=obstructions, requirements=requirements,
                    remove_empty=remove_empty, derive_empty=derive_empty,
                    minimize=minimize, sorted_input=sorted_input)
+
+    def encode
+
 
     @classmethod
     def from_string(cls, string):
