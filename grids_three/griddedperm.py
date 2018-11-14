@@ -477,22 +477,92 @@ class GriddedPerm(Compressible):
         return [self.get_gridded_perm_in_cells(comp)
                 for comp in factor_cells]
 
-    def compress(self):
-        """Compresses the gridded permutation into a list of integers. It starts
-        with a list of the values in the permutation. The rest is the list of
-        positions flattened."""
-        array = [p for p in self._patt]
-        array.extend(chain.from_iterable(self._pos))
-        return array
+    def compress(
+            self,
+            *,
+            cid=False,
+            file=None,
+            hook=None,
+            to_bytes=True,  # Changing default
+        ):
+        return super().compress(
+            cid=cid,
+            file=file,
+            hook=hook,
+            to_bytes=to_bytes,
+        )
 
     @classmethod
-    def decompress(cls, array):
-        """Decompresses a list of integers in the form outputted by the
-        compress method and constructs an Obstruction."""
-        n = len(array)
-        patt = Perm(array[i] for i in range(n//3))
-        pos = zip(array[n//3::2], array[n//3+1::2])
-        return cls(patt, pos)
+    def decompress(
+            cls,
+            compressed=None,
+            *,
+            file=None,
+            hook=None,
+            size=None,
+            from_bytes=True,  # Changing default
+            dispatch=False,
+        ):
+        return super().decompress(
+            compressed=compressed,
+            file=file,
+            hook=hook,
+            size=size,
+            from_bytes=from_bytes,
+            dispatch=dispatch,
+        )
+
+    def _compress_to_bytes(
+            self,
+            *,
+            cid=False,
+            file=None,
+            hook=None,
+        ):
+        bytes_written = 0
+        bytes_written += file.write(bytes(self._patt))
+        bytes_written += file.write(bytes(chain.from_iterable(self._pos)))
+        return bytes_written
+
+    def _decompress_from_bytes(
+            self,
+            compressed=None,
+            *,
+            file=None,
+            hook=None,
+            size=None,
+        ):
+        if file is not None:
+            compressed = file.read(size)
+        compressed = list(map(int, compressed))
+        n = len(compressed)
+        patt = Perm(compressed[i] for i in range(n//3))
+        pos = zip(compressed[n//3::2], compressed[n//3+1::2])
+        self.__init__(patt, pos)
+
+    def _compress_to_other(
+            self,
+            *,
+            cid=False,
+            file=None,
+            hook=None,
+        ):
+        compressed = super()._compress_to_other(cid=cid)
+        compressed["patt"] = tuple(self._patt)
+        compressed["pos"] = self._pos
+        return compressed
+
+    def _decompress_from_other(
+            self,
+            compressed=None,
+            *,
+            file=None,
+            hook=None,
+            size=None,
+        ):
+        patt = Perm(compressed['patt'])
+        pos = map(tuple, compressed['pos'])
+        self.__init__(patt, pos)
 
     # Symmetries
     def reverse(self, transf):
@@ -542,10 +612,7 @@ class GriddedPerm(Compressible):
     def to_jsonable(self):
         """Returns a dictionary object which is JSON serializable representing
         a GriddedPerm."""
-        output = dict()
-        output['patt'] = self._patt
-        output['pos'] = self._pos
-        return output
+        return self.compress(to_bytes=False)
 
     @classmethod
     def from_json(cls, jsonstr):
@@ -557,7 +624,7 @@ class GriddedPerm(Compressible):
     def from_dict(cls, jsondict):
         """Returns a GriddedPerm object from a dictionary loaded from a JSON
         serialized GriddedPerm object."""
-        return cls(Perm(jsondict['patt']), map(tuple, jsondict['pos']))
+        return cls.decompress(jsondict, from_bytes=False)
 
     @property
     def patt(self):

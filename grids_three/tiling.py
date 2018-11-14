@@ -1,4 +1,4 @@
-import base64
+import io
 import json
 from collections import Counter, defaultdict
 from functools import partial, reduce
@@ -8,6 +8,7 @@ from operator import mul
 import sympy
 
 from comb_spec_searcher import CombinatorialClass
+from rut.misc import Compressible
 from permuta import Perm, PermSet
 from permuta.misc import UnionFind
 
@@ -22,10 +23,14 @@ __all__ = ("Tiling")
 
 def split_16bit(n):
     """Split a 16 bit integer into (lower 8bits, upper 8bits)."""
-    return (n & 0xFF, (n >> 8) & 0xFF)
+    return n.to_bytes(2, byteorder="little")
 
 
-class Tiling(CombinatorialClass):
+def merge_8bit(bytes_):
+    return int.from_bytes(bytes_, byteorder="little")
+
+
+class Tiling(Compressible, CombinatorialClass):
     # TODO:
     #   - Intersection of requirements
     """Tiling class.
@@ -204,65 +209,147 @@ class Tiling(CombinatorialClass):
 
     # Compression
 
-    def compress(self):
-        """Compresses the tiling by flattening the sets of cells into lists of
-        integers which are concatenated together, every list preceeded by its
-        size. The obstructions are compressed and concatenated to the list, as
-        are the requirement lists."""
-        result = byte
-        result.extend(split_16bit(len(self.obstructions)))
-        result.extend(chain.from_iterable([len(ob)]+ob.compress()
-                                          for ob in self.obstructions))
-        result.extend(split_16bit(len(self.requirements)))
-        for reqlist in self.requirements:
-            result.extend(split_16bit(len(reqlist)))
-            result.extend(chain.from_iterable([len(req)]+req.compress()
-                                              for req in reqlist))
-        res = array('B', result)
-        return base64.standard_b64encode(res.tobytes())
+    def compress(
+            self,
+            *,
+            cid=False,
+            file=None,
+            hook=None,
+            to_bytes=True,  # Changing default
+        ):
+        return super().compress(
+            cid=cid,
+            file=file,
+            hook=hook,
+            to_bytes=to_bytes,
+        )
 
     @classmethod
-    def decompress(cls, arrbytes, remove_empty=False, derive_empty=False,
-                   minimize=False, sorted_input=True):
-        """Given a compressed tiling in the form of an 1-byte array, decompress
-        it and return a tiling."""
-        def merge_8bit(lh, uh):
-            """Takes two 16 bit integers and merges them into
-               one 16 bit integer assuming lh is lower half and
-               uh is the upper half."""
-            return lh | (uh << 8)
-        arr = array('B', arrbytes)
-        offset = 2
-        nobs = merge_8bit(arr[offset - 2], arr[offset-1])
-        obstructions = []
-        for _ in range(nobs):
-            pattlen = arr[offset]
-            offset += 1
-            obstructions.append(Obstruction.decompress(
-                arr[offset:offset+3*pattlen]))
-            offset += 3*pattlen
+    def decompress(
+            cls,
+            compressed=None,
+            *,
+            file=None,
+            hook=None,
+            size=None,
+            from_bytes=True,  # Changing default
+            dispatch=False,
+        ):
+        return super().decompress(
+            compressed=compressed,
+            file=file,
+            hook=hook,
+            size=size,
+            from_bytes=from_bytes,
+            dispatch=dispatch,
+        )
 
-        nreqs = merge_8bit(arr[offset], arr[offset + 1])
-        offset += 2
+    def _compress_to_bytes(
+            self,
+            *,
+            cid=False,
+            file=None,
+            hook=None,
+        ):
+        bytes_written = 0
+        # Write number of obstructions in 2 bytes
+        bytes_written += file.write(split_16bit(len(self.obstructions)))
+        # For each obstruction write 1 byte as its length, and then itself
+        bytes_written += sum(
+              file.write(bytes([len(obstruction)]))
+            + obstruction.compress(file=file)
+            for obstruction in self.obstructions
+        )
+        # Write number of requirement lists in 2 bytes
+        bytes_written += file.write(split_16bit(len(self.requirements)))
+        for reqlist in self.requirements:
+            # Similar to the obstruction writing
+            bytes_written += file.write(split_16bit(len(reqlist)))
+            bytes_written += sum(
+                  file.write(bytes([len(requirement)]))
+                + requirement.compress(file=file)
+                for requirement in reqlist
+            )
+        return bytes_written
+
+    def _decompress_from_bytes(
+            self,
+            compressed=None,
+            *,
+            file=None,
+            hook=None,
+            size=None,
+        ):
+        if file is None:
+            file = io.BytesIO(compressed)
+
+        obstructions = []
+        nobs = merge_8bit(file.read(2))
+        for _ in range(nobs):
+            pattlen = file.read(1)[0]
+            obstructions.append(
+                Obstruction.decompress(
+                    file=file,
+                    size=3*pattlen,
+                )
+            )
+
         requirements = []
+        nreqs = merge_8bit(file.read(2))
         for _ in range(nreqs):
-            reqlistlen = merge_8bit(arr[offset], arr[offset + 1])
-            offset += 2
+            reqlistlen = merge_8bit(file.read(2))
             reqlist = []
             for _ in range(reqlistlen):
-                pattlen = arr[offset]
-                offset += 1
-                reqlist.append(Requirement.decompress(
-                    arr[offset:offset+3*pattlen]))
-                offset += 3*pattlen
+                pattlen = file.read(1)[0]
+                reqlist.append(
+                    Requirement.decompress(
+                        file=file,
+                        size=3*pattlen,
+                    )
+                )
             requirements.append(reqlist)
 
-        return cls(obstructions=obstructions, requirements=requirements,
-                   remove_empty=remove_empty, derive_empty=derive_empty,
-                   minimize=minimize, sorted_input=sorted_input)
+        self.__init__(obstructions, requirements)
 
-    def encode
+    def _compress_to_other(
+            self,
+            *,
+            cid=False,
+            file=None,
+            hook=None,
+        ):
+        compressed = super()._compress_to_other(cid=cid)
+        compressed['obstructions'] = list(
+            map(
+                lambda x: x._compress_to_other(),
+                self.obstructions,
+            )
+        )
+        compressed['requirements'] = list(
+            map(
+                lambda x: list(map(lambda y: y._compress_to_other(), x)),
+                self.requirements,
+            )
+        )
+        return compressed
 
+    def _decompress_from_other(
+            self,
+            compressed=None,
+            *,
+            file=None,
+            hook=None,
+            size=None,
+        ):
+        obstructions = map(
+            lambda x: Obstruction.decompress(x, from_bytes=False),
+            compressed['obstructions'],
+        )
+        requirements = map(
+            lambda x: map(lambda y: Requirement.decompress(y, from_bytes=False), x),
+            compressed['requirements'],
+        )
+        self.__init__(obstructions, requirements)
 
     @classmethod
     def from_string(cls, string):
@@ -275,14 +362,7 @@ class Tiling(CombinatorialClass):
     def to_jsonable(self):
         """Returns a dictionary object which is JSON serializable which
         represents a Tiling."""
-        output = dict()
-        output['obstructions'] = list(map(lambda x: x.to_jsonable(),
-                                      self.obstructions))
-        output['requirements'] = list(map(lambda x:
-                                          list(map(lambda y: y.to_jsonable(),
-                                                   x)),
-                                      self.requirements))
-        return output
+        return self.compress(to_bytes=False)
 
     @classmethod
     def from_json(cls, jsonstr):
@@ -294,13 +374,7 @@ class Tiling(CombinatorialClass):
     def from_dict(cls, jsondict):
         """Returns a Tiling object from a dictionary loaded from a JSON
         serialized Tiling object."""
-        obstructions = map(lambda x: Obstruction.from_dict(x),
-                           jsondict['obstructions'])
-        requirements = map(lambda x:
-                           map(lambda y: Requirement.from_dict(y), x),
-                           jsondict['requirements'])
-        return cls(obstructions=obstructions,
-                   requirements=requirements)
+        return cls.decompress(jsondict, from_bytes=False)
 
     # Cell methods
 
