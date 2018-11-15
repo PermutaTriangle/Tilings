@@ -486,13 +486,13 @@ class GriddedPerm(Compressible):
             cid=False,
             file=None,
             hook=None,
-            to_bytes=True,  # Changing default
+            to_bytes=True  # Changing default
         ):
         return super().compress(
             cid=cid,
             file=file,
             hook=hook,
-            to_bytes=to_bytes,
+            to_bytes=to_bytes
         )
 
     @classmethod
@@ -504,7 +504,7 @@ class GriddedPerm(Compressible):
             hook=None,
             size=None,
             from_bytes=True,  # Changing default
-            dispatch=False,
+            dispatch=False
         ):
         return super().decompress(
             compressed=compressed,
@@ -520,7 +520,7 @@ class GriddedPerm(Compressible):
             *,
             cid=False,
             file=None,
-            hook=None,
+            hook=None
         ):
         bytes_written = 0
         bytes_written += file.write(bytes(self._patt))
@@ -533,7 +533,7 @@ class GriddedPerm(Compressible):
             *,
             file=None,
             hook=None,
-            size=None,
+            size=None
         ):
         if file is not None:
             compressed = file.read(size)
@@ -548,7 +548,7 @@ class GriddedPerm(Compressible):
             *,
             cid=False,
             file=None,
-            hook=None,
+            hook=None
         ):
         compressed = super()._compress_to_other(cid=cid)
         compressed["patt"] = tuple(self._patt)
@@ -561,7 +561,7 @@ class GriddedPerm(Compressible):
             *,
             file=None,
             hook=None,
-            size=None,
+            size=None
         ):
         patt = Perm(compressed['patt'])
         pos = map(tuple, compressed['pos'])
