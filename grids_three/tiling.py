@@ -92,6 +92,7 @@ class Tiling(CombinatorialClass):
     def _minimize_tiling(self):
         # Produce the mapping between the two tilings
         if not self.active_cells:
+            self.forward_map = {}
             self._obstructions = (Obstruction.single_cell(Perm((0,)), (0, 0)),)
             self._requirements = tuple()
             self._dimensions = (1, 1)
@@ -612,7 +613,7 @@ class Tiling(CombinatorialClass):
             # already been satisfied
             satisfiable = [
                 [req for req in reqlist if can_satisfy(curgp, curcol, req)]
-                for reqlist in reqs if not satisfies(curgp, reqlist)]
+                for reqlist in reqs]
             if any(len(reqlist) == 0 for reqlist in satisfiable):
                 return
 
