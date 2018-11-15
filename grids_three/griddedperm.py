@@ -10,6 +10,9 @@ from rut.misc import Compressible
 
 class GriddedPerm(Compressible):
     # TODO: Intersection of griddedperms
+
+    CID = "permuta.GridPerm"
+
     def __init__(self, pattern, positions):
         # TODO: Write check to verify gridded permutation makes sense, that is,
         # pattern can be mapped on the positions given.

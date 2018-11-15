@@ -42,6 +42,8 @@ class Tiling(Compressible, CombinatorialClass):
     cells and the active cells.
     """
 
+    CID = "permuta.Tiling"
+
     def __init__(self, obstructions=list(), requirements=list(),
                  remove_empty=True, derive_empty=True, minimize=True,
                  sorted_input=False):
