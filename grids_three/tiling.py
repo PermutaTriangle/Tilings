@@ -217,7 +217,7 @@ class Tiling(Compressible, CombinatorialClass):
             cid=False,
             file=None,
             hook=None,
-            to_bytes=True,  # Changing default
+            to_bytes=True  # Changing default
         ):
         return super().compress(
             cid=cid,
@@ -235,7 +235,7 @@ class Tiling(Compressible, CombinatorialClass):
             hook=None,
             size=None,
             from_bytes=True,  # Changing default
-            dispatch=False,
+            dispatch=False
         ):
         return super().decompress(
             compressed=compressed,
@@ -251,7 +251,7 @@ class Tiling(Compressible, CombinatorialClass):
             *,
             cid=False,
             file=None,
-            hook=None,
+            hook=None
         ):
         bytes_written = 0
         # Write number of obstructions in 2 bytes
@@ -280,7 +280,7 @@ class Tiling(Compressible, CombinatorialClass):
             *,
             file=None,
             hook=None,
-            size=None,
+            size=None
         ):
         if file is None:
             file = io.BytesIO(compressed)
@@ -318,7 +318,7 @@ class Tiling(Compressible, CombinatorialClass):
             *,
             cid=False,
             file=None,
-            hook=None,
+            hook=None
         ):
         compressed = super()._compress_to_other(cid=cid)
         compressed['obstructions'] = list(
@@ -341,7 +341,7 @@ class Tiling(Compressible, CombinatorialClass):
             *,
             file=None,
             hook=None,
-            size=None,
+            size=None
         ):
         obstructions = map(
             lambda x: Obstruction.decompress(x, from_bytes=False),
