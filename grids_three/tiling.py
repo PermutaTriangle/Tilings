@@ -92,6 +92,7 @@ class Tiling(CombinatorialClass):
     def _minimize_tiling(self):
         # Produce the mapping between the two tilings
         if not self.active_cells:
+            self.forward_map = {}
             self._obstructions = (Obstruction.single_cell(Perm((0,)), (0, 0)),)
             self._requirements = tuple()
             self._dimensions = (1, 1)
@@ -463,15 +464,20 @@ class Tiling(CombinatorialClass):
                       requirements=([gptransf(req) for req in reqlist]
                                     for reqlist in self.requirements))
 
-    def reverse(self):
+    def reverse(self, regions=False):
         """ |
         Reverses the tiling within its boundary. Every cell and obstruction
         gets flipped over the vertical middle axis."""
         def reverse_cell(cell):
             return (self.dimensions[0] - cell[0] - 1, cell[1])
-        return self._transform(
-            reverse_cell,
-            lambda gp: gp.reverse(reverse_cell))
+        reversed_tiling = self._transform(reverse_cell,
+                                          lambda gp: gp.reverse(reverse_cell))
+        if not regions:
+            return reversed_tiling
+        else:
+            return ([reversed_tiling],
+                    [{c: frozenset([reverse_cell(c)])
+                      for c in self.active_cells}])
 
     def complement(self):
         """ -
@@ -617,7 +623,7 @@ class Tiling(CombinatorialClass):
             # already been satisfied
             satisfiable = [
                 [req for req in reqlist if can_satisfy(curgp, curcol, req)]
-                for reqlist in reqs if not satisfies(curgp, reqlist)]
+                for reqlist in reqs]
             if any(len(reqlist) == 0 for reqlist in satisfiable):
                 return
 
