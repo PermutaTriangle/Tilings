@@ -740,6 +740,9 @@ def test_gridded_perms():
     tiling = Tiling()
     assert len(list(tiling.gridded_perms())) == 1
 
+    tiling = Tiling([Obstruction(Perm(tuple()), tuple())], [])
+    assert len(list(tiling.gridded_perms(maxlen=3))) == 0
+
     tiling = Tiling(requirements=[[Requirement(Perm((0,)), [(0, 0)])]])
     assert len(list(tiling.gridded_perms(maxlen=3))) == 9
 

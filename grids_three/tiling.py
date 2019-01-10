@@ -577,6 +577,9 @@ class Tiling(CombinatorialClass):
         The gridded permutations are up to length of the longest minimum
         gridded permutations that is griddable on the tiling.
         """
+        if Obstruction(Perm(tuple()), tuple()) in self.obstructions:
+            return
+
         if maxlen is None:
             maxlen = max(self.maximum_length_of_minimum_gridded_perm(), 1)
 

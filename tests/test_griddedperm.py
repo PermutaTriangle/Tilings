@@ -93,6 +93,9 @@ def test_occurrences_in(simpleob):
     assert not any(ob.occurrences_in(simpleob))
     assert not ob.occurs_in(simpleob)
 
+    ob = GriddedPerm(Perm(tuple()), tuple())
+    assert ob in ob
+
 
 def test_remove_cells(simpleob):
     assert (simpleob.remove_cells([(0, 0)]) ==
