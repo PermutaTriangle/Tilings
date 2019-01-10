@@ -795,6 +795,51 @@ class Tiling(CombinatorialClass):
                                                        factors)])
         return factors
 
+
+    def add_obstruction_in_all_ways(self, patt):
+        '''
+        Adds an obstruction of the pattern patt in all possible ways to
+        a fully separated (no interleaving rows or columns) tiling t.
+        '''
+        def rec(cells, p, pos, used, i, j, res):
+            '''
+            Recursive helper function
+            cells: List of cells sorted by column
+            p: The pattern
+            pos: List of the pattern's positions
+            used: Dictionary mapping permutation values to cells for pruning
+            i: Index in cells
+            j: Index in p
+            res: Resulting list of obstructions
+            '''
+            if j == len(p):
+                res.append(Obstruction(p, tuple(x for x in pos)))
+            elif i == len(cells):
+                return
+            else:
+                upper = min(v[1] for k,v in used.items() if k > p[j])
+                lower = max(v[1] for k,v in used.items() if k < p[j])
+                if lower <= cells[i][1] <= upper:
+                    used[p[j]] = cells[i]
+                    pos.append(cells[i])
+                    rec(cells, p, pos, used, i, j+1, res)
+                    pos.pop()
+                    del used[p[j]]
+                rec(cells, p, pos, used, i+1, j, res)
+        cells = sorted(self.positive_cells | self.possibly_empty)
+        used = {-1:(-1,-1), len(patt):self.dimensions}
+        pos = []
+        res = []
+        rec(cells, patt, pos, used, 0, 0, res)
+        return Tiling(obstructions=list(self.obstructions)+res, requirements=self.requirements)
+
+    @classmethod
+    def tiling_from_perm(cls, p):
+        '''
+        Returns a tiling with point requirements corresponding to the permutation 'p'
+        '''
+        return cls(requirements=[[Requirement(Perm((0,)), ((i,p[i]),))] for i in range(len(p))])
+
     def get_genf(self, *args, **kwargs):
         """
         Return generating function of a tiling.
