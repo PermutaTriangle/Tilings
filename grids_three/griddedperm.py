@@ -475,27 +475,21 @@ class GriddedPerm():
         return [self.get_gridded_perm_in_cells(comp)
                 for comp in factor_cells]
 
-    def compress(self, patthash=None):
-        """Compresses the gridded permutation into a list of integers. The
-        first element in the list is the rank of the permutation, if the
-        patthash dictionary is given the permutations value in the dictionary
-        is used.  The rest is the list of positions flattened."""
-        if patthash:
-            array = [patthash[self._patt]]
-        else:
-            array = [self._patt.rank()]
+    def compress(self):
+        """Compresses the gridded permutation into a list of integers. It starts
+        with a list of the values in the permutation. The rest is the list of
+        positions flattened."""
+        array = [p for p in self._patt]
         array.extend(chain.from_iterable(self._pos))
         return array
 
     @classmethod
-    def decompress(cls, array, patthash=None):
+    def decompress(cls, array):
         """Decompresses a list of integers in the form outputted by the
-        compress method and constructns an Obstruction."""
-        if patthash:
-            patt = patthash[array[0]]
-        else:
-            patt = Perm.unrank(array[0])
-        pos = zip(array[1::2], array[2::2])
+        compress method and constructs an Obstruction."""
+        n = len(array)
+        patt = Perm(array[i] for i in range(n//3))
+        pos = zip(array[n//3::2], array[n//3+1::2])
         return cls(patt, pos)
 
     # Symmetries

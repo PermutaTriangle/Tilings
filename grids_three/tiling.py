@@ -92,6 +92,7 @@ class Tiling(CombinatorialClass):
     def _minimize_tiling(self):
         # Produce the mapping between the two tilings
         if not self.active_cells:
+            self.forward_map = {}
             self._obstructions = (Obstruction.single_cell(Perm((0,)), (0, 0)),)
             self._requirements = tuple()
             self._dimensions = (1, 1)
@@ -199,56 +200,61 @@ class Tiling(CombinatorialClass):
 
     # Compression
 
-    def compress(self, patthash=None):
+    def compress(self):
         """Compresses the tiling by flattening the sets of cells into lists of
         integers which are concatenated together, every list preceeded by its
         size. The obstructions are compressed and concatenated to the list, as
         are the requirement lists."""
+        def split_16bit(n):
+            """Takes a 16 bit integer and splits it into
+               (lower 8bits, upper 8bits)"""
+            return (n & 0xFF, (n >> 8) & 0xFF)
         result = []
-        result.append(len(self.obstructions))
-        result.extend(chain.from_iterable(ob.compress(patthash)
+        result.extend(split_16bit(len(self.obstructions)))
+        result.extend(chain.from_iterable([len(ob)]+ob.compress()
                                           for ob in self.obstructions))
-        result.append(len(self.requirements))
+        result.extend(split_16bit(len(self.requirements)))
         for reqlist in self.requirements:
-            result.append(len(reqlist))
-            result.extend(chain.from_iterable(req.compress(patthash)
+            result.extend(split_16bit(len(reqlist)))
+            result.extend(chain.from_iterable([len(req)]+req.compress()
                                               for req in reqlist))
-        res = array('H', result)
+        res = array('B', result)
         return res.tobytes()
 
     @classmethod
-    def decompress(cls, arrbytes, patts=None, remove_empty=False,
-                   derive_empty=False, minimize=False, sorted_input=True):
-        """Given a compressed tiling in the form of an 2-byte array, decompress
+    def decompress(cls, arrbytes, remove_empty=False, derive_empty=False,
+                   minimize=False, sorted_input=True):
+        """Given a compressed tiling in the form of an 1-byte array, decompress
         it and return a tiling."""
-        arr = array('H', arrbytes)
-        offset = 1
-        nobs = arr[offset - 1]
+        def merge_8bit(lh, uh):
+            """Takes two 16 bit integers and merges them into
+               one 16 bit integer assuming lh is lower half and
+               uh is the upper half."""
+            return lh | (uh << 8)
+        arr = array('B', arrbytes)
+        offset = 2
+        nobs = merge_8bit(arr[offset - 2], arr[offset-1])
         obstructions = []
         for _ in range(nobs):
-            if patts:
-                patt = patts[arr[offset]]
-            else:
-                patt = Perm.unrank(arr[offset])
+            pattlen = arr[offset]
+            offset += 1
             obstructions.append(Obstruction.decompress(
-                arr[offset:offset + 2*(len(patt)) + 1], patts))
-            offset += 2 * len(patt) + 1
+                arr[offset:offset+3*pattlen]))
+            offset += 3*pattlen
 
-        nreqs = arr[offset]
-        offset += 1
+        nreqs = merge_8bit(arr[offset], arr[offset + 1])
+        offset += 2
         requirements = []
         for _ in range(nreqs):
-            reqlistlen = arr[offset]
-            offset += 1
+            reqlistlen = merge_8bit(arr[offset], arr[offset + 1])
+            offset += 2
             reqlist = []
             for _ in range(reqlistlen):
-                if patts:
-                    patt = patts[arr[offset]]
-                else:
-                    patt = Perm.unrank(arr[offset])
+                pattlen = arr[offset]
+                offset += 1
                 reqlist.append(Requirement.decompress(
-                    arr[offset:offset + 2*(len(patt)) + 1], patts))
-                offset += 2 * len(patt) + 1
+                    arr[offset:offset+3*pattlen]))
+                offset += 3*pattlen
             requirements.append(reqlist)
 
         return cls(obstructions=obstructions, requirements=requirements,
@@ -458,15 +464,20 @@ class Tiling(CombinatorialClass):
                       requirements=([gptransf(req) for req in reqlist]
                                     for reqlist in self.requirements))
 
-    def reverse(self):
+    def reverse(self, regions=False):
         """ |
         Reverses the tiling within its boundary. Every cell and obstruction
         gets flipped over the vertical middle axis."""
         def reverse_cell(cell):
             return (self.dimensions[0] - cell[0] - 1, cell[1])
-        return self._transform(
-            reverse_cell,
-            lambda gp: gp.reverse(reverse_cell))
+        reversed_tiling = self._transform(reverse_cell,
+                                          lambda gp: gp.reverse(reverse_cell))
+        if not regions:
+            return reversed_tiling
+        else:
+            return ([reversed_tiling],
+                    [{c: frozenset([reverse_cell(c)])
+                      for c in self.active_cells}])
 
     def complement(self):
         """ -
@@ -612,7 +623,7 @@ class Tiling(CombinatorialClass):
             # already been satisfied
             satisfiable = [
                 [req for req in reqlist if can_satisfy(curgp, curcol, req)]
-                for reqlist in reqs if not satisfies(curgp, reqlist)]
+                for reqlist in reqs]
             if any(len(reqlist) == 0 for reqlist in satisfiable):
                 return
 

@@ -553,26 +553,6 @@ def test_minimize(typicalob, simpleob):
 
 def test_compression(simpleob, singlecellob, everycellob, typicalob,
                      isolatedob):
-    patthash = {Perm((1, 0, 3, 2)): 0,
-                Perm((0, 3, 6, 1, 4, 7, 2, 5, 8)): 1,
-                Perm((1, 0, 2, 4, 3)): 4,
-                Perm((0, 1, 2)): 17}
-    revhash = {0: Perm((1, 0, 3, 2)),
-               1: Perm((0, 3, 6, 1, 4, 7, 2, 5, 8)),
-               4: Perm((1, 0, 2, 4, 3)),
-               17: Perm((0, 1, 2))}
-
-    assert (simpleob ==
-            GriddedPerm.decompress(simpleob.compress(patthash), revhash))
-    assert (singlecellob ==
-            GriddedPerm.decompress(singlecellob.compress(patthash), revhash))
-    assert (everycellob ==
-            GriddedPerm.decompress(everycellob.compress(patthash), revhash))
-    assert (typicalob ==
-            GriddedPerm.decompress(typicalob.compress(patthash), revhash))
-    assert (isolatedob ==
-            GriddedPerm.decompress(isolatedob.compress(patthash), revhash))
-
     assert (simpleob ==
             GriddedPerm.decompress(simpleob.compress()))
     assert (singlecellob ==
