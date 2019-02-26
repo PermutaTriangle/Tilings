@@ -817,8 +817,10 @@ class Tiling(CombinatorialClass):
         def get_equations(tiling):
             if root_class == tiling:
                 return []
-            factors = tiling.find_factors()
             lhs = get_function(tiling)
+            if tiling.is_empty():
+                return [sympy.Eq(lhs, 0)]
+            factors = tiling.find_factors()
             if len(factors) > 1:
                 rhs = reduce(mul,
                              [get_function(factor) for factor in factors],
@@ -837,14 +839,28 @@ class Tiling(CombinatorialClass):
                 return ([sympy.Eq(lhs, rhs)] +
                         get_equations(avoids) + get_equations(without))
 
+            for ob in tiling.obstructions:
+                if not ob.is_single_cell() and not ob.is_interleaving():
+                    patt = Perm.to_standard([v for i, v in enumerate(ob.patt)
+                                             if ob.pos[i] == ob.pos[0]])
+                    avoids = tiling.add_single_cell_obstruction(patt,
+                                                                ob.pos[0])
+                    contains = tiling.add_single_cell_requirement(patt,
+                                                                  ob.pos[0])
+                    lhs = get_function(tiling)
+                    rhs = get_function(avoids) + get_function(contains)
+                    return ([sympy.Eq(lhs, rhs)] +
+                             get_equations(avoids) + get_equations(contains))
+
             if tiling.dimensions == (1, 1) and not tiling.requirements:
                 min_poly = None # check_database(self)
                 if min_poly is None:
                     min_poly = base_cases(tiling)
                 if min_poly is None:
                     import tilescopethree as t
-                    pack = t.strategy_packs.point_placements_subset_verified
+                    pack = t.strategy_packs.point_placements
                     print("Starting a tilescope run.")
+                    print(tiling)
                     searcher = t.TileScopeTHREE(tiling, pack)
                     tree = searcher.auto_search(verbose=False)
                     F = sympy.Function("F")(sympy.abc.x)
