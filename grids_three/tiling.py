@@ -9,9 +9,10 @@ import sympy
 
 from comb_spec_searcher import CombinatorialClass
 from permuta import Perm, PermSet
+from comb_spec_searcher.utils import check_equation, check_poly
 from permuta.misc import UnionFind
 
-from .db_conf import check_database
+from .db_conf import check_database, update_database
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
 from .obstruction import Obstruction
@@ -803,127 +804,83 @@ class Tiling(CombinatorialClass):
                                                        factors)])
         return factors
 
-    def get_min_poly(self, root_func=None, root_class=None):
+    def get_min_poly(self, root_func=None, root_class=None, verbose=False):
         """Return the minimum polynomial of the generating function implied by
         the tiling."""
-        if root_func == self:
-            return 0
+        F = sympy.Symbol("F")
+        if self == Tiling(obstructions=(Obstruction(Perm((0,)), ((0, 0),)),)):
+            return sympy.sympify("{} - 1".format(F))
+        elif self ==  Tiling(obstructions=(Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+                                         Obstruction(Perm((1, 0)), ((0, 0), (0, 0))))):
+            return sympy.sympify("{} - x - 1".format(F))
+        elif self.requirements:
+            req = self.requirements[0]
+            newreqs = self.requirements[1:]
+            newobs = (self.obstructions +
+                        tuple(Obstruction(r.patt, r.pos) for r in req))
+            avoids = Tiling(newobs, newreqs)
+            without = Tiling(self.obstructions, newreqs)
+            A, B = sympy.Symbol("A"), sympy.Symbol("B")
+            avoids_min_poly = avoids.get_min_poly().subs({F: A})
+            without_min_poly = without.get_min_poly().subs({F: B})
+            eq = F - B + A
+            basis = sympy.groebner([avoids_min_poly, without_min_poly, eq],
+                                    A, B, F, wrt=[sympy.abc.x, F],
+                                    order='lex')
+            # Compute some initial conditions to length verify.
+            verify = 5
+            if basis.polys:
+                initial = [len(list(self.objects_of_length(i)))
+                           for i in range(verify + 1)]
 
-        def base_cases(tiling):
-            if tiling == Tiling(obstructions=(Obstruction(Perm((0,)), ((0, 0),)),)):
-                return sympy.sympify("{} - 1".format(get_function(tiling)))
-            if tiling ==  Tiling(obstructions=(Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-                                               Obstruction(Perm((1, 0)), ((0, 0), (0, 0))))):
-                return sympy.sympify("{} - x - 1".format(get_function(tiling)))
-
-        funcs = {root_class: root_func}
-        def get_function(tiling):
-            func = funcs.get(tiling)
-            if func is None:
-                label = len(funcs)
-                func = sympy.Function("F_{}".format(label))(sympy.abc.x)
-                funcs[tiling] = func
-            return func
-
-        def get_equations(tiling):
-            if root_class == tiling:
-                return []
-            lhs = get_function(tiling)
-            if tiling.is_empty():
-                return [sympy.Eq(lhs, 0)]
-            factors = tiling.find_factors()
-            if len(factors) > 1:
-                rhs = reduce(mul,
-                             [get_function(factor) for factor in factors],
-                             1)
-                return ([sympy.Eq(lhs, rhs)] +
-                        list(chain.from_iterable(get_equations(factor)
-                                                 for factor in factors)))
-            if tiling.requirements:
-                req = tiling.requirements[0]
-                newreqs = tiling.requirements[1:]
-                newobs = (tiling.obstructions +
-                          tuple(Obstruction(r.patt, r.pos) for r in req))
-                avoids = Tiling(newobs, newreqs)
-                without = Tiling(tiling.obstructions, newreqs)
-                rhs = get_function(without) - get_function(avoids)
-                return ([sympy.Eq(lhs, rhs)] +
-                        get_equations(avoids) + get_equations(without))
-
-            for ob in tiling.obstructions:
-                if not ob.is_single_cell() and not ob.is_interleaving():
-                    patt = Perm.to_standard([v for i, v in enumerate(ob.patt)
-                                             if ob.pos[i] == ob.pos[0]])
-                    avoids = tiling.add_single_cell_obstruction(patt,
-                                                                ob.pos[0])
-                    contains = tiling.add_single_cell_requirement(patt,
-                                                                  ob.pos[0])
-                    lhs = get_function(tiling)
-                    rhs = get_function(avoids) + get_function(contains)
-                    return ([sympy.Eq(lhs, rhs)] +
-                             get_equations(avoids) + get_equations(contains))
-
-            if tiling.dimensions == (1, 1) and not tiling.requirements:
-                min_poly = None # check_database(self)
+            # # Check that a polynomial is actually a min poly for the class by
+            # # plugging in initial conditions.
+            for poly in basis.polys:
+                if (poly.atoms(sympy.Symbol) == {F, sympy.abc.x}):
+                    eq = poly.as_expr()
+                    if check_poly(eq, initial):
+                        return eq
+                    elif check_equation(eq, initial):
+                        return eq
+            raise ValueError("Something went wrong.")
+        elif (self.dimensions == (1, 1) or
+              any(ob.is_interleaving() for ob in self.obstructions) or
+              any(r.is_interleaving() for req in self.requirements for r in req) or
+              (len(self.find_factors()) == 1 and
+               all(ob.is_single_cell() for ob in self.obstructions))):
+            try:
+                info = check_database(self)
+                min_poly = info.get('min_poly')
                 if min_poly is None:
-                    min_poly = base_cases(tiling)
-                if min_poly is None:
-                    import tilescopethree as t
-                    pack = t.strategy_packs.point_placements
-                    print("Starting a tilescope run.")
-                    print(tiling)
-                    searcher = t.TileScopeTHREE(tiling, pack)
-                    tree = searcher.auto_search(verbose=False)
-                    F = sympy.Function("F")(sympy.abc.x)
-                    min_poly = tree.get_min_poly().subs({F: lhs})
-                return [sympy.Eq(min_poly, 0)]
-            error = "Can't handle tiling.\n{}".format(tiling)
-            raise NotImplementedError(error)
-
-        def check_poly(min_poly, initial, root_initial):
-            """Return True if this is a minimum polynomial for the generating
-            function F of self."""
-            verification = min_poly.subs({get_function(self): initial})
-            if root_initial is not None:
-                verification = verification.subs({root_func: root_initial})
-            verification = verification.expand()
-            verification = verification + sympy.O(sympy.abc.x**verify)
-            verification = verification.removeO()
-            return verification == 0
-
-        eqs = get_equations(self)
-        class_func = get_function(self)
-        all_funcs = set(x for eq in eqs for x in eq.atoms(sympy.Function)
-                        if x!= class_func and x != root_func)
-        basis = sympy.groebner(eqs, *all_funcs, root_func, class_func,
-                                wrt=[sympy.abc.x, root_func], order='grevlex')
-
-
-        # Compute some initial conditions to length verify.
-        verify = 5
-        if basis.polys:
-            initial = 0
-            root_initial = None
-            if root_class is not None:
-                root_initial = 0
-            for i in range(verify + 1):
-                class_coeff = len(list(self.objects_of_length(i)))
-                initial += class_coeff * sympy.abc.x ** i
-                if root_class is not None:
-                    root_coeff = len(list(root_class.objects_of_length(i)))
-                    root_initial += root_coeff * sympy.abc.x ** i
-
-        # Check that a polynomial is actually a min poly for the class by
-        # plugging in initial conditions.
-        for poly in basis.polys:
-            if (poly.atoms(sympy.Function) == {class_func} or
-                    poly.atoms(sympy.Function) == {class_func, root_func}):
-                eq = poly.as_expr()
-                if check_poly(eq, initial, root_initial):
-                    F = sympy.Function("F")(sympy.abc.x)
-                    return eq.subs({class_func: F})
-
-        raise RuntimeError(("Incorrect minimum polynomial:\n" + str(self)))
+                    min_poly = F - sympy.sympify(info['genf'])
+                else:
+                    min_poly = sympy.sympify(min_poly)
+                return min_poly
+            except Exception as e:
+                raise NotImplementedError("Can't find the min poly for:\n" + str(self))
+        else:
+            import tilescopethree as t
+            from tilescopethree.strategies import (all_cell_insertions,
+                                                   factor,
+                                                   requirement_corroboration,
+                                                   subset_verified)
+            from comb_spec_searcher import StrategyPack
+            max_length = max(len(p) for p in self.obstructions)
+            pack = StrategyPack(initial_strats=[factor,
+                                                requirement_corroboration],
+                                inferral_strats=[],
+                                expansion_strats=[[partial(all_cell_insertions,
+                                                           maxlen=max_length)]],
+                                ver_strats=[partial(subset_verified,
+                                                    no_factors=True)],
+                                name="globally_verified")
+            if verbose:
+                print("Starting a tilescope run.")
+                print(self)
+            searcher = t.TileScopeTHREE(self, pack)
+            tree = searcher.auto_search(verbose=verbose)
+            min_poly = tree.get_min_poly()
+            return min_poly
 
     def get_genf(self, *args, **kwargs):
         """
@@ -953,6 +910,14 @@ class Tiling(CombinatorialClass):
             return sympy.sympify('-1/2*(sqrt(-4*x + 1) - 1)/x')
         if self == Tiling([Obstruction.single_cell(Perm((2, 1, 0)), (0, 0))]):
             return sympy.sympify('-1/2*(sqrt(-4*x + 1) - 1)/x')
+        if self == Tiling(obstructions=(Obstruction(Perm((0,)), ((0, 0),)),)):
+                return sympy.sympify("1")
+        if self ==  Tiling(obstructions=(Obstruction(Perm((0, 1)),
+                                                     ((0, 0), (0, 0))),
+                                         Obstruction(Perm((1, 0)),
+                                                     ((0, 0), (0, 0))))):
+                return sympy.sympify("x + 1")
+
 
         if kwargs.get('substitutions'):
             if kwargs.get('subs') is None:
@@ -1020,11 +985,11 @@ class Tiling(CombinatorialClass):
                 symbols[self] = symbol
             subs = kwargs.get('subs')
             if symbol not in subs:
-                subs[symbol] = check_database(self)
+                subs[symbol] = sympy.sympify(check_database(self)[genf])
             return symbol
         # Check the database
         try:
-            genf = check_database(self)
+            genf = sympy.sympify(check_database(self)['genf'])
         except Exception:
             raise ValueError("Tiling not in database:\n" + repr(self))
         return genf
