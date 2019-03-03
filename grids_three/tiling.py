@@ -801,10 +801,10 @@ class Tiling(CombinatorialClass):
         Adds an obstruction of the pattern patt in all possible ways to
         a fully separated (no interleaving rows or columns) tiling t.
         '''
-        def rec(cells, p, pos, used, i, j, res):
+        def rec(cols, p, pos, used, i, j, res):
             '''
             Recursive helper function
-            cells: List of cells sorted by column
+            cols: List of columns in increasing order, each column is a list of cells
             p: The pattern
             pos: List of the pattern's positions
             used: Dictionary mapping permutation values to cells for pruning
@@ -814,23 +814,27 @@ class Tiling(CombinatorialClass):
             '''
             if j == len(p):
                 res.append(Obstruction(p, tuple(x for x in pos)))
-            elif i == len(cells):
+            elif i == len(cols):
                 return
             else:
                 upper = min(v[1] for k,v in used.items() if k > p[j])
                 lower = max(v[1] for k,v in used.items() if k < p[j])
-                if lower <= cells[i][1] <= upper:
-                    used[p[j]] = cells[i]
-                    pos.append(cells[i])
-                    rec(cells, p, pos, used, i, j+1, res)
-                    pos.pop()
-                    del used[p[j]]
-                rec(cells, p, pos, used, i+1, j, res)
-        cells = sorted(self.positive_cells | self.possibly_empty)
+                for cell in cols[i]:
+                    if lower <= cell[1] <= upper:
+                        used[p[j]] = cell
+                        pos.append(cell)
+                        rec(cols, p, pos, used, i, j+1, res)
+                        pos.pop()
+                        del used[p[j]]
+                rec(cols, p, pos, used, i+1, j, res)
+        
+        cols = [[] for i in range(self.dimensions[0])]
+        for x in self.active_cells:
+            cols[x[0]].append(x)
         used = {-1:(-1,-1), len(patt):self.dimensions}
         pos = []
         res = []
-        rec(cells, patt, pos, used, 0, 0, res)
+        rec(cols, patt, pos, used, 0, 0, res)
         return Tiling(obstructions=list(self.obstructions)+res, requirements=self.requirements)
 
     @classmethod
