@@ -588,6 +588,9 @@ class Tiling(CombinatorialClass):
         The gridded permutations are up to length of the longest minimum
         gridded permutations that is griddable on the tiling.
         """
+        if Obstruction(Perm(tuple()), tuple()) in self.obstructions:
+            return
+
         if maxlen is None:
             maxlen = max(self.maximum_length_of_minimum_gridded_perm(), 1)
 
@@ -802,6 +805,55 @@ class Tiling(CombinatorialClass):
                      for cell_component, factor in zip(component_cells,
                                                        factors)])
         return factors
+
+
+    def add_obstruction_in_all_ways(self, patt):
+        '''
+        Adds an obstruction of the pattern patt in all possible ways to
+        a fully separated (no interleaving rows or columns) tiling t.
+        '''
+        def rec(cols, p, pos, used, i, j, res):
+            '''
+            Recursive helper function
+            cols: List of columns in increasing order, each column is a list of cells
+            p: The pattern
+            pos: List of the pattern's positions
+            used: Dictionary mapping permutation values to cells for pruning
+            i: Index in cells
+            j: Index in p
+            res: Resulting list of obstructions
+            '''
+            if j == len(p):
+                res.append(Obstruction(p, tuple(x for x in pos)))
+            elif i == len(cols):
+                return
+            else:
+                upper = min(v[1] for k,v in used.items() if k > p[j])
+                lower = max(v[1] for k,v in used.items() if k < p[j])
+                for cell in cols[i]:
+                    if lower <= cell[1] <= upper:
+                        used[p[j]] = cell
+                        pos.append(cell)
+                        rec(cols, p, pos, used, i, j+1, res)
+                        pos.pop()
+                        del used[p[j]]
+                rec(cols, p, pos, used, i+1, j, res)
+        
+        cols = [[] for i in range(self.dimensions[0])]
+        for x in self.active_cells:
+            cols[x[0]].append(x)
+        used = {-1:(-1,-1), len(patt):self.dimensions}
+        pos = []
+        res = []
+        rec(cols, patt, pos, used, 0, 0, res)
+        return Tiling(obstructions=list(self.obstructions)+res, requirements=self.requirements)
+
+    @classmethod
+    def tiling_from_perm(cls, p):
+        '''
+        Returns a tiling with point requirements corresponding to the permutation 'p'
+        '''
+        return cls(requirements=[[Requirement(Perm((0,)), ((i,p[i]),))] for i in range(len(p))])
 
     def get_genf(self, *args, **kwargs):
         """

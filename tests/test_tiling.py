@@ -740,6 +740,9 @@ def test_gridded_perms():
     tiling = Tiling()
     assert len(list(tiling.gridded_perms())) == 1
 
+    tiling = Tiling([Obstruction(Perm(tuple()), tuple())], [])
+    assert len(list(tiling.gridded_perms(maxlen=3))) == 0
+
     tiling = Tiling(requirements=[[Requirement(Perm((0,)), [(0, 0)])]])
     assert len(list(tiling.gridded_perms(maxlen=3))) == 9
 
@@ -1005,3 +1008,67 @@ def test_find_factors(compresstil, factorable_tiling):
 
     assert len(factors) == len(actual_factors)
     assert all(f in factors for f in actual_factors)
+
+
+def test_add_obstruction_in_all_ways():
+    initial_tiling = Tiling(obstructions=(
+        Obstruction(Perm((0,)), ((0, 0),)),
+        Obstruction(Perm((0,)), ((0, 1),)),
+        Obstruction(Perm((0,)), ((0, 3),)),
+        Obstruction(Perm((0,)), ((1, 0),)),
+        Obstruction(Perm((0,)), ((1, 1),)),
+        Obstruction(Perm((0,)), ((1, 2),)),
+        Obstruction(Perm((0,)), ((2, 1),)),
+        Obstruction(Perm((0,)), ((2, 2),)),
+        Obstruction(Perm((0,)), ((2, 3),)),
+        Obstruction(Perm((0,)), ((3, 0),)),
+        Obstruction(Perm((0,)), ((3, 2),)),
+        Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
+        Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
+        Obstruction(Perm((1, 0)), ((0, 2), (0, 2))),
+        Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
+        Obstruction(Perm((3, 0, 2, 4, 1)),
+                    ((1, 3), (1, 3), (1, 3), (1, 3), (1, 3))),
+        Obstruction(Perm((3, 0, 2, 4, 1)),
+                    ((3, 1), (3, 1), (3, 1), (3, 1), (3, 1))),
+        Obstruction(Perm((3, 0, 2, 4, 1)), ((3, 3),
+                    (3, 3), (3, 3), (3, 3), (3, 3)))),
+        requirements=((Requirement(Perm((0,)), ((0, 2),)),),
+                      (Requirement(Perm((0,)), ((2, 0),)),)))
+    final_tiling = Tiling(obstructions=(
+        Obstruction(Perm((0,)), ((0, 0),)),
+        Obstruction(Perm((0,)), ((0, 1),)),
+        Obstruction(Perm((0,)), ((0, 3),)),
+        Obstruction(Perm((0,)), ((1, 0),)),
+        Obstruction(Perm((0,)), ((1, 1),)),
+        Obstruction(Perm((0,)), ((1, 2),)),
+        Obstruction(Perm((0,)), ((2, 1),)),
+        Obstruction(Perm((0,)), ((2, 2),)),
+        Obstruction(Perm((0,)), ((2, 3),)),
+        Obstruction(Perm((0,)), ((3, 0),)),
+        Obstruction(Perm((0,)), ((3, 2),)),
+        Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
+        Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
+        Obstruction(Perm((1, 0)), ((0, 2), (0, 2))),
+        Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
+        Obstruction(Perm((1, 2, 0)), ((3, 1), (3, 3), (3, 1))),
+        Obstruction(Perm((2, 1, 3, 0)), ((1, 3), (3, 3), (3, 3), (3, 1))),
+        Obstruction(Perm((2, 1, 3, 0)), ((1, 3), (3, 3), (3, 3), (3, 3))),
+        Obstruction(Perm((3, 0, 2, 4, 1)),
+                    ((1, 3), (1, 3), (1, 3), (1, 3), (1, 3))),
+        Obstruction(Perm((3, 0, 2, 4, 1)),
+                    ((1, 3), (1, 3), (1, 3), (1, 3), (3, 3))),
+        Obstruction(Perm((3, 0, 2, 4, 1)),
+                    ((1, 3), (1, 3), (1, 3), (3, 3), (3, 3))),
+        Obstruction(Perm((3, 0, 2, 4, 1)),
+                    ((3, 1), (3, 1), (3, 1), (3, 1), (3, 1))),
+        Obstruction(Perm((3, 0, 2, 4, 1)),
+                    ((3, 3), (3, 1), (3, 3), (3, 3), (3, 1))),
+        Obstruction(Perm((3, 0, 2, 4, 1)),
+                    ((3, 3), (3, 1), (3, 3), (3, 3), (3, 3))),
+        Obstruction(Perm((3, 0, 2, 4, 1)),
+                    ((3, 3), (3, 3), (3, 3), (3, 3), (3, 3)))),
+        requirements=((Requirement(Perm((0,)), ((0, 2),)),),
+                      (Requirement(Perm((0,)), ((2, 0),)),)))
+    patt = Perm.to_standard((4, 1, 3, 5, 2))
+    assert(initial_tiling.add_obstruction_in_all_ways(patt) == final_tiling)
