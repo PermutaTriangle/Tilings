@@ -7,9 +7,9 @@ from operator import add, mul
 
 import sympy
 
-from comb_spec_searcher import CombinatorialClass
+from comb_spec_searcher import CombinatorialClass, ProofTree
 from permuta import Perm, PermSet
-from comb_spec_searcher.utils import check_equation, check_poly
+from comb_spec_searcher.utils import check_equation, check_poly, get_solution
 from permuta.misc import UnionFind
 
 from .db_conf import check_database, update_database
@@ -660,6 +660,9 @@ class Tiling(CombinatorialClass):
                                remove_empty=remove_empty)
         return merged_tiling
 
+    def is_point_tiling(self):
+        return self.dimensions == (1, 1) and (0, 0) in self.point_cells
+
     @property
     def point_cells(self):
         if not hasattr(self, "_point_cells"):
@@ -821,8 +824,8 @@ class Tiling(CombinatorialClass):
             avoids = Tiling(newobs, newreqs)
             without = Tiling(self.obstructions, newreqs)
             A, B = sympy.Symbol("A"), sympy.Symbol("B")
-            avoids_min_poly = avoids.get_min_poly().subs({F: A})
-            without_min_poly = without.get_min_poly().subs({F: B})
+            avoids_min_poly = avoids.get_min_poly(verbose=verbose).subs({F: A})
+            without_min_poly = without.get_min_poly(verbose=verbose).subs({F: B})
             eq = F - B + A
             basis = sympy.groebner([avoids_min_poly, without_min_poly, eq],
                                     A, B, F, wrt=[sympy.abc.x, F],
@@ -849,7 +852,7 @@ class Tiling(CombinatorialClass):
               (len(self.find_factors()) == 1 and
                all(ob.is_single_cell() for ob in self.obstructions))):
             try:
-                info = check_database(self)
+                info = check_database(self, verbose=verbose)
                 min_poly = info.get('min_poly')
                 if min_poly is None:
                     min_poly = F - sympy.sympify(info['genf'])
@@ -870,16 +873,13 @@ class Tiling(CombinatorialClass):
                                                 requirement_corroboration],
                                 inferral_strats=[],
                                 expansion_strats=[[partial(all_cell_insertions,
-                                                           maxlen=max_length)]],
+                                                           maxreqlen=max_length)]],
                                 ver_strats=[partial(subset_verified,
                                                     no_factors=True)],
                                 name="globally_verified")
-            if verbose:
-                print("Starting a tilescope run.")
-                print(self)
             searcher = t.TileScopeTHREE(self, pack)
             tree = searcher.auto_search(verbose=verbose)
-            min_poly = tree.get_min_poly()
+            min_poly = tree.get_min_poly(verbose=verbose)
             return min_poly
 
     def get_genf(self, *args, **kwargs):
@@ -989,9 +989,19 @@ class Tiling(CombinatorialClass):
             return symbol
         # Check the database
         try:
-            genf = sympy.sympify(check_database(self)['genf'])
+            info = check_database(self)
         except Exception:
             raise ValueError("Tiling not in database:\n" + repr(self))
+        if 'genf' in info:
+            genf = sympy.sympify(info['genf'])
+        elif 'min_poly' in info:
+            eq = sympy.Eq(sympy.sympify(info['min_poly']), 0)
+            initial = [len(list(self.objects_of_length(i))) for i in range(6)]
+            genf =  get_solution(eq, initial)
+            tree = info.get('tree')
+            if tree is not None:
+                tree = ProofTree.from_json(Tiling, tree)
+            update_database(self, info['min_poly'], genf, tree, force=True, equations=info.get('eqs'))
         return genf
     #
     # Dunder methods

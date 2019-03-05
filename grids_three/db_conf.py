@@ -1,6 +1,7 @@
 """Functions for adding and removing from database."""
 import json, sympy
 
+from functools import partial
 from pymongo import MongoClient
 from sympy import Poly, abc, sympify, var
 
@@ -104,20 +105,39 @@ def check_database(tiling, update=True, verbose=False):
             elif tiling.dimensions == (1, 1):
                 error += " Try running the tilescope."
                 import tilescopethree as t
-                pack = t.strategy_packs_v2.point_placements
-                if verbose:
+                from tilescopethree.strategies import (all_cell_insertions,
+                                                       factor,
+                                                       requirement_corroboration,
+                                                       requirement_placement,
+                                                       subset_verified,
+                                                       row_and_column_separation,
+                                                       obstruction_transitivity)
+                from comb_spec_searcher import StrategyPack
+                pack = StrategyPack(initial_strats=[factor,
+                                                    requirement_corroboration],
+                                    inferral_strats=[row_and_column_separation,
+                                                     obstruction_transitivity],
+                                    expansion_strats=[[all_cell_insertions],
+                                                      [requirement_placement]],
+                                    ver_strats=[partial(subset_verified,
+                                                        no_factors=True)],
+                                    name="restricted_point_placements")
+                # pack = t.strategy_packs_v2.point_placements
+                if False:
                     print("Starting a tilescope run.")
                     print(tiling)
                 searcher = t.TileScopeTHREE(tiling, pack)
                 tree = searcher.auto_search(verbose=verbose)
-                min_poly, genf = tree.get_min_poly(solve=True)
+                min_poly, genf = tree.get_min_poly(solve=True, verbose=verbose)
                 update_database(tiling, min_poly, genf, tree)
                 return check_database(tiling)
             else:
-                print("Enumerating factor:")
-                print(tiling)
+                if verbose:
+                    print("Enumerating factor:")
+                    print(tiling)
                 f = enumerate_tree_factor(tiling)
-                print(f)
+                if verbose:
+                    print(f)
                 update_database(tiling, None, f, None)
                 return check_database(tiling)
         raise ValueError(error)
