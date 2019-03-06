@@ -1,7 +1,8 @@
 """Functions for adding and removing from database."""
-import json, sympy
-
+import json
 from functools import partial
+
+import sympy
 from pymongo import MongoClient
 from sympy import Poly, abc, sympify, var
 
@@ -48,7 +49,8 @@ def update_database(tiling, min_poly, genf, tree, force=False, equations=None):
     Each database entry has three things: tiling, genf, tree.
     """
     if not force:
-        info = mongo.permsdb_three.min_poly_db.find_one({'key': tiling.compress()})
+        info = mongo.permsdb_three.min_poly_db.find_one({'key':
+                                                         tiling.compress()})
         if info is not None:
             return
     if isinstance(genf, str):
@@ -81,7 +83,7 @@ def update_database(tiling, min_poly, genf, tree, force=False, equations=None):
         if genf is not None:
             info['genf'] = str(genf)
         mongo.permsdb_three.min_poly_db.update({'key': info['key']},
-                                            info, upsert=True)
+                                               info, upsert=True)
 
 
 def check_database(tiling, update=True, verbose=False):
@@ -105,13 +107,12 @@ def check_database(tiling, update=True, verbose=False):
             elif tiling.dimensions == (1, 1):
                 error += " Try running the tilescope."
                 import tilescopethree as t
-                from tilescopethree.strategies import (all_cell_insertions,
-                                                       factor,
-                                                       requirement_corroboration,
-                                                       requirement_placement,
-                                                       subset_verified,
-                                                       row_and_column_separation,
-                                                       obstruction_transitivity)
+                from tilescopethree.strategies import (
+                                    all_cell_insertions, factor,
+                                    requirement_corroboration,
+                                    requirement_placement, subset_verified,
+                                    row_and_column_separation,
+                                    obstruction_transitivity)
                 from comb_spec_searcher import StrategyPack
                 pack = StrategyPack(initial_strats=[factor,
                                                     requirement_corroboration],
