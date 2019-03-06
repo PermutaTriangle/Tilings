@@ -1,10 +1,13 @@
 """Functions for adding and removing from database."""
 import json
+from functools import partial
 
+import sympy
 from pymongo import MongoClient
 from sympy import Poly, abc, sympify, var
 
 from comb_spec_searcher import ProofTree
+from comb_spec_searcher.utils import check_equation, check_poly
 from permuta import Perm
 
 from .misc import is_tree
@@ -38,37 +41,59 @@ def tiling_symmetries(tiling):
                 tiling.reverse(), tiling])
 
 
-def update_database(tiling, genf, tree):
+def update_database(tiling, min_poly, genf, tree, force=False, equations=None):
     """
     Add the generating function genf for tiling to database.
 
     The generating function is verified to be correct up to length 10.
     Each database entry has three things: tiling, genf, tree.
     """
-    info = mongo.permsdb_three.factordb.find_one({'key': tiling.compress()})
-    if info is not None:
-        return
+    if not force:
+        info = mongo.permsdb_three.min_poly_db.find_one({'key':
+                                                         tiling.compress()})
+        if info is not None:
+            return
     if isinstance(genf, str):
         genf = sympify(genf)
+    if isinstance(min_poly, str):
+        min_poly = sympify(min_poly)
     assert isinstance(tree, ProofTree) or tree is None
+    if genf is None and min_poly is None:
+        raise ValueError("Not adding genf or min poly.")
 
     count = [len(list(tiling.objects_of_length(i))) for i in range(11)]
-    if taylor_expand(sympify(genf), 10) != count:
-        raise ValueError("Incorrect generating function.")
+    if genf is not None:
+        if taylor_expand(sympify(genf), 10) != count:
+            print(taylor_expand(sympify(genf), 10), count)
+            raise ValueError("Incorrect generating function.")
+
+    if min_poly is not None:
+        if (not check_poly(min_poly, count) and
+                not check_equation(min_poly, count)):
+            raise ValueError("Incorrect minimum polynomial.")
 
     for t in tiling_symmetries(tiling):
-        if tree is None:
-            info = {'key': t.compress(), 'genf': str(genf)}
-        else:
-            info = {'key': t.compress(), 'genf': str(genf),
-                    'tree': json.dumps(tree.to_jsonable())}
-        mongo.permsdb_three.factordb.update({'key': info['key']},
-                                            info, upsert=True)
+        info = {'key': t.compress()}
+        if equations is not None:
+            info['eqs'] = equations
+        if tree is not None:
+            info['tree'] = json.dumps(tree.to_jsonable())
+        if min_poly is not None:
+            info['min_poly'] = str(min_poly)
+        if genf is not None:
+            info['genf'] = str(genf)
+        mongo.permsdb_three.min_poly_db.update({'key': info['key']},
+                                               info, upsert=True)
 
 
-def check_database(tiling, update=True):
-    """Look up and return the generating function for tiling."""
-    info = mongo.permsdb_three.factordb.find_one({'key': tiling.compress()})
+def check_database(tiling, update=True, verbose=False):
+    """Look up and return the database entry for tiling.
+    This is a dictionary containing:
+        key: the compression of the tiling
+        min_poly: the minimum polynomial satisfied by the tiling
+        genf: the generating function for the tiling
+        tree: a proof tree for the enumeration of the tiling"""
+    info = mongo.permsdb_three.min_poly_db.find_one({'key': tiling.compress()})
     if info is None:
         error = "Tiling not in database."
         if update:
@@ -81,12 +106,43 @@ def check_database(tiling, update=True):
                           "non-local obstructions.")
             elif tiling.dimensions == (1, 1):
                 error += " Try running the tilescope."
+                import tilescopethree as t
+                from tilescopethree.strategies import (
+                                    all_cell_insertions, factor,
+                                    requirement_corroboration,
+                                    requirement_placement, subset_verified,
+                                    row_and_column_separation,
+                                    obstruction_transitivity)
+                from comb_spec_searcher import StrategyPack
+                pack = StrategyPack(initial_strats=[factor,
+                                                    requirement_corroboration],
+                                    inferral_strats=[row_and_column_separation,
+                                                     obstruction_transitivity],
+                                    expansion_strats=[[all_cell_insertions],
+                                                      [requirement_placement]],
+                                    ver_strats=[partial(subset_verified,
+                                                        no_factors=True)],
+                                    name="restricted_point_placements")
+                # pack = t.strategy_packs_v2.point_placements
+                if False:
+                    print("Starting a tilescope run.")
+                    print(tiling)
+                searcher = t.TileScopeTHREE(tiling, pack)
+                tree = searcher.auto_search(verbose=verbose)
+                min_poly, genf = tree.get_min_poly(solve=True, verbose=verbose)
+                update_database(tiling, min_poly, genf, tree)
+                return check_database(tiling)
             else:
+                if verbose:
+                    print("Enumerating factor:")
+                    print(tiling)
                 f = enumerate_tree_factor(tiling)
-                update_database(tiling, f, None)
-                return f
+                if verbose:
+                    print(f)
+                update_database(tiling, None, f, None)
+                return check_database(tiling)
         raise ValueError(error)
-    return sympify(info['genf'])
+    return info
 
 
 def enumerate_tree_factor(tiling, **kwargs):
