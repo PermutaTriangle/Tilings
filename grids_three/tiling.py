@@ -1046,7 +1046,7 @@ class Tiling(CombinatorialClass):
             return symbol
         # Check the database
         try:
-            info = check_database(self)
+            info = check_database(self, verbose=kwargs.get('verbose', True))
         except Exception:
             raise ValueError("Tiling not in database:\n" + repr(self))
         if 'genf' in info:
@@ -1060,6 +1060,8 @@ class Tiling(CombinatorialClass):
                 tree = ProofTree.from_json(Tiling, tree)
             update_database(self, info['min_poly'], genf, tree,
                             force=True, equations=info.get('eqs'))
+        if genf is None:
+            raise ValueError()
         return genf
     #
     # Dunder methods
