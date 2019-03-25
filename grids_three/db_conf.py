@@ -61,7 +61,7 @@ def update_database(tiling, min_poly, genf, tree, force=False, equations=None):
     if genf is None and min_poly is None:
         raise ValueError("Not adding genf or min poly.")
 
-    verify = 10
+    verify = 4
     count = [len(list(tiling.objects_of_length(i))) for i in range(verify + 1)]
     if genf is not None:
         if taylor_expand(sympify(genf), verify) != count:
@@ -79,8 +79,9 @@ def update_database(tiling, min_poly, genf, tree, force=False, equations=None):
             info['eqs'] = equations
         elif tree is not None:
             try:
-                equations = ",\n".join("{} = {}".format(str(eq.lhs), str(eq.rhs))
-                                            for eq in tree.get_equations())
+                equations = ",\n".join("{} = {}".format(str(eq.lhs),
+                                                        str(eq.rhs))
+                                       for eq in tree.get_equations())
                 equations = equations.replace("(x)", "")
                 info['eqs'] = equations
             except ValueError as e:
@@ -178,7 +179,7 @@ def enumerate_monotone_tree_factor(tiling, verbose=False):
                                          obstruction_transitivity],
                         expansion_strats=[[partial(col_placements,
                                                    positive=False),
-                                           partial(col_placements,
+                                           partial(row_placements,
                                                    positive=False)]],
                         ver_strats=[one_by_one_verification],
                         name="restricted_row_col_placements")
@@ -203,9 +204,9 @@ def enumerate_one_by_one(tiling, verbose=False):
     pack = StrategyPack(initial_strats=[factor,
                                         requirement_corroboration],
                         inferral_strats=[row_and_column_separation,
-                                            obstruction_transitivity],
+                                         obstruction_transitivity],
                         expansion_strats=[[all_cell_insertions],
-                                            [requirement_placement]],
+                                          [requirement_placement]],
                         ver_strats=[partial(subset_verified,
                                             no_factors=True)],
                         name="restricted_point_placements")
