@@ -604,6 +604,12 @@ class Tiling(CombinatorialClass):
                     yield gp.__class__(
                         gp._patt.insert(new_element=val), gp._pos + (cell,))
 
+        positive_cells = frozenset(self.positive_cells)
+
+        def can_satisfy_positive_cells(gp):
+            pos_cells = positive_cells - frozenset(gp.pos)
+            return len(pos_cells) <= (maxlen - len(gp))
+
         def can_satisfy(gp, col, req):
             return req.get_subperm_left_col(col) in gp
 
@@ -629,6 +635,9 @@ class Tiling(CombinatorialClass):
                 [req for req in reqlist if can_satisfy(curgp, curcol, req)]
                 for reqlist in reqs]
             if any(len(reqlist) == 0 for reqlist in satisfiable):
+                return
+
+            if not can_satisfy_positive_cells(curgp):
                 return
 
             if can_satisfy_all(curgp, curcol + 1, satisfiable):
@@ -810,7 +819,6 @@ class Tiling(CombinatorialClass):
                                                        factors)])
         return factors
 
-      
     def get_min_poly(self, root_func=None, root_class=None, verbose=False):
         """Return the minimum polynomial of the generating function implied by
         the tiling."""
@@ -900,7 +908,8 @@ class Tiling(CombinatorialClass):
         def rec(cols, p, pos, used, i, j, res):
             '''
             Recursive helper function
-            cols: List of columns in increasing order, each column is a list of cells
+            cols: List of columns in increasing order, each column is a list of
+            cells
             p: The pattern
             pos: List of the pattern's positions
             used: Dictionary mapping permutation values to cells for pruning
@@ -913,32 +922,35 @@ class Tiling(CombinatorialClass):
             elif i == len(cols):
                 return
             else:
-                upper = min(v[1] for k,v in used.items() if k > p[j])
-                lower = max(v[1] for k,v in used.items() if k < p[j])
+                upper = min(v[1] for k, v in used.items() if k > p[j])
+                lower = max(v[1] for k, v in used.items() if k < p[j])
                 for cell in cols[i]:
                     if lower <= cell[1] <= upper:
                         used[p[j]] = cell
                         pos.append(cell)
-                        rec(cols, p, pos, used, i, j+1, res)
+                        rec(cols, p, pos, used, i, j + 1, res)
                         pos.pop()
                         del used[p[j]]
-                rec(cols, p, pos, used, i+1, j, res)
-        
+                rec(cols, p, pos, used, i + 1, j, res)
+
         cols = [[] for i in range(self.dimensions[0])]
         for x in self.active_cells:
             cols[x[0]].append(x)
-        used = {-1:(-1,-1), len(patt):self.dimensions}
+        used = {-1: (-1, -1), len(patt): self.dimensions}
         pos = []
         res = []
         rec(cols, patt, pos, used, 0, 0, res)
-        return Tiling(obstructions=list(self.obstructions)+res, requirements=self.requirements)
+        return Tiling(obstructions=list(self.obstructions) + res,
+                      requirements=self.requirements)
 
     @classmethod
     def tiling_from_perm(cls, p):
         '''
-        Returns a tiling with point requirements corresponding to the permutation 'p'
+        Returns a tiling with point requirements corresponding to the
+        permutation 'p'
         '''
-        return cls(requirements=[[Requirement(Perm((0,)), ((i,p[i]),))] for i in range(len(p))])
+        return cls(requirements=[[Requirement(Perm((0,)), ((i, p[i]),))]
+                                 for i in range(len(p))])
 
     def get_genf(self, *args, **kwargs):
         """
@@ -1046,7 +1058,7 @@ class Tiling(CombinatorialClass):
             return symbol
         # Check the database
         try:
-            info = check_database(self)
+            info = check_database(self, verbose=kwargs.get('verbose', True))
         except Exception:
             raise ValueError("Tiling not in database:\n" + repr(self))
         if 'genf' in info:
@@ -1060,6 +1072,8 @@ class Tiling(CombinatorialClass):
                 tree = ProofTree.from_json(Tiling, tree)
             update_database(self, info['min_poly'], genf, tree,
                             force=True, equations=info.get('eqs'))
+        if genf is None:
+            raise ValueError()
         return genf
     #
     # Dunder methods
