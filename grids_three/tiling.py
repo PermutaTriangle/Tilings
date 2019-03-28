@@ -443,6 +443,44 @@ class Tiling(CombinatorialClass):
                 edges.append((c1, c2))
         return edges
 
+    def sum_decomposition(self, skew=False):
+        """
+        Returns the sum decomposition of the tiling with respect to the cells.
+        If skew is True then returns the skew decomposition instead.
+        """
+        cells = sorted(self.active_cells)
+        decomposition = []
+        while len(cells) > 0:
+            x = cells[0][0] # x boundary, maximum in both cases
+            y = cells[0][1] # y boundary, maximum in sum, minimum in skew
+            change = True
+            while change:
+                change = False
+                for c in cells:
+                    if c[0] <= x:
+                        if (skew and c[1] < y) or (not skew and c[1] > y):
+                            y = c[1]
+                            change = True
+                    if (skew and c[1] >= y) or (not skew and c[1] <= y):
+                        if c[0] > x:
+                            x = c[0]
+                            change = True
+            decomposition.append([])
+            new_cells = []
+            for c in cells:
+                if c[0] <= x:
+                    decomposition[-1].append(c)
+                else:
+                    new_cells.append(c)
+            cells = new_cells
+        return decomposition
+
+    def skew_decomposition(self):
+        """
+        Returns the skew decomposition of the tiling with respect to the cells
+        """
+        return self.sum_decomposition(skew=True)
+
     @staticmethod
     def sort_requirements(requirements):
         return tuple(sorted(tuple(sorted(set(reqlist)))
