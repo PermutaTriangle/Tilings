@@ -857,8 +857,6 @@ class Tiling(CombinatorialClass):
                                                        factors)])
         return factors
 
-<<<<<<< HEAD
-=======
     def get_min_poly(self, root_func=None, root_class=None, verbose=False):
         """Return the minimum polynomial of the generating function implied by
         the tiling."""
@@ -940,7 +938,6 @@ class Tiling(CombinatorialClass):
             min_poly = tree.get_min_poly(verbose=verbose)
             return min_poly
 
->>>>>>> master
     def add_obstruction_in_all_ways(self, patt):
         '''
         Adds an obstruction of the pattern patt in all possible ways to
@@ -949,13 +946,8 @@ class Tiling(CombinatorialClass):
         def rec(cols, p, pos, used, i, j, res):
             '''
             Recursive helper function
-<<<<<<< HEAD
-            cols: List of columns in increasing order,
-                  each column is a list of cells
-=======
             cols: List of columns in increasing order, each column is a list of
             cells
->>>>>>> master
             p: The pattern
             pos: List of the pattern's positions
             used: Dictionary mapping permutation values to cells for pruning
@@ -977,12 +969,8 @@ class Tiling(CombinatorialClass):
                         rec(cols, p, pos, used, i, j + 1, res)
                         pos.pop()
                         del used[p[j]]
-<<<<<<< HEAD
-                rec(cols, p, pos, used, i+1, j, res)
-=======
                 rec(cols, p, pos, used, i + 1, j, res)
 
->>>>>>> master
         cols = [[] for i in range(self.dimensions[0])]
         for x in self.active_cells:
             cols[x[0]].append(x)
@@ -990,29 +978,17 @@ class Tiling(CombinatorialClass):
         pos = []
         res = []
         rec(cols, patt, pos, used, 0, 0, res)
-<<<<<<< HEAD
-        return Tiling(list(self.obstructions)+res, self.requirements)
-=======
         return Tiling(obstructions=list(self.obstructions) + res,
                       requirements=self.requirements)
->>>>>>> master
 
     @classmethod
     def tiling_from_perm(cls, p):
         '''
-<<<<<<< HEAD
-        Returns a tiling with point requirements
-        corresponding to the permutation 'p'
-        '''
-        return cls(requirements=[
-            [Requirement(Perm((0,)), ((i, p[i]),))] for i in range(len(p))])
-=======
         Returns a tiling with point requirements corresponding to the
         permutation 'p'
         '''
         return cls(requirements=[[Requirement(Perm((0,)), ((i, p[i]),))]
                                  for i in range(len(p))])
->>>>>>> master
 
     def get_genf(self, *args, **kwargs):
         """
