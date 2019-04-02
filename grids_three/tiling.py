@@ -3,15 +3,16 @@ from array import array
 from collections import Counter, defaultdict
 from functools import partial, reduce
 from itertools import chain
-from operator import mul
+from operator import add, mul
 
 import sympy
 
-from comb_spec_searcher import CombinatorialClass
+from comb_spec_searcher import CombinatorialClass, ProofTree
+from comb_spec_searcher.utils import check_equation, check_poly, get_solution
 from permuta import Perm, PermSet
 from permuta.misc import UnionFind
 
-from .db_conf import check_database
+from .db_conf import check_database, update_database
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
 from .obstruction import Obstruction
@@ -92,6 +93,7 @@ class Tiling(CombinatorialClass):
     def _minimize_tiling(self):
         # Produce the mapping between the two tilings
         if not self.active_cells:
+            self.forward_map = {}
             self._obstructions = (Obstruction.single_cell(Perm((0,)), (0, 0)),)
             self._requirements = tuple()
             self._dimensions = (1, 1)
@@ -199,56 +201,61 @@ class Tiling(CombinatorialClass):
 
     # Compression
 
-    def compress(self, patthash=None):
+    def compress(self):
         """Compresses the tiling by flattening the sets of cells into lists of
         integers which are concatenated together, every list preceeded by its
         size. The obstructions are compressed and concatenated to the list, as
         are the requirement lists."""
+        def split_16bit(n):
+            """Takes a 16 bit integer and splits it into
+               (lower 8bits, upper 8bits)"""
+            return (n & 0xFF, (n >> 8) & 0xFF)
         result = []
-        result.append(len(self.obstructions))
-        result.extend(chain.from_iterable(ob.compress(patthash)
+        result.extend(split_16bit(len(self.obstructions)))
+        result.extend(chain.from_iterable([len(ob)]+ob.compress()
                                           for ob in self.obstructions))
-        result.append(len(self.requirements))
+        result.extend(split_16bit(len(self.requirements)))
         for reqlist in self.requirements:
-            result.append(len(reqlist))
-            result.extend(chain.from_iterable(req.compress(patthash)
+            result.extend(split_16bit(len(reqlist)))
+            result.extend(chain.from_iterable([len(req)]+req.compress()
                                               for req in reqlist))
-        res = array('H', result)
+        res = array('B', result)
         return res.tobytes()
 
     @classmethod
-    def decompress(cls, arrbytes, patts=None, remove_empty=False,
-                   derive_empty=False, minimize=False, sorted_input=True):
-        """Given a compressed tiling in the form of an 2-byte array, decompress
+    def decompress(cls, arrbytes, remove_empty=False, derive_empty=False,
+                   minimize=False, sorted_input=True):
+        """Given a compressed tiling in the form of an 1-byte array, decompress
         it and return a tiling."""
-        arr = array('H', arrbytes)
-        offset = 1
-        nobs = arr[offset - 1]
+        def merge_8bit(lh, uh):
+            """Takes two 16 bit integers and merges them into
+               one 16 bit integer assuming lh is lower half and
+               uh is the upper half."""
+            return lh | (uh << 8)
+        arr = array('B', arrbytes)
+        offset = 2
+        nobs = merge_8bit(arr[offset - 2], arr[offset-1])
         obstructions = []
         for _ in range(nobs):
-            if patts:
-                patt = patts[arr[offset]]
-            else:
-                patt = Perm.unrank(arr[offset])
+            pattlen = arr[offset]
+            offset += 1
             obstructions.append(Obstruction.decompress(
-                arr[offset:offset + 2*(len(patt)) + 1], patts))
-            offset += 2 * len(patt) + 1
+                arr[offset:offset+3*pattlen]))
+            offset += 3*pattlen
 
-        nreqs = arr[offset]
-        offset += 1
+        nreqs = merge_8bit(arr[offset], arr[offset + 1])
+        offset += 2
         requirements = []
         for _ in range(nreqs):
-            reqlistlen = arr[offset]
-            offset += 1
+            reqlistlen = merge_8bit(arr[offset], arr[offset + 1])
+            offset += 2
             reqlist = []
             for _ in range(reqlistlen):
-                if patts:
-                    patt = patts[arr[offset]]
-                else:
-                    patt = Perm.unrank(arr[offset])
+                pattlen = arr[offset]
+                offset += 1
                 reqlist.append(Requirement.decompress(
-                    arr[offset:offset + 2*(len(patt)) + 1], patts))
-                offset += 2 * len(patt) + 1
+                    arr[offset:offset+3*pattlen]))
+                offset += 3*pattlen
             requirements.append(reqlist)
 
         return cls(obstructions=obstructions, requirements=requirements,
@@ -496,15 +503,20 @@ class Tiling(CombinatorialClass):
                       requirements=([gptransf(req) for req in reqlist]
                                     for reqlist in self.requirements))
 
-    def reverse(self):
+    def reverse(self, regions=False):
         """ |
         Reverses the tiling within its boundary. Every cell and obstruction
         gets flipped over the vertical middle axis."""
         def reverse_cell(cell):
             return (self.dimensions[0] - cell[0] - 1, cell[1])
-        return self._transform(
-            reverse_cell,
-            lambda gp: gp.reverse(reverse_cell))
+        reversed_tiling = self._transform(reverse_cell,
+                                          lambda gp: gp.reverse(reverse_cell))
+        if not regions:
+            return reversed_tiling
+        else:
+            return ([reversed_tiling],
+                    [{c: frozenset([reverse_cell(c)])
+                      for c in self.active_cells}])
 
     def complement(self):
         """ -
@@ -630,6 +642,12 @@ class Tiling(CombinatorialClass):
                     yield gp.__class__(
                         gp._patt.insert(new_element=val), gp._pos + (cell,))
 
+        positive_cells = frozenset(self.positive_cells)
+
+        def can_satisfy_positive_cells(gp):
+            pos_cells = positive_cells - frozenset(gp.pos)
+            return len(pos_cells) <= (maxlen - len(gp))
+
         def can_satisfy(gp, col, req):
             return req.get_subperm_left_col(col) in gp
 
@@ -653,8 +671,11 @@ class Tiling(CombinatorialClass):
             # already been satisfied
             satisfiable = [
                 [req for req in reqlist if can_satisfy(curgp, curcol, req)]
-                for reqlist in reqs if not satisfies(curgp, reqlist)]
+                for reqlist in reqs]
             if any(len(reqlist) == 0 for reqlist in satisfiable):
+                return
+
+            if not can_satisfy_positive_cells(curgp):
                 return
 
             if can_satisfy_all(curgp, curcol + 1, satisfiable):
@@ -688,6 +709,9 @@ class Tiling(CombinatorialClass):
         merged_tiling = Tiling(self.obstructions, reqs + [new_req],
                                remove_empty=remove_empty)
         return merged_tiling
+
+    def is_point_tiling(self):
+        return self.dimensions == (1, 1) and (0, 0) in self.point_cells
 
     @property
     def point_cells(self):
@@ -833,6 +857,90 @@ class Tiling(CombinatorialClass):
                                                        factors)])
         return factors
 
+<<<<<<< HEAD
+=======
+    def get_min_poly(self, root_func=None, root_class=None, verbose=False):
+        """Return the minimum polynomial of the generating function implied by
+        the tiling."""
+        F = sympy.Symbol("F")
+        if self == Tiling(obstructions=(Obstruction(Perm((0,)), ((0, 0),)),)):
+            return sympy.sympify("{} - 1".format(F))
+        elif self == Tiling(obstructions=(
+                                Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+                                Obstruction(Perm((1, 0)), ((0, 0), (0, 0))))):
+            return sympy.sympify("{} - x - 1".format(F))
+        elif self.requirements:
+            req = self.requirements[0]
+            newreqs = self.requirements[1:]
+            newobs = (self.obstructions +
+                      tuple(Obstruction(r.patt, r.pos) for r in req))
+            avoids = Tiling(newobs, newreqs)
+            without = Tiling(self.obstructions, newreqs)
+            A, B = sympy.Symbol("A"), sympy.Symbol("B")
+            avoids_min_poly = avoids.get_min_poly(verbose=verbose)
+            avoids_min_poly = avoids_min_poly.subs({F: A})
+            without_min_poly = without.get_min_poly(verbose=verbose)
+            without_min_poly = without_min_poly.subs({F: B})
+            eq = F - B + A
+            basis = sympy.groebner([avoids_min_poly, without_min_poly, eq],
+                                   A, B, F, wrt=[sympy.abc.x, F],
+                                   order='lex')
+            # Compute some initial conditions to length verify.
+            verify = 5
+            if basis.polys:
+                initial = [len(list(self.objects_of_length(i)))
+                           for i in range(verify + 1)]
+
+            # # Check that a polynomial is actually a min poly for the class by
+            # # plugging in initial conditions.
+            for poly in basis.polys:
+                if (poly.atoms(sympy.Symbol) == {F, sympy.abc.x}):
+                    eq = poly.as_expr()
+                    if check_poly(eq, initial):
+                        return eq
+                    elif check_equation(eq, initial):
+                        return eq
+            raise ValueError("Something went wrong.")
+        elif (self.dimensions == (1, 1) or
+              any(ob.is_interleaving() for ob in self.obstructions) or
+              any(r.is_interleaving() for req in self.requirements
+                  for r in req) or
+              (len(self.find_factors()) == 1 and
+               all(ob.is_single_cell() for ob in self.obstructions))):
+            try:
+                info = check_database(self, verbose=verbose)
+                min_poly = info.get('min_poly')
+                if min_poly is None:
+                    min_poly = F - sympy.sympify(info['genf'])
+                else:
+                    min_poly = sympy.sympify(min_poly)
+                return min_poly
+            except Exception as e:
+                raise NotImplementedError(("Can't find the min poly for:\n" +
+                                           str(self)))
+        else:
+            import tilescopethree as t
+            from tilescopethree.strategies import (all_cell_insertions,
+                                                   factor,
+                                                   requirement_corroboration,
+                                                   subset_verified)
+            from comb_spec_searcher import StrategyPack
+            max_length = max(len(p) for p in self.obstructions)
+            pack = StrategyPack(initial_strats=[factor,
+                                                requirement_corroboration],
+                                inferral_strats=[],
+                                expansion_strats=[[partial(
+                                                    all_cell_insertions,
+                                                    maxreqlen=max_length)]],
+                                ver_strats=[partial(subset_verified,
+                                                    no_factors=True)],
+                                name="globally_verified")
+            searcher = t.TileScopeTHREE(self, pack)
+            tree = searcher.auto_search(verbose=verbose)
+            min_poly = tree.get_min_poly(verbose=verbose)
+            return min_poly
+
+>>>>>>> master
     def add_obstruction_in_all_ways(self, patt):
         '''
         Adds an obstruction of the pattern patt in all possible ways to
@@ -841,8 +949,13 @@ class Tiling(CombinatorialClass):
         def rec(cols, p, pos, used, i, j, res):
             '''
             Recursive helper function
+<<<<<<< HEAD
             cols: List of columns in increasing order,
                   each column is a list of cells
+=======
+            cols: List of columns in increasing order, each column is a list of
+            cells
+>>>>>>> master
             p: The pattern
             pos: List of the pattern's positions
             used: Dictionary mapping permutation values to cells for pruning
@@ -861,10 +974,15 @@ class Tiling(CombinatorialClass):
                     if lower <= cell[1] <= upper:
                         used[p[j]] = cell
                         pos.append(cell)
-                        rec(cols, p, pos, used, i, j+1, res)
+                        rec(cols, p, pos, used, i, j + 1, res)
                         pos.pop()
                         del used[p[j]]
+<<<<<<< HEAD
                 rec(cols, p, pos, used, i+1, j, res)
+=======
+                rec(cols, p, pos, used, i + 1, j, res)
+
+>>>>>>> master
         cols = [[] for i in range(self.dimensions[0])]
         for x in self.active_cells:
             cols[x[0]].append(x)
@@ -872,16 +990,29 @@ class Tiling(CombinatorialClass):
         pos = []
         res = []
         rec(cols, patt, pos, used, 0, 0, res)
+<<<<<<< HEAD
         return Tiling(list(self.obstructions)+res, self.requirements)
+=======
+        return Tiling(obstructions=list(self.obstructions) + res,
+                      requirements=self.requirements)
+>>>>>>> master
 
     @classmethod
     def tiling_from_perm(cls, p):
         '''
+<<<<<<< HEAD
         Returns a tiling with point requirements
         corresponding to the permutation 'p'
         '''
         return cls(requirements=[
             [Requirement(Perm((0,)), ((i, p[i]),))] for i in range(len(p))])
+=======
+        Returns a tiling with point requirements corresponding to the
+        permutation 'p'
+        '''
+        return cls(requirements=[[Requirement(Perm((0,)), ((i, p[i]),))]
+                                 for i in range(len(p))])
+>>>>>>> master
 
     def get_genf(self, *args, **kwargs):
         """
@@ -913,6 +1044,13 @@ class Tiling(CombinatorialClass):
             return sympy.sympify('-1/2*(sqrt(-4*x + 1) - 1)/x')
         if self == Tiling([Obstruction.single_cell(Perm((2, 1, 0)), (0, 0))]):
             return sympy.sympify('-1/2*(sqrt(-4*x + 1) - 1)/x')
+        if self == Tiling(obstructions=(Obstruction(Perm((0,)), ((0, 0),)),)):
+                return sympy.sympify("1")
+        if self == Tiling(obstructions=(Obstruction(Perm((0, 1)),
+                                                    ((0, 0), (0, 0))),
+                                        Obstruction(Perm((1, 0)),
+                                                    ((0, 0), (0, 0))))):
+                return sympy.sympify("x + 1")
 
         if kwargs.get('substitutions'):
             if kwargs.get('subs') is None:
@@ -980,13 +1118,26 @@ class Tiling(CombinatorialClass):
                 symbols[self] = symbol
             subs = kwargs.get('subs')
             if symbol not in subs:
-                subs[symbol] = check_database(self)
+                subs[symbol] = sympy.sympify(check_database(self)[genf])
             return symbol
         # Check the database
         try:
-            genf = check_database(self)
+            info = check_database(self, verbose=kwargs.get('verbose', True))
         except Exception:
             raise ValueError("Tiling not in database:\n" + repr(self))
+        if 'genf' in info:
+            genf = sympy.sympify(info['genf'])
+        elif 'min_poly' in info:
+            eq = sympy.Eq(sympy.sympify(info['min_poly']), 0)
+            initial = [len(list(self.objects_of_length(i))) for i in range(6)]
+            genf = get_solution(eq, initial)
+            tree = info.get('tree')
+            if tree is not None:
+                tree = ProofTree.from_json(Tiling, tree)
+            update_database(self, info['min_poly'], genf, tree,
+                            force=True, equations=info.get('eqs'))
+        if genf is None:
+            raise ValueError()
         return genf
     #
     # Dunder methods
