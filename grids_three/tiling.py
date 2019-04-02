@@ -451,8 +451,8 @@ class Tiling(CombinatorialClass):
         cells = sorted(self.active_cells)
         decomposition = []
         while len(cells) > 0:
-            x = cells[0][0] # x boundary, maximum in both cases
-            y = cells[0][1] # y boundary, maximum in sum, minimum in skew
+            x = cells[0][0]  # x boundary, maximum in both cases
+            y = cells[0][1]  # y boundary, maximum in sum, minimum in skew
             change = True
             while change:
                 change = False
@@ -833,7 +833,6 @@ class Tiling(CombinatorialClass):
                                                        factors)])
         return factors
 
-
     def add_obstruction_in_all_ways(self, patt):
         '''
         Adds an obstruction of the pattern patt in all possible ways to
@@ -842,7 +841,8 @@ class Tiling(CombinatorialClass):
         def rec(cols, p, pos, used, i, j, res):
             '''
             Recursive helper function
-            cols: List of columns in increasing order, each column is a list of cells
+            cols: List of columns in increasing order,
+                  each column is a list of cells
             p: The pattern
             pos: List of the pattern's positions
             used: Dictionary mapping permutation values to cells for pruning
@@ -855,8 +855,8 @@ class Tiling(CombinatorialClass):
             elif i == len(cols):
                 return
             else:
-                upper = min(v[1] for k,v in used.items() if k > p[j])
-                lower = max(v[1] for k,v in used.items() if k < p[j])
+                upper = min(v[1] for k, v in used.items() if k > p[j])
+                lower = max(v[1] for k, v in used.items() if k < p[j])
                 for cell in cols[i]:
                     if lower <= cell[1] <= upper:
                         used[p[j]] = cell
@@ -865,22 +865,23 @@ class Tiling(CombinatorialClass):
                         pos.pop()
                         del used[p[j]]
                 rec(cols, p, pos, used, i+1, j, res)
-        
         cols = [[] for i in range(self.dimensions[0])]
         for x in self.active_cells:
             cols[x[0]].append(x)
-        used = {-1:(-1,-1), len(patt):self.dimensions}
+        used = {-1: (-1, -1), len(patt): self.dimensions}
         pos = []
         res = []
         rec(cols, patt, pos, used, 0, 0, res)
-        return Tiling(obstructions=list(self.obstructions)+res, requirements=self.requirements)
+        return Tiling(list(self.obstructions)+res, self.requirements)
 
     @classmethod
     def tiling_from_perm(cls, p):
         '''
-        Returns a tiling with point requirements corresponding to the permutation 'p'
+        Returns a tiling with point requirements
+        corresponding to the permutation 'p'
         '''
-        return cls(requirements=[[Requirement(Perm((0,)), ((i,p[i]),))] for i in range(len(p))])
+        return cls(requirements=[
+            [Requirement(Perm((0,)), ((i, p[i]),))] for i in range(len(p))])
 
     def get_genf(self, *args, **kwargs):
         """
@@ -893,6 +894,7 @@ class Tiling(CombinatorialClass):
                 self == kwargs.get('root_class')):
             return kwargs['root_func']
 
+        """
         if (kwargs.get('root_func') is not None and
             kwargs.get('root_class') is not None and
                 (self == kwargs.get('root_class') or
@@ -904,6 +906,7 @@ class Tiling(CombinatorialClass):
                  self == kwargs.get('root_class').antidiagonal() or
                  self == kwargs.get('root_class').complement())):
             return kwargs['root_func']
+        """
 
         # Remove once fusion specifications are added to the database.
         if self == Tiling([Obstruction.single_cell(Perm((0, 1, 2)), (0, 0))]):

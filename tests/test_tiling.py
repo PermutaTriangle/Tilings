@@ -1072,3 +1072,23 @@ def test_add_obstruction_in_all_ways():
                       (Requirement(Perm((0,)), ((2, 0),)),)))
     patt = Perm.to_standard((4, 1, 3, 5, 2))
     assert(initial_tiling.add_obstruction_in_all_ways(patt) == final_tiling)
+
+
+def test_sum_decomposition():
+    obs = [
+           Obstruction.single_cell(Perm((0, 1)), (0, 0)),
+           Obstruction.single_cell(Perm((0, 1)), (1, 2)),
+           Obstruction.single_cell(Perm((0, 1)), (2, 1)),
+           Obstruction.single_cell(Perm((0, 1)), (3, 2)),
+           Obstruction.single_cell(Perm((0, 1)), (4, 4)),
+           Obstruction.single_cell(Perm((0, 1)), (5, 3)),
+           ]
+    reqs = []
+
+    t = Tiling(obs, reqs)
+    assert(t.sum_decomposition() == [
+        [(0, 0)], [(1, 2), (2, 1), (3, 2)], [(4, 4), (5, 3)]])
+    assert(t.skew_decomposition() == [
+        [(0, 0), (1, 2), (2, 1), (3, 2), (4, 4), (5, 3)]])
+    assert(len(t.reverse().sum_decomposition()) == 1)
+    assert(len(t.reverse().skew_decomposition()) == 3)
