@@ -96,7 +96,7 @@ def update_database(tiling, min_poly, genf, tree, force=False, equations=None):
                                                info, upsert=True)
 
 
-def check_database(tiling, update=True, verbose=False):
+def check_database(tiling, update=True):
     """Look up and return the database entry for tiling.
     This is a dictionary containing:
         key: the compression of the tiling
@@ -115,22 +115,18 @@ def check_database(tiling, update=True, verbose=False):
                 error += (" Current methods to enumerate factors can't handle "
                           "non-local obstructions.")
             elif tiling.dimensions == (1, 1):
-                return enumerate_one_by_one(tiling, verbose=verbose)
+                return enumerate_one_by_one(tiling)
             elif is_monotone_tree_factor(tiling):
-                return enumerate_monotone_tree_factor(tiling, verbose=verbose)
+                return enumerate_monotone_tree_factor(tiling)
             elif is_monotone_tree_factor(tiling, one_non_monotone=True):
-                if verbose:
-                    print("Enumerating factor")
-                    print(tiling)
                 f = enumerate_tree_factor(tiling)
-                if verbose:
-                    print(f)
                 update_database(tiling, None, f, None)
                 return check_database(tiling)
             else:
                 error += "No method to enumerate tiling."
 
         raise ValueError(error)
+    print(info['tree'])
     return info
 
 
@@ -162,7 +158,7 @@ def is_monotone_tree_factor(tiling, one_non_monotone=False):
     return True
 
 
-def enumerate_monotone_tree_factor(tiling, verbose=False):
+def enumerate_monotone_tree_factor(tiling):
     """Return min_poly, genf, tree, that enumerates a monotone tree factor."""
     import tilescopethree as t
     from tilescopethree.strategies import (row_placements,
@@ -184,36 +180,57 @@ def enumerate_monotone_tree_factor(tiling, verbose=False):
                         ver_strats=[one_by_one_verification],
                         name="restricted_row_col_placements")
     searcher = t.TileScopeTHREE(tiling, pack)
-    tree = searcher.auto_search(verbose=verbose)
-    min_poly, genf = tree.get_min_poly(solve=True, verbose=verbose)
+    tree = searcher.auto_search()
+    min_poly, genf = tree.get_min_poly(solve=True)
     update_database(tiling, min_poly, genf, tree, force=True)
     return check_database(tiling)
 
 
-def enumerate_one_by_one(tiling, verbose=False):
+def enumerate_one_by_one(tiling):
     """Try to add the enumeration of a one by one tiling to the database,
     by starting a tilescpe run using a point placement pack."""
     import tilescopethree as t
     from tilescopethree.strategies import (
-                        all_cell_insertions, factor,
-                        requirement_corroboration,
-                        requirement_placement, subset_verified,
-                        row_and_column_separation,
-                        obstruction_transitivity)
+                        all_factor_insertions, factor,
+                        requirement_placement, one_by_one_verification,
+                        root_requirement_insertion,
+                        row_and_column_separation, requirement_corroboration,
+                        subset_verified, globally_verified)
     from comb_spec_searcher import StrategyPack
-    pack = StrategyPack(initial_strats=[factor,
-                                        requirement_corroboration],
-                        inferral_strats=[row_and_column_separation,
-                                         obstruction_transitivity],
-                        expansion_strats=[[all_cell_insertions],
-                                          [requirement_placement]],
-                        ver_strats=[partial(subset_verified,
-                                            no_factors=True)],
-                        name="restricted_point_placements")
-    # pack = t.strategy_packs_v2.point_placements
+    from permuta.permutils import is_insertion_encodable_maximum, is_insertion_encodable_rightmost
+    # pack = StrategyPack(initial_strats=[factor,
+    #                                     requirement_corroboration],
+    #                     inferral_strats=[row_and_column_separation,
+    #                                      obstruction_transitivity],
+    #                     expansion_strats=[[all_cell_insertions],
+    #                                       [requirement_placement]],
+    #                     ver_strats=[partial(subset_verified,
+    #                                         no_factors=True)],
+    #                     name="restricted_point_placements")
+    basis = [ob.patt for ob in tiling.obstructions]
+    if any((len(patt) == 3 and
+            not patt.is_increasing() and
+            not patt.is_decreasing()) for patt in basis):
+        # 231-avoiding
+        pack = StrategyPack(
+                initial_strats=[factor, requirement_corroboration,
+                                partial(all_factor_insertions,
+                                        ignore_parent=True)],
+                inferral_strats=[row_and_column_separation],
+                expansion_strats=[[partial(root_requirement_insertion,
+                                           maxreqlen=1)],
+                                  [requirement_placement]],
+                ver_strats=[one_by_one_verification],
+                name="subclass_of_231")
+    # elif is_insertion_encodable_maximum(basis):
+    #     pack = t.strategy_packs_v2.regular_insertion_encoding_top
+    # elif is_insertion_encodable_rightmost(basis):
+    #     pack = t.strategy_packs_v2.regular_insertion_encoding_left
+    else:
+        pack = t.strategy_packs_v2.all_the_strategies
     searcher = t.TileScopeTHREE(tiling, pack)
-    tree = searcher.auto_search(verbose=verbose)
-    min_poly, genf = tree.get_min_poly(solve=True, verbose=verbose)
+    tree = searcher.auto_search(status_update=10)
+    min_poly, genf = tree.get_min_poly(solve=True)
     update_database(tiling, min_poly, genf, tree)
     return check_database(tiling)
 
