@@ -126,7 +126,6 @@ def check_database(tiling, update=True):
                 error += "No method to enumerate tiling."
 
         raise ValueError(error)
-    print(info['tree'])
     return info
 
 
