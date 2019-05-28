@@ -857,16 +857,22 @@ class Tiling(CombinatorialClass):
                                                        factors)])
         return factors
 
-    def get_min_poly(self, root_func=None, root_class=None, verbose=False):
+    def get_min_poly(self, **kwargs):
         """Return the minimum polynomial of the generating function implied by
         the tiling."""
+        root_func = kwargs.get('root_func')
         F = sympy.Symbol("F")
+        root_func = sympy.Symbol(str(root_func).replace("(x)", ""))
+        kwargs['root_func'] = root_func
+        root_class = kwargs.get('root_class')
         if self == Tiling(obstructions=(Obstruction(Perm((0,)), ((0, 0),)),)):
             return sympy.sympify("{} - 1".format(F))
         elif self == Tiling(obstructions=(
                                 Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
                                 Obstruction(Perm((1, 0)), ((0, 0), (0, 0))))):
             return sympy.sympify("{} - x - 1".format(F))
+        elif self == root_class:
+            return sympy.sympify("{} - {}".format(F, root_func))
         elif self.requirements:
             req = self.requirements[0]
             newreqs = self.requirements[1:]
@@ -875,28 +881,49 @@ class Tiling(CombinatorialClass):
             avoids = Tiling(newobs, newreqs)
             without = Tiling(self.obstructions, newreqs)
             A, B = sympy.Symbol("A"), sympy.Symbol("B")
-            avoids_min_poly = avoids.get_min_poly(verbose=verbose)
-            avoids_min_poly = avoids_min_poly.subs({F: A})
-            without_min_poly = without.get_min_poly(verbose=verbose)
-            without_min_poly = without_min_poly.subs({F: B})
+            if avoids == root_class:
+                avoids_min_poly = A - root_func
+            else:
+                avoids_min_poly = avoids.get_min_poly(**kwargs)
+                avoids_min_poly = avoids_min_poly.subs({F: A})
+            if without == root_class:
+                without_min_poly = B - root_func
+            else:
+                without_min_poly = without.get_min_poly(**kwargs)
+                without_min_poly = without_min_poly.subs({F: B})
             eq = F - B + A
             basis = sympy.groebner([avoids_min_poly, without_min_poly, eq],
-                                   A, B, F, wrt=[sympy.abc.x, F],
+                                   A, B, F,
+                                   wrt=([sympy.abc.x, F] +
+                                        ([root_func] if root_func is not None
+                                         else [])),
                                    order='lex')
             # Compute some initial conditions to length verify.
             verify = 5
             if basis.polys:
                 initial = [len(list(self.objects_of_length(i)))
                            for i in range(verify + 1)]
+            if root_func is not None:
+                root_initial = [len(list(root_class.objects_of_length(i)))
+                                for i in range(verify + 1)]
 
             # # Check that a polynomial is actually a min poly for the class by
             # # plugging in initial conditions.
             for poly in basis.polys:
+                if root_initial:
+                    root_kwargs = {"root_func": root_func,
+                              "root_initial": root_initial}
                 if (poly.atoms(sympy.Symbol) == {F, sympy.abc.x}):
                     eq = poly.as_expr()
-                    if check_poly(eq, initial):
+                    if check_poly(eq, initial, **root_kwargs):
                         return eq
-                    elif check_equation(eq, initial):
+                    elif check_equation(eq, initial, **root_kwargs):
+                        return eq
+                if (poly.atoms(sympy.Symbol) == {F, sympy.abc.x, root_func}):
+                    eq = poly.as_expr()
+                    if check_poly(eq, initial, **root_kwargs):
+                        return eq
+                    elif check_equation(eq, initial, **root_kwargs):
                         return eq
             raise ValueError("Something went wrong.")
         elif (self.dimensions == (1, 1) or
@@ -906,7 +933,7 @@ class Tiling(CombinatorialClass):
               (len(self.find_factors()) == 1 and
                all(ob.is_single_cell() for ob in self.obstructions))):
             try:
-                info = check_database(self, verbose=verbose)
+                info = check_database(self)
                 min_poly = info.get('min_poly')
                 if min_poly is None:
                     min_poly = F - sympy.sympify(info['genf'])
@@ -918,7 +945,7 @@ class Tiling(CombinatorialClass):
                                            str(self)))
         else:
             import tilescopethree as t
-            from tilescopethree.strategies import (all_cell_insertions,
+            from tilescopethree.strategies import (all_factor_insertions,
                                                    factor,
                                                    requirement_corroboration,
                                                    subset_verified)
@@ -928,14 +955,14 @@ class Tiling(CombinatorialClass):
                                                 requirement_corroboration],
                                 inferral_strats=[],
                                 expansion_strats=[[partial(
-                                                    all_cell_insertions,
-                                                    maxreqlen=max_length)]],
+                                                    all_factor_insertions,
+                                                    ignore_parent=True)]],
                                 ver_strats=[partial(subset_verified,
                                                     no_factors=True)],
                                 name="globally_verified")
             searcher = t.TileScopeTHREE(self, pack)
-            tree = searcher.auto_search(verbose=verbose)
-            min_poly = tree.get_min_poly(verbose=verbose)
+            tree = searcher.auto_search()
+            min_poly = tree.get_min_poly(**kwargs)
             return min_poly
 
     def add_obstruction_in_all_ways(self, patt):
@@ -1098,7 +1125,7 @@ class Tiling(CombinatorialClass):
             return symbol
         # Check the database
         try:
-            info = check_database(self, verbose=kwargs.get('verbose', True))
+            info = check_database(self)
         except Exception:
             raise ValueError("Tiling not in database:\n" + repr(self))
         if 'genf' in info:
