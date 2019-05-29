@@ -434,6 +434,12 @@ class GriddedPerm():
             return self._pos[0]
         return None
 
+    def is_single_row(self):
+        """Check if the gridded permutation occupies only a single row."""
+        if len(set(y for (x,y) in self._pos)) == 1:
+            return True
+        return False
+
     def is_empty(self):
         """Check if the gridded permutation is the gridded permutation."""
         return not bool(self._patt)

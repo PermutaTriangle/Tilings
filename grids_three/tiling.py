@@ -439,15 +439,15 @@ class Tiling(CombinatorialClass):
         """
         Return the set of edges in the cell graph of the tiling.
         """
-        edges = list()
+        edges = set()
         cells = sorted(self.active_cells)
         for c1, c2 in zip(cells[:-1], cells[1:]):
             if c1[0] == c2[0]:
-                edges.append((c1, c2))
+                edges.add((c1, c2))
         cells = sorted(self.active_cells, key=lambda x: (x[1], x[0]))
         for c1, c2 in zip(cells[:-1], cells[1:]):
             if c1[1] == c2[1]:
-                edges.append((c1, c2))
+                edges.add((c1, c2))
         return edges
 
     def sum_decomposition(self, skew=False):
@@ -709,6 +709,19 @@ class Tiling(CombinatorialClass):
         merged_tiling = Tiling(self.obstructions, reqs + [new_req],
                                remove_empty=remove_empty)
         return merged_tiling
+
+    def is_epsilon(self):
+        """Returns True if the generating function for the tiling is 1."""
+        return (self.dimensions == (1, 1) and len(self.obstructions) == 1 and
+                len(self.obstructions[0]) == 1)
+
+    def is_atom(self):
+        """Returns True if the generating function for the tiling is x."""
+        return self.is_point_tiling()
+    
+    def is_positive(self):
+        """Returns True if tiling does not contain the empty permutation."""
+        return self.requirements
 
     def is_point_tiling(self):
         return self.dimensions == (1, 1) and (0, 0) in self.point_cells
