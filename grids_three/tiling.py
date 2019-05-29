@@ -160,11 +160,34 @@ class Tiling(CombinatorialClass):
     def _minimal_reqs(self, obstructions):
         """Returns a new set of minimal lists of requirements from the
         requirement set of self, and a list of further reduced obstructions."""
-        # TODO:
-        #   - Factor requirements
-        #   - Remove intersections of requirements from obstructions
-        cleanreqs = list()
+        factored_reqs = list()
         for reqs in self._requirements:
+            # If any gridded permutation in list is empty then you vacuously
+            # contain this requirement
+            if not all(reqs):
+                continue
+            if not reqs:
+                # If req is empty, then can not contain this requirement so
+                # the tiling is empty.
+                return (Obstruction.empty_perm(),), tuple()
+            factors = set(reqs[0].factors())
+            for req in reqs[1:]:
+                if not factors:
+                    break
+                factors = factors.intersection(req.factors())
+            if len(factors) == 0 or (len(factors) == 1 and len(reqs) == 1):
+                factored_reqs.append(reqs)
+                continue
+            remaining_cells = (set([c for req in reqs for c in req.pos]) -
+                               set([c for req in factors for c in req.pos]))
+            for factor in factors:
+                factored_reqs.append((factor,))
+            rem_req = tuple(req.get_gridded_perm_in_cells(remaining_cells)
+                            for req in reqs)
+            factored_reqs.append(rem_req)
+
+        cleanreqs = list()
+        for reqs in factored_reqs:
             # If any gridded permutation in list is empty then you vacuously
             # contain this requirement
             if not all(reqs):
@@ -193,6 +216,14 @@ class Tiling(CombinatorialClass):
                     if i != j and j not in ind_to_remove:
                         if all(any(r2 in r1 for r2 in reqs2) for r1 in reqs):
                             ind_to_remove.add(j)
+
+        for i, reqs in enumerate(cleanreqs):
+            if i in ind_to_remove:
+                continue
+            factored = [r.factors() for r in reqs]
+            for factors in factored:
+                if all(any(all(factor in req for req in other_req) for j, other_req in enumerate(cleanreqs) if i != j and j not in ind_to_remove) for factor in factors):
+                    ind_to_remove.add(i)
 
         return (obstructions,
                 Tiling.sort_requirements(reqs
@@ -718,7 +749,7 @@ class Tiling(CombinatorialClass):
     def is_atom(self):
         """Returns True if the generating function for the tiling is x."""
         return self.is_point_tiling()
-    
+
     def is_positive(self):
         """Returns True if tiling does not contain the empty permutation."""
         return self.requirements
