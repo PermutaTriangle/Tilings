@@ -22,8 +22,6 @@ __all__ = ("Tiling")
 
 
 class Tiling(CombinatorialClass):
-    # TODO:
-    #   - Intersection of requirements
     """Tiling class.
 
     Zero-indexed coordinates/cells from bottom left corner where the (x, y)
@@ -359,16 +357,6 @@ class Tiling(CombinatorialClass):
     def insert_cell(self, cell):
         """Performs 'cell insertion', adds a point requirement into the given
         cell. Cell should be active.
-
-        TODO: Given a requirement list that contains the requirement
-            Requirement(Perm((0, 1)), [(x_0, y_0), (x_1, y_1))
-        and a requirement that does not occupy (x_0, y_0), consider what
-        happens to this requirement when cell insertion is performed on (x_0,
-        y_0). This is a case of a subrequirement contained in every requirement
-        of some list, which then another requirement in another list contains.
-        Since the first requirement list guarantees that the subrequirement is
-        placed, the second requirement could remove the subrequirement from
-        itself.
         """
         if not self.cell_within_bounds(cell):
             raise ValueError(
@@ -462,14 +450,13 @@ class Tiling(CombinatorialClass):
         obdict = defaultdict(list)
         reqdict = defaultdict(list)
         for ob in self.obstructions:
-            if ob.is_localized():
+            if ob.is_localized() and len(ob) > 1:
                 obdict[ob.is_localized()].append(ob.patt)
         for req_list in self.requirements:
             if len(req_list) == 1:
                 req = req_list[0]
                 if req.is_localized():
                     reqdict[req.is_localized()].append(req.patt)
-        # TODO: Implement this for the intersection of requirements
         resdict = defaultdict(lambda: ([], []))
         for cell in chain(obdict.keys(), reqdict.keys()):
             resdict[cell] = (obdict[cell], reqdict[cell])
