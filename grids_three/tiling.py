@@ -168,7 +168,7 @@ class Tiling(CombinatorialClass):
                 continue
             if not reqs:
                 # If req is empty, then can not contain this requirement so
-                # the tiling is empty.
+                # the tiling is empty
                 return (Obstruction.empty_perm(),), tuple()
             factors = set(reqs[0].factors())
             for req in reqs[1:]:
@@ -176,8 +176,12 @@ class Tiling(CombinatorialClass):
                     break
                 factors = factors.intersection(req.factors())
             if len(factors) == 0 or (len(factors) == 1 and len(reqs) == 1):
+                # if there are no factors in the intersection, or it is just
+                # the same req as the first, we do nothing and add the original
                 factored_reqs.append(reqs)
                 continue
+            # add each of the factors as a single requirement, and then remove
+            # these from each of the other requirements in the list
             remaining_cells = (set([c for req in reqs for c in req.pos]) -
                                set([c for req in factors for c in req.pos]))
             for factor in factors:
@@ -221,8 +225,13 @@ class Tiling(CombinatorialClass):
             if i in ind_to_remove:
                 continue
             factored = [r.factors() for r in reqs]
+            # if every factor of every requirement in a list is implied by
+            # another requirement then we can remove this requirement list
             for factors in factored:
-                if all(any(all(factor in req for req in other_req) for j, other_req in enumerate(cleanreqs) if i != j and j not in ind_to_remove) for factor in factors):
+                if all(any(all(factor in req for req in other_req)
+                           for j, other_req in enumerate(cleanreqs)
+                           if i != j and j not in ind_to_remove)
+                       for factor in factors):
                     ind_to_remove.add(i)
 
         return (obstructions,
@@ -956,7 +965,7 @@ class Tiling(CombinatorialClass):
             for poly in basis.polys:
                 if root_initial:
                     root_kwargs = {"root_func": root_func,
-                              "root_initial": root_initial}
+                                   "root_initial": root_initial}
                 if (poly.atoms(sympy.Symbol) == {F, sympy.abc.x}):
                     eq = poly.as_expr()
                     if check_poly(eq, initial, **root_kwargs):

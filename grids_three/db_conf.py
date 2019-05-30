@@ -189,27 +189,19 @@ def enumerate_one_by_one(tiling):
     """Try to add the enumeration of a one by one tiling to the database,
     by starting a tilescpe run using a point placement pack."""
     import tilescopethree as t
-    from tilescopethree.strategies import (
-                        all_factor_insertions, factor,
-                        requirement_placement, one_by_one_verification,
-                        root_requirement_insertion,
-                        row_and_column_separation, requirement_corroboration,
-                        subset_verified, globally_verified)
-    from comb_spec_searcher import StrategyPack
-    from permuta.permutils import is_insertion_encodable_maximum, is_insertion_encodable_rightmost
-    # pack = StrategyPack(initial_strats=[factor,
-    #                                     requirement_corroboration],
-    #                     inferral_strats=[row_and_column_separation,
-    #                                      obstruction_transitivity],
-    #                     expansion_strats=[[all_cell_insertions],
-    #                                       [requirement_placement]],
-    #                     ver_strats=[partial(subset_verified,
-    #                                         no_factors=True)],
-    #                     name="restricted_point_placements")
+
     basis = [ob.patt for ob in tiling.obstructions]
     if any((len(patt) == 3 and
             not patt.is_increasing() and
             not patt.is_decreasing()) for patt in basis):
+        from tilescopethree.strategies import (
+                            all_factor_insertions, factor,
+                            requirement_placement, one_by_one_verification,
+                            root_requirement_insertion,
+                            row_and_column_separation,
+                            requirement_corroboration,
+                            subset_verified, globally_verified)
+        from comb_spec_searcher import StrategyPack
         # 231-avoiding
         pack = StrategyPack(
                 initial_strats=[factor, requirement_corroboration,
@@ -221,10 +213,6 @@ def enumerate_one_by_one(tiling):
                                   [requirement_placement]],
                 ver_strats=[one_by_one_verification],
                 name="subclass_of_231")
-    # elif is_insertion_encodable_maximum(basis):
-    #     pack = t.strategy_packs_v2.regular_insertion_encoding_top
-    # elif is_insertion_encodable_rightmost(basis):
-    #     pack = t.strategy_packs_v2.regular_insertion_encoding_left
     else:
         pack = t.strategy_packs_v2.all_the_strategies
     searcher = t.TileScopeTHREE(tiling, pack)
