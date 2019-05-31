@@ -22,8 +22,6 @@ __all__ = ("Tiling")
 
 
 class Tiling(CombinatorialClass):
-    # TODO:
-    #   - Intersection of requirements
     """Tiling class.
 
     Zero-indexed coordinates/cells from bottom left corner where the (x, y)
@@ -160,11 +158,38 @@ class Tiling(CombinatorialClass):
     def _minimal_reqs(self, obstructions):
         """Returns a new set of minimal lists of requirements from the
         requirement set of self, and a list of further reduced obstructions."""
-        # TODO:
-        #   - Factor requirements
-        #   - Remove intersections of requirements from obstructions
-        cleanreqs = list()
+        factored_reqs = list()
         for reqs in self._requirements:
+            # If any gridded permutation in list is empty then you vacuously
+            # contain this requirement
+            if not all(reqs):
+                continue
+            if not reqs:
+                # If req is empty, then can not contain this requirement so
+                # the tiling is empty
+                return (Obstruction.empty_perm(),), tuple()
+            factors = set(reqs[0].factors())
+            for req in reqs[1:]:
+                if not factors:
+                    break
+                factors = factors.intersection(req.factors())
+            if len(factors) == 0 or (len(factors) == 1 and len(reqs) == 1):
+                # if there are no factors in the intersection, or it is just
+                # the same req as the first, we do nothing and add the original
+                factored_reqs.append(reqs)
+                continue
+            # add each of the factors as a single requirement, and then remove
+            # these from each of the other requirements in the list
+            remaining_cells = (set([c for req in reqs for c in req.pos]) -
+                               set([c for req in factors for c in req.pos]))
+            for factor in factors:
+                factored_reqs.append((factor,))
+            rem_req = tuple(req.get_gridded_perm_in_cells(remaining_cells)
+                            for req in reqs)
+            factored_reqs.append(rem_req)
+
+        cleanreqs = list()
+        for reqs in factored_reqs:
             # If any gridded permutation in list is empty then you vacuously
             # contain this requirement
             if not all(reqs):
@@ -193,6 +218,20 @@ class Tiling(CombinatorialClass):
                     if i != j and j not in ind_to_remove:
                         if all(any(r2 in r1 for r2 in reqs2) for r1 in reqs):
                             ind_to_remove.add(j)
+
+        for i, reqs in enumerate(cleanreqs):
+            if i in ind_to_remove:
+                continue
+            factored = [r.factors() for r in reqs]
+            # if every factor of every requirement in a list is implied by
+            # another requirement then we can remove this requirement list
+            for factors in factored:
+                if all(any(all(factor in req for req in other_req)
+                           for j, other_req in enumerate(cleanreqs)
+                           if i != j and j not in ind_to_remove)
+                       for factor in factors):
+                    ind_to_remove.add(i)
+                    break
 
         return (obstructions,
                 Tiling.sort_requirements(reqs
@@ -319,16 +358,6 @@ class Tiling(CombinatorialClass):
     def insert_cell(self, cell):
         """Performs 'cell insertion', adds a point requirement into the given
         cell. Cell should be active.
-
-        TODO: Given a requirement list that contains the requirement
-            Requirement(Perm((0, 1)), [(x_0, y_0), (x_1, y_1))
-        and a requirement that does not occupy (x_0, y_0), consider what
-        happens to this requirement when cell insertion is performed on (x_0,
-        y_0). This is a case of a subrequirement contained in every requirement
-        of some list, which then another requirement in another list contains.
-        Since the first requirement list guarantees that the subrequirement is
-        placed, the second requirement could remove the subrequirement from
-        itself.
         """
         if not self.cell_within_bounds(cell):
             raise ValueError(
@@ -422,14 +451,13 @@ class Tiling(CombinatorialClass):
         obdict = defaultdict(list)
         reqdict = defaultdict(list)
         for ob in self.obstructions:
-            if ob.is_localized():
+            if ob.is_localized() and len(ob) > 1:
                 obdict[ob.is_localized()].append(ob.patt)
         for req_list in self.requirements:
             if len(req_list) == 1:
                 req = req_list[0]
                 if req.is_localized():
                     reqdict[req.is_localized()].append(req.patt)
-        # TODO: Implement this for the intersection of requirements
         resdict = defaultdict(lambda: ([], []))
         for cell in chain(obdict.keys(), reqdict.keys()):
             resdict[cell] = (obdict[cell], reqdict[cell])
@@ -718,7 +746,7 @@ class Tiling(CombinatorialClass):
     def is_atom(self):
         """Returns True if the generating function for the tiling is x."""
         return self.is_point_tiling()
-    
+
     def is_positive(self):
         """Returns True if tiling does not contain the empty permutation."""
         return self.requirements
@@ -925,7 +953,7 @@ class Tiling(CombinatorialClass):
             for poly in basis.polys:
                 if root_initial:
                     root_kwargs = {"root_func": root_func,
-                              "root_initial": root_initial}
+                                   "root_initial": root_initial}
                 if (poly.atoms(sympy.Symbol) == {F, sympy.abc.x}):
                     eq = poly.as_expr()
                     if check_poly(eq, initial, **root_kwargs):
