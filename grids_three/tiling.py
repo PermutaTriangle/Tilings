@@ -231,6 +231,7 @@ class Tiling(CombinatorialClass):
                            if i != j and j not in ind_to_remove)
                        for factor in factors):
                     ind_to_remove.add(i)
+                    break
 
         return (obstructions,
                 Tiling.sort_requirements(reqs
