@@ -63,7 +63,7 @@ and `P` is a tuple of cells. The permutation is assumed to be a `Perm` from the
 given permutation. This can be checked using the `contradictory` method.
 
 ```python
-    >>> from permuta import *
+    >>> from permuta import Perm
     >>> gp = GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 0), (1, 0)))
     >>> gp.contradictory()
     False
@@ -71,3 +71,66 @@ given permutation. This can be checked using the `contradictory` method.
     >>> gp.contradictory()
     True
 ```
+
+A `Tiling` is created with an iterable of `Obstruction` and an iterable of
+`Requirement` lists. It is assumed that all cells not mentioned in some
+obstruction or requirement is empty. You can print the tiling to get an
+overview of the tiling created. In this example, we have a tiling that
+corresponds to non-empty permutation avoiding `123`.
+
+```python
+    >>> obstructions = [Obstruction.single_cell(Perm((0, 1)), (1, 1)),
+                        Obstruction.single_cell(Perm((1, 0)), (1, 1)),
+                        Obstruction.single_cell(Perm((0, 1)), (0, 0)),
+                        Obstruction.single_cell(Perm((0, 1, 2)), (2, 0)),
+                        Obstruction(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0)))]
+    >>> requirements = [[Requirement.single_cell(Perm((0,)), (1, 1))]]
+    >>> til = Tiling(obstructions, requirements)
+    >>> print(til)
+    +-+-+-+
+    | |●| |
+    +-+-+-+
+    |\| |1|
+    +-+-+-+
+    1: Av(012)
+    \: Av(01)
+    ●: point
+    Crossing obstructions:
+    012: (0, 0), (2, 0), (2, 0)
+    Requirement 0:
+    0: (1, 1)
+    >>> til.dimensions
+    (3, 2)
+    >>> til.active_cells
+    {(0, 0), (1, 1), (2, 0)}
+    >>> til.point_cells
+    frozenset({(1, 1)})
+    >>> til.possibly_empty
+    {(0, 0), (2, 0)}
+    >>> til.positive_cells
+    frozenset({(1, 1)})
+
+```
+
+There are a number of methods available on the tiling. You can generate the
+gridded permutations satisfying the obtructions and requirements using the
+`gridded_perms_of_length` method.
+
+```python
+    >>> for i in range(4):
+    ...     for gp in til.gridded_perms_of_length(i):
+    ...         print(gp)
+    ...
+    0: (1, 1)
+    10: (1, 1), (2, 0)
+    01: (0, 0), (1, 1)
+    210: (1, 1), (2, 0), (2, 0)
+    201: (1, 1), (2, 0), (2, 0)
+    120: (0, 0), (1, 1), (2, 0)
+    021: (0, 0), (1, 1), (2, 0)
+    102: (0, 0), (0, 0), (1, 1)
+```
+
+There are numerous other methods and properties. Many of these specific to the
+`tilescope` algorithm, discussed in
+[Christian Bean’s PhD thesis](https://skemman.is/handle/1946/31663).
