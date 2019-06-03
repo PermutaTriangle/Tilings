@@ -1,13 +1,24 @@
 language: python
+sudo: false
+
+language: python
 python:
-  - "3.4"
-  - "3.5"
-  - "3.6"
-  - "nightly"
-  - "pypy3"
+- '3.5'
+- '3.6'
+- '3.7'
+- '3.7-dev'
+- '3.8-dev'
+- 'nightly'
+- 'pypy3.5'
+
 install:
-  - pip install -e .
+- pip install -e .
+
 before_script:
-  - pip install -r test_requirements.txt
+- pip install -r test_requirements.txt
+
 script:
-  - pytest
+- pytest --cov=tilings --cov-report=term-missing
+
+after_success:
+- coveralls
