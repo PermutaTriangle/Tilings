@@ -17,10 +17,10 @@ setup(
     license="BSD-3",
     keywords=("permutation perm gridded pattern tiling avoid contain"
               "occurrences grid class")
-    url="https://github.com/PermutaTriangle/grids_three",
+    url="https://github.com/PermutaTriangle/Tilings",
     project_urls={
-        'Source': 'https://github.com/PermutaTriangle/grids_three',
-        'Tracker': 'https://github.com/PermutaTriangle/grids_three/issues'
+        'Source': 'https://github.com/PermutaTriangle/Tilings',
+        'Tracker': 'https://github.com/PermutaTriangle/Tilings/issues'
     },
     packages=find_packages(),
     long_description=read("README.md"),
