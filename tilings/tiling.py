@@ -1162,7 +1162,7 @@ class Tiling(CombinatorialClass):
                 symbols[self] = symbol
             subs = kwargs.get('subs')
             if symbol not in subs:
-                subs[symbol] = sympy.sympify(check_database(self)[genf])
+                subs[symbol] = sympy.sympify(check_database(self)['genf'])
             return symbol
         # Check the database
         try:

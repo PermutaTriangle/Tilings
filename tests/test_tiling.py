@@ -3,8 +3,8 @@ from itertools import chain
 
 import pytest
 
-from grids_three import GriddedPerm, Obstruction, Requirement, Tiling
 from permuta import Perm
+from tilings import GriddedPerm, Obstruction, Requirement, Tiling
 
 
 @pytest.fixture
