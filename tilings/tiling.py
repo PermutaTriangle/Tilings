@@ -985,12 +985,17 @@ class Tiling(CombinatorialClass):
                 raise NotImplementedError(("Can't find the min poly for:\n" +
                                            str(self)))
         else:
-            import tilescopethree as t
-            from tilescopethree.strategies import (all_factor_insertions,
-                                                   factor,
-                                                   requirement_corroboration,
-                                                   subset_verified)
-            from comb_spec_searcher import StrategyPack
+            try:
+                import tilescopethree as t
+                from tilescopethree.strategies import (
+                                    all_factor_insertions, factor,
+                                    requirement_corroboration, subset_verified)
+                from comb_spec_searcher import StrategyPack
+            except ImportError:
+                raise ValueError(("The enumeration of tilings relies on "
+                                  "tilescope. This has not yet be released. "
+                                  "If you need this functionality, then "
+                                  "contact permutatriangle@gmail.com"))
             max_length = max(len(p) for p in self.obstructions)
             pack = StrategyPack(initial_strats=[factor,
                                                 requirement_corroboration],
