@@ -16,14 +16,14 @@ setup(
     description="A Python library for gridded permutations and tilings.",
     license="BSD-3",
     keywords=("permutation perm gridded pattern tiling avoid contain"
-              "occurrences grid class")
+              "occurrences grid class"),
     url="https://github.com/PermutaTriangle/Tilings",
     project_urls={
         'Source': 'https://github.com/PermutaTriangle/Tilings',
         'Tracker': 'https://github.com/PermutaTriangle/Tilings/issues'
     },
     packages=find_packages(),
-    long_description=read("README.md"),
+    long_description=read("README.rst"),
     install_requires=['comb_spec_searcher',
                       'permuta',
                       'sympy'],
@@ -31,7 +31,7 @@ setup(
     tests_require=['pytest',
                    'permuta',
                    'pytest-pep8',
-                   'pytest-isort']
+                   'pytest-isort'],
     python_requires='>=3.5',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
