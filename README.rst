@@ -106,10 +106,10 @@ have a tiling that corresponds to non-empty permutation avoiding
 .. code:: python
 
        >>> obstructions = [Obstruction.single_cell(Perm((0, 1)), (1, 1)),
-                           Obstruction.single_cell(Perm((1, 0)), (1, 1)),
-                           Obstruction.single_cell(Perm((0, 1)), (0, 0)),
-                           Obstruction.single_cell(Perm((0, 1, 2)), (2, 0)),
-                           Obstruction(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0)))]
+       ...                 Obstruction.single_cell(Perm((1, 0)), (1, 1)),
+       ...                 Obstruction.single_cell(Perm((0, 1)), (0, 0)),
+       ...                 Obstruction.single_cell(Perm((0, 1, 2)), (2, 0)),
+       ...                 Obstruction(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0)))]
        >>> requirements = [[Requirement.single_cell(Perm((0,)), (1, 1))]]
        >>> til = Tiling(obstructions, requirements)
        >>> print(til)
