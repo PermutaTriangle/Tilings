@@ -106,10 +106,10 @@ have a tiling that corresponds to non-empty permutation avoiding
 .. code:: python
 
        >>> obstructions = [Obstruction.single_cell(Perm((0, 1)), (1, 1)),
-                           Obstruction.single_cell(Perm((1, 0)), (1, 1)),
-                           Obstruction.single_cell(Perm((0, 1)), (0, 0)),
-                           Obstruction.single_cell(Perm((0, 1, 2)), (2, 0)),
-                           Obstruction(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0)))]
+       ...                 Obstruction.single_cell(Perm((1, 0)), (1, 1)),
+       ...                 Obstruction.single_cell(Perm((0, 1)), (0, 0)),
+       ...                 Obstruction.single_cell(Perm((0, 1, 2)), (2, 0)),
+       ...                 Obstruction(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0)))]
        >>> requirements = [[Requirement.single_cell(Perm((0,)), (1, 1))]]
        >>> til = Tiling(obstructions, requirements)
        >>> print(til)
@@ -127,12 +127,12 @@ have a tiling that corresponds to non-empty permutation avoiding
        0: (1, 1)
        >>> til.dimensions
        (3, 2)
-       >>> til.active_cells
-       {(0, 0), (1, 1), (2, 0)}
+       >>> sorted(til.active_cells)
+       [(0, 0), (1, 1), (2, 0)]
        >>> til.point_cells
        frozenset({(1, 1)})
-       >>> til.possibly_empty
-       {(0, 0), (2, 0)}
+       >>> sorted(til.possibly_empty)
+       [(0, 0), (2, 0)]
        >>> til.positive_cells
        frozenset({(1, 1)})
 
@@ -145,7 +145,6 @@ using the ``gridded_perms_of_length`` method.
        >>> for i in range(4):
        ...     for gp in til.gridded_perms_of_length(i):
        ...         print(gp)
-       ...
        0: (1, 1)
        10: (1, 1), (2, 0)
        01: (0, 0), (1, 1)
