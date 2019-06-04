@@ -1,5 +1,20 @@
-tilings
+Tilings
 =======
+
+.. image:: https://travis-ci.org/PermutaTriangle/Tilings.svg?branch=master
+    :alt: Travis
+    :target: https://travis-ci.org/PermutaTriangle/Tilings
+.. image:: https://coveralls.io/repos/github/PermutaTriangle/Tilings/badge.svg?branch=master
+    :alt: Coveralls
+    :target: https://coveralls.io/github/PermutaTriangle/Tilings?branch=master
+.. image:: https://img.shields.io/pypi/v/Tilings.svg
+    :alt: PyPI
+    :target: https://pypi.python.org/pypi/Tilings
+.. image:: https://img.shields.io/pypi/l/Tilings.svg
+    :target: https://pypi.python.org/pypi/Tilings
+.. image:: https://img.shields.io/pypi/pyversions/Tilings.svg
+    :target: https://pypi.python.org/pypi/Tilings
+
 
 ``tilings`` is a Python library for working with gridded permutation and
 tilings.
