@@ -1,4 +1,4 @@
-language: python
+dist: xenial
 sudo: false
 
 language: python

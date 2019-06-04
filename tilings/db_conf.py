@@ -257,7 +257,7 @@ def enumerate_tree_factor(tiling, **kwargs):
         for start, basis in basis_array.items():
             if len(basis[0][0]) != 1:
                 break
-    from grids_three import Obstruction, Tiling
+    from tilings import Obstruction, Tiling
     basis = basis_array[start]
     y = variables[start[0]][start[1]]
     initial_genf = Tiling([Obstruction.single_cell(p, (0, 0))
