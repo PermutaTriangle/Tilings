@@ -30,7 +30,6 @@ setup(
                       'sympy'],
     setup_requires=['pytest-runner'],
     tests_require=['pytest',
-                   'permuta',
                    'pytest-pep8',
                    'pytest-isort'],
     python_requires='>=3.5',
