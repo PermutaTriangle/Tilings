@@ -29,9 +29,10 @@ setup(
                       'pymongo',
                       'sympy'],
     setup_requires=['pytest-runner'],
-    tests_require=['pytest',
-                   'pytest-pep8',
-                   'pytest-isort'],
+    tests_require=['pytest==4.5.0',
+                   'pytest-cov==2.7.1',
+                   'pytest-pep8==1.0.6',
+                   'pytest-isort==0.3.1'],
     python_requires='>=3.5',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -43,6 +44,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
 
         'Topic :: Education',
