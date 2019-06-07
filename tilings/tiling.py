@@ -167,7 +167,8 @@ class Tiling(CombinatorialClass):
                     # if factor implied by some requirement list then we
                     # remove it from the gridded perm
                     if not any(all(f in r for r in req_list)
-                               for req_list in self._requirements):
+                               for req_list in self._requirements
+                               if req_list != reqs):
                         cells.extend(f.pos)
                 cleaned_req.append(req.get_gridded_perm_in_cells(cells))
             cleaned_reqs.append(cleaned_req)

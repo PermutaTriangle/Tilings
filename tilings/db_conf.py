@@ -48,7 +48,6 @@ def update_database(tiling, min_poly, genf, tree, force=False, equations=None):
     """
     try:
         mongo = MongoClient('mongodb://localhost:27017/permsdb_three')
-
         if not force:
             info = mongo.permsdb_three.min_poly_db.find_one({'key':
                                                             tiling.compress()})
