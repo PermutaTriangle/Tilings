@@ -48,7 +48,6 @@ def update_database(tiling, min_poly, genf, tree, force=False, equations=None):
     """
     try:
         mongo = MongoClient('mongodb://localhost:27017/permsdb_three')
-
         if not force:
             info = mongo.permsdb_three.min_poly_db.find_one({'key':
                                                             tiling.compress()})
@@ -96,6 +95,7 @@ def update_database(tiling, min_poly, genf, tree, force=False, equations=None):
                 info['genf'] = str(genf)
             mongo.permsdb_three.min_poly_db.update({'key': info['key']},
                                                    info, upsert=True)
+        mongo.close()
     except errors.PyMongoError:
         raise ValueError(("If you wish to save generating functions of tilings"
                           " you will need to setup MongoDB."))
@@ -112,6 +112,7 @@ def check_database(tiling, update=True):
         mongo = MongoClient('mongodb://localhost:27017/permsdb_three')
         info = mongo.permsdb_three.min_poly_db.find_one({'key':
                                                          tiling.compress()})
+        mongo.close()
     except errors.PyMongoError:
         raise ValueError(("If you wish to find the generating functions of "
                           "tilings you will need to setup MongoDB. If you "

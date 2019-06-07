@@ -158,8 +158,23 @@ class Tiling(CombinatorialClass):
     def _minimal_reqs(self, obstructions):
         """Returns a new set of minimal lists of requirements from the
         requirement set of self, and a list of further reduced obstructions."""
-        factored_reqs = list()
+        cleaned_reqs = []
         for reqs in self._requirements:
+            cleaned_req = []
+            for req in reqs:
+                cells = []
+                for f in req.factors():
+                    # if factor implied by some requirement list then we
+                    # remove it from the gridded perm
+                    if not any(all(f in r for r in req_list)
+                               for req_list in self._requirements
+                               if req_list != reqs):
+                        cells.extend(f.pos)
+                cleaned_req.append(req.get_gridded_perm_in_cells(cells))
+            cleaned_reqs.append(cleaned_req)
+
+        factored_reqs = list()
+        for reqs in cleaned_reqs:
             # If any gridded permutation in list is empty then you vacuously
             # contain this requirement
             if not all(reqs):
