@@ -423,8 +423,10 @@ class Tiling(CombinatorialClass):
 
     def only_positive_in_row_and_col(self, cell):
         """Check if the cell is the only positive cell in row and column."""
-        return (self.only_positive_in_row(cell) and
-                self.only_positive_in_col(cell))
+        if cell not in self.positive_cells:
+            return False
+        return sum(1 for (x, y) in self.positive_cells
+                   if y == cell[1] or x == cell[0]) == 1
 
     def only_positive_in_row(self, cell):
         """Check if the cell is the only positive cell in row."""
@@ -449,6 +451,11 @@ class Tiling(CombinatorialClass):
     def only_cell_in_row(self, cell):
         """Checks if the cell is the only active cell in the row."""
         return sum(1 for (x, y) in self.active_cells if y == cell[1]) == 1
+
+    def only_cell_in_row_and_col(self, cell):
+        """Checks if the cell is the only active cell in the row."""
+        return sum(1 for (x, y) in self.active_cells
+                   if y == cell[1] or x == cell[0]) == 1
 
     def cells_in_row(self, row):
         """Return all active cells in row."""
