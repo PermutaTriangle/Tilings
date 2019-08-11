@@ -1092,3 +1092,17 @@ def test_sum_decomposition():
         [(0, 0), (1, 2), (2, 1), (3, 2), (4, 4), (5, 3)]])
     assert(len(t.reverse().sum_decomposition()) == 1)
     assert(len(t.reverse().skew_decomposition()) == 3)
+
+
+def test_is_empty_cell(isolated_tiling):
+    assert isolated_tiling.is_empty_cell((0, 1))
+    assert not isolated_tiling.is_empty_cell((0, 0))
+    assert not isolated_tiling.is_empty_cell((2, 1))
+
+
+def test_is_monotone_cell(isolated_tiling):
+    assert isolated_tiling.is_monotone_cell((0, 0))
+    assert not isolated_tiling.is_monotone_cell((1, 0))
+    assert not isolated_tiling.is_monotone_cell((2, 1))
+    t = Tiling.from_string('123')
+    assert not t.is_monotone_cell((0, 0))

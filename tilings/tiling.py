@@ -779,6 +779,16 @@ class Tiling(CombinatorialClass):
     def is_point_tiling(self):
         return self.dimensions == (1, 1) and (0, 0) in self.point_cells
 
+    def is_empty_cell(self, cell):
+        """Check if the cell of the tiling is empty."""
+        return cell in self.empty_cells
+
+    def is_monotone_cell(self, cell):
+        """Check if the cell is non-empty and decreasing or increasing."""
+        local_obs = self.cell_basis()[cell][0]
+        return (any(ob in [Perm((0, 1)), Perm((1, 0))] for ob in local_obs) and
+                not self.is_empty_cell(cell))
+
     @property
     def point_cells(self):
         if not hasattr(self, "_point_cells"):
