@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Remove factors from requirements if already implied by other requirement
 list.
 - Added tiling method `is_empty_cell` and `is_monotone_cell`
+### Changed
+- The `cell_basis` method of the tilings has an 1 obstruction for empty cell.
+  The basis of a cell that is outside of the tiling is no longer defined.
 ### Fixed
 - Infinite recursion issue in get_genf.
 - Close mongo when finished.

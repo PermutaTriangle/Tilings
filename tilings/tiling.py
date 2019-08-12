@@ -2,7 +2,7 @@ import json
 from array import array
 from collections import Counter, defaultdict
 from functools import partial, reduce
-from itertools import chain
+from itertools import chain, product
 from operator import add, mul
 
 import sympy
@@ -476,16 +476,16 @@ class Tiling(CombinatorialClass):
         obdict = defaultdict(list)
         reqdict = defaultdict(list)
         for ob in self.obstructions:
-            if ob.is_localized() and len(ob) > 1:
+            if ob.is_localized():
                 obdict[ob.is_localized()].append(ob.patt)
         for req_list in self.requirements:
             if len(req_list) == 1:
                 req = req_list[0]
                 if req.is_localized():
                     reqdict[req.is_localized()].append(req.patt)
-        resdict = defaultdict(lambda: ([], []))
-        for cell in chain(obdict.keys(), reqdict.keys()):
-            resdict[cell] = (obdict[cell], reqdict[cell])
+        all_cells = product(range(self.dimensions[0]),
+                            range(self.dimensions[1]))
+        resdict = {cell: (obdict[cell], reqdict[cell]) for cell in all_cells}
         return resdict
 
     def cell_graph(self):
