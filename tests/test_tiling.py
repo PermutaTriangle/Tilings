@@ -700,6 +700,18 @@ def test_cell_basis(factorable_tiling):
     # Basis for a non active cell
     bdict = factorable_tiling.cell_basis()
     assert bdict[(0, 1)] == ([Perm((0,))], [])
+    assert bdict[(5, 3)] == ([Perm((0, 1)), Perm((1, 0))], [Perm((0,))])
+    tiling2 = Tiling(
+                [], [[Requirement(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 1)))]])
+    bdict2 = tiling2.cell_basis()
+    assert bdict2[(0, 0)] == ([], [Perm((0, 1))])
+    assert bdict2[(0, 1)] == ([], [Perm((0,))])
+    tiling3 = Tiling(
+                [], [[Requirement(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 1))),
+                      Requirement(Perm((0, 1, 2)), ((0, 0), (0, 1), (0, 1)))]])
+    bdict3 = tiling3.cell_basis()
+    assert bdict3[(0, 0)] == ([], [Perm((0,))])
+    assert bdict3[(0, 1)] == ([], [Perm((0,))])
     # Check that all cell have a basis
     dim = factorable_tiling.dimensions
     for cell in product(range(dim[0]), range(dim[1])):

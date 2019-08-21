@@ -478,11 +478,23 @@ class Tiling(CombinatorialClass):
         for ob in self.obstructions:
             if ob.is_localized():
                 obdict[ob.is_localized()].append(ob.patt)
+
         for req_list in self.requirements:
-            if len(req_list) == 1:
-                req = req_list[0]
-                if req.is_localized():
-                    reqdict[req.is_localized()].append(req.patt)
+            for req in req_list:
+                for cell in set(req.pos):
+                    gp = req.get_gridded_perm_in_cells([cell])
+                    if (gp not in reqdict[cell] and
+                            all(gp in r for r in req_list)):
+                        reqdict[cell].append(gp.patt)
+        for cell, contain in reqdict.items():
+            ind_to_remove = set()
+            for i, req in enumerate(contain):
+                if any(req in other
+                       for j, other in enumerate(contain) if i != j):
+                    ind_to_remove.add(i)
+            reqdict[cell] = [req for i, req in enumerate(contain)
+                             if i not in ind_to_remove]
+
         all_cells = product(range(self.dimensions[0]),
                             range(self.dimensions[1]))
         resdict = {cell: (obdict[cell], reqdict[cell]) for cell in all_cells}
