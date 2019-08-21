@@ -479,6 +479,23 @@ def test_add_obstruction(compresstil):
             compresstil)
 
 
+def test_add_list_requirement(finite_tiling):
+    list_req = [Requirement(Perm((1, 0)), ((0, 0), (0, 0))),
+                Requirement(Perm((1, 0)), ((0, 1), (0, 1)))]
+    assert (finite_tiling.add_list_requirement(list_req) ==
+            Tiling(obstructions=(
+                Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+                Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+                Obstruction(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
+                Obstruction(Perm((2, 1, 0)), ((0, 1), (0, 1), (0, 1))),
+                Obstruction(Perm((3, 2, 1, 0)), ((0, 1),)*2 + ((0, 0),)*2)
+            ), requirements=(
+                (Requirement(Perm((0,)), ((0, 0),)),),
+                (Requirement(Perm((1, 0)), ((0, 0), (0, 0))),
+                 Requirement(Perm((1, 0)), ((0, 1), (0, 1)))),
+            )))
+
+
 def test_add_requirement(compresstil, factorable_tiling):
     assert (compresstil.add_requirement(Perm((1, 0)), ((1, 1), (2, 0))) ==
             Tiling(obstructions=(Obstruction(Perm(), ()),)))

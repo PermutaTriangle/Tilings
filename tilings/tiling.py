@@ -389,12 +389,19 @@ class Tiling(CombinatorialClass):
             self._obstructions + (Obstruction(patt, pos),),
             self._requirements)
 
+    def add_list_requirement(self, req_list):
+        """
+        Return a new tiling with the requirement list added.
+        """
+        requirements = self._requirements + (tuple(req_list),)
+        return Tiling(obstructions=self._obstructions,
+                      requirements=requirements)
+
     def add_requirement(self, patt, pos):
         """Returns a new tiling with the requirement of the pattern
         patt with position pos."""
-        return Tiling(
-            self._obstructions,
-            self._requirements + ((Requirement(patt, pos),),))
+        new_req_list = (Requirement(patt, pos),)
+        return self.add_list_requirement(new_req_list)
 
     def add_single_cell_obstruction(self, patt, cell):
         """Returns a new tiling with the single cell obstruction of the pattern
@@ -406,9 +413,8 @@ class Tiling(CombinatorialClass):
     def add_single_cell_requirement(self, patt, cell):
         """Returns a new tiling with the single cell requirement of the pattern
         patt in the given cell."""
-        return Tiling(
-            self._obstructions,
-            self._requirements + ([Requirement.single_cell(patt, cell)],))
+        new_req_list = (Requirement.single_cell(patt, cell),)
+        return self.add_list_requirement(new_req_list)
 
     def fully_isolated(self):
         """Check if all cells are isolated on their rows and columns."""
