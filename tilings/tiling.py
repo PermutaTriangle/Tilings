@@ -2,7 +2,7 @@ import json
 from array import array
 from collections import Counter, defaultdict
 from functools import partial, reduce
-from itertools import chain
+from itertools import chain, product
 from operator import add, mul
 
 import sympy
@@ -482,16 +482,28 @@ class Tiling(CombinatorialClass):
         obdict = defaultdict(list)
         reqdict = defaultdict(list)
         for ob in self.obstructions:
-            if ob.is_localized() and len(ob) > 1:
+            if ob.is_localized():
                 obdict[ob.is_localized()].append(ob.patt)
+
         for req_list in self.requirements:
-            if len(req_list) == 1:
-                req = req_list[0]
-                if req.is_localized():
-                    reqdict[req.is_localized()].append(req.patt)
-        resdict = defaultdict(lambda: ([], []))
-        for cell in chain(obdict.keys(), reqdict.keys()):
-            resdict[cell] = (obdict[cell], reqdict[cell])
+            for req in req_list:
+                for cell in set(req.pos):
+                    gp = req.get_gridded_perm_in_cells([cell])
+                    if (gp not in reqdict[cell] and
+                            all(gp in r for r in req_list)):
+                        reqdict[cell].append(gp.patt)
+        for cell, contain in reqdict.items():
+            ind_to_remove = set()
+            for i, req in enumerate(contain):
+                if any(req in other
+                       for j, other in enumerate(contain) if i != j):
+                    ind_to_remove.add(i)
+            reqdict[cell] = [req for i, req in enumerate(contain)
+                             if i not in ind_to_remove]
+
+        all_cells = product(range(self.dimensions[0]),
+                            range(self.dimensions[1]))
+        resdict = {cell: (obdict[cell], reqdict[cell]) for cell in all_cells}
         return resdict
 
     def cell_graph(self):
@@ -784,6 +796,20 @@ class Tiling(CombinatorialClass):
 
     def is_point_tiling(self):
         return self.dimensions == (1, 1) and (0, 0) in self.point_cells
+
+    def is_empty_cell(self, cell):
+        """Check if the cell of the tiling is empty."""
+        return cell in self.empty_cells
+
+    def is_monotone_cell(self, cell):
+        """
+        Check if the cell is decreasing or increasing.
+
+        If the cell is empty it is considered as monotone.
+        """
+        local_obs = self.cell_basis()[cell][0]
+        return any(ob in [Perm((0,)), Perm((0, 1)), Perm((1, 0))]
+                   for ob in local_obs)
 
     @property
     def point_cells(self):

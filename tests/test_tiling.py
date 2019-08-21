@@ -1,5 +1,5 @@
 import json
-from itertools import chain
+from itertools import chain, product
 
 import pytest
 
@@ -692,8 +692,7 @@ def test_cells_in_row_col(typical_redundant_obstructions,
     assert col4 == set()
 
 
-def test_cell_basis(typical_redundant_obstructions,
-                    typical_redundant_requirements):
+def test_cell_basis(factorable_tiling):
     tiling = Tiling(
         obstructions=[Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)]),
                       Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 1), (1, 1)]),
@@ -715,10 +714,27 @@ def test_cell_basis(typical_redundant_obstructions,
     basis = bdict[(1, 1)]
     assert len(basis[1]) == 0
     assert set(basis[0]) == {Perm((0, 2, 1))}
-    basis = bdict[(3, 3)]
-    assert len(basis) == 2
-    assert basis[0] == []
-    assert basis[1] == []
+    # Basis for a non active cell
+    bdict = factorable_tiling.cell_basis()
+    assert bdict[(0, 1)] == ([Perm((0,))], [])
+    assert bdict[(5, 3)] == ([Perm((0, 1)), Perm((1, 0))], [Perm((0,))])
+    tiling2 = Tiling(
+                [], [[Requirement(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 1)))]])
+    bdict2 = tiling2.cell_basis()
+    assert bdict2[(0, 0)] == ([], [Perm((0, 1))])
+    assert bdict2[(0, 1)] == ([], [Perm((0,))])
+    tiling3 = Tiling(
+                [], [[Requirement(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 1))),
+                      Requirement(Perm((0, 1, 2)), ((0, 0), (0, 1), (0, 1)))]])
+    bdict3 = tiling3.cell_basis()
+    assert bdict3[(0, 0)] == ([], [Perm((0,))])
+    assert bdict3[(0, 1)] == ([], [Perm((0,))])
+    # Check that all cell have a basis
+    dim = factorable_tiling.dimensions
+    for cell in product(range(dim[0]), range(dim[1])):
+        assert cell in bdict
+        assert len(bdict[cell][0]) >= 1
+    assert dim + (1, 0) not in bdict
 
 
 def test_cell_graph(factorable_tiling, compresstil,
@@ -1109,3 +1125,17 @@ def test_sum_decomposition():
         [(0, 0), (1, 2), (2, 1), (3, 2), (4, 4), (5, 3)]])
     assert(len(t.reverse().sum_decomposition()) == 1)
     assert(len(t.reverse().skew_decomposition()) == 3)
+
+
+def test_is_empty_cell(isolated_tiling):
+    assert isolated_tiling.is_empty_cell((0, 1))
+    assert not isolated_tiling.is_empty_cell((0, 0))
+    assert not isolated_tiling.is_empty_cell((2, 1))
+
+
+def test_is_monotone_cell(isolated_tiling):
+    assert isolated_tiling.is_monotone_cell((0, 0))
+    assert isolated_tiling.is_monotone_cell((1, 0))
+    assert not isolated_tiling.is_monotone_cell((2, 1))
+    t = Tiling.from_string('123')
+    assert not t.is_monotone_cell((0, 0))
