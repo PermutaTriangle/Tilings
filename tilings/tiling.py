@@ -784,10 +784,14 @@ class Tiling(CombinatorialClass):
         return cell in self.empty_cells
 
     def is_monotone_cell(self, cell):
-        """Check if the cell is non-empty and decreasing or increasing."""
+        """
+        Check if the cell is decreasing or increasing.
+
+        If the cell is empty it is considered as monotone.
+        """
         local_obs = self.cell_basis()[cell][0]
-        return (any(ob in [Perm((0, 1)), Perm((1, 0))] for ob in local_obs) and
-                not self.is_empty_cell(cell))
+        return any(ob in [Perm((0,)), Perm((0, 1)), Perm((1, 0))]
+                   for ob in local_obs)
 
     @property
     def point_cells(self):

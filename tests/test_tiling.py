@@ -1106,7 +1106,7 @@ def test_is_empty_cell(isolated_tiling):
 
 def test_is_monotone_cell(isolated_tiling):
     assert isolated_tiling.is_monotone_cell((0, 0))
-    assert not isolated_tiling.is_monotone_cell((1, 0))
+    assert isolated_tiling.is_monotone_cell((1, 0))
     assert not isolated_tiling.is_monotone_cell((2, 1))
     t = Tiling.from_string('123')
     assert not t.is_monotone_cell((0, 0))
