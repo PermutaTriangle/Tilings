@@ -12,6 +12,8 @@ list.
 ### Changed
 - The `cell_basis` method of the tilings has an 1 obstruction for empty cell.
   The basis of a cell that is outside of the tiling is no longer defined.
+- The requirement list in `cell_basis` method now finds intersections of
+  requirement lists
 ### Fixed
 - Infinite recursion issue in get_genf.
 - Close mongo when finished.
