@@ -14,6 +14,9 @@ Tilings
     :target: https://pypi.python.org/pypi/Tilings
 .. image:: https://img.shields.io/pypi/pyversions/Tilings.svg
     :target: https://pypi.python.org/pypi/Tilings
+.. image:: https://requires.io/github/PermutaTriangle/Tilings/requirements.svg?branch=master
+     :target: https://requires.io/github/PermutaTriangle/Tilings/requirements/?branch=master
+     :alt: Requirements Status
 
 
 ``tilings`` is a Python library for working with gridded permutation and
