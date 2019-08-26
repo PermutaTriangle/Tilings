@@ -384,7 +384,7 @@ class Tiling(CombinatorialClass):
 
     def add_obstruction(self, patt, pos):
         """Returns a new tiling with the obstruction of the pattern
-        patt with positionp pos."""
+        patt with positions pos."""
         return Tiling(
             self._obstructions + (Obstruction(patt, pos),),
             self._requirements)
