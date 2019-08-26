@@ -2,7 +2,7 @@ import json
 from array import array
 from collections import Counter, defaultdict
 from functools import partial, reduce
-from itertools import chain
+from itertools import chain, product
 from operator import add, mul
 
 import sympy
@@ -188,8 +188,26 @@ class Tiling(CombinatorialClass):
                             for req in reqs)
             factored_reqs.append(rem_req)
 
-        cleanreqs = list()
+        cleaned_reqs = []
         for reqs in factored_reqs:
+            if not all(reqs):
+                continue
+            cleaned_req = []
+            for req in reqs:
+                cells = []
+                for f in req.factors():
+                    # if factor implied by some requirement list then we
+                    # remove it from the gridded perm
+                    if not any(all(f in r for r in req_list)
+                               for req_list in factored_reqs
+                               if not all(any(r2 in r1 for r2 in reqs)
+                                          for r1 in req_list)):
+                        cells.extend(f.pos)
+                cleaned_req.append(req.get_gridded_perm_in_cells(cells))
+            cleaned_reqs.append(cleaned_req)
+
+        cleanreqs = list()
+        for reqs in cleaned_reqs:
             # If any gridded permutation in list is empty then you vacuously
             # contain this requirement
             if not all(reqs):
@@ -371,12 +389,19 @@ class Tiling(CombinatorialClass):
             self._obstructions + (Obstruction(patt, pos),),
             self._requirements)
 
+    def add_list_requirement(self, req_list):
+        """
+        Return a new tiling with the requirement list added.
+        """
+        requirements = self._requirements + (tuple(req_list),)
+        return Tiling(obstructions=self._obstructions,
+                      requirements=requirements)
+
     def add_requirement(self, patt, pos):
         """Returns a new tiling with the requirement of the pattern
         patt with position pos."""
-        return Tiling(
-            self._obstructions,
-            self._requirements + ((Requirement(patt, pos),),))
+        new_req_list = (Requirement(patt, pos),)
+        return self.add_list_requirement(new_req_list)
 
     def add_single_cell_obstruction(self, patt, cell):
         """Returns a new tiling with the single cell obstruction of the pattern
@@ -388,9 +413,8 @@ class Tiling(CombinatorialClass):
     def add_single_cell_requirement(self, patt, cell):
         """Returns a new tiling with the single cell requirement of the pattern
         patt in the given cell."""
-        return Tiling(
-            self._obstructions,
-            self._requirements + ([Requirement.single_cell(patt, cell)],))
+        new_req_list = (Requirement.single_cell(patt, cell),)
+        return self.add_list_requirement(new_req_list)
 
     def fully_isolated(self):
         """Check if all cells are isolated on their rows and columns."""
@@ -405,8 +429,10 @@ class Tiling(CombinatorialClass):
 
     def only_positive_in_row_and_col(self, cell):
         """Check if the cell is the only positive cell in row and column."""
-        return (self.only_positive_in_row(cell) and
-                self.only_positive_in_col(cell))
+        if cell not in self.positive_cells:
+            return False
+        return sum(1 for (x, y) in self.positive_cells
+                   if y == cell[1] or x == cell[0]) == 1
 
     def only_positive_in_row(self, cell):
         """Check if the cell is the only positive cell in row."""
@@ -432,6 +458,11 @@ class Tiling(CombinatorialClass):
         """Checks if the cell is the only active cell in the row."""
         return sum(1 for (x, y) in self.active_cells if y == cell[1]) == 1
 
+    def only_cell_in_row_and_col(self, cell):
+        """Checks if the cell is the only active cell in the row."""
+        return sum(1 for (x, y) in self.active_cells
+                   if y == cell[1] or x == cell[0]) == 1
+
     def cells_in_row(self, row):
         """Return all active cells in row."""
         return frozenset((x, y) for (x, y) in self.active_cells if y == row)
@@ -451,16 +482,28 @@ class Tiling(CombinatorialClass):
         obdict = defaultdict(list)
         reqdict = defaultdict(list)
         for ob in self.obstructions:
-            if ob.is_localized() and len(ob) > 1:
+            if ob.is_localized():
                 obdict[ob.is_localized()].append(ob.patt)
+
         for req_list in self.requirements:
-            if len(req_list) == 1:
-                req = req_list[0]
-                if req.is_localized():
-                    reqdict[req.is_localized()].append(req.patt)
-        resdict = defaultdict(lambda: ([], []))
-        for cell in chain(obdict.keys(), reqdict.keys()):
-            resdict[cell] = (obdict[cell], reqdict[cell])
+            for req in req_list:
+                for cell in set(req.pos):
+                    gp = req.get_gridded_perm_in_cells([cell])
+                    if (gp not in reqdict[cell] and
+                            all(gp in r for r in req_list)):
+                        reqdict[cell].append(gp.patt)
+        for cell, contain in reqdict.items():
+            ind_to_remove = set()
+            for i, req in enumerate(contain):
+                if any(req in other
+                       for j, other in enumerate(contain) if i != j):
+                    ind_to_remove.add(i)
+            reqdict[cell] = [req for i, req in enumerate(contain)
+                             if i not in ind_to_remove]
+
+        all_cells = product(range(self.dimensions[0]),
+                            range(self.dimensions[1]))
+        resdict = {cell: (obdict[cell], reqdict[cell]) for cell in all_cells}
         return resdict
 
     def cell_graph(self):
@@ -753,6 +796,20 @@ class Tiling(CombinatorialClass):
 
     def is_point_tiling(self):
         return self.dimensions == (1, 1) and (0, 0) in self.point_cells
+
+    def is_empty_cell(self, cell):
+        """Check if the cell of the tiling is empty."""
+        return cell in self.empty_cells
+
+    def is_monotone_cell(self, cell):
+        """
+        Check if the cell is decreasing or increasing.
+
+        If the cell is empty it is considered as monotone.
+        """
+        local_obs = self.cell_basis()[cell][0]
+        return any(ob in [Perm((0,)), Perm((0, 1)), Perm((1, 0))]
+                   for ob in local_obs)
 
     @property
     def point_cells(self):
