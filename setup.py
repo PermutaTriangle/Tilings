@@ -24,7 +24,7 @@ setup(
     },
     packages=find_packages(),
     long_description=read("README.rst"),
-    install_requires=['comb_spec_searcher==0.1.0',
+    install_requires=['comb-spec-searcher==0.2.0',
                       'permuta==1.1.0',
                       'pymongo==3.9.0',
                       'sympy==1.4'],
