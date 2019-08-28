@@ -5,6 +5,7 @@ import pytest
 
 from permuta import Perm
 from tilings import GriddedPerm, Obstruction, Requirement, Tiling
+from tilings.exception import InvalidOperationError
 
 
 @pytest.fixture
@@ -1139,3 +1140,31 @@ def test_is_monotone_cell(isolated_tiling):
     assert not isolated_tiling.is_monotone_cell((2, 1))
     t = Tiling.from_string('123')
     assert not t.is_monotone_cell((0, 0))
+
+
+# ------------------------------------------------------------
+# Test for algorithms
+# ------------------------------------------------------------
+
+
+def test_fusion():
+    t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+        Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+        Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
+    ])
+    with pytest.raises(AssertionError):
+        t.fusion()
+    with pytest.raises(AssertionError):
+        t.fusion(row=0, col=1)
+    with pytest.raises(InvalidOperationError):
+        t.fusion(row=1)
+    with pytest.raises(InvalidOperationError):
+        t.fusion(col=3)
+    with pytest.raises(InvalidOperationError):
+        t.fusion(col=1)
+    assert (t.fusion(col=0) == Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+    ]))
