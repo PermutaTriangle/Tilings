@@ -675,7 +675,8 @@ class Tiling(CombinatorialClass):
         if not fusion.fusable():
             fus_type = 'Rows' if row is not None else 'Columns'
             idx = row if row is not None else col
-            message = f'{fus_type} {idx} and {idx+1} are not fusable.'
+            message = '{} {} and {} are not fusable.'.format(fus_type,
+                                                             idx, idx+1)
             raise InvalidOperationError(message)
         return fusion.fused_tiling()
 
