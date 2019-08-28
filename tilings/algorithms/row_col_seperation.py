@@ -25,10 +25,12 @@ class Graph(object):
         - For the vertex order implied by a reduced acyclic graph
     """
 
-    def __init__(self, vertices, edges):
+    def __init__(self, vertices, matrix=None):
         self._vertex_labels = [set([v]) for v in vertices]
         self._vertex_weights = [1 for _ in self._vertex_labels]
-        self._matrix = Graph._adjacency_matrix(len(self._vertex_labels), edges)
+        self._matrix = matrix
+        assert len(matrix) == len(self._vertex_labels)
+        assert all(len(row) == len(self._matrix) for row in matrix)
         self._reduced = False
         self._is_acyclic = False
 
@@ -142,17 +144,6 @@ class Graph(object):
         return [
             p[1] for p in sorted(zip(vert_num_parent, self._vertex_labels))
         ]
-
-    @staticmethod
-    def _adjacency_matrix(num_vertex, edges):
-        """
-        Computes the adjacency matrix of the directed graph.
-        `edges` must be an iterable of edges written as tuple  `(start, end)`
-        """
-        matrix = [[0 for _ in range(num_vertex)] for _ in range(num_vertex)]
-        for i, j in edges:
-            matrix[i][j] = 1
-        return matrix
 
     def _add_matrix_rows(self, row1_idx, row2_idx):
         """

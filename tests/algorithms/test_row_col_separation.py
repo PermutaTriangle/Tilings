@@ -83,37 +83,49 @@ def matrix():
 
 
 @pytest.fixture
-def edges():
-    return ((0, 1), (0, 3), (2, 3), (3, 3))
+def matrix2():
+    m = [[0, 1, 0, 1, 0],
+         [0, 0, 0, 0, 0],
+         [0, 0, 0, 1, 0],
+         [0, 0, 0, 1, 0],
+         [0, 0, 0, 0, 0]]
+    return m
 
 
 @pytest.fixture
 def graph_with_matrix(matrix):
-    G = Graph(range(3), [])
-    G._matrix = matrix
+    G = Graph(range(3), matrix=matrix)
     return G
 
 
 @pytest.fixture
-def graph1(edges):
-    return Graph(range(5), edges)
+def graph1(matrix2):
+    g = Graph(range(5), matrix=matrix2)
+    return g
 
 
 @pytest.fixture
 def graph2():
-    edges = ((0, 2), (1, 0), (1, 2), (1, 3), (2, 0), (2, 3), (3, 2))
-    return Graph(range(4), edges)
+    m = [[0, 0, 1, 0],
+         [1, 0, 1, 1],
+         [1, 0, 0, 1],
+         [0, 0, 1, 0]]
+    g = Graph(range(4), matrix=m)
+    return g
 
 
 @pytest.fixture
 def graph3():
-    edges = ((0, 1), (0, 2))
-    return Graph(range(3), edges)
+    m = [[0, 1, 1],
+         [0, 0, 0],
+         [0, 0, 0]]
+    g = Graph(range(3), matrix=m)
+    return g
 
 
-def test_init(edges):
-    G = Graph('abcde', edges)
-    assert G._matrix == Graph._adjacency_matrix(5, edges)
+def test_init(matrix2):
+    G = Graph('abcde', matrix=matrix2)
+    assert G._matrix == matrix2
     assert G._vertex_labels == [set(c) for c in 'abcde']
     assert G._vertex_weights == [1 for _ in range(5)]
     assert not G._reduced
@@ -122,15 +134,6 @@ def test_init(edges):
 
 def test_num_vertices(graph_with_matrix):
     assert graph_with_matrix.num_vertices == 3
-
-
-def test_adjacency_matrix(edges):
-    assert (Graph._adjacency_matrix(5, edges) ==
-            [[0, 1, 0, 1, 0],
-             [0, 0, 0, 0, 0],
-             [0, 0, 0, 1, 0],
-             [0, 0, 0, 1, 0],
-             [0, 0, 0, 0, 0]])
 
 
 def test_add_matrix_rows1(graph_with_matrix):
