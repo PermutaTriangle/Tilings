@@ -1,76 +1,10 @@
+from itertools import product
+
 import pytest
 
 from permuta import Perm
-from tilings import Obstruction, Tiling
-from tilings.algorithms.row_col_seperation import Graph
-
-
-@pytest.fixture
-def not_separable_tilings():
-    t1 = Tiling(obstructions=[
-        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
-        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (2, 0)))
-    ])
-    t2 = Tiling(obstructions=[
-        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((3, 0),)*3),
-        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
-    ])
-    t3 = Tiling(obstructions=[
-        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((3, 0),)*3),
-        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (3, 0))),
-        Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
-    ])
-    return [t1, t2, t3]
-
-
-@pytest.fixture
-def seperable_tilings():
-    t1 = Tiling(obstructions=[
-        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
-        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
-    ])
-    t2 = Tiling(obstructions=[
-        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((3, 0),)*3),
-        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (3, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
-    ])
-    # Separation of many cell togheter
-    t3 = Tiling(obstructions=[
-        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((3, 0),)*3),
-        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (3, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
-    ])
-    return [t1, t2, t3]
-
+from tilings import Obstruction, Requirement, Tiling
+from tilings.algorithms.row_col_seperation import Graph, RowColSeparation
 
 # ----------------------------------------------------------------------------
 #           Test for the Graph class
@@ -244,9 +178,9 @@ def test_is_acyclic(graph1, graph2, graph3):
 
 def test_find_cyle(graph1, graph2):
     graph2.reduce()
-    assert set(graph2._find_cycle()) == set([(0, 2), (2, 0)])
+    assert set(graph2.find_cycle()) == set([(0, 2), (2, 0)])
     graph1.reduce()
-    assert graph1._find_cycle() is None
+    assert graph1.find_cycle() is None
 
 
 def test_break_cycle_in_all_ways(graph2):
@@ -286,3 +220,268 @@ def test_vertex_order(graph2, graph3):
     print(graph3)
     graph3.reduce()
     assert graph3.vertex_order() == [set([0]), set([1, 2])]
+
+
+def test_le(graph2, graph3):
+    assert graph2 < graph3
+    assert graph2 <= graph3
+
+# ----------------------------------------------------------------------------
+#           Test for the RowColSeparation class
+# ----------------------------------------------------------------------------
+
+
+@pytest.fixture
+def not_separable_tilings():
+    t1 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+        Obstruction(Perm((0, 1)), ((1, 0), (2, 0)))
+    ])
+    t2 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((3, 0),)*3),
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
+        Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
+        Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
+    ])
+    t3 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((3, 0),)*3),
+        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (3, 0))),
+        Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
+        Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
+    ])
+    return [t1, t2, t3]
+
+
+@pytest.fixture
+def seperable_tiling1():
+    t1 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+        Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
+    ])
+    return t1
+
+
+@pytest.fixture
+def seperable_tiling2():
+    t2 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((3, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
+        Obstruction(Perm((0, 1, 2)), ((1, 1),)*3),
+        Obstruction(Perm((0, 1, 2)), ((2, 1),)*3),
+        Obstruction(Perm((0,)), ((3, 1),)),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (3, 0))),
+        Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
+        Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
+        Obstruction(Perm((0, 1)), ((0, 1), (1, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (2, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (3, 1))),
+        Obstruction(Perm((0, 1)), ((1, 1), (2, 1))),
+        Obstruction(Perm((0, 1)), ((2, 1), (3, 1))),
+    ])
+    return t2
+
+
+@pytest.fixture
+def seperable_tiling3():
+    t3 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((3, 0),)*3),
+        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (3, 0))),
+        Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
+        Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
+    ])
+    return t3
+
+
+def assert_matrix_entry_is(rcs, matrix, cell1, cell2, value):
+    i1 = rcs.cell_idx(cell1)
+    i2 = rcs.cell_idx(cell2)
+    if matrix[i1][i2] != value:
+        m = "Value matrix[{}][{}] is {}, not {}".format(cell1, cell2,
+                                                        matrix[i1][i2],
+                                                        value)
+        raise AssertionError(m)
+
+
+def test_init(seperable_tiling2):
+    rcs = RowColSeparation(seperable_tiling2)
+    assert rcs._tiling == seperable_tiling2
+    assert len(rcs._active_cells) == 7
+    assert (3, 1) not in rcs._active_cells
+
+
+def test_cell_idx(seperable_tiling2):
+    rcs = RowColSeparation(seperable_tiling2)
+    for c in seperable_tiling2.active_cells:
+        assert c == rcs.cell_at_idx(rcs.cell_idx(c))
+
+
+def test_cell_at_idx(seperable_tiling2):
+    rcs = RowColSeparation(seperable_tiling2)
+    for i in range(len(seperable_tiling2.active_cells)):
+        assert i == rcs.cell_idx(rcs.cell_at_idx(i))
+
+
+def test_basic_matrix(seperable_tiling2):
+    rcs = RowColSeparation(seperable_tiling2)
+    ncol = seperable_tiling2.dimensions[0]
+    nrow = seperable_tiling2.dimensions[1]
+    # Row basic matrix
+    m = rcs._basic_matrix(True)
+    for c1, c2 in product(seperable_tiling2.active_cells, repeat=2):
+        if c1[1] < c2[1]:
+            assert_matrix_entry_is(rcs, m, c1, c2, 1)
+        else:
+            assert_matrix_entry_is(rcs, m, c1, c2, 0)
+    # Column basic matrix
+    m = rcs._basic_matrix(False)
+    for c1, c2 in product(seperable_tiling2.active_cells, repeat=2):
+        if c1[0] < c2[0]:
+            assert_matrix_entry_is(rcs, m, c1, c2, 1)
+        else:
+            assert_matrix_entry_is(rcs, m, c1, c2, 0)
+
+
+def test_cell_order(seperable_tiling1):
+    rcs = RowColSeparation(seperable_tiling1)
+    ob = Obstruction(Perm((0, 1)), ((0, 0), (0, 1)))
+    assert rcs._col_cell_order(ob) == ((0, 1), (0, 0))
+    ob = Obstruction(Perm((1, 0)), ((0, 0), (0, 1)))
+    assert rcs._col_cell_order(ob) == ((0, 0), (0, 1))
+    ob = Obstruction(Perm((0, 1)), ((0, 0), (1, 0)))
+    assert rcs._row_cell_order(ob) == ((1, 0), (0, 0))
+    ob = Obstruction(Perm((1, 0)), ((0, 0), (1, 0)))
+    assert rcs._row_cell_order(ob) == ((0, 0), (1, 0))
+
+
+def test_complete_inequalities_matrices(seperable_tiling2):
+    print(seperable_tiling2)
+    print()
+    rcs = RowColSeparation(seperable_tiling2)
+    row_m, col_m = rcs._complete_ineq_matrices()
+    # Row basic matrix
+    ob_ineq = [((1, 0), (0, 0)),
+               ((2, 0), (0, 0)),
+               ((3, 0), (0, 0)),
+               ((1, 1), (0, 1)),
+               ((2, 1), (0, 1)),
+               ((2, 0), (1, 0)),
+               ((2, 1), (1, 1)),
+               ((3, 0), (2, 0))]
+    for c1, c2 in product(seperable_tiling2.active_cells, repeat=2):
+        if c1[1] < c2[1] or (c1, c2) in ob_ineq:
+            print(1, c1, c2)
+            assert_matrix_entry_is(rcs, row_m, c1, c2, 1)
+        else:
+            print(0, c1, c2)
+            assert_matrix_entry_is(rcs, row_m, c1, c2, 0)
+    # Column basic matrix
+    ob_ineq = [((0, 1), (0, 0))]
+    for c1, c2 in product(seperable_tiling2.active_cells, repeat=2):
+        if c1[0] < c2[0] or (c1, c2) in ob_ineq:
+            assert_matrix_entry_is(rcs, col_m, c1, c2, 1)
+        else:
+            assert_matrix_entry_is(rcs, col_m, c1, c2, 0)
+
+
+def test_row_ineq_graph(seperable_tiling2):
+    rcs = RowColSeparation(seperable_tiling2)
+    assert rcs.row_ineq_graph()._matrix == rcs._complete_ineq_matrices()[0]
+
+
+def test_col_ineq_graph(seperable_tiling2):
+    rcs = RowColSeparation(seperable_tiling2)
+    assert rcs.col_ineq_graph()._matrix == rcs._complete_ineq_matrices()[1]
+
+
+def test_all_order():
+    t = Tiling(obstructions=[Obstruction(Perm((0, 1)), ((0, 0), (1, 0)))])
+    rcs = RowColSeparation(t)
+    assert (list(rcs._all_order(rcs.row_ineq_graph())) ==
+            [[{(1, 0)}, {(0, 0)}]])
+    assert (list(rcs._all_order(rcs.col_ineq_graph())) ==
+            [[{(0, 0)}, {(1, 0)}]])
+    t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+        Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
+    ])
+    rcs = RowColSeparation(t)
+    assert (sorted(rcs._all_order(rcs.row_ineq_graph())) == [
+        [{(1, 0)}, {(0, 0)}],
+        [{(0, 0)}, {(1, 0)}],
+    ])
+    assert (list(rcs._all_order(rcs.col_ineq_graph())) ==
+            [[{(0, 0)}, {(1, 0)}]])
+
+
+def test_maximal_order():
+    t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+        Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
+    ])
+    rcs = RowColSeparation(t)
+    assert (sorted(rcs._maximal_order(rcs.row_ineq_graph())) in [
+        [{(1, 0)}, {(0, 0)}],
+        [{(0, 0)}, {(1, 0)}],
+    ])
+    assert (list(rcs._maximal_order(rcs.col_ineq_graph())) ==
+            [{(0, 0)}, {(1, 0)}])
+
+
+def test_seperates_tiling():
+    t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+        Obstruction(Perm((2, 0, 1)), ((0, 0), (1, 0), (1, 0))),
+        Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
+        Obstruction(Perm((2, 0, 1)), ((1, 0), (1, 0), (1, 0))),
+    ], requirements=[
+        [Requirement(Perm((0,)), ((1, 0),))]
+    ])
+    print(t)
+    rcs = RowColSeparation(t)
+    row_order = [{(1, 0)}, {(0, 0)}]
+    col_order = [{(0, 0)}, {(1, 0)}]
+    sep_t = rcs._seperates_tiling(row_order, col_order)
+    print(sep_t)
+    assert sep_t == Tiling(obstructions=[
+        Obstruction(Perm((2, 0, 1)), ((0, 1), (1, 0), (1, 0))),
+        Obstruction(Perm((2, 0, 1)), ((0, 1), (0, 1), (0, 1))),
+        Obstruction(Perm((2, 0, 1)), ((1, 0), (1, 0), (1, 0))),
+    ], requirements=[
+        [Requirement(Perm((0,)), ((1, 0),))]
+    ])
+
+
+def test_map_gridded_perm(seperable_tiling1):
+    rcs = RowColSeparation(seperable_tiling1)
+    ob = Obstruction(Perm((0,  1,  2)), ((0,  0), (1,  0), (1,  0)))
+    cell_map = {(0,  0): (0,  0), (1,  0): (1,  1)}
+    assert (rcs._map_gridded_perm(cell_map, ob) ==
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))))
+    ob = Requirement(Perm((0,  1,  2)), ((0,  0), (1,  0), (1,  0)))
+    assert (rcs._map_gridded_perm(cell_map, ob) ==
+            Requirement(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))))
