@@ -407,6 +407,22 @@ class RowColSeparation(object):
         for req_list in self._tiling.requirements:
             yield [self._map_gridded_perm(cell_map, req) for req in req_list]
 
+    @property
+    def max_row_order(self):
+        """A maximal order on the rows."""
+        if hasattr(self, '_max_row_order'):
+            return self._max_row_order
+        self._max_row_order = self._maximal_order(self.row_ineq_graph())
+        return self._max_row_order
+
+    @property
+    def max_col_order(self):
+        """A maximal order on the columns."""
+        if hasattr(self, '_max_col_order'):
+            return self._max_col_order
+        self._max_col_order = self._maximal_order(self.col_ineq_graph())
+        return self._max_col_order
+
     @staticmethod
     def _map_gridded_perm(cell_map, gp):
         """
@@ -425,9 +441,7 @@ class RowColSeparation(object):
         """
         Return the one the possible maximal separation of the tiling.
         """
-        row_order = self._maximal_order(self.row_ineq_graph())
-        col_order = self._maximal_order(self.col_ineq_graph())
-        return self._seperates_tiling(row_order, col_order)
+        return self._seperates_tiling(self.max_row_order, self.max_col_order)
 
     def all_seperated_tiling(self, only_max=False):
         """

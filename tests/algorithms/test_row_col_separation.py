@@ -444,12 +444,15 @@ def test_maximal_order():
         Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
     ])
     rcs = RowColSeparation(t)
-    assert (sorted(rcs._maximal_order(rcs.row_ineq_graph())) in [
+    possible_order = [
         [{(1, 0)}, {(0, 0)}],
         [{(0, 0)}, {(1, 0)}],
-    ])
+    ]
+    assert sorted(rcs._maximal_order(rcs.row_ineq_graph())) in possible_order
+    assert rcs.max_row_order in possible_order
     assert (list(rcs._maximal_order(rcs.col_ineq_graph())) ==
             [{(0, 0)}, {(1, 0)}])
+    assert rcs.max_col_order == [{(0, 0)}, {(1, 0)}]
 
 
 def test_seperates_tiling():
