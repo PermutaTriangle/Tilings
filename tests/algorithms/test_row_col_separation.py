@@ -370,7 +370,7 @@ def test_cell_order(seperable_tiling1):
     rcs = RowColSeparation(seperable_tiling1)
     ob = Obstruction(Perm((0, 1)), ((0, 0), (0, 1)))
     assert rcs._col_cell_order(ob) == ((0, 1), (0, 0))
-    ob = Obstruction(Perm((1, 0)), ((0, 0), (0, 1)))
+    ob = Obstruction(Perm((1, 0)), ((0, 1), (0, 0)))
     assert rcs._col_cell_order(ob) == ((0, 0), (0, 1))
     ob = Obstruction(Perm((0, 1)), ((0, 0), (1, 0)))
     assert rcs._row_cell_order(ob) == ((1, 0), (0, 0))
@@ -485,3 +485,28 @@ def test_map_gridded_perm(seperable_tiling1):
     ob = Requirement(Perm((0,  1,  2)), ((0,  0), (1,  0), (1,  0)))
     assert (rcs._map_gridded_perm(cell_map, ob) ==
             Requirement(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))))
+
+
+def test_seperated_tiling():
+    t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0),)*2),
+        Obstruction(Perm((0, 1)), ((1, 0),)*2),
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+    ])
+    rcs = RowColSeparation(t)
+    assert rcs.seperated_tiling() == Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 1),)*2),
+        Obstruction(Perm((0, 1)), ((1, 0),)*2),
+    ])
+
+
+def test_all_seperation():
+    t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0),)*2),
+        Obstruction(Perm((0, 1)), ((1, 0),)*2),
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+        Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
+    ])
+    assert len(list(RowColSeparation(t).all_seperated_tiling())) == 2
+    assert (len(list(RowColSeparation(t).all_seperated_tiling(
+        only_max=False))) == 2)

@@ -1,5 +1,5 @@
 import heapq
-from itertools import combinations
+from itertools import combinations, product
 from operator import xor
 
 import tilings
@@ -303,10 +303,7 @@ class RowColSeparation(object):
         c1, c2 = ob.pos
         assert c1[0] == c2[0], "Obstruction not a col obstruction"
         assert not c1[1] == c2[1], "Obstruction is single cell"
-        if ob.patt[0] == 0:
-            return c2, c1
-        else:
-            return c1, c2
+        return c2, c1
 
     def _add_ineq(self, ineq, matrix):
         """
@@ -399,7 +396,8 @@ class RowColSeparation(object):
 
     def _map_obstructions(self, cell_map):
         """Map the obstruction of a tiling according to the cell map."""
-        for ob in self._tiling.obstructions:
+        non_point_obs = (ob for ob in self._tiling.obstructions if len(ob) > 1)
+        for ob in non_point_obs:
             ob = self._map_gridded_perm(cell_map, ob)
             if not ob.contradictory():
                 yield ob
@@ -419,12 +417,16 @@ class RowColSeparation(object):
         gp = gp.__class__(gp.patt, pos)
         return gp
 
+    def seperable(self):
+        """Test if the tiling is separable."""
+        raise NotImplementedError
+
     def seperated_tiling(self):
         """
         Return the one the possible maximal separation of the tiling.
         """
-        row_order = self._maximal_order(self._row_ineq_graph())
-        col_order = self._maximal_order(self._col_ineq_graph())
+        row_order = self._maximal_order(self.row_ineq_graph())
+        col_order = self._maximal_order(self.col_ineq_graph())
         return self._seperates_tiling(row_order, col_order)
 
     def all_seperated_tiling(self, only_max=False):
@@ -436,8 +438,8 @@ class RowColSeparation(object):
         NOTE: The same tiling might be returned many times.
         """
         orders = product(
-            self._maximal_order(self._row_ineq_graph(), only_max=only_max),
-            self._maximal_order(self._col_ineq_graph(), only_max=only_max),
+            self._all_order(self.row_ineq_graph(), only_max=only_max),
+            self._all_order(self.col_ineq_graph(), only_max=only_max),
         )
         for row_order, col_order in orders:
             yield self._seperates_tiling(row_order, col_order)
