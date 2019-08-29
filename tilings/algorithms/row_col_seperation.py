@@ -434,8 +434,14 @@ class RowColSeparation(object):
         return gp
 
     def seperable(self):
-        """Test if the tiling is separable."""
-        raise NotImplementedError
+        """
+        Test if the tiling is separable.
+
+        A tiling is not separable the separation does not creates any new row
+        or column.
+        """
+        ncol, nrow = self._tiling.dimensions
+        return len(self.max_row_order) > nrow or len(self.max_col_order) > ncol
 
     def seperated_tiling(self):
         """

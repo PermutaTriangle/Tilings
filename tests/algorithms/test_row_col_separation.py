@@ -490,7 +490,8 @@ def test_map_gridded_perm(seperable_tiling1):
             Requirement(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))))
 
 
-def test_seperated_tiling():
+def test_seperated_tiling(not_separable_tilings, seperable_tiling1,
+                          seperable_tiling2, seperable_tiling3,):
     t = Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 0),)*2),
         Obstruction(Perm((0, 1)), ((1, 0),)*2),
@@ -501,6 +502,62 @@ def test_seperated_tiling():
         Obstruction(Perm((0, 1)), ((0, 1),)*2),
         Obstruction(Perm((0, 1)), ((1, 0),)*2),
     ])
+    for t in not_separable_tilings:
+        rcs = RowColSeparation(t)
+        assert t == rcs.seperated_tiling()
+    t1_sep = Tiling(obstructions=(
+        Obstruction(Perm((0,)), ((0, 0),)),
+        Obstruction(Perm((0,)), ((0, 1),)),
+        Obstruction(Perm((0,)), ((1, 0),)),
+        Obstruction(Perm((0,)), ((1, 2),)),
+        Obstruction(Perm((0,)), ((2, 1),)),
+        Obstruction(Perm((0,)), ((2, 2),)),
+        Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 1, 2)), ((1, 1), (1, 1), (1, 1))),
+        Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0)))
+    ), requirements=())
+    t2_sep = Tiling(obstructions=(
+        Obstruction(Perm((0,)), ((0, 0),)),
+        Obstruction(Perm((0,)), ((0, 1),)),
+        Obstruction(Perm((0,)), ((0, 2),)),
+        Obstruction(Perm((0,)), ((0, 3),)),
+        Obstruction(Perm((0,)), ((1, 0),)),
+        Obstruction(Perm((0,)), ((1, 2),)),
+        Obstruction(Perm((0,)), ((1, 3),)),
+        Obstruction(Perm((0,)), ((1, 4),)),
+        Obstruction(Perm((0,)), ((2, 1),)),
+        Obstruction(Perm((0,)), ((2, 2),)),
+        Obstruction(Perm((0,)), ((2, 4),)),
+        Obstruction(Perm((0,)), ((3, 1),)),
+        Obstruction(Perm((0,)), ((3, 3),)),
+        Obstruction(Perm((0,)), ((3, 4),)),
+        Obstruction(Perm((0,)), ((4, 1),)),
+        Obstruction(Perm((0,)), ((4, 2),)),
+        Obstruction(Perm((0,)), ((4, 3),)),
+        Obstruction(Perm((0,)), ((4, 4),)),
+        Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
+        Obstruction(Perm((0, 1)), ((3, 0), (4, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 4), (0, 4), (0, 4))),
+        Obstruction(Perm((0, 1, 2)), ((1, 1), (1, 1), (1, 1))),
+        Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
+        Obstruction(Perm((0, 1, 2)), ((2, 3), (2, 3), (2, 3))),
+        Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
+        Obstruction(Perm((0, 1, 2)), ((3, 2), (3, 2), (3, 2))),
+        Obstruction(Perm((0, 1, 2)), ((4, 0), (4, 0), (4, 0)))
+    ), requirements=())
+    t3_sep = Tiling(obstructions=(
+        Obstruction(Perm((0,)), ((0, 0),)),
+        Obstruction(Perm((0,)), ((1, 0),)),
+        Obstruction(Perm((0,)), ((2, 1),)),
+        Obstruction(Perm((0,)), ((3, 1),)),
+        Obstruction(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 1))),
+        Obstruction(Perm((0, 1, 2)), ((1, 1), (1, 1), (1, 1))),
+        Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
+        Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0)))
+    ), requirements=())
+    assert RowColSeparation(seperable_tiling1).seperated_tiling() == t1_sep
+    assert RowColSeparation(seperable_tiling2).seperated_tiling() == t2_sep
+    assert RowColSeparation(seperable_tiling3).seperated_tiling() == t3_sep
 
 
 def test_all_seperation():
@@ -513,3 +570,13 @@ def test_all_seperation():
     assert len(list(RowColSeparation(t).all_seperated_tiling())) == 2
     assert (len(list(RowColSeparation(t).all_seperated_tiling(
         only_max=False))) == 2)
+
+
+def test_seperable(not_separable_tilings, seperable_tiling1, seperable_tiling2,
+                   seperable_tiling3):
+    for t in not_separable_tilings:
+        rcs = RowColSeparation(t)
+        assert not rcs.seperable()
+    for t in [seperable_tiling1, seperable_tiling2, seperable_tiling3]:
+        rcs = RowColSeparation(t)
+        assert rcs.seperable()
