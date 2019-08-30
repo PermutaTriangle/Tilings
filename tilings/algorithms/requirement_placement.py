@@ -14,6 +14,7 @@ class RequirementPlacement(object):
     directions = (DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST)
     row_directions = (DIR_NORTH, DIR_SOUTH)
     col_directions = (DIR_EAST, DIR_WEST)
+
     def __init__(self, tiling):
         self.tiling = tiling
 
@@ -33,7 +34,7 @@ class RequirementPlacement(object):
         yield from self.requirement_placements(length, partial=True)
 
     def requirement_placements(self, length, partial=False):
-        req_tiling = Tiling(self.tiling.requirements)
+        req_tiling = Tiling(requirement=self.tiling.requirements)
         for gp in req_tiling.gridded_perms_of_length(length):
             if len(gp.factors()) == 1:
                 for idx in range(length):
