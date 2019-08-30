@@ -373,7 +373,7 @@ class RowColSeparation(object):
         """ Returns a order that maximise separation. """
         return next(RowColSeparation._all_order(graph))
 
-    def _seperates_tiling(self, row_order, col_order):
+    def _separates_tiling(self, row_order, col_order):
         cell_map = self._get_cell_map(row_order, col_order)
         obs = self._map_obstructions(cell_map)
         reqs = self._map_requirements(cell_map)
@@ -433,7 +433,7 @@ class RowColSeparation(object):
         gp = gp.__class__(gp.patt, pos)
         return gp
 
-    def seperable(self):
+    def separable(self):
         """
         Test if the tiling is separable.
 
@@ -443,13 +443,13 @@ class RowColSeparation(object):
         ncol, nrow = self._tiling.dimensions
         return len(self.max_row_order) > nrow or len(self.max_col_order) > ncol
 
-    def seperated_tiling(self):
+    def separated_tiling(self):
         """
         Return the one the possible maximal separation of the tiling.
         """
-        return self._seperates_tiling(self.max_row_order, self.max_col_order)
+        return self._separates_tiling(self.max_row_order, self.max_col_order)
 
-    def all_seperated_tiling(self, only_max=False):
+    def all_separated_tiling(self, only_max=False):
         """
         Generator over all the possibles separation of the tiling.
 
@@ -462,4 +462,4 @@ class RowColSeparation(object):
             self._all_order(self.col_ineq_graph(), only_max=only_max),
         )
         for row_order, col_order in orders:
-            yield self._seperates_tiling(row_order, col_order)
+            yield self._separates_tiling(row_order, col_order)

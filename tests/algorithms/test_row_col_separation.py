@@ -4,7 +4,7 @@ import pytest
 
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
-from tilings.algorithms.row_col_seperation import Graph, RowColSeparation
+from tilings.algorithms.row_col_separation import Graph, RowColSeparation
 
 # ----------------------------------------------------------------------------
 #           Test for the Graph class
@@ -264,7 +264,7 @@ def not_separable_tilings():
 
 
 @pytest.fixture
-def seperable_tiling1():
+def separable_tiling1():
     t1 = Tiling(obstructions=[
         Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
         Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
@@ -277,7 +277,7 @@ def seperable_tiling1():
 
 
 @pytest.fixture
-def seperable_tiling2():
+def separable_tiling2():
     t2 = Tiling(obstructions=[
         Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
         Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
@@ -303,7 +303,7 @@ def seperable_tiling2():
 
 
 @pytest.fixture
-def seperable_tiling3():
+def separable_tiling3():
     t3 = Tiling(obstructions=[
         Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
         Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
@@ -327,47 +327,47 @@ def assert_matrix_entry_is(rcs, matrix, cell1, cell2, value):
         raise AssertionError(m)
 
 
-def test_init(seperable_tiling2):
-    rcs = RowColSeparation(seperable_tiling2)
-    assert rcs._tiling == seperable_tiling2
+def test_init(separable_tiling2):
+    rcs = RowColSeparation(separable_tiling2)
+    assert rcs._tiling == separable_tiling2
     assert len(rcs._active_cells) == 7
     assert (3, 1) not in rcs._active_cells
 
 
-def test_cell_idx(seperable_tiling2):
-    rcs = RowColSeparation(seperable_tiling2)
-    for c in seperable_tiling2.active_cells:
+def test_cell_idx(separable_tiling2):
+    rcs = RowColSeparation(separable_tiling2)
+    for c in separable_tiling2.active_cells:
         assert c == rcs.cell_at_idx(rcs.cell_idx(c))
 
 
-def test_cell_at_idx(seperable_tiling2):
-    rcs = RowColSeparation(seperable_tiling2)
-    for i in range(len(seperable_tiling2.active_cells)):
+def test_cell_at_idx(separable_tiling2):
+    rcs = RowColSeparation(separable_tiling2)
+    for i in range(len(separable_tiling2.active_cells)):
         assert i == rcs.cell_idx(rcs.cell_at_idx(i))
 
 
-def test_basic_matrix(seperable_tiling2):
-    rcs = RowColSeparation(seperable_tiling2)
-    ncol = seperable_tiling2.dimensions[0]
-    nrow = seperable_tiling2.dimensions[1]
+def test_basic_matrix(separable_tiling2):
+    rcs = RowColSeparation(separable_tiling2)
+    ncol = separable_tiling2.dimensions[0]
+    nrow = separable_tiling2.dimensions[1]
     # Row basic matrix
     m = rcs._basic_matrix(True)
-    for c1, c2 in product(seperable_tiling2.active_cells, repeat=2):
+    for c1, c2 in product(separable_tiling2.active_cells, repeat=2):
         if c1[1] < c2[1]:
             assert_matrix_entry_is(rcs, m, c1, c2, 1)
         else:
             assert_matrix_entry_is(rcs, m, c1, c2, 0)
     # Column basic matrix
     m = rcs._basic_matrix(False)
-    for c1, c2 in product(seperable_tiling2.active_cells, repeat=2):
+    for c1, c2 in product(separable_tiling2.active_cells, repeat=2):
         if c1[0] < c2[0]:
             assert_matrix_entry_is(rcs, m, c1, c2, 1)
         else:
             assert_matrix_entry_is(rcs, m, c1, c2, 0)
 
 
-def test_cell_order(seperable_tiling1):
-    rcs = RowColSeparation(seperable_tiling1)
+def test_cell_order(separable_tiling1):
+    rcs = RowColSeparation(separable_tiling1)
     ob = Obstruction(Perm((0, 1)), ((0, 0), (0, 1)))
     assert rcs._col_cell_order(ob) == ((0, 1), (0, 0))
     ob = Obstruction(Perm((1, 0)), ((0, 1), (0, 0)))
@@ -378,10 +378,10 @@ def test_cell_order(seperable_tiling1):
     assert rcs._row_cell_order(ob) == ((0, 0), (1, 0))
 
 
-def test_complete_inequalities_matrices(seperable_tiling2):
-    print(seperable_tiling2)
+def test_complete_inequalities_matrices(separable_tiling2):
+    print(separable_tiling2)
     print()
-    rcs = RowColSeparation(seperable_tiling2)
+    rcs = RowColSeparation(separable_tiling2)
     row_m, col_m = rcs._complete_ineq_matrices()
     # Row basic matrix
     ob_ineq = [((1, 0), (0, 0)),
@@ -392,7 +392,7 @@ def test_complete_inequalities_matrices(seperable_tiling2):
                ((2, 0), (1, 0)),
                ((2, 1), (1, 1)),
                ((3, 0), (2, 0))]
-    for c1, c2 in product(seperable_tiling2.active_cells, repeat=2):
+    for c1, c2 in product(separable_tiling2.active_cells, repeat=2):
         if c1[1] < c2[1] or (c1, c2) in ob_ineq:
             print(1, c1, c2)
             assert_matrix_entry_is(rcs, row_m, c1, c2, 1)
@@ -401,20 +401,20 @@ def test_complete_inequalities_matrices(seperable_tiling2):
             assert_matrix_entry_is(rcs, row_m, c1, c2, 0)
     # Column basic matrix
     ob_ineq = [((0, 1), (0, 0))]
-    for c1, c2 in product(seperable_tiling2.active_cells, repeat=2):
+    for c1, c2 in product(separable_tiling2.active_cells, repeat=2):
         if c1[0] < c2[0] or (c1, c2) in ob_ineq:
             assert_matrix_entry_is(rcs, col_m, c1, c2, 1)
         else:
             assert_matrix_entry_is(rcs, col_m, c1, c2, 0)
 
 
-def test_row_ineq_graph(seperable_tiling2):
-    rcs = RowColSeparation(seperable_tiling2)
+def test_row_ineq_graph(separable_tiling2):
+    rcs = RowColSeparation(separable_tiling2)
     assert rcs.row_ineq_graph()._matrix == rcs._complete_ineq_matrices()[0]
 
 
-def test_col_ineq_graph(seperable_tiling2):
-    rcs = RowColSeparation(seperable_tiling2)
+def test_col_ineq_graph(separable_tiling2):
+    rcs = RowColSeparation(separable_tiling2)
     assert rcs.col_ineq_graph()._matrix == rcs._complete_ineq_matrices()[1]
 
 
@@ -455,7 +455,7 @@ def test_maximal_order():
     assert rcs.max_col_order == [{(0, 0)}, {(1, 0)}]
 
 
-def test_seperates_tiling():
+def test_separates_tiling():
     t = Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
         Obstruction(Perm((2, 0, 1)), ((0, 0), (1, 0), (1, 0))),
@@ -468,7 +468,7 @@ def test_seperates_tiling():
     rcs = RowColSeparation(t)
     row_order = [{(1, 0)}, {(0, 0)}]
     col_order = [{(0, 0)}, {(1, 0)}]
-    sep_t = rcs._seperates_tiling(row_order, col_order)
+    sep_t = rcs._separates_tiling(row_order, col_order)
     print(sep_t)
     assert sep_t == Tiling(obstructions=[
         Obstruction(Perm((2, 0, 1)), ((0, 1), (1, 0), (1, 0))),
@@ -479,8 +479,8 @@ def test_seperates_tiling():
     ])
 
 
-def test_map_gridded_perm(seperable_tiling1):
-    rcs = RowColSeparation(seperable_tiling1)
+def test_map_gridded_perm(separable_tiling1):
+    rcs = RowColSeparation(separable_tiling1)
     ob = Obstruction(Perm((0,  1,  2)), ((0,  0), (1,  0), (1,  0)))
     cell_map = {(0,  0): (0,  0), (1,  0): (1,  1)}
     assert (rcs._map_gridded_perm(cell_map, ob) ==
@@ -490,21 +490,21 @@ def test_map_gridded_perm(seperable_tiling1):
             Requirement(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))))
 
 
-def test_seperated_tiling(not_separable_tilings, seperable_tiling1,
-                          seperable_tiling2, seperable_tiling3,):
+def test_separated_tiling(not_separable_tilings, separable_tiling1,
+                          separable_tiling2, separable_tiling3,):
     t = Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 0),)*2),
         Obstruction(Perm((0, 1)), ((1, 0),)*2),
         Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
     ])
     rcs = RowColSeparation(t)
-    assert rcs.seperated_tiling() == Tiling(obstructions=[
+    assert rcs.separated_tiling() == Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 1),)*2),
         Obstruction(Perm((0, 1)), ((1, 0),)*2),
     ])
     for t in not_separable_tilings:
         rcs = RowColSeparation(t)
-        assert t == rcs.seperated_tiling()
+        assert t == rcs.separated_tiling()
     t1_sep = Tiling(obstructions=(
         Obstruction(Perm((0,)), ((0, 0),)),
         Obstruction(Perm((0,)), ((0, 1),)),
@@ -555,28 +555,28 @@ def test_seperated_tiling(not_separable_tilings, seperable_tiling1,
         Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
         Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0)))
     ), requirements=())
-    assert RowColSeparation(seperable_tiling1).seperated_tiling() == t1_sep
-    assert RowColSeparation(seperable_tiling2).seperated_tiling() == t2_sep
-    assert RowColSeparation(seperable_tiling3).seperated_tiling() == t3_sep
+    assert RowColSeparation(separable_tiling1).separated_tiling() == t1_sep
+    assert RowColSeparation(separable_tiling2).separated_tiling() == t2_sep
+    assert RowColSeparation(separable_tiling3).separated_tiling() == t3_sep
 
 
-def test_all_seperation():
+def test_all_separation():
     t = Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 0),)*2),
         Obstruction(Perm((0, 1)), ((1, 0),)*2),
         Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
         Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
     ])
-    assert len(list(RowColSeparation(t).all_seperated_tiling())) == 2
-    assert (len(list(RowColSeparation(t).all_seperated_tiling(
+    assert len(list(RowColSeparation(t).all_separated_tiling())) == 2
+    assert (len(list(RowColSeparation(t).all_separated_tiling(
         only_max=False))) == 2)
 
 
-def test_seperable(not_separable_tilings, seperable_tiling1, seperable_tiling2,
-                   seperable_tiling3):
+def test_separable(not_separable_tilings, separable_tiling1, separable_tiling2,
+                   separable_tiling3):
     for t in not_separable_tilings:
         rcs = RowColSeparation(t)
-        assert not rcs.seperable()
-    for t in [seperable_tiling1, seperable_tiling2, seperable_tiling3]:
+        assert not rcs.separable()
+    for t in [separable_tiling1, separable_tiling2, separable_tiling3]:
         rcs = RowColSeparation(t)
-        assert rcs.seperable()
+        assert rcs.separable()
