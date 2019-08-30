@@ -72,9 +72,8 @@ class GriddedPerm():
 
     def occurrences_in(self, other):
         """Returns all occurrences of self in other."""
-        for occ in self._patt.occurrences_in(other.patt):
-            if all(self._pos[i] == other.pos[occ[i]] for i in range(len(occ))):
-                yield occ
+        for occ in self._patt.occurrences_in(other.patt, self.pos, other.pos):
+            yield occ
 
     def occurs_in(self, other):
         """Checks if self occurs in other."""
