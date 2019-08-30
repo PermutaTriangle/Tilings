@@ -218,10 +218,10 @@ class Graph(object):
             return orientation2
 
     def __repr__(self):
-        s = f'Graph over the vertices {self._vertex_labels}\n'
-        s += f'Vertex weight is {self._vertex_weights}\n'
+        s = 'Graph over the vertices {}\n'.format(self._vertex_labels)
+        s += 'Vertex weight is {}\n'.format(self._vertex_weights)
         for row in self._matrix:
-            s += f'{row}\n'
+            s += '{}\n'.format(row)
         return s
 
     def __lt__(self, other):
