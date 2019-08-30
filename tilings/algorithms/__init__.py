@@ -1,1 +1,1 @@
-from tilings.algorithms.fusion import Fusion
+from .fusion import Fusion

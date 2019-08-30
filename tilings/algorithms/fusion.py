@@ -1,5 +1,4 @@
 """The implementation of the fusion algorithm"""
-import tilings
 
 
 class Fusion(object):
@@ -139,7 +138,7 @@ class Fusion(object):
         """
         Return the fused tiling.
         """
-        return tilings.Tiling(
+        return self._tiling.__class__(
             obstructions=self.obstruction_fuse_counter.keys(),
             requirements=map(dict.keys, self.requirements_fuse_counters),
         )
