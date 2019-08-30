@@ -88,7 +88,7 @@ class Graph(object):
         `reduce` method.
         """
         assert self._reduced, "Graph must first be reduced"
-        if self._is_acyclic:
+        if self._is_acyclic or self.num_vertices == 0:
             return True
         for row in self._matrix:
             if row.count(0) == self.num_vertices:

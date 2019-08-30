@@ -57,6 +57,11 @@ def graph3():
     return g
 
 
+@pytest.fixture
+def empty_graph():
+    return Graph([], [])
+
+
 def test_init(matrix2):
     G = Graph('abcde', matrix=matrix2)
     assert G._matrix == matrix2
@@ -151,8 +156,9 @@ def test_trim_edges(graph_with_matrix):
     ])
 
 
-def test_find_non_edges(graph2):
+def test_find_non_edges(graph2, empty_graph):
     assert set(graph2.find_non_edge()) == {0, 3}
+    assert empty_graph.find_non_edge() is None
 
 
 def test_reduce(graph1, graph2):
@@ -163,7 +169,7 @@ def test_reduce(graph1, graph2):
     assert graph1._reduced
 
 
-def test_is_acyclic(graph1, graph2, graph3):
+def test_is_acyclic(graph1, graph2, graph3, empty_graph):
     graph2.reduce()
     assert not graph2.is_acyclic()
     for g in graph2.break_cycle_in_all_ways([(0, 2), (2, 0)]):
@@ -172,8 +178,9 @@ def test_is_acyclic(graph1, graph2, graph3):
     graph1.reduce()
     assert graph1.is_acyclic()
     graph3.reduce()
-    print(graph3)
     assert graph3.is_acyclic()
+    empty_graph.reduce()
+    assert empty_graph.is_acyclic()
 
 
 def test_find_cyle(graph1, graph2):
@@ -558,6 +565,9 @@ def test_separated_tiling(not_separable_tilings, separable_tiling1,
     assert RowColSeparation(separable_tiling1).separated_tiling() == t1_sep
     assert RowColSeparation(separable_tiling2).separated_tiling() == t2_sep
     assert RowColSeparation(separable_tiling3).separated_tiling() == t3_sep
+    # Test for the empty tiling
+    empty_tiling = Tiling(obstructions=[Obstruction(Perm((0,)), ((0, 0),))])
+    assert RowColSeparation(empty_tiling).separated_tiling() == empty_tiling
 
 
 def test_all_separation():
