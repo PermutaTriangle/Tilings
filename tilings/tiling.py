@@ -12,7 +12,7 @@ from comb_spec_searcher.utils import check_equation, check_poly, get_solution
 from permuta import Perm, PermSet
 from permuta.misc import UnionFind
 
-from .algorithms import Fusion
+from .algorithms import Fusion, RowColSeparation
 from .db_conf import check_database, update_database
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
@@ -679,6 +679,14 @@ class Tiling(CombinatorialClass):
                                                              idx, idx+1)
             raise InvalidOperationError(message)
         return fusion.fused_tiling()
+
+    def row_and_column_separation(self):
+        """
+        Splits the row and columns of a tilings using the inequalities implied
+        by the length two obstructions.
+        """
+        rcs = RowColSeparation(self)
+        return rcs.separated_tiling()
 
     # -------------------------------------------------------------
     # Properties and getters
