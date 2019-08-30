@@ -3,7 +3,7 @@ from array import array
 from collections import Counter, defaultdict
 from functools import partial, reduce
 from itertools import chain, product
-from operator import add, mul
+from operator import add, mul, xor
 
 import sympy
 
@@ -12,7 +12,9 @@ from comb_spec_searcher.utils import check_equation, check_poly, get_solution
 from permuta import Perm, PermSet
 from permuta.misc import UnionFind
 
+from .algorithms import Fusion
 from .db_conf import check_database, update_database
+from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
 from .obstruction import Obstruction
@@ -256,7 +258,9 @@ class Tiling(CombinatorialClass):
                                          for i, reqs in enumerate(cleanreqs)
                                          if i not in ind_to_remove))
 
+    # -------------------------------------------------------------
     # Compression
+    # -------------------------------------------------------------
 
     def compress(self):
         """Compresses the tiling by flattening the sets of cells into lists of
@@ -326,7 +330,10 @@ class Tiling(CombinatorialClass):
                  for p in string.split('_')]
         return cls(obstructions=basis)
 
+    # -------------------------------------------------------------
     # JSON methods
+    # -------------------------------------------------------------
+
     def to_jsonable(self):
         """Returns a dictionary object which is JSON serializable which
         represents a Tiling."""
@@ -357,7 +364,9 @@ class Tiling(CombinatorialClass):
         return cls(obstructions=obstructions,
                    requirements=requirements)
 
+    # -------------------------------------------------------------
     # Cell methods
+    # -------------------------------------------------------------
 
     def cell_within_bounds(self, cell):
         """Checks if a cell is within the bounds of the tiling."""
@@ -564,7 +573,10 @@ class Tiling(CombinatorialClass):
         return tuple(sorted(tuple(sorted(set(reqlist)))
                             for reqlist in requirements))
 
+    # -------------------------------------------------------------
     # Symmetries
+    # -------------------------------------------------------------
+
     def _transform(self, transf, gptransf):
         """ Transforms the tiling according to the two transformation functions
         given. The first transf is mapping of cells while gptransf is a
@@ -644,9 +656,33 @@ class Tiling(CombinatorialClass):
             rotate90_cell,
             lambda gp: gp.rotate90(rotate90_cell))
 
-    #
+    # -------------------------------------------------------------
+    # Algortihms
+    # -------------------------------------------------------------
+
+    def fusion(self, row=None, col=None):
+        """
+        Fuse the tilings.
+
+        If `row` is not `None` then `row` and `row+1` are fused togheter.
+        If `col` is not `None` then `col` and `col+1` are fused togheter.
+        """
+        assert xor(row is None, col is None), "Specify only `row` or `column`"
+        if not (row in range(self.dimensions[1]-1) or
+                col in range(self.dimensions[0]-1)):
+            raise InvalidOperationError('`row` or `column` out or range')
+        fusion = Fusion(self, row_idx=row, col_idx=col)
+        if not fusion.fusable():
+            fus_type = 'Rows' if row is not None else 'Columns'
+            idx = row if row is not None else col
+            message = '{} {} and {} are not fusable.'.format(fus_type,
+                                                             idx, idx+1)
+            raise InvalidOperationError(message)
+        return fusion.fused_tiling()
+
+    # -------------------------------------------------------------
     # Properties and getters
-    #
+    # -------------------------------------------------------------
 
     def maximum_length_of_minimum_gridded_perm(self):
         """Returns the maximum length of the minimum gridded permutation that
@@ -1151,12 +1187,12 @@ class Tiling(CombinatorialClass):
         if self == Tiling([Obstruction.single_cell(Perm((2, 1, 0)), (0, 0))]):
             return sympy.sympify('-1/2*(sqrt(-4*x + 1) - 1)/x')
         if self == Tiling(obstructions=(Obstruction(Perm((0,)), ((0, 0),)),)):
-                return sympy.sympify("1")
+            return sympy.sympify("1")
         if self == Tiling(obstructions=(Obstruction(Perm((0, 1)),
                                                     ((0, 0), (0, 0))),
                                         Obstruction(Perm((1, 0)),
                                                     ((0, 0), (0, 0))))):
-                return sympy.sympify("x + 1")
+            return sympy.sympify("x + 1")
 
         if kwargs.get('substitutions'):
             if kwargs.get('subs') is None:
@@ -1245,9 +1281,10 @@ class Tiling(CombinatorialClass):
         if genf is None:
             raise ValueError()
         return genf
-    #
+
+    # -------------------------------------------------------------
     # Dunder methods
-    #
+    # -------------------------------------------------------------
 
     def __hash__(self):
         return (hash(self._requirements) ^ hash(self._obstructions))
