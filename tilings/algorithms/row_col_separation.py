@@ -2,8 +2,6 @@ import heapq
 from itertools import combinations, product
 from operator import xor
 
-import tilings
-
 
 class Graph(object):
     """
@@ -24,7 +22,6 @@ class Graph(object):
 
     Moreover, one can also ask:
         - if the graph is acyclic with `is_acyclic`
-        - if the graph is reduced with `is_acyclic`
         - for a cycle of the graph with `find_cycle`
         - For the vertex order implied by a reduced acyclic graph
     """
@@ -116,10 +113,9 @@ class Graph(object):
             if self._is_edge(v1, v2) and self._is_edge(v2, v1):
                 return ((v1, v2), (v2, v1))
         for v1, v2, v3 in combinations(range(self.num_vertices), 3):
-            if self._matrix[v1][v2] != 0 and self._matrix[v2][v1] != 0:
-                cycle = self._length_3_cyle(v1, v2, v3)
-                if cycle:
-                    return cycle
+            cycle = self._lenght3_cycle(v1, v2, v3)
+            if cycle:
+                return cycle
         self._is_acyclic = True
         return None
 
@@ -347,8 +343,7 @@ class RowColSeparation(object):
     @staticmethod
     def _all_order(graph, only_max=False):
         """
-        Generator of ordering of the active cell that gives the highest amount
-        of separation.
+        Generator of ordering of the active cells.
 
         One can get only the maximal separation by setting `only_max` to
         `True`.
@@ -377,7 +372,7 @@ class RowColSeparation(object):
         cell_map = self._get_cell_map(row_order, col_order)
         obs = self._map_obstructions(cell_map)
         reqs = self._map_requirements(cell_map)
-        return tilings.Tiling(obstructions=obs, requirements=reqs)
+        return self._tiling.__class__(obstructions=obs, requirements=reqs)
 
     @staticmethod
     def _get_cell_map(row_order, col_order):

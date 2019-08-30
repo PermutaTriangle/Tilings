@@ -188,6 +188,9 @@ def test_find_cyle(graph1, graph2):
     assert set(graph2.find_cycle()) == set([(0, 2), (2, 0)])
     graph1.reduce()
     assert graph1.find_cycle() is None
+    three_cycle = Graph(range(3), [[0, 1, 0], [0, 0, 1], [1, 0, 0]])
+    three_cycle.reduce()
+    assert set(three_cycle.find_cycle()) == set([(0, 1), (1, 2), (2, 0)])
 
 
 def test_break_cycle_in_all_ways(graph2):
