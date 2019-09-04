@@ -7,7 +7,16 @@ def map_cell(col_mapping, row_mapping, cell):
 
 
 def union_reduce(iterable):
-    """Returns the union of the elements contained in the iterables."""
+    """
+    Returns the union of the elements contained in the iterables.
+
+    >>> union_reduce(([1,2], [2,3]))
+    {1, 2, 3}
+    >>> union_reduce(([], range(0, 10, 2)))
+    {0, 2, 4, 6, 8}
+    >>> union_reduce(([], []))
+    set()
+    """
     return reduce(set.__or__, map(set, iterable), set())
 
 
