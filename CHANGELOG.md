@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Update permuta to 1.2.0
+- Update comb_spec_searcher to 0.2.2
 
 ## [1.0.1] - 2019-08-26
 ### Changed
