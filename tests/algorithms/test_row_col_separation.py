@@ -2,6 +2,7 @@ from itertools import product
 
 import pytest
 
+from comb_spec_searcher import Rule
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
 from tilings.algorithms.row_col_separation import Graph, RowColSeparation
@@ -164,6 +165,9 @@ def test_find_non_edges(graph2, empty_graph):
 def test_reduce(graph1, graph2):
     graph2.reduce()
     assert graph2._matrix == [[0, 0, 2], [2, 0, 1], [2, 0, 0]]
+    # Test that making it twice does nothing
+    graph2.reduce()
+    assert graph2._matrix == [[0, 0, 2], [2, 0, 1], [2, 0, 0]]
     graph1.reduce()
     assert graph1._matrix == [[0]]
     assert graph1._reduced
@@ -214,6 +218,18 @@ def test_break_cycle_in_all_ways(graph2):
     assert graph2._vertex_labels[0] == set([0, 3])
     g._vertex_weights[1] = 10
     assert graph2._vertex_weights[1] == 1
+
+
+def test_lenght3_cycle():
+    g = Graph([1, 2, 3, 4], [[0, 1, 0, 0], [0, 0, 1, 0],
+                             [1, 0, 0, 0], [1, 1, 1, 0]])
+    cycle = set([(0, 1), (1, 2), (2, 0)])
+    assert set(g._lenght3_cycle(0, 1, 2)) == cycle
+    assert set(g._lenght3_cycle(0, 2, 1)) == cycle
+    assert set(g._lenght3_cycle(1, 0, 2)) == cycle
+    assert set(g._lenght3_cycle(1, 2, 0)) == cycle
+    assert set(g._lenght3_cycle(2, 0, 1)) == cycle
+    assert set(g._lenght3_cycle(2, 1, 0)) == cycle
 
 
 def test_vertex_order(graph2, graph3):
@@ -409,6 +425,7 @@ def test_complete_inequalities_matrices(separable_tiling2):
         else:
             print(0, c1, c2)
             assert_matrix_entry_is(rcs, row_m, c1, c2, 0)
+    assert rcs._ineq_matrices == (row_m, col_m)
     # Column basic matrix
     ob_ineq = [((0, 1), (0, 0))]
     for c1, c2 in product(separable_tiling2.active_cells, repeat=2):
@@ -593,3 +610,20 @@ def test_separable(not_separable_tilings, separable_tiling1, separable_tiling2,
     for t in [separable_tiling1, separable_tiling2, separable_tiling3]:
         rcs = RowColSeparation(t)
         assert rcs.separable()
+
+
+def test_formal_step(separable_tiling1):
+    assert (RowColSeparation(separable_tiling1).formal_step() ==
+            'Row and column separation')
+
+
+def test_rule(separable_tiling1, not_separable_tilings):
+    rcs = RowColSeparation(separable_tiling1)
+    rule = rcs.rule()
+    assert isinstance(rule, Rule)
+    assert rule.comb_classes == [rcs.separated_tiling()]
+    assert rule.ignore_parent
+    assert rule.workable == [True]
+    assert rule.constructor == 'equiv'
+    assert rule.possibly_empty == [False]
+    assert RowColSeparation(not_separable_tilings[0]).rule() is None

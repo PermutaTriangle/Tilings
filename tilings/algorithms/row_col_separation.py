@@ -2,6 +2,8 @@ import heapq
 from itertools import combinations, product
 from operator import xor
 
+from comb_spec_searcher import InferralRule
+
 
 class Graph(object):
     """
@@ -458,3 +460,18 @@ class RowColSeparation(object):
         )
         for row_order, col_order in orders:
             yield self._separates_tiling(row_order, col_order)
+
+    def formal_step(self):
+        """
+        Returns a string describing the operation that was performed.
+        """
+        return 'Row and column separation'
+
+    def rule(self):
+        """
+        Return a comb_spec_searcher rule for the separation.
+
+        If the tiling is not separable, returns None.
+        """
+        if self.separable():
+            return InferralRule(self.formal_step(), self.separated_tiling())
