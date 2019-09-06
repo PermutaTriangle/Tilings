@@ -1,6 +1,7 @@
 from collections import defaultdict
 from itertools import chain, combinations
 
+from comb_spec_searcher import Rule
 from permuta.misc import UnionFind
 
 
@@ -142,10 +143,37 @@ class Factor(object):
         """
         raise NotImplementedError
 
-    def __repr__(self):
-        s = 'Factoring algorithms for the tiling:\n'
-        s += str(self._tiling)
-        return s
+    @property
+    def formal_step(self):
+        """
+        Return a string that describe the operation performed on the tiling.
+        """
+        return 'The factor of the tiling.'
+
+    @property
+    def constructor(self):
+        """
+        Returns the type of constructor for the factorisation
+        """
+        return 'cartesian'
+
+    def rule(self, workable=True):
+        """
+        Return the comb_spec_searcher rule for the factorisation.
+
+        TODO: Describe the meaning or workable.
+        """
+        if not self.factorable():
+            return
+        assert isinstance(workable, bool)
+        factors = self.factors()
+        return Rule(self.formal_step,
+                    factors,
+                    inferable=[False for _ in factors],
+                    workable=[workable for _ in factors],
+                    possibly_empty=[False for _ in factors],
+                    ignore_parent=workable,
+                    constructor=self.constructor)
 
 
 class FactorWithMonotoneInterleaving(Factor):
@@ -172,6 +200,20 @@ class FactorWithMonotoneInterleaving(Factor):
         for c1, c2 in cell_pair_to_unite:
             self._unite_cells((c1, c2))
 
+    @property
+    def formal_step(self):
+        """
+        Return a string that describe the operation performed on the tiling.
+        """
+        return "The factor with monotone interleaving of the tiling."
+
+    @property
+    def constructor(self):
+        """
+        Returns the type of constructor for the factorisation
+        """
+        return 'other'
+
 
 class FactorWithInterleaving(Factor):
     """
@@ -187,3 +229,17 @@ class FactorWithInterleaving(Factor):
         interleaving is allowed on row and column.
         """
         pass
+
+    @property
+    def formal_step(self):
+        """
+        Return a string that describe the operation performed on the tiling.
+        """
+        return "The factor with interleaving of the tiling."
+
+    @property
+    def constructor(self):
+        """
+        Returns the type of constructor for the factorisation
+        """
+        return 'other'

@@ -52,6 +52,16 @@ def tiling2():
 
 
 @pytest.fixture
+def not_fact_tiling():
+    not_fact_tiling = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+    ])
+    return not_fact_tiling
+
+
+@pytest.fixture
 def factor1(tiling1):
     return Factor(tiling1)
 
@@ -59,6 +69,68 @@ def factor1(tiling1):
 @pytest.fixture
 def factor2(tiling2):
     return Factor(tiling2)
+
+
+@pytest.fixture
+def factor1_with_int(tiling1):
+    return FactorWithInterleaving(tiling1)
+
+
+@pytest.fixture
+def factor2_with_int(tiling2):
+    return FactorWithInterleaving(tiling2)
+
+
+@pytest.fixture
+def factor1_with_mon_int(tiling1):
+    return FactorWithMonotoneInterleaving(tiling1)
+
+
+@pytest.fixture
+def factor2_with_mon_int(tiling2):
+    return FactorWithMonotoneInterleaving(tiling2)
+
+# ------------------------------------------------------------
+#       Test for all classes
+# ------------------------------------------------------------
+
+
+def test_formal_step(factor1, factor1_with_mon_int, factor1_with_int):
+    assert (factor1.formal_step ==
+            'The factor of the tiling.')
+    assert (factor1_with_int.formal_step ==
+            'The factor with interleaving of the tiling.')
+    assert (factor1_with_mon_int.formal_step ==
+            'The factor with monotone interleaving of the tiling.')
+
+
+def test_constructor(factor1, factor1_with_mon_int, factor1_with_int):
+    assert factor1.constructor == 'cartesian'
+    assert factor1_with_int.constructor == 'other'
+    assert factor1_with_mon_int.constructor == 'other'
+
+
+def test_rule(factor1, factor1_with_mon_int, factor1_with_int,
+              not_fact_tiling):
+    factor_objs = [factor1, factor1_with_mon_int, factor1_with_int]
+    assert all(fo.rule().formal_step == fo.formal_step for fo in factor_objs)
+    assert all(not any(fo.rule().inferable) for fo in factor_objs)
+    assert all(len(fo.rule().inferable) == len(fo.factors())
+               for fo in factor_objs)
+    assert all(all(fo.rule().workable) for fo in factor_objs)
+    assert all(len(fo.rule().inferable) == len(fo.factors())
+               for fo in factor_objs)
+    assert all(not any(fo.rule(workable=False).workable) for fo in factor_objs)
+    assert all(len(fo.rule(workable=False).workable) == len(fo.factors())
+               for fo in factor_objs)
+    assert all(not any(fo.rule().possibly_empty) for fo in factor_objs)
+    assert all(len(fo.rule().possibly_empty) == len(fo.factors())
+               for fo in factor_objs)
+    assert all(fo.rule().ignore_parent for fo in factor_objs)
+    assert not any(fo.rule(workable=False).ignore_parent for fo in factor_objs)
+    assert all(fo.rule().constructor == fo.constructor for fo in factor_objs)
+
+    assert Factor(not_fact_tiling).rule() is None
 
 # ------------------------------------------------
 #       Test for the class Factor
@@ -305,7 +377,7 @@ def test_get_factor_obs_and_reqs(factor1, factor2):
     assert (obs2, reqs2) in f2_obs_and_reqs
 
 
-def test_factorable(factor1, factor2):
+def test_factorable(factor1, factor2, not_fact_tiling):
     assert factor1.factorable()
     assert factor2.factorable()
 
@@ -318,11 +390,6 @@ def test_factorable(factor1, factor2):
     ], requirements=[[Requirement(Perm((0,)), ((0, 0),))]])
     assert not Factor(point_tiling).factorable()
 
-    not_fact_tiling = Tiling(obstructions=[
-        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
-        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-    ])
     assert not Factor(not_fact_tiling).factorable()
 
 
@@ -367,33 +434,49 @@ def test_factor(factor1, factor2):
     assert f1 in factor2.factors()
     assert f2 in factor2.factors()
 
+
+@pytest.mark.xfail
+def test_all_factorisation():
+    t = Tiling(obstructions=[
+        Obstruction(Perm(0, 1), ((0, 0),)*2),
+        Obstruction(Perm(0, 1), ((1, 1),)*2),
+        Obstruction(Perm(0, 1), ((1, 1),)*2),
+    ])
+    fo = Factor(t)
+    f1 = Tiling(obstructions=[
+        Obstruction(Perm(0, 1), ((0, 0),)*2),
+        Obstruction(Perm(0, 1), ((1, 1),)*2),
+    ])
+    f2 = Tiling(obstructions=[
+        Obstruction(Perm(0, 1), ((0, 0),)*2),
+    ])
+    assert set(f1, f2) in map(set, fo.all_factorisation())
+
 # ------------------------------------------------------------
 #       Test for the class FactorWithMonotoneInterleaving
 # ------------------------------------------------------------
 
 
-def test_unite_rows_and_cols_monotone_interleaving(tiling1, tiling2):
-    factor1 = FactorWithMonotoneInterleaving(tiling1)
-    factor1._unite_rows_and_cols()
-    all_rep = set(factor1._get_cell_representative(c)
+def test_unite_rows_and_cols_monotone_interleaving(factor1_with_mon_int,
+                                                   factor2_with_mon_int):
+    factor1_with_mon_int._unite_rows_and_cols()
+    all_rep = set(factor1_with_mon_int._get_cell_representative(c)
                   for c in product(range(4), range(3)))
     assert len(all_rep) == 11
-    assert (factor1._get_cell_representative((0, 0)) ==
-            factor1._get_cell_representative((3, 0)))
+    assert (factor1_with_mon_int._get_cell_representative((0, 0)) ==
+            factor1_with_mon_int._get_cell_representative((3, 0)))
 
-    factor2 = FactorWithMonotoneInterleaving(tiling2)
-    factor2._unite_rows_and_cols()
+    factor2_with_mon_int._unite_rows_and_cols()
     comp1 = [(2, 2), (3, 2), (4, 2), (2, 3)]
-    all_rep = set(factor2._get_cell_representative(c)
+    all_rep = set(factor2_with_mon_int._get_cell_representative(c)
                   for c in product(range(5), range(4)))
     assert len(all_rep) == 17
     for c1, c2 in combinations(comp1, r=2):
-        assert (factor2._get_cell_representative(c1) ==
-                factor2._get_cell_representative(c2))
+        assert (factor2_with_mon_int._get_cell_representative(c1) ==
+                factor2_with_mon_int._get_cell_representative(c2))
 
 
-def test_mon_int_factor(tiling1, tiling2):
-    factor1 = FactorWithMonotoneInterleaving(tiling1)
+def test_mon_int_factor(factor1_with_mon_int, factor2_with_mon_int):
     f1 = Tiling(obstructions=[
         Obstruction(Perm((2, 1, 0)), ((0, 0),)*3),
         Obstruction(Perm((2, 0, 1)), ((1, 0),)*3),
@@ -406,12 +489,11 @@ def test_mon_int_factor(tiling1, tiling2):
     f3 = Tiling(obstructions=[
         Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
     ])
-    assert len(factor1.factors()) == 3
-    assert f1 in factor1.factors()
-    assert f2 in factor1.factors()
-    assert f3 in factor1.factors()
+    assert len(factor1_with_mon_int.factors()) == 3
+    assert f1 in factor1_with_mon_int.factors()
+    assert f2 in factor1_with_mon_int.factors()
+    assert f3 in factor1_with_mon_int.factors()
 
-    factor2 = FactorWithMonotoneInterleaving(tiling2)
     f1 = Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 0),)*2),
         Obstruction(Perm((0, 1)), ((0, 1),)*2),
@@ -434,31 +516,29 @@ def test_mon_int_factor(tiling1, tiling2):
         [Requirement(Perm((0, 1)), ((0, 1), (1, 1))),
          Requirement(Perm((0, 1)), ((1, 1), (2, 1)))],
     ])
-    assert len(factor2.factors()) == 2
-    assert f1 in factor2.factors()
-    assert f2 in factor2.factors()
+    assert len(factor2_with_mon_int.factors()) == 2
+    assert f1 in factor2_with_mon_int.factors()
+    assert f2 in factor2_with_mon_int.factors()
 
 # ------------------------------------------------------------
 #       Test for the class FactorWithInterleaving
 # ------------------------------------------------------------
 
 
-def test_unite_rows_and_cols_monotone_interleaving(tiling1, tiling2):
-    factor1 = FactorWithInterleaving(tiling1)
-    factor1._unite_rows_and_cols()
-    all_rep = set(factor1._get_cell_representative(c)
+def test_unite_rows_and_cols_monotone_interleaving(factor1_with_int,
+                                                   factor2_with_int):
+    factor1_with_int._unite_rows_and_cols()
+    all_rep = set(factor1_with_int._get_cell_representative(c)
                   for c in product(range(4), range(3)))
     assert len(all_rep) == 12
 
-    factor2 = FactorWithInterleaving(tiling2)
-    factor2._unite_rows_and_cols()
-    all_rep = set(factor2._get_cell_representative(c)
+    factor2_with_int._unite_rows_and_cols()
+    all_rep = set(factor2_with_int._get_cell_representative(c)
                   for c in product(range(5), range(4)))
     assert len(all_rep) == 20
 
 
-def test_int_factor(tiling1, tiling2):
-    factor1 = FactorWithInterleaving(tiling1)
+def test_int_factor(factor1_with_int, factor2_with_int):
     f1 = Tiling(obstructions=[
         Obstruction(Perm((2, 1, 0)), ((0, 0),)*3),
     ])
@@ -473,13 +553,12 @@ def test_int_factor(tiling1, tiling2):
     f4 = Tiling(obstructions=[
         Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
     ])
-    assert len(factor1.factors()) == 4
-    assert f1 in factor1.factors()
-    assert f2 in factor1.factors()
-    assert f3 in factor1.factors()
-    assert f4 in factor1.factors()
+    assert len(factor1_with_int.factors()) == 4
+    assert f1 in factor1_with_int.factors()
+    assert f2 in factor1_with_int.factors()
+    assert f3 in factor1_with_int.factors()
+    assert f4 in factor1_with_int.factors()
 
-    factor2 = FactorWithInterleaving(tiling2)
     f1 = Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 0),)*2),
         Obstruction(Perm((0, 1)), ((0, 1),)*2),
@@ -504,7 +583,7 @@ def test_int_factor(tiling1, tiling2):
         [Requirement(Perm((0, 1)), ((0, 0), (1, 0))),
          Requirement(Perm((0, 1)), ((1, 0), (2, 0)))],
     ])
-    assert len(factor2.factors()) == 3
-    assert f1 in factor2.factors()
-    assert f2 in factor2.factors()
-    assert f3 in factor2.factors()
+    assert len(factor2_with_int.factors()) == 3
+    assert f1 in factor2_with_int.factors()
+    assert f2 in factor2_with_int.factors()
+    assert f3 in factor2_with_int.factors()
