@@ -316,3 +316,18 @@ def test_fused_tiling(row_fusion, col_fusion, col_fusion_big, fusion_with_req):
         [Requirement(Perm((0, 1)), ((0, 0), (1, 0)))],
         [Requirement(Perm((1, 0)), ((1, 0), (1, 0)))],
     ]))
+
+
+def test_formal_step(row_fusion, col_fusion):
+    assert row_fusion.formal_step() == "Fuse rows 0 and 1."
+    assert col_fusion.formal_step() == "Fuse columns 0 and 1."
+
+
+def test_rule(row_fusion):
+    rule = row_fusion.rule()
+    assert rule.formal_step == row_fusion.formal_step()
+    assert rule.comb_classes == [row_fusion.fused_tiling()]
+    assert rule.inferable == [True]
+    assert rule.workable == [True]
+    assert rule.possibly_empty == [False]
+    assert rule.constructor == 'other'
