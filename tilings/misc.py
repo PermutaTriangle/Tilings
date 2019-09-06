@@ -10,10 +10,10 @@ def union_reduce(iterable):
     """
     Returns the union of the elements contained in the iterables.
 
-    >>> union_reduce(([1,2], [2,3]))
-    {1, 2, 3}
-    >>> union_reduce(([], range(0, 10, 2)))
-    {0, 2, 4, 6, 8}
+    >>> sorted(union_reduce(([1,2], [2,3])))
+    [1, 2, 3]
+    >>> sorted(union_reduce(([], range(0, 10, 2))))
+    [0, 2, 4, 6, 8]
     >>> union_reduce(([], []))
     set()
     """
