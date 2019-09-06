@@ -153,7 +153,7 @@ class Factor(object):
         return s
 
 
-class FactorWithMonotoneIterleaving(Factor):
+class FactorWithMonotoneInterleaving(Factor):
     """
     Algorithm to compute the factorisation with monotone interleaving of a
     tiling.

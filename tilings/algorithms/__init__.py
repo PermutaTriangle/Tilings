@@ -1,3 +1,3 @@
 from .factor import (Factor, FactorWithInterleaving,
-                     FactorWithMonotoneIterleaving)
+                     FactorWithMonotoneInterleaving)
 from .fusion import Fusion

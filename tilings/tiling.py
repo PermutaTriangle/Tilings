@@ -13,7 +13,7 @@ from permuta import Perm, PermSet
 from permuta.misc import UnionFind
 
 from .algorithms import (Factor, FactorWithInterleaving,
-                         FactorWithMonotoneIterleaving, Fusion)
+                         FactorWithMonotoneInterleaving, Fusion)
 from .db_conf import check_database, update_database
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
@@ -694,7 +694,7 @@ class Tiling(CombinatorialClass):
         """
         factor_class = {
             'none': Factor,
-            'monotone': FactorWithMonotoneIterleaving,
+            'monotone': FactorWithMonotoneInterleaving,
             'any': FactorWithInterleaving,
         }
         if interleaving in factor_class:

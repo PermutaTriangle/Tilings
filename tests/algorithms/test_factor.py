@@ -6,7 +6,7 @@ from permuta import Perm
 from permuta.misc.union_find import UnionFind
 from tilings import Obstruction, Requirement, Tiling
 from tilings.algorithms import (Factor, FactorWithInterleaving,
-                                FactorWithMonotoneIterleaving)
+                                FactorWithMonotoneInterleaving)
 
 # ------------------------------------------------
 #      Fixture and utility
@@ -368,7 +368,7 @@ def test_factor(factor1, factor2):
     assert f2 in factor2.factors()
 
 # ------------------------------------------------------------
-#       Test for the class FactorWithMonotoneIterleaving
+#       Test for the class FactorWithMonotoneInterleaving
 # ------------------------------------------------------------
 
 
@@ -391,8 +391,55 @@ def test_unite_rows_and_cols_monotone_interleaving(tiling1, tiling2):
         assert (factor2._get_cell_representative(c1) ==
                 factor2._get_cell_representative(c2))
 
+
+def test_mon_int_factor(tiling1, tiling2):
+    factor1 = FactorWithMonotoneInterleaving(tiling1)
+    f1 = Tiling(obstructions=[
+        Obstruction(Perm((2, 1, 0)), ((0, 0),)*3),
+        Obstruction(Perm((2, 0, 1)), ((1, 0),)*3),
+    ])
+    f2 = Tiling(obstructions=[
+        Obstruction(Perm((1, 0)), ((0, 0),)*2),
+        Obstruction(Perm((1, 0)), ((1, 1),)*2),
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 1))),
+    ])
+    f3 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
+    ])
+    assert len(factor1.factors()) == 3
+    assert f1 in factor1.factors()
+    assert f2 in factor1.factors()
+    assert f3 in factor1.factors()
+
+    factor2 = FactorWithMonotoneInterleaving(tiling2)
+    f1 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0),)*2),
+        Obstruction(Perm((0, 1)), ((0, 1),)*2),
+        Obstruction(Perm((0, 1)), ((1, 0),)*2),
+        Obstruction(Perm((0, 1)), ((1, 1),)*2),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (1, 1))),
+    ], requirements=[
+        [Requirement(Perm((0, 1)), ((0, 0), (0, 1)))],
+    ])
+    f2 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((1, 1),)*2),
+        Obstruction(Perm((0, 1)), ((2, 1),)*2),
+        Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+    ], requirements=[
+        [Requirement(Perm((0, 1)), ((0, 1), (1, 1))),
+         Requirement(Perm((0, 1)), ((1, 1), (2, 1)))],
+    ])
+    assert len(factor2.factors()) == 2
+    assert f1 in factor2.factors()
+    assert f2 in factor2.factors()
+
 # ------------------------------------------------------------
-#       Test for the class FactorWithIterleaving
+#       Test for the class FactorWithInterleaving
 # ------------------------------------------------------------
 
 
@@ -408,3 +455,56 @@ def test_unite_rows_and_cols_monotone_interleaving(tiling1, tiling2):
     all_rep = set(factor2._get_cell_representative(c)
                   for c in product(range(5), range(4)))
     assert len(all_rep) == 20
+
+
+def test_int_factor(tiling1, tiling2):
+    factor1 = FactorWithInterleaving(tiling1)
+    f1 = Tiling(obstructions=[
+        Obstruction(Perm((2, 1, 0)), ((0, 0),)*3),
+    ])
+    f2 = Tiling(obstructions=[
+        Obstruction(Perm((2, 0, 1)), ((1, 0),)*3),
+    ])
+    f3 = Tiling(obstructions=[
+        Obstruction(Perm((1, 0)), ((0, 0),)*2),
+        Obstruction(Perm((1, 0)), ((1, 1),)*2),
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 1))),
+    ])
+    f4 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
+    ])
+    assert len(factor1.factors()) == 4
+    assert f1 in factor1.factors()
+    assert f2 in factor1.factors()
+    assert f3 in factor1.factors()
+    assert f4 in factor1.factors()
+
+    factor2 = FactorWithInterleaving(tiling2)
+    f1 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0),)*2),
+        Obstruction(Perm((0, 1)), ((0, 1),)*2),
+        Obstruction(Perm((0, 1)), ((1, 0),)*2),
+        Obstruction(Perm((0, 1)), ((1, 1),)*2),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (1, 1))),
+    ], requirements=[
+        [Requirement(Perm((0, 1)), ((0, 0), (0, 1)))],
+    ])
+    f2 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+    ])
+    f3 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((1, 0),)*2),
+        Obstruction(Perm((0, 1)), ((2, 0),)*2),
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+    ], requirements=[
+        [Requirement(Perm((0, 1)), ((0, 0), (1, 0))),
+         Requirement(Perm((0, 1)), ((1, 0), (2, 0)))],
+    ])
+    assert len(factor2.factors()) == 3
+    assert f1 in factor2.factors()
+    assert f2 in factor2.factors()
+    assert f3 in factor2.factors()
