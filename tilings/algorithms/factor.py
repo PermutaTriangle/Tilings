@@ -114,11 +114,6 @@ class Factor(object):
                                  if ob.pos[0] in component)
             requirements = tuple(req for req in self._tiling.requirements
                                  if req[0].pos[0] in component)
-            # Requirement and obstruction can be empty?
-            if not (obstructions or requirements):
-                print(self._tiling)
-                print(self._tiling.__repr__())
-                raise RuntimeError('empty factor')
             factors.append((obstructions, requirements))
         self._factors_obs_and_reqs = factors
         return self._factors_obs_and_reqs
