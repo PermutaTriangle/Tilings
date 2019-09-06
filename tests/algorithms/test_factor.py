@@ -318,6 +318,13 @@ def test_factorable(factor1, factor2):
     ], requirements=[[Requirement(Perm((0,)), ((0, 0),))]])
     assert not Factor(point_tiling).factorable()
 
+    not_fact_tiling = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+    ])
+    assert not Factor(not_fact_tiling).factorable()
+
 
 def test_factor(factor1, factor2):
     f1 = Tiling(obstructions=[
