@@ -79,16 +79,16 @@ def partitions_iterator(lst):
     Iterator over all the possible partitions of a list. A partition is yielded
     as a list of list.
 
-    The partition in a single part is not returned.
+    The partition in a single part and the parition consisting of only
+    singleton are not returned.
 
     >>> for partition in partitions_iterator([1, 2, 3]):
     ...     print(partition)
     [[1, 2], [3]]
     [[1], [2, 3]]
     [[1, 3], [2]]
-    [[1], [2], [3]]
     """
-    for i in range(2, len(lst)+1):
+    for i in range(2, len(lst)):
         for part in algorithm_u(lst, i):
             yield part
 
