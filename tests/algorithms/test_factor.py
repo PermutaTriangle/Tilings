@@ -441,7 +441,7 @@ def test_factor(factor1, factor2):
     assert f2 in factor2.factors()
 
 
-def test_all_factorisation():
+def test_reducible_factorisations():
     t = Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 0),)*2),
         Obstruction(Perm((0, 1)), ((1, 1),)*2),
@@ -455,12 +455,8 @@ def test_all_factorisation():
     f2 = Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 0),)*2),
     ])
-    for fs in fo.all_factorisation():
-        print('--'*40)
-        for f in fs:
-            print(f)
-    assert set([f1, f2]) in map(set, fo.all_factorisation())
-    assert [f2, f2, f2] in fo.all_factorisation()
+    assert set([f1, f2]) in map(set, fo.reducible_factorisations())
+    assert [f2, f2, f2] not in fo.reducible_factorisations()
 
 # ------------------------------------------------------------
 #       Test for the class FactorWithMonotoneInterleaving

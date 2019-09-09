@@ -105,7 +105,7 @@ class Factor(object):
 
     def _get_factors_obs_and_reqs(self):
         """
-        Returns a list of all the minimal factors of the tiling.
+        Returns a list of all the irreducible factors of the tiling.
         Each factor is a tuple (obstructions, requirements)
         """
         if hasattr(self, '_factors_obs_and_reqs'):
@@ -128,21 +128,21 @@ class Factor(object):
 
     def factors(self):
         """
-        Returns all the minimal factors of the tiling.
+        Returns all the irreducible factors of the tiling.
         """
         return [self._tiling.__class__(obstructions=f[0], requirements=f[1],
                                        minimize=False)
                 for f in self._get_factors_obs_and_reqs()]
 
-    def all_factorisation(self):
+    def reducible_factorisations(self):
         """
-        Iterator over all non maximal factorization that can be obtained by
+        Iterator over all reducible factorisation that can be obtained by
         grouping of irreducible factors.
 
         Each factorisation is a list of tiling.
 
         For example if T = T1 x T2 x T3 then (T1 x T3) x T2 is a possible non
-        maximal factorisation.
+        irreducible factorisation.
         """
         min_comp = self._get_factors_obs_and_reqs()
         print(min_comp)
