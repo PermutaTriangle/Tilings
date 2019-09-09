@@ -157,12 +157,12 @@ class Factor(object):
                 )
             yield factors
 
-    @property
-    def formal_step(self):
+    def formal_step(self, union=False):
         """
         Return a string that describe the operation performed on the tiling.
         """
-        return 'The factor of the tiling.'
+        union_str = 'unions of ' if union else ''
+        return 'The {}factors of the tiling.'.format(union_str)
 
     @property
     def constructor(self):
@@ -171,23 +171,35 @@ class Factor(object):
         """
         return 'cartesian'
 
-    def rule(self, workable=True):
+    def _rule(self, factors, formal_step, workable):
         """
-        Return the comb_spec_searcher rule for the factorisation.
+        Return the comb_spec_searcher rule for the factorisation where the list
+        of factors is given as a list of tilings.
 
         TODO: Describe the meaning or workable.
         """
         if not self.factorable():
             return
         assert isinstance(workable, bool)
-        factors = self.factors()
-        return Rule(self.formal_step,
+        return Rule(formal_step,
                     factors,
                     inferable=[False for _ in factors],
                     workable=[workable for _ in factors],
                     possibly_empty=[False for _ in factors],
                     ignore_parent=workable,
                     constructor=self.constructor)
+
+    def rule(self, workable=True):
+        return self._rule(self.factors(), self.formal_step(), workable)
+
+    def all_union_rule(self):
+        """
+        Iterator over the rule for all possible union of factors.
+
+        This generator includes a normal factor rule for the irreducible
+        factorisation.
+        """
+        raise NotImplementedError
 
 
 class FactorWithMonotoneInterleaving(Factor):
@@ -214,12 +226,13 @@ class FactorWithMonotoneInterleaving(Factor):
         for c1, c2 in cell_pair_to_unite:
             self._unite_cells((c1, c2))
 
-    @property
-    def formal_step(self):
+    def formal_step(self, union=False):
         """
         Return a string that describe the operation performed on the tiling.
         """
-        return "The factor with monotone interleaving of the tiling."
+        union_str = 'unions of ' if union else ''
+        return ("The {}factors with monotone interleaving of the "
+                "tiling.".format(union_str))
 
     @property
     def constructor(self):
@@ -244,12 +257,13 @@ class FactorWithInterleaving(Factor):
         """
         pass
 
-    @property
-    def formal_step(self):
+    def formal_step(self, union=False):
         """
         Return a string that describe the operation performed on the tiling.
         """
-        return "The factor with interleaving of the tiling."
+        union_str = 'unions of ' if union else ''
+        return ("The {}factors with interleaving of the "
+                "tiling.".format(union_str))
 
     @property
     def constructor(self):

@@ -96,12 +96,18 @@ def factor2_with_mon_int(tiling2):
 
 
 def test_formal_step(factor1, factor1_with_mon_int, factor1_with_int):
-    assert (factor1.formal_step ==
-            'The factor of the tiling.')
-    assert (factor1_with_int.formal_step ==
-            'The factor with interleaving of the tiling.')
-    assert (factor1_with_mon_int.formal_step ==
-            'The factor with monotone interleaving of the tiling.')
+    assert (factor1.formal_step() ==
+            'The factors of the tiling.')
+    assert (factor1_with_int.formal_step() ==
+            'The factors with interleaving of the tiling.')
+    assert (factor1_with_mon_int.formal_step() ==
+            'The factors with monotone interleaving of the tiling.')
+    assert (factor1.formal_step(union=True) ==
+            'The unions of factors of the tiling.')
+    assert (factor1_with_int.formal_step(union=True) ==
+            'The unions of factors with interleaving of the tiling.')
+    assert (factor1_with_mon_int.formal_step(union=True) ==
+            'The unions of factors with monotone interleaving of the tiling.')
 
 
 def test_constructor(factor1, factor1_with_mon_int, factor1_with_int):
@@ -113,7 +119,7 @@ def test_constructor(factor1, factor1_with_mon_int, factor1_with_int):
 def test_rule(factor1, factor1_with_mon_int, factor1_with_int,
               not_fact_tiling):
     factor_objs = [factor1, factor1_with_mon_int, factor1_with_int]
-    assert all(fo.rule().formal_step == fo.formal_step for fo in factor_objs)
+    assert all(fo.rule().formal_step == fo.formal_step() for fo in factor_objs)
     assert all(not any(fo.rule().inferable) for fo in factor_objs)
     assert all(len(fo.rule().inferable) == len(fo.factors())
                for fo in factor_objs)
