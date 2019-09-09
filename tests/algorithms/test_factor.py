@@ -435,22 +435,26 @@ def test_factor(factor1, factor2):
     assert f2 in factor2.factors()
 
 
-@pytest.mark.xfail
 def test_all_factorisation():
     t = Tiling(obstructions=[
-        Obstruction(Perm(0, 1), ((0, 0),)*2),
-        Obstruction(Perm(0, 1), ((1, 1),)*2),
-        Obstruction(Perm(0, 1), ((1, 1),)*2),
+        Obstruction(Perm((0, 1)), ((0, 0),)*2),
+        Obstruction(Perm((0, 1)), ((1, 1),)*2),
+        Obstruction(Perm((0, 1)), ((2, 2),)*2),
     ])
     fo = Factor(t)
     f1 = Tiling(obstructions=[
-        Obstruction(Perm(0, 1), ((0, 0),)*2),
-        Obstruction(Perm(0, 1), ((1, 1),)*2),
+        Obstruction(Perm((0, 1)), ((0, 0),)*2),
+        Obstruction(Perm((0, 1)), ((1, 1),)*2),
     ])
     f2 = Tiling(obstructions=[
-        Obstruction(Perm(0, 1), ((0, 0),)*2),
+        Obstruction(Perm((0, 1)), ((0, 0),)*2),
     ])
-    assert set(f1, f2) in map(set, fo.all_factorisation())
+    for fs in fo.all_factorisation():
+        print('--'*40)
+        for f in fs:
+            print(f)
+    assert set([f1, f2]) in map(set, fo.all_factorisation())
+    assert [f2, f2, f2] in fo.all_factorisation()
 
 # ------------------------------------------------------------
 #       Test for the class FactorWithMonotoneInterleaving

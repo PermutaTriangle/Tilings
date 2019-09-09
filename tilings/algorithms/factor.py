@@ -3,6 +3,7 @@ from itertools import chain, combinations
 
 from comb_spec_searcher import Rule
 from permuta.misc import UnionFind
+from tilings.misc import partitions_iterator
 
 
 class Factor(object):
@@ -135,13 +136,26 @@ class Factor(object):
 
     def all_factorisation(self):
         """
-        Iterator over all possible factorization that can be obtained by
-        grouping of minimal factor.
+        Iterator over all non maximal factorization that can be obtained by
+        grouping of irreducible factors.
 
-        For example if T = T1 x T2 x T3 then (T1 x T3) x T2 if a possible
-        factorisation.
+        Each factorisation is a list of tiling.
+
+        For example if T = T1 x T2 x T3 then (T1 x T3) x T2 is a possible non
+        maximal factorisation.
         """
-        raise NotImplementedError
+        min_comp = self._get_factors_obs_and_reqs()
+        print(min_comp)
+        for partition in partitions_iterator(min_comp):
+            factors = []
+            for part in partition:
+                obstructions, requirements = zip(*part)
+                factors.append(self._tiling.__class__(
+                    obstructions=chain(*obstructions),
+                    requirements=chain(*requirements),
+                    minimize=False)
+                )
+            yield factors
 
     @property
     def formal_step(self):
