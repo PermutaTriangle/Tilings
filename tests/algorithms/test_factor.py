@@ -138,6 +138,21 @@ def test_rule(factor1, factor1_with_mon_int, factor1_with_int,
 
     assert Factor(not_fact_tiling).rule() is None
 
+
+def test_all_union_rules():
+    t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0),)*2),
+        Obstruction(Perm((0, 1)), ((1, 1),)*2),
+        Obstruction(Perm((0, 1)), ((2, 2),)*2),
+    ])
+    fo = Factor(t)
+    f2 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0),)*2),
+    ])
+    assert all('unions' in rule.formal_step for rule in fo.all_union_rules())
+    assert all(rule.comb_classes != [f2, f2, f2]
+               for rule in fo.all_union_rules())
+
 # ------------------------------------------------
 #       Test for the class Factor
 # ------------------------------------------------

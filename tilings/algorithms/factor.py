@@ -192,14 +192,21 @@ class Factor(object):
     def rule(self, workable=True):
         return self._rule(self.factors(), self.formal_step(), workable)
 
-    def all_union_rule(self):
+    def all_union_rules(self, workable=True):
         """
         Iterator over the rule for all possible union of factors.
+
+        A rule is yielded for reach reducible_factorisations
 
         This generator includes a normal factor rule for the irreducible
         factorisation.
         """
-        raise NotImplementedError
+        for factorisation in self.reducible_factorisations():
+            yield self._rule(
+                factorisation,
+                self.formal_step(union=True),
+                workable=workable
+            )
 
 
 class FactorWithMonotoneInterleaving(Factor):
