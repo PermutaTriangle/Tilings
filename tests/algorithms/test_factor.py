@@ -150,8 +150,15 @@ def test_all_union_rules():
         Obstruction(Perm((0, 1)), ((0, 0),)*2),
     ])
     assert all('unions' in rule.formal_step for rule in fo.all_union_rules())
+    # The full factorisation rule is not returned
     assert all(rule.comb_classes != [f2, f2, f2]
                for rule in fo.all_union_rules())
+    # The tiling are marked as not workable by default
+    assert all(rule.workable == [False, False]
+               for rule in fo.all_union_rules())
+    # The workable can be turned on for union of factor
+    assert all(rule.workable == [True, True]
+               for rule in fo.all_union_rules(workable=True))
 
 # ------------------------------------------------
 #       Test for the class Factor
