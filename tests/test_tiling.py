@@ -81,7 +81,7 @@ def factorable_tiling():
                         Obstruction(Perm((2, 0, 1)), ((5, 4), (5, 4), (5, 4))),
                         Obstruction(Perm((1, 2, 0)), ((4, 6), (4, 6), (4, 6))),
                         Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 2))),
-                        Obstruction(Perm((0, 2, 1, 3)),
+                        Obstruction(Perm((0, 1, 2, 3)),
                                     ((2, 2), (2, 2), (2, 3), (2, 3))),
                         Obstruction(Perm((0, 1)), ((6, 4), (6, 4))),
                         Obstruction(Perm((1, 0)), ((6, 4), (6, 4))),
@@ -511,7 +511,7 @@ def test_add_requirement(compresstil, factorable_tiling):
                         Obstruction(Perm((2, 0, 1)), ((5, 4), (5, 4), (5, 4))),
                         Obstruction(Perm((1, 2, 0)), ((4, 6), (4, 6), (4, 6))),
                         Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 2))),
-                        Obstruction(Perm((0, 2, 1, 3)),
+                        Obstruction(Perm((0, 1, 2, 3)),
                                     ((2, 2), (2, 2), (2, 3), (2, 3))),
                         Obstruction(Perm((0, 1)), ((6, 4), (6, 4))),
                         Obstruction(Perm((1, 0)), ((6, 4), (6, 4))),
@@ -1012,38 +1012,6 @@ def test_dimensions(compresstil, empty_tiling, finite_tiling, christian_til):
     assert christian_til.dimensions == (3, 3)
 
 
-def test_find_factors(compresstil, factorable_tiling):
-    factors = compresstil.find_factors()
-    assert len(factors) == 1
-    assert factors[0] == compresstil
-
-    factors = factorable_tiling.find_factors()
-
-    actual_factors = [
-        Tiling(obstructions=[
-                Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
-                Obstruction(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
-                Obstruction(Perm((2, 1, 0)), ((2, 1), (2, 1), (2, 1))),
-                Obstruction(Perm((2, 0, 1)), ((2, 2), (2, 2), (2, 2))),
-                Obstruction(Perm((1, 2, 0)), ((3, 3), (3, 3), (3, 3))),
-                Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 1))),
-                Obstruction(Perm((0, 2, 1, 3)),
-                            ((2, 1), (2, 1), (2, 2), (2, 2)))],
-               requirements=[[Requirement(Perm((0, 1)), ((0, 0), (0, 0))),
-                              Requirement(Perm((1, 0)), ((3, 3), (3, 3)))]]),
-        Tiling(obstructions=[Obstruction(Perm((1, 0, 2)),
-                                         ((0, 0), (0, 0), (0, 0))),
-                             Obstruction(Perm((2, 0, 1)),
-                                         ((0, 0), (0, 0), (0, 0))),
-                             Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-                             Obstruction(Perm((1, 0)), ((1, 0), (1, 0)))],
-               requirements=[[Requirement(Perm((0,)), ((1, 0),))]]),
-        Tiling(obstructions=[Obstruction(Perm((0, 1)), ((0, 0), (0, 0)))])]
-
-    assert len(factors) == len(actual_factors)
-    assert all(f in factors for f in actual_factors)
-
-
 def test_add_obstruction_in_all_ways():
     initial_tiling = Tiling(obstructions=(
         Obstruction(Perm((0,)), ((0, 0),)),
@@ -1168,6 +1136,98 @@ def test_fusion():
         Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
         Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
     ]))
+
+
+def test_find_factors(compresstil, factorable_tiling):
+    factors = compresstil.find_factors()
+    assert len(factors) == 1
+    assert factors[0] == compresstil
+
+    factors = factorable_tiling.find_factors(interleaving='none')
+    actual_factors = [
+        Tiling(obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+            Obstruction(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
+            Obstruction(Perm((2, 1, 0)), ((2, 1), (2, 1), (2, 1))),
+            Obstruction(Perm((2, 0, 1)), ((2, 2), (2, 2), (2, 2))),
+            Obstruction(Perm((1, 2, 0)), ((3, 3), (3, 3), (3, 3))),
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 1))),
+            Obstruction(Perm((0, 1, 2, 3)), ((2, 1), (2, 1), (2, 2), (2, 2)))
+        ], requirements=[[
+            Requirement(Perm((0, 1)), ((0, 0), (0, 0))),
+            Requirement(Perm((1, 0)), ((3, 3), (3, 3)))
+        ]]),
+        Tiling(obstructions=[
+            Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
+            Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
+            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+            Obstruction(Perm((1, 0)), ((1, 0), (1, 0)))
+        ], requirements=[[Requirement(Perm((0,)), ((1, 0),))]]),
+        Tiling(obstructions=[Obstruction(Perm((0, 1)), ((0, 0), (0, 0)))])]
+    assert len(factors) == len(actual_factors)
+    assert all(f in factors for f in actual_factors)
+
+    mon_int_factors = factorable_tiling.find_factors(interleaving='monotone')
+    actual_mon_int_factors = [
+        Tiling(obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+            Obstruction(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
+            Obstruction(Perm((2, 1, 0)), ((2, 1), (2, 1), (2, 1))),
+            Obstruction(Perm((2, 0, 1)), ((2, 2), (2, 2), (2, 2))),
+            Obstruction(Perm((1, 2, 0)), ((3, 3), (3, 3), (3, 3))),
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 1))),
+            Obstruction(Perm((0, 1, 2, 3)), ((2, 1), (2, 1), (2, 2), (2, 2)))
+        ], requirements=[[
+            Requirement(Perm((0, 1)), ((0, 0), (0, 0))),
+            Requirement(Perm((1, 0)), ((3, 3), (3, 3)))
+        ]]),
+        Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+            Obstruction(Perm((1, 0)), ((1, 0), (1, 0)))
+        ], requirements=[[Requirement(Perm((0,)), ((1, 0),))]]),
+        Tiling(obstructions=[
+            Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
+            Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
+        ]),
+        Tiling(obstructions=[Obstruction(Perm((0, 1)), ((0, 0), (0, 0)))])]
+    assert len(mon_int_factors) == len(actual_mon_int_factors)
+    assert all(f in mon_int_factors for f in actual_mon_int_factors)
+
+    int_factors = factorable_tiling.find_factors(interleaving='any')
+    actual_int_factors = [
+        Tiling(obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+            Obstruction(Perm((2, 1, 0)), ((1, 1), (1, 1), (1, 1))),
+            Obstruction(Perm((2, 0, 1)), ((1, 2), (1, 2), (1, 2))),
+            Obstruction(Perm((1, 2, 0)), ((2, 3), (2, 3), (2, 3))),
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 1))),
+            Obstruction(Perm((0, 1, 2, 3)), ((1, 1), (1, 1), (1, 2), (1, 2)))
+        ], requirements=[[
+            Requirement(Perm((0, 1)), ((0, 0), (0, 0))),
+            Requirement(Perm((1, 0)), ((2, 3), (2, 3)))
+        ]]),
+        Tiling(obstructions=[
+            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
+        ]),
+        Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+            Obstruction(Perm((1, 0)), ((1, 0), (1, 0)))
+        ], requirements=[[Requirement(Perm((0,)), ((1, 0),))]]),
+        Tiling(obstructions=[
+            Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
+            Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
+        ]),
+        Tiling(obstructions=[Obstruction(Perm((0, 1)), ((0, 0), (0, 0)))])]
+    for f in int_factors:
+        print(f)
+    print('-'*50)
+    for f in actual_int_factors:
+        print(f)
+    assert len(int_factors) == len(actual_int_factors)
+    assert all(f in int_factors for f in actual_int_factors)
+
+    with pytest.raises(InvalidOperationError):
+        factors = compresstil.find_factors(interleaving='magic')
 
 
 def test_row_and_column_separation():
