@@ -553,8 +553,8 @@ def test_mon_int_factor(factor1_with_mon_int, factor2_with_mon_int):
 # ------------------------------------------------------------
 
 
-def test_unite_rows_and_cols_monotone_interleaving(factor1_with_int,
-                                                   factor2_with_int):
+def test_unite_rows_and_cols_interleaving(factor1_with_int,
+                                          factor2_with_int):
     factor1_with_int._unite_rows_and_cols()
     all_rep = set(factor1_with_int._get_cell_representative(c)
                   for c in product(range(4), range(3)))
@@ -564,6 +564,16 @@ def test_unite_rows_and_cols_monotone_interleaving(factor1_with_int,
     all_rep = set(factor2_with_int._get_cell_representative(c)
                   for c in product(range(5), range(4)))
     assert len(all_rep) == 20
+
+
+def test_unite_all_interleaving(factor1_with_int):
+    print(factor1_with_int._tiling)
+    factor1_with_int._unite_all()
+    assert (factor1_with_int._get_cell_representative((1, 1)) ==
+            factor1_with_int._get_cell_representative((2, 2)))
+    all_rep = set(factor1_with_int._get_cell_representative(c)
+                  for c in product(range(4), range(3)))
+    assert len(all_rep) == 11
 
 
 def test_int_factor(factor1_with_int, factor2_with_int):

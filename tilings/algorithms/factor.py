@@ -261,6 +261,13 @@ class FactorWithInterleaving(Factor):
         """
         pass
 
+    def _unite_all(self):
+        """
+        Unite all the cells that share an obstruction or a requirement list.
+        """
+        self._unite_obstructions()
+        self._unite_requirements()
+
     def formal_step(self, union=False):
         """
         Return a string that describe the operation performed on the tiling.
