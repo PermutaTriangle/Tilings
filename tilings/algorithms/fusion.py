@@ -1,4 +1,5 @@
 """The implementation of the fusion algorithm"""
+from comb_spec_searcher import Rule
 
 
 class Fusion(object):
@@ -142,3 +143,25 @@ class Fusion(object):
             obstructions=self.obstruction_fuse_counter.keys(),
             requirements=map(dict.keys, self.requirements_fuse_counters),
         )
+
+    def formal_step(self):
+        """
+        Return a string describing the operation performed on the tiling.
+        """
+        fusing = 'rows' if self._fuse_row else 'columns'
+        idx = self._row_idx if self._fuse_row else self._col_idx
+        return "Fuse {} {} and {}.".format(fusing, idx, idx+1)
+
+    def rule(self):
+        """
+        Return a comb_spec_searcher rule for the fusion.
+
+        If the tiling is not fusable, return None.
+        """
+        if self.fusable():
+            return Rule(formal_step=self.formal_step(),
+                        comb_classes=[self.fused_tiling()],
+                        inferable=[True],
+                        workable=[True],
+                        possibly_empty=[False],
+                        constructor='other')

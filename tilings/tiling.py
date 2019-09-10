@@ -13,7 +13,8 @@ from permuta import Perm, PermSet
 from permuta.misc import UnionFind
 
 from .algorithms import (Factor, FactorWithInterleaving,
-                         FactorWithMonotoneInterleaving, Fusion)
+                         FactorWithMonotoneInterleaving, Fusion,
+                         RowColSeparation)
 from .db_conf import check_database, update_database
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
@@ -703,6 +704,15 @@ class Tiling(CombinatorialClass):
             raise InvalidOperationError('interleaving option must be in {}'
                                         .format(list(factor_class.keys())))
         return factor.factors()
+
+    def row_and_column_separation(self):
+        """
+        Splits the row and columns of a tilings using the inequalities implied
+        by the length two obstructions.
+        """
+        rcs = RowColSeparation(self)
+        return rcs.separated_tiling()
+
     # -------------------------------------------------------------
     # Properties and getters
     # -------------------------------------------------------------

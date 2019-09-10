@@ -1228,3 +1228,26 @@ def test_find_factors(compresstil, factorable_tiling):
 
     with pytest.raises(InvalidOperationError):
         factors = compresstil.find_factors(interleaving='magic')
+
+
+def test_row_and_column_separation():
+    separable_t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
+        Obstruction(Perm((0, 1, 2)), ((0, 2),)*3),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 2))),
+    ])
+    assert separable_t.row_and_column_separation() == Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
+        Obstruction(Perm((0, 1, 2)), ((0, 2),)*3),
+    ])
+    not_sep_t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
+        Obstruction(Perm((0, 1, 2)), ((0, 2),)*3),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
+    ])
+    assert not_sep_t.row_and_column_separation() == not_sep_t
