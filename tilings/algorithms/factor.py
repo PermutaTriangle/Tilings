@@ -141,11 +141,10 @@ class Factor(object):
 
         Each factorisation is a list of tiling.
 
-        For example if T = T1 x T2 x T3 then (T1 x T3) x T2 is a possible non
-        irreducible factorisation.
+        For example if T = T1 x T2 x T3 then (T1 x T3) x T2 is a possible
+        reducible factorisation.
         """
         min_comp = self._get_factors_obs_and_reqs()
-        print(min_comp)
         for partition in partitions_iterator(min_comp):
             factors = []
             for part in partition:
@@ -176,7 +175,10 @@ class Factor(object):
         Return the comb_spec_searcher rule for the factorisation where the list
         of factors is given as a list of tilings.
 
-        TODO: Describe the meaning or workable.
+        If workable=True,  then we expand the  children, and want to  ignore
+        the parent. If workable=False, then we do  not expand the children,
+        and want to keep working on the parent (perhaps placing points into
+        cells or something).
         """
         if not self.factorable():
             return
@@ -190,13 +192,26 @@ class Factor(object):
                     constructor=self.constructor)
 
     def rule(self, workable=True):
+        """
+        Return the comb_spec_searcher rule for the irreducible factorisation.
+
+        If workable=True,  then we expand the  children, and want to  ignore
+        the parent. If workable=False, then we do  not expand the children,
+        and want to keep working on the parent (perhaps placing points into
+        cells or something).
+        """
         return self._rule(self.factors(), self.formal_step(), workable)
 
     def all_union_rules(self, workable=False):
         """
         Iterator over the rule for all possible union of factors.
 
-        A rule is yielded for each reducibler factorisations
+        A rule is yielded for each reducible factorisations
+
+        If workable=True,  then we expand the  children, and want to  ignore
+        the parent. If workable=False, then we do  not expand the children,
+        and want to keep working on the parent (perhaps placing points into
+        cells or something).
         """
         for factorisation in self.reducible_factorisations():
             yield self._rule(
