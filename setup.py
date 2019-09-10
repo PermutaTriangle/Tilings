@@ -25,7 +25,7 @@ setup(
     packages=find_packages(),
     long_description=read("README.rst"),
     install_requires=['comb-spec-searcher==0.2.2',
-                      'permuta==1.2.0',
+                      'permuta==1.2.1',
                       'pymongo==3.9.0',
                       'sympy==1.4'],
     setup_requires=['pytest-runner==5.1'],
