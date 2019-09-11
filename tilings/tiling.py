@@ -14,7 +14,7 @@ from permuta.misc import UnionFind
 
 from .algorithms import (Factor, FactorWithInterleaving,
                          FactorWithMonotoneInterleaving, Fusion,
-                         RowColSeparation)
+                         ObstructionTransitivity, RowColSeparation)
 from .db_conf import check_database, update_database
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
@@ -659,7 +659,7 @@ class Tiling(CombinatorialClass):
             lambda gp: gp.rotate90(rotate90_cell))
 
     # -------------------------------------------------------------
-    # Algortihms
+    # Algorithms
     # -------------------------------------------------------------
 
     def fusion(self, row=None, col=None):
@@ -712,6 +712,17 @@ class Tiling(CombinatorialClass):
         """
         rcs = RowColSeparation(self)
         return rcs.separated_tiling()
+
+    def obstruction_transitivity(self):
+        """
+        Add length 2 obstructions to the tiling using transitivity over
+        positive cell.
+
+        For three cell A, B and C on the same row or column, if A < B, B < C
+        and B is positive then the obstruction for A < B is added.
+        """
+        obs_trans = ObstructionTransitivity(self)
+        return obs_trans.obstruction_transitivity()
 
     # -------------------------------------------------------------
     # Properties and getters

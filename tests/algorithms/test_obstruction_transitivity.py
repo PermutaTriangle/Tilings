@@ -44,15 +44,13 @@ def tiling_simple_trans_row_len3():
 @pytest.fixture
 def tiling_no_trans_row():
     return Tiling(obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-                                Obstruction(Perm((0, 1)), [(1, 0), (2, 0)])],
-                  requirements=[])
+                                Obstruction(Perm((0, 1)), [(1, 0), (2, 0)])])
 
 
 @pytest.fixture
 def tiling_no_trans_col():
     return Tiling(obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (0, 1)]),
-                                Obstruction(Perm((0, 1)), [(0, 1), (0, 2)])],
-                  requirements=[])
+                                Obstruction(Perm((0, 1)), [(0, 1), (0, 2)])])
 
 
 class TestObstructionTransitivity:
