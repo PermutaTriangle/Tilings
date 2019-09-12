@@ -716,10 +716,10 @@ class Tiling(CombinatorialClass):
     def obstruction_transitivity(self):
         """
         Add length 2 obstructions to the tiling using transitivity over
-        positive cell.
+        positive cells.
 
-        For three cell A, B and C on the same row or column, if A < B, B < C
-        and B is positive then the obstruction for A < B is added.
+        For three cells A, B and C on the same row or column, if A < B, B < C
+        and B is positive then the obstruction for A < C is added.
         """
         obs_trans = ObstructionTransitivity(self)
         return obs_trans.obstruction_transitivity()

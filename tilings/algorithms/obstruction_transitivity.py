@@ -11,7 +11,7 @@ class ObstructionTransitivity(object):
     The obstruction transitivity algorithm.
 
     The obstruction transitivity considers all length 2 obstructions with both
-    points in the same row or some column. By considering these length 2
+    points in the same row or same column. By considering these length 2
     obstructions in similar manner as the row and column separation, as
     inequality relations. When the obstructions use a positive cell,
     transitivity applies, i.e. if a < b < c and b is positive, then a < c.
@@ -19,7 +19,6 @@ class ObstructionTransitivity(object):
 
     def __init__(self, tiling):
         self._tiling = tiling
-        self._init_positive_cells()
 
     def positive_cells_col(self, col_index):
         """
@@ -27,7 +26,7 @@ class ObstructionTransitivity(object):
 
         OUTPUT:
 
-            List of integer.
+            List of integers.
         """
         if not hasattr(self, '_positive_cells_col'):
             self._init_positive_cells()
@@ -39,7 +38,7 @@ class ObstructionTransitivity(object):
 
         OUTPUT:
 
-            List of integer.
+            List of integers.
         Return a dictionary of positive cells for each column.
         """
         if not hasattr(self, '_positive_cells_row'):
@@ -48,9 +47,9 @@ class ObstructionTransitivity(object):
 
     def ineq_col(self, col_index):
         """
-        Returns a set of inequalities on the specified column.
+        Returns a set of inequalities in the specified column.
 
-        An inequality is a tuple on integer (r1, r2) such that r1 < r2.
+        An inequality is a tuple of integer (r1, r2) such that r1 < r2.
         """
         if not hasattr(self, '_colineq'):
             self._init_ineq()
@@ -58,9 +57,9 @@ class ObstructionTransitivity(object):
 
     def ineq_row(self, row_index):
         """
-        Returns a set of inequalities on the specified row.
+        Returns a set of inequalities in the specified row.
 
-        An inequality is a tuple on integer (c1, c2) such that c1 < c2.
+        An inequality is a tuple of integer (c1, c2) such that c1 < c2.
         """
         if not hasattr(self, '_rowineq'):
             self._init_ineq()
@@ -68,7 +67,7 @@ class ObstructionTransitivity(object):
 
     def _init_positive_cells(self):
         """
-        Fill the dictionary of positive cell by rows and columns.
+        Fill the dictionary of positive cells by rows and columns.
         """
         self._positive_cells_row = defaultdict(list)
         self._positive_cells_col = defaultdict(list)
@@ -78,7 +77,7 @@ class ObstructionTransitivity(object):
 
     def _init_ineq(self):
         """
-        Fill the dictionary of rows and columns inequality.
+        Fill the dictionary of row and column inequalities.
         """
         self._colineq = defaultdict(set)
         self._rowineq = defaultdict(set)
@@ -89,10 +88,7 @@ class ObstructionTransitivity(object):
             leftrow, rightrow = ob.pos[0][1], ob.pos[1][1]
             # In same column
             if leftcol == rightcol:
-                if ob.patt == Perm((0, 1)):
-                    self._colineq[leftcol].add((rightrow, leftrow))
-                else:
-                    self._colineq[leftcol].add((rightrow, leftrow))
+                self._colineq[leftcol].add((rightrow, leftrow))
             # In same row
             elif ob.pos[0][1] == ob.pos[1][1]:
                 if ob.patt == Perm((0, 1)):
@@ -105,7 +101,7 @@ class ObstructionTransitivity(object):
         """
         Given an inequality of cells compute an obstruction.
 
-        The inequalities are give as tuple `(cell1, cell2)` where `cell1` is
+        The inequalities are given as tuple `(cell1, cell2)` where `cell1` is
         strictly smaller than `cell2`.
         """
         left, right = ineq
@@ -135,8 +131,9 @@ class ObstructionTransitivity(object):
 
         Given a list of inequalities and positive cells, a new set of
         inequalities is computed. For every positive cell c, when g < c < l the
-        relation g < l is added if not already there. The new list of
-        inequalities is returned.
+        relation g < l is added if not already there.
+
+        The list of new inequalities is returned.
         """
         gtlist = defaultdict(list)
         ltlist = defaultdict(list)
@@ -199,7 +196,7 @@ class ObstructionTransitivity(object):
         """
         Return a comb_spec_searcher Rule for the obstruction transitivity.
 
-        If the no new obstruction is added return None.
+        If no new obstruction is added return None.
         """
         if not self.new_ineq():
             return None
@@ -208,7 +205,7 @@ class ObstructionTransitivity(object):
             self.obstruction_transitivity()
         )
 
-    def __repr__(self):
+    def __str__(self):
         s = 'ObstructionTransitivity object for the tiling:\n'
         s += self._tiling.__str__()
         return s
