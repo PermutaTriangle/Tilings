@@ -1251,3 +1251,19 @@ def test_row_and_column_separation():
         Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
     ])
     assert not_sep_t.row_and_column_separation() == not_sep_t
+
+
+def test_obstruction_transitivity():
+    t1 = Tiling(obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
+                              Obstruction(Perm((0, 1)), [(1, 0), (2, 0)])],
+                requirements=[[Requirement(Perm((0,)), [(1, 0)])]])
+    assert t1.obstruction_transitivity() == Tiling(
+        obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
+                      Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
+                      Obstruction(Perm((0, 1)), [(0, 0), (2, 0)])],
+        requirements=[[Requirement(Perm((0,)), [(1, 0)])]])
+    # Tiling with no new obstruction
+    t2 = Tiling(obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (0, 1)]),
+                              Obstruction(Perm((0, 1)), [(0, 1), (0, 2)])],
+                )
+    assert t2.obstruction_transitivity() == t2
