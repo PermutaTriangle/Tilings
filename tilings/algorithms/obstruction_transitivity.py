@@ -197,7 +197,9 @@ class ObstructionTransitivity(object):
 
     def rule(self):
         """
-        Return a comb_spec_searcher Rule.
+        Return a comb_spec_searcher Rule for the obstruction transitivity.
+
+        If the no new obstruction is added return None.
         """
         if not self.new_ineq():
             return None
