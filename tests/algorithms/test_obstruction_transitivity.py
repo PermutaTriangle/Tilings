@@ -53,6 +53,37 @@ def tiling_no_trans_col():
                                 Obstruction(Perm((0, 1)), [(0, 1), (0, 2)])])
 
 
+@pytest.fixture
+def tiling_with_empty_inf_cell():
+    t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
+        Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
+        Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
+        Obstruction(Perm((0, 1)), ((3, 0), (3, 0))),
+        Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
+        Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
+        Obstruction(Perm((1, 0)), ((1, 0), (3, 0))),
+        Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
+        Obstruction(Perm((1, 0)), ((2, 0), (3, 0))),
+        Obstruction(Perm((1, 0)), ((3, 0), (3, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (3, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+        Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
+        Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (2, 0))),
+        Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+        Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (1, 0))),
+        Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (2, 0))),
+        Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (3, 0))),
+    ], requirements=[[
+        Requirement(Perm((0, 1)), ((1, 0), (2, 0)))
+    ]])
+    return t
+
+
 class TestObstructionTransitivity:
 
     @pytest.fixture
@@ -78,6 +109,10 @@ class TestObstructionTransitivity:
     @pytest.fixture
     def no_trans_col(self, tiling_no_trans_col):
         return ObstructionTransitivity(tiling_no_trans_col)
+
+    @pytest.fixture
+    def with_empty_inf_cell(self, tiling_with_empty_inf_cell):
+        return ObstructionTransitivity(tiling_with_empty_inf_cell)
 
     def test_init(self, tiling_simple_trans_col):
         obstrans = ObstructionTransitivity(tiling_simple_trans_col)
@@ -121,6 +156,8 @@ class TestObstructionTransitivity:
         assert simple_trans_row_len3.ineq_col(3) == set()
 
     def test_ineq_ob(self, simple_trans_col):
+        assert (simple_trans_col.ineq_ob(((0, 0), (0, 0))) ==
+                Obstruction(Perm((0,)), [(0, 0)]))
         assert (simple_trans_col.ineq_ob(((0, 0), (1, 0))) ==
                 Obstruction(Perm((1, 0)), [(0, 0), (1, 0)]))
         assert (simple_trans_col.ineq_ob(((1, 0), (0, 0))) ==
@@ -139,6 +176,9 @@ class TestObstructionTransitivity:
                 {(0, 2)})
         assert (simple_trans_col.ineq_closure([], [(0, 1), (1, 2)]) ==
                 set())
+        assert (simple_trans_col.ineq_closure([1, 2], [(1, 2), (2, 3), (3, 2),
+                                                       (1, 3), (3, 1)]) ==
+                {(3, 3)})
         assert (simple_trans_col.ineq_closure(
             [1, 2], [(0, 1), (1, 2), (2, 3), (3, 4)]) ==
                 {(1, 3), (0, 3), (0, 2)})
@@ -160,7 +200,8 @@ class TestObstructionTransitivity:
                                       no_trans_row,
                                       tiling_no_trans_row,
                                       no_trans_col,
-                                      tiling_no_trans_col):
+                                      tiling_no_trans_col,
+                                      with_empty_inf_cell):
         assert simple_trans_row.obstruction_transitivity() == Tiling(
             obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
                           Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
@@ -200,6 +241,25 @@ class TestObstructionTransitivity:
 
         assert no_trans_row.obstruction_transitivity() == tiling_no_trans_row
         assert no_trans_col.obstruction_transitivity() == tiling_no_trans_col
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
+            Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
+            Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
+            Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+            Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
+            Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (2, 0))),
+            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (1, 0))),
+            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (2, 0))),
+        ], requirements=[[
+            Requirement(Perm((0, 1)), ((1, 0), (2, 0)))
+        ]])
+        assert (with_empty_inf_cell.obstruction_transitivity() == t)
 
     def test_rule(self, simple_trans_col, no_trans_col):
         assert no_trans_col.rule() is None

@@ -106,10 +106,12 @@ class ObstructionTransitivity(object):
         Given an inequality of cells compute an obstruction.
 
         The inequalities are give as tuple `(cell1, cell2)` where `cell1` is
-        smaller than `cell2`.
+        strictly smaller than `cell2`.
         """
         left, right = ineq
-        if left[0] == right[0]:
+        if left == right:
+            return Obstruction(Perm((0,)), (left,))
+        elif left[0] == right[0]:
             # same column
             if left[1] < right[1]:
                 return Obstruction(Perm((1, 0)), [right, left])
@@ -127,7 +129,7 @@ class ObstructionTransitivity(object):
                  ).format(left, right))
 
     @staticmethod
-    def ineq_closure(pos, ineqs):
+    def ineq_closure(positive_cells, ineqs):
         """
         Computes the transitive closure over positive cells.
 
@@ -141,11 +143,11 @@ class ObstructionTransitivity(object):
         for left, right in ineqs:
             ltlist[left].append(right)
             gtlist[right].append(left)
-        stack = list(pos)
+        to_analyse = set(positive_cells)
         ineqs = set(ineqs)
         newineqs = set()
-        while len(stack) > 0:
-            cur = stack.pop(0)
+        while to_analyse:
+            cur = to_analyse.pop()
             not_existing_ineq = filter(
                 lambda x: x not in ineqs,
                 product(gtlist[cur], ltlist[cur])
@@ -154,12 +156,11 @@ class ObstructionTransitivity(object):
                 gtlist[lt].append(gt)
                 ltlist[gt].append(lt)
                 ineqs.add((gt, lt))
-                if gt != lt:
-                    newineqs.add((gt, lt))
-                if lt not in stack and lt in pos:
-                    stack.append(lt)
-                if gt not in stack and gt in pos:
-                    stack.append(gt)
+                newineqs.add((gt, lt))
+                if lt in positive_cells:
+                    to_analyse.add(lt)
+                if gt in positive_cells:
+                    to_analyse.add(gt)
         return newineqs
 
     def new_ineq(self):
