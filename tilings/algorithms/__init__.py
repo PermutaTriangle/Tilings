@@ -3,3 +3,4 @@ from .factor import (Factor, FactorWithInterleaving,
 from .fusion import Fusion
 from .obstruction_transitivity import ObstructionTransitivity
 from .row_col_separation import RowColSeparation
+from .obstruction_inferral import SubobstructionInferral, EmptyCellInferral
