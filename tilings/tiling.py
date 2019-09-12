@@ -1340,11 +1340,12 @@ class Tiling(CombinatorialClass):
                                                           for p in basis)))
             result.append("\n")
 
-        result.append("Crossing obstructions:\n")
-        for ob in self.obstructions:
-            if not ob.is_single_cell():
-                result.append(str(ob))
-                result.append("\n")
+        if any(not ob.is_single_cell() for ob in self.obstructions):
+            result.append("Crossing obstructions:\n")
+            for ob in self.obstructions:
+                if not ob.is_single_cell():
+                    result.append(str(ob))
+                    result.append("\n")
         for i, req in enumerate(self.requirements):
             result.append("Requirement {}:\n".format(str(i)))
             for r in req:
