@@ -93,7 +93,8 @@ class EmptyCellInferral(ObstructionInferral):
         """
         active = set(self._tiling.active_cells)
         positive = set(self._tiling.positive_cells)
-        return set(Obstruction(Perm((0,)), (cell,)) for cell in active - positive)
+        non_positive = active - positive
+        return set(Obstruction(Perm((0,)), (cell,)) for cell in non_positive)
 
     def empty_cells(self):
         """
