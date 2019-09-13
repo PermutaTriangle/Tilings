@@ -2,6 +2,7 @@ import abc
 from itertools import chain
 
 from comb_spec_searcher import InferralRule
+from permuta import Perm
 from tilings import Obstruction
 
 
@@ -58,9 +59,14 @@ class ObstructionInferral(abc.ABC):
         return "Added the obstructions {}.".format(self.new_obs())
 
     def rule(self):
-        """ Return a comb_spec_searcher Rule for the new tiling. """
-        return InferralRule(self.formal_step(),
-                            self.subobstruction_inferral())
+        """
+        Return a comb_spec_searcher Rule for the new tiling.
+
+        If no new obstruction is added, returns None.
+        """
+        if self.new_obs():
+            return InferralRule(self.formal_step(),
+                                self.obstruction_inferral())
 
 
 class SubobstructionInferral(ObstructionInferral):
@@ -76,6 +82,7 @@ class SubobstructionInferral(ObstructionInferral):
         subobs = set()
         for ob in self._tiling.obstructions:
             subobs.update(ob.all_subperms())
+        subobs.remove(Obstruction(Perm(), []))
         return subobs
 
 
@@ -84,9 +91,9 @@ class EmptyCellInferral(ObstructionInferral):
         """
         Return an iterator over point obstructions in non-positive cells.
         """
-        active = set(tiling.active_cells)
-        positive = set(tiling.positive_cells)
-        return (cell for cell in active - positive)
+        active = set(self._tiling.active_cells)
+        positive = set(self._tiling.positive_cells)
+        return set(Obstruction(Perm((0,)), (cell,)) for cell in active - positive)
 
     def empty_cells(self):
         """
@@ -96,5 +103,5 @@ class EmptyCellInferral(ObstructionInferral):
 
     def formal_step(self):
         """ Return a string describing the operation performed. """
-        empty_cells_str - ", ".join(map(str, self.empty_cells()))
-        return "the cells {} are empty".format(empty_cells_str)
+        empty_cells_str = ", ".join(map(str, self.empty_cells()))
+        return "The cells {} are empty.".format(empty_cells_str)
