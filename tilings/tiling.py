@@ -12,7 +12,9 @@ from comb_spec_searcher.utils import check_equation, check_poly, get_solution
 from permuta import Perm, PermSet
 from permuta.misc import UnionFind
 
-from .algorithms import Fusion
+from .algorithms import (Factor, FactorWithInterleaving,
+                         FactorWithMonotoneInterleaving, Fusion,
+                         ObstructionTransitivity, RowColSeparation)
 from .db_conf import check_database, update_database
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
@@ -657,17 +659,17 @@ class Tiling(CombinatorialClass):
             lambda gp: gp.rotate90(rotate90_cell))
 
     # -------------------------------------------------------------
-    # Algortihms
+    # Algorithms
     # -------------------------------------------------------------
 
     def fusion(self, row=None, col=None):
         """
         Fuse the tilings.
 
-        If `row` is not `None` then `row` and `row+1` are fused togheter.
-        If `col` is not `None` then `col` and `col+1` are fused togheter.
+        If `row` is not `None` then `row` and `row+1` are fused together.
+        If `col` is not `None` then `col` and `col+1` are fused together.
         """
-        assert xor(row is None, col is None), "Specify only `row` or `column`"
+        assert xor(row is None, col is None), "Specify only `row` or `col`"
         if not (row in range(self.dimensions[1]-1) or
                 col in range(self.dimensions[0]-1)):
             raise InvalidOperationError('`row` or `column` out or range')
@@ -679,6 +681,48 @@ class Tiling(CombinatorialClass):
                                                              idx, idx+1)
             raise InvalidOperationError(message)
         return fusion.fused_tiling()
+
+    def find_factors(self, interleaving='none'):
+        """
+        Return list with the factors of the tiling.
+
+        Two non-empty cells are in the same factor if they are in the same row
+        or column, or they share an obstruction or requirement. However, if
+        `interleaving` is set to 'monotone' cell on the same row do not need to
+        be in the same factor if one of them is monotone. If interleaving is
+        set 'all' then cells on the same row or columns don't need to be in
+        the same factor.
+        """
+        factor_class = {
+            'none': Factor,
+            'monotone': FactorWithMonotoneInterleaving,
+            'any': FactorWithInterleaving,
+        }
+        if interleaving in factor_class:
+            factor = factor_class[interleaving](self)
+        else:
+            raise InvalidOperationError('interleaving option must be in {}'
+                                        .format(list(factor_class.keys())))
+        return factor.factors()
+
+    def row_and_column_separation(self):
+        """
+        Splits the row and columns of a tilings using the inequalities implied
+        by the length two obstructions.
+        """
+        rcs = RowColSeparation(self)
+        return rcs.separated_tiling()
+
+    def obstruction_transitivity(self):
+        """
+        Add length 2 obstructions to the tiling using transitivity over
+        positive cells.
+
+        For three cells A, B and C on the same row or column, if A < B, B < C
+        and B is positive then the obstruction for A < C is added.
+        """
+        obs_trans = ObstructionTransitivity(self)
+        return obs_trans.obstruction_transitivity()
 
     # -------------------------------------------------------------
     # Properties and getters
@@ -925,71 +969,6 @@ class Tiling(CombinatorialClass):
                 self._dimensions = (max(rows) + 1,
                                     max(cols) + 1)
         return self._dimensions
-
-    def find_factors(self, **kwargs):
-        """
-        Return list with the factors of the tiling.
-
-        Two non-empty cells are in the same factor if they are in the same row
-        or colum, or they share an obstruction or requirement.
-        """
-        n, m = self.dimensions
-        cells = list(self.active_cells)
-        uf = UnionFind(n * m)
-
-        def cell_to_int(cell):
-            return cell[0] * m + cell[1]
-
-        def unite_list(iterable, same_row_or_col=False):
-            for i in range(len(iterable)):
-                for j in range(i+1, len(iterable)):
-                    c1 = iterable[i]
-                    c2 = iterable[j]
-                    if not same_row_or_col or c1[0] == c2[0] or c1[1] == c2[1]:
-                        uf.unite(cell_to_int(c1),
-                                 cell_to_int(c2))
-
-        # Unite if share an obstruction or requirement
-        for ob in self.obstructions:
-            unite_list(ob.pos)
-        for req_list in self.requirements:
-            unite_list(list(union_reduce(req.pos for req in req_list)))
-        # Unite if same row or column
-        unite_list(cells, same_row_or_col=True)
-
-        # Collect the connected components of the cells
-        all_components = {}
-        for cell in cells:
-            i = uf.find(cell_to_int(cell))
-            if i in all_components:
-                all_components[i].append(cell)
-            else:
-                all_components[i] = [cell]
-        component_cells = list(set(cells) for cells in all_components.values())
-
-        # Collect the factors of the tiling
-        factors = []
-        for cell_component in component_cells:
-            obstructions = [ob for ob in self.obstructions
-                            if ob.pos[0] in cell_component]
-            requirements = [req for req in self.requirements
-                            if req[0].pos[0] in cell_component]
-
-            if obstructions or requirements:
-                factors.append(Tiling(obstructions=obstructions,
-                                      requirements=requirements))
-
-        if kwargs.get('regions', False):
-            def cell_map(cell_component, factor):
-                map = factor.forward_map
-                return {c: set([map[c]]) for c in cell_component
-                        if (c in map and
-                            map[c] in factor.active_cells)}
-            return (factors,
-                    [cell_map(cell_component, factor)
-                     for cell_component, factor in zip(component_cells,
-                                                       factors)])
-        return factors
 
     def get_min_poly(self, **kwargs):
         """Return the minimum polynomial of the generating function implied by
@@ -1372,11 +1351,12 @@ class Tiling(CombinatorialClass):
                                                           for p in basis)))
             result.append("\n")
 
-        result.append("Crossing obstructions:\n")
-        for ob in self.obstructions:
-            if not ob.is_single_cell():
-                result.append(str(ob))
-                result.append("\n")
+        if any(not ob.is_single_cell() for ob in self.obstructions):
+            result.append("Crossing obstructions:\n")
+            for ob in self.obstructions:
+                if not ob.is_single_cell():
+                    result.append(str(ob))
+                    result.append("\n")
         for i, req in enumerate(self.requirements):
             result.append("Requirement {}:\n".format(str(i)))
             for r in req:
