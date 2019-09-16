@@ -6,7 +6,8 @@ import pytest
 from comb_spec_searcher import Rule
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
-from tilings.algorithms import EmptyCellInferral, SubobstructionInferral
+from tilings.algorithms import (AllObstructionInferral, EmptyCellInferral,
+                                SubobstructionInferral)
 from tilings.algorithms.obstruction_inferral import ObstructionInferral
 
 
@@ -75,8 +76,7 @@ class CommonTest(abc.ABC):
 
     def test_formal_step(self, obs_inf1):
         assert (obs_inf1.formal_step() ==
-                "Added the obstructions [Obstruction(Perm((0, 1)), "
-                "((0, 0), (0, 0)))].")
+                "Added the obstructions {}.".format(obs_inf1.new_obs()))
 
     def test_rule(self, obs_inf1, obs_not_inf):
         rule = obs_inf1.rule()
@@ -160,7 +160,6 @@ class TestSubobstructionInferral(CommonTest):
         assert sub_obs_inf._tiling == tiling1
 
     def test_potential_new_obs(self, obs_inf1):
-        print(obs_inf1._tiling)
         assert obs_inf1.potential_new_obs() == set([
             Obstruction(Perm((0,)), ((0, 0),)),
             Obstruction(Perm((0,)), ((1, 0),)),
@@ -205,6 +204,8 @@ class TestEmptyCellInferral(CommonTest):
     @pytest.fixture
     def tiling1(self):
         t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
             Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
             Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
         ], requirements=[[
@@ -231,14 +232,73 @@ class TestEmptyCellInferral(CommonTest):
         empty_inf = EmptyCellInferral(tiling1)
         assert empty_inf._tiling == tiling1
 
-    def test_potential_new_obs(self, obs_inf1, obs_inf2):
-        assert obs_inf1.potential_new_obs() == set([
+    def test_new_obs(self, obs_inf1, obs_inf2):
+        assert set(obs_inf1.potential_new_obs()) == set([
             Obstruction(Perm((0,)), ((1, 0), )),
         ])
-        assert obs_inf2.potential_new_obs() == set([
+        assert set(obs_inf2.potential_new_obs()) == set([
             Obstruction(Perm((0,)), ((0, 0), )),
             Obstruction(Perm((0,)), ((2, 0), )),
         ])
 
     def test_formal_step(self, obs_inf1):
         assert "The cells (1, 0) are empty."
+
+
+class TestAllObstructionInferral(CommonTest):
+
+    @pytest.fixture
+    def obs_inf1(self, tiling1):
+        return AllObstructionInferral(tiling1, 2)
+
+    @pytest.fixture
+    def obs_not_inf(self, tiling_not_inf):
+        return AllObstructionInferral(tiling_not_inf, 3)
+
+    def test_obstruction_length(self, obs_inf1):
+        assert obs_inf1.obstrucion_length == 2
+
+    def test_avoids_obstruction(self, obs_inf1):
+        assert obs_inf1.avoids_obstructions(Obstruction(Perm((0, 1)),
+                                                        ((0, 0), (1, 0))))
+        assert not obs_inf1.avoids_obstructions(
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))))
+
+    def test_not_required(self, obs_inf1):
+        assert not obs_inf1.not_required(Requirement(Perm((0,)), ((1, 0),)))
+        assert not obs_inf1.not_required(Requirement(Perm((1, 0)),
+                                                     ((1, 0), (1, 0))))
+        assert obs_inf1.not_required(Requirement(Perm((0, 1)),
+                                                     ((1, 0), (1, 0))))
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+        ], requirements=[[
+            Requirement(Perm((0, 1)), ((0, 0),)*2),
+            Requirement(Perm((1, 0)), ((0, 0),)*2),
+        ]])
+        obs_inf = AllObstructionInferral(t, 2)
+        assert obs_inf.not_required(
+            Obstruction(Perm((0, 1)), ((0, 0),)*2))
+        assert not obs_inf.not_required(
+            Obstruction(Perm((0,)), ((0, 0),)))
+
+    def test_potential_new_obs(self, obs_inf1, obs_not_inf):
+        assert set(obs_inf1.potential_new_obs()) == set([
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+            Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+            Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
+        ])
+        assert set(obs_not_inf.potential_new_obs()) == set([
+            Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+            Obstruction(Perm((0, 2, 1)), ((0, 0),)*3),
+            Obstruction(Perm((1, 0, 2)), ((0, 0),)*3),
+            Obstruction(Perm((1, 2, 0)), ((0, 0),)*3),
+            Obstruction(Perm((2, 0, 1)), ((0, 0),)*3),
+            Obstruction(Perm((2, 1, 0)), ((0, 0),)*3),
+        ])
+
+    def test_new_obs(self, obs_inf1, obs_not_inf):
+        assert set(obs_inf1.new_obs()) == set([
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        ])
+        assert obs_not_inf.new_obs() == []

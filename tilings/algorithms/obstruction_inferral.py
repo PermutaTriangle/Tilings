@@ -1,8 +1,8 @@
 import abc
-from itertools import chain
+from itertools import chain, product
 
 from comb_spec_searcher import InferralRule
-from permuta import Perm
+from permuta import Perm, PermSet
 from tilings import Obstruction
 
 
@@ -86,15 +86,56 @@ class SubobstructionInferral(ObstructionInferral):
         return subobs
 
 
-class EmptyCellInferral(ObstructionInferral):
+class AllObstructionInferral(ObstructionInferral):
+    """
+    Algorithm to compute the tiling created by adding all
+    obstruction of given length which can be added.
+    """
+    def __init__(self, tiling, obstrucion_length):
+        super().__init__(tiling)
+        self._obs_len = obstrucion_length
+
+    @property
+    def obstrucion_length(self):
+        return self._obs_len
+
+    def avoids_obstructions(self, gp):
+        """
+        Return True if the gridded perm `gp` does not contains any obstruction
+        of the tiling.
+        """
+        return all(ob not in gp for ob in self._tiling.obstructions)
+
+    def not_required(self, gp):
+        """
+        Returns True if the gridded perm `gp` is not required by any
+        requirement list of the tiling.
+        """
+        return all(any(gp not in req for req in req_list)
+                   for req_list in self._tiling.requirements)
+
     def potential_new_obs(self):
         """
-        Return an iterator over point obstructions in non-positive cells.
+        Iterator over all possible obstruction of `self.obstruction_length`.
         """
-        active = set(self._tiling.active_cells)
-        positive = set(self._tiling.positive_cells)
-        non_positive = active - positive
-        return set(Obstruction(Perm((0,)), (cell,)) for cell in non_positive)
+        active = self._tiling.active_cells
+        n = self._obs_len
+        all_gp = (Obstruction(patt, pos) for patt, pos in
+                  product(PermSet(n), product(active, repeat=n)))
+        pot_obs = all_gp
+        pot_obs = (gp for gp in all_gp if
+                   not gp.contradictory() and
+                   self.avoids_obstructions(gp) and
+                   self.not_required(gp))
+        return pot_obs
+
+
+class EmptyCellInferral(AllObstructionInferral):
+    """
+    Try to add a point obstruction to all the active non positive cell
+    """
+    def __init__(self, tiling):
+        super().__init__(tiling, 1)
 
     def empty_cells(self):
         """
