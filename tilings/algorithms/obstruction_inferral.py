@@ -114,16 +114,11 @@ class AllObstructionInferral(ObstructionInferral):
         """
         Iterator over all possible obstruction of `self.obstruction_length`.
         """
-        active = self._tiling.active_cells
+        no_req_tiling = self._tiling.__class__(self._tiling.obstructions)
         n = self._obs_len
-        all_gp = (Obstruction(patt, pos) for patt, pos in
-                  product(PermSet(n), product(active, repeat=n)))
-        pot_obs = all_gp
-        pot_obs = (gp for gp in all_gp if
-                   not gp.contradictory() and
-                   self.avoids_obstructions(gp) and
-                   self.not_required(gp))
-        return pot_obs
+        pot_obs = filter(self.not_required,
+                         no_req_tiling.gridded_perms_of_length(n))
+        return (Obstruction(gp.patt, gp.pos) for gp in pot_obs)
 
 
 class EmptyCellInferral(AllObstructionInferral):
