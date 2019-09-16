@@ -176,7 +176,6 @@ class TestSubobstructionInferral(CommonTest):
         assert obs_not_inf.new_obs() == []
         assert obs_inf2.new_obs() == [
             Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (2, 0))),
         ]
 
     def test_obstruction_inferral(self, obs_inf2):

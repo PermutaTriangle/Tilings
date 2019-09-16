@@ -29,14 +29,10 @@ class ObstructionInferral(abc.ABC):
         if hasattr(self, '_new_obs'):
             return self._new_obs
         newobs = []
-        merged_tiling = self._tiling.merge()
         for ob in sorted(self.potential_new_obs(), key=len):
-            if self.can_add_obstruction(ob, merged_tiling):
+            cont_newob = any(newob in ob for newob in newobs)
+            if not cont_newob and self.can_add_obstruction(ob, self._tiling):
                 newobs.append(ob)
-                merged_tiling = merged_tiling.__class__(
-                    obstructions=chain(merged_tiling.obstructions, (ob,)),
-                    requirements=merged_tiling.requirements,
-                    remove_empty=False)
         self._new_obs = newobs
         return self._new_obs
 
@@ -44,7 +40,7 @@ class ObstructionInferral(abc.ABC):
     def can_add_obstruction(obstruction, tiling):
         """Return true if obstruction can be added to tiling."""
         return (tiling.add_requirement(obstruction.patt, obstruction.pos)
-                .merge().is_empty())
+                .is_empty())
 
     def obstruction_inferral(self):
         """
