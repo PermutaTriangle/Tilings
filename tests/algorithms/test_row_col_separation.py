@@ -220,16 +220,16 @@ def test_break_cycle_in_all_ways(graph2):
     assert graph2._vertex_weights[1] == 1
 
 
-def test_lenght3_cycle():
+def test_length3_cycle():
     g = Graph([1, 2, 3, 4], [[0, 1, 0, 0], [0, 0, 1, 0],
                              [1, 0, 0, 0], [1, 1, 1, 0]])
     cycle = set([(0, 1), (1, 2), (2, 0)])
-    assert set(g._lenght3_cycle(0, 1, 2)) == cycle
-    assert set(g._lenght3_cycle(0, 2, 1)) == cycle
-    assert set(g._lenght3_cycle(1, 0, 2)) == cycle
-    assert set(g._lenght3_cycle(1, 2, 0)) == cycle
-    assert set(g._lenght3_cycle(2, 0, 1)) == cycle
-    assert set(g._lenght3_cycle(2, 1, 0)) == cycle
+    assert set(g._length3_cycle(0, 1, 2)) == cycle
+    assert set(g._length3_cycle(0, 2, 1)) == cycle
+    assert set(g._length3_cycle(1, 0, 2)) == cycle
+    assert set(g._length3_cycle(1, 2, 0)) == cycle
+    assert set(g._length3_cycle(2, 0, 1)) == cycle
+    assert set(g._length3_cycle(2, 1, 0)) == cycle
 
 
 def test_vertex_order(graph2, graph3):

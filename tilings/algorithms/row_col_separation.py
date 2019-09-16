@@ -115,7 +115,7 @@ class Graph(object):
             if self._is_edge(v1, v2) and self._is_edge(v2, v1):
                 return ((v1, v2), (v2, v1))
         for v1, v2, v3 in combinations(range(self.num_vertices), 3):
-            cycle = self._lenght3_cycle(v1, v2, v3)
+            cycle = self._length3_cycle(v1, v2, v3)
             if cycle:
                 return cycle
         self._is_acyclic = True
@@ -201,7 +201,7 @@ class Graph(object):
     def _is_edge(self, v1, v2):
         return self._matrix[v1][v2] != 0
 
-    def _lenght3_cycle(self, v1, v2, v3):
+    def _length3_cycle(self, v1, v2, v3):
         """
         Return the edges of a length 3 cycle containing the three vertices if
         such a cycle exist. Otherwise return None
