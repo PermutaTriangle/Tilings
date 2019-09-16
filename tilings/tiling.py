@@ -726,12 +726,12 @@ class Tiling(CombinatorialClass):
         obs_trans = ObstructionTransitivity(self)
         return obs_trans.obstruction_transitivity()
 
-    def all_obstruction_inferral(self, obstruction_lenght):
+    def all_obstruction_inferral(self, obstruction_length):
         """
-        Adds all the obstruction of length `obstruction_lenght` that doesn't
+        Adds all the obstruction of length `obstruction_length` that doesn't
         change the set of gridded permutations of the tiling.
         """
-        obs_inf = AllObstructionInferral(self, obstruction_lenght)
+        obs_inf = AllObstructionInferral(self, obstruction_length)
         return obs_inf.obstruction_inferral()
 
     def emtpy_cell_inferral(self):
