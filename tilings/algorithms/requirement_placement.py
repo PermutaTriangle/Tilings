@@ -124,15 +124,6 @@ class RequirementPlacement(object):
         point_req = GriddedPerm(Perm((0,)), (cell,))
         return self._place_point_of_req(point_req, 0, direction)
 
-    def requirement_placements(self, length):
-        req_tiling = Tiling(requirements=self.tiling.requirements)
-        for gp in req_tiling.gridded_perms_of_length(length):
-            if len(gp.factors()) == 1:
-                for idx in range(length):
-                    for direction in self.directions:
-                        yield self._place_point_of_req(
-                                                gp, idx, direction)
-
     def placed_obstructions_and_requirements(self, cell):
         stretched_obs = self.stretched_obstructions(cell)
         stretched_reqs = self.stretched_requirements(cell)
@@ -160,6 +151,24 @@ class RequirementPlacement(object):
             for direction in self.directions:
                 print("Placing:", cell, "Direction:", direction)
                 yield self._place_point_in_cell(cell, direction)
+
+    # def requirement_placements(self, length):
+    #     obs_tiling = Tiling(self.tiling.obstructions)
+    #     for gp in obs_tiling.gridded_perms_of_length(length):
+    #         if len(gp.factors()) == 1:
+    #             if Tiling(self.tiling.obstruction + (gp, ),
+    #                       self.tiling.requirements).is_empty():
+    #                 for idx in range(length):
+    #                     for direction in self.directions:
+    #                         yield self._place_point_of_req(gp, idx, direction)
+
+    def requirement_placements(self):
+        for req in self.tiling.requirements:
+            if len(req) == 1:
+                for gp in req[0].all_subperms(proper=False):
+                    for idx in range(len(gp)):
+                        for direction in self.directions:
+                            yield self._place_point_of_req(gp, idx, direction)
 
     def row_placements(self, check=False):
         if not self._own_row:
