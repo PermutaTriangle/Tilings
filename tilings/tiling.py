@@ -490,6 +490,8 @@ class Tiling(CombinatorialClass):
         cell and the second contains the intersections of requirement lists
         that are localized in the cell.
         """
+        if hasattr(self, '_cell_basis'):
+            return self._cell_basis
         obdict = defaultdict(list)
         reqdict = defaultdict(list)
         for ob in self.obstructions:
@@ -515,7 +517,8 @@ class Tiling(CombinatorialClass):
         all_cells = product(range(self.dimensions[0]),
                             range(self.dimensions[1]))
         resdict = {cell: (obdict[cell], reqdict[cell]) for cell in all_cells}
-        return resdict
+        self._cell_basis = resdict
+        return self._cell_basis
 
     def cell_graph(self):
         """
