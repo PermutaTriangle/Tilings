@@ -12,9 +12,11 @@ from comb_spec_searcher.utils import check_equation, check_poly, get_solution
 from permuta import Perm, PermSet
 from permuta.misc import UnionFind
 
-from .algorithms import (Factor, FactorWithInterleaving,
+from .algorithms import (AllObstructionInferral, EmptyCellInferral, Factor,
+                         FactorWithInterleaving,
                          FactorWithMonotoneInterleaving, Fusion,
-                         ObstructionTransitivity, RowColSeparation)
+                         ObstructionTransitivity, RowColSeparation,
+                         SubobstructionInferral)
 from .db_conf import check_database, update_database
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
@@ -723,6 +725,31 @@ class Tiling(CombinatorialClass):
         """
         obs_trans = ObstructionTransitivity(self)
         return obs_trans.obstruction_transitivity()
+
+    def all_obstruction_inferral(self, obstruction_length):
+        """
+        Adds all the obstruction of length `obstruction_length` that doesn't
+        change the set of gridded permutations of the tiling.
+        """
+        obs_inf = AllObstructionInferral(self, obstruction_length)
+        return obs_inf.obstruction_inferral()
+
+    def emtpy_cell_inferral(self):
+        """
+        Adds point obstruction in the cell of the tilings that should be empty.
+
+        Equivalent to `self.all_obstruction_inferral(1)`
+        """
+        obs_inf = EmptyCellInferral(self)
+        return obs_inf.obstruction_inferral()
+
+    def subobstruction_inferral(self):
+        """
+        Adds all the subobstruction of the tiling's obstruction that doesn't
+        change the set of gridded permutations of the tiling.
+        """
+        obs_inf = SubobstructionInferral(self)
+        return obs_inf.obstruction_inferral()
 
     # -------------------------------------------------------------
     # Properties and getters

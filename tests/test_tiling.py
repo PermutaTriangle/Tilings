@@ -1267,3 +1267,114 @@ def test_obstruction_transitivity():
                               Obstruction(Perm((0, 1)), [(0, 1), (0, 2)])],
                 )
     assert t2.obstruction_transitivity() == t2
+
+
+def test_subobstruction_inferral():
+    t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+        Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
+        Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2)))
+    ], requirements=[[Requirement(Perm((1, 0)), ((0, 1), (0, 0)))]])
+    assert t.subobstruction_inferral() == Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+        Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
+        Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
+        Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 2), (0, 1))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2)))
+    ], requirements=[[Requirement(Perm((1, 0)), ((0, 1), (0, 0)))]])
+
+
+def test_all_obstruction_inferral():
+    t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+        Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
+        Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2)))
+    ], requirements=[[Requirement(Perm((1, 0)), ((0, 1), (0, 0)))]])
+    assert t.all_obstruction_inferral(3) == Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+        Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
+        Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
+        Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 2), (0, 1))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
+        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2)))
+    ], requirements=[[Requirement(Perm((1, 0)), ((0, 1), (0, 0)))]])
+
+
+def test_empty_cell_inferral():
+    t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
+        Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
+        Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
+        Obstruction(Perm((0, 1)), ((3, 0), (3, 0))),
+        Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
+        Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
+        Obstruction(Perm((1, 0)), ((1, 0), (3, 0))),
+        Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
+        Obstruction(Perm((1, 0)), ((2, 0), (3, 0))),
+        Obstruction(Perm((1, 0)), ((3, 0), (3, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (3, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+        Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
+        Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (2, 0))),
+        Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+        Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (1, 0))),
+        Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (2, 0))),
+        Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (3, 0))),
+    ], requirements=[[
+        Requirement(Perm((0, 1)), ((1, 0), (2, 0)))
+    ]])
+    assert t.emtpy_cell_inferral() == Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
+        Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
+        Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
+        Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+        Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
+        Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (2, 0))),
+        Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+        Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (1, 0))),
+        Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (2, 0))),
+    ], requirements=[[
+        Requirement(Perm((0, 1)), ((1, 0), (2, 0)))
+    ]])
