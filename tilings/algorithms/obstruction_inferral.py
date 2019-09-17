@@ -17,14 +17,14 @@ class ObstructionInferral(abc.ABC):
     @abc.abstractmethod
     def potential_new_obs(self):
         """
-        Return an iterable of new obstruction that should be added to the
-        tiling if possible
+        Return an iterable of new obstructions that should be added to the
+        tiling if possible.
         """
         pass
 
     def new_obs(self):
         """
-        Returns the list of new obstruction that can be added to the tiling.
+        Returns the list of new obstructions that can be added to the tiling.
         """
         if hasattr(self, '_new_obs'):
             return self._new_obs
@@ -38,7 +38,7 @@ class ObstructionInferral(abc.ABC):
 
     @staticmethod
     def can_add_obstruction(obstruction, tiling):
-        """Return true if obstruction can be added to tiling."""
+        """Return true if `obstruction` can be added to `tiling`."""
         return (tiling.add_requirement(obstruction.patt, obstruction.pos)
                 .is_empty())
 
@@ -77,7 +77,7 @@ class SubobstructionInferral(ObstructionInferral):
         """
         subobs = set()
         for ob in self._tiling.obstructions:
-            subobs.update(ob.all_subperms())
+            subobs.update(ob.all_subperms(proper=True))
         subobs.remove(Obstruction(Perm(), []))
         return subobs
 
