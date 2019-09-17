@@ -70,18 +70,18 @@ class Fusion(object):
         Count the multiplicities of a set of gridded permutations after the
         fusion.
 
-        Return a dictionary of gridded permutations with their multiplicities.
+        Return a Counter of gridded permutations with their multiplicities.
         """
-        fuse_counter = dict()
+        fuse_counter = Counter()
         for gp in gridded_perms:
             fused_perm = self._fuse_gridded_perm(gp)
-            fuse_counter[fused_perm] = fuse_counter.get(fused_perm, 0) + 1
+            fuse_counter[fused_perm] += 1
         return fuse_counter
 
     @property
     def obstruction_fuse_counter(self):
         """
-        Dictionary of multiplicities of fused obstructions.
+        Counter of multiplicities of fused obstructions.
         """
         if hasattr(self, '_obstruction_fuse_counter'):
             return self._obstruction_fuse_counter
@@ -141,7 +141,7 @@ class Fusion(object):
         """
         return self._tiling.__class__(
             obstructions=self.obstruction_fuse_counter.keys(),
-            requirements=map(dict.keys, self.requirements_fuse_counters),
+            requirements=self.requirements_fuse_counters,
         )
 
     def formal_step(self):
