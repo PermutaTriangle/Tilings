@@ -1138,6 +1138,85 @@ def test_fusion():
     ]))
 
 
+def test_component_fusion():
+    t = Tiling(obstructions=[
+        Obstruction(Perm((0,)), ((1, 0),)),
+        Obstruction(Perm((0,)), ((1, 1),)),
+        Obstruction(Perm((0,)), ((1, 2),)),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 2))),
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 3))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 3))),
+        Obstruction(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 3))),
+        Obstruction(Perm((0, 1, 2)), ((0, 1), (0, 1), (1, 3))),
+        Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 2), (0, 3))),
+        Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 2), (1, 3))),
+        Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
+        Obstruction(Perm((0, 2, 1)), ((0, 1), (0, 1), (0, 1))),
+        Obstruction(Perm((0, 2, 1)), ((0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 2, 1)), ((1, 3), (1, 3), (1, 3))),
+        Obstruction(Perm((1, 0, 2)), ((1, 3), (1, 3), (1, 3))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 0), (0, 3), (0, 3), (0, 3))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 3), (0, 3), (0, 3))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 3), (0, 3), (1, 3))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 3), (1, 3), (1, 3))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 2), (0, 3), (0, 3), (0, 3))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 2), (0, 3), (0, 3), (1, 3))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 2), (0, 3), (1, 3), (1, 3))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 3), (0, 3), (0, 3), (0, 3))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 3), (0, 3), (0, 3), (1, 3))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 3), (0, 3), (1, 3), (1, 3))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 0), (0, 3), (0, 3), (0, 3))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 3), (0, 3), (0, 3))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 3), (0, 3), (1, 3))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 3), (1, 3), (1, 3))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 2), (0, 3), (0, 3), (0, 3))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 2), (0, 3), (0, 3), (1, 3))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 2), (0, 3), (1, 3), (1, 3))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 3), (0, 3), (0, 3), (0, 3))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 3), (0, 3), (0, 3), (1, 3))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 3), (0, 3), (1, 3), (1, 3)))
+    ])
+    assert t.component_fusion(row=1) == Tiling(obstructions=[
+        Obstruction(Perm((0,)), ((1, 0),)),
+        Obstruction(Perm((0,)), ((1, 1),)),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 0), (1, 2))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 2))),
+        Obstruction(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 2))),
+        Obstruction(Perm((0, 1, 2)), ((0, 1), (0, 1), (1, 2))),
+        Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
+        Obstruction(Perm((0, 2, 1)), ((0, 1), (0, 1), (0, 1))),
+        Obstruction(Perm((0, 2, 1)), ((1, 2), (1, 2), (1, 2))),
+        Obstruction(Perm((1, 0, 2)), ((1, 2), (1, 2), (1, 2))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 2), (0, 2), (1, 2))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 2), (1, 2), (1, 2))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 2), (0, 2), (0, 2), (1, 2))),
+        Obstruction(Perm((0, 1, 3, 2)), ((0, 2), (0, 2), (1, 2), (1, 2))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 2), (0, 2), (1, 2))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 2), (1, 2), (1, 2))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 2), (0, 2), (0, 2), (1, 2))),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 2), (0, 2), (1, 2), (1, 2)))
+    ])
+    with pytest.raises(AssertionError):
+        t.fusion()
+    with pytest.raises(AssertionError):
+        t.fusion(row=0, col=1)
+    with pytest.raises(InvalidOperationError):
+        t.fusion(row=5)
+    with pytest.raises(InvalidOperationError):
+        t.fusion(col=3)
+    with pytest.raises(InvalidOperationError):
+        t.fusion(col=1)
+
+
 def test_find_factors(compresstil, factorable_tiling):
     factors = compresstil.find_factors()
     assert len(factors) == 1

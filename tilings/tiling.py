@@ -12,8 +12,8 @@ from comb_spec_searcher.utils import check_equation, check_poly, get_solution
 from permuta import Perm, PermSet
 from permuta.misc import UnionFind
 
-from .algorithms import (AllObstructionInferral, EmptyCellInferral, Factor,
-                         FactorWithInterleaving,
+from .algorithms import (AllObstructionInferral, ComponentFusion,
+                         EmptyCellInferral, Factor, FactorWithInterleaving,
                          FactorWithMonotoneInterleaving, Fusion,
                          ObstructionTransitivity, RowColSeparation,
                          SubobstructionInferral)
@@ -667,9 +667,9 @@ class Tiling(CombinatorialClass):
     # Algorithms
     # -------------------------------------------------------------
 
-    def fusion(self, row=None, col=None):
+    def _fusion(self, row, col, fusion_class):
         """
-        Fuse the tilings.
+        Fuse the tilings using the fusion class.
 
         If `row` is not `None` then `row` and `row+1` are fused together.
         If `col` is not `None` then `col` and `col+1` are fused together.
@@ -678,7 +678,7 @@ class Tiling(CombinatorialClass):
         if not (row in range(self.dimensions[1]-1) or
                 col in range(self.dimensions[0]-1)):
             raise InvalidOperationError('`row` or `column` out or range')
-        fusion = Fusion(self, row_idx=row, col_idx=col)
+        fusion = fusion_class(self, row_idx=row, col_idx=col)
         if not fusion.fusable():
             fus_type = 'Rows' if row is not None else 'Columns'
             idx = row if row is not None else col
@@ -686,6 +686,25 @@ class Tiling(CombinatorialClass):
                                                              idx, idx+1)
             raise InvalidOperationError(message)
         return fusion.fused_tiling()
+
+    def fusion(self, row=None, col=None):
+        """
+        Fuse the tilings.
+
+        If `row` is not `None` then `row` and `row+1` are fused together.
+        If `col` is not `None` then `col` and `col+1` are fused together.
+        """
+        return self._fusion(row, col, Fusion)
+
+    def component_fusion(self, row=None, col=None):
+        """
+        Fuse the tilings in such a way that it can be infused by drawing a line
+        between skew/sum-components.
+
+        If `row` is not `None` then `row` and `row+1` are fused together.
+        If `col` is not `None` then `col` and `col+1` are fused together.
+        """
+        return self._fusion(row, col, ComponentFusion)
 
     def find_factors(self, interleaving='none'):
         """
