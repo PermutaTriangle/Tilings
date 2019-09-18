@@ -214,7 +214,7 @@ class ComponentFusion(Fusion):
         first_cell = next(iter(rows[0]))
         second_cell = next(iter(rows[1]))
         cells_are_adjacent = (first_cell[0] == second_cell[0] or
-                          first_cell[1] == second_cell[1])
+                              first_cell[1] == second_cell[1])
         if not cells_are_adjacent:
             return False
         same_basis = (self._tiling.cell_basis()[first_cell][0] ==
@@ -276,7 +276,7 @@ class ComponentFusion(Fusion):
         crossing between the first and second cell.
         """
         return (len(gp) == 2 and gp.occupies(self.first_cell) and
-            gp.occupies(self.second_cell))
+                gp.occupies(self.second_cell))
 
     @property
     def obstruction_fuse_counter(self):
@@ -296,8 +296,8 @@ class ComponentFusion(Fusion):
 
     def obstructions_to_add(self):
         """
-        Iterator over all the obstruction obtained by fusing obstruction of the tiling
-        and then unfusing it in all possible ways. Crossing length 2
+        Iterator over all the obstruction obtained by fusing obstruction of the
+        tiling and then unfusing it in all possible ways. Crossing length 2
         obstructions between first cell and second cell are not processed.
         """
         return chain.from_iterable(self._unfuse_gridded_perm(ob) for ob in
