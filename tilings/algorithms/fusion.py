@@ -176,14 +176,14 @@ class ComponentFusion(Fusion):
     """
     Component Fusion algorithm container class.
 
-    Fuse tiling it in can be unfused by drawing a line between any component.
+    Fuse tiling it it can be unfused by drawing a line between any component.
 
     Check if a fusion is valid and compute the fused tiling.
 
     If `row_idx` is provided it attempts to fuse row `row_idx` with row
     `row_idx+1`.
 
-    If incited `col_ids` is provided it attempts to fuse column `col_idx` with
+    If `col_idx` is provided it attempts to fuse column `col_idx` with
     column `col_idx+1`.
     """
 
@@ -281,7 +281,7 @@ class ComponentFusion(Fusion):
     @property
     def obstruction_fuse_counter(self):
         """
-        Dictionary of multiplicities of fused obstructions.
+        Counter of multiplicities of fused obstructions.
 
         Crossing length 2 obstructions between first cell and second cell
         are ignored.
@@ -296,8 +296,8 @@ class ComponentFusion(Fusion):
 
     def obstructions_to_add(self):
         """
-        Iterator over all the obstruction obtained by fusing obstruction of the
-        tiling and then unfusing it in all possible ways. Crossing length 2
+        Iterator over all the obstructions obtained by fusing obstructions of
+        the tiling and then unfusing it in all possible ways. Crossing length 2
         obstructions between first cell and second cell are not processed.
         """
         return chain.from_iterable(self._unfuse_gridded_perm(ob) for ob in
@@ -312,7 +312,7 @@ class ComponentFusion(Fusion):
     def fusable(self):
         """
         Return True if adjacent rows can be viewed as one row where you draw a
-        horizontal line through the permutation.
+        horizontal line through the components.
         """
         if not self._pre_check() or not self.has_crossing_len2_ob():
             return False

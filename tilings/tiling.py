@@ -698,7 +698,7 @@ class Tiling(CombinatorialClass):
 
     def component_fusion(self, row=None, col=None):
         """
-        Fuse the tilings in such a way that it can be infused by drawing a line
+        Fuse the tilings in such a way that it can be unfused by drawing a line
         between skew/sum-components.
 
         If `row` is not `None` then `row` and `row+1` are fused together.
