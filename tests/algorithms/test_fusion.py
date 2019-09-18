@@ -348,6 +348,11 @@ class TestComponentFusion(TestFusion):
     def row_fusion(self, row_tiling):
         return ComponentFusion(row_tiling, row_idx=0)
 
+    @pytest.fixture
+    def not_prechecked_fusion(self, row_tiling):
+        t = row_tiling.add_single_cell_obstruction(Perm((0, 2, 1)), (0, 0))
+        return ComponentFusion(t, row_idx=0)
+
     def test_init(self, col_tiling, tiling_with_req, row_tiling):
         ComponentFusion(col_tiling, col_idx=0)
         ComponentFusion(row_tiling, row_idx=0)
@@ -356,17 +361,22 @@ class TestComponentFusion(TestFusion):
         with pytest.raises(RuntimeError):
             ComponentFusion(tiling_with_req, col_idx=0)
 
-    def test_pre_check(self, col_fusion, row_fusion):
+    def test_pre_check(self, col_fusion, row_fusion, not_prechecked_fusion):
         assert col_fusion._pre_check()
         assert row_fusion._pre_check()
+        assert not not_prechecked_fusion._pre_check()
 
-    def test_first_cell(self, col_fusion, row_fusion):
+    def test_first_cell(self, col_fusion, row_fusion, not_prechecked_fusion):
         assert col_fusion.first_cell == (0, 0)
         assert row_fusion.first_cell == (0, 0)
+        with pytest.raises(RuntimeError):
+            not_prechecked_fusion.first_cell
 
-    def test_second_cell(self, col_fusion, row_fusion):
+    def test_second_cell(self, col_fusion, row_fusion, not_prechecked_fusion):
         assert col_fusion.second_cell == (1, 0)
         assert row_fusion.second_cell == (0, 1)
+        with pytest.raises(RuntimeError):
+            not_prechecked_fusion.second_cell
 
     def test_pre_check_long_row(self):
         t = Tiling(obstructions=[
@@ -390,10 +400,9 @@ class TestComponentFusion(TestFusion):
     def test_pre_check_diff_basis(self):
         t = Tiling(obstructions=[
             Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-            Obstruction(Perm((0, 1)), ((1, 1),)*2),
+            Obstruction(Perm((0, 1)), ((0, 1),)*2),
         ])
         assert not ComponentFusion(t, row_idx=0)._pre_check()
-        assert not ComponentFusion(t, col_idx=0)._pre_check()
 
     def test_has_crosssing_len2_ob(self, row_fusion, col_fusion):
         assert row_fusion.has_crossing_len2_ob()
@@ -478,9 +487,17 @@ class TestComponentFusion(TestFusion):
             Obstruction(Perm((0,)), ((1, 1),)),
         ])
 
-    def test_fusable(self, col_fusion, row_fusion):
+    def test_fusable(self, col_fusion, row_fusion, not_prechecked_fusion):
         assert col_fusion.fusable()
         assert row_fusion.fusable()
+        assert not not_prechecked_fusion.fusable()
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
+            Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
+            Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
+        ])
+        assert not ComponentFusion(t, col_idx=0).fusable()
 
     def test_fused_tiling(self, col_fusion, row_fusion):
         assert col_fusion.fused_tiling() == Tiling.from_string('021')

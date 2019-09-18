@@ -332,5 +332,3 @@ class ComponentFusion(Fusion):
         s = 'ComponentFusion Algorithm for:\n'
         s += str(self._tiling)
         return s
-
-    __repr__ = __str__
