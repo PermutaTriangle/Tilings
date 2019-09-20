@@ -10,8 +10,7 @@ class RequirementPlacement(object):
     """
     The requirement placement container class.
 
-    Check if a placement is a valid and then places points onto own row,
-    own col, or both.
+    Places points onto own row, own col, or both.
     """
     def __init__(self, tiling, own_row=True, own_col=True):
         if not own_row and not own_col:
@@ -323,12 +322,12 @@ class RequirementPlacement(object):
                         for direction in self.directions:
                             placed_tiling = self.place_point_of_req(
                                                             gp, idx, direction)
-                            formal_step = self._pattern_placements_formal_step(
+                            formal_step = self._pattern_placement_formal_step(
                                                             idx, gp, direction)
                             yield EquivalenceRule(formal_step, placed_tiling)
 
     def _col_placement_formal_step(self, idx, direction):
-        return "Placing {} points in col {}.".format(
+        return "Placing {} points in column {}.".format(
                                         self._direction_string(direction), idx)
 
     def _row_placement_formal_step(self, idx, direction):
@@ -339,7 +338,7 @@ class RequirementPlacement(object):
         return "Placing {} point in cell {}.".format(
                                        self._direction_string(direction), cell)
 
-    def _pattern_placements_formal_step(self, idx, gp, direction):
+    def _pattern_placement_formal_step(self, idx, gp, direction):
         return "Placing the {} point of ({}, {}) in {}.".format(
                                             self._direction_string(direction),
                                             idx, gp.patt[idx], str(gp))

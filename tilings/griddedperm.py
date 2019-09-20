@@ -220,128 +220,128 @@ class GriddedPerm():
             mindex = min(p[0] for p in col)
         return (mindex, maxdex, minval, maxval)
 
-    def point_translation(self, index, insert_point):
-        """Given an index of a point in the gridded permutation and an insert
-        location, compute the transformation of the point. The translation
-        assumes that a new row and a new column is inserted in to the location.
-        """
-        x, y = self._pos[index]
-        return (x + 2 if index >= insert_point[0] else x,
-                y + 2 if self._patt[index] >= insert_point[1] else y)
+    # def point_translation(self, index, insert_point):
+    #     """Given an index of a point in the gridded permutation and an insert
+    #     location, compute the transformation of the point. The translation
+    #     assumes that a new row and a new column is inserted in to the location.
+    #     """
+    #     x, y = self._pos[index]
+    #     return (x + 2 if index >= insert_point[0] else x,
+    #             y + 2 if self._patt[index] >= insert_point[1] else y)
 
-    def partial_point_translation(self, index, insert_point, row=True):
-        """Given an index of a point in the gridded permutation and an insert
-        location, compute the transformation of the point. If row=True, the
-        translation assumes that a new row is inserted. If row=False, it
-        assumes a new column is inserted.
-        """
-        x, y = self._pos[index]
-        return (x + 2 if not row and index >= insert_point[0] else x,
-                y + 2 if row and self._patt[index] >= insert_point[1] else y)
+    # def partial_point_translation(self, index, insert_point, row=True):
+    #     """Given an index of a point in the gridded permutation and an insert
+    #     location, compute the transformation of the point. If row=True, the
+    #     translation assumes that a new row is inserted. If row=False, it
+    #     assumes a new column is inserted.
+    #     """
+    #     x, y = self._pos[index]
+    #     return (x + 2 if not row and index >= insert_point[0] else x,
+    #             y + 2 if row and self._patt[index] >= insert_point[1] else y)
 
-    def stretch_gridding(self, insert_point):
-        """Given an cell location, translate all the points of the gridded
-        permutation as when a point is inserted into the cell."""
-        newpos = [self.point_translation(p, insert_point)
-                  for p in range(len(self))]
-        return self.__class__(self._patt, newpos)
+    # def stretch_gridding(self, insert_point):
+    #     """Given an cell location, translate all the points of the gridded
+    #     permutation as when a point is inserted into the cell."""
+    #     newpos = [self.point_translation(p, insert_point)
+    #               for p in range(len(self))]
+    #     return self.__class__(self._patt, newpos)
 
-    def partial_stretch_gridding(self, insert_point, row=True):
-        """Given an cell location, translate all the points of the gridded
-        permutation as when a point is inserted into the cell. If row=True it
-        is assumed a new row is added. If row=False it is assumed a new column
-        is added."""
-        newpos = [self.partial_point_translation(p, insert_point, row)
-                  for p in range(len(self))]
-        return self.__class__(self._patt, newpos)
+    # def partial_stretch_gridding(self, insert_point, row=True):
+    #     """Given an cell location, translate all the points of the gridded
+    #     permutation as when a point is inserted into the cell. If row=True it
+    #     is assumed a new row is added. If row=False it is assumed a new column
+    #     is added."""
+    #     newpos = [self.partial_point_translation(p, insert_point, row)
+    #               for p in range(len(self))]
+    #     return self.__class__(self._patt, newpos)
 
-    def place_point(self, cell, direction, partial=False, row=True):
-        """Places a point furthest to the direction 'direction' into a cell,
-        returns the same gridded permutation if the gridded permutation does
-        not span the rows or columns of the cell. Otherwise returns a list of
-        new gridded permutations that are constructed from self by splitting it
-        over the row and column of the cell, in every possible way.
+    # def place_point(self, cell, direction, partial=False, row=True):
+    #     """Places a point furthest to the direction 'direction' into a cell,
+    #     returns the same gridded permutation if the gridded permutation does
+    #     not span the rows or columns of the cell. Otherwise returns a list of
+    #     new gridded permutations that are constructed from self by splitting it
+    #     over the row and column of the cell, in every possible way.
 
-        If the gridded permutation occupies the cell, the placed point will use
-        one of the points of the gridded permutation that occupies the cell and
-        construct a new gridded permutation which has that point removed.
+    #     If the gridded permutation occupies the cell, the placed point will use
+    #     one of the points of the gridded permutation that occupies the cell and
+    #     construct a new gridded permutation which has that point removed.
 
-        If partial=True then it will partially place onto its own row.
-        If partial=True and row=False it will partially place onto its own
-        column.
-        """
-        # If the gridded permutation does not span the cell, the resulting list
-        # of new obstructions would contain only the gridded permutation
-        # itself.
-        res = list()
-        # If the gridded permutation contains a point in the cell (occupies)
-        mindex, maxdex, minval, maxval = self.get_bounding_box(cell)
-        if partial:
-            # New indices of the point.
-            point_cell = (cell[0] if row else cell[0] + 1,
-                          cell[1] + 1 if row else cell[1])
-            assert (direction == DIR_NONE or (row == (direction == DIR_NORTH or
-                                                      direction == DIR_SOUTH)))
-        forced_index = None
-        if self.occupies(cell):
-            if direction != DIR_NONE:
-                forced_index = self.forced_point_index(cell, direction)
-                forced_val = self._patt[forced_index]
-                newpatt = Perm.to_standard(
-                    self._patt[i] for i in range(len(self))
-                    if partial or i != forced_index)
-                if partial:
-                    newposition = [
-                        self.partial_point_translation(
-                                        p, (forced_index, forced_val), row)
-                        if p != forced_index else point_cell
-                        for p in range(len(self))]
-                else:
-                    newposition = [
-                        self.point_translation(p, (forced_index, forced_val))
-                        for p in range(len(self)) if p != forced_index]
-                res.append(self.__class__(newpatt, newposition))
-            else:
-                for index in self.points_in_cell(cell):
-                    newpatt = Perm.to_standard(
-                        self._patt[i] for i in range(len(self))
-                        if partial or i != index)
-                    if partial:
-                        newposition = [
-                            self.partial_point_translation(
-                                        p, (index, self._patt[index]), row)
-                            if p != index else point_cell
-                            for p in range(len(self))]
-                    else:
-                        newposition = [
-                            self.point_translation(
-                                            p, (index, self._patt[index]))
-                            for p in range(len(self)) if p != index]
-                    res.append(self.__class__(newpatt, newposition))
-        # Gridded permutation spans the cell, find the bounding box of all the
-        # possible locations for the placed point in relation to the pattern.
-            if direction == DIR_EAST:
-                mindex = forced_index + 1
-            elif direction == DIR_NORTH:
-                minval = forced_val + 1
-            elif direction == DIR_WEST:
-                maxdex = forced_index
-            elif direction == DIR_SOUTH:
-                maxval = forced_val
+    #     If partial=True then it will partially place onto its own row.
+    #     If partial=True and row=False it will partially place onto its own
+    #     column.
+    #     """
+    #     # If the gridded permutation does not span the cell, the resulting list
+    #     # of new obstructions would contain only the gridded permutation
+    #     # itself.
+    #     res = list()
+    #     # If the gridded permutation contains a point in the cell (occupies)
+    #     mindex, maxdex, minval, maxval = self.get_bounding_box(cell)
+    #     if partial:
+    #         # New indices of the point.
+    #         point_cell = (cell[0] if row else cell[0] + 1,
+    #                       cell[1] + 1 if row else cell[1])
+    #         assert (direction == DIR_NONE or (row == (direction == DIR_NORTH or
+    #                                                   direction == DIR_SOUTH)))
+    #     forced_index = None
+    #     if self.occupies(cell):
+    #         if direction != DIR_NONE:
+    #             forced_index = self.forced_point_index(cell, direction)
+    #             forced_val = self._patt[forced_index]
+    #             newpatt = Perm.to_standard(
+    #                 self._patt[i] for i in range(len(self))
+    #                 if partial or i != forced_index)
+    #             if partial:
+    #                 newposition = [
+    #                     self.partial_point_translation(
+    #                                     p, (forced_index, forced_val), row)
+    #                     if p != forced_index else point_cell
+    #                     for p in range(len(self))]
+    #             else:
+    #                 newposition = [
+    #                     self.point_translation(p, (forced_index, forced_val))
+    #                     for p in range(len(self)) if p != forced_index]
+    #             res.append(self.__class__(newpatt, newposition))
+    #         else:
+    #             for index in self.points_in_cell(cell):
+    #                 newpatt = Perm.to_standard(
+    #                     self._patt[i] for i in range(len(self))
+    #                     if partial or i != index)
+    #                 if partial:
+    #                     newposition = [
+    #                         self.partial_point_translation(
+    #                                     p, (index, self._patt[index]), row)
+    #                         if p != index else point_cell
+    #                         for p in range(len(self))]
+    #                 else:
+    #                     newposition = [
+    #                         self.point_translation(
+    #                                         p, (index, self._patt[index]))
+    #                         for p in range(len(self)) if p != index]
+    #                 res.append(self.__class__(newpatt, newposition))
+    #     # Gridded permutation spans the cell, find the bounding box of all the
+    #     # possible locations for the placed point in relation to the pattern.
+    #         if direction == DIR_EAST:
+    #             mindex = forced_index + 1
+    #         elif direction == DIR_NORTH:
+    #             minval = forced_val + 1
+    #         elif direction == DIR_WEST:
+    #             maxdex = forced_index
+    #         elif direction == DIR_SOUTH:
+    #             maxval = forced_val
 
-        if partial:
-            if row:
-                maxdex = mindex
-            else:
-                maxval = minval
+    #     if partial:
+    #         if row:
+    #             maxdex = mindex
+    #         else:
+    #             maxval = minval
 
-        for i in range(mindex, maxdex + 1):
-            for j in range(minval, maxval + 1):
-                if partial:
-                    res.append(self.partial_stretch_gridding((i, j), row))
-                else:
-                    res.append(self.stretch_gridding((i, j)))
-        return res
+    #     for i in range(mindex, maxdex + 1):
+    #         for j in range(minval, maxval + 1):
+    #             if partial:
+    #                 res.append(self.partial_stretch_gridding((i, j), row))
+    #             else:
+    #                 res.append(self.stretch_gridding((i, j)))
+    #     return res
 
     def insert_point(self, cell):
         """Insert a new point into cell of the obstruction, such that the point
