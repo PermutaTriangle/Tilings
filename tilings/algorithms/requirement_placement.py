@@ -1,9 +1,12 @@
-from ..obstruction import Obstruction
-from ..requirement import Requirement
-from comb_spec_searcher import EquivalenceRule, BatchRule
 from itertools import chain
+
+from comb_spec_searcher import EquivalenceRule, BatchRule
 from permuta import Perm
 from permuta.misc import (DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST)
+
+from ..obstruction import Obstruction
+from ..requirement import Requirement
+
 
 
 class RequirementPlacement(object):
@@ -179,7 +182,8 @@ class RequirementPlacement(object):
         gp = Obstruction(gp.patt, gp.pos)
         return [stretched_gp
                 for stretched_gp in self._stretch_gridded_perm(gp, gp.pos[idx])
-                if self._farther(stretched_gp.pos[idx], placed_cell, direction)]
+                if self._farther(stretched_gp.pos[idx],
+                                 placed_cell, direction)]
 
     def _forced_obstructions_from_list(self, gp_list, cell, direction):
         """
