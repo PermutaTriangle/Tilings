@@ -2,6 +2,7 @@
 import pytest
 
 from permuta import Perm
+from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST
 from tilings import GriddedPerm, Obstruction, Requirement, Tiling
 from tilings.algorithms import RequirementPlacement
 
@@ -316,3 +317,154 @@ def test_stretch_gridded_perm(gp1, placement1, placement1owncol,
                  GriddedPerm(Perm((3, 1, 2, 0, 4)),
                              ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2)))]))
 
+
+def test_stretch_gridded_perms():
+    pass
+
+
+def test_stretched_obstructions():
+    pass
+
+
+def test_stretched_requirements():
+    pass
+
+
+def test_stretched_obstructions_and_requirements():
+    pass
+
+
+def farther(placement1):
+    assert placement1._farther((0, 0), (2, 0), DIR_EAST) is False
+    assert placement1._farther((0, 0), (2, 0), DIR_NORTH) is False
+    assert placement1._farther((0, 0), (2, 0), DIR_WEST) is True
+    assert placement1._farther((0, 0), (2, 0), DIR_SOUTH) is False
+
+    assert placement1._farther((2, 3), (2, 0), DIR_EAST) is False
+    assert placement1._farther((2, 3), (2, 0), DIR_NORTH) is True
+    assert placement1._farther((2, 3), (2, 0), DIR_WEST) is False
+    assert placement1._farther((2, 3), (2, 0), DIR_SOUTH) is False
+
+    assert placement1._farther((1, 1), (3, 4), DIR_EAST) is False
+    assert placement1._farther((1, 1), (3, 4), DIR_NORTH) is False
+    assert placement1._farther((1, 1), (3, 4), DIR_WEST) is True
+    assert placement1._farther((1, 1), (3, 4), DIR_SOUTH) is True
+
+    assert placement1._farther((1, 5), (3, 4), DIR_EAST) is False
+    assert placement1._farther((1, 5), (3, 4), DIR_NORTH) is True
+    assert placement1._farther((1, 5), (3, 4), DIR_WEST) is True
+    assert placement1._farther((1, 5), (3, 4), DIR_SOUTH) is False
+
+    assert placement1._farther((2, 2), (1, 1), DIR_EAST) is True
+    assert placement1._farther((2, 2), (1, 1), DIR_NORTH) is True
+    assert placement1._farther((2, 2), (1, 1), DIR_WEST) is False
+    assert placement1._farther((2, 2), (1, 1), DIR_SOUTH) is False
+
+
+def test_forced_obstructions_from_patt(gp1, placement1, placement1owncol,
+                                       placement1ownrow):
+    assert (set(placement1._forced_obstructions_from_patt(gp1, 2,
+                                                          DIR_NORTH)) ==
+            set([Obstruction(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (0, 0), (3, 3), (3, 0), (3, 3))),
+                 Obstruction(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (0, 0), (1, 3), (3, 0), (3, 3))),
+                 Obstruction(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (0, 0), (1, 3), (1, 0), (3, 3))),
+                 Obstruction(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (0, 0), (1, 3), (1, 0), (1, 3)))]))
+
+    assert (set(placement1owncol._forced_obstructions_from_patt(gp1, 1,
+                                                                DIR_EAST)) ==
+            set([Obstruction(Perm((3, 1, 2, 0, 4)),
+                             ((2, 1), (2, 0), (3, 1), (3, 0), (3, 1))),
+                 Obstruction(Perm((3, 1, 2, 0, 4)),
+                             ((0, 1), (2, 0), (3, 1), (3, 0), (3, 1)))]))
+
+    assert (set(placement1ownrow._forced_obstructions_from_patt(gp1, 3,
+                                                                DIR_SOUTH)) ==
+            set([Obstruction(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (0, 2), (1, 3), (1, 0), (1, 3))),
+                 Obstruction(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (0, 0), (1, 3), (1, 0), (1, 3)))]))
+
+
+def test_forced_obstructions_from_list(gp1, placement1, placement1owncol,
+                                       placement1ownrow):
+    req_list_row = [Requirement(Perm((0,)), ((0, 0),)),
+                    Requirement(Perm((0,)), ((1, 0),))]
+    assert (set(placement1._forced_obstructions_from_list(
+                                        req_list_row, (0, 0), DIR_NORTH)) ==
+            set([Obstruction(Perm((0,)), ((0, 2),)),
+                 Obstruction(Perm((0,)), ((2, 2),)),
+                 Obstruction(Perm((0,)), ((3, 2),))]))
+    assert (set(placement1._forced_obstructions_from_list(
+                                        req_list_row, (0, 0), DIR_SOUTH)) ==
+            set([Obstruction(Perm((0,)), ((0, 0),)),
+                 Obstruction(Perm((0,)), ((2, 0),)),
+                 Obstruction(Perm((0,)), ((3, 0),))]))
+    assert (set(placement1._forced_obstructions_from_list(
+                                        req_list_row, (1, 0), DIR_NORTH)) ==
+            set([Obstruction(Perm((0,)), ((0, 2),)),
+                 Obstruction(Perm((0,)), ((1, 2),)),
+                 Obstruction(Perm((0,)), ((3, 2),))]))
+    assert (set(placement1._forced_obstructions_from_list(
+                                        req_list_row, (1, 0), DIR_SOUTH)) ==
+            set([Obstruction(Perm((0,)), ((0, 0),)),
+                 Obstruction(Perm((0,)), ((1, 0),)),
+                 Obstruction(Perm((0,)), ((3, 0),))]))
+    assert (set(placement1ownrow._forced_obstructions_from_list(
+                                        req_list_row, (0, 0), DIR_NORTH)) ==
+            set([Obstruction(Perm((0,)), ((0, 2),)),
+                 Obstruction(Perm((0,)), ((1, 2),))]))
+    assert (set(placement1ownrow._forced_obstructions_from_list(
+                                        req_list_row, (0, 0), DIR_SOUTH)) ==
+            set([Obstruction(Perm((0,)), ((0, 0),)),
+                 Obstruction(Perm((0,)), ((1, 0),))]))
+    assert (set(placement1ownrow._forced_obstructions_from_list(
+                                        req_list_row, (1, 0), DIR_NORTH)) ==
+            set([Obstruction(Perm((0,)), ((0, 2),)),
+                 Obstruction(Perm((0,)), ((1, 2),))]))
+    assert (set(placement1ownrow._forced_obstructions_from_list(
+                                        req_list_row, (1, 0), DIR_SOUTH)) ==
+            set([Obstruction(Perm((0,)), ((0, 0),)),
+                 Obstruction(Perm((0,)), ((1, 0),))]))
+
+    req_list_col = [Requirement(Perm((0,)), ((0, 0),)),
+                    Requirement(Perm((0,)), ((0, 1),))]
+    assert (set(placement1._forced_obstructions_from_list(
+                                        req_list_col, (0, 0), DIR_EAST)) ==
+            set([Obstruction(Perm((0,)), ((2, 0),)),
+                 Obstruction(Perm((0,)), ((2, 2),)),
+                 Obstruction(Perm((0,)), ((2, 3),))]))
+    assert (set(placement1._forced_obstructions_from_list(
+                                        req_list_col, (0, 0), DIR_WEST)) ==
+            set([Obstruction(Perm((0,)), ((0, 0),)),
+                 Obstruction(Perm((0,)), ((0, 2),)),
+                 Obstruction(Perm((0,)), ((0, 3),))]))
+    assert (set(placement1._forced_obstructions_from_list(
+                                        req_list_col, (0, 1), DIR_EAST)) ==
+            set([Obstruction(Perm((0,)), ((2, 0),)),
+                 Obstruction(Perm((0,)), ((2, 1),)),
+                 Obstruction(Perm((0,)), ((2, 3),))]))
+    assert (set(placement1._forced_obstructions_from_list(
+                                        req_list_col, (0, 1), DIR_WEST)) ==
+            set([Obstruction(Perm((0,)), ((0, 0),)),
+                 Obstruction(Perm((0,)), ((0, 1),)),
+                 Obstruction(Perm((0,)), ((0, 3),))]))
+    assert (set(placement1owncol._forced_obstructions_from_list(
+                                        req_list_col, (0, 0), DIR_EAST)) ==
+            set([Obstruction(Perm((0,)), ((2, 0),)),
+                 Obstruction(Perm((0,)), ((2, 1),))]))
+    assert (set(placement1owncol._forced_obstructions_from_list(
+                                        req_list_col, (0, 0), DIR_WEST)) ==
+            set([Obstruction(Perm((0,)), ((0, 0),)),
+                 Obstruction(Perm((0,)), ((0, 1),))]))
+    assert (set(placement1owncol._forced_obstructions_from_list(
+                                        req_list_col, (0, 1), DIR_EAST)) ==
+            set([Obstruction(Perm((0,)), ((2, 0),)),
+                 Obstruction(Perm((0,)), ((2, 1),))]))
+    assert (set(placement1owncol._forced_obstructions_from_list(
+                                        req_list_col, (0, 1), DIR_WEST)) ==
+            set([Obstruction(Perm((0,)), ((0, 0),)),
+                 Obstruction(Perm((0,)), ((0, 1),))]))
