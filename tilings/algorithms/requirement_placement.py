@@ -200,7 +200,7 @@ class RequirementPlacement(object):
                 if any(self.farther(c1, placed_cell, direction)
                        for c1 in stretched_gp.pos)]
 
-    def _place_point_of_req(self, gp, idx, direction):
+    def place_point_of_req(self, gp, idx, direction):
         """
         Return the tiling a point is placed that corresponds to the direction
         most occurrence of the idx point in gp in the original tiling.
@@ -211,15 +211,15 @@ class RequirementPlacement(object):
         return self.tiling.__class__(obs + forced_obs, reqs)
 
 
-    def _place_point_in_cell(self, cell, direction):
+    def place_point_in_cell(self, cell, direction):
         """
         Return the tiling in which a point is placed in the given direction and
         cell.
         """
-        point_req = GriddedPerm(Perm((0,)), (cell,))
-        return self._place_point_of_req(point_req, 0, direction)
+        point_req = Requirement(Perm((0,)), (cell,))
+        return self.place_point_of_req(point_req, 0, direction)
 
-    def _place_point_of_req_list(self, req_list, direction):
+    def place_point_of_req_list(self, req_list, direction):
         """
         Return a list of tilings, in which each tiling corresponds to a
         possible way in which a direction most point can occur of any gridded
@@ -240,7 +240,7 @@ class RequirementPlacement(object):
         """
         req_list = [Requirement(Perm((0,)), (cell,))
                     for cell in self.tiling.cells_in_col(index)]
-        return self._place_point_of_req_list(req_list, direction)
+        return self.place_point_of_req_list(req_list, direction)
 
     def row_placement(self, index, direction):
         """
@@ -249,7 +249,7 @@ class RequirementPlacement(object):
         """
         req_list = [Requirement(Perm((0,)), (cell,))
                     for cell in self.tiling.cells_in_row(index)]
-        return self._place_point_of_req_list(req_list, direction)
+        return self.place_point_of_req_list(req_list, direction)
 
     def empty_col(self, index):
         """
@@ -306,7 +306,7 @@ class RequirementPlacement(object):
         """
         for cell in self.tiling.positive_cells:
             for direction in self.directions:
-                placed_tiling = self._place_point_in_cell(cell, direction)
+                placed_tiling = self.place_point_in_cell(cell, direction)
                 formal_step = self._point_placement_formal_step(
                                                             cell, direction)
                 yield EquivalenceRule(formal_step, placed_tiling)
@@ -321,7 +321,7 @@ class RequirementPlacement(object):
                 for gp in req[0].all_subperms(proper=False):
                     for idx in range(len(gp)):
                         for direction in self.directions:
-                            placed_tiling = self._place_point_of_req(
+                            placed_tiling = self.place_point_of_req(
                                                             gp, idx, direction)
                             formal_step = self._pattern_placements_formal_step(
                                                             idx, gp, direction)

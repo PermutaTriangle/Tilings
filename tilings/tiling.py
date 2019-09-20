@@ -15,8 +15,8 @@ from permuta.misc import UnionFind
 from .algorithms import (AllObstructionInferral, ComponentFusion,
                          EmptyCellInferral, Factor, FactorWithInterleaving,
                          FactorWithMonotoneInterleaving, Fusion,
-                         ObstructionTransitivity, RowColSeparation,
-                         SubobstructionInferral)
+                         ObstructionTransitivity, RequirementPlacement,
+                         RowColSeparation, SubobstructionInferral)
 from .db_conf import check_database, update_database
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
@@ -774,16 +774,36 @@ class Tiling(CombinatorialClass):
         return obs_inf.obstruction_inferral()
 
     def place_point_in_cell(self, cell, direction):
-        pass
+        """
+        Return the tiling where a point is placed in the given cell and
+        direction.
+        """
+        req_placement = RequirementPlacement(self)
+        return req_placement.place_point_in_cell(cell, direction)
 
     def place_point_of_gridded_permutation(self, gp, idx, direction):
-        pass
+        """
+        Return the tiling where the directionmost occurrence of the idx point
+        in the gridded permutaion gp is placed.
+        """
+        req_placement = RequirementPlacement(self)
+        return req_placement.place_point_of_req(gp, idx, direction)
 
-    def place_row(self, idx):
-        pass
+    def place_row(self, idx, direction):
+        """
+        Return the list of tilings in which the directionmost point in the row
+        is placed.
+        """
+        req_placement = RequirementPlacement(self)
+        return req_placement.row_placement(idx, direction)
 
-    def place_col(self, idx):
-        pass
+    def place_col(self, idx, direction):
+        """
+        Return the list of tilings in which the directionmost point in the
+        column is placed.
+        """
+        req_placement = RequirementPlacement(self)
+        return req_placement.col_placement(idx, direction)
 
     # -------------------------------------------------------------
     # Properties and getters
