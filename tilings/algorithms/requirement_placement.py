@@ -1,12 +1,11 @@
 from itertools import chain
 
-from comb_spec_searcher import EquivalenceRule, BatchRule
+from comb_spec_searcher import BatchRule, EquivalenceRule
 from permuta import Perm
-from permuta.misc import (DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST)
+from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST
 
 from ..obstruction import Obstruction
 from ..requirement import Requirement
-
 
 
 class RequirementPlacement(object):
@@ -213,7 +212,6 @@ class RequirementPlacement(object):
         forced_obs = self._forced_obstructions_from_patt(gp, idx, direction)
         return self._tiling.__class__(obs + forced_obs, reqs)
 
-
     def place_point_in_cell(self, cell, direction):
         """
         Return the tiling in which a point is placed in the given direction and
@@ -262,7 +260,7 @@ class RequirementPlacement(object):
         newobs = tuple(Obstruction(Perm((0,)), (cell,))
                        for cell in self._tiling.cells_in_col(cell))
         return self._tiling.__class__(self._tiling.obstructions + newobs,
-                                     self._tiling.requirements)
+                                      self._tiling.requirements)
 
     def empty_row(self, index):
         """
@@ -271,7 +269,7 @@ class RequirementPlacement(object):
         newobs = tuple(Obstruction(Perm((0,)), (cell,))
                        for cell in self._tiling.cells_in_row(cell))
         return self._tiling.__class__(self._tiling.obstructions + newobs,
-                                     self._tiling.requirements)
+                                      self._tiling.requirements)
 
     def all_col_placement_rules(self):
         """
