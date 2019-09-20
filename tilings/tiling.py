@@ -10,7 +10,7 @@ import sympy
 from comb_spec_searcher import CombinatorialClass, ProofTree
 from comb_spec_searcher.utils import check_equation, check_poly, get_solution
 from permuta import Perm, PermSet
-from permuta.misc import UnionFind
+from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, UnionFind
 
 from .algorithms import (AllObstructionInferral, ComponentFusion,
                          EmptyCellInferral, Factor, FactorWithInterleaving,
@@ -803,6 +803,46 @@ class Tiling(CombinatorialClass):
         column is placed.
         """
         req_placement = RequirementPlacement(self)
+        return req_placement.col_placement(idx, direction)
+
+    def partial_place_point_in_cell(self, cell, direction):
+        """
+        Return the tiling where a point is placed in the given cell and
+        direction. The point is placed onto its own row or own column
+        depending on the direction.
+        """
+        if direction in (DIR_EAST, DIR_WEST):
+            req_placement = RequirementPlacement(self, own_row=False)
+        else:
+            req_placement = RequirementPlacement(self, own_col=False)
+        return req_placement.place_point_in_cell(cell, direction)
+
+    def partial_place_point_of_gridded_permutation(self, gp, idx, direction):
+        """
+        Return the tiling where the directionmost occurrence of the idx point
+        in the gridded permutaion gp is placed. The point is placed onto its
+        own row or own column depending on the direction.
+        """
+        if direction in (DIR_EAST, DIR_WEST):
+            req_placement = RequirementPlacement(self, own_row=False)
+        else:
+            req_placement = RequirementPlacement(self, own_col=False)
+        return req_placement.place_point_of_req(gp, idx, direction)
+
+    def partial_place_row(self, idx, direction):
+        """
+        Return the list of tilings in which the directionmost point in the row
+        is placed. The points are placed onto thier own row.
+        """
+        req_placement = RequirementPlacement(self, own_row=True, own_col=False)
+        return req_placement.row_placement(idx, direction)
+
+    def partial_place_col(self, idx, direction):
+        """
+        Return the list of tilings in which the directionmost point in the
+        column is placed. The points are placed onto their own column.
+        """
+        req_placement = RequirementPlacement(self, own_row=False, own_col=True)
         return req_placement.col_placement(idx, direction)
 
     # -------------------------------------------------------------
