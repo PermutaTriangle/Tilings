@@ -237,3 +237,82 @@ def test_gridded_perm_translation(gp1, placement1, placement1owncol,
             GriddedPerm(Perm((3, 1, 2, 0, 4)),
                         ((0, 1), (0, 0), (1, 1), (1, 0), (1, 3))))
 
+
+def test_placed_cell(placement1, placement1owncol, placement1ownrow):
+    assert placement1._placed_cell((0, 0)) == (1, 1)
+    assert placement1._placed_cell((3, 2)) == (4, 3)
+    assert placement1owncol._placed_cell((9, 7)) == (10, 7)
+    assert placement1owncol._placed_cell((2, 1)) == (3, 1)
+    assert placement1ownrow._placed_cell((0, 4)) == (0, 5)
+    assert placement1ownrow._placed_cell((4, 2)) == (4, 3)
+
+
+def test_point_obstructions(placement1, placement1owncol, placement1ownrow):
+    assert (placement1._point_obstructions((0, 0)) ==
+            [Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
+             Obstruction(Perm((1, 0)), ((1, 1), (1, 1)))])
+    assert (placement1owncol._point_obstructions((0, 0)) ==
+            [Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+             Obstruction(Perm((1, 0)), ((1, 0), (1, 0)))])
+    assert (placement1ownrow._point_obstructions((0, 0)) ==
+            [Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+             Obstruction(Perm((1, 0)), ((0, 1), (0, 1)))])
+
+
+def test_point_requirements(placement1, placement1owncol, placement1ownrow):
+    assert (placement1._point_requirements((2, 3)) ==
+            [[Requirement(Perm((0,)), ((3, 4),))]])
+    assert (placement1ownrow._point_requirements((2, 3)) ==
+            [[Requirement(Perm((0,)), ((2, 4),))]])
+    assert (placement1owncol._point_requirements((2, 3)) ==
+            [[Requirement(Perm((0,)), ((3, 3),))]])
+
+
+def test_stretch_gridded_perm(gp1, placement1, placement1owncol,
+                              placement1ownrow):
+    assert (set(placement1._stretch_gridded_perm(gp1, (0, 0))) ==
+            set([GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((2, 3), (2, 2), (3, 3), (3, 2), (3, 3))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((2, 3), (2, 2), (3, 3), (3, 0), (3, 3))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((2, 3), (2, 0), (3, 3), (3, 0), (3, 3))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (2, 2), (3, 3), (3, 2), (3, 3))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (2, 2), (3, 3), (3, 0), (3, 3))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (2, 0), (3, 3), (3, 0), (3, 3))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (0, 2), (3, 3), (3, 2), (3, 3))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (0, 2), (3, 3), (3, 0), (3, 3))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (0, 0), (3, 3), (3, 0), (3, 3))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (1, 1), (3, 3), (3, 0), (3, 3)))]))
+    assert (set(placement1owncol._stretch_gridded_perm(gp1, (1, 0))) ==
+            set([GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 1), (0, 0), (3, 1), (3, 0), (3, 1))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 1), (0, 0), (1, 1), (3, 0), (3, 1))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 1), (0, 0), (1, 1), (1, 0), (3, 1))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 1), (0, 0), (1, 1), (1, 0), (1, 1))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 1), (0, 0), (1, 1), (2, 0), (3, 1)))]))
+    assert (set(placement1ownrow._stretch_gridded_perm(gp1, (1, 1))) ==
+            set([GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (0, 0), (1, 3), (1, 0), (1, 3))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (0, 0), (1, 1), (1, 0), (1, 3))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 1), (0, 0), (1, 1), (1, 0), (1, 3))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 1), (0, 0), (1, 1), (1, 0), (1, 1))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 3), (0, 0), (1, 2), (1, 0), (1, 3))),
+                 GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                             ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2)))]))
+
