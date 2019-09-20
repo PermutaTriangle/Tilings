@@ -1,4 +1,5 @@
-from tilings import GriddedPerm, Obstruction, Requirement, Tiling
+from ..obstruction import Obstruction
+from ..requirement import Requirement
 from comb_spec_searcher import EquivalenceRule, BatchRule
 from itertools import chain
 from permuta import Perm
@@ -53,7 +54,8 @@ class RequirementPlacement(object):
         """
         x, y = gp.pos[index]
         return (x + 2 if self._own_col and index >= placed_cell[0] else x,
-                y + 2 if self._own_row and gp.patt[index] >= placed_cell[1] else y)
+                y + 2 if (self._own_row and
+                          gp.patt[index] >= placed_cell[1]) else y)
 
     def _gridded_perm_translation(self, gp, placed_cell):
         """
@@ -206,7 +208,7 @@ class RequirementPlacement(object):
         cell = gp.pos[idx]
         obs, reqs = self._stretched_obstructions_and_requirements(cell)
         forced_obs = self.forced_obstructions_from_patt(gp, idx, direction)
-        return Tiling(obs + forced_obs, reqs)
+        return self.tiling.__class__(obs + forced_obs, reqs)
 
 
     def _place_point_in_cell(self, cell, direction):
@@ -228,7 +230,7 @@ class RequirementPlacement(object):
         for cell in cells:
             obs, reqs = self._stretched_obstructions_and_requirements(cell)
             forced_obs = self.forced_obstructions_from_list(req_list, cell, direction)
-            tilings.append(Tiling(obs + forced_obs, reqs))
+            tilings.append(self.tiling.__class__(obs + forced_obs, reqs))
         return tilings
 
     def col_placement(self, index, direction):
@@ -255,8 +257,8 @@ class RequirementPlacement(object):
         """
         newobs = tuple(Obstruction(Perm((0,)), (cell,))
                        for cell in self.tiling.cells_in_col(cell))
-        return Tiling(self.tiling.obstructions + newobs,
-                      self.tiling.requirements)
+        return self.tiling.__class__(self.tiling.obstructions + newobs,
+                                     self.tiling.requirements)
 
     def empty_row(self, index):
         """
@@ -264,8 +266,8 @@ class RequirementPlacement(object):
         """
         newobs = tuple(Obstruction(Perm((0,)), (cell,))
                        for cell in self.tiling.cells_in_row(cell))
-        return Tiling(self.tiling.obstructions + newobs,
-                      self.tiling.requirements)
+        return self.tiling.__class__(self.tiling.obstructions + newobs,
+                                     self.tiling.requirements)
 
     def all_col_placement_rules(self):
         """

@@ -751,6 +751,18 @@ class Tiling(CombinatorialClass):
         obs_inf = SubobstructionInferral(self)
         return obs_inf.obstruction_inferral()
 
+    def place_point_in_cell(self, cell, direction):
+        pass
+
+    def place_point_of_gridded_permutation(self, gp, idx, direction):
+        pass
+
+    def place_row(self, idx):
+        pass
+
+    def place_col(self, idx):
+        pass
+
     # -------------------------------------------------------------
     # Properties and getters
     # -------------------------------------------------------------
