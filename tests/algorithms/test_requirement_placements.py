@@ -239,6 +239,55 @@ def test_gridded_perm_translation(gp1, placement1, placement1owncol,
                         ((0, 1), (0, 0), (1, 1), (1, 0), (1, 3))))
 
 
+def test_gridded_perm_translation_with_point(gp1, placement1, placement1owncol,
+                                             placement1ownrow):
+    assert (placement1._gridded_perm_translation_with_point(gp1, 0) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((1, 2), (2, 0), (3, 1), (3, 0), (3, 3))))
+    assert (placement1._gridded_perm_translation_with_point(gp1, 1) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((0, 3), (1, 1), (3, 3), (3, 0), (3, 3))))
+    assert (placement1._gridded_perm_translation_with_point(gp1, 2) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((0, 3), (0, 0), (2, 2), (3, 0), (3, 3))))
+    assert (placement1._gridded_perm_translation_with_point(gp1, 3) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((0, 3), (0, 2), (1, 3), (2, 1), (3, 3))))
+    assert (placement1._gridded_perm_translation_with_point(gp1, 4) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((0, 1), (0, 0), (1, 1), (1, 0), (2, 2))))
+    assert (placement1ownrow._gridded_perm_translation_with_point(gp1, 0) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((0, 2), (0, 0), (1, 1), (1, 0), (1, 3))))
+    assert (placement1ownrow._gridded_perm_translation_with_point(gp1, 1) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((0, 3), (0, 1), (1, 3), (1, 0), (1, 3))))
+    assert (placement1ownrow._gridded_perm_translation_with_point(gp1, 2) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((0, 3), (0, 0), (1, 2), (1, 0), (1, 3))))
+    assert (placement1ownrow._gridded_perm_translation_with_point(gp1, 3) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((0, 3), (0, 2), (1, 3), (1, 1), (1, 3))))
+    assert (placement1ownrow._gridded_perm_translation_with_point(gp1, 4) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2))))
+    assert (placement1owncol._gridded_perm_translation_with_point(gp1, 0) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((1, 1), (2, 0), (3, 1), (3, 0), (3, 1))))
+    assert (placement1owncol._gridded_perm_translation_with_point(gp1, 1) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((0, 1), (1, 0), (3, 1), (3, 0), (3, 1))))
+    assert (placement1owncol._gridded_perm_translation_with_point(gp1, 2) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((0, 1), (0, 0), (2, 1), (3, 0), (3, 1))))
+    assert (placement1owncol._gridded_perm_translation_with_point(gp1, 3) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((0, 1), (0, 0), (1, 1), (2, 0), (3, 1))))
+    assert (placement1owncol._gridded_perm_translation_with_point(gp1, 4) ==
+            GriddedPerm(Perm((3, 1, 2, 0, 4)),
+                        ((0, 1), (0, 0), (1, 1), (1, 0), (2, 1))))
+
+
 def test_placed_cell(placement1, placement1owncol, placement1ownrow):
     assert placement1._placed_cell((0, 0)) == (1, 1)
     assert placement1._placed_cell((3, 2)) == (4, 3)

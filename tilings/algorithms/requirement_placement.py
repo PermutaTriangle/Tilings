@@ -67,6 +67,20 @@ class RequirementPlacement(object):
                   for index in range(len(gp))]
         return gp.__class__(gp.patt, newpos)
 
+    def _gridded_perm_translation_with_point(self, gp, point_index):
+        """
+        Return the stretched gridded permutation obtained when the point at
+        point_index in gp is placed.
+        """
+        # TODO: to prepare for intervals consider all ways of drawing a
+        #       rectangle around point in cell.
+        new_pos = [self._point_translation(
+                                    gp, i, (point_index, gp.patt[point_index]))
+                   if i != point_index else self._placed_cell(
+                                                         gp.pos[point_index])
+                   for i in range(len(gp))]
+        return gp.__class__(gp.patt, new_pos)
+
     def _placed_cell(self, cell):
         """
         Return the cell in which the point will be added in the placed tiling.
@@ -107,13 +121,8 @@ class RequirementPlacement(object):
         res = [self._gridded_perm_translation(gp, (i, j))
                for i in range(mindex, maxdex + 1)
                for j in range(minval, maxval + 1)]
-        for index in gp.points_in_cell(cell):
-            # TODO: to prepare for intervals consider all ways of drawing a
-            #       rectangle around point in cell.
-            new_pos = [self._point_translation(gp, i, (index, gp.patt[index]))
-                       if i != index else self._placed_cell(cell)
-                       for i in range(len(gp))]
-            res.append(gp.__class__(gp.patt, new_pos))
+        for i in gp.points_in_cell(cell):
+            res.append(self._gridded_perm_translation_with_point(gp, i))
         return res
 
     def _stretch_gridded_perms(self, gps, cell):
@@ -181,8 +190,8 @@ class RequirementPlacement(object):
         gp = Obstruction(gp.patt, gp.pos)
         return [stretched_gp
                 for stretched_gp in self._stretch_gridded_perm(gp, gp.pos[idx])
-                if self._farther(stretched_gp.pos[idx],
-                                 placed_cell, direction)]
+                if self._farther(stretched_gp.pos[idx], placed_cell,
+                                 direction)]
 
     def _forced_obstructions_from_list(self, gp_list, cell, direction):
         """
@@ -210,7 +219,8 @@ class RequirementPlacement(object):
         cell = gp.pos[idx]
         obs, reqs = self._stretched_obstructions_and_requirements(cell)
         forced_obs = self._forced_obstructions_from_patt(gp, idx, direction)
-        return self._tiling.__class__(obs + forced_obs, reqs)
+        rem_reqs = [[self._gridded_perm_translation_with_point(gp, idx)]]
+        return self._tiling.__class__(obs + forced_obs, reqs + rem_reqs)
 
     def place_point_in_cell(self, cell, direction):
         """
@@ -258,7 +268,7 @@ class RequirementPlacement(object):
         Return the tiling in which the index row is empty.
         """
         newobs = tuple(Obstruction(Perm((0,)), (cell,))
-                       for cell in self._tiling.cells_in_col(cell))
+                       for cell in self._tiling.cells_in_col(index))
         return self._tiling.__class__(self._tiling.obstructions + newobs,
                                       self._tiling.requirements)
 
@@ -267,7 +277,7 @@ class RequirementPlacement(object):
         Return the tiling in which the index row is empty.
         """
         newobs = tuple(Obstruction(Perm((0,)), (cell,))
-                       for cell in self._tiling.cells_in_row(cell))
+                       for cell in self._tiling.cells_in_row(index))
         return self._tiling.__class__(self._tiling.obstructions + newobs,
                                       self._tiling.requirements)
 
@@ -276,13 +286,13 @@ class RequirementPlacement(object):
         Yield all possible rules coming from placing points in a column.
         """
         if not self._own_row:
-            raise ValueError("Col placements must be onto own row.")
+            return
         for index in range(self._tiling.dimensions[0]):
             for direction in self.directions:
                 if direction in (DIR_EAST, DIR_WEST):
                     tilings = ([self.empty_col(index)] +
-                               self.row_placement(index, direction))
-                    formal_step = self._row_placement_formal_step(
+                               self.col_placement(index, direction))
+                    formal_step = self._col_placement_formal_step(
                                                             index, direction)
                     yield BatchRule(formal_step, tilings)
 
@@ -291,7 +301,7 @@ class RequirementPlacement(object):
         Yield all possible rules coming from placing points in a row.
         """
         if not self._own_row:
-            raise ValueError("Row placements must be onto own row.")
+            return
         for index in range(self._tiling.dimensions[1]):
             for direction in self.directions:
                 if direction in (DIR_NORTH, DIR_SOUTH):
