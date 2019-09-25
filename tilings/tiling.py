@@ -915,16 +915,18 @@ class Tiling(CombinatorialClass):
         return (self.dimensions == (1, 1) and len(self.obstructions) == 1 and
                 len(self.obstructions[0]) == 1)
 
-    def is_atom(self):
-        """Returns True if the generating function for the tiling is x."""
-        return self.is_point_tiling()
-
     def is_positive(self):
         """Returns True if tiling does not contain the empty permutation."""
         return self.requirements
 
     def is_point_tiling(self):
+        """
+        Returns True if the only gridded permutations of the tiling is
+        1: (0, 0)
+        """
         return self.dimensions == (1, 1) and (0, 0) in self.point_cells
+
+    is_atom = is_point_tiling
 
     def is_empty_cell(self, cell):
         """Check if the cell of the tiling is empty."""
