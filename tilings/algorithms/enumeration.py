@@ -104,16 +104,12 @@ class LocallyFactorableEnumeration(Enumeration):
 
     A tiling is locally factorable if all its obstructions and requirements are
     locally factorable, i.e. each obstruction or requirement use at most one
-    cell on each row and column.
+    cell on each row and column. To be locally factorable, a tiling
+    should not be equivalent to a 1x1 tiling.
 
     A locally factorable tiling can be describe with a tree with only subset
     verified tiling.
     """
-
-    def __init__(self, tiling, basis=[]):
-        super().__init__(tiling)
-        # TODO: The basis attribute is unused
-        self.basis = basis
 
     # pack = StrategyPack(
     #     name="LocallyFactorable",
@@ -163,3 +159,45 @@ class LocallyFactorableEnumeration(Enumeration):
                 self._locally_factorable_obstructions() and
                 self._locally_factorable_requirements() and
                 not self._possible_tautology())
+
+
+class LocalEnumeration(Enumeration):
+    """
+    Enumeration strategy for a locally enumerable tiling.
+
+    A tiling is locally enumerable if the tiling has no crossing obstructions
+    or requirements. To be locally enumerable, a tiling also should not be
+    equivalent to a 1x1 tiling.
+
+
+    There's not universal way of describing a tiling that is locally enumerable
+    with a tree.
+    """
+
+    def __init__(tiling, no_req=False):
+        super().__init__(tiling)
+        self.no_req = no_req
+
+    pack = None
+
+    formal_step = "Tiling is locally enumerable"
+
+    def get_tree(self, **kwargs):
+        error = ("There is no known way of getting the tree for a locally "
+                 "enumerable tiling in general")
+        raise NotImplementedError(error)
+
+    def get_genf(self, **kwargs):
+        error = ("There is no known way of getting the generating function "
+                 "for a locally enumerable tiling in general")
+        raise NotImplementedError(error)
+
+    def verified(self):
+        if self.no_req and self.tiling.requirements:
+            return False
+        if self.tiling.dimensions == (1, 1):
+            return False
+        obs = self.tiling.obstructions
+        reqs = chain.from_iterable(self.tiling.requirements)
+        all_gp = chain(obs, reqs)
+        return all(gp.is_single_cell() for gp in all_gp)

@@ -6,7 +6,6 @@ from unittest.mock import Mock, patch, PropertyMock
 
 from comb_spec_searcher import StrategyPack
 from comb_spec_searcher.strategies.rule import VerificationRule
-from tilescopethree.strategy_packs_v2 import point_placements
 from tilings import Obstruction, Requirement, Tiling
 from tilings.exception import InvalidOperationError
 from tilings.algorithms.enumeration import Enumeration
