@@ -1,9 +1,11 @@
 import abc
 from itertools import chain
+
 import sympy
 
 from comb_spec_searcher import VerificationRule
 from tilings.exception import InvalidOperationError
+
 
 class Enumeration(abc.ABC):
     """
@@ -81,7 +83,8 @@ class BasicEnumeration(Enumeration):
 
     @property
     def pack(self):
-        raise InvalidOperationError('Cannot get a tree for a basic enumeration')
+        raise InvalidOperationError('Cannot get a tree for a basic '
+                                    'enumeration')
 
     def get_tree(self, **kwargs):
         raise InvalidOperationError('Cannot get a tree for a basic '
@@ -132,7 +135,7 @@ class LocallyFactorableEnumeration(Enumeration):
         if len(self.tiling.positive_cells) > 1:
             return False
         cells = set()
-        maxlen = max(self.tiling.maximum_length_of_minimum_gridded_perm(), 1) + 1
+        maxlen = max(self.tiling.maximum_length_of_minimum_gridded_perm(), 1)+1
         for gp in self.tiling.gridded_perms(maxlen=maxlen):
             cells.update(gp.pos)
             print(gp)

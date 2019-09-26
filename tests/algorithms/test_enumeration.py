@@ -1,16 +1,16 @@
 import abc
+from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
 import sympy
-from unittest.mock import Mock, patch, PropertyMock
 
 from comb_spec_searcher import StrategyPack
 from comb_spec_searcher.strategies.rule import VerificationRule
-from tilings import Obstruction, Requirement, Tiling
-from tilings.exception import InvalidOperationError
-from tilings.algorithms.enumeration import Enumeration
-from tilings.algorithms import BasicEnumeration, LocallyFactorableEnumeration
 from permuta import Perm
+from tilings import Obstruction, Requirement, Tiling
+from tilings.algorithms import BasicEnumeration, LocallyFactorableEnumeration
+from tilings.algorithms.enumeration import Enumeration
+from tilings.exception import InvalidOperationError
 
 
 class CommonTest(abc.ABC):
@@ -150,7 +150,7 @@ class TestLocallyFactorableEnumeration(CommonTest):
         raise NotImplementedError
 
     def test_locally_factorable_requirements(self, enum_verified,
-                                            enum_not_verified):
+                                             enum_not_verified):
         assert enum_not_verified._locally_factorable_requirements()
         assert enum_verified._locally_factorable_requirements()
         t1 = Tiling(obstructions=[
@@ -161,7 +161,8 @@ class TestLocallyFactorableEnumeration(CommonTest):
             [Requirement(Perm((1, 0)), ((0, 0), (0, 0)))]
         ])
         enum_with_not_loc_fact_reqs = LocallyFactorableEnumeration(t1)
-        assert not enum_with_not_loc_fact_reqs._locally_factorable_requirements()
+        assert not (enum_with_not_loc_fact_reqs.
+                    _locally_factorable_requirements())
         t2 = Tiling(obstructions=[
             Obstruction(Perm((0, 1)), ((0, 0),)*2),
             Obstruction(Perm((0, 1)), ((1, 0),)*2),
