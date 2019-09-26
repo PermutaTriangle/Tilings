@@ -43,7 +43,7 @@ class Enumeration(abc.ABC):
         raise NotImplementedError
 
     def verification_rule(self):
-        if self.verified:
+        if self.verified():
             return VerificationRule(formal_step=self.formal_step)
 
     def get_tree(self, **kwargs):
@@ -53,7 +53,11 @@ class Enumeration(abc.ABC):
 
         All the kwargs are past to the `auto_search` method of the TileScope
         instance that search for the tree.
+
+        Raises an InvalidOperationError if the tiling is not verified.
         """
+        if not self.verified():
+            raise InvalidOperationError('The tiling is not verified')
         searcher = TileScopeTHREE(self.tiling, self.pack)
         tree = searcher.auto_search(**kwargs)
         if tree is None:
@@ -65,7 +69,11 @@ class Enumeration(abc.ABC):
         Returns the generating function for the tiling.
 
         All the kwargs are passed to `self.get_tree`.
+
+        Raises an InvalidOperationError if the tiling is not verified.
         """
+        if not self.verified():
+            raise InvalidOperationError('The tiling is not verified')
         return self.get_tree(**kwargs).get_genf()
 
 
@@ -75,11 +83,11 @@ class BasicEnumeration(Enumeration):
 
     @property
     def pack(self):
-        raise NotImplementedError('Cannot get a tree for a basic enumeration')
+        raise InvalidOperationError('Cannot get a tree for a basic enumeration')
 
     def get_tree(self, **kwargs):
         raise InvalidOperationError('Cannot get a tree for a basic '
-                                    'enumeration')
+                                  'enumeration')
 
     def get_genf(self, **kwargs):
         if self.tiling.is_epsilon():
