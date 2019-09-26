@@ -2,12 +2,7 @@ import abc
 from itertools import chain
 import sympy
 
-from tilescopethree import TileScopeTHREE
-from tilescopethree.strategies import (factor,
-                                       requirement_corroboration,
-                                       all_factor_insertions,
-                                       subset_verified)
-from comb_spec_searcher import StrategyPack, VerificationRule
+from comb_spec_searcher import VerificationRule
 from tilings.exception import InvalidOperationError
 
 class Enumeration(abc.ABC):
@@ -76,6 +71,9 @@ class Enumeration(abc.ABC):
             raise InvalidOperationError('The tiling is not verified')
         return self.get_tree(**kwargs).get_genf()
 
+    def __repr__(self):
+        return 'Enumeration for:\n' + str(self.tiling)
+
 
 class BasicEnumeration(Enumeration):
 
@@ -87,7 +85,7 @@ class BasicEnumeration(Enumeration):
 
     def get_tree(self, **kwargs):
         raise InvalidOperationError('Cannot get a tree for a basic '
-                                  'enumeration')
+                                    'enumeration')
 
     def get_genf(self, **kwargs):
         if self.tiling.is_epsilon():
@@ -112,18 +110,21 @@ class LocallyFactorableEnumeration(Enumeration):
     verified tiling.
     """
 
-    def __init__(self, tiling, basis):
+    def __init__(self, tiling, basis=[]):
         super().__init__(tiling)
         # TODO: The basis attribute is unused
         self.basis = basis
 
-    pack = StrategyPack(
-        name="LocallyFactorable",
-        initial_strats=[factor, requirement_corroboration],
-        inferral_strats=[],
-        expansion_strats=[all_factor_insertions],
-        ver_strats=[subset_verified]
-    )
+    # pack = StrategyPack(
+    #     name="LocallyFactorable",
+    #     initial_strats=[factor, requirement_corroboration],
+    #     inferral_strats=[],
+    #     expansion_strats=[all_factor_insertions],
+    #     ver_strats=[subset_verified]
+    # )
+    @property
+    def pack(self):
+        raise NotImplementedError
 
     formal_step = "Tiling is locally factorable"
 
@@ -136,8 +137,9 @@ class LocallyFactorableEnumeration(Enumeration):
             return False
         cells = set()
         maxlen = max(self.tiling.maximum_length_of_minimum_gridded_perm(), 1) + 1
-        for gp in tiling.gridded_perms(maxlen=maxlen):
+        for gp in self.tiling.gridded_perms(maxlen=maxlen):
             cells.update(gp.pos)
+            print(gp)
             if len(cells) > 1:
                 return False
         return True
@@ -153,7 +155,7 @@ class LocallyFactorableEnumeration(Enumeration):
         """
         Check if all the requirements of the tiling are locally factorable.
         """
-        reqs = chain.from_iterable(tilings.requirements)
+        reqs = chain.from_iterable(self.tiling.requirements)
         return all(not r.is_interleaving() for r in reqs)
 
     def verified(self):
