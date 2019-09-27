@@ -8,7 +8,8 @@ from comb_spec_searcher import StrategyPack
 from comb_spec_searcher.strategies.rule import VerificationRule
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
-from tilings.algorithms import BasicEnumeration, LocallyFactorableEnumeration
+from tilings.algorithms import (BasicEnumeration, LocalEnumeration,
+                                LocallyFactorableEnumeration)
 from tilings.algorithms.enumeration import Enumeration
 from tilings.exception import InvalidOperationError
 
@@ -130,7 +131,7 @@ class TestLocallyFactorableEnumeration(CommonTest):
 
     @pytest.fixture
     def onebyone_enum(self):
-        return Tiling.from_string('123')
+        return LocallyFactorableEnumeration(Tiling.from_string('123'))
 
     @pytest.mark.xfail
     def test_pack(self, enum_verified):
@@ -182,3 +183,64 @@ class TestLocallyFactorableEnumeration(CommonTest):
     def test_possible_tautology(self, enum_verified, enum_with_tautology):
         assert not enum_verified._possible_tautology()
         assert enum_with_tautology._possible_tautology()
+
+    def test_1x1_verified(self, onebyone_enum):
+        assert not onebyone_enum.verified()
+
+
+class TestLocalEnumeration(CommonTest):
+    @pytest.fixture
+    def enum_verified(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+            Obstruction(Perm((0, 2, 1)), ((1, 0),)*3),
+            Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+            Obstruction(Perm((0, 1)), ((1, 1),)*2),
+        ], requirements=[[
+            Requirement(Perm((0, 1)), ((0, 0),)*2),
+            Requirement(Perm((0, 1)), ((1, 0),)*2),
+        ]])
+        return LocalEnumeration(t)
+
+    @pytest.fixture
+    def enum_not_verified(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+            Obstruction(Perm((0, 2, 1)), ((1, 0),)*3),
+            Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+            Obstruction(Perm((0, 1)), ((1, 1),)*2),
+            Obstruction(Perm((0, 1)), ((0, 0), (1, 1))),
+        ], requirements=[[
+            Requirement(Perm((0, 1)), ((0, 0),)*2),
+            Requirement(Perm((0, 1)), ((1, 0),)*2),
+        ]])
+        return LocalEnumeration(t)
+
+    @pytest.fixture
+    def onebyone_enum(self):
+        return LocalEnumeration(Tiling.from_string('123'))
+
+    def test_pack(self, enum_verified):
+        assert enum_verified.pack is None
+
+    def test_verified(self, enum_verified, enum_not_verified):
+        assert enum_verified.verified()
+        assert not enum_not_verified.verified()
+
+    def test_formal_step(self, enum_verified):
+        assert (enum_verified.formal_step == "Tiling is locally enumerable")
+
+    def test_get_tree(self, enum_verified):
+        with pytest.raises(NotImplementedError):
+            enum_verified.get_tree()
+
+    def test_get_genf(self, enum_verified):
+        with pytest.raises(NotImplementedError):
+            enum_verified.get_genf()
+
+    def test_get_genf_not_verified(self, enum_not_verified):
+        with pytest.raises(InvalidOperationError):
+            enum_not_verified.get_genf()
+
+    def test_1x1_verified(self, onebyone_enum):
+        assert not onebyone_enum.verified()

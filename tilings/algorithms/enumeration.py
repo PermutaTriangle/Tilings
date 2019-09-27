@@ -177,7 +177,7 @@ class LocalEnumeration(Enumeration):
     with a tree.
     """
 
-    def __init__(tiling, no_req=False):
+    def __init__(self, tiling, no_req=False):
         super().__init__(tiling)
         self.no_req = no_req
 
@@ -186,11 +186,15 @@ class LocalEnumeration(Enumeration):
     formal_step = "Tiling is locally enumerable"
 
     def get_tree(self, **kwargs):
+        if not self.verified():
+            raise InvalidOperationError('The tiling is not verified')
         error = ("There is no known way of getting the tree for a locally "
                  "enumerable tiling in general")
         raise NotImplementedError(error)
 
     def get_genf(self, **kwargs):
+        if not self.verified():
+            raise InvalidOperationError('The tiling is not verified')
         error = ("There is no known way of getting the generating function "
                  "for a locally enumerable tiling in general")
         raise NotImplementedError(error)
