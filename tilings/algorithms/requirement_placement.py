@@ -1,4 +1,4 @@
-from itertools import chain
+from itertools import chain, product
 
 from comb_spec_searcher import BatchRule, EquivalenceRule
 from permuta import Perm
@@ -328,16 +328,15 @@ class RequirementPlacement(object):
         Yield all possible rules coming from placing the point of patterns that
         occur as subpatterns of requirements containing a single pattern.
         """
-        for req in self._tiling.requirements:
-            if len(req) == 1:
-                for gp in req[0].all_subperms(proper=False):
-                    for idx in range(len(gp)):
-                        for direction in self.directions:
-                            placed_tiling = self.place_point_of_req(
-                                                            gp, idx, direction)
-                            formal_step = self._pattern_placement_formal_step(
-                                                            idx, gp, direction)
-                            yield EquivalenceRule(formal_step, placed_tiling)
+        subgps = set(chain.from_iterable(req[0].all_subperms(proper=False)
+                                           for req in self._tiling.requirements
+                                           if len(req) == 1))
+        for gp in subgps:
+            for idx, direction in product(range(len(gp)), self.directions):
+                placed_tiling = self.place_point_of_req(gp, idx, direction)
+                formal_step = self._pattern_placement_formal_step(
+                                                        idx, gp, direction)
+                yield EquivalenceRule(formal_step, placed_tiling)
 
     def _col_placement_formal_step(self, idx, direction):
         return "Placing {} points in column {}.".format(
