@@ -1,5 +1,6 @@
 from .enumeration import (BasicEnumeration, LocalEnumeration,
-                          LocallyFactorableEnumeration)
+                          LocallyFactorableEnumeration,
+                          MonotoneTreeEnumeration)
 from .factor import (Factor, FactorWithInterleaving,
                      FactorWithMonotoneInterleaving)
 from .fusion import ComponentFusion, Fusion

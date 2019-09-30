@@ -9,7 +9,8 @@ from comb_spec_searcher.strategies.rule import VerificationRule
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
 from tilings.algorithms import (BasicEnumeration, LocalEnumeration,
-                                LocallyFactorableEnumeration)
+                                LocallyFactorableEnumeration,
+                                MonotoneTreeEnumeration)
 from tilings.algorithms.enumeration import Enumeration
 from tilings.exception import InvalidOperationError
 
@@ -244,3 +245,98 @@ class TestLocalEnumeration(CommonTest):
 
     def test_1x1_verified(self, onebyone_enum):
         assert not onebyone_enum.verified()
+
+
+class TestMonotoneTreeEnumeration(CommonTest):
+
+    @pytest.fixture
+    def enum_verified(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0),)*2),
+            Obstruction(Perm((0, 1)), ((0, 1),)*2),
+            Obstruction(Perm((0, 1)), ((0, 2),)*2),
+            Obstruction(Perm((0, 1)), ((2, 0),)*2),
+            Obstruction(Perm((0, 1, 2)), ((1, 1),)*3),
+        ])
+        return MonotoneTreeEnumeration(t)
+
+    @pytest.fixture
+    def enum_not_verified(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0),)*2),
+            Obstruction(Perm((0, 1)), ((0, 1),)*2),
+            Obstruction(Perm((0, 1)), ((0, 2),)*2),
+            Obstruction(Perm((0, 1)), ((2, 0),)*2),
+            Obstruction(Perm((0, 1)), ((2, 2),)*2),
+            Obstruction(Perm((0, 1, 2)), ((1, 1),)*3),
+        ])
+        return MonotoneTreeEnumeration(t)
+
+    @pytest.fixture
+    def enum_with_req(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0),)*2),
+            Obstruction(Perm((0, 1)), ((0, 1),)*2),
+            Obstruction(Perm((0, 1)), ((0, 2),)*2),
+            Obstruction(Perm((0, 1)), ((2, 0),)*2),
+            Obstruction(Perm((0, 1, 2)), ((1, 1),)*3),
+        ], requirements=[
+            [Requirement(Perm((2, 0, 1)), ((2, 0),)*3)],
+            [Requirement(Perm((0,)), ((0, 1),))]
+        ])
+        return MonotoneTreeEnumeration(t)
+
+    @pytest.fixture
+    def onebyone_enum(self):
+        return LocalEnumeration(Tiling.from_string('123'))
+
+    @pytest.fixture
+    def enum_with_crossing(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0),)*2),
+            Obstruction(Perm((0, 1)), ((0, 1),)*2),
+            Obstruction(Perm((0, 1)), ((0, 2),)*2),
+            Obstruction(Perm((0, 1)), ((2, 0),)*2),
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+            Obstruction(Perm((0, 1, 2)), ((1, 1),)*3),
+        ])
+        return MonotoneTreeEnumeration(t)
+
+    def test_formal_step(self, enum_verified):
+        assert enum_verified.formal_step == "Tiling is a monotone tree"
+
+    def test_visited_cells_aligned(self, enum_verified):
+        visited = {(1, 1), (0, 1)}
+        assert (sorted(enum_verified._visted_cells_aligned((0, 2), visited)) ==
+                [(0, 1)])
+
+    def test_cell_tree_traversal(self, enum_verified):
+        order = list(enum_verified._cell_tree_traversal((1, 1)))
+        assert len(order) == 4
+        assert (1, 1) not in order
+        assert order[0] == (0, 1)
+        assert order[3] == (2, 0)
+        assert set(order[1:3]) == {(0, 0), (0, 2)}
+
+    def test_not_verified(self, enum_with_req, onebyone_enum,
+                          enum_with_crossing):
+        assert not enum_with_crossing.verified()
+        assert not enum_with_req.verified()
+        assert not onebyone_enum.verified()
+
+    def test_get_genf(self, enum_verified):
+        x = sympy.Symbol('x')
+        expected_gf = -(sympy.sqrt(-(4*x**3 - 14*x**2 + 8*x - 1) /
+                                   (2*x**2 - 4*x + 1)) - 1)/(2*x*(x**2 - 3*x +
+                                                                  1))
+        assert sympy.simplify(enum_verified.get_genf() - expected_gf) == 0
+
+    @pytest.mark.xfail(reason='pack does not exist')
+    def test_get_tree(self, enum_verified):
+        raise NotImplementedError
+
+    @pytest.mark.xfail
+    def test_pack(self, enum_verified):
+        pack = enum_verified.pack
+        assert isinstance(pack, StrategyPack)
+        assert pack.name == 'MonotoneTree'

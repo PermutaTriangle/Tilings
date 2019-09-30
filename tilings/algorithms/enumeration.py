@@ -1,10 +1,12 @@
 import abc
+from collections import deque
 from itertools import chain
 
 import sympy
 
 from comb_spec_searcher import VerificationRule
 from tilings.exception import InvalidOperationError
+from tilings.misc import is_tree
 
 
 class Enumeration(abc.ABC):
@@ -208,3 +210,98 @@ class LocalEnumeration(Enumeration):
         reqs = chain.from_iterable(self.tiling.requirements)
         all_gp = chain(obs, reqs)
         return all(gp.is_single_cell() for gp in all_gp)
+
+
+class MonotoneTreeEnumeration(Enumeration):
+    """
+    Enumeration strategy for a monotone tree tiling.
+
+    A tiling is a monotone tree if its cell graph is a tree and all but
+    possibly one cell are monotone. To be a monotone tree, a tiling also
+    should not be equivalent to a 1x1 tiling. The tiling can't have any
+    requirement.
+
+    A monotone tree tiling can be described by a tree where the verified object
+    are the cells of the tiling.
+    """
+    # pack = StrategyPack(
+    #     name="MontoneTree",
+    #     initial_strats=[factor],
+    #     inferral_strats=[],
+    #     expansion_strats=[factor_monotone_leaves],
+    #     ver_strats=[1x1verified]
+    # )
+    @property
+    def pack(self):
+        raise NotImplementedError
+
+    formal_step = "Tiling is a monotone tree"
+
+    def verified(self):
+        if self.tiling.requirements:
+            return False
+        obs_localized = all(ob.is_single_cell() for ob in
+                            self.tiling.obstructions)
+        num_non_monotone = sum(1 for c in self.tiling.active_cells
+                               if not self.tiling.is_monotone_cell(c))
+        return (obs_localized and num_non_monotone <= 1 and
+                is_tree(self.tiling.cell_graph()))
+
+    def _cell_tree_traversal(self, start):
+        """
+        Traverse the tree by starting at `start` and always visiting an entire
+        row or column before going somewhere else.
+
+        The start vertices is not yielded.
+        """
+        queue = deque(chain(self.tiling.cells_in_col(start[1]),
+                            self.tiling.cells_in_row(start[0])))
+        visited = set([start])
+        while queue:
+            cell = queue.popleft()
+            print(cell)
+            if cell not in visited:
+                print('treat')
+                yield cell
+                visited.add(cell)
+                queue.extend(self.tiling.cells_in_row(cell[1]))
+                queue.extend(self.tiling.cells_in_col(cell[0]))
+            print(queue)
+        # return [(0, 1), (0, 2), (0, 0), (2, 0)]
+
+    def _visted_cells_aligned(self, cell, visited):
+        """
+        Return the cells that are in visited and in the same row or column as
+        `cell`.
+        """
+        row_cells = self.tiling.cells_in_row(cell[1])
+        col_cells = self.tiling.cells_in_col(cell[0])
+        return (c for c in visited if (c in row_cells or c in col_cells))
+
+    def get_genf(self):
+        if not self.verified():
+            raise InvalidOperationError('The tiling is not verified')
+        try:
+            start = next(c for c in self.tiling.active_cells
+                         if not self.tiling.is_monotone_cell(c))
+        except StopIteration:
+            start = next(self.tiling.active_cells)
+        start_basis = self.tiling.cell_basis()[start][0]
+        start_tiling = self.tiling.from_perm(obstructions=start_basis)
+        start_gf = start_tiling.get_genf()
+        variables = {c: sympy.Symbol('y_{}_{}'.format(*c)) for c in
+                     self.tiling.active_cells}
+        x = sympy.Symbol('x')
+        C = (1 - sympy.sqrt(1 - 4*x)) / (2*x)
+        F = start_gf.subs({x: x * variables[start]})
+        visited = set([start])
+        for c in self._cell_tree_traversal(start):
+            cv = variables[c]
+            gap_filler = 1 / (1 - x*cv)
+            cell_to_substitute = self._visted_cells_aligned(c, visited)
+            substitutions = {scv: scv * gap_filler
+                             for scv in map(variables.get, cell_to_substitute)}
+            F = gap_filler * F.subs(substitutions)
+            visited.add(c)
+        F = sympy.simplify(F.subs({v: 1 for v in variables.values()}))
+        return F
