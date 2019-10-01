@@ -29,7 +29,7 @@ setup(
                       'pymongo==3.9.0',
                       'sympy==1.4'],
     setup_requires=['pytest-runner==5.1'],
-    tests_require=['pytest==5.1.3',
+    tests_require=['pytest==5.2.0',
                    'pytest-cov==2.7.1',
                    'pytest-pep8==1.0.6',
                    'pytest-isort==0.3.1'],
