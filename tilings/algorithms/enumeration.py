@@ -305,3 +305,34 @@ class MonotoneTreeEnumeration(Enumeration):
             visited.add(c)
         F = sympy.simplify(F.subs({v: 1 for v in variables.values()}))
         return F
+
+
+class ElementaryEnumeration(Enumeration):
+    """
+    Enumeration strategy for a elementary tiling.
+
+    A tiling is elementary if each active cell is on its own row and column.
+    To be locally factorable, a tiling should not be equivalent to a 1x1
+    tiling.
+
+    By definition an elementary tiling is locally factorable.
+
+    A elementary tiling can be describe with a tree with only one by one
+    verified tiling.
+    """
+    # pack = StrategyPack(
+    #     name="LocallyFactorable",
+    #     initial_strats=[factor, requirement_corroboration],
+    #     inferral_strats=[],
+    #     expansion_strats=[all_factor_insertions],
+    #     ver_strats=[subset_verified]
+    # )
+    @property
+    def pack(self):
+        raise NotImplementedError
+
+    formal_step = "Tiling is elementary"
+
+    def verified(self):
+        return (self.tiling.fully_isolated() and
+                not self.tiling.dimensions == (1, 1))

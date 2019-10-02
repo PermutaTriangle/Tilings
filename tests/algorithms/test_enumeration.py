@@ -8,8 +8,8 @@ from comb_spec_searcher import StrategyPack
 from comb_spec_searcher.strategies.rule import VerificationRule
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
-from tilings.algorithms import (BasicEnumeration, LocalEnumeration,
-                                LocallyFactorableEnumeration,
+from tilings.algorithms import (BasicEnumeration, ElementaryEnumeration,
+                                LocalEnumeration, LocallyFactorableEnumeration,
                                 MonotoneTreeEnumeration)
 from tilings.algorithms.enumeration import Enumeration
 from tilings.exception import InvalidOperationError
@@ -340,3 +340,75 @@ class TestMonotoneTreeEnumeration(CommonTest):
         pack = enum_verified.pack
         assert isinstance(pack, StrategyPack)
         assert pack.name == 'MonotoneTree'
+
+
+class TestElementaryEnumeration(CommonTest):
+    @pytest.fixture
+    def enum_verified(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
+            Obstruction(Perm((0, 1, 2)), ((1, 2),)*3),
+            Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
+            Obstruction(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0)))
+        ])
+        return ElementaryEnumeration(t)
+
+    @pytest.fixture
+    def enum_not_verified(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
+            Obstruction(Perm((0, 1, 2)), ((1, 2),)*3),
+            Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+            Obstruction(Perm((1, 2, 0)), ((0, 1), (1, 2), (1, 0)))
+        ])
+        return ElementaryEnumeration(t)
+
+    @pytest.fixture
+    def enum_onebyone(self):
+        t = Tiling.from_string('123')
+        return ElementaryEnumeration(t)
+
+    @pytest.fixture
+    def enum_with_interleaving(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
+            Obstruction(Perm((0, 1, 2)), ((1, 2),)*3),
+            Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+        ])
+        return ElementaryEnumeration(t)
+
+    @pytest.fixture
+    def enum_with_req(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
+            Obstruction(Perm((0, 1, 2)), ((1, 2),)*3),
+            Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
+            Obstruction(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0)))
+        ], requirements=[
+            [Requirement(Perm((0,)), ((0, 1),))],
+            [Requirement(Perm((0, 1)), ((0, 1), (1, 2)))]
+        ])
+        return ElementaryEnumeration(t)
+
+    @pytest.mark.xfail
+    def test_pack(self, enum_verified):
+        pack = enum_verified.pack
+        assert isinstance(pack, StrategyPack)
+        assert pack.name == 'LocallyFactorable'
+
+    def test_formal_step(self, enum_verified):
+        enum_verified.formal_step == 'Tiling is elementary'
+
+    @pytest.mark.xfail
+    def test_get_tree(self, enum_verified):
+        raise NotImplementedError
+
+    @pytest.mark.xfail
+    def test_get_genf(self, enum_verified):
+        raise NotImplementedError
+
+    def test_more_verified(self, enum_onebyone, enum_with_interleaving,
+                           enum_with_req,):
+        assert not enum_onebyone.verified()
+        assert not enum_with_interleaving.verified()
+        assert enum_with_req.verified()
