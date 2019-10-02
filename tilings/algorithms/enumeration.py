@@ -129,22 +129,6 @@ class LocallyFactorableEnumeration(Enumeration):
 
     formal_step = "Tiling is locally factorable"
 
-    def _possible_tautology(self):
-        """
-        Return True if possibly equivalent to a 1x1 tiling through empty
-        cell inferral. It just checks if two cells are non-empty.
-        """
-        if len(self.tiling.positive_cells) > 1:
-            return False
-        cells = set()
-        maxlen = max(self.tiling.maximum_length_of_minimum_gridded_perm(), 1)+1
-        for gp in self.tiling.gridded_perms(maxlen=maxlen):
-            cells.update(gp.pos)
-            print(gp)
-            if len(cells) > 1:
-                return False
-        return True
-
     def _locally_factorable_obstructions(self):
         """
         Check if all the obstructions of the tiling are locally factorable.
@@ -162,8 +146,7 @@ class LocallyFactorableEnumeration(Enumeration):
     def verified(self):
         return (not self.tiling.dimensions == (1, 1) and
                 self._locally_factorable_obstructions() and
-                self._locally_factorable_requirements() and
-                not self._possible_tautology())
+                self._locally_factorable_requirements())
 
 
 class LocalEnumeration(Enumeration):
@@ -259,15 +242,11 @@ class MonotoneTreeEnumeration(Enumeration):
         visited = set([start])
         while queue:
             cell = queue.popleft()
-            print(cell)
             if cell not in visited:
-                print('treat')
                 yield cell
                 visited.add(cell)
                 queue.extend(self.tiling.cells_in_row(cell[1]))
                 queue.extend(self.tiling.cells_in_col(cell[0]))
-            print(queue)
-        # return [(0, 1), (0, 2), (0, 0), (2, 0)]
 
     def _visted_cells_aligned(self, cell, visited):
         """
@@ -285,7 +264,7 @@ class MonotoneTreeEnumeration(Enumeration):
             start = next(c for c in self.tiling.active_cells
                          if not self.tiling.is_monotone_cell(c))
         except StopIteration:
-            start = next(self.tiling.active_cells)
+            start = next(iter(self.tiling.active_cells))
         start_basis = self.tiling.cell_basis()[start][0]
         start_tiling = self.tiling.from_perm(obstructions=start_basis)
         start_gf = start_tiling.get_genf()

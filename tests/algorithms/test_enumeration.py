@@ -127,7 +127,6 @@ class TestLocallyFactorableEnumeration(CommonTest):
             Obstruction(Perm((0, 1, 2)), ((1, 1),)*3),
             Obstruction(Perm((0, 1)), ((0, 0), (1, 1))),
         ])
-        print(t)
         return LocallyFactorableEnumeration(t)
 
     @pytest.fixture
@@ -221,6 +220,19 @@ class TestLocalEnumeration(CommonTest):
     def onebyone_enum(self):
         return LocalEnumeration(Tiling.from_string('123'))
 
+    @pytest.fixture
+    def enum_no_req(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+            Obstruction(Perm((0, 2, 1)), ((1, 0),)*3),
+            Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+            Obstruction(Perm((0, 1)), ((1, 1),)*2),
+        ], requirements=[[
+            Requirement(Perm((0, 1)), ((0, 0),)*2),
+            Requirement(Perm((0, 1)), ((1, 0),)*2),
+        ]])
+        return LocalEnumeration(t, no_req=True)
+
     def test_pack(self, enum_verified):
         assert enum_verified.pack is None
 
@@ -245,6 +257,9 @@ class TestLocalEnumeration(CommonTest):
 
     def test_1x1_verified(self, onebyone_enum):
         assert not onebyone_enum.verified()
+
+    def test_no_req_option(self, enum_no_req):
+        assert not enum_no_req.verified()
 
 
 class TestMonotoneTreeEnumeration(CommonTest):
@@ -281,7 +296,6 @@ class TestMonotoneTreeEnumeration(CommonTest):
             Obstruction(Perm((0, 1)), ((2, 0),)*2),
             Obstruction(Perm((0, 1, 2)), ((1, 1),)*3),
         ], requirements=[
-            [Requirement(Perm((2, 0, 1)), ((2, 0),)*3)],
             [Requirement(Perm((0,)), ((0, 1),))]
         ])
         return MonotoneTreeEnumeration(t)
@@ -330,6 +344,13 @@ class TestMonotoneTreeEnumeration(CommonTest):
                                    (2*x**2 - 4*x + 1)) - 1)/(2*x*(x**2 - 3*x +
                                                                   1))
         assert sympy.simplify(enum_verified.get_genf() - expected_gf) == 0
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0),)*2),
+            Obstruction(Perm((0, 1)), ((1, 0),)*2),
+        ])
+        enum_no_start = MonotoneTreeEnumeration(t)
+        expected_gf = -1/((x - 1)*(x/(x - 1) + 1))
+        assert sympy.simplify(enum_no_start.get_genf() - expected_gf) == 0
 
     @pytest.mark.xfail(reason='pack does not exist')
     def test_get_tree(self, enum_verified):
