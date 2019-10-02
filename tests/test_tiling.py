@@ -345,6 +345,18 @@ def test_from_string():
                                 ((0, 0), (0, 0), (0, 0), (0, 0)))]))
 
 
+def test_from_perm():
+    t = Tiling.from_perm([Perm((0, 1, 2)), Perm((0, 2, 1, 3))],
+                         [[Perm((0, 1)), Perm((1, 0))]])
+    assert t == Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+        Obstruction(Perm((0, 2, 1, 3)), ((0, 0),)*4),
+    ], requirements=[[
+        Requirement(Perm((0, 1)), ((0, 0),)*2),
+        Requirement(Perm((1, 0)), ((0, 0),)*2),
+    ]])
+
+
 def test_compression(compresstil):
     assert compresstil == Tiling.decompress(compresstil.compress())
     assert compresstil.compress() == compresstil.compress()

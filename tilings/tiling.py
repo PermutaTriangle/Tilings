@@ -65,6 +65,20 @@ class Tiling(CombinatorialClass):
             if remove_empty:
                 self._minimize_tiling()
 
+    @classmethod
+    def from_perm(cls, obstructions=[], requirements=[]):
+        """
+        Return a 1x1 tiling from that avoids permutation in `obstructions`
+        and contains one permutation form each iterable of `requirements`.
+        """
+        t = Tiling(obstructions=(
+            Obstruction(p, ((0, 0),)*len(p)) for p in obstructions
+        ))
+        for req_list in requirements:
+            req_list = [Requirement(p, ((0, 0),)*len(p)) for p in req_list]
+            t = t.add_list_requirement(req_list)
+        return t
+
     def _fill_empty(self):
         add = []
         (i, j) = self.dimensions
