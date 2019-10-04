@@ -132,7 +132,7 @@ def test_formal_step(placement1):
              "012: (0, 0), (1, 1), (1, 2)."))
 
 
-def test_col_placement():
+def test_col_placement(tiling2, placement1, placement1owncol):
     pass
 
 
@@ -367,19 +367,24 @@ def test_stretch_gridded_perm(gp1, placement1, placement1owncol,
                              ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2)))]))
 
 
-def test_stretch_gridded_perms():
+def test_stretch_gridded_perms(tiling2, placement1, placement1owncol,
+                               placement1ownrow):
     pass
 
 
-def test_stretched_obstructions():
+def test_stretched_obstructions(tiling2, placement1, placement1owncol,
+                                placement1ownrow):
     pass
 
 
-def test_stretched_requirements():
+def test_stretched_requirements(tiling2, placement1, placement1owncol,
+                                placement1ownrow):
     pass
 
 
-def test_stretched_obstructions_and_requirements():
+def test_stretched_obstructions_and_requirements(tiling2, placement1,
+                                                 placement1owncol,
+                                                 placement1ownrow):
     pass
 
 

@@ -329,8 +329,8 @@ class RequirementPlacement(object):
         occur as subpatterns of requirements containing a single pattern.
         """
         subgps = set(chain.from_iterable(req[0].all_subperms(proper=False)
-                                           for req in self._tiling.requirements
-                                           if len(req) == 1))
+                                         for req in self._tiling.requirements
+                                         if len(req) == 1))
         for gp in subgps:
             for idx, direction in product(range(len(gp)), self.directions):
                 placed_tiling = self.place_point_of_req(gp, idx, direction)
