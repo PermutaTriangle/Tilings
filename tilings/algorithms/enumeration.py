@@ -2,6 +2,7 @@ import abc
 from collections import deque
 from itertools import chain
 
+import requests
 import sympy
 
 from comb_spec_searcher import VerificationRule
@@ -315,3 +316,68 @@ class ElementaryEnumeration(Enumeration):
     def verified(self):
         return (self.tiling.fully_isolated() and
                 not self.tiling.dimensions == (1, 1))
+
+
+class DatabaseEnumeration(Enumeration):
+    """
+    Enumeration strategy for a tilings that are in the database.
+
+    There is not always a tree for a tiling in the database but you can always
+    find the generating function and the minimal polynomial in the database.
+    """
+
+    API_ROOT_URL = 'https://api.combopal.Ru.is/'
+    all_verified_tilings = frozenset()
+
+    @classmethod
+    def load_verified_tiling(cls):
+        """
+        Load all the verified tiling in the attribute `all_verified_tilings` of
+        the class.
+
+        That speeds up the verification test.
+        """
+        if not DatabaseEnumeration.all_verified_tilings:
+            uri = cls.API_ROOT_URL+'all_verified_tilings'
+            response = requests.get(uri)
+            response.raise_for_status()
+            compressed_tilings = map(bytes.fromhex, response.json())
+            cls.all_verified_tilings = frozenset(compressed_tilings)
+
+    def _get_tiling_entry(self):
+        """
+        Retrieve the tiling entry from the database. Returns None if the tiling
+        is not in the database.
+        """
+        key = self.tiling.compress().hex()
+        search_url = (DatabaseEnumeration.API_ROOT_URL +
+                      '/verified_tiling/key/{}'.format(key))
+        r = requests.get(search_url)
+        if r.status_code == 404:
+            return None
+        r.raise_for_status()
+        return r.json()
+
+    def verified(self):
+        if DatabaseEnumeration.all_verified_tilings:
+            return self.tiling.compress() in self.all_verified_tilings
+        else:
+            return self._get_tiling_entry() is not None
+
+    formal_step = 'Tiling is in the database'
+
+    @property
+    def pack(self):
+        raise NotImplementedError('No standard pack for a database verified '
+                                  'tiling.')
+
+    def get_tree(self):
+        if not self.verified():
+            raise InvalidOperationError('The tiling is not verified')
+        raise NotImplementedError('No standard way of getting a tree for a '
+                                  'tiling in the database.')
+
+    def get_genf(self):
+        if not self.verified():
+            raise InvalidOperationError('The tiling is not verified')
+        return sympy.sympify(self._get_tiling_entry()['genf'])

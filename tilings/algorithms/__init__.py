@@ -1,5 +1,6 @@
-from .enumeration import (BasicEnumeration, ElementaryEnumeration,
-                          LocalEnumeration, LocallyFactorableEnumeration,
+from .enumeration import (BasicEnumeration, DatabaseEnumeration,
+                          ElementaryEnumeration, LocalEnumeration,
+                          LocallyFactorableEnumeration,
                           MonotoneTreeEnumeration)
 from .factor import (Factor, FactorWithInterleaving,
                      FactorWithMonotoneInterleaving)

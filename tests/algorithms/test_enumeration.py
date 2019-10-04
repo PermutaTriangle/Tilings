@@ -8,8 +8,9 @@ from comb_spec_searcher import StrategyPack
 from comb_spec_searcher.strategies.rule import VerificationRule
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
-from tilings.algorithms import (BasicEnumeration, ElementaryEnumeration,
-                                LocalEnumeration, LocallyFactorableEnumeration,
+from tilings.algorithms import (BasicEnumeration, DatabaseEnumeration,
+                                ElementaryEnumeration, LocalEnumeration,
+                                LocallyFactorableEnumeration,
                                 MonotoneTreeEnumeration)
 from tilings.algorithms.enumeration import Enumeration
 from tilings.exception import InvalidOperationError
@@ -21,6 +22,7 @@ class CommonTest(abc.ABC):
     def enum_verified(self):
         raise NotImplementedError
 
+    @abc.abstractmethod
     @pytest.fixture
     def enum_not_verified(self):
         raise NotImplementedError
@@ -338,6 +340,7 @@ class TestMonotoneTreeEnumeration(CommonTest):
         assert not enum_with_req.verified()
         assert not onebyone_enum.verified()
 
+    @pytest.mark.xfail(reason='No database setup')
     def test_get_genf(self, enum_verified):
         x = sympy.Symbol('x')
         expected_gf = -(sympy.sqrt(-(4*x**3 - 14*x**2 + 8*x - 1) /
@@ -433,3 +436,47 @@ class TestElementaryEnumeration(CommonTest):
         assert not enum_onebyone.verified()
         assert not enum_with_interleaving.verified()
         assert enum_with_req.verified()
+
+
+class TestDatabaseEnumeration(CommonTest):
+    @pytest.fixture
+    def enum_verified(self):
+        t = Tiling.from_string('123_132_231')
+        return DatabaseEnumeration(t)
+
+    @pytest.fixture
+    def enum_not_verified(self):
+        t = Tiling.from_string('1324')
+        return DatabaseEnumeration(t)
+
+    def test_formal_step(self, enum_verified):
+        assert enum_verified.formal_step == 'Tiling is in the database'
+
+    def test_get_genf(self, enum_verified):
+        assert (enum_verified.get_genf() ==
+                sympy.sympify('(x**2 - x + 1)/(x**2 - 2*x + 1)'))
+
+    def test_get_tree(self, enum_verified):
+        with pytest.raises(NotImplementedError):
+            enum_verified.get_tree()
+
+    def test_pack(self, enum_verified):
+        with pytest.raises(NotImplementedError):
+            enum_verified.pack
+
+    @pytest.mark.slow
+    def test_load_verified_tilings(self):
+        assert not DatabaseEnumeration.all_verified_tilings
+        DatabaseEnumeration.load_verified_tiling()
+        assert DatabaseEnumeration.all_verified_tilings
+        sample = next(iter(DatabaseEnumeration.all_verified_tilings))
+        Tiling.decompress(sample)
+
+    def test_verification_with_cache(self):
+        t = Tiling.from_string('123_132_231')
+        DatabaseEnumeration.all_verified_tilings = frozenset()
+        assert DatabaseEnumeration(t).verified()
+        DatabaseEnumeration.all_verified_tilings = frozenset([1, 2, 3, 4])
+        assert not DatabaseEnumeration(t).verified()
+        DatabaseEnumeration.all_verified_tilings = frozenset([t.compress()])
+        assert DatabaseEnumeration(t).verified()
