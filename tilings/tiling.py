@@ -677,6 +677,20 @@ class Tiling(CombinatorialClass):
             rotate90_cell,
             lambda gp: gp.rotate90(rotate90_cell))
 
+    def all_symmetries(self):
+        """
+        Return all the symmetries of a tiling in a set.
+        """
+        symmetries = set()
+        t = self
+        for i in range(4):
+            symmetries.add(t)
+            symmetries.add(t.inverse())
+            t = t.rotate90()
+            if t in symmetries:
+                break
+        return symmetries
+
     # -------------------------------------------------------------
     # Algorithms
     # -------------------------------------------------------------

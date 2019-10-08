@@ -963,6 +963,16 @@ def test_symmetries(christian_til):
     assert christian_til.rotate90().reverse() == christian_til.antidiagonal()
 
 
+def test_all_symmetries():
+    t = Tiling.from_string('123')
+    assert len(t.all_symmetries()) == 2
+    t = Tiling.from_string('1')
+    assert len(t.all_symmetries()) == 1
+    t = Tiling.from_string('1243')
+    assert len(t.all_symmetries()) == 4
+    t = Tiling.from_string('1342')
+    assert len(t.all_symmetries()) == 8
+
 def test_is_empty(compresstil, empty_tiling, finite_tiling):
     assert not compresstil.is_empty()
     assert not finite_tiling.is_empty()
