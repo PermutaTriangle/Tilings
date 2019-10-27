@@ -28,7 +28,7 @@ setup(
                       'permuta==1.2.1',
                       'pymongo==3.9.0',
                       'sympy==1.4'],
-    setup_requires=['pytest-runner==5.1'],
+    setup_requires=['pytest-runner==5.2'],
     tests_require=['pytest==5.2.2',
                    'pytest-cov==2.8.1',
                    'pytest-pep8==1.0.6',
