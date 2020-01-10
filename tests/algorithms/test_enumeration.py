@@ -11,7 +11,7 @@ from tilings import Obstruction, Requirement, Tiling
 from tilings.algorithms import (BasicEnumeration, DatabaseEnumeration,
                                 ElementaryEnumeration, LocalEnumeration,
                                 LocallyFactorableEnumeration,
-                                MonotoneTreeEnumeration)
+                                MonotoneTreeEnumeration, OneByOneEnumeration)
 from tilings.algorithms.enumeration import Enumeration
 from tilings.exception import InvalidOperationError
 
@@ -489,3 +489,33 @@ class TestDatabaseEnumeration(CommonTest):
         assert not DatabaseEnumeration(t).verified()
         DatabaseEnumeration.all_verified_tilings = frozenset([t.compress()])
         assert DatabaseEnumeration(t).verified()
+
+
+class TestOneByOneEnumeration(CommonTest):
+    @pytest.fixture
+    def enum_verified(self):
+        t = Tiling.from_string('1324_321')
+        return OneByOneEnumeration(t, [Perm((2, 1, 0))])
+
+    @pytest.fixture
+    def enum_not_verified(self):
+        t = Tiling.from_string('321')
+        return OneByOneEnumeration(t, [Perm((2, 1, 0))])
+
+    @pytest.mark.xfail
+    def test_pack(self, enum_verified):
+        pack = enum_verified.pack
+        assert isinstance(pack, StrategyPack)
+        assert pack.name == 'LocallyFactorable'
+
+    def test_formal_step(self, enum_verified):
+        assert (enum_verified.formal_step ==
+                "This tiling is a subclass of the original tiling.")
+
+    @pytest.mark.xfail
+    def test_get_tree(self, enum_verified):
+        raise NotImplementedError
+
+    @pytest.mark.xfail
+    def test_get_genf(self, enum_verified):
+        raise NotImplementedError

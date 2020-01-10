@@ -6,6 +6,7 @@ import requests
 import sympy
 
 from comb_spec_searcher import VerificationRule
+from permuta import Perm
 from tilings.exception import InvalidOperationError
 from tilings.misc import is_tree
 
@@ -384,3 +385,38 @@ class DatabaseEnumeration(Enumeration):
         if not self.verified():
             raise InvalidOperationError('The tiling is not verified')
         return sympy.sympify(self._get_tiling_entry()['genf'])
+
+
+class OneByOneEnumeration(Enumeration):
+    """
+    Enumeration a tiling that consist of a single cell and is a subclass of the
+    basis.
+    """
+
+    def __init__(self, tiling, basis):
+        self.basis = set(basis)
+        assert all(isinstance(p, Perm) for p in self.basis), ('Element of the '
+                                                              'basis must be '
+                                                              'permutations')
+        super().__init__(tiling)
+
+    formal_step = "This tiling is a subclass of the original tiling."
+
+    def pack(self):
+        """
+        Make it return all the strategies
+        """
+        raise NotImplementedError
+
+    def verified(self):
+        if not self.tiling.dimensions == (1, 1):
+            return False
+        return self.basis != set(ob.patt for ob in self.tiling.obstructions)
+
+    def get_genf(self):
+        """
+        TODO: This function should:
+            - check if the basis is in the database
+            - try to run tilescope on the tiling
+        """
+        return super().get_genf()
