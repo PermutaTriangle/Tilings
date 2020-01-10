@@ -2,6 +2,7 @@ import json
 from itertools import chain, product
 
 import pytest
+import sympy
 
 from permuta import Perm
 from tilings import GriddedPerm, Obstruction, Requirement, Tiling
@@ -973,6 +974,7 @@ def test_all_symmetries():
     t = Tiling.from_string('1342')
     assert len(t.all_symmetries()) == 8
 
+
 def test_is_empty(compresstil, empty_tiling, finite_tiling):
     assert not compresstil.is_empty()
     assert not finite_tiling.is_empty()
@@ -1479,3 +1481,42 @@ def test_empty_cell_inferral():
     ], requirements=[[
         Requirement(Perm((0, 1)), ((1, 0), (2, 0)))
     ]])
+
+
+class TestGetGenf():
+    """
+    Group all the test regarding getting the generating function for a tiling.
+    """
+
+    def test_empty_tiling(self):
+        t = Tiling([Obstruction(Perm((0, 1)), [(0, 0), (0, 0)])],
+                   [[Requirement(Perm((0, 1)), [(0, 0), (0, 0)])]])
+        assert t.get_genf() == sympy.sympify('0')
+
+    def test_monotone_cell(self):
+        t = Tiling([Obstruction(Perm((0, 1)), ((0, 0), (0, 0)))])
+        assert sympy.simplify(t.get_genf() - sympy.sympify('1/(1-x)')) == 0
+
+    def test_with_req(self):
+        t = Tiling([Obstruction(Perm((0, 1)), ((0, 0), (0, 0)))],
+                   [[Requirement(Perm((0,)), ((0, 0),))]])
+        assert sympy.simplify(t.get_genf() - sympy.sympify('x/(1-x)')) == 0
+
+    @pytest.mark.xfail
+    def test_adjacent_monotone(self):
+        t = Tiling([Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+                    Obstruction(Perm((0, 1)), ((1, 0), (1, 0)))])
+        assert sympy.simplify(t.get_genf() - sympy.sympify('1/(1-2*x)')) == 0
+
+    @pytest.mark.xfail
+    def test_with_req(self):
+        t = Tiling([Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+                    Obstruction(Perm((0, 1)), ((1, 1), (1, 1)))],
+                   [[Requirement(Perm((0,)), ((1, 1),))],
+                    [Requirement(Perm((0,)), ((1, 1),))]])
+        assert sympy.simplify(t.get_genf() - sympy.sympify('x/(1-x)')) == 0
+
+    def test_not_enumerable(self):
+        t = Tiling.from_string('1324')
+        with pytest.raises(ValueError):
+            t.get_genf()
