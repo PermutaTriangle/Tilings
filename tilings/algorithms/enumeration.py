@@ -98,10 +98,13 @@ class BasicEnumeration(Enumeration):
             return sympy.sympify('1')
         elif self.tiling.is_point_tiling():
             return sympy.sympify('x')
+        elif self.tiling.is_point_or_empty():
+            return sympy.sympify('x + 1')
         raise InvalidOperationError('Not an atom')
 
     def verified(self):
-        return self.tiling.is_epsilon() or self.tiling.is_point_tiling()
+        return (self.tiling.is_epsilon() or self.tiling.is_point_tiling() or
+                self.tiling.is_point_or_empty())
 
 
 class LocallyFactorableEnumeration(Enumeration):

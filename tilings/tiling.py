@@ -956,6 +956,13 @@ class Tiling(CombinatorialClass):
 
     is_atom = is_point_tiling
 
+    def is_point_or_empty(self):
+        point_or_empty_tiling = Tiling(obstructions=(
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+            Obstruction(Perm((1, 0)), ((0, 0), (0, 0)))
+        ))
+        return self == point_or_empty_tiling
+
     def is_empty_cell(self, cell):
         """Check if the cell of the tiling is empty."""
         return cell in self.empty_cells

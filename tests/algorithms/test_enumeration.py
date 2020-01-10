@@ -82,8 +82,16 @@ class TestBasicEnumeration(CommonTest):
         t = t.insert_cell((0, 0))
         return BasicEnumeration(t)
 
+    @pytest.fixture
+    def point_or_empty_enum(self):
+        t = Tiling.from_string('12_21')
+        return BasicEnumeration(t)
+
     def test_point_is_verified(self, point_enum):
         assert point_enum.verified()
+
+    def test_point_or_empty_is_verified(self, point_or_empty_enum):
+        assert point_or_empty_enum.verified()
 
     def test_formal_step(self, enum_verified):
         assert enum_verified.formal_step == 'Base cases'
@@ -96,9 +104,10 @@ class TestBasicEnumeration(CommonTest):
         with pytest.raises(InvalidOperationError):
             enum_verified.get_tree()
 
-    def test_get_genf(self, empty_enum, point_enum):
+    def test_get_genf(self, empty_enum, point_enum, point_or_empty_enum):
         assert empty_enum.get_genf() == sympy.sympify('1')
         assert point_enum.get_genf() == sympy.sympify('x')
+        assert point_or_empty_enum.get_genf() == sympy.sympify('x+1')
 
 
 class TestLocallyFactorableEnumeration(CommonTest):
