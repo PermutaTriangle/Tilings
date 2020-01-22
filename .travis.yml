@@ -1,9 +1,7 @@
-dist: xenial
-sudo: false
-
 language: python
 python:
 - 'pypy3'
+- 'pypy3.5'
 - '3.5'
 - '3.6'
 - '3.7'
