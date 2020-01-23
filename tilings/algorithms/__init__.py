@@ -1,3 +1,7 @@
+from .enumeration import (BasicEnumeration, DatabaseEnumeration,
+                          ElementaryEnumeration, LocalEnumeration,
+                          LocallyFactorableEnumeration,
+                          MonotoneTreeEnumeration, OneByOneEnumeration)
 from .factor import (Factor, FactorWithInterleaving,
                      FactorWithMonotoneInterleaving)
 from .fusion import ComponentFusion, Fusion
