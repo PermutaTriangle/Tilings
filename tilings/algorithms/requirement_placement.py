@@ -251,6 +251,7 @@ class RequirementPlacement(object):
         Return the list corresponding the index column being placed in the
         given direction.
         """
+        assert direction in (DIR_EAST, DIR_WEST)
         req_list = [Requirement(Perm((0,)), (cell,))
                     for cell in self._tiling.cells_in_col(index)]
         return self.place_point_of_req_list(req_list, direction)
@@ -260,6 +261,7 @@ class RequirementPlacement(object):
         Return the list corresponding the index row being placed in the given
         direction.
         """
+        assert direction in (DIR_NORTH, DIR_SOUTH)
         req_list = [Requirement(Perm((0,)), (cell,))
                     for cell in self._tiling.cells_in_row(index)]
         return self.place_point_of_req_list(req_list, direction)
