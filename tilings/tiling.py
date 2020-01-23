@@ -17,6 +17,10 @@ from .algorithms import (AllObstructionInferral, ComponentFusion,
                          FactorWithMonotoneInterleaving, Fusion,
                          ObstructionTransitivity, RequirementPlacement,
                          RowColSeparation, SubobstructionInferral)
+from .algorithms.enumeration import (BasicEnumeration, DatabaseEnumeration,
+                                     LocallyFactorableEnumeration,
+                                     MonotoneTreeEnumeration,
+                                     OneByOneEnumeration)
 from .db_conf import check_database, update_database
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
@@ -64,6 +68,20 @@ class Tiling(CombinatorialClass):
             # Remove empty rows and empty columns
             if remove_empty:
                 self._minimize_tiling()
+
+    @classmethod
+    def from_perms(cls, obstructions=[], requirements=[]):
+        """
+        Return a 1x1 tiling from that avoids permutation in `obstructions`
+        and contains one permutation form each iterable of `requirements`.
+        """
+        t = Tiling(obstructions=(
+            Obstruction(p, ((0, 0),)*len(p)) for p in obstructions
+        ))
+        for req_list in requirements:
+            req_list = [Requirement(p, ((0, 0),)*len(p)) for p in req_list]
+            t = t.add_list_requirement(req_list)
+        return t
 
     def _fill_empty(self):
         add = []
@@ -663,6 +681,20 @@ class Tiling(CombinatorialClass):
             rotate90_cell,
             lambda gp: gp.rotate90(rotate90_cell))
 
+    def all_symmetries(self):
+        """
+        Return all the symmetries of a tiling in a set.
+        """
+        symmetries = set()
+        t = self
+        for i in range(4):
+            symmetries.add(t)
+            symmetries.add(t.inverse())
+            t = t.rotate90()
+            if t in symmetries:
+                break
+        return symmetries
+
     # -------------------------------------------------------------
     # Algorithms
     # -------------------------------------------------------------
@@ -987,16 +1019,25 @@ class Tiling(CombinatorialClass):
         return (self.dimensions == (1, 1) and len(self.obstructions) == 1 and
                 len(self.obstructions[0]) == 1)
 
-    def is_atom(self):
-        """Returns True if the generating function for the tiling is x."""
-        return self.is_point_tiling()
-
     def is_positive(self):
         """Returns True if tiling does not contain the empty permutation."""
         return self.requirements
 
     def is_point_tiling(self):
+        """
+        Returns True if the only gridded permutations of the tiling is
+        1: (0, 0)
+        """
         return self.dimensions == (1, 1) and (0, 0) in self.point_cells
+
+    is_atom = is_point_tiling
+
+    def is_point_or_empty(self):
+        point_or_empty_tiling = Tiling(obstructions=(
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+            Obstruction(Perm((1, 0)), ((0, 0), (0, 0)))
+        ))
+        return self == point_or_empty_tiling
 
     def is_empty_cell(self, cell):
         """Check if the cell of the tiling is empty."""
@@ -1259,128 +1300,34 @@ class Tiling(CombinatorialClass):
     def get_genf(self, *args, **kwargs):
         """
         Return generating function of a tiling.
-
-        Currently works only for the point tiling and the empty tiling.
         """
-        # If root has been given a function, return it if you see the root
+        # If root has been given a function, return it if you see the root or a
+        # symmetries.
         if (kwargs.get('root_func') is not None and
-                self == kwargs.get('root_class')):
+                kwargs.get('root_class') in self.all_symmetries()):
             return kwargs['root_func']
-
-        """
-        if (kwargs.get('root_func') is not None and
-            kwargs.get('root_class') is not None and
-                (self == kwargs.get('root_class') or
-                 self == kwargs.get('root_class').reverse() or
-                 self == kwargs.get('root_class').inverse() or
-                 self == kwargs.get('root_class').rotate90() or
-                 self == kwargs.get('root_class').rotate180() or
-                 self == kwargs.get('root_class').rotate270() or
-                 self == kwargs.get('root_class').antidiagonal() or
-                 self == kwargs.get('root_class').complement())):
-            return kwargs['root_func']
-        """
-
-        # Remove once fusion specifications are added to the database.
-        if self == Tiling([Obstruction.single_cell(Perm((0, 1, 2)), (0, 0))]):
-            return sympy.sympify('-1/2*(sqrt(-4*x + 1) - 1)/x')
-        if self == Tiling([Obstruction.single_cell(Perm((2, 1, 0)), (0, 0))]):
-            return sympy.sympify('-1/2*(sqrt(-4*x + 1) - 1)/x')
-        if self == Tiling(obstructions=(Obstruction(Perm((0,)), ((0, 0),)),)):
-            return sympy.sympify("1")
-        if self == Tiling(obstructions=(Obstruction(Perm((0, 1)),
-                                                    ((0, 0), (0, 0))),
-                                        Obstruction(Perm((1, 0)),
-                                                    ((0, 0), (0, 0))))):
-            return sympy.sympify("x + 1")
-
-        if kwargs.get('substitutions'):
-            if kwargs.get('subs') is None:
-                kwargs['subs'] = {}
-            if kwargs.get('symbols') is None:
-                kwargs['symbols'] = {}
         if self.is_empty():
             return sympy.sympify(0)
-        # Reduce tiling by multiplying together the factors.
-        if kwargs.get('factored') is None:
-            return reduce(mul, [factor.get_genf(factored=True, *args, **kwargs)
-                                for factor in self.find_factors()], 1)
-        del kwargs['factored']
-        # Reduce requirements list by either containing or avoiding the first
-        # requirement in the list
-        for req_list in self.requirements:
-            if len(req_list) > 1:
-                req = req_list[0]
-                return (self.add_obstruction(
-                                req.patt, req.pos).get_genf(*args, **kwargs) +
-                        self.add_requirement(
-                                req.patt, req.pos).get_genf(*args, **kwargs))
-
-        # At this stage, all requirement lists are length 1. Can count by
-        # counting the tiling with the requirement removed and subtracting the
-        # tiling with it added as an obstruction.
-        if len(self.requirements) > 0:
+        # Can count by counting the tiling with a requirement removed and
+        # subtracting the tiling with it added as an obstruction.
+        if self.requirements:
             ignore = Tiling(obstructions=self.obstructions,
                             requirements=self.requirements[1:])
-            req = self.requirements[0][0]
+            req = self.requirements[0]
+            t_avoid_req = Tiling(obstructions=(
+                chain(self.obstructions,
+                      (Obstruction(r.patt, r.pos) for r in req))
+            ), requirements=self.requirements[1:])
             return (ignore.get_genf(*args, **kwargs) -
-                    ignore.add_obstruction(req.patt,
-                                           req.pos).get_genf(*args, **kwargs))
-
-        # Reduce factorable obstruction by either containing or avoiding
-        # localized subobstruction
-        for ob in self.obstructions:
-            if not ob.is_single_cell() and not ob.is_interleaving():
-                patt = Perm.to_standard([v for i, v in enumerate(ob.patt)
-                                         if ob.pos[i] == ob.pos[0]])
-                return (self.add_single_cell_obstruction(
-                                patt, ob.pos[0]).get_genf(*args, **kwargs) +
-                        self.add_single_cell_requirement(
-                                patt, ob.pos[0]).get_genf(*args, **kwargs))
-
-        # some special cases with one by one tilings
-        if self.dimensions == (1, 1):
-            # The empty tiling has exactly one gridded permutation of length 0
-            if (not self.requirements and len(self.obstructions) == 1 and
-                    len(self.obstructions[0]) == 1):
-                return sympy.sympify(1)
-            # The point tiling has exactly one gridded permutation of length 1
-            if (len(self.obstructions) == 2 and
-                    all(len(ob) == 2 for ob in self.obstructions) and
-                    len(self.requirements) == 1 and
-                    len(self.requirements[0]) == 1 and
-                    len(self.requirements[0][0]) == 1):
-                return sympy.abc.x
-
-        if kwargs.get('substitutions'):
-            symbols = kwargs.get('symbols')
-            symbol = symbols.get(self)
-            if symbol is None:
-                symbol = sympy.Function('C_' + str(len(symbols)))(sympy.abc.x)
-                symbols[self] = symbol
-            subs = kwargs.get('subs')
-            if symbol not in subs:
-                subs[symbol] = sympy.sympify(check_database(self)['genf'])
-            return symbol
-        # Check the database
-        try:
-            info = check_database(self)
-        except Exception:
-            raise ValueError("Tiling not in database:\n" + repr(self))
-        if 'genf' in info:
-            genf = sympy.sympify(info['genf'])
-        elif 'min_poly' in info:
-            eq = sympy.Eq(sympy.sympify(info['min_poly']), 0)
-            initial = [len(list(self.objects_of_length(i))) for i in range(6)]
-            genf = get_solution(eq, initial)
-            tree = info.get('tree')
-            if tree is not None:
-                tree = ProofTree.from_json(Tiling, tree)
-            update_database(self, info['min_poly'], genf, tree,
-                            force=True, equations=info.get('eqs'))
-        if genf is None:
-            raise ValueError()
-        return genf
+                    t_avoid_req.get_genf(*args, **kwargs))
+        # Try using some of the enumeration strategy
+        enum_stragies = [BasicEnumeration, LocallyFactorableEnumeration,
+                         MonotoneTreeEnumeration, DatabaseEnumeration]
+        for enum_strat in enum_stragies:
+            if enum_strat(self).verified():
+                return enum_strat(self).get_genf()
+        raise ValueError('We were unable to enumerate this tiling:\n' +
+                         str(self))
 
     # -------------------------------------------------------------
     # Dunder methods
