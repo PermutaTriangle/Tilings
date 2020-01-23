@@ -1,6 +1,9 @@
+import re
+from itertools import chain
 
 import pytest
 
+from comb_spec_searcher import Rule
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST
 from tilings import GriddedPerm, Obstruction, Requirement, Tiling
@@ -132,36 +135,137 @@ def test_formal_step(placement1):
              "012: (0, 0), (1, 1), (1, 2)."))
 
 
-def test_col_placement(tiling2, placement1, placement1owncol):
-    pass
+def test_col_placement(placement1):
+    print(placement1._tiling)
+    tilings = placement1.col_placement(1, DIR_WEST)
+    assert len(tilings) == 2
+    assert all(isinstance(t, Tiling) for t in tilings)
 
 
-def test_row_placement():
-    pass
+def test_row_placement(placement1):
+    print(placement1._tiling)
+    tilings = placement1.row_placement(1, DIR_NORTH)
+    assert len(tilings) == 1
+    assert all(isinstance(t, Tiling) for t in tilings)
 
 
-def test_empty_col():
-    pass
+def test_empty_row(placement1):
+    t = Tiling(obstructions=(
+        Obstruction(Perm((0,)), ((0, 1),)),
+        Obstruction(Perm((0,)), ((1, 0),)),
+        Obstruction(Perm((0,)), ((2, 0),)),
+        Obstruction(Perm((0,)), ((3, 1),)),
+        Obstruction(Perm((1, 0)), ((2, 1), (2, 1))),
+        Obstruction(Perm((0, 1, 2)), ((1, 1), (1, 1), (1, 1))),
+        Obstruction(Perm((2, 0, 1)), ((3, 0), (3, 0), (3, 0))),
+        Obstruction(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0)))),
+    )
+    assert (placement1.empty_row(1) == t)
 
 
-def test_empty_row():
-    pass
+def test_empty_col(placement1):
+    t = Tiling(obstructions=(
+        Obstruction(Perm((0,)), ((0, 1),)),
+        Obstruction(Perm((0,)), ((0, 2),)),
+        Obstruction(Perm((0,)), ((1, 0),)),
+        Obstruction(Perm((0,)), ((1, 1),)),
+        Obstruction(Perm((0,)), ((2, 1),)),
+        Obstruction(Perm((0,)), ((2, 2),)),
+        Obstruction(Perm((1, 0)), ((1, 2), (1, 2))),
+        Obstruction(Perm((2, 0, 1)), ((2, 0), (2, 0), (2, 0))),
+        Obstruction(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0)))),
+        requirements=())
+    print(t)
+    print(placement1._tiling)
+    assert placement1.empty_col(1) == t
 
 
-def test_all_col_placement_rules():
-    pass
+def test_all_col_placement_rules(placement1):
+    print(placement1._tiling)
+    rules = list(placement1.all_col_placement_rules())
+    assert len(rules) == 8
+    for rule in rules:
+        assert isinstance(rule, Rule)
+        assert len(rule.comb_classes) > 1
+        assert re.match(r'Placing ((leftmost)|(rightmost)) points in '
+                        r'column \d+\.', rule.formal_step)
+        assert not rule.ignore_parent
+        assert all(rule.workable)
+        assert rule.constructor == 'disjoint'
+        assert all(rule.possibly_empty)
+    assert (sorted(len(rule.comb_classes) for rule in rules) ==
+            [2, 2, 2, 2, 2, 2, 3, 3])
 
 
-def test_all_row_placement_rules():
-    pass
+def test_all_row_placement_rules(placement1):
+    rules = list(placement1.all_row_placement_rules())
+    assert len(rules) == 6
+    for rule in rules:
+        assert isinstance(rule, Rule)
+        assert len(rule.comb_classes) > 1
+        assert re.match(r'Placing ((topmost)|(bottommost)) points in '
+                        r'row \d+\.', rule.formal_step)
+        assert not rule.ignore_parent
+        assert all(rule.workable)
+        assert rule.constructor == 'disjoint'
+        assert all(rule.possibly_empty)
+    assert (sorted(len(rule.comb_classes) for rule in rules) ==
+            [2, 2, 3, 3, 3, 3])
 
 
-def test_all_point_placement_rules():
-    pass
+def test_all_point_placement_rules(placement1, placement2, placement2owncol,
+                                   placement2ownrow):
+    assert list(placement1.all_point_placement_rules()) == []
+    print(placement2._tiling)
+    assert len(list(placement2.all_point_placement_rules())) == 12
+    assert len(list(placement2owncol.all_point_placement_rules())) == 6
+    assert len(list(placement2ownrow.all_point_placement_rules())) == 6
+    for rule in placement2.all_point_placement_rules():
+        assert isinstance(rule, Rule)
+        assert len(rule.comb_classes) == 1
+        assert re.match(r'Placing (leftmost|rightmost|topmost|bottommost) '
+                        r'point in cell \(\d+, \d+\)\.', rule.formal_step)
+        assert not rule.ignore_parent
+        assert rule.workable == [True]
+        assert rule.constructor == 'equiv'
+        assert rule.possibly_empty == [False]
 
 
-def test_all_requirement_placement_rules():
-    pass
+def test_all_requirement_placement_rules(placement1):
+    t = Tiling(obstructions=[Obstruction(Perm((1, 0)), ((0, 0),)*2)],
+               requirements=[[Requirement(Perm((0, 1)), ((0, 0),)*2)]])
+    placement = RequirementPlacement(t)
+    rules = list(placement.all_requirement_placement_rules())
+    assert len(rules) == 12
+    for rule in rules:
+        assert isinstance(rule, Rule)
+        assert len(rule.comb_classes) == 1
+        assert isinstance(rule.formal_step, str) and len(rule.formal_step) > 0
+        assert re.match(r'Placing the (leftmost|rightmost|topmost|bottommost) '
+                        r'point of \(\d+, \d+\) in \d+: (\(\d+, \d+\), )*'
+                        r'\(\d+, \d+\)\.', rule.formal_step)
+        assert not rule.ignore_parent
+        assert rule.workable == [True]
+        assert rule.constructor == 'equiv'
+        assert rule.possibly_empty == [False]
+    comb_classes = set(rule.comb_classes[0] for rule in rules)
+    assert len(comb_classes) == 4
+    assert Tiling(obstructions=[
+        Obstruction(Perm((0,)), ((0, 1),)),
+        Obstruction(Perm((0,)), ((0, 2),)),
+        Obstruction(Perm((0,)), ((1, 0),)),
+        Obstruction(Perm((0,)), ((1, 2),)),
+        Obstruction(Perm((0,)), ((2, 0),)),
+        Obstruction(Perm((0,)), ((2, 1),)),
+        Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
+        Obstruction(Perm((0, 1)), ((2, 2), (2, 2))),
+        Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
+        Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
+        Obstruction(Perm((1, 0)), ((2, 2), (2, 2))),
+    ], requirements=[
+        [Requirement(Perm((0,)), ((1, 1),))],
+        [Requirement(Perm((0,)), ((2, 2),))],
+    ]) in comb_classes
 
 
 # ------------------------------------------------------------
@@ -367,25 +471,67 @@ def test_stretch_gridded_perm(gp1, placement1, placement1owncol,
                              ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2)))]))
 
 
-def test_stretch_gridded_perms(tiling2, placement1, placement1owncol,
+def test_stretch_gridded_perms(placement1, placement1owncol,
                                placement1ownrow):
-    pass
+    gps = [GriddedPerm(Perm((0, 1)), [(0, 0), (1, 1)]),
+           GriddedPerm(Perm((0, 1)), [(1, 1), (2, 2)])]
+    for p in (placement1, placement1ownrow, placement1owncol):
+        assert (set(p._stretch_gridded_perms(gps, (1, 1))) ==
+                set(chain.from_iterable(p._stretch_gridded_perm(gp, (1, 1))
+                                        for gp in gps)))
 
 
-def test_stretched_obstructions(tiling2, placement1, placement1owncol,
+def test_stretched_obstructions(placement1, placement1owncol,
                                 placement1ownrow):
-    pass
+    orig_obs = placement1._tiling.obstructions
+    assert (sorted(placement1._stretched_obstructions((1, 1))) ==
+            sorted(placement1._stretch_gridded_perms(orig_obs, (1, 1))))
+    orig_reqs = placement1owncol._tiling.obstructions
+    assert (sorted(placement1owncol._stretched_obstructions((1, 1))) ==
+            sorted(placement1owncol._stretch_gridded_perms(orig_obs, (1, 1))))
+    orig_reqs = placement1ownrow._tiling.obstructions
+    assert (sorted(placement1ownrow._stretched_obstructions((1, 1))) ==
+            sorted(placement1ownrow._stretch_gridded_perms(orig_obs, (1, 1))))
 
 
-def test_stretched_requirements(tiling2, placement1, placement1owncol,
+def test_stretched_requirements(placement1, placement1owncol,
                                 placement1ownrow):
-    pass
+    orig_reqs = placement1._tiling.requirements
+    assert (sorted(placement1._stretched_requirements((1, 1))) ==
+            sorted(placement1._stretch_gridded_perms(orig_reqs, (1, 1))))
+    orig_reqs = placement1owncol._tiling.requirements
+    assert (sorted(placement1owncol._stretched_requirements((1, 1))) ==
+            sorted(placement1owncol._stretch_gridded_perms(orig_reqs, (1, 1))))
+    orig_reqs = placement1ownrow._tiling.requirements
+    assert (sorted(placement1ownrow._stretched_requirements((1, 1))) ==
+            sorted(placement1ownrow._stretch_gridded_perms(orig_reqs, (1, 1))))
 
 
-def test_stretched_obstructions_and_requirements(tiling2, placement1,
+def test_stretched_obstructions_and_requirements(placement1,
                                                  placement1owncol,
                                                  placement1ownrow):
-    pass
+    obs, reqs = placement1._stretched_obstructions_and_requirements((1, 1))
+    assert set(obs) == set(placement1._stretched_obstructions((1, 1)) +
+                           [Obstruction.single_cell(Perm((0, 1)), (2, 2)),
+                            Obstruction.single_cell(Perm((1, 0)), (2, 2))])
+    assert sorted(reqs) == sorted(placement1._stretched_requirements((1, 1)) +
+                                  [[Requirement(Perm((0,)), ((2, 2),))]])
+    obs, reqs = placement1ownrow._stretched_obstructions_and_requirements(
+        (1, 1))
+    assert set(obs) == set(placement1ownrow._stretched_obstructions((1, 1)) +
+                           [Obstruction.single_cell(Perm((0, 1)), (1, 2)),
+                            Obstruction.single_cell(Perm((1, 0)), (1, 2))])
+    assert (sorted(reqs) ==
+            sorted(placement1ownrow._stretched_requirements((1, 1)) +
+                   [[Requirement(Perm((0,)), ((1, 2),))]]))
+    obs, reqs = placement1owncol._stretched_obstructions_and_requirements(
+        (1, 1))
+    assert set(obs) == set(placement1owncol._stretched_obstructions((1, 1)) +
+                           [Obstruction.single_cell(Perm((0, 1)), (2, 1)),
+                            Obstruction.single_cell(Perm((1, 0)), (2, 1))])
+    assert (sorted(reqs) ==
+            sorted(placement1owncol._stretched_requirements((1, 1)) +
+                   [[Requirement(Perm((0,)), ((2, 1),))]]))
 
 
 def farther(placement1):
@@ -448,77 +594,77 @@ def test_forced_obstructions_from_list(gp1, placement1, placement1owncol,
     req_list_row = [Requirement(Perm((0,)), ((0, 0),)),
                     Requirement(Perm((0,)), ((1, 0),))]
     assert (set(placement1._forced_obstructions_from_list(
-                                        req_list_row, (0, 0), DIR_NORTH)) ==
-            set([Obstruction(Perm((0,)), ((0, 2),)),
-                 Obstruction(Perm((0,)), ((2, 2),)),
-                 Obstruction(Perm((0,)), ((3, 2),))]))
+        req_list_row, (0, 0), DIR_NORTH)) ==
+        set([Obstruction(Perm((0,)), ((0, 2),)),
+             Obstruction(Perm((0,)), ((2, 2),)),
+             Obstruction(Perm((0,)), ((3, 2),))]))
     assert (set(placement1._forced_obstructions_from_list(
-                                        req_list_row, (0, 0), DIR_SOUTH)) ==
-            set([Obstruction(Perm((0,)), ((0, 0),)),
-                 Obstruction(Perm((0,)), ((2, 0),)),
-                 Obstruction(Perm((0,)), ((3, 0),))]))
+        req_list_row, (0, 0), DIR_SOUTH)) ==
+        set([Obstruction(Perm((0,)), ((0, 0),)),
+             Obstruction(Perm((0,)), ((2, 0),)),
+             Obstruction(Perm((0,)), ((3, 0),))]))
     assert (set(placement1._forced_obstructions_from_list(
-                                        req_list_row, (1, 0), DIR_NORTH)) ==
-            set([Obstruction(Perm((0,)), ((0, 2),)),
-                 Obstruction(Perm((0,)), ((1, 2),)),
-                 Obstruction(Perm((0,)), ((3, 2),))]))
+        req_list_row, (1, 0), DIR_NORTH)) ==
+        set([Obstruction(Perm((0,)), ((0, 2),)),
+             Obstruction(Perm((0,)), ((1, 2),)),
+             Obstruction(Perm((0,)), ((3, 2),))]))
     assert (set(placement1._forced_obstructions_from_list(
-                                        req_list_row, (1, 0), DIR_SOUTH)) ==
-            set([Obstruction(Perm((0,)), ((0, 0),)),
-                 Obstruction(Perm((0,)), ((1, 0),)),
-                 Obstruction(Perm((0,)), ((3, 0),))]))
+        req_list_row, (1, 0), DIR_SOUTH)) ==
+        set([Obstruction(Perm((0,)), ((0, 0),)),
+             Obstruction(Perm((0,)), ((1, 0),)),
+             Obstruction(Perm((0,)), ((3, 0),))]))
     assert (set(placement1ownrow._forced_obstructions_from_list(
-                                        req_list_row, (0, 0), DIR_NORTH)) ==
-            set([Obstruction(Perm((0,)), ((0, 2),)),
-                 Obstruction(Perm((0,)), ((1, 2),))]))
+        req_list_row, (0, 0), DIR_NORTH)) ==
+        set([Obstruction(Perm((0,)), ((0, 2),)),
+             Obstruction(Perm((0,)), ((1, 2),))]))
     assert (set(placement1ownrow._forced_obstructions_from_list(
-                                        req_list_row, (0, 0), DIR_SOUTH)) ==
-            set([Obstruction(Perm((0,)), ((0, 0),)),
-                 Obstruction(Perm((0,)), ((1, 0),))]))
+        req_list_row, (0, 0), DIR_SOUTH)) ==
+        set([Obstruction(Perm((0,)), ((0, 0),)),
+             Obstruction(Perm((0,)), ((1, 0),))]))
     assert (set(placement1ownrow._forced_obstructions_from_list(
-                                        req_list_row, (1, 0), DIR_NORTH)) ==
-            set([Obstruction(Perm((0,)), ((0, 2),)),
-                 Obstruction(Perm((0,)), ((1, 2),))]))
+        req_list_row, (1, 0), DIR_NORTH)) ==
+        set([Obstruction(Perm((0,)), ((0, 2),)),
+             Obstruction(Perm((0,)), ((1, 2),))]))
     assert (set(placement1ownrow._forced_obstructions_from_list(
-                                        req_list_row, (1, 0), DIR_SOUTH)) ==
-            set([Obstruction(Perm((0,)), ((0, 0),)),
-                 Obstruction(Perm((0,)), ((1, 0),))]))
+        req_list_row, (1, 0), DIR_SOUTH)) ==
+        set([Obstruction(Perm((0,)), ((0, 0),)),
+             Obstruction(Perm((0,)), ((1, 0),))]))
 
     req_list_col = [Requirement(Perm((0,)), ((0, 0),)),
                     Requirement(Perm((0,)), ((0, 1),))]
     assert (set(placement1._forced_obstructions_from_list(
-                                        req_list_col, (0, 0), DIR_EAST)) ==
-            set([Obstruction(Perm((0,)), ((2, 0),)),
-                 Obstruction(Perm((0,)), ((2, 2),)),
-                 Obstruction(Perm((0,)), ((2, 3),))]))
+        req_list_col, (0, 0), DIR_EAST)) ==
+        set([Obstruction(Perm((0,)), ((2, 0),)),
+             Obstruction(Perm((0,)), ((2, 2),)),
+             Obstruction(Perm((0,)), ((2, 3),))]))
     assert (set(placement1._forced_obstructions_from_list(
-                                        req_list_col, (0, 0), DIR_WEST)) ==
-            set([Obstruction(Perm((0,)), ((0, 0),)),
-                 Obstruction(Perm((0,)), ((0, 2),)),
-                 Obstruction(Perm((0,)), ((0, 3),))]))
+        req_list_col, (0, 0), DIR_WEST)) ==
+        set([Obstruction(Perm((0,)), ((0, 0),)),
+             Obstruction(Perm((0,)), ((0, 2),)),
+             Obstruction(Perm((0,)), ((0, 3),))]))
     assert (set(placement1._forced_obstructions_from_list(
-                                        req_list_col, (0, 1), DIR_EAST)) ==
-            set([Obstruction(Perm((0,)), ((2, 0),)),
-                 Obstruction(Perm((0,)), ((2, 1),)),
-                 Obstruction(Perm((0,)), ((2, 3),))]))
+        req_list_col, (0, 1), DIR_EAST)) ==
+        set([Obstruction(Perm((0,)), ((2, 0),)),
+             Obstruction(Perm((0,)), ((2, 1),)),
+             Obstruction(Perm((0,)), ((2, 3),))]))
     assert (set(placement1._forced_obstructions_from_list(
-                                        req_list_col, (0, 1), DIR_WEST)) ==
-            set([Obstruction(Perm((0,)), ((0, 0),)),
-                 Obstruction(Perm((0,)), ((0, 1),)),
-                 Obstruction(Perm((0,)), ((0, 3),))]))
+        req_list_col, (0, 1), DIR_WEST)) ==
+        set([Obstruction(Perm((0,)), ((0, 0),)),
+             Obstruction(Perm((0,)), ((0, 1),)),
+             Obstruction(Perm((0,)), ((0, 3),))]))
     assert (set(placement1owncol._forced_obstructions_from_list(
-                                        req_list_col, (0, 0), DIR_EAST)) ==
-            set([Obstruction(Perm((0,)), ((2, 0),)),
-                 Obstruction(Perm((0,)), ((2, 1),))]))
+        req_list_col, (0, 0), DIR_EAST)) ==
+        set([Obstruction(Perm((0,)), ((2, 0),)),
+             Obstruction(Perm((0,)), ((2, 1),))]))
     assert (set(placement1owncol._forced_obstructions_from_list(
-                                        req_list_col, (0, 0), DIR_WEST)) ==
-            set([Obstruction(Perm((0,)), ((0, 0),)),
-                 Obstruction(Perm((0,)), ((0, 1),))]))
+        req_list_col, (0, 0), DIR_WEST)) ==
+        set([Obstruction(Perm((0,)), ((0, 0),)),
+             Obstruction(Perm((0,)), ((0, 1),))]))
     assert (set(placement1owncol._forced_obstructions_from_list(
-                                        req_list_col, (0, 1), DIR_EAST)) ==
-            set([Obstruction(Perm((0,)), ((2, 0),)),
-                 Obstruction(Perm((0,)), ((2, 1),))]))
+        req_list_col, (0, 1), DIR_EAST)) ==
+        set([Obstruction(Perm((0,)), ((2, 0),)),
+             Obstruction(Perm((0,)), ((2, 1),))]))
     assert (set(placement1owncol._forced_obstructions_from_list(
-                                        req_list_col, (0, 1), DIR_WEST)) ==
-            set([Obstruction(Perm((0,)), ((0, 0),)),
-                 Obstruction(Perm((0,)), ((0, 1),))]))
+        req_list_col, (0, 1), DIR_WEST)) ==
+        set([Obstruction(Perm((0,)), ((0, 0),)),
+             Obstruction(Perm((0,)), ((0, 1),))]))
