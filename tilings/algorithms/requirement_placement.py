@@ -213,8 +213,9 @@ class RequirementPlacement(object):
 
     def place_point_of_req(self, gp, idx, direction):
         """
-        Return the tiling a point is placed that corresponds to the direction
-        most occurrence of the idx point in gp in the original tiling.
+        Return the tiling where the placed point correspond to the
+        directionmost (the furtest in the given direction, ex: leftmost point)
+        occurrence of the idx point in gp.
         """
         cell = gp.pos[idx]
         obs, reqs = self._stretched_obstructions_and_requirements(cell)
@@ -325,8 +326,8 @@ class RequirementPlacement(object):
 
     def all_requirement_placement_rules(self):
         """
-        Yield all possible rules coming from placing the point of patterns that
-        occur as subpatterns of requirements containing a single pattern.
+        Yield all possible rules coming from placing a point of a patttern that
+        occurs as a subpattern of requirement containing a single pattern.
         """
         subgps = set(chain.from_iterable(req[0].all_subperms(proper=False)
                                          for req in self._tiling.requirements
