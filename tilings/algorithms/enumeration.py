@@ -271,12 +271,11 @@ class MonotoneTreeEnumeration(Enumeration):
         except StopIteration:
             start = next(iter(self.tiling.active_cells))
         start_basis = self.tiling.cell_basis()[start][0]
-        start_tiling = self.tiling.from_perm(obstructions=start_basis)
+        start_tiling = self.tiling.from_perms(obstructions=start_basis)
         start_gf = start_tiling.get_genf()
         variables = {c: sympy.Symbol('y_{}_{}'.format(*c)) for c in
                      self.tiling.active_cells}
         x = sympy.Symbol('x')
-        C = (1 - sympy.sqrt(1 - 4*x)) / (2*x)
         F = start_gf.subs({x: x * variables[start]})
         visited = set([start])
         for c in self._cell_tree_traversal(start):
@@ -296,7 +295,7 @@ class ElementaryEnumeration(Enumeration):
     Enumeration strategy for a elementary tiling.
 
     A tiling is elementary if each active cell is on its own row and column.
-    To be locally factorable, a tiling should not be equivalent to a 1x1
+    To be elementary, a tiling should not be equivalent to a 1x1
     tiling.
 
     By definition an elementary tiling is locally factorable.
@@ -330,7 +329,7 @@ class DatabaseEnumeration(Enumeration):
     find the generating function and the minimal polynomial in the database.
     """
 
-    API_ROOT_URL = 'https://api.combopal.Ru.is/'
+    API_ROOT_URL = 'https://api.combopal.ru.is/'
     all_verified_tilings = frozenset()
 
     @classmethod

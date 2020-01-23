@@ -70,7 +70,7 @@ class Tiling(CombinatorialClass):
                 self._minimize_tiling()
 
     @classmethod
-    def from_perm(cls, obstructions=[], requirements=[]):
+    def from_perms(cls, obstructions=[], requirements=[]):
         """
         Return a 1x1 tiling from that avoids permutation in `obstructions`
         and contains one permutation form each iterable of `requirements`.
