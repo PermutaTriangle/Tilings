@@ -44,6 +44,10 @@ class Enumeration(abc.ABC):
         raise NotImplementedError
 
     def verification_rule(self):
+        """
+        Return a verification rule if the tiling is verified.
+        Otherwise, returns None
+        """
         if self.verified():
             return VerificationRule(formal_step=self.formal_step)
 
