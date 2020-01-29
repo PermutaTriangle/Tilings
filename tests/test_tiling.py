@@ -1544,7 +1544,7 @@ def test_place_point_of_gridded_permutation(obs_inf_til):
 
 
 def test_place_row(obs_inf_til):
-    assert obs_inf_til.place_row(2, 1) == [Tiling(
+    assert set(obs_inf_til.place_row(2, 1)) == set([Tiling(
         obstructions=(
             Obstruction(Perm((0,)), ((0, 3),)),
             Obstruction(Perm((0,)), ((1, 0),)),
@@ -1601,11 +1601,11 @@ def test_place_row(obs_inf_til):
         requirements=((Requirement(Perm((0,)), ((1, 3),)),),
                       (Requirement(Perm((1, 0)), ((0, 1), (0, 0))),
                        Requirement(Perm((1, 0)), ((0, 1), (2, 0))),
-                       Requirement(Perm((1, 0)), ((2, 1), (2, 0))))))]
+                       Requirement(Perm((1, 0)), ((2, 1), (2, 0))))))])
 
 
 def test_place_col(obs_inf_til):
-    assert obs_inf_til.place_col(0, 2) == [
+    assert set(obs_inf_til.place_col(0, 2)) == set([
         Tiling(obstructions=(
             Obstruction(Perm((0,)), ((0, 0),)),
             Obstruction(Perm((0,)), ((0, 2),)),
@@ -1675,7 +1675,7 @@ def test_place_col(obs_inf_til):
             Obstruction(Perm((1, 0, 3, 2)), ((1, 2), (1, 2), (1, 4), (1, 2))),
             Obstruction(Perm((1, 0, 3, 2)), ((1, 4), (1, 4), (1, 4), (1, 4)))),
                requirements=((Requirement(Perm((0,)), ((0, 3),)),),
-                             (Requirement(Perm((1, 0)), ((1, 1), (1, 0))),)))]
+                             (Requirement(Perm((1, 0)), ((1, 1), (1, 0))),)))])
 
 
 def test_partial_place_point_in_cell(obs_inf_til):
@@ -1761,7 +1761,7 @@ def test_partial_place_point_of_gridded_permutation(obs_inf_til):
 
 
 def test_partial_place_row(obs_inf_til):
-    assert obs_inf_til.partial_place_row(2, 3) == [Tiling(
+    assert set(obs_inf_til.partial_place_row(2, 3)) == set([Tiling(
         obstructions=(
             Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
             Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
@@ -1789,11 +1789,11 @@ def test_partial_place_row(obs_inf_til):
             Obstruction(Perm((1, 0, 3, 2)), ((0, 3), (0, 2), (0, 3), (0, 3))),
             Obstruction(Perm((1, 0, 3, 2)), ((0, 3), (0, 3), (0, 3), (0, 3)))),
         requirements=((Requirement(Perm((0,)), ((0, 2),)),),
-                      (Requirement(Perm((1, 0)), ((0, 1), (0, 0))),)))]
+                      (Requirement(Perm((1, 0)), ((0, 1), (0, 0))),)))])
 
 
 def test_partial_place_col(obs_inf_til):
-    assert obs_inf_til.partial_place_col(0, 0) == [
+    assert set(obs_inf_til.partial_place_col(0, 0)) == set([
         Tiling(obstructions=(
             Obstruction(Perm((0,)), ((1, 0),)),
             Obstruction(Perm((0,)), ((1, 2),)),
@@ -1861,7 +1861,7 @@ def test_partial_place_col(obs_inf_til):
             Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
             Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (1, 2)))),
                requirements=((Requirement(Perm((0,)), ((1, 2),)),),
-                             (Requirement(Perm((1, 0)), ((0, 1), (0, 0))),)))]
+                             (Requirement(Perm((1, 0)), ((0, 1), (0, 0))),)))])
 
 
 class TestGetGenf():
