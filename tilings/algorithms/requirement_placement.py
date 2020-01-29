@@ -220,7 +220,8 @@ class RequirementPlacement(object):
         cell = gp.pos[idx]
         obs, reqs = self._stretched_obstructions_and_requirements(cell)
         forced_obs = self._forced_obstructions_from_patt(gp, idx, direction)
-        rem_reqs = [[self._gridded_perm_translation_with_point(gp, idx)]]
+        rem_reqs = [[self._gridded_perm_translation_with_point(
+                                        Requirement(gp.patt, gp.pos), idx)]]
         return self._tiling.__class__(obs + forced_obs, reqs + rem_reqs)
 
     def place_point_in_cell(self, cell, direction):
