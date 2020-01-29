@@ -93,6 +93,25 @@ def factorable_tiling():
 
 
 @pytest.fixture
+def obs_inf_til():
+    return Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+            Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
+            Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
+            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
+            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
+            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
+            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+            Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+            Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
+            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
+            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
+            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2)))
+            ], requirements=[[Requirement(Perm((1, 0)), ((0, 1), (0, 0)))]])
+
+
+@pytest.fixture
 def typical_redundant_obstructions():
     """Returns a very typical list of obstructions clustered together in a
     corner of a tiling.  """
@@ -1372,23 +1391,8 @@ def test_obstruction_transitivity():
     assert t2.obstruction_transitivity() == t2
 
 
-def test_subobstruction_inferral():
-    t = Tiling(obstructions=[
-        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-        Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-        Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
-        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
-        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
-        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
-        Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
-        Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-        Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
-        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
-        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
-        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2)))
-    ], requirements=[[Requirement(Perm((1, 0)), ((0, 1), (0, 0)))]])
-    assert t.subobstruction_inferral() == Tiling(obstructions=[
+def test_subobstruction_inferral(obs_inf_til):
+    assert obs_inf_til.subobstruction_inferral() == Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
         Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
         Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
@@ -1404,23 +1408,8 @@ def test_subobstruction_inferral():
     ], requirements=[[Requirement(Perm((1, 0)), ((0, 1), (0, 0)))]])
 
 
-def test_all_obstruction_inferral():
-    t = Tiling(obstructions=[
-        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-        Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-        Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
-        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
-        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
-        Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
-        Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
-        Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-        Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
-        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
-        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
-        Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2)))
-    ], requirements=[[Requirement(Perm((1, 0)), ((0, 1), (0, 0)))]])
-    assert t.all_obstruction_inferral(3) == Tiling(obstructions=[
+def test_all_obstruction_inferral(obs_inf_til):
+    assert obs_inf_til.all_obstruction_inferral(3) == Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
         Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
         Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
@@ -1481,6 +1470,38 @@ def test_empty_cell_inferral():
     ], requirements=[[
         Requirement(Perm((0, 1)), ((1, 0), (2, 0)))
     ]])
+
+
+def place_point_in_cell(obs_inf_til):
+    pass
+
+
+def test_place_point_of_gridded_permutation():
+    pass
+
+
+def test_place_row():
+    pass
+
+
+def test_place_col():
+    pass
+
+
+def test_partial_place_point_in_cell():
+    pass
+
+
+def test_partial_place_point_of_gridded_permutation():
+    pass
+
+
+def test_partial_place_row():
+    pass
+
+
+def test_partial_place_col():
+    pass
 
 
 class TestGetGenf():
