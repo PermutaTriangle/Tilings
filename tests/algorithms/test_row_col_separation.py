@@ -286,7 +286,18 @@ def not_separable_tilings():
         Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
         Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
     ])
-    return [t1, t2, t3]
+    t4 = Tiling(obstructions=(
+        Obstruction(Perm((0,)), ((1, 1),)),
+        Obstruction(Perm((0,)), ((1, 2),)),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
+        Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
+        Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+        Obstruction(Perm((1, 0)), ((0, 2), (0, 0))),
+    ), requirements=((Requirement(Perm((0,)), ((0, 1),)),),))
+    return [t1, t2, t3, t4]
 
 
 @pytest.fixture
@@ -341,6 +352,22 @@ def separable_tiling3():
         Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
     ])
     return t3
+
+
+@pytest.fixture
+def separable_tiling4():
+    return Tiling(obstructions=(
+        Obstruction(Perm((0,)), ((1, 1),)),
+        Obstruction(Perm((0,)), ((1, 2),)),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
+        Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
+        Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+        Obstruction(Perm((1, 0)), ((0, 2), (0, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 2))),
+    ), requirements=((Requirement(Perm((0,)), ((0, 1),)),),))
 
 
 def assert_matrix_entry_is(rcs, matrix, cell1, cell2, value):
@@ -518,7 +545,8 @@ def test_map_gridded_perm(separable_tiling1):
 
 
 def test_separated_tiling(not_separable_tilings, separable_tiling1,
-                          separable_tiling2, separable_tiling3,):
+                          separable_tiling2, separable_tiling3,
+                          separable_tiling4):
     t = Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 0),)*2),
         Obstruction(Perm((0, 1)), ((1, 0),)*2),
@@ -582,9 +610,17 @@ def test_separated_tiling(not_separable_tilings, separable_tiling1,
         Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
         Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0)))
     ), requirements=())
+    t4_sep = Tiling(obstructions=(
+        Obstruction(Perm((0, 1)), ((0, 2),)*2),
+        Obstruction(Perm((0, 1)), ((1, 1),)*2),
+        Obstruction(Perm((0, 1)), ((2, 0),)*2),
+        Obstruction(Perm((0, 1)), ((3, 0),)*2),
+        Obstruction(Perm((1, 0)), ((0, 2), (2, 0))),
+    ), requirements=((Requirement(Perm((0,)), ((1, 1),)),),))
     assert RowColSeparation(separable_tiling1).separated_tiling() == t1_sep
     assert RowColSeparation(separable_tiling2).separated_tiling() == t2_sep
     assert RowColSeparation(separable_tiling3).separated_tiling() == t3_sep
+    assert RowColSeparation(separable_tiling4).separated_tiling() == t4_sep
     # Test for the empty tiling
     empty_tiling = Tiling(obstructions=[Obstruction(Perm((0,)), ((0, 0),))])
     assert RowColSeparation(empty_tiling).separated_tiling() == empty_tiling

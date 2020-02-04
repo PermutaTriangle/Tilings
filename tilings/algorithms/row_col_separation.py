@@ -90,7 +90,7 @@ class Graph(object):
         if self._is_acyclic or self.num_vertices == 0:
             return True
         for row in self._matrix:
-            if row.count(0) == self.num_vertices:
+            if self.find_cycle() is None:
                 self._is_acyclic = True
                 return True
         return False
@@ -357,10 +357,10 @@ class RowColSeparation(object):
         heap = [graph]
         while heap and (not only_max or max_sep_seen <= graph.num_vertices):
             graph = heapq.heappop(heap)
-            if graph.is_acyclic():
+            cycle = graph.find_cycle()
+            if cycle is None:
                 yield graph.vertex_order()
             else:
-                cycle = graph.find_cycle()
                 for g in graph.break_cycle_in_all_ways(cycle):
                     g.reduce()
                     heapq.heappush(heap, g)
