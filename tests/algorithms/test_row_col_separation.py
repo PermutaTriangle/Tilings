@@ -185,6 +185,10 @@ def test_is_acyclic(graph1, graph2, graph3, empty_graph):
     assert graph3.is_acyclic()
     empty_graph.reduce()
     assert empty_graph.is_acyclic()
+    g = Graph(range(4), [[0, 0, 1, 1], [1, 0, 0, 1],
+                         [0, 1, 0, 1], [0, 0, 0, 0]])
+    g.reduce()
+    assert not g.is_acyclic()
 
 
 def test_find_cyle(graph1, graph2):
