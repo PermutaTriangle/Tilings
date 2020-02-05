@@ -10,28 +10,20 @@ if TYPE_CHECKING:
     from tilings import Tiling
 ListRequirement = Tuple[Requirement, ...]
 
+EXTRA_BASIS_ERR = "'extra_basis' should be a list of Perm to avoid"
 
+
+# Abstract classes
 class RequirementInsertion(abc.ABC):
     """
     Bases class for requirement insertion on tilings.
 
-    It will create batch rules based on the containment or not of a
-    requirement.  The requirement  used are  provided by `req_list_to_insert`
-    and will  be of length at most `max_len` and avoid any pattern
-    in `extra_basis`.
+    It will create batch rules based on the containment or not of
+    requirements.  The requirement  used are  provided by `req_list_to_insert`
     """
 
-    def __init__(self, tiling: 'Tiling', maxreqlen: int,
-                 extra_basis: Optional[List[Perm]] = None):
-        error_msg = "'extra_basis' flag should be a list of Perm to avoid"
-        if extra_basis is None:
-            self.extra_basis = []
-        else:
-            assert isinstance(extra_basis, list), error_msg
-            assert all(isinstance(p, Perm) for p in extra_basis), error_msg
-            self.extra_basis = extra_basis
+    def __init__(self, tiling: 'Tiling'):
         self.tiling = tiling
-        self.maxreqlen = maxreqlen
 
     @abc.abstractmethod
     def req_lists_to_insert(self) -> Iterable[ListRequirement]:
@@ -40,12 +32,21 @@ class RequirementInsertion(abc.ABC):
         rules.
         """
 
-    @abc.abstractmethod
-    def formal_step(self, req_list: ListRequirement) -> str:
+    @staticmethod
+    def formal_step(req_list: ListRequirement) -> str:
         """
         Return the formal step for the insertion according to the req_list
         inserted.
+
+        This needs to be redefined if you want to insert list requirement with
+        more than one requirement.
         """
+        if len(req_list) != 1:
+            raise NotImplementedError
+        req = req_list[0]
+        if req.is_localized():
+            return 'Insert {} in cell {}.'.format(req.patt, req.pos[0])
+        return 'Insert {}.'.format(req)
 
     def insert_requirement(self, req_list: ListRequirement
                            ) -> 'Tuple[Tiling, Tiling]':
@@ -77,9 +78,29 @@ class RequirementInsertion(abc.ABC):
                 constructor='disjoint')
 
 
-class CrossingInsertion(RequirementInsertion):
+class RequirementInsertionWithRestriction(RequirementInsertion):
     """
-    Insert all possible requirement, crossing and non-crossing.
+    As RequirementInsertion, but a set of pattern to avoids and a maxima length
+    can be provided.
+    """
+    def __init__(self, tiling: 'Tiling', maxreqlen: int,
+                 extra_basis: Optional[List[Perm]] = None):
+        super().__init__(tiling)
+        if extra_basis is None:
+            self.extra_basis = []
+        else:
+            assert isinstance(extra_basis, list), EXTRA_BASIS_ERR
+            assert all(isinstance(p, Perm) for p in extra_basis), \
+                EXTRA_BASIS_ERR
+            self.extra_basis = extra_basis
+        self.maxreqlen = maxreqlen
+
+
+# Concrete classes
+class CrossingInsertion(RequirementInsertionWithRestriction):
+    """
+    Insert all possible requirement, crossing and non-crossing of length at
+    most `maxreqlen` that avoid the pattern in `extra_basis`.
     """
 
     def req_lists_to_insert(self) -> Iterable[ListRequirement]:
@@ -92,15 +113,8 @@ class CrossingInsertion(RequirementInsertion):
                 if len(gp.factors()) == 1:
                     yield (Requirement(gp.patt, gp.pos),)
 
-    def formal_step(self, req_list: ListRequirement) -> str:
-        assert len(req_list) == 1
-        req = req_list[0]
-        if req.is_localized():
-            return 'Insert {} in cell {}.'.format(req.patt, req.pos[0])
-        return 'Insert {}.'.format(req)
 
-
-class CellInsertion(RequirementInsertion):
+class CellInsertion(RequirementInsertionWithRestriction):
     """
     Inserting single cell requirements.
     """
@@ -117,13 +131,8 @@ class CellInsertion(RequirementInsertion):
                          all(patt > perm for perm in bdict[cell][1]))
                         )
 
-    def formal_step(self, req_list: ListRequirement) -> str:
-        assert len(req_list) == 1
-        req = req_list[0]
-        return 'Insert {} in cell {}'.format(req.patt, req.pos[0])
 
-
-class RequirementExtension(CellInsertion):
+class RequirementExtension(RequirementInsertionWithRestriction):
     """
     Inserting longer requirement in cells that  already have requirement.
     """
@@ -143,11 +152,8 @@ class RowInsertion(RequirementInsertion):
     """
     Insert a list requirement in that enforce that a row is active.
     """
-
-    def __init__(self, tiling: 'Tiling'):
-        super().__init__(tiling, 1, None)
-
-    def formal_step(self, req_list: ListRequirement) -> str:
+    @staticmethod
+    def formal_step(req_list: ListRequirement) -> str:
         row = req_list[0].pos[0][1]
         return "Either row {} is empty or not.".format(row)
 
@@ -166,11 +172,8 @@ class ColInsertion(RequirementInsertion):
     """
     Insert a list requirement in that enforce that a column is active.
     """
-
-    def __init__(self, tiling: 'Tiling'):
-        super().__init__(tiling, 1, None)
-
-    def formal_step(self, req_list: ListRequirement) -> str:
+    @staticmethod
+    def formal_step(req_list: ListRequirement) -> str:
         row = req_list[0].pos[0][0]
         return "Either column {} is empty or not.".format(row)
 
@@ -189,18 +192,6 @@ class FactorInsertion(RequirementInsertion):
     """
     Insert the proper factor of any obstruction or requirements.
     """
-    def __init__(self, tiling: 'Tiling'):
-        maxlen = max(len(gp) for gp in chain(tiling.obstructions,
-                                             *tiling.requirements))
-        super().__init__(tiling, maxlen)
-
-    def formal_step(self, req_list: ListRequirement) -> str:
-        assert len(req_list) == 1
-        req = req_list[0]
-        if req.is_localized():
-            return 'Insert {} in cell {}.'.format(req.patt, req.pos[0])
-        return 'Insert {}.'.format(req)
-
     def req_lists_to_insert(self) -> Iterable[ListRequirement]:
         gp_facts = map(GriddedPerm.factors, chain(self.tiling.obstructions,
                                                   *self.tiling.requirements))
