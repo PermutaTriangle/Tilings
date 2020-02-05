@@ -198,3 +198,14 @@ class FactorInsertion(RequirementInsertion):
         proper_facts = chain.from_iterable(f for f in gp_facts if len(f) > 1)
         for f in proper_facts:
             yield (Requirement(f.patt, f.pos),)
+
+
+class RequirementCorroboration(RequirementInsertion):
+    """
+    Insert one requirement from a requirement list.
+    """
+    def req_lists_to_insert(self) -> Iterable[ListRequirement]:
+        to_insert = chain.from_iterable(
+            reqs for reqs in self.tiling.requirements if len(reqs) > 1)
+        for req in to_insert:
+            yield (req,)
