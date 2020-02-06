@@ -149,15 +149,3 @@ def partial_row_and_col_placements(tiling, **kwargs):
     for req_placement in req_placements:
         yield from req_placement.all_row_placement_rules()
         yield from req_placement.all_col_placement_rules()
-
-
-# TODO: Clarify what is this function doing
-def requirement_list_placement(tiling, **kwargs):
-    """Places all requirements on the tiling in every direction."""
-    req_placement = RequirementPlacement(tiling)
-    directions = (DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST)
-    for req, direction in product(tiling.requirements, directions):
-        yield BatchRule(req_placement.place_point_of_req_list(req, direction),
-                        "Inserting {} point of requirement list ({})".format(
-                            req_placement._direction_string(direction),
-                            ", ".join(str(r) for r in req)))
