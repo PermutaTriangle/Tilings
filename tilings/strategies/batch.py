@@ -84,7 +84,7 @@ def all_requirement_insertions(tiling: Tiling, maxreqlen: int = 1,
                                  extra_basis).rules(ignore_parent)
 
 
-def all_factor_insertions(tiling: Tiling, ignore_parent: bool = False,
+def all_factor_insertions(tiling: Tiling, ignore_parent: bool = True,
                           **kwargs) -> Iterable[Rule]:
     """
     Insert all proper factor of the requirement or obstructions on the tiling.
