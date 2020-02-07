@@ -123,6 +123,17 @@ def col_placements(tiling, **kwargs):
     yield from RequirementPlacement(tiling).all_col_placement_rules()
 
 
+def all_placements(tiling, **kwargs):
+    req_placements = (RequirementPlacement(tiling),
+                      RequirementPlacement(tiling, own_row=False),
+                      RequirementPlacement(tiling, own_col=False))
+    for req_placement in req_placements:
+        yield from req_placement.all_point_placement_rules()
+        yield from req_placement.all_requirement_placement_rules()
+        yield from req_placement.all_col_placement_rules()
+        yield from req_placement.all_row_placement_rules()
+
+
 def row_and_col_placements(tiling, **kwargs):
     req_placements = RequirementPlacement(tiling)
     yield from req_placements.all_row_placement_rules()
