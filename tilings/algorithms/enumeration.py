@@ -14,6 +14,7 @@ from tilings.misc import is_tree
 if TYPE_CHECKING:
     from tilings import Tiling
 
+
 class Enumeration(abc.ABC):
     """
     General representation of a strategy to enumerate tilings.

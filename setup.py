@@ -31,7 +31,7 @@ setup(
     setup_requires=['pytest-runner==5.2'],
     tests_require=['pytest==5.3.3',
                    'pytest-cov==2.8.1',
-                   'pytest-pep8==1.0.6',
+                   'pytest-pycodestyle==2.0.0',
                    'pytest-isort==0.3.1'],
     python_requires='>=3.5',
     classifiers=[

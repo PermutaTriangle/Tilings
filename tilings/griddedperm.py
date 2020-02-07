@@ -314,9 +314,9 @@ class GriddedPerm():
                 for comp in factor_cells]
 
     def compress(self):
-        """Compresses the gridded permutation into a list of integers. It starts
-        with a list of the values in the permutation. The rest is the list of
-        positions flattened."""
+        """Compresses the gridded permutation into a list of integers.
+        It starts with a list of the values in the permutation. The rest is
+        the list of positions flattened."""
         array = list(self._patt)
         array.extend(chain.from_iterable(self._pos))
         return array
@@ -332,7 +332,7 @@ class GriddedPerm():
 
     # Symmetries
     def reverse(self, transf):
-        """ |
+        """
         Reverses the tiling within its boundary. Every cell and obstruction
         gets flipped over the vertical middle axis."""
         return self.__class__(self._patt.reverse(),
