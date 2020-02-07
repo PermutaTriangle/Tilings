@@ -8,5 +8,9 @@ from .fusion import ComponentFusion, Fusion
 from .obstruction_inferral import (AllObstructionInferral, EmptyCellInferral,
                                    SubobstructionInferral)
 from .obstruction_transitivity import ObstructionTransitivity
+from .requirement_insertion import (CellInsertion, ColInsertion,
+                                    CrossingInsertion, FactorInsertion,
+                                    RequirementCorroboration,
+                                    RequirementExtension, RowInsertion)
 from .requirement_placement import RequirementPlacement
 from .row_col_separation import RowColSeparation
