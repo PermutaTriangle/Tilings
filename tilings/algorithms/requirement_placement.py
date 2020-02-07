@@ -8,7 +8,7 @@ from ..obstruction import Obstruction
 from ..requirement import Requirement
 
 
-class RequirementPlacement(object):
+class RequirementPlacement():
     """
     The requirement placement container class.
 
@@ -170,12 +170,13 @@ class RequirementPlacement(object):
         """Return True if c1 is farther in the given direction than c2."""
         if direction == DIR_EAST:
             return c1[0] > c2[0]
-        elif direction == DIR_WEST:
+        if direction == DIR_WEST:
             return c1[0] < c2[0]
-        elif direction == DIR_NORTH:
+        if direction == DIR_NORTH:
             return c1[1] > c2[1]
-        elif direction == DIR_SOUTH:
+        if direction == DIR_SOUTH:
             return c1[1] < c2[1]
+        raise Exception('Invalid direction')
 
     def _forced_obstructions_from_patt(self, gp, idx, direction):
         """
@@ -363,9 +364,10 @@ class RequirementPlacement(object):
     def _direction_string(direction):
         if direction == DIR_EAST:
             return "rightmost"
-        elif direction == DIR_WEST:
+        if direction == DIR_WEST:
             return "leftmost"
-        elif direction == DIR_NORTH:
+        if direction == DIR_NORTH:
             return "topmost"
-        elif direction == DIR_SOUTH:
+        if direction == DIR_SOUTH:
             return "bottommost"
+        raise Exception('Invalid direction')

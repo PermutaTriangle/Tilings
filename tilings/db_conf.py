@@ -1,8 +1,8 @@
+# pylint: skip-file
 """Functions for adding and removing from database."""
 import json
 from functools import partial
 
-import sympy
 from pymongo import MongoClient, errors
 from sympy import Poly, abc, sympify, var
 
@@ -85,7 +85,7 @@ def update_database(tiling, min_poly, genf, tree, force=False, equations=None):
                                            for eq in tree.get_equations())
                     equations = equations.replace("(x)", "")
                     info['eqs'] = equations
-                except ValueError as e:
+                except ValueError:
                     pass
             if tree is not None:
                 info['tree'] = json.dumps(tree.to_jsonable())

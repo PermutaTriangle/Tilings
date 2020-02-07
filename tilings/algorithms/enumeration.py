@@ -63,11 +63,11 @@ class Enumeration(abc.ABC):
         """
         if not self.verified():
             raise InvalidOperationError('The tiling is not verified')
-        searcher = TileScopeTHREE(self.tiling, self.pack)
-        tree = searcher.auto_search(**kwargs)
-        if tree is None:
-            raise InvalidOperationError('Cannot find a tree')
-        return tree
+        # searcher = TileScopeTHREE(self.tiling, self.pack)
+        # tree = searcher.auto_search(**kwargs)
+        # if tree is None:
+        #     raise InvalidOperationError('Cannot find a tree')
+        # return tree
 
     def get_genf(self, **kwargs):
         """
@@ -101,9 +101,9 @@ class BasicEnumeration(Enumeration):
     def get_genf(self, **kwargs):
         if self.tiling.is_epsilon():
             return sympy.sympify('1')
-        elif self.tiling.is_point_tiling():
+        if self.tiling.is_point_tiling():
             return sympy.sympify('x')
-        elif self.tiling.is_point_or_empty():
+        if self.tiling.is_point_or_empty():
             return sympy.sympify('x + 1')
         raise InvalidOperationError('Not an atom')
 
@@ -266,7 +266,7 @@ class MonotoneTreeEnumeration(Enumeration):
         col_cells = self.tiling.cells_in_col(cell[0])
         return (c for c in visited if (c in row_cells or c in col_cells))
 
-    def get_genf(self):
+    def get_genf(self, **kwargs):
         if not self.verified():
             raise InvalidOperationError('The tiling is not verified')
         try:
@@ -368,8 +368,7 @@ class DatabaseEnumeration(Enumeration):
     def verified(self):
         if DatabaseEnumeration.all_verified_tilings:
             return self.tiling.compress() in self.all_verified_tilings
-        else:
-            return self._get_tiling_entry() is not None
+        return self._get_tiling_entry() is not None
 
     formal_step = 'Tiling is in the database'
 
@@ -378,13 +377,13 @@ class DatabaseEnumeration(Enumeration):
         raise NotImplementedError('No standard pack for a database verified '
                                   'tiling.')
 
-    def get_tree(self):
+    def get_tree(self, **kwargs):
         if not self.verified():
             raise InvalidOperationError('The tiling is not verified')
         raise NotImplementedError('No standard way of getting a tree for a '
                                   'tiling in the database.')
 
-    def get_genf(self):
+    def get_genf(self, **kwargs):
         if not self.verified():
             raise InvalidOperationError('The tiling is not verified')
         return sympy.sympify(self._get_tiling_entry()['genf'])
@@ -405,6 +404,7 @@ class OneByOneEnumeration(Enumeration):
 
     formal_step = "This tiling is a subclass of the original tiling."
 
+    @property
     def pack(self):
         """
         Make it return all the strategies
@@ -416,10 +416,11 @@ class OneByOneEnumeration(Enumeration):
             return False
         return self.basis != set(ob.patt for ob in self.tiling.obstructions)
 
-    def get_genf(self):
+    def get_genf(self, **kwargs):
         """
         TODO: This function should:
             - check if the basis is in the database
             - try to run tilescope on the tiling
         """
-        return super().get_genf()
+        # pylint: disable=useless-super-delegation
+        return super().get_genf(**kwargs)

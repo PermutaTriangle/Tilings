@@ -1,9 +1,7 @@
-from itertools import product
 from typing import Iterable, List, Optional
 
-from comb_spec_searcher import BatchRule, Rule
+from comb_spec_searcher import Rule
 from permuta import Perm
-from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST
 from tilings import Tiling
 from tilings.algorithms import (CellInsertion, ColInsertion, CrossingInsertion,
                                 FactorInsertion, RequirementCorroboration,

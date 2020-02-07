@@ -1,11 +1,10 @@
 import heapq
 from itertools import combinations, product
-from operator import xor
 
 from comb_spec_searcher import InferralRule
 
 
-class Graph(object):
+class Graph():
     """
     A weighted directed graph implemented with an adjacency matrix.
 
@@ -126,6 +125,7 @@ class Graph(object):
         Generator over Graph object obtained by removing one edge of the
         `edges` iterator.
         """
+        # pylint: disable=protected-access
         for e in edges:
             new_graph = Graph.__new__(Graph)
             new_graph._vertex_labels = [vl.copy()
@@ -237,10 +237,13 @@ class Graph(object):
         return self.num_vertices >= other.num_vertices
 
 
-class RowColSeparation(object):
+class RowColSeparation():
     def __init__(self, tiling):
         self._tiling = tiling
         self._active_cells = tuple(sorted(tiling.active_cells))
+        self._ineq_matrices = None
+        self._max_row_order = None
+        self._max_col_order = None
 
     def cell_at_idx(self, idx):
         """Return the cell at index `idx`."""
@@ -257,7 +260,6 @@ class RowColSeparation(object):
         otherwise return if for the columns.
         """
         idx = 1 if row else 0
-        num_cell = len(self._active_cells)
         m = []
         for c1 in self._active_cells:
             row = [1 if c1[idx] < c2[idx] else 0 for c2 in self._active_cells]
@@ -283,8 +285,7 @@ class RowColSeparation(object):
         assert c1[0] != c2[0], "Obstruction is single cell"
         if ob.patt[0] == 0:
             return c2, c1
-        else:
-            return c1, c2
+        return c1, c2
 
     @staticmethod
     def _col_cell_order(ob):
@@ -319,7 +320,7 @@ class RowColSeparation(object):
         OUTPUT:
             tuple `(row_matrix, col_matrix)`
         """
-        if hasattr(self, '_ineq_matrices'):
+        if self._ineq_matrices is not None:
             return self._ineq_matrices
         row_m = self._basic_matrix(row=True)
         col_m = self._basic_matrix(row=False)
@@ -407,7 +408,7 @@ class RowColSeparation(object):
     @property
     def max_row_order(self):
         """A maximal order on the rows."""
-        if hasattr(self, '_max_row_order'):
+        if self._max_row_order is not None:
             return self._max_row_order
         self._max_row_order = self._maximal_order(self.row_ineq_graph())
         return self._max_row_order
@@ -415,7 +416,7 @@ class RowColSeparation(object):
     @property
     def max_col_order(self):
         """A maximal order on the columns."""
-        if hasattr(self, '_max_col_order'):
+        if self._max_col_order is not None:
             return self._max_col_order
         self._max_col_order = self._maximal_order(self.col_ineq_graph())
         return self._max_col_order
@@ -461,7 +462,8 @@ class RowColSeparation(object):
         for row_order, col_order in orders:
             yield self._separates_tiling(row_order, col_order)
 
-    def formal_step(self):
+    @staticmethod
+    def formal_step():
         """
         Returns a string describing the operation that was performed.
         """

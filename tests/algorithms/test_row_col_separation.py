@@ -508,11 +508,11 @@ def test_separates_tiling():
 
 def test_map_gridded_perm(separable_tiling1):
     rcs = RowColSeparation(separable_tiling1)
-    ob = Obstruction(Perm((0,  1,  2)), ((0,  0), (1,  0), (1,  0)))
-    cell_map = {(0,  0): (0,  0), (1,  0): (1,  1)}
+    ob = Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0)))
+    cell_map = {(0, 0): (0, 0), (1, 0): (1, 1)}
     assert (rcs._map_gridded_perm(cell_map, ob) ==
             Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))))
-    ob = Requirement(Perm((0,  1,  2)), ((0,  0), (1,  0), (1,  0)))
+    ob = Requirement(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0)))
     assert (rcs._map_gridded_perm(cell_map, ob) ==
             Requirement(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))))
 
