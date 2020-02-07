@@ -338,7 +338,7 @@ class DatabaseEnumeration(Enumeration):
     """
 
     API_ROOT_URL = 'https://api.combopal.ru.is/'
-    all_verified_tilings: FrozenSet[bytes] = frozenset()
+    all_verified_tilings = frozenset()  # type: FrozenSet[bytes]
 
     @classmethod
     def load_verified_tiling(cls):
