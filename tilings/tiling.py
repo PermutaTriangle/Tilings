@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 from functools import partial
 from itertools import chain, product
 from operator import xor
+from typing import List, Tuple
 
 import sympy
 
@@ -288,16 +289,16 @@ class Tiling(CombinatorialClass):
     # Compression
     # -------------------------------------------------------------
 
-    def compress(self):
+    def compress(self) -> bytes:
         """Compresses the tiling by flattening the sets of cells into lists of
         integers which are concatenated together, every list preceeded by its
         size. The obstructions are compressed and concatenated to the list, as
         are the requirement lists."""
-        def split_16bit(n):
+        def split_16bit(n) -> Tuple[int, int]:
             """Takes a 16 bit integer and splits it into
                (lower 8bits, upper 8bits)"""
             return (n & 0xFF, (n >> 8) & 0xFF)
-        result = []
+        result: List[int] = []
         result.extend(split_16bit(len(self.obstructions)))
         result.extend(chain.from_iterable([len(ob)]+ob.compress()
                                           for ob in self.obstructions))

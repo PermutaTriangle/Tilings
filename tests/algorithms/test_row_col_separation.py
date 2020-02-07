@@ -63,7 +63,7 @@ def empty_graph():
     return Graph([], [])
 
 
-def test_init(matrix2):
+def test_init_graph(matrix2):
     G = Graph('abcde', matrix=matrix2)
     assert G._matrix == matrix2
     assert G._vertex_labels == [set(c) for c in 'abcde']

@@ -1,26 +1,29 @@
 import abc
 from collections import deque
 from itertools import chain
+from typing import TYPE_CHECKING, FrozenSet, Optional
 
 import requests
 import sympy
 
-from comb_spec_searcher import VerificationRule
+from comb_spec_searcher import ProofTree, StrategyPack, VerificationRule
 from permuta import Perm
 from tilings.exception import InvalidOperationError
 from tilings.misc import is_tree
 
+if TYPE_CHECKING:
+    from tilings import Tiling
 
 class Enumeration(abc.ABC):
     """
     General representation of a strategy to enumerate tilings.
     """
 
-    def __init__(self, tiling):
+    def __init__(self, tiling: 'Tiling'):
         self.tiling = tiling
 
     @abc.abstractproperty
-    def pack(self):
+    def pack(self) -> StrategyPack:
         """
         Returns a TileScope pack that fines a proof tree for the tilings in
         which the verification strategy used are "simpler".
@@ -30,20 +33,20 @@ class Enumeration(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def verified(self):
+    def verified(self) -> bool:
         """
         Returns True if enumeration strategy works for the tiling.
         """
         raise NotImplementedError
 
     @abc.abstractproperty
-    def formal_step(self):
+    def formal_step(self) -> str:
         """
         Return a string that describe the verification strategy.
         """
         raise NotImplementedError
 
-    def verification_rule(self):
+    def verification_rule(self) -> Optional[VerificationRule]:
         """
         Return a verification rule if the tiling is verified.
         Otherwise, returns None
@@ -51,7 +54,7 @@ class Enumeration(abc.ABC):
         if self.verified():
             return VerificationRule(formal_step=self.formal_step)
 
-    def get_tree(self, **kwargs):
+    def get_tree(self, **kwargs) -> ProofTree:
         """
         Returns a tree for the tilings. Raises an `InvalidOperationError` if no
         tree can be found.
@@ -81,7 +84,7 @@ class Enumeration(abc.ABC):
             raise InvalidOperationError('The tiling is not verified')
         return self.get_tree(**kwargs).get_genf()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return 'Enumeration for:\n' + str(self.tiling)
 
 
@@ -334,7 +337,7 @@ class DatabaseEnumeration(Enumeration):
     """
 
     API_ROOT_URL = 'https://api.combopal.ru.is/'
-    all_verified_tilings = frozenset()
+    all_verified_tilings: FrozenSet[bytes] = frozenset()
 
     @classmethod
     def load_verified_tiling(cls):
