@@ -223,7 +223,7 @@ def enumerate_one_by_one(tiling):
                                 root_requirement_insertion,
                                 row_and_column_separation,
                                 requirement_corroboration,
-                                subset_verified, globally_verified)
+                                )
             from comb_spec_searcher import StrategyPack
             # 231-avoiding
             pack = StrategyPack(

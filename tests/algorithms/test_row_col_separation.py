@@ -374,8 +374,6 @@ def test_cell_at_idx(separable_tiling2):
 
 def test_basic_matrix(separable_tiling2):
     rcs = RowColSeparation(separable_tiling2)
-    ncol = separable_tiling2.dimensions[0]
-    nrow = separable_tiling2.dimensions[1]
     # Row basic matrix
     m = rcs._basic_matrix(True)
     for c1, c2 in product(separable_tiling2.active_cells, repeat=2):
