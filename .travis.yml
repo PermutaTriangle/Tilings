@@ -6,6 +6,9 @@ matrix:
     - name: flake8
       python: 3.7
       env: TOXENV=flake8
+    - name: mypy
+      python: 3.7
+      env: TOXENV=mypy
 
     - python: 3.5
       env: TOXENV=py35

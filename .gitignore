@@ -95,3 +95,4 @@ ENV/
 devtest.py
 
 .pytest_cache
+.mypy_cache
