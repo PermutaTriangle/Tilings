@@ -2,8 +2,7 @@ import json
 from itertools import chain, combinations
 
 from permuta import Perm
-from permuta.misc import (DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST,
-                          UnionFind)
+from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, UnionFind
 
 
 class GriddedPerm():
@@ -15,7 +14,7 @@ class GriddedPerm():
         if not isinstance(pattern, Perm):
             raise ValueError(
                 "Variable 'pattern' should be an instance of permuta.Perm")
-        if not len(pattern):
+        if not pattern:
             self._patt = pattern
             self._pos = tuple(positions)
             self._cells = frozenset()
@@ -126,14 +125,13 @@ class GriddedPerm():
             points = list(self.points_in_cell(cell))
             if direction == DIR_EAST:
                 return max(points)
-            elif direction == DIR_NORTH:
+            if direction == DIR_NORTH:
                 return max((self._patt[p], p) for p in points)[1]
-            elif direction == DIR_WEST:
+            if direction == DIR_WEST:
                 return min(points)
-            elif direction == DIR_SOUTH:
+            if direction == DIR_SOUTH:
                 return min((self._patt[p], p) for p in points)[1]
-            else:
-                raise ValueError("You're lost, no valid direction")
+            raise ValueError("You're lost, no valid direction")
 
     def get_points_col(self, col):
         """Yields all points of the gridded permutation in the column col."""
@@ -316,10 +314,10 @@ class GriddedPerm():
                 for comp in factor_cells]
 
     def compress(self):
-        """Compresses the gridded permutation into a list of integers. It starts
-        with a list of the values in the permutation. The rest is the list of
-        positions flattened."""
-        array = [p for p in self._patt]
+        """Compresses the gridded permutation into a list of integers.
+        It starts with a list of the values in the permutation. The rest is
+        the list of positions flattened."""
+        array = list(self._patt)
         array.extend(chain.from_iterable(self._pos))
         return array
 
@@ -334,7 +332,7 @@ class GriddedPerm():
 
     # Symmetries
     def reverse(self, transf):
-        """ |
+        """
         Reverses the tiling within its boundary. Every cell and obstruction
         gets flipped over the vertical middle axis."""
         return self.__class__(self._patt.reverse(),
@@ -362,19 +360,19 @@ class GriddedPerm():
 
     def rotate270(self, transf):
         """Rotate 270 degrees"""
-        rotated = self._patt._rotate_left()
+        rotated = self._patt.rotate_left()
         pos = rotated.apply(self._pos)
         return self.__class__(rotated, map(transf, pos))
 
     def rotate180(self, transf):
         """Rotate 180 degrees"""
-        return self.__class__(self._patt._rotate_180(),
+        return self.__class__(self._patt.rotate(2),
                               reversed(list(map(transf, self._pos))))
 
     def rotate90(self, transf):
         """Rotate 90 degrees"""
         return self.__class__(
-            self._patt._rotate_right(),
+            self._patt.rotate_right(),
             map(transf, self._patt.inverse().apply(self._pos)))
 
     def to_jsonable(self):

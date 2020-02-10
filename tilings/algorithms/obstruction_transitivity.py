@@ -6,7 +6,7 @@ from permuta import Perm
 from tilings import Obstruction
 
 
-class ObstructionTransitivity(object):
+class ObstructionTransitivity():
     """
     The obstruction transitivity algorithm.
 
@@ -19,6 +19,11 @@ class ObstructionTransitivity(object):
 
     def __init__(self, tiling):
         self._tiling = tiling
+        self._colineq = None
+        self._rowineq = None
+        self._positive_cells_col = None
+        self._positive_cells_row = None
+        self._new_ineq = None
 
     def positive_cells_col(self, col_index):
         """
@@ -28,7 +33,7 @@ class ObstructionTransitivity(object):
 
             List of integers.
         """
-        if not hasattr(self, '_positive_cells_col'):
+        if self._positive_cells_col is None:
             self._init_positive_cells()
         return self._positive_cells_col[col_index]
 
@@ -41,7 +46,7 @@ class ObstructionTransitivity(object):
             List of integers.
         Return a dictionary of positive cells for each column.
         """
-        if not hasattr(self, '_positive_cells_row'):
+        if self._positive_cells_row is None:
             self._init_positive_cells()
         return self._positive_cells_row[row_index]
 
@@ -51,7 +56,7 @@ class ObstructionTransitivity(object):
 
         An inequality is a tuple of integer (r1, r2) such that r1 < r2.
         """
-        if not hasattr(self, '_colineq'):
+        if self._colineq is None:
             self._init_ineq()
         return self._colineq[col_index]
 
@@ -61,7 +66,7 @@ class ObstructionTransitivity(object):
 
         An inequality is a tuple of integer (c1, c2) such that c1 < c2.
         """
-        if not hasattr(self, '_rowineq'):
+        if self._rowineq is None:
             self._init_ineq()
         return self._rowineq[row_index]
 
@@ -107,22 +112,19 @@ class ObstructionTransitivity(object):
         left, right = ineq
         if left == right:
             return Obstruction(Perm((0,)), (left,))
-        elif left[0] == right[0]:
+        if left[0] == right[0]:
             # same column
             if left[1] < right[1]:
                 return Obstruction(Perm((1, 0)), [right, left])
-            else:
-                return Obstruction(Perm((0, 1)), [right, left])
-        elif left[1] == right[1]:
+            return Obstruction(Perm((0, 1)), [right, left])
+        if left[1] == right[1]:
             # same row
             if left[0] < right[0]:
                 return Obstruction(Perm((1, 0)), [left, right])
-            else:
-                return Obstruction(Perm((0, 1)), [right, left])
-        else:
-            raise ValueError(
-                ("Can not construct an obstruction from inequality {} < {}"
-                 ).format(left, right))
+            return Obstruction(Perm((0, 1)), [right, left])
+        raise ValueError(
+            ("Can not construct an obstruction from inequality {} < {}"
+             ).format(left, right))
 
     @staticmethod
     def ineq_closure(positive_cells, ineqs):
@@ -164,7 +166,7 @@ class ObstructionTransitivity(object):
         """
         Compute the new inequalities.
         """
-        if hasattr(self, '_new_ineq'):
+        if self._new_ineq is not None:
             return self._new_ineq
         newineqs = []
         ncol, nrow = self._tiling.dimensions

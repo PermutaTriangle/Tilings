@@ -486,10 +486,8 @@ def test_stretched_obstructions(placement1, placement1owncol,
     orig_obs = placement1._tiling.obstructions
     assert (sorted(placement1._stretched_obstructions((1, 1))) ==
             sorted(placement1._stretch_gridded_perms(orig_obs, (1, 1))))
-    orig_reqs = placement1owncol._tiling.obstructions
     assert (sorted(placement1owncol._stretched_obstructions((1, 1))) ==
             sorted(placement1owncol._stretch_gridded_perms(orig_obs, (1, 1))))
-    orig_reqs = placement1ownrow._tiling.obstructions
     assert (sorted(placement1ownrow._stretched_obstructions((1, 1))) ==
             sorted(placement1ownrow._stretch_gridded_perms(orig_obs, (1, 1))))
 

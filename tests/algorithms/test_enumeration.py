@@ -1,5 +1,4 @@
 import abc
-from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
 import sympy
@@ -12,7 +11,6 @@ from tilings.algorithms import (BasicEnumeration, DatabaseEnumeration,
                                 ElementaryEnumeration, LocalEnumeration,
                                 LocallyFactorableEnumeration,
                                 MonotoneTreeEnumeration, OneByOneEnumeration)
-from tilings.algorithms.enumeration import Enumeration
 from tilings.exception import InvalidOperationError
 
 
@@ -129,7 +127,6 @@ class TestLocallyFactorableEnumeration(CommonTest):
             Obstruction(Perm((0, 1)), ((1, 1),)*2),
         ])
         return LocallyFactorableEnumeration(t)
-        pass
 
     @pytest.fixture
     def enum_with_tautology(self):
@@ -430,7 +427,7 @@ class TestElementaryEnumeration(CommonTest):
         assert pack.name == 'LocallyFactorable'
 
     def test_formal_step(self, enum_verified):
-        enum_verified.formal_step == 'Tiling is elementary'
+        assert enum_verified.formal_step == 'Tiling is elementary'
 
     @pytest.mark.xfail
     def test_get_tree(self, enum_verified):

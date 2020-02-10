@@ -1,8 +1,8 @@
 import abc
-from itertools import chain, product
+from itertools import chain
 
 from comb_spec_searcher import InferralRule
-from permuta import Perm, PermSet
+from permuta import Perm
 from tilings import Obstruction
 
 
@@ -13,6 +13,7 @@ class ObstructionInferral(abc.ABC):
     """
     def __init__(self, tiling):
         self._tiling = tiling
+        self._new_obs = None
 
     @abc.abstractmethod
     def potential_new_obs(self):
@@ -20,13 +21,12 @@ class ObstructionInferral(abc.ABC):
         Return an iterable of new obstructions that should be added to the
         tiling if possible.
         """
-        pass
 
     def new_obs(self):
         """
         Returns the list of new obstructions that can be added to the tiling.
         """
-        if hasattr(self, '_new_obs'):
+        if self._new_obs is not None:
             return self._new_obs
         newobs = []
         for ob in sorted(self.potential_new_obs(), key=len):

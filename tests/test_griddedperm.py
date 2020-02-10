@@ -1,7 +1,7 @@
 import pytest
 
 from permuta import Perm
-from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST
+from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST
 from tilings import GriddedPerm
 
 

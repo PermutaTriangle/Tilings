@@ -63,7 +63,7 @@ def empty_graph():
     return Graph([], [])
 
 
-def test_init(matrix2):
+def test_init_graph(matrix2):
     G = Graph('abcde', matrix=matrix2)
     assert G._matrix == matrix2
     assert G._vertex_labels == [set(c) for c in 'abcde']
@@ -374,8 +374,6 @@ def test_cell_at_idx(separable_tiling2):
 
 def test_basic_matrix(separable_tiling2):
     rcs = RowColSeparation(separable_tiling2)
-    ncol = separable_tiling2.dimensions[0]
-    nrow = separable_tiling2.dimensions[1]
     # Row basic matrix
     m = rcs._basic_matrix(True)
     for c1, c2 in product(separable_tiling2.active_cells, repeat=2):
@@ -508,11 +506,11 @@ def test_separates_tiling():
 
 def test_map_gridded_perm(separable_tiling1):
     rcs = RowColSeparation(separable_tiling1)
-    ob = Obstruction(Perm((0,  1,  2)), ((0,  0), (1,  0), (1,  0)))
-    cell_map = {(0,  0): (0,  0), (1,  0): (1,  1)}
+    ob = Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0)))
+    cell_map = {(0, 0): (0, 0), (1, 0): (1, 1)}
     assert (rcs._map_gridded_perm(cell_map, ob) ==
             Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))))
-    ob = Requirement(Perm((0,  1,  2)), ((0,  0), (1,  0), (1,  0)))
+    ob = Requirement(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0)))
     assert (rcs._map_gridded_perm(cell_map, ob) ==
             Requirement(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))))
 
