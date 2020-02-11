@@ -360,13 +360,21 @@ class RequirementPlacement():
         return s
 
     def _point_placement_formal_step(self, cell, direction):
-        return "Placing {} point in cell {}.".format(
-                                       self._direction_string(direction), cell)
+        dir_str = self._direction_string(direction)
+        s = 'Placing '
+        if not (self._own_col and self._own_row):
+            s += 'partially '
+        s += '{} point in cell {}.'.format(dir_str, cell)
+        return s
 
     def _pattern_placement_formal_step(self, idx, gp, direction):
-        return "Placing the {} point of ({}, {}) in {}.".format(
-                                            self._direction_string(direction),
-                                            idx, gp.patt[idx], str(gp))
+        dir_str = self._direction_string(direction)
+        s = 'Placing '
+        if not (self._own_col and self._own_row):
+            s += 'partially '
+        s += 'the {} point of ({}, {}) in {}.'.format(
+            dir_str, idx, gp.patt[idx], gp)
+        return s
 
     @staticmethod
     def _direction_string(direction):
