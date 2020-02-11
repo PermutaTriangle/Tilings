@@ -1,6 +1,6 @@
 import abc
 from importlib import import_module
-from typing import Iterator, Optional, Union
+from typing import Iterator, Optional, Type, Union
 
 from comb_spec_searcher import Rule
 from tilings import Tiling
@@ -17,14 +17,19 @@ class Strategy(abc.ABC):
     def __str__(self) -> str:
         """Return the name of the strategy."""
 
-    @abc.abstractmethod
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
+        c = self.__class__
+        return {
+            'class_module': c.__module__,
+            'strategy_class': c.__name__,
+        }
 
-    @abc.abstractclassmethod
+    @classmethod
+    @abc.abstractmethod
     def from_dict(cls, d: dict) -> 'Strategy':
         """Return the strategy from the json representation."""
-        module = import_module(d['class_module'])
-        StrategyClass = getattr(module, d['strategy_class'])
-        assert isinstance(StrategyClass, Strategy), 'Not a valid strategy'
-        return StrategyClass.from_dict(d)
+        module = import_module(d.pop('class_module'))
+        StratClass: Type[Strategy] = getattr(module, d.pop('strategy_class'))
+        assert issubclass(StratClass, Strategy), 'Not a valid strategy'
+        return StratClass.from_dict(d)  # type: ignore

@@ -23,12 +23,6 @@ class ObstructionTransitivityStrategy(Strategy):
     def __str__(self) -> str:
         return 'obstruction transitivity'
 
-    def to_jsonable(self) -> dict:
-        return {
-            'class_module': 'tilings.algorithms.inferral',
-            'strategy_class': 'ObstructionTransitivityStrategy',
-        }
-
     @classmethod
     def from_dict(cls, d: dict) -> 'ObstructionTransitivityStrategy':
         return cls()
@@ -44,12 +38,6 @@ class RowColumnSeparationStrategy(Strategy):
 
     def __str__(self) -> str:
         return 'row and column separation'
-
-    def to_jsonable(self) -> dict:
-        return {
-            'class_module': 'tilings.algorithms.inferral',
-            'strategy_class': 'RowColumnSeparationStrategy',
-        }
 
     @classmethod
     def from_dict(cls, d: dict) -> 'RowColumnSeparationStrategy':
@@ -70,12 +58,6 @@ class EmptyCellInferralStrategy(Strategy):
     def __str__(self) -> str:
         return 'empty cell inferral'
 
-    def to_jsonable(self) -> dict:
-        return {
-            'class_module': 'tilings.algorithms.inferral',
-            'strategy_class': 'EmptyCellInferralStrategy',
-        }
-
     @classmethod
     def from_dict(cls, d: dict) -> 'EmptyCellInferralStrategy':
         return cls()
@@ -91,12 +73,6 @@ class SubobstructionInferralStrategy(Strategy):
 
     def __str__(self) -> str:
         return 'subobstruction inferral'
-
-    def to_jsonable(self) -> dict:
-        return {
-            'class_module': 'tilings.algorithms.inferral',
-            'strategy_class': 'SubobstructionInferralStrategy',
-        }
 
     @classmethod
     def from_dict(cls, d: dict) -> 'SubobstructionInferralStrategy':
