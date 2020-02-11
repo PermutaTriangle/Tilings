@@ -290,7 +290,7 @@ class RequirementPlacement():
         """
         Yield all possible rules coming from placing points in a column.
         """
-        if not self._own_row:
+        if not self._own_col:
             return
         for index in range(self._tiling.dimensions[0]):
             for direction in self.directions:
@@ -344,12 +344,20 @@ class RequirementPlacement():
                 yield EquivalenceRule(formal_step, placed_tiling)
 
     def _col_placement_formal_step(self, idx, direction):
-        return "Placing {} points in column {}.".format(
-                                        self._direction_string(direction), idx)
+        dir_str = self._direction_string(direction)
+        s = 'Placing '
+        if not (self._own_col and self._own_row):
+            s += 'partially '
+        s += '{} points in column {}.'.format(dir_str, idx)
+        return s
 
     def _row_placement_formal_step(self, idx, direction):
-        return "Placing {} points in row {}.".format(
-                                        self._direction_string(direction), idx)
+        dir_str = self._direction_string(direction)
+        s = 'Placing '
+        if not (self._own_col and self._own_row):
+            s += 'partially '
+        s += '{} points in row {}.'.format(dir_str, idx)
+        return s
 
     def _point_placement_formal_step(self, cell, direction):
         return "Placing {} point in cell {}.".format(

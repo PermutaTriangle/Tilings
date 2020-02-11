@@ -197,6 +197,27 @@ def test_all_col_placement_rules(placement1):
             [2, 2, 2, 2, 2, 2, 3, 3])
 
 
+def test_all_col_placement_rules_partial(placement1owncol, placement1ownrow):
+    print(placement1owncol._tiling)
+    rules = list(placement1owncol.all_col_placement_rules())
+    assert len(rules) == 8
+    for rule in rules:
+        assert isinstance(rule, Rule)
+        assert len(rule.comb_classes) > 1
+        assert re.match(r'Placing partially ((leftmost)|(rightmost)) points '
+                        r'in column \d+\.', rule.formal_step)
+        assert not rule.ignore_parent
+        assert all(rule.workable)
+        assert rule.constructor == 'disjoint'
+        assert all(rule.possibly_empty)
+    assert (sorted(len(rule.comb_classes) for rule in rules) ==
+            [2, 2, 2, 2, 2, 2, 3, 3])
+
+    # Nothing to do if not placing on own col
+    rules = list(placement1ownrow.all_col_placement_rules())
+    assert len(rules) == 0
+
+
 def test_all_row_placement_rules(placement1):
     rules = list(placement1.all_row_placement_rules())
     assert len(rules) == 6
@@ -211,6 +232,27 @@ def test_all_row_placement_rules(placement1):
         assert all(rule.possibly_empty)
     assert (sorted(len(rule.comb_classes) for rule in rules) ==
             [2, 2, 3, 3, 3, 3])
+
+
+def test_all_row_placement_rules_partial(placement1owncol, placement1ownrow):
+    print(placement1owncol._tiling)
+    rules = list(placement1ownrow.all_row_placement_rules())
+    assert len(rules) == 6
+    for rule in rules:
+        assert isinstance(rule, Rule)
+        assert len(rule.comb_classes) > 1
+        assert re.match(r'Placing partially ((topmost)|(bottommost)) points '
+                        r'in row \d+\.', rule.formal_step)
+        assert not rule.ignore_parent
+        assert all(rule.workable)
+        assert rule.constructor == 'disjoint'
+        assert all(rule.possibly_empty)
+    assert (sorted(len(rule.comb_classes) for rule in rules) ==
+            [2, 2, 3, 3, 3, 3])
+
+    # Nothing to do if only not placing on own row
+    rules = list(placement1owncol.all_row_placement_rules())
+    assert len(rules) == 0
 
 
 def test_all_point_placement_rules(placement1, placement2, placement2owncol,
