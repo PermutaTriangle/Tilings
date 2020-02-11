@@ -1,4 +1,4 @@
-from typing import Iterable, List, Optional
+from typing import Iterable, Iterator, List, Optional
 
 from comb_spec_searcher import Rule
 from permuta import Perm
@@ -7,15 +7,14 @@ from tilings.algorithms import (CellInsertion, ColInsertion, CrossingInsertion,
                                 FactorInsertion, RequirementCorroboration,
                                 RequirementExtension, RequirementPlacement,
                                 RowInsertion)
-
+from tilings.strategies.abstract_strategy import Strategy
 
 # -------------------------------------
 #   Requirement Insertion             |
 # -------------------------------------
-def all_cell_insertions(tiling: Tiling, maxreqlen: int = 1, extra_basis:
-                        Optional[List[Perm]] = None,
-                        ignore_parent: bool = False,
-                        **kwargs) -> Iterable[Rule]:
+
+
+class AllCellInsertionStrategy(Strategy):
     """
     The cell insertion strategy.
 
@@ -25,73 +24,227 @@ def all_cell_insertions(tiling: Tiling, maxreqlen: int = 1, extra_basis:
     some maximum number given by maxreqnum) and returns two tilings; one which
     requires the pattern in the cell and one where the pattern is obstructed.
     """
-    yield from CellInsertion(tiling, maxreqlen,
-                             extra_basis).rules(ignore_parent)
+    def __init__(self, maxreqlen: int = 1,
+                 extra_basis: Optional[List[Perm]] = None,
+                 ignore_parent: bool = False,
+                 ) -> None:
+        self.maxreqlen = maxreqlen
+        self.extra_basis = extra_basis
+        self.ignore_parent = ignore_parent
+
+    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+        yield from (CellInsertion(tiling, self.maxreqlen, self.extra_basis)
+                    .rules(self.ignore_parent))
+
+    def __str__(self) -> str:
+        if self.extra_basis is not None:
+            return ('restricted cell insertion up to '
+                    'length {}'.format(self.maxreqlen))
+        return 'cell insertion up to length {}'.format(self.maxreqlen)
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d['maxreqlen'] = self.maxreqlen
+        d['extra_basis'] = self.extra_basis
+        d['ignore_parent'] = self.ignore_parent
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> 'AllCellInsertionStrategy':
+        return cls(
+            d['maxreqlen'],
+            [Perm(p) for p in d['extra_basis']],
+            d['ignore_parent'],
+        )
 
 
-def root_requirement_insertion(tiling, **kwargs) -> Iterable[Rule]:
+class RootInsertionStrategy(AllCellInsertionStrategy):
     """
     The cell insertion strategy performed only on 1 by 1 tilings.
     """
-    if tiling.dimensions != (1, 1) or tiling.requirements:
-        return
-    yield from all_cell_insertions(tiling, **kwargs)
+    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+        if tiling.dimensions != (1, 1) or tiling.requirements:
+            return
+        yield from (CellInsertion(tiling, self.maxreqlen, self.extra_basis)
+                    .rules(self.ignore_parent))
+
+    def __str__(self) -> str:
+        if self.extra_basis is None:
+            return 'root insertion up to length {}'.format(self.maxreqlen)
+        return ('restricted root insertion up to '
+                'length {}'.format(self.maxreqlen))
 
 
-def all_point_insertions(tiling, **kwargs) -> Iterable[Rule]:
-    """
-    The cell insertion strategy using only points.
-    """
-    yield from all_cell_insertions(tiling, maxreqlen=1, **kwargs)
+class AllPointInsertionStrategy(Strategy):
+    def __init__(self, ignore_parent: bool = False) -> None:
+        self.ignore_parent = ignore_parent
+
+    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+        yield from (CellInsertion(tiling, maxreqlen=1, extra_basis=[])
+                    .rules(self.ignore_parent))
+
+    def __str__(self) -> str:
+        return 'point insertion'
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d['ignore_parent'] = self.ignore_parent
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> 'AllPointInsertionStrategy':
+        return cls(**d)
 
 
-def all_requirement_extensions(tiling: Tiling, maxreqlen: int = 2,
-                               extra_basis: Optional[List[Perm]] = None,
-                               ignore_parent: bool = False,
-                               **kwargs) -> Iterable[Rule]:
+class AllRequirementExtensionStrategy(Strategy):
     """
     Insert longer requirements in to cells which contain a requirement
     """
-    yield from RequirementExtension(tiling, maxreqlen,
-                                    extra_basis).rules(ignore_parent)
+    def __init__(self, maxreqlen: int = 2,
+                 extra_basis: Optional[List[Perm]] = None,
+                 ignore_parent: bool = False,
+                 ) -> None:
+        self.maxreqlen = maxreqlen
+        self.extra_basis = extra_basis
+        self.ignore_parent = ignore_parent
+
+    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+        yield from (
+            RequirementExtension(tiling, self.maxreqlen, self.extra_basis)
+            .rules(self.ignore_parent)
+        )
+
+    def __str__(self) -> str:
+        if self.extra_basis is not None:
+            return ('restricted requirement extension up to '
+                    'length {}'.format(self.maxreqlen))
+        return ('requirement extension insertion up to '
+                'length {}'.format(self.maxreqlen))
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d['maxreqlen'] = self.maxreqlen
+        d['extra_basis'] = self.extra_basis
+        d['ignore_parent'] = self.ignore_parent
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> 'AllRequirementExtensionStrategy':
+        return cls(
+            d['maxreqlen'],
+            [Perm(p) for p in d['extra_basis']],
+            d['ignore_parent'],
+        )
 
 
-def all_row_insertions(tiling: Tiling, ignore_parent: bool = False,
-                       **kwargs) -> Iterable[Rule]:
+class AllRowInsertionStrategy(Strategy):
     """Insert a list requirement into every possibly empty row."""
-    yield from RowInsertion(tiling).rules(ignore_parent)
+    def __init__(self, ignore_parent: bool = False) -> None:
+        self.ignore_parent = ignore_parent
+
+    def __call__(self, tiling: Tiling) -> Iterable[Rule]:
+        yield from RowInsertion(tiling).rules(self.ignore_parent)
+
+    def __str__(self) -> str:
+        return 'row insertion'
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d['ignore_parent'] = self.ignore_parent
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> 'AllRowInsertionStrategy':
+        return cls(**d)
 
 
-def all_col_insertions(tiling, ignore_parent: bool = False,
-                       **kwargs) -> Iterable[Rule]:
-    """Insert a list requirement into every possibly empty column."""
-    yield from ColInsertion(tiling).rules(ignore_parent)
+class AllColInsertionStrategy(Strategy):
+    """Insert a list requirement into every possibly empty row."""
+    def __init__(self, ignore_parent: bool = False) -> None:
+        self.ignore_parent = ignore_parent
+
+    def __call__(self, tiling: Tiling) -> Iterable[Rule]:
+        yield from ColInsertion(tiling).rules(self.ignore_parent)
+
+    def __str__(self) -> str:
+        return 'column insertion'
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d['ignore_parent'] = self.ignore_parent
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> 'AllColInsertionStrategy':
+        return cls(**d)
 
 
-def all_requirement_insertions(tiling: Tiling, maxreqlen: int = 1,
-                               extra_basis: Optional[List[Perm]] = None,
-                               ignore_parent: bool = False,
-                               **kwargs) -> Iterable[Rule]:
+class AllRequirementInsertionStrategy(Strategy):
     """
     Insert all possible requirements the obstruction allows if the tiling does
     not have requirements.
     """
-    if tiling.requirements:
-        return
-    yield from CrossingInsertion(tiling, maxreqlen,
-                                 extra_basis).rules(ignore_parent)
+    def __init__(self, maxreqlen: int = 1,
+                 extra_basis: Optional[List[Perm]] = None,
+                 ignore_parent: bool = False,
+                 ) -> None:
+        self.maxreqlen = maxreqlen
+        self.extra_basis = extra_basis
+        self.ignore_parent = ignore_parent
+
+    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+        if tiling.requirements:
+            return
+        yield from (CrossingInsertion(tiling, self.maxreqlen, self.extra_basis)
+                    .rules(self.ignore_parent))
+
+    def __str__(self) -> str:
+        if self.extra_basis is not None:
+            return ('restricted requirement insertion up to '
+                    'length {}'.format(self.maxreqlen))
+        return ('requirement insertion up to '
+                'length {}'.format(self.maxreqlen))
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d['maxreqlen'] = self.maxreqlen
+        d['extra_basis'] = self.extra_basis
+        d['ignore_parent'] = self.ignore_parent
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> 'AllRequirementInsertionStrategy':
+        return cls(
+            d['mare glen'],
+            [Perm(p) for p in d['extra_basis']],
+            d['ignore_parent'],
+        )
 
 
-def all_factor_insertions(tiling: Tiling, ignore_parent: bool = True,
-                          **kwargs) -> Iterable[Rule]:
+class AllFactorInsertionStrategy(Strategy):
     """
     Insert all proper factor of the requirement or obstructions on the tiling.
     """
-    yield from FactorInsertion(tiling).rules(ignore_parent)
+    def __init__(self, ignore_parent: bool = True) -> None:
+        self.ignore_parent = ignore_parent
+
+    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+        yield from FactorInsertion(tiling).rules(self.ignore_parent)
+
+    def __str__(self) -> str:
+        return 'all factor insertion'
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d['ignore_parent'] = self.ignore_parent
+        return d
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(**d)
 
 
-def requirement_corroboration(tiling: Tiling, ignore_parent: bool = True,
-                              **kwargs) -> Iterable[Rule]:
+class RequirementCorroborationStrategy(Strategy):
     """
     The requirement corroboration strategy.
 
@@ -107,54 +260,87 @@ def requirement_corroboration(tiling: Tiling, ignore_parent: bool = True,
     that avoid the requirement, must therefore satisfy another requirement from
     the same list and hence the requirement list must be of length at least 2.
     """
-    yield from RequirementCorroboration(tiling).rules(ignore_parent)
+    def __init__(self, ignore_parent: bool = True):
+        self.ignore_parent = ignore_parent
+
+    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+        yield from (RequirementCorroboration(tiling)
+                    .rules(self.ignore_parent))
+
+    def __str__(self) -> str:
+        return 'requirement corroboration'
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d['ignore_parent'] = self.ignore_parent
+
+    @classmethod
+    def from_dict(cls, d: dict) -> 'RequirementCorroborationStrategy':
+        return cls(**d)
 
 
 # -------------------------------------
 #   Row and column placement          |
 # -------------------------------------
-def row_placements(tiling, **kwargs):
-    yield from RequirementPlacement(tiling).all_row_placement_rules()
+
+class RowAndColumnPlacementStrategy(Strategy):
+    def __init__(self, place_row: bool, place_col: bool,
+                 partial: bool = False) -> None:
+        assert place_col or place_row, 'Must place column or row'
+        self.place_row = place_row
+        self.place_col = place_col
+        self.partial = partial
+
+    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+        if self.partial:
+            req_placements = [RequirementPlacement(tiling, own_row=False),
+                              RequirementPlacement(tiling, own_col=False)]
+        else:
+            req_placements = [RequirementPlacement(tiling)]
+        for req_placement in req_placements:
+            if self.place_row:
+                yield from req_placement.all_row_placement_rules()
+            if self.place_col:
+                yield from req_placement.all_col_placement_rules()
+
+    def __str__(self) -> str:
+        s = '{} placement'
+        if self.place_col and self.place_col:
+            s.format('row and column')
+        elif self.place_row:
+            s.format('row')
+        else:
+            s.format('column')
+        if self.partial:
+            s = ' '.join(['partial', s])
+        return s
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d['place_row'] = self.place_row
+        d['place_col'] = self.place_col
+        d['partial'] = self.partial
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> 'RowAndColumnPlacementStrategy':
+        return cls(*d)
 
 
-def col_placements(tiling, **kwargs):
-    yield from RequirementPlacement(tiling).all_col_placement_rules()
+class AllPlacementsStrategy(Strategy):
+    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+        req_placements = (RequirementPlacement(tiling),
+                          RequirementPlacement(tiling, own_row=False),
+                          RequirementPlacement(tiling, own_col=False))
+        for req_placement in req_placements:
+            yield from req_placement.all_point_placement_rules()
+            yield from req_placement.all_requirement_placement_rules()
+            yield from req_placement.all_col_placement_rules()
+            yield from req_placement.all_row_placement_rules()
 
+    def __str__(self) -> str:
+        return 'all placements'
 
-def all_placements(tiling, **kwargs):
-    req_placements = (RequirementPlacement(tiling),
-                      RequirementPlacement(tiling, own_row=False),
-                      RequirementPlacement(tiling, own_col=False))
-    for req_placement in req_placements:
-        yield from req_placement.all_point_placement_rules()
-        yield from req_placement.all_requirement_placement_rules()
-        yield from req_placement.all_col_placement_rules()
-        yield from req_placement.all_row_placement_rules()
-
-
-def row_and_col_placements(tiling, **kwargs):
-    req_placements = RequirementPlacement(tiling)
-    yield from req_placements.all_row_placement_rules()
-    yield from req_placements.all_col_placement_rules()
-
-
-def partial_row_placements(tiling, **kwargs):
-    req_placements = (RequirementPlacement(tiling, own_row=False),
-                      RequirementPlacement(tiling, own_col=False))
-    for req_placement in req_placements:
-        yield from req_placement.all_row_placement_rules()
-
-
-def partial_col_placements(tiling, **kwargs):
-    req_placements = (RequirementPlacement(tiling, own_row=False),
-                      RequirementPlacement(tiling, own_col=False))
-    for req_placement in req_placements:
-        yield from req_placement.all_col_placement_rules()
-
-
-def partial_row_and_col_placements(tiling, **kwargs):
-    req_placements = (RequirementPlacement(tiling, own_row=False),
-                      RequirementPlacement(tiling, own_col=False))
-    for req_placement in req_placements:
-        yield from req_placement.all_row_placement_rules()
-        yield from req_placement.all_col_placement_rules()
+    @classmethod
+    def from_dict(cls, d: dict) -> 'AllPlacementsStrategy':
+        return AllPlacementsStrategy()
