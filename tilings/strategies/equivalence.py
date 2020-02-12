@@ -20,7 +20,7 @@ class RequirementPlacementStrategy(Strategy):
         self.point_only = point_only
         self.partial = partial
 
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         if self.partial:
             req_placements = [RequirementPlacement(tiling, own_row=False),
                               RequirementPlacement(tiling, own_col=False)]

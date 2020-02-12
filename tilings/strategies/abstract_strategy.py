@@ -10,7 +10,7 @@ STRATEGY_OUTPUT = Union[Optional[Rule], Iterator[Rule]]
 
 class Strategy(abc.ABC):
     @abc.abstractmethod
-    def __call__(self, tiling: Tiling) -> STRATEGY_OUTPUT:
+    def __call__(self, tiling: Tiling, **kwargs) -> STRATEGY_OUTPUT:
         """Returns the results of the strategy on a tiling."""
 
     @abc.abstractmethod

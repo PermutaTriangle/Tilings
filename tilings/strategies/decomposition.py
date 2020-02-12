@@ -25,7 +25,7 @@ class FactorStrategy(Strategy):
         self.union = union
         self.workable = workable
 
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         factor_algo = FactorStrategy.factor_class[self.interleaving](tiling)
         if factor_algo.factorable():
             yield factor_algo.rule(workable=self.workable)

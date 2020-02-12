@@ -35,7 +35,7 @@ def component_fusion(tiling, **kwargs):
 
 
 class FusionStrategy(Strategy):
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         return _general_fusion_iterator(tiling, Fusion)
 
     def __str__(self) -> str:
@@ -50,7 +50,7 @@ class FusionStrategy(Strategy):
 
 
 class ComponentFusionStrategy(Strategy):
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         return _general_fusion_iterator(tiling, ComponentFusion)
 
     def __str__(self) -> str:

@@ -17,7 +17,7 @@ class ObstructionTransitivityStrategy(Strategy):
     inequality relations. When the obstructions use a positive cell,
     transitivity applies, i.e. if a < b < c and b is positive, then a < c.
     """
-    def __call__(self, tiling: Tiling) -> Optional[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Rule]:
         return ObstructionTransitivity(tiling).rule()
 
     def __str__(self) -> str:
@@ -35,7 +35,7 @@ class RowColumnSeparationStrategy(Strategy):
     """
     An inferral function that tries to separate cells in rows and columns.
     """
-    def __call__(self, tiling: Tiling) -> Optional[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Rule]:
         rcs = RowColSeparation(tiling)
         return rcs.rule()
 
@@ -58,7 +58,7 @@ class EmptyCellInferralStrategy(Strategy):
     point requirement. If the resulting tiling is empty, then a point
     obstruction can be added into the cell, i.e. the cell is empty.
     """
-    def __call__(self, tiling: Tiling) -> Optional[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Rule]:
         return EmptyCellInferral(tiling).rule()
 
     def __str__(self) -> str:
@@ -77,7 +77,7 @@ class SubobstructionInferralStrategy(Strategy):
     Return tiling created by adding all subobstructions which can be
     added.
     """
-    def __call__(self, tiling: Tiling) -> Optional[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Rule]:
         return SubobstructionInferral(tiling).rule()
 
     def __str__(self) -> str:

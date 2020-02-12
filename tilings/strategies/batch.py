@@ -32,7 +32,7 @@ class AllCellInsertionStrategy(Strategy):
         self.extra_basis = extra_basis
         self.ignore_parent = ignore_parent
 
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         yield from (CellInsertion(tiling, self.maxreqlen, self.extra_basis)
                     .rules(self.ignore_parent))
 
@@ -71,7 +71,7 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
     """
     The cell insertion strategy performed only on 1 by 1 tilings.
     """
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         if tiling.dimensions != (1, 1) or tiling.requirements:
             return
         yield from (CellInsertion(tiling, self.maxreqlen, self.extra_basis)
@@ -93,7 +93,7 @@ class AllPointInsertionStrategy(Strategy):
     def __init__(self, ignore_parent: bool = False) -> None:
         self.ignore_parent = ignore_parent
 
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         yield from (CellInsertion(tiling, maxreqlen=1, extra_basis=[])
                     .rules(self.ignore_parent))
 
@@ -126,7 +126,7 @@ class AllRequirementExtensionStrategy(Strategy):
         self.extra_basis = extra_basis
         self.ignore_parent = ignore_parent
 
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         yield from (
             RequirementExtension(tiling, self.maxreqlen, self.extra_basis)
             .rules(self.ignore_parent)
@@ -169,7 +169,7 @@ class AllRowInsertionStrategy(Strategy):
     def __init__(self, ignore_parent: bool = False) -> None:
         self.ignore_parent = ignore_parent
 
-    def __call__(self, tiling: Tiling) -> Iterable[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterable[Rule]:
         yield from RowInsertion(tiling).rules(self.ignore_parent)
 
     def __str__(self) -> str:
@@ -194,7 +194,7 @@ class AllColInsertionStrategy(Strategy):
     def __init__(self, ignore_parent: bool = False) -> None:
         self.ignore_parent = ignore_parent
 
-    def __call__(self, tiling: Tiling) -> Iterable[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterable[Rule]:
         yield from ColInsertion(tiling).rules(self.ignore_parent)
 
     def __str__(self) -> str:
@@ -227,7 +227,7 @@ class AllRequirementInsertionStrategy(Strategy):
         self.extra_basis = extra_basis
         self.ignore_parent = ignore_parent
 
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         if tiling.requirements:
             return
         yield from (CrossingInsertion(tiling, self.maxreqlen, self.extra_basis)
@@ -272,7 +272,7 @@ class AllFactorInsertionStrategy(Strategy):
     def __init__(self, ignore_parent: bool = True) -> None:
         self.ignore_parent = ignore_parent
 
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         yield from FactorInsertion(tiling).rules(self.ignore_parent)
 
     def __str__(self) -> str:
@@ -311,7 +311,7 @@ class RequirementCorroborationStrategy(Strategy):
     def __init__(self, ignore_parent: bool = True):
         self.ignore_parent = ignore_parent
 
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         yield from (RequirementCorroboration(tiling)
                     .rules(self.ignore_parent))
 
@@ -344,7 +344,7 @@ class RowAndColumnPlacementStrategy(Strategy):
         self.place_col = place_col
         self.partial = partial
 
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         if self.partial:
             req_placements = [RequirementPlacement(tiling, own_row=False),
                               RequirementPlacement(tiling, own_col=False)]
@@ -387,7 +387,7 @@ class RowAndColumnPlacementStrategy(Strategy):
 
 
 class AllPlacementsStrategy(Strategy):
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         req_placements = (RequirementPlacement(tiling),
                           RequirementPlacement(tiling, own_row=False),
                           RequirementPlacement(tiling, own_col=False))
