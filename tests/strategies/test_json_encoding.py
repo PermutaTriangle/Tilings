@@ -14,6 +14,7 @@ from tilings.strategies.batch import (AllCellInsertionStrategy,
                                       AllRowInsertionStrategy,
                                       RequirementCorroborationStrategy,
                                       RowAndColumnPlacementStrategy)
+from tilings.strategies.decomposition import FactorStrategy
 from tilings.strategies.inferral import (EmptyCellInferralStrategy,
                                          ObstructionTransitivityStrategy,
                                          RowColumnSeparationStrategy,
@@ -75,6 +76,12 @@ strategy_objects = [
     ObstructionTransitivityStrategy(),
     RowColumnSeparationStrategy(),
     SubobstructionInferralStrategy(),
+
+    # Decomposition strategy
+    FactorStrategy(),
+    FactorStrategy(interleaving='all'),
+    FactorStrategy(interleaving='monotone', union=True),
+    FactorStrategy(interleaving=None, union=True, workable=False),
 ]
 
 

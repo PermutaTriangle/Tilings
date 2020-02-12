@@ -1,9 +1,6 @@
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
-from tilings.algorithms import (Factor, FactorWithInterleaving,
-                                FactorWithMonotoneInterleaving)
-from tilings.strategies.decomposition import (factor, factor_with_interleaving,
-                                              general_factor)
+from tilings.strategies.decomposition import FactorStrategy
 
 pytest_plugins = [
     'tests.fixtures.simple_tiling',
@@ -12,48 +9,36 @@ pytest_plugins = [
 ]
 
 
-def test_general_factor(simple_tiling, diverse_tiling):
-    assert len(list(general_factor(simple_tiling, Factor))) == 0
-    assert (len(list(general_factor(simple_tiling,
-                                    FactorWithMonotoneInterleaving))) == 0)
-    assert (len(list(general_factor(simple_tiling,
-                                    FactorWithInterleaving))) == 0)
-    assert (len(list(general_factor(diverse_tiling,
-                                    FactorWithInterleaving))) == 1)
-    # Test union param
-    strats = list(general_factor(diverse_tiling,
-                                 FactorWithInterleaving,
-                                 union=True))
+def test_not_factorable(simple_tiling):
+    assert len(list(FactorStrategy()(simple_tiling))) == 0
+    assert (len(list(FactorStrategy(interleaving='monotone')(simple_tiling)))
+            == 0)
+    assert len(list(FactorStrategy(interleaving='all')(simple_tiling))) == 0
+
+
+def test_with_union(diverse_tiling):
+    strats = list(FactorStrategy(interleaving='all',
+                                 union=True)(diverse_tiling))
     assert len(strats) == 14
     assert sum(1 for s in strats if 'unions' in s.formal_step) == 13
     assert sum(1 for s in strats if all(s.workable)) == 1
     assert sum(1 for s in strats if not any(s.workable)) == 13
-    # Test union param with workable to False
-    strats = list(general_factor(diverse_tiling,
-                                 FactorWithInterleaving,
-                                 union=True,
-                                 workable=False))
+
+
+def test_with_union_not_workable(diverse_tiling):
+    strats = list(FactorStrategy(
+        interleaving='all', union=True, workable=False,
+                            )(diverse_tiling))
     assert sum(1 for s in strats if all(s.workable)) == 0
     assert sum(1 for s in strats if not any(s.workable)) == 14
-    # Test union param with workable to True
-    strats = list(general_factor(diverse_tiling,
-                                 FactorWithInterleaving,
-                                 union=True,
-                                 workable=True))
-    assert sum(1 for s in strats if all(s.workable)) == 1
-    assert sum(1 for s in strats if not any(s.workable)) == 13
 
 
-def test_factor_no_unions(simple_tiling,
-                          diverse_tiling,
-                          no_point_tiling):
-    assert len(list(factor(simple_tiling))) == 0
-    assert len(list(factor(diverse_tiling))) == 0
+def test_standard_factor(simple_tiling):
     tiling = Tiling(
         obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (0, 0)])],
         requirements=[[Requirement(Perm((0, 1)), [(1, 1), (1, 1)]),
                        Requirement(Perm((0, 1)), [(1, 1), (1, 2)])]])
-    strats = [s.comb_classes for s in factor(tiling)]
+    strats = [s.comb_classes for s in FactorStrategy()(tiling)]
     assert len(strats) == 1
     factors = strats[0]
     assert set(factors) == set([
@@ -61,13 +46,14 @@ def test_factor_no_unions(simple_tiling,
                               Requirement(Perm((0, 1)), [(0, 0), (0, 1)])]]),
         Tiling(obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (0, 0)])])])
 
+
+def test_factor_all_interleaving(diverse_tiling):
     strats = [s.comb_classes
-              for s in factor_with_interleaving(diverse_tiling)]
+              for s in FactorStrategy(interleaving='all')(diverse_tiling)]
     assert len(strats) == 1
     factors = strats[0]
     assert len(factors) == 4
     print(diverse_tiling)
-
     assert set(factors) == set([
         Tiling(obstructions=[Obstruction(Perm((0, 2, 3, 1)),
                                          [(0, 0), (1, 1), (1, 1), (2, 0)])],
