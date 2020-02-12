@@ -197,6 +197,27 @@ def test_all_col_placement_rules(placement1):
             [2, 2, 2, 2, 2, 2, 3, 3])
 
 
+def test_all_col_placement_rules_partial(placement1owncol, placement1ownrow):
+    print(placement1owncol._tiling)
+    rules = list(placement1owncol.all_col_placement_rules())
+    assert len(rules) == 8
+    for rule in rules:
+        assert isinstance(rule, Rule)
+        assert len(rule.comb_classes) > 1
+        assert re.match(r'Placing partially ((leftmost)|(rightmost)) points '
+                        r'in column \d+\.', rule.formal_step)
+        assert not rule.ignore_parent
+        assert all(rule.workable)
+        assert rule.constructor == 'disjoint'
+        assert all(rule.possibly_empty)
+    assert (sorted(len(rule.comb_classes) for rule in rules) ==
+            [2, 2, 2, 2, 2, 2, 3, 3])
+
+    # Nothing to do if not placing on own col
+    rules = list(placement1ownrow.all_col_placement_rules())
+    assert len(rules) == 0
+
+
 def test_all_row_placement_rules(placement1):
     rules = list(placement1.all_row_placement_rules())
     assert len(rules) == 6
@@ -211,6 +232,27 @@ def test_all_row_placement_rules(placement1):
         assert all(rule.possibly_empty)
     assert (sorted(len(rule.comb_classes) for rule in rules) ==
             [2, 2, 3, 3, 3, 3])
+
+
+def test_all_row_placement_rules_partial(placement1owncol, placement1ownrow):
+    print(placement1owncol._tiling)
+    rules = list(placement1ownrow.all_row_placement_rules())
+    assert len(rules) == 6
+    for rule in rules:
+        assert isinstance(rule, Rule)
+        assert len(rule.comb_classes) > 1
+        assert re.match(r'Placing partially ((topmost)|(bottommost)) points '
+                        r'in row \d+\.', rule.formal_step)
+        assert not rule.ignore_parent
+        assert all(rule.workable)
+        assert rule.constructor == 'disjoint'
+        assert all(rule.possibly_empty)
+    assert (sorted(len(rule.comb_classes) for rule in rules) ==
+            [2, 2, 3, 3, 3, 3])
+
+    # Nothing to do if only not placing on own row
+    rules = list(placement1owncol.all_row_placement_rules())
+    assert len(rules) == 0
 
 
 def test_all_point_placement_rules(placement1, placement2, placement2owncol,
@@ -229,9 +271,27 @@ def test_all_point_placement_rules(placement1, placement2, placement2owncol,
         assert rule.workable == [True]
         assert rule.constructor == 'equiv'
         assert rule.possibly_empty == [False]
+    for rule in placement2ownrow.all_point_placement_rules():
+        assert isinstance(rule, Rule)
+        assert len(rule.comb_classes) == 1
+        assert re.match(r'Placing partially (topmost|bottommost) '
+                        r'point in cell \(\d+, \d+\)\.', rule.formal_step)
+        assert not rule.ignore_parent
+        assert rule.workable == [True]
+        assert rule.constructor == 'equiv'
+        assert rule.possibly_empty == [False]
+    for rule in placement2owncol.all_point_placement_rules():
+        assert isinstance(rule, Rule)
+        assert len(rule.comb_classes) == 1
+        assert re.match(r'Placing partially (rightmost|leftmost) '
+                        r'point in cell \(\d+, \d+\)\.', rule.formal_step)
+        assert not rule.ignore_parent
+        assert rule.workable == [True]
+        assert rule.constructor == 'equiv'
+        assert rule.possibly_empty == [False]
 
 
-def test_all_requirement_placement_rules(placement1):
+def test_all_requirement_placement_rules():
     t = Tiling(obstructions=[Obstruction(Perm((1, 0)), ((0, 0),)*2)],
                requirements=[[Requirement(Perm((0, 1)), ((0, 0),)*2)]])
     placement = RequirementPlacement(t)
@@ -267,6 +327,30 @@ def test_all_requirement_placement_rules(placement1):
         [Requirement(Perm((0,)), ((2, 2),))],
     ]) in comb_classes
 
+
+def test_all_requirement_placement_rules_partial(placement2owncol,
+                                                 placement2ownrow):
+    print(placement2owncol._tiling)
+    for rule in placement2owncol.all_requirement_placement_rules():
+        assert isinstance(rule, Rule)
+        assert len(rule.comb_classes) == 1
+        assert isinstance(rule.formal_step, str) and len(rule.formal_step) > 0
+        assert re.match(r'Placing partially the (leftmost|rightmost) '
+                        r'point of \(\d+, \d+\) in \d+: (\(\d+, \d+\), )*'
+                        r'\(\d+, \d+\)\.', rule.formal_step)
+        assert rule.workable == [True]
+        assert rule.constructor == 'equiv'
+        assert rule.possibly_empty == [False]
+    for rule in placement2ownrow.all_requirement_placement_rules():
+        assert isinstance(rule, Rule)
+        assert len(rule.comb_classes) == 1
+        assert isinstance(rule.formal_step, str) and len(rule.formal_step) > 0
+        assert re.match(r'Placing partially the (topmost|bottommost) '
+                        r'point of \(\d+, \d+\) in \d+: (\(\d+, \d+\), )*'
+                        r'\(\d+, \d+\)\.', rule.formal_step)
+        assert rule.workable == [True]
+        assert rule.constructor == 'equiv'
+        assert rule.possibly_empty == [False]
 
 # ------------------------------------------------------------
 #       Tests for RequirementPlacement Class
