@@ -1,8 +1,7 @@
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import Obstruction, Requirement, Tiling
-from tilings.strategies.equivalence import (point_placement,
-                                            requirement_placement)
+from tilings.strategies.equivalence import RequirementPlacementStrategy
 
 pytest_plugins = [
     'tests.fixtures.obstructions_requirements',
@@ -13,6 +12,8 @@ pytest_plugins = [
 
 
 def test_point_placement(diverse_tiling, no_point_tiling):
+    point_placement = RequirementPlacementStrategy(point_only=True)
+    requirement_placement = RequirementPlacementStrategy(point_only=False)
     strats = list(point_placement(diverse_tiling))
     assert len(strats) == 5 * len(DIRS)
     strats = list(requirement_placement(no_point_tiling))

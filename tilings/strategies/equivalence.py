@@ -1,57 +1,53 @@
+from typing import Iterator
+
+from comb_spec_searcher import Rule
+from tilings import Tiling
 from tilings.algorithms import RequirementPlacement
+from tilings.strategies.abstract_strategy import Strategy
 
 
-# -------------------------------------
-#   Placement                         |
-# -------------------------------------
-def requirement_placement(tiling, **kwargs):
+class RequirementPlacementStrategy(Strategy):
     """
     Strategy that places a single forced point of a requirement.
+    Yield all possible rules coming from placing a point of a pattern that
+    occurs as a subpattern of requirement containing a single pattern.
 
-    The requirement_placement strategy considers every requirement list of
-    length exactly 1. For each of these requirements, it considers all the
-    points of the requirement. The strategy then returns all tilings where the
-    point has been placed with a force.
+    INPUTS:
+        - `point_only`: only place point for length 1 subpattern.
+        - `partial`: places only the point on its own row or its own column.
     """
-    yield from RequirementPlacement(tiling).all_requirement_placement_rules()
+    def __init__(self, point_only: bool, partial: bool = False):
+        self.point_only = point_only
+        self.partial = partial
 
+    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+        if self.partial:
+            req_placements = [RequirementPlacement(tiling, own_row=False),
+                              RequirementPlacement(tiling, own_col=False)]
+        else:
+            req_placements = [RequirementPlacement(tiling)]
+        for req_placement in req_placements:
+            if self.point_only:
+                yield from req_placement.all_point_placement_rules()
+            else:
+                yield from req_placement.all_requirement_placement_rules()
 
-def point_placement(tiling, **kwargs):
-    """
-    Strategy that place a single forced point of a point requirement.
+    def __str__(self) -> str:
+        s = 'partial ' if self.partial else ''
+        s += 'point' if self.point_only else 'requirement'
+        s += 'placement'
+        return s
 
-    The point placement strategy considers all point requirements in their own
-    requirement lists. For each of them, it returns a new tiling where the
-    point has been placed with a force.
-    """
-    yield from RequirementPlacement(tiling).all_point_placement_rules()
+    def __repr__(self) -> str:
+        return ('RequirementPlacementStrategy(point_only={}, partial={})'
+                .format(self.point_only, self.partial))
 
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d['point_only'] = self.point_only
+        d['partial'] = self.partial
+        return d
 
-# -------------------------------------
-#   Partial Placement                 |
-# -------------------------------------
-def partial_requirement_placement(tiling, **kwargs):
-    """
-    Strategy that places a single forced point of a requirement onto it own row
-    or onto its own column.
-
-    The partial_requirement_placement strategy considers every requirement list
-    of length exactly 1. For each of these requirements, it considers all the
-    points of the requirement. The strategy then returns all tilings where the
-    point has been partially placed with a force.
-    """
-    req_placements = (RequirementPlacement(tiling, own_row=False),
-                      RequirementPlacement(tiling, own_col=False))
-    for req_placement in req_placements:
-        yield from req_placement.all_requirement_placement_rules()
-
-
-def partial_point_placement(tiling, **kwargs):
-    """
-    Strategy that place a single forced point of a point requirement.
-
-    The point placement strategy considers all point requirements in their own
-    requirement lists. For each of them, it returns a new tiling where the
-    point has been placed with a force.
-    """
-    yield from partial_requirement_placement(tiling, point_only=True)
+    @classmethod
+    def from_dict(cls, d: dict) -> 'RequirementPlacementStrategy':
+        return cls(**d)
