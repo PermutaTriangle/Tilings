@@ -23,6 +23,9 @@ class ObstructionTransitivityStrategy(Strategy):
     def __str__(self) -> str:
         return 'obstruction transitivity'
 
+    def __repr__(self) -> str:
+        return 'ObstructionTransitivityStrategy()'
+
     @classmethod
     def from_dict(cls, d: dict) -> 'ObstructionTransitivityStrategy':
         return cls()
@@ -38,6 +41,9 @@ class RowColumnSeparationStrategy(Strategy):
 
     def __str__(self) -> str:
         return 'row and column separation'
+
+    def __repr__(self) -> str:
+        return 'RowColumnSeparationStrategy()'
 
     @classmethod
     def from_dict(cls, d: dict) -> 'RowColumnSeparationStrategy':
@@ -58,6 +64,9 @@ class EmptyCellInferralStrategy(Strategy):
     def __str__(self) -> str:
         return 'empty cell inferral'
 
+    def __repr__(self) -> str:
+        return 'EmptyCellInferralStrategy()'
+
     @classmethod
     def from_dict(cls, d: dict) -> 'EmptyCellInferralStrategy':
         return cls()
@@ -73,6 +82,9 @@ class SubobstructionInferralStrategy(Strategy):
 
     def __str__(self) -> str:
         return 'subobstruction inferral'
+
+    def __repr__(self) -> str:
+        return 'SubobstructionInferralStrategy()'
 
     @classmethod
     def from_dict(cls, d: dict) -> 'SubobstructionInferralStrategy':

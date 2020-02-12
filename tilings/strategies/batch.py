@@ -42,6 +42,11 @@ class AllCellInsertionStrategy(Strategy):
                     'length {}'.format(self.maxreqlen))
         return 'cell insertion up to length {}'.format(self.maxreqlen)
 
+    def __repr__(self) -> str:
+        return ('AllCellInsertionStrategy(maxreqlen={}, extra_basis={}, '
+                'ignore_parent={})'.format(self.maxreqlen, self.extra_basis,
+                                           self.ignore_parent))
+
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
         d['maxreqlen'] = self.maxreqlen
@@ -74,6 +79,11 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
         return ('restricted root insertion up to '
                 'length {}'.format(self.maxreqlen))
 
+    def __repr__(self) -> str:
+        return ('RootInsertionStrategy(maxreqlen={}, extra_basis={}, '
+                'ignore_parent={})'.format(self.maxreqlen, self.extra_basis,
+                                           self.ignore_parent))
+
 
 class AllPointInsertionStrategy(Strategy):
     def __init__(self, ignore_parent: bool = False) -> None:
@@ -85,6 +95,10 @@ class AllPointInsertionStrategy(Strategy):
 
     def __str__(self) -> str:
         return 'point insertion'
+
+    def __repr__(self) -> str:
+        return ('AllPointInsertionStrategy(ignore_parent={})'
+                .format(self.ignore_parent))
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
@@ -121,6 +135,11 @@ class AllRequirementExtensionStrategy(Strategy):
         return ('requirement extension insertion up to '
                 'length {}'.format(self.maxreqlen))
 
+    def __repr__(self) -> str:
+        return ('AllRequirementExtensionStrategy(maxreqlen={}, extra_basis={},'
+                ' ignore_parent={})'.format(self.maxreqlen, self.extra_basis,
+                                            self.ignore_parent))
+
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
         d['maxreqlen'] = self.maxreqlen
@@ -148,6 +167,10 @@ class AllRowInsertionStrategy(Strategy):
     def __str__(self) -> str:
         return 'row insertion'
 
+    def __repr__(self) -> str:
+        return 'AllRowInsertionStrategy(ignore_parent={})'.format(
+            self.ignore_parent)
+
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
         d['ignore_parent'] = self.ignore_parent
@@ -168,6 +191,10 @@ class AllColInsertionStrategy(Strategy):
 
     def __str__(self) -> str:
         return 'column insertion'
+
+    def __repr__(self) -> str:
+        return 'AllColInsertionStrategy(ignore_parent={})'.format(
+            self.ignore_parent)
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
@@ -205,6 +232,11 @@ class AllRequirementInsertionStrategy(Strategy):
         return ('requirement insertion up to '
                 'length {}'.format(self.maxreqlen))
 
+    def __repr__(self) -> str:
+        return ('AllRequirementExtensionStrategy(maxreqlen={}, extra_basis={},'
+                ' ignore_parent={})'.format(self.maxreqlen, self.extra_basis,
+                                            self.ignore_parent))
+
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
         d['maxreqlen'] = self.maxreqlen
@@ -233,6 +265,10 @@ class AllFactorInsertionStrategy(Strategy):
 
     def __str__(self) -> str:
         return 'all factor insertion'
+
+    def __repr__(self) -> str:
+        return 'AllFactorInsertionStrategy(ignore_parent={})'.format(
+            self.ignore_parent)
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
@@ -269,6 +305,10 @@ class RequirementCorroborationStrategy(Strategy):
 
     def __str__(self) -> str:
         return 'requirement corroboration'
+
+    def __repr__(self) -> str:
+        return ('RequirementCorroborationStrategy(ignore_parent={})'
+                .format(self.ignore_parent))
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
@@ -315,6 +355,12 @@ class RowAndColumnPlacementStrategy(Strategy):
             s = ' '.join(['partial', s])
         return s
 
+    def __repr__(self) -> str:
+        return ('RowAndColumnPlacementStrategy(place_row={}, '
+                'place_col={}, partial={})'.format(self.place_row,
+                                                   self.place_col,
+                                                   self.partial))
+
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
         d['place_row'] = self.place_row
@@ -340,6 +386,9 @@ class AllPlacementsStrategy(Strategy):
 
     def __str__(self) -> str:
         return 'all placements'
+
+    def __repr__(self) -> str:
+        return 'AllPlacementsStrategy()'
 
     @classmethod
     def from_dict(cls, d: dict) -> 'AllPlacementsStrategy':

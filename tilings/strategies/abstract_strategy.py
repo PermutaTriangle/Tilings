@@ -17,6 +17,10 @@ class Strategy(abc.ABC):
     def __str__(self) -> str:
         """Return the name of the strategy."""
 
+    @abc.abstractmethod
+    def __repr__(self) -> str:
+        pass
+
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
         c = self.__class__
