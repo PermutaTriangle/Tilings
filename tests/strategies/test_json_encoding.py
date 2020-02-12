@@ -20,6 +20,10 @@ from tilings.strategies.inferral import (EmptyCellInferralStrategy,
                                          ObstructionTransitivityStrategy,
                                          RowColumnSeparationStrategy,
                                          SubobstructionInferralStrategy)
+from tilings.strategies.verification import (
+    BasicVerificationStrategy, DatabaseVerificationStrategy,
+    ElementaryVerificationStrategy, LocallyFactorableVerificationStrategy,
+    LocalVerificationStrategy, OneByOneVerificationStrategy)
 
 
 def assert_same_strategy(s1, s2):
@@ -87,6 +91,14 @@ strategy_objects = [
     # Fusion strategies
     FusionStrategy(),
     ComponentFusionStrategy(),
+
+    # Verification strategies
+    BasicVerificationStrategy(),
+    DatabaseVerificationStrategy(),
+    ElementaryVerificationStrategy(),
+    LocallyFactorableVerificationStrategy(),
+    LocalVerificationStrategy(),
+    OneByOneVerificationStrategy(),
 ]
 
 
@@ -94,3 +106,5 @@ strategy_objects = [
 def test_json_encoding(strategy):
     strategy_new = json_encode_decode(strategy)
     assert_same_strategy(strategy, strategy_new)
+    # Verification strategies
+    BasicVerificationStrategy(),
