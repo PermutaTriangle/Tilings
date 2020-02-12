@@ -34,6 +34,6 @@ class Strategy(abc.ABC):
     def from_dict(cls, d: dict) -> 'Strategy':
         """Return the strategy from the json representation."""
         module = import_module(d.pop('class_module'))
-        StratClass: Type[Strategy] = getattr(module, d.pop('strategy_class'))
+        StratClass = getattr(module, d.pop('strategy_class'))  # type: Type[Strategy] # noqa: E501
         assert issubclass(StratClass, Strategy), 'Not a valid strategy'
         return StratClass.from_dict(d)  # type: ignore
