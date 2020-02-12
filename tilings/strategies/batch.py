@@ -56,9 +56,13 @@ class AllCellInsertionStrategy(Strategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> 'AllCellInsertionStrategy':
+        if d['extra_basis'] is None:
+            extra_basis = None
+        else:
+            extra_basis = [Perm(p) for p in d['extra_basis']]
         return cls(
             d['maxreqlen'],
-            [Perm(p) for p in d['extra_basis']],
+            extra_basis,
             d['ignore_parent'],
         )
 
@@ -149,9 +153,13 @@ class AllRequirementExtensionStrategy(Strategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> 'AllRequirementExtensionStrategy':
+        if d['extra_basis'] is None:
+            extra_basis = None
+        else:
+            extra_basis = [Perm(p) for p in d['extra_basis']]
         return cls(
             d['maxreqlen'],
-            [Perm(p) for p in d['extra_basis']],
+            extra_basis,
             d['ignore_parent'],
         )
 
@@ -246,9 +254,13 @@ class AllRequirementInsertionStrategy(Strategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> 'AllRequirementInsertionStrategy':
+        if d['extra_basis'] is None:
+            extra_basis = None
+        else:
+            extra_basis = [Perm(p) for p in d['extra_basis']]
         return cls(
-            d['mare glen'],
-            [Perm(p) for p in d['extra_basis']],
+            d['maxreqlen'],
+            extra_basis,
             d['ignore_parent'],
         )
 
@@ -313,6 +325,7 @@ class RequirementCorroborationStrategy(Strategy):
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
         d['ignore_parent'] = self.ignore_parent
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> 'RequirementCorroborationStrategy':
@@ -370,7 +383,7 @@ class RowAndColumnPlacementStrategy(Strategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> 'RowAndColumnPlacementStrategy':
-        return cls(*d)
+        return cls(**d)
 
 
 class AllPlacementsStrategy(Strategy):

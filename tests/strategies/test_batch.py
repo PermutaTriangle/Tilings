@@ -1,8 +1,5 @@
-import json
-
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
-from tilings.strategies.abstract_strategy import Strategy
 from tilings.strategies.batch import (AllCellInsertionStrategy,
                                       AllColInsertionStrategy,
                                       AllFactorInsertionStrategy,
@@ -16,7 +13,7 @@ from tilings.strategies.batch import (AllCellInsertionStrategy,
 
 pytest_plugins = [
     'tests.fixtures.obstructions_requirements',
-    'tests.fixtures.simple_tiling'
+    'tests.fixtures.simple_tiling',
 ]
 
 
@@ -60,14 +57,6 @@ def test_all_cell_insertions_points(simple_tiling):
                        Requirement(Perm((0, 1)), ((0, 0), (1, 1)))]])))
     print(simple_tiling)
     assert strats == actual
-
-
-def test_point_insertion_json():
-    strat = AllPointInsertionStrategy(ignore_parent=True)
-    json_str = json.dumps(strat.to_jsonable())
-    strat2 = Strategy.from_dict(json.loads(json_str))
-    assert strat2.__class__ == strat.__class__
-    assert strat2.__dict__ == strat.__dict__
 
 
 def test_all_cell_insertions(typical_redundant_requirements,
