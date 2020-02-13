@@ -9,10 +9,18 @@ from tilings.algorithms import (CellInsertion, ColInsertion, CrossingInsertion,
                                 RowInsertion)
 from tilings.strategies.abstract_strategy import Strategy
 
-# -------------------------------------
-#   Requirement Insertion             |
-# -------------------------------------
-
+__all__ = [
+    'AllCellInsertionStrategy',
+    'RootInsertionStrategy',
+    'AllRequirementExtensionStrategy',
+    'AllRowInsertionStrategy',
+    'AllColInsertionStrategy',
+    'AllRequirementInsertionStrategy',
+    'AllFactorInsertionStrategy',
+    'RequirementCorroborationStrategy',
+    'RowAndColumnPlacementStrategy',
+    'AllPlacementsStrategy',
+]
 
 class AllCellInsertionStrategy(Strategy):
     """
@@ -308,10 +316,6 @@ class RequirementCorroborationStrategy(Strategy):
     def from_dict(cls, d: dict) -> 'RequirementCorroborationStrategy':
         return cls(**d)
 
-
-# -------------------------------------
-#   Row and column placement          |
-# -------------------------------------
 
 class RowAndColumnPlacementStrategy(Strategy):
     def __init__(self, place_row: bool, place_col: bool,

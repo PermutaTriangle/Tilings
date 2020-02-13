@@ -6,6 +6,8 @@ from tilings.algorithms import (Factor, FactorWithInterleaving,
                                 FactorWithMonotoneInterleaving)
 from tilings.strategies.abstract_strategy import Strategy
 
+__all__ = ['FactorStrategy']
+
 
 class FactorStrategy(Strategy):
 

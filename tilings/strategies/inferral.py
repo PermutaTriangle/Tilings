@@ -6,6 +6,13 @@ from tilings.algorithms import (EmptyCellInferral, ObstructionTransitivity,
                                 RowColSeparation, SubobstructionInferral)
 from tilings.strategies.abstract_strategy import Strategy
 
+__all__ = [
+    'ObstructionTransitivityStrategy',
+    'RowColumnSeparationStrategy',
+    'EmptyCellInferralStrategy',
+    'SubobstructionInferralStrategy',
+]
+
 
 class ObstructionTransitivityStrategy(Strategy):
     """

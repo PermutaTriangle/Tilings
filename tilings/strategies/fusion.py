@@ -6,6 +6,8 @@ from tilings import Tiling
 from tilings.algorithms import ComponentFusion, Fusion
 from tilings.strategies.abstract_strategy import Strategy
 
+__all__ = ['FusionStrategy', 'ComponentFusionStrategy']
+
 
 def _general_fusion_iterator(tiling: Tiling,
                              fusion_class: Type[Fusion]) -> Iterator[Rule]:
@@ -21,17 +23,6 @@ def _general_fusion_iterator(tiling: Tiling,
         (fusion_class(tiling, col_idx=c) for c in range(ncol-1))
     )
     return (fusion.rule() for fusion in possible_fusion if fusion.fusable())
-
-
-def component_fusion(tiling, **kwargs):
-    """
-    Yield rules found by fusing rows and columns of a tiling, where the
-    unfused tiling obtained by drawing a line through certain heights/indices
-    of the row/column.
-    """
-    if tiling.requirements:
-        return
-    yield from _general_fusion_iterator(tiling, ComponentFusion)
 
 
 class FusionStrategy(Strategy):
@@ -50,6 +41,11 @@ class FusionStrategy(Strategy):
 
 
 class ComponentFusionStrategy(Strategy):
+    """
+    Yield rules found by fusing rows and columns of a tiling, where the
+    unfused tiling obtained by drawing a line through certain heights/indices
+    of the row/column.
+    """
     def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         return _general_fusion_iterator(tiling, ComponentFusion)
 

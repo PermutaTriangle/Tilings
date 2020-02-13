@@ -11,6 +11,15 @@ from tilings.algorithms.enumeration import (BasicEnumeration,
                                             OneByOneEnumeration)
 from tilings.strategies.abstract_strategy import Strategy
 
+__all__ = [
+    'BasicVerificationStrategy',
+    'OneByOneVerificationStrategy',
+    'DatabaseVerificationStrategy',
+    'LocallyFactorableVerificationStrategy',
+    'ElementaryVerificationStrategy',
+    'LocalVerificationStrategy',
+]
+
 
 class _VerificationStrategy(Strategy):
     """

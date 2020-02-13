@@ -5,6 +5,8 @@ from tilings import Tiling
 from tilings.algorithms import RequirementPlacement
 from tilings.strategies.abstract_strategy import Strategy
 
+__all__ = ['RequirementPlacementStrategy']
+
 
 class RequirementPlacementStrategy(Strategy):
     """
