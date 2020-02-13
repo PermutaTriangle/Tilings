@@ -1,7 +1,7 @@
 from typing import Iterable, Iterator, List, Optional
 
 from comb_spec_searcher import Rule
-from permuta import Perm
+from permuta import Av, Perm
 from tilings import Tiling
 from tilings.algorithms import (CellInsertion, ColInsertion, CrossingInsertion,
                                 FactorInsertion, RequirementCorroboration,
@@ -28,10 +28,10 @@ class AllCellInsertionStrategy(Strategy):
     The cell insertion strategy.
 
     The cell insertion strategy is a batch strategy that considers each active
-    cells, excluding positive cells. For each of these cells, the strategy
-    considers all patterns (up to some maximum length given by maxreqlen, and
-    some maximum number given by maxreqnum) and returns two tilings; one which
-    requires the pattern in the cell and one where the pattern is obstructed.
+    cells. For each of these cells, the strategy
+    considers all patterns (up to some maximum length given by `maxreqlen`)
+    and returns two tilings; one which requires the pattern in the cell and
+    one where the pattern is obstructed.
     """
     def __init__(self, maxreqlen: int = 1,
                  extra_basis: Optional[List[Perm]] = None,
@@ -49,8 +49,9 @@ class AllCellInsertionStrategy(Strategy):
         if self.maxreqlen == 1:
             return 'point insertion'
         if self.extra_basis is not None:
-            return ('restricted cell insertion up to '
-                    'length {}'.format(self.maxreqlen))
+            perm_class = Av(self.extra_basis)
+            return ('cell insertion from {} up to '
+                    'length {}'.format(perm_class, self.maxreqlen))
         return 'cell insertion up to length {}'.format(self.maxreqlen)
 
     def __repr__(self) -> str:
@@ -91,8 +92,10 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
     def __str__(self) -> str:
         if self.extra_basis is None:
             return 'root insertion up to length {}'.format(self.maxreqlen)
-        return ('restricted root insertion up to '
-                'length {}'.format(self.maxreqlen))
+
+        perm_class = Av(self.extra_basis)
+        return ('root insertion from {} up to '
+                'length {}'.format(perm_class, self.maxreqlen))
 
     def __repr__(self) -> str:
         return ('RootInsertionStrategy(maxreqlen={}, extra_basis={}, '
@@ -120,8 +123,9 @@ class AllRequirementExtensionStrategy(Strategy):
 
     def __str__(self) -> str:
         if self.extra_basis is not None:
-            return ('restricted requirement extension up to '
-                    'length {}'.format(self.maxreqlen))
+            perm_class = Av(self.extra_basis)
+            return ('requirement extension from {} up to '
+                    'length {}'.format(perm_class, self.maxreqlen))
         return ('requirement extension insertion up to '
                 'length {}'.format(self.maxreqlen))
 
@@ -223,8 +227,9 @@ class AllRequirementInsertionStrategy(Strategy):
         if self.maxreqlen == 1:
             return 'point insertion'
         if self.extra_basis is not None:
-            return ('restricted requirement insertion up to '
-                    'length {}'.format(self.maxreqlen))
+            perm_class = Av(self.extra_basis)
+            return ('requirement insertion from {} up to '
+                    'length {}'.format(perm_class, self.maxreqlen))
         return ('requirement insertion up to '
                 'length {}'.format(self.maxreqlen))
 
