@@ -37,6 +37,8 @@ class AllCellInsertionStrategy(Strategy):
                     .rules(self.ignore_parent))
 
     def __str__(self) -> str:
+        if self.maxreqlen == 1:
+            return 'point insertion'
         if self.extra_basis is not None:
             return ('restricted cell insertion up to '
                     'length {}'.format(self.maxreqlen))
@@ -87,31 +89,6 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
         return ('RootInsertionStrategy(maxreqlen={}, extra_basis={}, '
                 'ignore_parent={})'.format(self.maxreqlen, self.extra_basis,
                                            self.ignore_parent))
-
-
-class AllPointInsertionStrategy(Strategy):
-    def __init__(self, ignore_parent: bool = False) -> None:
-        self.ignore_parent = ignore_parent
-
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
-        yield from (CellInsertion(tiling, maxreqlen=1, extra_basis=[])
-                    .rules(self.ignore_parent))
-
-    def __str__(self) -> str:
-        return 'point insertion'
-
-    def __repr__(self) -> str:
-        return ('AllPointInsertionStrategy(ignore_parent={})'
-                .format(self.ignore_parent))
-
-    def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
-        d['ignore_parent'] = self.ignore_parent
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict) -> 'AllPointInsertionStrategy':
-        return cls(**d)
 
 
 class AllRequirementExtensionStrategy(Strategy):
@@ -241,7 +218,7 @@ class AllRequirementInsertionStrategy(Strategy):
                 'length {}'.format(self.maxreqlen))
 
     def __repr__(self) -> str:
-        return ('AllRequirementExtensionStrategy(maxreqlen={}, extra_basis={},'
+        return ('AllRequirementInsertionStrategy(maxreqlen={}, extra_basis={},'
                 ' ignore_parent={})'.format(self.maxreqlen, self.extra_basis,
                                             self.ignore_parent))
 
