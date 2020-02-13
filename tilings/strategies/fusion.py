@@ -1,9 +1,16 @@
 from itertools import chain
+from typing import Iterator, Type
 
+from comb_spec_searcher import Rule
+from tilings import Tiling
 from tilings.algorithms import ComponentFusion, Fusion
+from tilings.strategies.abstract_strategy import Strategy
+
+__all__ = ['FusionStrategy', 'ComponentFusionStrategy']
 
 
-def general_fusion_iterator(tiling, fusion_class):
+def _general_fusion_iterator(tiling: Tiling,
+                             fusion_class: Type[Fusion]) -> Iterator[Rule]:
     """
     Generator over rules found by fusing rows or columns of `tiling` using
     the fusion defined by `fusion_class`.
@@ -18,17 +25,36 @@ def general_fusion_iterator(tiling, fusion_class):
     return (fusion.rule() for fusion in possible_fusion if fusion.fusable())
 
 
-def fusion(tiling, **kwargs):
-    """Generator over rules found by fusing rows or columns of `tiling`."""
-    return general_fusion_iterator(tiling, fusion_class=Fusion)
+class FusionStrategy(Strategy):
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+        return _general_fusion_iterator(tiling, Fusion)
+
+    def __str__(self) -> str:
+        return 'fusion'
+
+    def __repr__(self) -> str:
+        return 'FusionStrategy()'
+
+    @classmethod
+    def from_dict(cls, d: dict) -> 'FusionStrategy':
+        return cls()
 
 
-def component_fusion(tiling, **kwargs):
+class ComponentFusionStrategy(Strategy):
     """
     Yield rules found by fusing rows and columns of a tiling, where the
     unfused tiling obtained by drawing a line through certain heights/indices
     of the row/column.
     """
-    if tiling.requirements:
-        return
-    yield from general_fusion_iterator(tiling, ComponentFusion)
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+        return _general_fusion_iterator(tiling, ComponentFusion)
+
+    def __str__(self) -> str:
+        return 'component fusion'
+
+    def __repr__(self) -> str:
+        return 'ComponentFusion()'
+
+    @classmethod
+    def from_dict(cls, d: dict) -> 'ComponentFusionStrategy':
+        return cls()

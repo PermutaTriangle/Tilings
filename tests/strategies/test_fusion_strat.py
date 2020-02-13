@@ -3,7 +3,7 @@ import pytest
 from comb_spec_searcher import Rule
 from permuta import Perm
 from tilings import Obstruction, Tiling
-from tilings.strategies.fusion import component_fusion, fusion
+from tilings.strategies import ComponentFusionStrategy, FusionStrategy
 
 
 @pytest.fixture
@@ -38,8 +38,8 @@ def tiling2():
 
 
 def test_component_fusion(tiling1, tiling2):
-    assert len(list(component_fusion(tiling1))) == 0
-    assert len(list(component_fusion(tiling2))) == 1
+    assert len(list(ComponentFusionStrategy()(tiling1))) == 0
+    assert len(list(ComponentFusionStrategy()(tiling2))) == 1
 
 
 @pytest.fixture
@@ -91,8 +91,8 @@ def big_tiling():
 
 
 def test_fusion(small_tiling, big_tiling):
-    assert len(list(fusion(big_tiling))) == 0
-    small_tiling_rules = list(fusion(small_tiling))
+    assert len(list(FusionStrategy()(big_tiling))) == 0
+    small_tiling_rules = list(FusionStrategy()(small_tiling))
     assert len(small_tiling_rules) == 2
     assert all(isinstance(rule, Rule) for rule in small_tiling_rules)
     assert all(rule.constructor == 'other' for rule in small_tiling_rules)
@@ -101,5 +101,5 @@ def test_fusion(small_tiling, big_tiling):
         Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
         Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
     ])
-    t_rules = list(fusion(t))
+    t_rules = list(FusionStrategy()(t))
     assert len(t_rules) == 1

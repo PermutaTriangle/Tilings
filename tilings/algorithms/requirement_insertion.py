@@ -148,46 +148,6 @@ class RequirementExtension(RequirementInsertionWithRestriction):
                         yield (Requirement.single_cell(patt, cell),)
 
 
-class RowInsertion(RequirementInsertion):
-    """
-    Insert a list requirement in that enforce that a row is active.
-    """
-    @staticmethod
-    def formal_step(req_list: ListRequirement) -> str:
-        row = req_list[0].pos[0][1]
-        return "Either row {} is empty or not.".format(row)
-
-    def req_lists_to_insert(self) -> Iterable[ListRequirement]:
-        positive_cells = self.tiling.positive_cells
-        for row in range(self.tiling.dimensions[1]):
-            row_cells = self.tiling.cells_in_row(row)
-            if all(c not in positive_cells for c in row_cells):
-                yield tuple(
-                    Requirement(Perm((0,)), (c,))
-                    for c in row_cells
-                )
-
-
-class ColInsertion(RequirementInsertion):
-    """
-    Insert a list requirement in that enforce that a column is active.
-    """
-    @staticmethod
-    def formal_step(req_list: ListRequirement) -> str:
-        row = req_list[0].pos[0][0]
-        return "Either column {} is empty or not.".format(row)
-
-    def req_lists_to_insert(self) -> Iterable[ListRequirement]:
-        positive_cells = self.tiling.positive_cells
-        for col in range(self.tiling.dimensions[0]):
-            col_cells = self.tiling.cells_in_col(col)
-            if all(c not in positive_cells for c in col_cells):
-                yield tuple(
-                    Requirement(Perm((0,)), (c,))
-                    for c in col_cells
-                )
-
-
 class FactorInsertion(RequirementInsertion):
     """
     Insert the proper factor of any obstruction or requirements.

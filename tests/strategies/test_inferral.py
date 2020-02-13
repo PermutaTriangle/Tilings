@@ -2,8 +2,8 @@ import pytest
 
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
-from tilings.strategies.inferral import (obstruction_transitivity,
-                                         row_and_column_separation)
+from tilings.strategies import (ObstructionTransitivityStrategy,
+                                RowColumnSeparationStrategy)
 
 pytest_plugins = [
     'tests.fixtures.simple_trans'
@@ -15,21 +15,21 @@ def test_obstruction_transitivity(simple_trans_row,
                                   simple_trans_col,
                                   simple_trans_row_len2,
                                   simple_trans_row_len3):
-    strat = obstruction_transitivity(simple_trans_row)
+    strat = ObstructionTransitivityStrategy()(simple_trans_row)
     assert strat.comb_classes[0] == Tiling(
         obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
                       Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
                       Obstruction(Perm((0, 1)), [(0, 0), (2, 0)])],
         requirements=[[Requirement(Perm((0,)), [(1, 0)])]])
 
-    strat = obstruction_transitivity(simple_trans_col)
+    strat = ObstructionTransitivityStrategy()(simple_trans_col)
     assert strat.comb_classes[0] == Tiling(
         obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (0, 1)]),
                       Obstruction(Perm((0, 1)), [(0, 1), (0, 2)]),
                       Obstruction(Perm((0, 1)), [(0, 0), (0, 2)])],
         requirements=[[Requirement(Perm((0,)), [(0, 1)])]])
 
-    strat = obstruction_transitivity(simple_trans_row_len2)
+    strat = ObstructionTransitivityStrategy()(simple_trans_row_len2)
     assert strat.comb_classes[0] == Tiling(
         obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
                       Obstruction(Perm((0, 1)), [(0, 0), (2, 0)]),
@@ -40,7 +40,7 @@ def test_obstruction_transitivity(simple_trans_row,
         requirements=[[Requirement(Perm((0,)), [(1, 0)])],
                       [Requirement(Perm((0,)), [(2, 0)])]])
 
-    strat = obstruction_transitivity(simple_trans_row_len3)
+    strat = ObstructionTransitivityStrategy()(simple_trans_row_len3)
     assert strat.comb_classes[0] == Tiling(
         obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
                       Obstruction(Perm((0, 1)), [(0, 0), (2, 0)]),
@@ -151,14 +151,14 @@ def test_row_col_seperation(not_separable_tilings, seperable_tiling1,
         Obstruction(Perm((0, 1)), ((1, 0),)*2),
         Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
     ])
-    rcs = row_and_column_separation(t)
+    rcs = RowColumnSeparationStrategy()(t)
     assert rcs.comb_classes[0] == Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 1),)*2),
         Obstruction(Perm((0, 1)), ((1, 0),)*2),
     ])
 
     for t in not_separable_tilings:
-        assert row_and_column_separation(t) is None
+        assert RowColumnSeparationStrategy()(t) is None
     t1_sep = Tiling(obstructions=(
         Obstruction(Perm((0,)), ((0, 0),)),
         Obstruction(Perm((0,)), ((0, 1),)),
@@ -209,9 +209,9 @@ def test_row_col_seperation(not_separable_tilings, seperable_tiling1,
         Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
         Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0)))
     ), requirements=())
-    assert (row_and_column_separation(seperable_tiling1).comb_classes[0] ==
+    assert (RowColumnSeparationStrategy()(seperable_tiling1).comb_classes[0] ==
             t1_sep)
-    assert (row_and_column_separation(seperable_tiling2).comb_classes[0] ==
+    assert (RowColumnSeparationStrategy()(seperable_tiling2).comb_classes[0] ==
             t2_sep)
-    assert (row_and_column_separation(seperable_tiling3).comb_classes[0] ==
+    assert (RowColumnSeparationStrategy()(seperable_tiling3).comb_classes[0] ==
             t3_sep)
