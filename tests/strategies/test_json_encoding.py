@@ -5,12 +5,10 @@ import pytest
 from permuta import Perm
 from tilings.strategies.abstract_strategy import Strategy
 from tilings.strategies.batch import (AllCellInsertionStrategy,
-                                      AllColInsertionStrategy,
                                       AllFactorInsertionStrategy,
                                       AllPlacementsStrategy,
                                       AllRequirementExtensionStrategy,
                                       AllRequirementInsertionStrategy,
-                                      AllRowInsertionStrategy,
                                       RequirementCorroborationStrategy,
                                       RowAndColumnPlacementStrategy)
 from tilings.strategies.decomposition import FactorStrategy
@@ -58,14 +56,11 @@ strategy_objects = [
     # Batch strategies
     AllCellInsertionStrategy(),
     AllCellInsertionStrategy(1, [Perm((0, 1, 2))], ignore_parent=True),
-    AllColInsertionStrategy(ignore_parent=False),
-    AllColInsertionStrategy(ignore_parent=True),
     AllFactorInsertionStrategy(),
     AllPlacementsStrategy(),
     AllRequirementExtensionStrategy(),
     AllRequirementExtensionStrategy(maxreqlen=4),
     AllRequirementInsertionStrategy(),
-    AllRowInsertionStrategy(),
     RequirementCorroborationStrategy(),
     RowAndColumnPlacementStrategy(place_col=True, place_row=True),
     RowAndColumnPlacementStrategy(place_col=True, place_row=True,

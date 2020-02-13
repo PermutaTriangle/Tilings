@@ -1,20 +1,17 @@
-from typing import Iterable, Iterator, List, Optional
+from typing import Iterator, List, Optional
 
 from comb_spec_searcher import Rule
 from permuta import Av, Perm
 from tilings import Tiling
-from tilings.algorithms import (CellInsertion, ColInsertion, CrossingInsertion,
+from tilings.algorithms import (CellInsertion, CrossingInsertion,
                                 FactorInsertion, RequirementCorroboration,
-                                RequirementExtension, RequirementPlacement,
-                                RowInsertion)
+                                RequirementExtension, RequirementPlacement)
 from tilings.strategies.abstract_strategy import Strategy
 
 __all__ = [
     'AllCellInsertionStrategy',
     'RootInsertionStrategy',
     'AllRequirementExtensionStrategy',
-    'AllRowInsertionStrategy',
-    'AllColInsertionStrategy',
     'AllRequirementInsertionStrategy',
     'AllFactorInsertionStrategy',
     'RequirementCorroborationStrategy',
@@ -152,56 +149,6 @@ class AllRequirementExtensionStrategy(Strategy):
             extra_basis,
             d['ignore_parent'],
         )
-
-
-class AllRowInsertionStrategy(Strategy):
-    """Insert a list requirement into every possibly empty row."""
-    def __init__(self, ignore_parent: bool = False) -> None:
-        self.ignore_parent = ignore_parent
-
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterable[Rule]:
-        yield from RowInsertion(tiling).rules(self.ignore_parent)
-
-    def __str__(self) -> str:
-        return 'row insertion'
-
-    def __repr__(self) -> str:
-        return 'AllRowInsertionStrategy(ignore_parent={})'.format(
-            self.ignore_parent)
-
-    def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
-        d['ignore_parent'] = self.ignore_parent
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict) -> 'AllRowInsertionStrategy':
-        return cls(**d)
-
-
-class AllColInsertionStrategy(Strategy):
-    """Insert a list requirement into every possibly empty row."""
-    def __init__(self, ignore_parent: bool = False) -> None:
-        self.ignore_parent = ignore_parent
-
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterable[Rule]:
-        yield from ColInsertion(tiling).rules(self.ignore_parent)
-
-    def __str__(self) -> str:
-        return 'column insertion'
-
-    def __repr__(self) -> str:
-        return 'AllColInsertionStrategy(ignore_parent={})'.format(
-            self.ignore_parent)
-
-    def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
-        d['ignore_parent'] = self.ignore_parent
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict) -> 'AllColInsertionStrategy':
-        return cls(**d)
 
 
 class AllRequirementInsertionStrategy(Strategy):

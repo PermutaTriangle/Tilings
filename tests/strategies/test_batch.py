@@ -1,12 +1,10 @@
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
 from tilings.strategies import (AllCellInsertionStrategy,
-                                AllColInsertionStrategy,
                                 AllFactorInsertionStrategy,
                                 AllPlacementsStrategy,
                                 AllRequirementExtensionStrategy,
                                 AllRequirementInsertionStrategy,
-                                AllRowInsertionStrategy,
                                 RequirementCorroborationStrategy,
                                 RowAndColumnPlacementStrategy)
 
@@ -194,45 +192,6 @@ def test_requirement_extensions(typical_obstructions_with_local,
             tiling.add_single_cell_requirement(Perm((2, 1, 0)), (3, 0))
         ])])
     assert strats == actual
-
-
-def test_all_row_insertion():
-    t = Tiling(obstructions=[
-        Obstruction(Perm((0, 1)), ((0, 0),)*2),
-        Obstruction(Perm((0, 1)), ((1, 0),)*2),
-        Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
-    ], requirements=[
-        [Requirement(Perm((0, 1)), ((0, 1),)*2)]
-    ])
-    strats = set([tuple(s.comb_classes)
-                  for s in AllRowInsertionStrategy()(t)])
-    actual = set([
-        (Tiling(obstructions=[Obstruction(Perm((0, 1, 2)), ((0, 0),)*3)],
-                requirements=[[Requirement(Perm((0, 1)), ((0, 0),)*2)]]),
-         t.add_list_requirement([Requirement(Perm((0,)), ((0, 0),)),
-                                 Requirement(Perm((0,)), ((1, 0),)), ])), ])
-    assert actual == strats
-    assert (next(AllRowInsertionStrategy()(t)).formal_step ==
-            'Either row 0 is empty or not.')
-
-
-def test_all_col_insertion():
-    t = Tiling(obstructions=[
-        Obstruction(Perm((0, 1)), ((0, 0),)*2),
-        Obstruction(Perm((0, 1)), ((1, 0),)*2),
-        Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
-    ], requirements=[
-        [Requirement(Perm((0, 1)), ((0, 1),)*2)]
-    ])
-    strats = set([tuple(s.comb_classes)
-                  for s in AllColInsertionStrategy()(t)])
-    actual = set([
-        (t.add_single_cell_obstruction(Perm((0,)), (1, 0)),
-         t.add_single_cell_requirement(Perm((0,)), (1, 0)),)
-    ])
-    assert actual == strats
-    assert (next(AllColInsertionStrategy()(t)).formal_step ==
-            'Either column 1 is empty or not.')
 
 
 def test_all_requirement_insertion():

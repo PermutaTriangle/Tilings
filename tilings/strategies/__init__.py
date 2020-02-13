@@ -1,7 +1,6 @@
-from .batch import (AllCellInsertionStrategy, AllColInsertionStrategy,
-                    AllFactorInsertionStrategy, AllPlacementsStrategy,
-                    AllRequirementExtensionStrategy,
-                    AllRequirementInsertionStrategy, AllRowInsertionStrategy,
+from .batch import (AllCellInsertionStrategy, AllFactorInsertionStrategy,
+                    AllPlacementsStrategy, AllRequirementExtensionStrategy,
+                    AllRequirementInsertionStrategy,
                     RequirementCorroborationStrategy, RootInsertionStrategy,
                     RowAndColumnPlacementStrategy)
 from .decomposition import FactorStrategy
@@ -21,12 +20,10 @@ from .verification import (BasicVerificationStrategy,
 __all__ = [
     # Batch
     'AllCellInsertionStrategy',
-    'AllColInsertionStrategy',
     'AllFactorInsertionStrategy',
     'AllPlacementsStrategy',
     'AllRequirementExtensionStrategy',
     'AllRequirementInsertionStrategy',
-    'AllRowInsertionStrategy',
     'RequirementCorroborationStrategy',
     'RootInsertionStrategy',
     'RowAndColumnPlacementStrategy',
