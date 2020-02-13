@@ -88,11 +88,7 @@ class Graph():
         assert self._reduced, "Graph must first be reduced"
         if self._is_acyclic or self.num_vertices == 0:
             return True
-        for row in self._matrix:
-            if self.find_cycle() is None:
-                self._is_acyclic = True
-                return True
-        return False
+        return self.find_cycle() is None
 
     def find_cycle(self):
         """
