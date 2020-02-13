@@ -28,7 +28,7 @@ class _VerificationStrategy(Strategy):
     `VERIFICATION_CLASS`.
     """
     # pylint: disable=E1102
-    VERIFICATION_CLASS = None  # type: Type[Enumeration]
+    VERIFICATION_CLASS = NotImplemented  # type: Type[Enumeration]
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)

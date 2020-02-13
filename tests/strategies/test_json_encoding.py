@@ -8,7 +8,6 @@ from tilings.strategies.batch import (AllCellInsertionStrategy,
                                       AllColInsertionStrategy,
                                       AllFactorInsertionStrategy,
                                       AllPlacementsStrategy,
-                                      AllPointInsertionStrategy,
                                       AllRequirementExtensionStrategy,
                                       AllRequirementInsertionStrategy,
                                       AllRowInsertionStrategy,
@@ -57,15 +56,12 @@ def json_encode_decode(s):
 
 strategy_objects = [
     # Batch strategies
-    AllPointInsertionStrategy(ignore_parent=True),
-    AllPointInsertionStrategy(ignore_parent=False),
     AllCellInsertionStrategy(),
     AllCellInsertionStrategy(1, [Perm((0, 1, 2))], ignore_parent=True),
     AllColInsertionStrategy(ignore_parent=False),
     AllColInsertionStrategy(ignore_parent=True),
     AllFactorInsertionStrategy(),
     AllPlacementsStrategy(),
-    AllPointInsertionStrategy(),
     AllRequirementExtensionStrategy(),
     AllRequirementExtensionStrategy(maxreqlen=4),
     AllRequirementInsertionStrategy(),

@@ -1,15 +1,14 @@
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
-from tilings.strategies.batch import (AllCellInsertionStrategy,
-                                      AllColInsertionStrategy,
-                                      AllFactorInsertionStrategy,
-                                      AllPlacementsStrategy,
-                                      AllPointInsertionStrategy,
-                                      AllRequirementExtensionStrategy,
-                                      AllRequirementInsertionStrategy,
-                                      AllRowInsertionStrategy,
-                                      RequirementCorroborationStrategy,
-                                      RowAndColumnPlacementStrategy)
+from tilings.strategies import (AllCellInsertionStrategy,
+                                AllColInsertionStrategy,
+                                AllFactorInsertionStrategy,
+                                AllPlacementsStrategy,
+                                AllRequirementExtensionStrategy,
+                                AllRequirementInsertionStrategy,
+                                AllRowInsertionStrategy,
+                                RequirementCorroborationStrategy,
+                                RowAndColumnPlacementStrategy)
 
 pytest_plugins = [
     'tests.fixtures.obstructions_requirements',
@@ -18,8 +17,10 @@ pytest_plugins = [
 
 
 def test_all_cell_insertions_points(simple_tiling):
+    point_insertion = AllCellInsertionStrategy(maxreqlen=1)
+    assert str(point_insertion) == 'point insertion'
     strats = set([tuple(s.comb_classes)
-                  for s in AllPointInsertionStrategy()(simple_tiling)])
+                  for s in point_insertion(simple_tiling)])
     assert all(len(s) == 2 for s in strats)
     actual = set()
     actual.add((Tiling(

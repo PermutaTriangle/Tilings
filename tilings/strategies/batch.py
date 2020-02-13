@@ -22,6 +22,7 @@ __all__ = [
     'AllPlacementsStrategy',
 ]
 
+
 class AllCellInsertionStrategy(Strategy):
     """
     The cell insertion strategy.
@@ -219,6 +220,8 @@ class AllRequirementInsertionStrategy(Strategy):
                     .rules(self.ignore_parent))
 
     def __str__(self) -> str:
+        if self.maxreqlen == 1:
+            return 'point insertion'
         if self.extra_basis is not None:
             return ('restricted requirement insertion up to '
                     'length {}'.format(self.maxreqlen))

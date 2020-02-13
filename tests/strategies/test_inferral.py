@@ -2,8 +2,8 @@ import pytest
 
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
-from tilings.strategies.inferral import (ObstructionTransitivityStrategy,
-                                         RowColumnSeparationStrategy)
+from tilings.strategies import (ObstructionTransitivityStrategy,
+                                RowColumnSeparationStrategy)
 
 pytest_plugins = [
     'tests.fixtures.simple_trans'

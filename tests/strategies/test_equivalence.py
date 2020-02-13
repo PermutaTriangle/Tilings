@@ -1,7 +1,7 @@
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import Obstruction, Requirement, Tiling
-from tilings.strategies.equivalence import RequirementPlacementStrategy
+from tilings.strategies import RequirementPlacementStrategy
 
 pytest_plugins = [
     'tests.fixtures.obstructions_requirements',

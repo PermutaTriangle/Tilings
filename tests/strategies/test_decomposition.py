@@ -1,6 +1,6 @@
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
-from tilings.strategies.decomposition import FactorStrategy
+from tilings.strategies import FactorStrategy
 
 pytest_plugins = [
     'tests.fixtures.simple_tiling',
