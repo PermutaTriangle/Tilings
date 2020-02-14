@@ -111,4 +111,4 @@ class LocalVerificationStrategy(_VerificationStrategy):
     VERIFICATION_CLASS = LocalEnumeration
 
     def __str__(self) -> str:
-        return 'locally factorable verification'
+        return 'local verification'
