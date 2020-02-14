@@ -295,11 +295,11 @@ class RowAndColumnPlacementStrategy(Strategy):
     def __str__(self) -> str:
         s = '{} placement'
         if self.place_col and self.place_col:
-            s.format('row and column')
+            s = s.format('row and column')
         elif self.place_row:
-            s.format('row')
+            s = s.format('row')
         else:
-            s.format('column')
+            s = s.format('column')
         if self.partial:
             s = ' '.join(['partial', s])
         return s
