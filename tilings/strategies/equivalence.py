@@ -18,7 +18,7 @@ class RequirementPlacementStrategy(Strategy):
         - `point_only`: only place point for length 1 subpattern.
         - `partial`: places only the point on its own row or its own column.
     """
-    def __init__(self, point_only: bool, partial: bool = False):
+    def __init__(self, point_only: bool = False, partial: bool = False):
         self.point_only = point_only
         self.partial = partial
 
