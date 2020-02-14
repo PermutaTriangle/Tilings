@@ -3,7 +3,9 @@ from itertools import chain
 from typing import Optional
 
 from comb_spec_searcher import StrategyPack
+from comb_spec_searcher.utils import get_func_name
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
+from tilings import Tiling
 from tilings import strategies as strat
 from tilings.strategies.abstract_strategy import Strategy
 
@@ -53,8 +55,25 @@ class TileScopePack(StrategyPack):
         return s
 
     def __str__(self) -> str:
-        # Redefine to use the Strategy __str__
-        super().__str__(self)
+        string = ("Looking for {} combinatorial specification"
+                  " with the strategies:\n").format(
+            'iterative' if self.iterative else 'recursive')
+        initial_strats = ", ".join(map(str, self.initial_strats))
+        infer_strats = ", ".join(map(str, self.inferral_strats))
+        verif_strats = ", ".join(map(str, self.ver_strats))
+        string += "Inferral: {}\n".format(infer_strats)
+        string += "Initial: {}\n".format(initial_strats)
+        string += "Verification: {}\n".format(verif_strats)
+        if self.forward_equivalence:
+            string += "Using forward equivalence only.\n"
+        if self.symmetries:
+            symme_strats = ", ".join(get_func_name(f)
+                                     for f in self.symmetries)
+            string += "Symmetries: {}\n".format(symme_strats)
+        for i, strategies in enumerate(self.expansion_strats):
+            strats = ", ".join(map(str, strategies))
+            string += "Set {}: {}\n".format(i+1, strats)
+        return string
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TileScopePack):
@@ -85,26 +104,94 @@ class TileScopePack(StrategyPack):
 
     # Method to add power to a pack
     # Pack are immutable, these methods return a new pack.
-    def make_fusion(self) -> 'TileScopePack':
+    def add_initial(self, strategy: Strategy,
+                    name_ext: str = '') -> 'TileScopePack':
+        """
+        Create a new pack with an additional initial strategy and append
+        name_ext to the name of the pack.
+        """
+        if strategy in self:
+            raise ValueError(("The strategy {!r} is already in pack."
+                              "".format(strategy)))
+        new_pack = copy(self)
+        new_pack.initial_strats.append(strategy)
+        if name_ext:
+            new_pack.name = '_'.join([self.name, name_ext])
+        return new_pack
+
+    def add_inferral(self, strategy: Strategy,
+                     name_ext: str = '') -> 'TileScopePack':
+        """
+        Create a new pack with an additional inferral strategy and append
+        name_ext to the name of the pack.
+        """
+        if strategy in self:
+            raise ValueError(("The strategy {!r} is already in pack."
+                              "".format(strategy)))
+        new_pack = copy(self)
+        new_pack.inferral_strats.append(strategy)
+        if name_ext:
+            new_pack.name = '_'.join([self.name, name_ext])
+        return new_pack
+
+    def add_verification(self, strategy: Strategy,
+                         name_ext: str = '') -> 'TileScopePack':
+        """
+        Create a new pack with an additional verification strategy and append
+        name_ext to the name of the pack.
+        """
+        if strategy in self:
+            raise ValueError(("The strategy {!r} is already in pack."
+                              "".format(strategy)))
+        new_pack = copy(self)
+        new_pack.initial_strats.append(strategy)
+        if name_ext:
+            new_pack.name = '_'.join([self.name, name_ext])
+        return new_pack
+
+    def make_fusion(self, component: bool = True) -> 'TileScopePack':
         """Create a new pack by adding fusion to the current pack."""
-        raise NotImplementedError
+        if component:
+            return self.add_initial(strat.ComponentFusionStrategy(),
+                                    'component_fusion')
+        return self.add_initial(strat.FusionStrategy(), 'fusion')
 
     def make_elementary(self) -> 'TileScopePack':
         """
         Create a new pack by using only one by one and elementary
         verification.
         """
-        raise NotImplementedError
+        if (strat.ElementaryVerificationStrategy() in self and
+            strat.OneByOneVerificationStrategy() in self and
+            len(self.ver_strats) == 2 and
+                self.forward_equivalence and self.iterative):
+            raise ValueError("The pack is already elementary.")
+        new_pack = copy(self)
+        new_pack.ver_strats = [strat.ElementaryVerificationStrategy(),
+                               strat.OneByOneVerificationStrategy()]
+        new_pack.name = '_'.join(['elementary', self.name])
+        new_pack.forward_equivalence = True
+        new_pack.iterative = True
+        return new_pack
 
     def make_database(self) -> 'TileScopePack':
         """
         Create a new pack by adding database verification to the current pack.
         """
-        raise NotImplementedError
+        return self.add_verification(strat.DatabaseVerificationStrategy(),
+                                     'database')
 
     def add_symmetry(self) -> 'TileScopePack':
         """Create a new pack by turning on symmetry on the current pack."""
-        raise NotImplementedError
+        if self.symmetries:
+            raise ValueError("Symmetries already turned on.")
+        symmetries = [Tiling.inverse, Tiling.reverse, Tiling.complement,
+                      Tiling.antidiagonal, Tiling.rotate90,
+                      Tiling.rotate180, Tiling.rotate270]
+        new_pack = copy(self)
+        new_pack.name = '_'.join(['symmetries', self.name])
+        new_pack.symmetries = symmetries
+        return new_pack
 
     # Creation of the base pack
     @classmethod
