@@ -156,7 +156,7 @@ class AllRequirementInsertionStrategy(Strategy):
     Insert all possible requirements the obstruction allows if the tiling does
     not have requirements.
     """
-    def __init__(self, maxreqlen: int = 1,
+    def __init__(self, maxreqlen: int = 2,
                  extra_basis: Optional[List[Perm]] = None,
                  ignore_parent: bool = False,
                  ) -> None:
