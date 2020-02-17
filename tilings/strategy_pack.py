@@ -1,6 +1,5 @@
 from copy import copy
 from itertools import chain
-from typing import Optional
 
 from comb_spec_searcher import StrategyPack
 from comb_spec_searcher.utils import get_func_name
@@ -8,6 +7,10 @@ from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import Tiling
 from tilings import strategies as strat
 from tilings.strategies.abstract_strategy import Strategy
+
+SYMMETRIES_FUNCTIONS = [Tiling.inverse, Tiling.reverse, Tiling.complement,
+                        Tiling.antidiagonal, Tiling.rotate90,
+                        Tiling.rotate180, Tiling.rotate270]
 
 
 class TileScopePack(StrategyPack):
@@ -75,10 +78,10 @@ class TileScopePack(StrategyPack):
             string += "Set {}: {}\n".format(i+1, strats)
         return string
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, TileScopePack):
+    def __eq__(self, other: object):
+        if not isinstance(other, StrategyPack):
             return NotImplemented
-        raise NotImplementedError
+        return self.__dict__ == other.__dict__
 
     def __copy__(self) -> 'TileScopePack':
         return TileScopePack(
@@ -96,11 +99,34 @@ class TileScopePack(StrategyPack):
 
     # JSON methods
     def to_jsonable(self) -> dict:
-        raise NotImplementedError
+        return {
+            'name': self.name,
+            'initial_strats': [s.to_jsonable() for s in self.initial_strats],
+            'inferral_strats': [s.to_jsonable() for s in self.inferral_strats],
+            'ver_strats': [s.to_jsonable() for s in self.ver_strats],
+            'expansion_strats': [[s.to_jsonable() for s in strat_list]
+                                 for strat_list in self.expansion_strats],
+            'symmetries': bool(self.symmetries),
+            'forward_equivalence': self.forward_equivalence,
+            'iterative': self.iterative,
+        }
 
     @classmethod
     def from_dict(cls, d: dict) -> 'TileScopePack':
-        raise NotImplementedError
+        name = d.pop('name')
+        initial_strats = [Strategy.from_dict(strat_dict) for strat_dict in
+                          d.pop('initial_strats')]
+        inferral_strats = [Strategy.from_dict(strat_dict) for strat_dict in
+                           d.pop('inferral_strats')]
+        ver_strats = [Strategy.from_dict(strat_dict) for strat_dict in
+                      d.pop('ver_strats')]
+        expansion_strats = [[Strategy.from_dict(strat_dict) for strat_dict in
+                             strat_list] for strat_list in
+                            d.pop('expansion_strats')]
+        if d.pop('symmetries'):
+            d['symmetries'] = SYMMETRIES_FUNCTIONS
+        return cls(initial_strats, inferral_strats, expansion_strats,
+                   ver_strats, name, **d)
 
     # Method to add power to a pack
     # Pack are immutable, these methods return a new pack.
@@ -185,12 +211,9 @@ class TileScopePack(StrategyPack):
         """Create a new pack by turning on symmetry on the current pack."""
         if self.symmetries:
             raise ValueError("Symmetries already turned on.")
-        symmetries = [Tiling.inverse, Tiling.reverse, Tiling.complement,
-                      Tiling.antidiagonal, Tiling.rotate90,
-                      Tiling.rotate180, Tiling.rotate270]
         new_pack = copy(self)
         new_pack.name = '_'.join(['symmetries', self.name])
-        new_pack.symmetries = symmetries
+        new_pack.symmetries = SYMMETRIES_FUNCTIONS
         return new_pack
 
     # Creation of the base pack
@@ -300,9 +323,7 @@ class TileScopePack(StrategyPack):
             name=name)
 
     @classmethod
-    def regular_insertion_encoding(cls,
-                                   direction: Optional[int] = None
-                                   ) -> 'TileScopePack':
+    def regular_insertion_encoding(cls, direction: int) -> 'TileScopePack':
         """This pack finds insertion encodings."""
         if direction not in DIRS:
             raise ValueError("Must be direction in {}.".format(DIRS))
