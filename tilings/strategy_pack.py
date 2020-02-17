@@ -170,7 +170,7 @@ class TileScopePack(StrategyPack):
             raise ValueError(("The strategy {!r} is already in pack."
                               "".format(strategy)))
         new_pack = copy(self)
-        new_pack.initial_strats.append(strategy)
+        new_pack.ver_strats.append(strategy)
         if name_ext:
             new_pack.name = '_'.join([self.name, name_ext])
         return new_pack
