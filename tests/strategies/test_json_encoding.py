@@ -97,5 +97,3 @@ strategy_objects = [
 def test_json_encoding(strategy):
     strategy_new = json_encode_decode(strategy)
     assert_same_strategy(strategy, strategy_new)
-    # Verification strategies
-    BasicVerificationStrategy(),
