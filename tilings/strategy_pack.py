@@ -175,7 +175,7 @@ class TileScopePack(StrategyPack):
             new_pack.name = '_'.join([self.name, name_ext])
         return new_pack
 
-    def make_fusion(self, component: bool = True) -> 'TileScopePack':
+    def make_fusion(self, component: bool = False) -> 'TileScopePack':
         """Create a new pack by adding fusion to the current pack."""
         if component:
             return self.add_initial(strat.ComponentFusionStrategy(),
