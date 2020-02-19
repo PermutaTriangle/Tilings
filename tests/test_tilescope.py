@@ -1,3 +1,5 @@
+import json
+
 import pytest
 import sympy
 
@@ -8,6 +10,7 @@ from tilings.tilescope import TileScope
 point_placements = TileScopePack.point_placements()
 all_the_strategies_verify_database = (TileScopePack.all_the_strategies()
                                       .make_database())
+all_the_strategies_fusion = TileScopePack.all_the_strategies().make_fusion()
 point_placements_fusion = point_placements.make_fusion()
 point_placements_component_fusion = (
     point_placements.make_fusion(component=True))
@@ -77,3 +80,24 @@ def test_1324():
     assert num_fusion == 1
     assert num_comp_fusion == 1
     assert isinstance(t, ProofTree)
+
+
+def test_json():
+    searcher = TileScope(
+        '1324',
+        all_the_strategies_fusion
+    )
+    searcher.auto_search(max_time=2)
+    dict_ = searcher.to_dict()
+    json_str = json.dumps(dict_)
+    new_dict = json.loads(json_str)
+    new_searcher = TileScope.from_dict(new_dict)
+    assert new_searcher.__dict__.keys() == searcher.__dict__.keys()
+    assert new_searcher._time_taken == searcher._time_taken
+    assert new_searcher.strategy_times == searcher.strategy_times
+    assert new_searcher.strategy_expansions == searcher.strategy_expansions
+    assert new_searcher.kwargs == searcher.kwargs
+    assert new_searcher.strategy_pack == searcher.strategy_pack
+    assert new_searcher.start_class == searcher.start_class
+    new_searcher.auto_search(max_time=2)
+    assert new_searcher._time_taken > 2
