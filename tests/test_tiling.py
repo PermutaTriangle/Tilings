@@ -2294,8 +2294,17 @@ class TestGetGenf:
             [[Requirement(Perm((0,)), ((0, 0),))]],
         )
         assert sympy.simplify(t.get_genf() - sympy.sympify("x/(1-x)")) == 0
+        t = Tiling(
+            [Obstruction(Perm((0, 2, 1)), ((0, 0),) * 3)],
+            [[Requirement(Perm((0, 1)), ((0, 0),) * 2)]],
+        )
+        assert (
+            sympy.simplify(
+                t.get_genf() - sympy.sympify("(1-sqrt(1-4*x))/(2*x)-1/(1-x)")
+            )
+            == 0
+        )
 
-    @pytest.mark.xfail
     def test_adjacent_monotone(self):
         t = Tiling(
             [
@@ -2305,21 +2314,24 @@ class TestGetGenf:
         )
         assert sympy.simplify(t.get_genf() - sympy.sympify("1/(1-2*x)")) == 0
 
-    @pytest.mark.xfail
     def test_with_list_req(self):
         t = Tiling(
+            [Obstruction(Perm((0, 2, 1)), ((0, 0),) * 3)],
             [
-                Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-                Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
-            ],
-            [
-                [Requirement(Perm((0,)), ((1, 1),))],
-                [Requirement(Perm((0,)), ((0, 0),))],
+                [
+                    Requirement(Perm((0, 1)), ((0, 0),) * 2),
+                    Requirement(Perm((1, 0)), ((0, 0),) * 2),
+                ]
             ],
         )
-        assert sympy.simplify(t.get_genf() - sympy.sympify("(x/(1-x))**2")) == 0
+        expected_gf = sympy.sympify("(1-sqrt(1-4*x))/(2*x)-1-x")
+        assert sympy.simplify(t.get_genf() - expected_gf) == 0
 
+    @pytest.mark.slow
     def test_not_enumerable(self):
         t = Tiling.from_string("1324")
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidOperationError):
+            t.get_genf()
+        t = Tiling.from_string("123")
+        with pytest.raises(InvalidOperationError):
             t.get_genf()

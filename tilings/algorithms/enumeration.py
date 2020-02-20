@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel
 import abc
 from collections import deque
 from itertools import chain
@@ -14,6 +15,7 @@ from tilings.misc import is_tree
 
 if TYPE_CHECKING:
     from tilings import Tiling
+    from tilings.strategy_pack import TileScopePack
 
 x = sympy.Symbol("x")
 
@@ -23,10 +25,10 @@ class Enumeration(abc.ABC):
     General representation of a strategy to enumerate tilings.
     """
 
-    def __init__(self, tiling: "Tiling"):
+    def __init__(self, tiling: "Tiling") -> None:
         self.tiling = tiling
 
-    @abc.abstractproperty
+    @property
     def pack(self) -> StrategyPack:
         """
         Returns a TileScope pack that fines a proof tree for the tilings in
@@ -34,7 +36,7 @@ class Enumeration(abc.ABC):
 
         The pack is assumed to produce a finite universe.
         """
-        raise NotImplementedError
+        raise NotImplementedError("{} does not implement `pack`".format(self.__class__))
 
     @abc.abstractmethod
     def verified(self) -> bool:
@@ -57,6 +59,7 @@ class Enumeration(abc.ABC):
         """
         if self.verified():
             return VerificationRule(formal_step=self.formal_step)
+        return None
 
     def get_tree(self, **kwargs) -> ProofTree:
         """
@@ -68,48 +71,51 @@ class Enumeration(abc.ABC):
 
         Raises an InvalidOperationError if the tiling is not verified.
         """
+        from tilings.tilescope import TileScope
+
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
-        # searcher = TileScopeTHREE(self.tiling, self.pack)
-        # tree = searcher.auto_search(**kwargs)
-        # if tree is None:
-        #     raise InvalidOperationError('Cannot find a tree')
-        # return tree
+        try:
+            pack = self.pack
+        except NotImplementedError:
+            raise NotImplementedError(
+                "{} does not implement `get_tree`".format(self.__class__)
+            )
+        searcher = TileScope(self.tiling, pack)
+        tree = searcher.auto_search(**kwargs)
+        if tree is None:
+            raise InvalidOperationError("Cannot find a tree")
+        return tree
 
-    def get_genf(self, **kwargs):
+    def get_genf(self):
         """
         Returns the generating function for the tiling.
-
-        All the kwargs are passed to `self.get_tree`.
 
         Raises an InvalidOperationError if the tiling is not verified.
         """
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
-        return self.get_tree(**kwargs).get_genf()
+        raise NotImplementedError(
+            "{} does not implement `get_genf`.".format(self.__class__)
+        )
 
     def __repr__(self) -> str:
-        return "Enumeration for:\n" + str(self.tiling)
+        return "{!r}({!r})".format(self.__class__, self.tiling)
 
 
 class BasicEnumeration(Enumeration):
 
     formal_step = "Base cases"
 
-    @property
-    def pack(self):
-        raise InvalidOperationError("Cannot get a tree for a basic " "enumeration")
-
-    def get_tree(self, **kwargs):
-        raise InvalidOperationError("Cannot get a tree for a basic " "enumeration")
-
-    def get_genf(self, **kwargs):
+    def get_genf(self):
         if self.tiling.is_epsilon():
             return sympy.sympify("1")
         if self.tiling.is_point_tiling():
             return x
         if self.tiling.is_point_or_empty():
-            return x + 1
+            return sympy.sympify("x + 1")
+        if self.tiling.is_empty():
+            return sympy.sympify("0")
         raise InvalidOperationError("Not an atom")
 
     def verified(self):
@@ -117,6 +123,7 @@ class BasicEnumeration(Enumeration):
             self.tiling.is_epsilon()
             or self.tiling.is_point_tiling()
             or self.tiling.is_point_or_empty()
+            or self.tiling.is_empty()
         )
 
 
@@ -129,20 +136,28 @@ class LocallyFactorableEnumeration(Enumeration):
     cell on each row and column. To be locally factorable, a tiling
     should not be equivalent to a 1x1 tiling.
 
-    A locally factorable tiling can be describe with a tree with only subset
-    verified tiling.
+    A locally factorable tiling can be describe with a tree with only local
+    tilings verified tilings.
     """
 
-    # pack = StrategyPack(
-    #     name="LocallyFactorable",
-    #     initial_strats=[factor, requirement_corroboration],
-    #     inferral_strats=[],
-    #     expansion_strats=[all_factor_insertions],
-    #     ver_strats=[subset_verified]
-    # )
     @property
-    def pack(self):
-        raise NotImplementedError
+    def pack(self) -> "TileScopePack":
+        from tilings.strategy_pack import TileScopePack
+        from tilings import strategies as strat
+
+        return TileScopePack(
+            name="locally_factorable_tiling",
+            initial_strats=[
+                strat.FactorStrategy(),
+                strat.RequirementCorroborationStrategy(),
+            ],
+            inferral_strats=[],
+            expansion_strats=[[strat.AllFactorInsertionStrategy()]],
+            ver_strats=[
+                strat.LocalVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+            ],
+        )
 
     formal_step = "Tiling is locally factorable"
 
@@ -177,34 +192,14 @@ class LocalEnumeration(Enumeration):
 
 
     There's not universal way of describing a tiling that is locally enumerable
-    with a tree.
+    with a tree neither to get its generating function.
     """
 
     def __init__(self, tiling, no_req=False):
         super().__init__(tiling)
         self.no_req = no_req
 
-    pack = None
-
     formal_step = "Tiling is locally enumerable"
-
-    def get_tree(self, **kwargs):
-        if not self.verified():
-            raise InvalidOperationError("The tiling is not verified")
-        error = (
-            "There is no known way of getting the tree for a locally "
-            "enumerable tiling in general"
-        )
-        raise NotImplementedError(error)
-
-    def get_genf(self, **kwargs):
-        if not self.verified():
-            raise InvalidOperationError("The tiling is not verified")
-        error = (
-            "There is no known way of getting the generating function "
-            "for a locally enumerable tiling in general"
-        )
-        raise NotImplementedError(error)
 
     def verified(self):
         if self.no_req and self.tiling.requirements:
@@ -230,7 +225,11 @@ class MonotoneTreeEnumeration(Enumeration):
 
     @property
     def pack(self):
-        raise NotImplementedError
+        raise NotImplementedError(
+            "A tree for a monotone tree tiling requires interleaving factor "
+            "which is not implemented. You can still obtain the generating "
+            "function with get_genf."
+        )
 
     formal_step = "Tiling is a monotone tree"
     _tracking_var = sympy.var("t")
@@ -278,7 +277,7 @@ class MonotoneTreeEnumeration(Enumeration):
         col_cells = self.tiling.cells_in_col(cell[0])
         return (c for c in visited if (c in row_cells or c in col_cells))
 
-    def get_genf(self, **kwargs):
+    def get_genf(self):
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
         try:
@@ -314,8 +313,8 @@ class MonotoneTreeEnumeration(Enumeration):
             visited.add(cell)
         F = sympy.simplify(F.subs({v: 1 for v in F.free_symbols if v != x}))
         # A simple test to warn us if the code is wrong
-        assert taylor_expand(F) == [
-            len(list(self.tiling.objects_of_length(i))) for i in range(11)
+        assert taylor_expand(F, 7) == [
+            len(list(self.tiling.objects_of_length(i))) for i in range(8)
         ], "Bad genf"
         return F
 
@@ -406,16 +405,21 @@ class ElementaryEnumeration(Enumeration):
     verified tiling.
     """
 
-    # pack = StrategyPack(
-    #     name="LocallyFactorable",
-    #     initial_strats=[factor, requirement_corroboration],
-    #     inferral_strats=[],
-    #     expansion_strats=[all_factor_insertions],
-    #     ver_strats=[subset_verified]
-    # )
     @property
-    def pack(self):
-        raise NotImplementedError
+    def pack(self) -> "TileScopePack":
+        from tilings.strategy_pack import TileScopePack
+        from tilings import strategies as strat
+
+        return TileScopePack(
+            name="elementary_tiling",
+            initial_strats=[
+                strat.FactorStrategy(),
+                strat.RequirementCorroborationStrategy(),
+            ],
+            inferral_strats=[],
+            expansion_strats=[[strat.AllFactorInsertionStrategy()]],
+            ver_strats=[strat.OneByOneVerificationStrategy()],
+        )
 
     formal_step = "Tiling is elementary"
 
@@ -481,18 +485,7 @@ class DatabaseEnumeration(Enumeration):
 
     formal_step = "Tiling is in the database"
 
-    @property
-    def pack(self):
-        raise NotImplementedError("No standard pack for a database verified " "tiling.")
-
-    def get_tree(self, **kwargs):
-        if not self.verified():
-            raise InvalidOperationError("The tiling is not verified")
-        raise NotImplementedError(
-            "No standard way of getting a tree for a " "tiling in the database."
-        )
-
-    def get_genf(self, **kwargs):
+    def get_genf(self):
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
         return sympy.sympify(self._get_tiling_entry()["genf"])
@@ -502,34 +495,58 @@ class OneByOneEnumeration(Enumeration):
     """
     Enumeration a tiling that consist of a single cell and is a subclass of the
     basis.
+
+    INPUTS:
+    - `basis`: the basis of the class the tiling must be a subclass of.
     """
 
     def __init__(self, tiling, basis):
         self.basis = set(basis)
-        assert all(isinstance(p, Perm) for p in self.basis), (
-            "Element of the " "basis must be " "permutations"
-        )
+        error_msg = "Element of the basis must be permutations"
+        assert all(isinstance(p, Perm) for p in self.basis), error_msg
         super().__init__(tiling)
 
     formal_step = "This tiling is a subclass of the original tiling."
 
     @property
-    def pack(self):
-        """
-        Make it return all the strategies
-        """
-        raise NotImplementedError
+    def pack(self) -> "TileScopePack":
+        from tilings.strategy_pack import TileScopePack
+        from tilings import strategies as strat
+
+        return TileScopePack(
+            initial_strats=[
+                strat.FactorStrategy(),
+                strat.RequirementCorroborationStrategy(),
+                strat.AllFactorInsertionStrategy(),
+            ],
+            ver_strats=[
+                strat.OneByOneVerificationStrategy(),
+                strat.BasicVerificationStrategy(),
+            ],
+            inferral_strats=[
+                strat.RowColumnSeparationStrategy(),
+                strat.ObstructionTransitivityStrategy(),
+            ],
+            expansion_strats=[
+                [strat.AllCellInsertionStrategy()],
+                [strat.AllPlacementsStrategy()],
+            ],
+            name="one_by_one",
+        )
 
     def verified(self):
         if not self.tiling.dimensions == (1, 1):
             return False
         return self.basis != set(ob.patt for ob in self.tiling.obstructions)
 
-    def get_genf(self, **kwargs):
-        """
-        TODO: This function should:
-            - check if the basis is in the database
-            - try to run tilescope on the tiling
-        """
-        # pylint: disable=useless-super-delegation
-        return super().get_genf(**kwargs)
+    def get_genf(self):
+        # TODO: check the proof tree database for the basis and then try to get
+        # a tree.
+        try:
+            tree = self.get_tree(max_time=10)
+        except InvalidOperationError:
+            raise InvalidOperationError(
+                "Cannot find the generating function for:\n {}.".format(self.tiling)
+                + "Consider running a distinct run for this basis."
+            )
+        return tree.get_genf()

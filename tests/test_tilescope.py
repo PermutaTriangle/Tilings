@@ -1,9 +1,10 @@
 import json
 
 import pytest
-import sympy
 
 from comb_spec_searcher import ProofTree
+from comb_spec_searcher.utils import taylor_expand
+from tilings import strategies as strat
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
 
@@ -24,13 +25,26 @@ def test_132():
     assert isinstance(t, ProofTree)
 
 
-@pytest.mark.xfail(reason="Generating function finding not implemented")
+@pytest.mark.slow
 def test_132_genf():
     searcher = TileScope("132", point_placements)
-    t = searcher.auto_search(smallest=True)
-    gf = sympy.series(t.get_genf(), n=15)
-    x = sympy.Symbol("x")
-    assert [gf.coeff(x, n) for n in range(13)] == [
+    tree = searcher.auto_search(smallest=True)
+    with pytest.raises(ValueError):
+        # The tree is not expanded.
+        # Hence we can't find the generation function.
+        tree.get_genf()
+
+    after_pack = TileScopePack(
+        initial_strats=[],
+        inferral_strats=[],
+        expansion_strats=[[strat.FactorStrategy()]],
+        ver_strats=[strat.BasicVerificationStrategy()],
+        name="locally_factorable_expansion",
+    )
+    expanded_tree = tree.expand_tree(after_pack, css=TileScope)
+    print(expanded_tree)
+    genf = expanded_tree.get_genf()
+    assert taylor_expand(genf, 12) == [
         1,
         1,
         2,
@@ -111,3 +125,23 @@ def test_json():
     assert new_searcher.start_class == searcher.start_class
     new_searcher.auto_search(max_time=2)
     assert new_searcher._time_taken > 2
+
+
+def test_proof_tree_extension():
+    basis = "120_0123"
+    pack = TileScopePack.point_placements()
+
+    tilescope = TileScope(basis, pack)
+    tree = tilescope.auto_search(status_update=10)
+
+    after_pack = TileScopePack(
+        initial_strats=[strat.FactorStrategy()],
+        inferral_strats=[strat.RowColumnSeparationStrategy()],
+        expansion_strats=[[strat.AllFactorInsertionStrategy()]],
+        ver_strats=[
+            strat.BasicVerificationStrategy(),
+            strat.OneByOneVerificationStrategy(),
+        ],
+        name="locally_factorable_expansion",
+    )
+    tree.expand_tree(after_pack, css=TileScope)
