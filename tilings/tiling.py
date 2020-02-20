@@ -37,6 +37,7 @@ from .algorithms.enumeration import (
     DatabaseEnumeration,
     LocallyFactorableEnumeration,
     MonotoneTreeEnumeration,
+    OneByOneEnumeration,
 )
 from .db_conf import check_database
 from .exception import InvalidOperationError
@@ -1327,15 +1328,6 @@ class Tiling(CombinatorialClass):
         """
         Return generating function of a tiling.
         """
-        # If root has been given a function, return it if you see the root or a
-        # symmetries.
-        if (
-            kwargs.get("root_func") is not None
-            and kwargs.get("root_class") in self.all_symmetries()
-        ):
-            return kwargs["root_func"]
-        if self.is_empty():
-            return sympy.sympify(0)
         # Can count by counting the tiling with a requirement removed and
         # subtracting the tiling with it added as an obstruction.
         if self.requirements:
@@ -1355,13 +1347,19 @@ class Tiling(CombinatorialClass):
         # Try using some of the enumeration strategy
         enum_stragies = [
             BasicEnumeration,
-            LocallyFactorableEnumeration,
-            MonotoneTreeEnumeration,
             DatabaseEnumeration,
+            MonotoneTreeEnumeration,
         ]
         for enum_strat in enum_stragies:
             if enum_strat(self).verified():
                 return enum_strat(self).get_genf()
+        # Check for 1x1
+        obo_enum = OneByOneEnumeration(self, basis=[])
+        if obo_enum.verified():
+            return obo_enum.get_genf()
+        # Give some advice about how the get the generation function
+        if LocallyFactorableEnumeration(self).verified():
+            raise ValueError("This tiling is not enumerable but is expandable")
         raise ValueError("We were unable to enumerate this tiling:\n" + str(self))
 
     # -------------------------------------------------------------

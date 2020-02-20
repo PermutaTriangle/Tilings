@@ -3,7 +3,7 @@ import abc
 import pytest
 import sympy
 
-from comb_spec_searcher import StrategyPack
+from comb_spec_searcher import ProofTree, StrategyPack
 from comb_spec_searcher.strategies.rule import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
@@ -101,11 +101,11 @@ class TestBasicEnumeration(CommonTest):
         assert enum_verified.formal_step == "Base cases"
 
     def test_pack(self, enum_verified):
-        with pytest.raises(InvalidOperationError):
+        with pytest.raises(NotImplementedError):
             enum_verified.pack
 
     def test_get_tree(self, enum_verified):
-        with pytest.raises(InvalidOperationError):
+        with pytest.raises(NotImplementedError):
             enum_verified.get_tree()
 
     def test_get_genf(self, empty_enum, point_enum, point_or_empty_enum):
@@ -153,22 +153,33 @@ class TestLocallyFactorableEnumeration(CommonTest):
     def onebyone_enum(self):
         return LocallyFactorableEnumeration(Tiling.from_string("123"))
 
-    @pytest.mark.xfail
     def test_pack(self, enum_verified):
         pack = enum_verified.pack
         assert isinstance(pack, StrategyPack)
-        assert pack.name == "LocallyFactorable"
+        assert pack.name == "locally_factorable_tiling"
 
     def test_formal_step(self, enum_verified):
         assert enum_verified.formal_step == "Tiling is locally factorable"
 
-    @pytest.mark.xfail
     def test_get_tree(self, enum_verified):
-        raise NotImplementedError
+        tree = enum_verified.get_tree()
+        assert isinstance(tree, ProofTree)
+        assert tree.number_of_nodes() == 3
 
-    @pytest.mark.xfail
+        t = Tiling(
+            obstructions=[
+                Obstruction(Perm((0, 1)), ((0, 0), (1, 1))),
+                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
+                Obstruction(Perm((0, 1)), ((1, 1),) * 2),
+            ]
+        )
+        enum = LocallyFactorableEnumeration(t)
+        tree = enum.get_tree()
+        assert tree.number_of_nodes() == 3
+
     def test_get_genf(self, enum_verified):
-        raise NotImplementedError
+        with pytest.raises(NotImplementedError):
+            enum_verified.get_genf()
 
     def test_locally_factorable_requirements(self, enum_verified, enum_not_verified):
         assert enum_not_verified._locally_factorable_requirements()
@@ -201,11 +212,6 @@ class TestLocallyFactorableEnumeration(CommonTest):
     def test_locally_factorable_obstructions(self, enum_not_verified, enum_verified):
         assert not enum_not_verified._locally_factorable_obstructions()
         assert enum_verified._locally_factorable_obstructions()
-
-    @pytest.mark.xfail(reason="Cannot think of a tautology")
-    def test_possible_tautology(self, enum_verified, enum_with_tautology):
-        assert not enum_verified._possible_tautology()
-        assert enum_with_tautology._possible_tautology()
 
     def test_1x1_verified(self, onebyone_enum):
         assert not onebyone_enum.verified()
@@ -272,7 +278,8 @@ class TestLocalEnumeration(CommonTest):
         return LocalEnumeration(t, no_req=True)
 
     def test_pack(self, enum_verified):
-        assert enum_verified.pack is None
+        with pytest.raises(NotImplementedError):
+            enum_verified.pack
 
     def test_verified(self, enum_verified, enum_not_verified):
         assert enum_verified.verified()
@@ -309,7 +316,7 @@ class TestMonotoneTreeEnumeration(CommonTest):
                 Obstruction(Perm((0, 1)), ((0, 1),) * 2),
                 Obstruction(Perm((0, 1)), ((0, 2),) * 2),
                 Obstruction(Perm((0, 1)), ((2, 0),) * 2),
-                Obstruction(Perm((0, 1, 2)), ((1, 1),) * 3),
+                Obstruction(Perm((0, 2, 1)), ((1, 1),) * 3),
             ]
         )
         return MonotoneTreeEnumeration(t)
@@ -394,16 +401,9 @@ class TestMonotoneTreeEnumeration(CommonTest):
         )
         assert not MonotoneTreeEnumeration(forest_tiling).verified()
 
-    @pytest.mark.xfail(reason="No database setup")
+    @pytest.mark.slow
     def test_get_genf(self, enum_verified):
         x = sympy.Symbol("x")
-        expected_gf = -(
-            sympy.sqrt(
-                -(4 * x ** 3 - 14 * x ** 2 + 8 * x - 1) / (2 * x ** 2 - 4 * x + 1)
-            )
-            - 1
-        ) / (2 * x * (x ** 2 - 3 * x + 1))
-        assert sympy.simplify(enum_verified.get_genf() - expected_gf) == 0
         t = Tiling(
             obstructions=[
                 Obstruction(Perm((0, 1)), ((0, 0),) * 2),
@@ -413,16 +413,21 @@ class TestMonotoneTreeEnumeration(CommonTest):
         enum_no_start = MonotoneTreeEnumeration(t)
         expected_gf = -1 / ((x - 1) * (x / (x - 1) + 1))
         assert sympy.simplify(enum_no_start.get_genf() - expected_gf) == 0
+        expected_gf = -(
+            sympy.sqrt(
+                -(4 * x ** 3 - 14 * x ** 2 + 8 * x - 1) / (2 * x ** 2 - 4 * x + 1)
+            )
+            - 1
+        ) / (2 * x * (x ** 2 - 3 * x + 1))
+        assert sympy.simplify(enum_verified.get_genf() - expected_gf) == 0
 
-    @pytest.mark.xfail(reason="pack does not exist")
     def test_get_tree(self, enum_verified):
-        raise NotImplementedError
+        with pytest.raises(NotImplementedError):
+            enum_verified.get_tree()
 
-    @pytest.mark.xfail
     def test_pack(self, enum_verified):
-        pack = enum_verified.pack
-        assert isinstance(pack, StrategyPack)
-        assert pack.name == "MonotoneTree"
+        with pytest.raises(NotImplementedError):
+            enum_verified.pack
 
     def test_get_genf_simple(self):
         t = Tiling(
@@ -599,9 +604,9 @@ class TestElementaryEnumeration(CommonTest):
     def enum_verified(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1, 2)), ((0, 1),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((1, 2),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((2, 0),) * 3),
+                Obstruction(Perm((0, 1)), ((0, 1),) * 2),
+                Obstruction(Perm((0, 1)), ((1, 2),) * 2),
+                Obstruction(Perm((0, 1)), ((2, 0),) * 2),
                 Obstruction(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
             ]
         )
@@ -651,22 +656,32 @@ class TestElementaryEnumeration(CommonTest):
         )
         return ElementaryEnumeration(t)
 
-    @pytest.mark.xfail
     def test_pack(self, enum_verified):
         pack = enum_verified.pack
         assert isinstance(pack, StrategyPack)
-        assert pack.name == "LocallyFactorable"
+        assert pack.name == "elementary_tiling"
 
     def test_formal_step(self, enum_verified):
         assert enum_verified.formal_step == "Tiling is elementary"
 
-    @pytest.mark.xfail
     def test_get_tree(self, enum_verified):
-        raise NotImplementedError
+        t = Tiling(
+            obstructions=[
+                Obstruction(Perm((0, 1)), ((0, 0), (1, 1))),
+                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
+                Obstruction(Perm((0, 1)), ((1, 1),) * 2),
+            ]
+        )
+        enum = ElementaryEnumeration(t)
+        tree = enum.get_tree(smallest=True)
+        assert tree.number_of_nodes() == 3
 
-    @pytest.mark.xfail
+        tree = enum_verified.get_tree(smallest=True)
+        assert tree.number_of_nodes() == 9
+
     def test_get_genf(self, enum_verified):
-        raise NotImplementedError
+        with pytest.raises(NotImplementedError):
+            enum_verified.get_genf()
 
     def test_more_verified(
         self, enum_onebyone, enum_with_interleaving, enum_with_req,
@@ -695,6 +710,11 @@ class TestDatabaseEnumeration(CommonTest):
             "(x**2 - x + 1)/(x**2 - 2*x + 1)"
         )
 
+    @pytest.mark.xfail(reason="123 not in db")
+    def test_more_verified(self):
+        t = Tiling.from_string("123")
+        assert DatabaseEnumeration(t).verified()
+
     def test_get_tree(self, enum_verified):
         with pytest.raises(NotImplementedError):
             enum_verified.get_tree()
@@ -705,11 +725,11 @@ class TestDatabaseEnumeration(CommonTest):
 
     @pytest.mark.slow
     def test_load_verified_tilings(self):
-        assert not DatabaseEnumeration.all_verified_tilings
         DatabaseEnumeration.load_verified_tiling()
         assert DatabaseEnumeration.all_verified_tilings
         sample = next(iter(DatabaseEnumeration.all_verified_tilings))
-        Tiling.decompress(sample)
+        t = Tiling.decompress(sample)
+        assert DatabaseEnumeration(t).verified()
 
     def test_verification_with_cache(self):
         t = Tiling.from_string("123_132_231")
@@ -732,11 +752,10 @@ class TestOneByOneEnumeration(CommonTest):
         t = Tiling.from_string("321")
         return OneByOneEnumeration(t, [Perm((2, 1, 0))])
 
-    @pytest.mark.xfail
     def test_pack(self, enum_verified):
         pack = enum_verified.pack
         assert isinstance(pack, StrategyPack)
-        assert pack.name == "LocallyFactorable"
+        assert pack.name == "one_by_one"
 
     def test_formal_step(self, enum_verified):
         assert (
@@ -744,10 +763,31 @@ class TestOneByOneEnumeration(CommonTest):
             == "This tiling is a subclass of the original tiling."
         )
 
-    @pytest.mark.xfail
+    @pytest.mark.slow
     def test_get_tree(self, enum_verified):
-        raise NotImplementedError
+        enum_verified.get_tree()
 
-    @pytest.mark.xfail
+    def test_get_tree_dec(self):
+        t = Tiling.from_string("01")
+        enum = OneByOneEnumeration(t, basis=[Perm((0, 1, 3))])
+        tree = enum.get_tree(smallest=True)
+        assert tree.number_of_nodes() == 5
+
+    @pytest.mark.slow
     def test_get_genf(self, enum_verified):
-        raise NotImplementedError
+        genf = enum_verified.get_genf()
+        assert taylor_expand(genf) == [1, 1, 2, 5, 13, 32, 72, 148, 281, 499, 838]
+
+    def test_get_genf_dec(self):
+        t = Tiling.from_string("01")
+        enum = OneByOneEnumeration(t, basis=[Perm((0, 1, 3))])
+        genf = enum.get_genf()
+        print(genf)
+        assert sympy.simplify(genf - sympy.sympify("1/(1-x)")) == 0
+
+    def test_get_genf_132(self):
+        t = Tiling.from_string("132")
+        enum = OneByOneEnumeration(t, basis=[Perm((0, 2, 1, 3))])
+        genf = enum.get_genf()
+        print(genf)
+        assert sympy.simplify(genf - sympy.sympify("(1-sqrt(1-4*x))/(2*x)")) == 0
