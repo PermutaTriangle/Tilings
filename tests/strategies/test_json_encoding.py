@@ -12,6 +12,7 @@ from tilings.strategies.batch import (AllCellInsertionStrategy,
                                       RequirementCorroborationStrategy,
                                       RowAndColumnPlacementStrategy)
 from tilings.strategies.decomposition import FactorStrategy
+from tilings.strategies.equivalence import RequirementPlacementStrategy
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategies.inferral import (EmptyCellInferralStrategy,
                                          ObstructionTransitivityStrategy,
@@ -90,6 +91,15 @@ strategy_objects = [
     LocallyFactorableVerificationStrategy(),
     LocalVerificationStrategy(),
     OneByOneVerificationStrategy(),
+
+    # Equivalent Strategy
+    RequirementPlacementStrategy(),
+    RequirementPlacementStrategy(ignore_parent=True),
+    RequirementPlacementStrategy(ignore_parent=False),
+    RequirementPlacementStrategy(point_only=True),
+    RequirementPlacementStrategy(point_only=False),
+    RequirementPlacementStrategy(partial=True),
+    RequirementPlacementStrategy(partial=False),
 ]
 
 
