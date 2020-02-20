@@ -63,7 +63,7 @@ def empty_graph():
     return Graph([], [])
 
 
-def test_init(matrix2):
+def test_init_graph(matrix2):
     G = Graph('abcde', matrix=matrix2)
     assert G._matrix == matrix2
     assert G._vertex_labels == [set(c) for c in 'abcde']
@@ -185,6 +185,10 @@ def test_is_acyclic(graph1, graph2, graph3, empty_graph):
     assert graph3.is_acyclic()
     empty_graph.reduce()
     assert empty_graph.is_acyclic()
+    g = Graph(range(4), [[0, 0, 1, 1], [1, 0, 0, 1],
+                         [0, 1, 0, 1], [0, 0, 0, 0]])
+    g.reduce()
+    assert not g.is_acyclic()
 
 
 def test_find_cyle(graph1, graph2):
@@ -286,7 +290,18 @@ def not_separable_tilings():
         Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
         Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
     ])
-    return [t1, t2, t3]
+    t4 = Tiling(obstructions=(
+        Obstruction(Perm((0,)), ((1, 1),)),
+        Obstruction(Perm((0,)), ((1, 2),)),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
+        Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
+        Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+        Obstruction(Perm((1, 0)), ((0, 2), (0, 0))),
+    ), requirements=((Requirement(Perm((0,)), ((0, 1),)),),))
+    return [t1, t2, t3, t4]
 
 
 @pytest.fixture
@@ -343,6 +358,22 @@ def separable_tiling3():
     return t3
 
 
+@pytest.fixture
+def separable_tiling4():
+    return Tiling(obstructions=(
+        Obstruction(Perm((0,)), ((1, 1),)),
+        Obstruction(Perm((0,)), ((1, 2),)),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
+        Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
+        Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+        Obstruction(Perm((1, 0)), ((0, 2), (0, 0))),
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 2))),
+    ), requirements=((Requirement(Perm((0,)), ((0, 1),)),),))
+
+
 def assert_matrix_entry_is(rcs, matrix, cell1, cell2, value):
     i1 = rcs.cell_idx(cell1)
     i2 = rcs.cell_idx(cell2)
@@ -374,8 +405,6 @@ def test_cell_at_idx(separable_tiling2):
 
 def test_basic_matrix(separable_tiling2):
     rcs = RowColSeparation(separable_tiling2)
-    ncol = separable_tiling2.dimensions[0]
-    nrow = separable_tiling2.dimensions[1]
     # Row basic matrix
     m = rcs._basic_matrix(True)
     for c1, c2 in product(separable_tiling2.active_cells, repeat=2):
@@ -508,17 +537,18 @@ def test_separates_tiling():
 
 def test_map_gridded_perm(separable_tiling1):
     rcs = RowColSeparation(separable_tiling1)
-    ob = Obstruction(Perm((0,  1,  2)), ((0,  0), (1,  0), (1,  0)))
-    cell_map = {(0,  0): (0,  0), (1,  0): (1,  1)}
+    ob = Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0)))
+    cell_map = {(0, 0): (0, 0), (1, 0): (1, 1)}
     assert (rcs._map_gridded_perm(cell_map, ob) ==
             Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))))
-    ob = Requirement(Perm((0,  1,  2)), ((0,  0), (1,  0), (1,  0)))
+    ob = Requirement(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0)))
     assert (rcs._map_gridded_perm(cell_map, ob) ==
             Requirement(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))))
 
 
 def test_separated_tiling(not_separable_tilings, separable_tiling1,
-                          separable_tiling2, separable_tiling3,):
+                          separable_tiling2, separable_tiling3,
+                          separable_tiling4):
     t = Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((0, 0),)*2),
         Obstruction(Perm((0, 1)), ((1, 0),)*2),
@@ -582,9 +612,17 @@ def test_separated_tiling(not_separable_tilings, separable_tiling1,
         Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
         Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0)))
     ), requirements=())
+    t4_sep = Tiling(obstructions=(
+        Obstruction(Perm((0, 1)), ((0, 2),)*2),
+        Obstruction(Perm((0, 1)), ((1, 1),)*2),
+        Obstruction(Perm((0, 1)), ((2, 0),)*2),
+        Obstruction(Perm((0, 1)), ((3, 0),)*2),
+        Obstruction(Perm((1, 0)), ((0, 2), (2, 0))),
+    ), requirements=((Requirement(Perm((0,)), ((1, 1),)),),))
     assert RowColSeparation(separable_tiling1).separated_tiling() == t1_sep
     assert RowColSeparation(separable_tiling2).separated_tiling() == t2_sep
     assert RowColSeparation(separable_tiling3).separated_tiling() == t3_sep
+    assert RowColSeparation(separable_tiling4).separated_tiling() == t4_sep
     # Test for the empty tiling
     empty_tiling = Tiling(obstructions=[Obstruction(Perm((0,)), ((0, 0),))])
     assert RowColSeparation(empty_tiling).separated_tiling() == empty_tiling

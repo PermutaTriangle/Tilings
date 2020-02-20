@@ -28,7 +28,7 @@ def intersection_reduce(iterable):
     """Returns the intersection of the iterables."""
     try:
         return reduce(set.__and__, map(set, iterable))
-    except Exception:
+    except TypeError:
         return set()
 
 
@@ -58,9 +58,10 @@ def is_connected(adj_table):
     visited = {cell: False for cell in adj_table}
 
     # pick some start vertex
+
     for start in adj_table:
         break
-
+    # pylint: disable=undefined-loop-variable
     queue = [start]
     while queue:
         curr = queue.pop()
@@ -94,6 +95,7 @@ def partitions_iterator(lst):
 
 
 def algorithm_u(ns, m):
+    # pylint: disable=too-many-statements,too-many-branches
     def visit(n, a):
         ps = [[] for i in range(m)]
         for j in range(n):
