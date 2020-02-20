@@ -18,9 +18,11 @@ class RequirementPlacementStrategy(Strategy):
         - `point_only`: only place point for length 1 subpattern.
         - `partial`: places only the point on its own row or its own column.
     """
-    def __init__(self, point_only: bool = False, partial: bool = False):
+    def __init__(self, point_only: bool = False, partial: bool = False,
+                 ignore_parent: bool = False):
         self.point_only = point_only
         self.partial = partial
+        self.ignore_parent = ignore_parent
 
     def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         if self.partial:
@@ -30,24 +32,29 @@ class RequirementPlacementStrategy(Strategy):
             req_placements = [RequirementPlacement(tiling)]
         for req_placement in req_placements:
             if self.point_only:
-                yield from req_placement.all_point_placement_rules()
+                yield from req_placement.all_point_placement_rules(
+                    self.ignore_parent)
             else:
-                yield from req_placement.all_requirement_placement_rules()
+                yield from req_placement.all_requirement_placement_rules(
+                    self.ignore_parent)
 
     def __str__(self) -> str:
         s = 'partial ' if self.partial else ''
         s += 'point' if self.point_only else 'requirement'
         s += 'placement'
+        s += '(ignore parent)' if self.ignore_parent else ''
         return s
 
     def __repr__(self) -> str:
-        return ('RequirementPlacementStrategy(point_only={}, partial={})'
-                .format(self.point_only, self.partial))
+        return ('RequirementPlacementStrategy(point_only={}, partial={},'
+                ' ignore_parent={})'
+                .format(self.point_only, self.partial, self.ignore_parent))
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
         d['point_only'] = self.point_only
         d['partial'] = self.partial
+        d['ignore_parent'] = self.ignore_parent
         return d
 
     @classmethod

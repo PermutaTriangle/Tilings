@@ -394,8 +394,8 @@ class TileScopePack(StrategyPack):
         name = "only_length_{}_root_placements".format(length)
         return TileScopePack(
             initial_strats=[
-                strat.RequirementPlacementStrategy(),
-                strat.FactorStrategy(),
+                strat.RequirementPlacementStrategy(ignore_parent=True),
+                strat.FactorStrategy(union=True),
             ], ver_strats=[
                 strat.BasicVerificationStrategy(),
                 strat.OneByOneVerificationStrategy(),

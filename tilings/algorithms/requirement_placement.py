@@ -1,6 +1,6 @@
 from itertools import chain, product
 
-from comb_spec_searcher import BatchRule, EquivalenceRule
+from comb_spec_searcher import BatchRule, Rule
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST
 
@@ -316,7 +316,7 @@ class RequirementPlacement():
                                                             index, direction)
                     yield BatchRule(formal_step, tilings)
 
-    def all_point_placement_rules(self):
+    def all_point_placement_rules(self, ignore_parent=False):
         """
         Yield all posible rules coming from placing a point in a positive cell
         of the tiling.
@@ -326,9 +326,11 @@ class RequirementPlacement():
                 placed_tiling = self.place_point_in_cell(cell, direction)
                 formal_step = self._point_placement_formal_step(
                                                             cell, direction)
-                yield EquivalenceRule(formal_step, placed_tiling)
+                yield Rule(formal_step, [placed_tiling], [True], [False],
+                           [True], ignore_parent=ignore_parent,
+                           constructor='equiv')
 
-    def all_requirement_placement_rules(self):
+    def all_requirement_placement_rules(self, ignore_parent=False):
         """
         Yield all possible rules coming from placing a point of a patttern that
         occurs as a subpattern of requirement containing a single pattern.
@@ -341,7 +343,9 @@ class RequirementPlacement():
                 placed_tiling = self.place_point_of_req(gp, idx, direction)
                 formal_step = self._pattern_placement_formal_step(
                                                         idx, gp, direction)
-                yield EquivalenceRule(formal_step, placed_tiling)
+                yield Rule(formal_step, [placed_tiling], [True], [False],
+                           [True], ignore_parent=ignore_parent,
+                           constructor='equiv')
 
     def _col_placement_formal_step(self, idx, direction):
         dir_str = self._direction_string(direction)
