@@ -1,5 +1,6 @@
 from copy import copy
 from itertools import chain
+from typing import List
 
 from comb_spec_searcher import StrategyPack
 from comb_spec_searcher.utils import get_func_name
@@ -16,8 +17,11 @@ class TileScopePack(StrategyPack):
                                 Tiling.rotate90, Tiling.rotate180,
                                 Tiling.rotate270)
 
-    def __init__(self, initial_strats, inferral_strats, expansion_strats,
-                 ver_strats, name, **kwargs):
+    def __init__(self, initial_strats: List[Strategy],
+                 inferral_strats: List[Strategy],
+                 expansion_strats: List[List[Strategy]],
+                 ver_strats: List[Strategy],
+                 name: str, **kwargs):
         if 'symmetries' in kwargs:
             assert all(sym in TileScopePack.ALL_SYMMETRIES_FUNCTIONS
                        for sym in kwargs['symmetries']), 'Invalid symmetry'
@@ -375,10 +379,8 @@ class TileScopePack(StrategyPack):
         name = "{}{}{}_placements".format("row" if not col_only else "",
                                           "_and_" if both else "",
                                           "col" if not row_only else "")
-        expansion_strats = [
-            strat.RowAndColumnPlacementStrategy(place_row=place_row,
-                                                place_col=place_col),
-        ]
+        rowcol_strat = strat.RowAndColumnPlacementStrategy(place_row=place_row,
+                                                           place_col=place_col)
         return TileScopePack(
             initial_strats=[
                 strat.FactorStrategy(),
@@ -391,7 +393,7 @@ class TileScopePack(StrategyPack):
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityStrategy(),
             ], expansion_strats=[
-                expansion_strats
+                [rowcol_strat]
             ],
             name=name)
 
