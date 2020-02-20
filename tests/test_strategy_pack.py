@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from tilings import Tiling
 from tilings.strategy_pack import TileScopePack
 
 
@@ -28,6 +29,9 @@ def json_encode_decode(sp):
     return sp_new
 
 
+not_all_sym = TileScopePack.all_the_strategies()
+not_all_sym.symmetries.append(Tiling.inverse)
+not_all_sym.symmetries.append(Tiling.reverse)
 pack = [
     TileScopePack.all_the_strategies(),
     TileScopePack.all_the_strategies().make_fusion(),
@@ -46,6 +50,7 @@ pack = [
     TileScopePack.only_root_placements(3),
     TileScopePack.only_root_placements(3),
     TileScopePack.requirement_placements(2),
+    not_all_sym,
 ]
 
 

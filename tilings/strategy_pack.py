@@ -8,12 +8,21 @@ from tilings import Tiling
 from tilings import strategies as strat
 from tilings.strategies.abstract_strategy import Strategy
 
-SYMMETRIES_FUNCTIONS = [Tiling.inverse, Tiling.reverse, Tiling.complement,
-                        Tiling.antidiagonal, Tiling.rotate90,
-                        Tiling.rotate180, Tiling.rotate270]
-
 
 class TileScopePack(StrategyPack):
+
+    ALL_SYMMETRIES_FUNCTIONS = (Tiling.inverse, Tiling.reverse,
+                                Tiling.complement, Tiling.antidiagonal,
+                                Tiling.rotate90, Tiling.rotate180,
+                                Tiling.rotate270)
+
+    def __init__(self, initial_strats, inferral_strats, expansion_strats,
+                 ver_strats, name, **kwargs):
+        if 'symmetries' in kwargs:
+            assert all(sym in TileScopePack.ALL_SYMMETRIES_FUNCTIONS
+                       for sym in kwargs['symmetries']), 'Invalid symmetry'
+        super().__init__(initial_strats, inferral_strats, expansion_strats,
+                         ver_strats, name, **kwargs)
 
     def __contains__(self, strategy: Strategy) -> bool:
         """
@@ -99,6 +108,9 @@ class TileScopePack(StrategyPack):
 
     # JSON methods
     def to_jsonable(self) -> dict:
+        sym = [sym in self.symmetries for sym in
+               TileScopePack.ALL_SYMMETRIES_FUNCTIONS]
+        assert sum(sym) == len(self.symmetries), "Can't save all symmetries"
         return {
             'name': self.name,
             'initial_strats': [s.to_jsonable() for s in self.initial_strats],
@@ -106,7 +118,7 @@ class TileScopePack(StrategyPack):
             'ver_strats': [s.to_jsonable() for s in self.ver_strats],
             'expansion_strats': [[s.to_jsonable() for s in strat_list]
                                  for strat_list in self.expansion_strats],
-            'symmetries': bool(self.symmetries),
+            'symmetries': sym,
             'forward_equivalence': self.forward_equivalence,
             'iterative': self.iterative,
         }
@@ -123,8 +135,12 @@ class TileScopePack(StrategyPack):
         expansion_strats = [[Strategy.from_dict(strat_dict) for strat_dict in
                              strat_list] for strat_list in
                             d.pop('expansion_strats')]
-        if d.pop('symmetries'):
-            d['symmetries'] = SYMMETRIES_FUNCTIONS
+        symmetries = list(
+            sym for sym, included in
+            zip(TileScopePack.ALL_SYMMETRIES_FUNCTIONS, d.pop('symmetries'))
+            if included
+        )
+        d['symmetries'] = symmetries
         return cls(initial_strats, inferral_strats, expansion_strats,
                    ver_strats, name, **d)
 
@@ -213,7 +229,7 @@ class TileScopePack(StrategyPack):
             raise ValueError("Symmetries already turned on.")
         new_pack = copy(self)
         new_pack.name = '_'.join(['symmetries', self.name])
-        new_pack.symmetries = SYMMETRIES_FUNCTIONS
+        new_pack.symmetries = list(TileScopePack.ALL_SYMMETRIES_FUNCTIONS)
         return new_pack
 
     # Creation of the base pack
