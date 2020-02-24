@@ -1,11 +1,23 @@
 from itertools import chain, product
+from typing import (TYPE_CHECKING, Dict, Iterable, Iterator, List, Tuple,
+                    TypeVar)
 
 from comb_spec_searcher import BatchRule, Rule
 from permuta import Perm
-from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST
+from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 
 from ..obstruction import Obstruction
 from ..requirement import Requirement
+
+if TYPE_CHECKING:
+    from tilings import Tiling
+
+Cell = Tuple[int, int]
+Dir = int
+ListRequirement = List[Requirement]
+GriddedPerm = TypeVar('GriddedPerm', Obstruction, Requirement)
+ObsCache = Dict[Cell, List[Obstruction]]
+ReqsCache = Dict[Cell, List[ListRequirement]]
 
 
 class RequirementPlacement():
@@ -13,23 +25,40 @@ class RequirementPlacement():
     The requirement placement container class.
 
     Places points onto own row, own col, or both.
+
+    INPUTS:
+        - `tiling`: The tilings to perform the placement with
+        - `own_row`: Indiciate the place the point on its own row
+        - `own_col`: Indiciate the place the point on its own column
+        - `dirs`: The directions used for placement (default to all
+          directions).
+          The possible directions are:
+            - `permuta.misc.DIR_NORTH`
+            - `permuta.misc.DIR_SOUTH`
+            - `permuta.misc.DIR_EAST`
+            - `permuta.misc.DIR_WEST`
     """
-    def __init__(self, tiling, own_row=True, own_col=True):
+    def __init__(self, tiling: 'Tiling', own_row: bool = True,
+                 own_col: bool = True, dirs: Iterable[int] = tuple(DIRS)):
         if not own_row and not own_col:
             raise ValueError("Must place on own row or on own column.")
+        assert all(d in DIRS for d in dirs), "Got an invalid direction"
         self._tiling = tiling
         self._own_row = own_row
         self._own_col = own_col
-        self._stretched_obstructions_cache = {}
-        self._stretched_requirements_cache = {}
+        self._stretched_obstructions_cache = {}  # type: ObsCache
+        self._stretched_requirements_cache = {}  # type: ReqsCache
         if self._own_row and self._own_col:
-            self.directions = (DIR_EAST, DIR_NORTH, DIR_WEST, DIR_SOUTH)
+            self.directions = frozenset(DIRS)
         elif self._own_row:
-            self.directions = (DIR_NORTH, DIR_SOUTH)
+            self.directions = frozenset((DIR_NORTH, DIR_SOUTH))
         elif self._own_col:
-            self.directions = (DIR_EAST, DIR_WEST)
+            self.directions = frozenset((DIR_EAST, DIR_WEST))
+        self.directions = frozenset(dirs).intersection(self.directions)
+        assert self.directions, "No direction to place"
 
-    def _point_translation(self, gp, index, placed_cell):
+    def _point_translation(self, gp: GriddedPerm, index: int,
+                           placed_cell: Cell) -> Cell:
         """
         Return the translated position of the cell at the given index.
 
@@ -58,7 +87,8 @@ class RequirementPlacement():
                 y + 2 if (self._own_row and
                           gp.patt[index] >= placed_cell[1]) else y)
 
-    def _gridded_perm_translation(self, gp, placed_cell):
+    def _gridded_perm_translation(self, gp: GriddedPerm,
+                                  placed_cell: Cell) -> GriddedPerm:
         """
         Return the gridded permutation with all of the cells translated
         assuming that the point was placed at placed cell
@@ -67,7 +97,9 @@ class RequirementPlacement():
                   for index in range(len(gp))]
         return gp.__class__(gp.patt, newpos)
 
-    def _gridded_perm_translation_with_point(self, gp, point_index):
+    def _gridded_perm_translation_with_point(
+        self, gp: GriddedPerm, point_index: int
+    ) -> GriddedPerm:
         """
         Return the stretched gridded permutation obtained when the point at
         point_index in gp is placed.
@@ -81,7 +113,7 @@ class RequirementPlacement():
                    for i in range(len(gp))]
         return gp.__class__(gp.patt, new_pos)
 
-    def _placed_cell(self, cell):
+    def _placed_cell(self, cell: Cell) -> Cell:
         """
         Return the cell in which the point will be added in the placed tiling.
 
@@ -91,7 +123,7 @@ class RequirementPlacement():
         x, y = cell
         return (x + 1 if self._own_col else x, y + 1 if self._own_row else y)
 
-    def _point_obstructions(self, cell):
+    def _point_obstructions(self, cell: Cell) -> List[Obstruction]:
         """
         Return the localised 12 and 21 obstruction required to ensure the
         newly placed point is a point.
@@ -100,7 +132,7 @@ class RequirementPlacement():
         return [Obstruction(Perm((0, 1)), (placed_cell, placed_cell)),
                 Obstruction(Perm((1, 0)), (placed_cell, placed_cell))]
 
-    def _point_requirements(self, cell):
+    def _point_requirements(self, cell: Cell) -> List[ListRequirement]:
         """
         Return the requirement required to ensure that the newly placed point
         is a point.
@@ -108,7 +140,8 @@ class RequirementPlacement():
         placed_cell = self._placed_cell(cell)
         return [[Requirement(Perm((0,)), (placed_cell,))]]
 
-    def _stretch_gridded_perm(self, gp, cell):
+    def _stretch_gridded_perm(self, gp: GriddedPerm,
+                              cell: Cell) -> Iterable[GriddedPerm]:
         """
         Return all of the possible ways that a gridded permutation can be
         stretched assuming that a point is placed into the given cell.
@@ -125,7 +158,8 @@ class RequirementPlacement():
             res.append(self._gridded_perm_translation_with_point(gp, i))
         return res
 
-    def _stretch_gridded_perms(self, gps, cell):
+    def _stretch_gridded_perms(self, gps: Iterable[GriddedPerm],
+                               cell: Cell) -> List[GriddedPerm]:
         """
         Return all strected gridded permuations for an iterable of gridded
         permutations, assuming a point is placed in the given cell.
@@ -133,7 +167,7 @@ class RequirementPlacement():
         return list(chain.from_iterable(self._stretch_gridded_perm(gp, cell)
                                         for gp in gps))
 
-    def _stretched_obstructions(self, cell):
+    def _stretched_obstructions(self, cell: Cell) -> List[Obstruction]:
         """
         Return all of the stretched obstructions that are created if placing a
         point in the given cell.
@@ -143,7 +177,7 @@ class RequirementPlacement():
                 self._stretch_gridded_perms(self._tiling.obstructions, cell)
         return self._stretched_obstructions_cache[cell]
 
-    def _stretched_requirements(self, cell):
+    def _stretched_requirements(self, cell: Cell) -> List[ListRequirement]:
         """
         Return all of the stretched requirements that are created if placing a
         point in the given cell.
@@ -154,7 +188,9 @@ class RequirementPlacement():
                          for req_list in self._tiling.requirements]
         return self._stretched_requirements_cache[cell]
 
-    def _stretched_obstructions_and_requirements(self, cell):
+    def _stretched_obstructions_and_requirements(
+        self, cell: Cell
+    ) -> Tuple[List[Obstruction], List[ListRequirement]]:
         """
         Return all of the stretched obstruction and requirements assuming that
         a point is placed in cell.
@@ -166,7 +202,7 @@ class RequirementPlacement():
         return stretched_obs + point_obs, stretched_reqs + point_req
 
     @staticmethod
-    def _farther(c1, c2, direction):
+    def _farther(c1: Cell, c2: Cell, direction: Dir) -> bool:
         """Return True if c1 is farther in the given direction than c2."""
         if direction == DIR_EAST:
             return c1[0] > c2[0]
@@ -178,7 +214,8 @@ class RequirementPlacement():
             return c1[1] < c2[1]
         raise Exception('Invalid direction')
 
-    def _forced_obstructions_from_patt(self, gp, idx, direction):
+    def _forced_obstructions_from_patt(self, gp: GriddedPerm, idx: int,
+                                       direction: Dir) -> List[Obstruction]:
         """
         Return the obstructions required to ensure that the placed point is
         the direction most occurence of the idx point of gp.
@@ -188,13 +225,15 @@ class RequirementPlacement():
         than the placed cell.
         """
         placed_cell = self._placed_cell(gp.pos[idx])
-        gp = Obstruction(gp.patt, gp.pos)
+        ob = Obstruction(gp.patt, gp.pos)
         return [stretched_gp
-                for stretched_gp in self._stretch_gridded_perm(gp, gp.pos[idx])
+                for stretched_gp in self._stretch_gridded_perm(ob, ob.pos[idx])
                 if self._farther(stretched_gp.pos[idx], placed_cell,
                                  direction)]
 
-    def _forced_obstructions_from_list(self, gp_list, cell, direction):
+    def _forced_obstructions_from_list(
+        self, gp_list: List[GriddedPerm], cell: Cell, direction: Dir
+    ) -> List[Obstruction]:
         """
         Return the obstructions required to ensure that the placed point is
         the direction most occurence of a point used in an occurrence of any
@@ -212,7 +251,8 @@ class RequirementPlacement():
                 if any(self._farther(c1, placed_cell, direction)
                        for c1 in stretched_gp.pos)]
 
-    def place_point_of_req(self, gp, idx, direction):
+    def place_point_of_req(self, gp: GriddedPerm, idx: int,
+                           direction: Dir) -> 'Tiling':
         """
         Return the tiling where the placed point correspond to the
         directionmost (the furtest in the given direction, ex: leftmost point)
@@ -225,7 +265,7 @@ class RequirementPlacement():
                                         Requirement(gp.patt, gp.pos), idx)]]
         return self._tiling.__class__(obs + forced_obs, reqs + rem_reqs)
 
-    def place_point_in_cell(self, cell, direction):
+    def place_point_in_cell(self, cell: Cell, direction: Dir) -> 'Tiling':
         """
         Return the tiling in which a point is placed in the given direction and
         cell.
@@ -233,7 +273,8 @@ class RequirementPlacement():
         point_req = Requirement(Perm((0,)), (cell,))
         return self.place_point_of_req(point_req, 0, direction)
 
-    def place_point_of_req_list(self, req_list, direction):
+    def place_point_of_req_list(self, req_list: ListRequirement,
+                                direction: Dir) -> List['Tiling']:
         """
         Return a list of tilings, in which each tiling corresponds to a
         possible way in which a direction most point can occur of any gridded
@@ -248,7 +289,7 @@ class RequirementPlacement():
             tilings.append(self._tiling.__class__(obs + forced_obs, reqs))
         return tilings
 
-    def col_placement(self, index, direction):
+    def col_placement(self, index: int, direction: Dir) -> List['Tiling']:
         """
         Return the list corresponding the index column being placed in the
         given direction.
@@ -258,7 +299,7 @@ class RequirementPlacement():
                     for cell in self._tiling.cells_in_col(index)]
         return self.place_point_of_req_list(req_list, direction)
 
-    def row_placement(self, index, direction):
+    def row_placement(self, index: int, direction: Dir) -> List['Tiling']:
         """
         Return the list corresponding the index row being placed in the given
         direction.
@@ -268,7 +309,7 @@ class RequirementPlacement():
                     for cell in self._tiling.cells_in_row(index)]
         return self.place_point_of_req_list(req_list, direction)
 
-    def empty_col(self, index):
+    def empty_col(self, index: int) -> 'Tiling':
         """
         Return the tiling in which the index row is empty.
         """
@@ -277,7 +318,7 @@ class RequirementPlacement():
         return self._tiling.__class__(self._tiling.obstructions + newobs,
                                       self._tiling.requirements)
 
-    def empty_row(self, index):
+    def empty_row(self, index: int) -> 'Tiling':
         """
         Return the tiling in which the index row is empty.
         """
@@ -286,7 +327,7 @@ class RequirementPlacement():
         return self._tiling.__class__(self._tiling.obstructions + newobs,
                                       self._tiling.requirements)
 
-    def all_col_placement_rules(self):
+    def all_col_placement_rules(self) -> Iterator[Rule]:
         """
         Yield all possible rules coming from placing points in a column.
         """
@@ -301,7 +342,7 @@ class RequirementPlacement():
                                                             index, direction)
                     yield BatchRule(formal_step, tilings)
 
-    def all_row_placement_rules(self):
+    def all_row_placement_rules(self) -> Iterator[Rule]:
         """
         Yield all possible rules coming from placing points in a row.
         """
@@ -316,7 +357,9 @@ class RequirementPlacement():
                                                             index, direction)
                     yield BatchRule(formal_step, tilings)
 
-    def all_point_placement_rules(self, ignore_parent=False):
+    def all_point_placement_rules(
+        self, ignore_parent: bool = False
+    ) -> Iterator[Rule]:
         """
         Yield all posible rules coming from placing a point in a positive cell
         of the tiling.
@@ -330,7 +373,9 @@ class RequirementPlacement():
                            [True], ignore_parent=ignore_parent,
                            constructor='equiv')
 
-    def all_requirement_placement_rules(self, ignore_parent=False):
+    def all_requirement_placement_rules(
+        self, ignore_parent: bool = False
+    ) -> Iterator[Rule]:
         """
         Yield all possible rules coming from placing a point of a patttern that
         occurs as a subpattern of requirement containing a single pattern.
@@ -347,7 +392,7 @@ class RequirementPlacement():
                            [True], ignore_parent=ignore_parent,
                            constructor='equiv')
 
-    def _col_placement_formal_step(self, idx, direction):
+    def _col_placement_formal_step(self, idx: int, direction: Dir) -> str:
         dir_str = self._direction_string(direction)
         s = 'Placing '
         if not (self._own_col and self._own_row):
@@ -355,7 +400,7 @@ class RequirementPlacement():
         s += '{} points in column {}.'.format(dir_str, idx)
         return s
 
-    def _row_placement_formal_step(self, idx, direction):
+    def _row_placement_formal_step(self, idx: int, direction: Dir) -> str:
         dir_str = self._direction_string(direction)
         s = 'Placing '
         if not (self._own_col and self._own_row):
@@ -363,7 +408,7 @@ class RequirementPlacement():
         s += '{} points in row {}.'.format(dir_str, idx)
         return s
 
-    def _point_placement_formal_step(self, cell, direction):
+    def _point_placement_formal_step(self, cell: Cell, direction: Dir) -> str:
         dir_str = self._direction_string(direction)
         s = 'Placing '
         if not (self._own_col and self._own_row):
@@ -371,7 +416,8 @@ class RequirementPlacement():
         s += '{} point in cell {}.'.format(dir_str, cell)
         return s
 
-    def _pattern_placement_formal_step(self, idx, gp, direction):
+    def _pattern_placement_formal_step(self, idx: int, gp: GriddedPerm,
+                                       direction: Dir) -> str:
         dir_str = self._direction_string(direction)
         s = 'Placing '
         if not (self._own_col and self._own_row):
@@ -381,7 +427,7 @@ class RequirementPlacement():
         return s
 
     @staticmethod
-    def _direction_string(direction):
+    def _direction_string(direction: Dir) -> str:
         if direction == DIR_EAST:
             return "rightmost"
         if direction == DIR_WEST:
