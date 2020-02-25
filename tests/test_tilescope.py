@@ -39,6 +39,14 @@ def test_132_genf():
 
 
 @pytest.mark.timeout(20)
+def test_132_elementary():
+    searcher = TileScope('132', point_placements.make_elementary())
+    t = searcher.auto_search()
+    assert t.number_of_nodes() == 5
+    assert isinstance(t, ProofTree)
+
+
+@pytest.mark.timeout(20)
 def test_123():
     print(all_the_strategies_verify_database)
     searcher = TileScope('123', point_placements_fusion)
