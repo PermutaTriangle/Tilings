@@ -339,6 +339,7 @@ class DatabaseEnumeration(Enumeration):
 
     API_ROOT_URL = 'https://api.combopal.ru.is/'
     all_verified_tilings = frozenset()  # type: FrozenSet[bytes]
+    num_verified_request = 0
 
     @classmethod
     def load_verified_tiling(cls):
@@ -370,8 +371,18 @@ class DatabaseEnumeration(Enumeration):
         return r.json()
 
     def verified(self):
+        """
+        Check if a tiling is verified.
+
+        After a 100 checks it loads all the saved tiling from the database to
+        speed up future requests.
+        """
+        DatabaseEnumeration.num_verified_request += 1
         if DatabaseEnumeration.all_verified_tilings:
-            return self.tiling.compress() in self.all_verified_tilings
+            return (self.tiling.compress() in
+                    DatabaseEnumeration.all_verified_tilings)
+        if DatabaseEnumeration.num_verified_request > 100:
+            DatabaseEnumeration.load_verified_tiling()
         return self._get_tiling_entry() is not None
 
     formal_step = 'Tiling is in the database'
