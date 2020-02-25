@@ -362,7 +362,7 @@ class DatabaseEnumeration(Enumeration):
         """
         key = self.tiling.compress().hex()
         search_url = (DatabaseEnumeration.API_ROOT_URL +
-                      '/verified_tiling/key/{}'.format(key))
+                      'verified_tiling/key/{}'.format(key))
         r = requests.get(search_url)
         if r.status_code == 404:
             return None
