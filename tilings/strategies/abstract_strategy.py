@@ -21,6 +21,21 @@ class Strategy(abc.ABC):
     def __repr__(self) -> str:
         pass
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Strategy):
+            return NotImplemented
+        return (self.__class__ == other.__class__ and
+                self.__dict__ == other.__dict__)
+
+    def __hash__(self):
+        """
+        Hash function for the strategy.
+
+        As we don't expect a use case were many object for the same class
+        strategy are used. This hash function should perform correctly.
+        """
+        return hash(self.__class__)
+
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
         c = self.__class__

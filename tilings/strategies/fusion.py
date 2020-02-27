@@ -47,6 +47,8 @@ class ComponentFusionStrategy(Strategy):
     of the row/column.
     """
     def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+        if tiling.requirements:
+            return iter([])
         return _general_fusion_iterator(tiling, ComponentFusion)
 
     def __str__(self) -> str:
