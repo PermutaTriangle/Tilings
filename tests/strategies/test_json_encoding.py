@@ -100,6 +100,7 @@ strategy_objects = [
     RequirementPlacementStrategy(point_only=False),
     RequirementPlacementStrategy(partial=True),
     RequirementPlacementStrategy(partial=False),
+    RequirementPlacementStrategy(dirs=[1, 3, 0]),
 ]
 
 

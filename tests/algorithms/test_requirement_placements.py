@@ -83,6 +83,16 @@ def placement2owncol(tiling2):
 
 
 @pytest.fixture
+def placement_only_west():
+    t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+    ], requirements=[[
+        Requirement(Perm((0,)), ((0, 0),)),
+    ]])
+    return RequirementPlacement(t, dirs=[DIR_WEST])
+
+
+@pytest.fixture
 def gp1():
     return GriddedPerm(Perm((3, 1, 2, 0, 4)),
                        ((0, 1), (0, 0), (1, 1), (1, 0), (1, 1)))
@@ -256,12 +266,13 @@ def test_all_row_placement_rules_partial(placement1owncol, placement1ownrow):
 
 
 def test_all_point_placement_rules(placement1, placement2, placement2owncol,
-                                   placement2ownrow):
+                                   placement2ownrow, placement_only_west):
     assert list(placement1.all_point_placement_rules()) == []
     print(placement2._tiling)
     assert len(list(placement2.all_point_placement_rules())) == 12
     assert len(list(placement2owncol.all_point_placement_rules())) == 6
     assert len(list(placement2ownrow.all_point_placement_rules())) == 6
+    assert len(list(placement_only_west.all_point_placement_rules())) == 1
     for rule in placement2.all_point_placement_rules():
         assert isinstance(rule, Rule)
         assert len(rule.comb_classes) == 1
@@ -289,6 +300,18 @@ def test_all_point_placement_rules(placement1, placement2, placement2owncol,
         assert rule.workable == [True]
         assert rule.constructor == 'equiv'
         assert rule.possibly_empty == [False]
+    for rule in placement_only_west.all_point_placement_rules():
+        assert len(rule.comb_classes) == 1
+        assert rule.formal_step == 'Placing leftmost point in cell (0, 0).'
+        rule.comb_classes[0] == Tiling(obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
+            Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 2))),
+            Obstruction(Perm((0, 1)), ((1, 2), (1, 2))),
+            Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+            Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
+        ], requirements=[[
+            Obstruction(Perm((0,)), ((0, 1),)),
+        ]])
 
 
 def test_all_requirement_placement_rules():
