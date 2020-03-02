@@ -418,6 +418,7 @@ class TileScopePack(StrategyPack):
                 strat.BasicVerificationStrategy(),
                 strat.OneByOneVerificationStrategy(),
                 strat.LocalVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
             ], inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityStrategy(),
