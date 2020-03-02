@@ -81,7 +81,7 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
     The cell insertion strategy performed only on 1 by 1 tilings.
     """
     def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
-        if tiling.dimensions != (1, 1) or tiling.requirements:
+        if tiling.dimensions != (1, 1):
             return
         yield from (CellInsertion(tiling, self.maxreqlen, self.extra_basis)
                     .rules(self.ignore_parent))
