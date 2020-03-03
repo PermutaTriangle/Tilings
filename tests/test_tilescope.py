@@ -54,7 +54,7 @@ def test_123():
     assert isinstance(t, ProofTree)
 
 
-@pytest.mark.timeout(20)
+@pytest.mark.timeout(60)
 def test_123_with_db():
     searcher = TileScope('123', all_the_strategies_verify_database)
     t = searcher.auto_search(smallest=True)
