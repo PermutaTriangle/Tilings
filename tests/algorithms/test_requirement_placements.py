@@ -351,6 +351,165 @@ def test_all_requirement_placement_rules():
     ]) in comb_classes
 
 
+def test_not_equivalent_to_itself():
+    """
+    We don't want the rule to say the tiling is equivalent to itself.
+    The opposite can create situation where the tiling is mark as unworkable
+    because of the ignore parent flag.
+    """
+    t_fully_placed = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
+        Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
+    ], requirements=[[
+        Requirement(Perm((0,)), ((1, 1),))
+    ]])
+    t_row_placed = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+        Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
+    ], requirements=[[
+        Requirement(Perm((0,)), ((0, 1),))
+    ]])
+    t_row_placed2 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+        Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
+    ], requirements=[[
+        Requirement(Perm((0, 1)), ((0, 0), (0, 1)))
+    ]])
+    t_col_placed = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+        Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
+    ], requirements=[[
+        Requirement(Perm((0,)), ((1, 0),))
+    ]])
+    t_col_placed2 = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+        Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+        Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
+    ], requirements=[[
+        Requirement(Perm((0, 1)), ((0, 0), (1, 0)))
+    ]])
+    placement_fully_placed = RequirementPlacement(t_fully_placed)
+    placement_fully_placed_partial_col = RequirementPlacement(t_fully_placed,
+                                                              own_row=False)
+    placement_fully_placed_partial_row = RequirementPlacement(t_fully_placed,
+                                                              own_col=False)
+    placement_row_placed = RequirementPlacement(t_row_placed)
+    placement_row_placed_partial_col = RequirementPlacement(t_row_placed,
+                                                            own_row=False)
+    placement_row_placed_partial_row = RequirementPlacement(t_row_placed,
+                                                            own_col=False)
+    placement_row_placed2 = RequirementPlacement(t_row_placed2)
+    placement_col_placed = RequirementPlacement(t_col_placed)
+    placement_col_placed_partial_col = RequirementPlacement(t_col_placed,
+                                                            own_row=False)
+    placement_col_placed_partial_row = RequirementPlacement(t_col_placed,
+                                                            own_col=False)
+    placement_col_placed2 = RequirementPlacement(t_col_placed2)
+    print(t_fully_placed)
+    print(t_row_placed)
+    print(t_row_placed2)
+    print(t_col_placed)
+    print(t_col_placed2)
+    # Requirement placements
+    assert len(list(
+        placement_fully_placed.all_requirement_placement_rules())) == 0
+    assert len(list(
+        placement_fully_placed_partial_row.all_requirement_placement_rules())
+    ) == 0
+    assert len(list(
+        placement_fully_placed_partial_col.all_requirement_placement_rules())
+    ) == 0
+    assert len(list(
+        placement_row_placed.all_requirement_placement_rules())) == 4
+    assert len(list(
+        placement_row_placed_partial_col.all_requirement_placement_rules())
+    ) == 2
+    assert len(list(
+        placement_row_placed_partial_row.all_requirement_placement_rules())
+    ) == 0
+    assert len(list(
+        placement_row_placed2.all_requirement_placement_rules())) == 16
+    assert len(list(
+        placement_col_placed.all_requirement_placement_rules())) == 4
+    assert len(list(
+        placement_col_placed_partial_col.all_requirement_placement_rules())
+    ) == 0
+    assert len(list(
+        placement_col_placed_partial_row.all_requirement_placement_rules())
+    ) == 2
+    assert len(list(
+        placement_col_placed2.all_requirement_placement_rules())) == 16
+    # Check that the class are correct
+    assert all(r.comb_classes[0] != t_fully_placed for r in
+               placement_fully_placed.all_requirement_placement_rules())
+    assert all(r.comb_classes[0] != t_row_placed for r in
+               placement_row_placed.all_requirement_placement_rules())
+    assert all(r.comb_classes[0] != t_row_placed2 for r in
+               placement_row_placed2.all_requirement_placement_rules())
+    assert all(r.comb_classes[0] != t_col_placed for r in
+               placement_col_placed.all_requirement_placement_rules())
+    assert all(r.comb_classes[0] != t_col_placed2 for r in
+               placement_col_placed2.all_requirement_placement_rules())
+    # Point placements
+    assert len(list(
+        placement_fully_placed.all_point_placement_rules())) == 0
+    assert len(list(
+        placement_row_placed.all_point_placement_rules())) == 4
+    assert len(list(
+        placement_row_placed2.all_point_placement_rules())) == 8
+    assert len(list(
+        placement_col_placed.all_point_placement_rules())) == 4
+    assert len(list(
+        placement_col_placed2.all_point_placement_rules())) == 8
+    # Check that the class are correct
+    assert all(r.comb_classes[0] != t_fully_placed for r in
+               placement_fully_placed.all_point_placement_rules())
+    assert all(r.comb_classes[0] != t_row_placed for r in
+               placement_row_placed.all_point_placement_rules())
+    assert all(r.comb_classes[0] != t_row_placed2 for r in
+               placement_row_placed2.all_point_placement_rules())
+    assert all(r.comb_classes[0] != t_col_placed for r in
+               placement_col_placed.all_point_placement_rules())
+    assert all(r.comb_classes[0] != t_col_placed2 for r in
+               placement_col_placed2.all_point_placement_rules())
+    # Row placement
+    assert len(list(
+        placement_fully_placed.all_row_placement_rules())) == 2
+    assert len(list(
+        placement_fully_placed_partial_col.all_row_placement_rules())) == 0
+    assert len(list(
+        placement_fully_placed_partial_row.all_row_placement_rules())) == 2
+    assert len(list(
+        placement_fully_placed.all_row_placement_rules())) == 2
+    assert len(list(
+        placement_row_placed.all_row_placement_rules())) == 2
+    assert len(list(
+        placement_row_placed_partial_col.all_row_placement_rules())) == 0
+    assert len(list(
+        placement_row_placed_partial_row.all_row_placement_rules())) == 2
+    assert len(list(
+        placement_row_placed2.all_row_placement_rules())) == 2
+    assert len(list(
+        placement_col_placed.all_row_placement_rules())) == 2
+    assert len(list(
+        placement_col_placed2.all_row_placement_rules())) == 2
+    # Col placement
+    assert len(list(
+        placement_fully_placed.all_col_placement_rules())) == 2
+    assert len(list(
+        placement_row_placed.all_col_placement_rules())) == 2
+    assert len(list(
+        placement_row_placed2.all_col_placement_rules())) == 2
+    assert len(list(
+        placement_col_placed.all_col_placement_rules())) == 2
+    assert len(list(
+        placement_col_placed2.all_col_placement_rules())) == 2
+
+
 def test_all_requirement_placement_rules_partial(placement2owncol,
                                                  placement2ownrow):
     print(placement2owncol._tiling)

@@ -1,6 +1,6 @@
-from itertools import chain, product
-from typing import (TYPE_CHECKING, Dict, Iterable, Iterator, List, Tuple,
-                    TypeVar)
+from itertools import chain
+from typing import (TYPE_CHECKING, Dict, FrozenSet, Iterable, Iterator, List,
+                    Tuple, TypeVar)
 
 from comb_spec_searcher import BatchRule, Rule
 from permuta import Perm
@@ -44,6 +44,8 @@ class RequirementPlacement():
             raise ValueError("Must place on own row or on own column.")
         assert all(d in DIRS for d in dirs), "Got an invalid direction"
         self._tiling = tiling
+        self._point_row_cells = self._tiling_point_row_cells()
+        self._point_col_cells = self._tiling_point_col_cells()
         self._own_row = own_row
         self._own_col = own_col
         self._stretched_obstructions_cache = {}  # type: ObsCache
@@ -56,6 +58,38 @@ class RequirementPlacement():
             self.directions = frozenset((DIR_EAST, DIR_WEST))
         self.directions = frozenset(dirs).intersection(self.directions)
         assert self.directions, "No direction to place"
+
+    def _tiling_point_col_cells(self) -> FrozenSet[Cell]:
+        """
+        The point cells of the tilings that are the only active cell in there
+        column.
+        """
+        return frozenset(filter(
+            self._tiling.only_cell_in_col, self._tiling.point_cells
+        ))
+
+    def _tiling_point_row_cells(self) -> FrozenSet[Cell]:
+        """
+        The point cells of the tilings that are the only active cell in there
+        row.
+        """
+        return frozenset(filter(
+            self._tiling.only_cell_in_row, self._tiling.point_cells
+        ))
+
+    def _already_placed(self, cell) -> bool:
+        """
+        Determine if this cell is already placed.
+        """
+        full_placement = self._own_row and self._own_col
+        if full_placement:
+            return (cell in self._point_col_cells and
+                    cell in self._point_row_cells)
+        if self._own_row:  # Only placing in own row
+            return cell in self._point_row_cells
+        if self._own_col:  # Only placing in own column
+            return cell in self._point_col_cells
+        raise Exception('Not placing at all!!')
 
     def _point_translation(self, gp: GriddedPerm, index: int,
                            placed_cell: Cell) -> Cell:
@@ -333,7 +367,9 @@ class RequirementPlacement():
         """
         if not self._own_col:
             return
-        for index in range(self._tiling.dimensions[0]):
+        unplaced_col = (idx for idx in range(self._tiling.dimensions[0]) if not
+                        any(cell[0] == idx for cell in self._point_col_cells))
+        for index in unplaced_col:
             for direction in self.directions:
                 if direction in (DIR_EAST, DIR_WEST):
                     tilings = ([self.empty_col(index)] +
@@ -348,7 +384,9 @@ class RequirementPlacement():
         """
         if not self._own_row:
             return
-        for index in range(self._tiling.dimensions[1]):
+        unplaced_row = (idx for idx in range(self._tiling.dimensions[1]) if not
+                        any(cell[1] == idx for cell in self._point_row_cells))
+        for index in unplaced_row:
             for direction in self.directions:
                 if direction in (DIR_NORTH, DIR_SOUTH):
                     tilings = ([self.empty_row(index)] +
@@ -365,6 +403,8 @@ class RequirementPlacement():
         of the tiling.
         """
         for cell in self._tiling.positive_cells:
+            if self._already_placed(cell):
+                continue
             for direction in self.directions:
                 placed_tiling = self.place_point_in_cell(cell, direction)
                 formal_step = self._point_placement_formal_step(
@@ -377,20 +417,24 @@ class RequirementPlacement():
         self, ignore_parent: bool = False
     ) -> Iterator[Rule]:
         """
-        Yield all possible rules coming from placing a point of a patttern that
+        Yield all possible rules coming from placing a point of a pattern that
         occurs as a subpattern of requirement containing a single pattern.
         """
         subgps = set(chain.from_iterable(req[0].all_subperms(proper=False)
                                          for req in self._tiling.requirements
                                          if len(req) == 1))
         for gp in subgps:
-            for idx, direction in product(range(len(gp)), self.directions):
-                placed_tiling = self.place_point_of_req(gp, idx, direction)
-                formal_step = self._pattern_placement_formal_step(
-                                                        idx, gp, direction)
-                yield Rule(formal_step, [placed_tiling], [True], [False],
-                           [True], ignore_parent=ignore_parent,
-                           constructor='equiv')
+            for idx in range(len(gp)):
+                cell = gp.pos[idx]
+                if self._already_placed(cell):
+                    continue
+                for direction in self.directions:
+                    placed_tiling = self.place_point_of_req(gp, idx, direction)
+                    formal_step = self._pattern_placement_formal_step(
+                        idx, gp, direction)
+                    yield Rule(formal_step, [placed_tiling], [True], [False],
+                               workable=[True], ignore_parent=ignore_parent,
+                               constructor='equiv')
 
     def _col_placement_formal_step(self, idx: int, direction: Dir) -> str:
         dir_str = self._direction_string(direction)
