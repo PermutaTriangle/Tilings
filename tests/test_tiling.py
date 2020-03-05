@@ -1373,6 +1373,23 @@ def test_row_and_column_separation():
         Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
     ])
     assert not_sep_t.row_and_column_separation() == not_sep_t
+    need_two_sep_t = Tiling(obstructions=[
+        Obstruction(Perm((0, 1)), ((0, 1),)*2),
+        Obstruction(Perm((1, 0)), ((0, 1), (0, 0))),
+        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
+        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
+        Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 1), (1, 0))),
+    ], requirements=[
+        [Requirement(Perm((0,)), ((0, 1),))]
+    ])
+    assert (need_two_sep_t.row_and_column_separation() ==
+            Tiling(obstructions=[
+                Obstruction(Perm((0, 1)), ((1, 2),)*2),
+                Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
+                Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
+            ], requirements=[
+                [Requirement(Perm((0,)), ((1, 2),))]
+            ]))
 
 
 def test_obstruction_transitivity():
