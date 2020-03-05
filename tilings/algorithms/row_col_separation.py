@@ -1,3 +1,12 @@
+"""
+The row and columns separation algorithm.
+
+The main algorithm for the separation is contained in the class
+`_RowColSeparationSingleApplication`. The new separated tiling have new
+length 2 crossing obstructions that would allow more separation.
+The role of the class `RowColSeparation` is to make sure that row columns
+separation is idempotent by applying the core algorithm until it stabilises.
+"""
 import heapq
 from itertools import combinations, product
 
@@ -233,7 +242,10 @@ class Graph():
         return self.num_vertices >= other.num_vertices
 
 
-class RowColSeparation():
+class _RowColSeparationSingleApplication():
+    """
+    Make the row separation of the tiling.
+    """
     def __init__(self, tiling):
         self._tiling = tiling
         self._active_cells = tuple(sorted(tiling.active_cells))
@@ -365,7 +377,7 @@ class RowColSeparation():
     @staticmethod
     def _maximal_order(graph):
         """ Returns a order that maximise separation. """
-        return next(RowColSeparation._all_order(graph))
+        return next(_RowColSeparationSingleApplication._all_order(graph))
 
     def _separates_tiling(self, row_order, col_order):
         cell_map = self._get_cell_map(row_order, col_order)
@@ -458,12 +470,49 @@ class RowColSeparation():
         for row_order, col_order in orders:
             yield self._separates_tiling(row_order, col_order)
 
-    @staticmethod
-    def formal_step():
+
+class RowColSeparation():
+    """
+    This is basically a simple wrapper around
+    `_RowColSeparationSingleApplication` to ensure the separation is
+    idempotent.
+
+    It applies the row columns separation until it does not change the tiling.
+    """
+    def __init__(self, tiling):
+        self._tiling = tiling
+        self._separated_tilings = []
+        separation_algo = _RowColSeparationSingleApplication(self._tiling)
+        while separation_algo.separable():
+            new_sep = separation_algo.separated_tiling()
+            self._separated_tilings.append(new_sep)
+            separation_algo = _RowColSeparationSingleApplication(new_sep)
+
+    def separable(self):
+        """
+        Test if the tiling is separable.
+
+        A tiling is not separable the separation does not creates any new row
+        or column.
+        """
+        return bool(self._separated_tilings)
+
+    def separated_tiling(self):
+        """
+        Return the one the possible maximal separation of the tiling.
+        """
+        if not self._separated_tilings:
+            return self._tiling
+        return self._separated_tilings[-1]
+
+    def formal_step(self):
         """
         Returns a string describing the operation that was performed.
         """
-        return 'Row and column separation'
+        s = 'Row and column separation'
+        if len(self._separated_tilings) > 1:
+            s += ' ({} times)'.format(len(self._separated_tilings))
+        return s
 
     def rule(self):
         """
