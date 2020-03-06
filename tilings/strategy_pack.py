@@ -412,8 +412,8 @@ class TileScopePack(StrategyPack):
         name = "only_length_{}_root_placements".format(length)
         return TileScopePack(
             initial_strats=[
+                strat.RootInsertionStrategy(maxreqlen=length),
                 strat.RequirementPlacementStrategy(ignore_parent=True),
-                strat.FactorStrategy(union=True),
             ], ver_strats=[
                 strat.BasicVerificationStrategy(),
                 strat.OneByOneVerificationStrategy(),
@@ -423,7 +423,7 @@ class TileScopePack(StrategyPack):
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityStrategy(),
             ], expansion_strats=[[
-                strat.RootInsertionStrategy(maxreqlen=length),
+                strat.FactorStrategy(union=True),
             ]],
             name=name)
 
