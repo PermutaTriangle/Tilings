@@ -6,6 +6,7 @@ from tilings.strategies import (AllCellInsertionStrategy,
                                 AllRequirementExtensionStrategy,
                                 AllRequirementInsertionStrategy,
                                 RequirementCorroborationStrategy,
+                                RootInsertionStrategy,
                                 RowAndColumnPlacementStrategy)
 
 pytest_plugins = [
@@ -322,3 +323,25 @@ def test_all_placements():
     ])
     rules = list(AllPlacementsStrategy()(t))
     assert len(rules) == 24
+
+
+def test_root_insertion():
+    t_2x2 = Tiling(obstructions=(
+        Obstruction(Perm((0, 1)), ((0, 0),)*2),
+        Obstruction(Perm((0, 1)), ((1, 1),)*2),
+    ))
+    t = Tiling.from_string('1234')
+    assert list(RootInsertionStrategy()(t_2x2)) == []
+    assert len(list(RootInsertionStrategy(maxreqlen=3)(t))) == 9
+    t_w_req = t.add_single_cell_requirement(Perm((0, 1)), (0, 0))
+    assert len(list(RootInsertionStrategy(maxreqlen=3)(t_w_req))) == 7
+    rules = list(RootInsertionStrategy(maxreqlen=3, max_num_req=1)(t_w_req))
+    assert len(rules) == 5
+    t_w_req2 = t.add_single_cell_requirement(Perm((0, 1, 2)), (0, 0))
+    print('=='*30)
+    rules = list(RootInsertionStrategy(maxreqlen=4, max_num_req=1)(t_w_req2))
+    assert len(rules) == 9
+    rules = list(RootInsertionStrategy(maxreqlen=4, max_num_req=2)(t_w_req2))
+    for rule in rules:
+        print(rule.comb_classes[1])
+    assert len(rules) == 29

@@ -1,6 +1,6 @@
 from copy import copy
 from itertools import chain
-from typing import List
+from typing import List, Optional
 
 from comb_spec_searcher import StrategyPack
 from comb_spec_searcher.utils import get_func_name
@@ -408,11 +408,14 @@ class TileScopePack(StrategyPack):
         return pack
 
     @classmethod
-    def only_root_placements(cls, length: int = 1) -> 'TileScopePack':
+    def only_root_placements(
+        cls, length: int = 1, max_num_req: Optional[int] = None,
+    ) -> 'TileScopePack':
         name = "only_length_{}_root_placements".format(length)
         return TileScopePack(
             initial_strats=[
-                strat.RootInsertionStrategy(maxreqlen=length),
+                strat.RootInsertionStrategy(maxreqlen=length,
+                                            max_num_req=max_num_req),
                 strat.RequirementPlacementStrategy(ignore_parent=True),
             ], ver_strats=[
                 strat.BasicVerificationStrategy(),
