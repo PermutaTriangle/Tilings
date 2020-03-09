@@ -80,8 +80,8 @@ class RequirementInsertion(abc.ABC):
 
 class RequirementInsertionWithRestriction(RequirementInsertion):
     """
-    As RequirementInsertion, but a set of pattern to avoids and a maxima length
-    can be provided.
+    As RequirementInsertion, but a set of pattern to avoids and a maximum
+    length can be provided.
     """
     def __init__(self, tiling: 'Tiling', maxreqlen: int,
                  extra_basis: Optional[List[Perm]] = None):
@@ -110,7 +110,8 @@ class CrossingInsertion(RequirementInsertionWithRestriction):
                                            minimize=False, sorted_input=True)
         for length in range(1, self.maxreqlen + 1):
             for gp in obs_tiling.gridded_perms_of_length(length):
-                if len(gp.factors()) == 1:
+                if len(gp.factors()) == 1 and all(p not in gp.patt for p in
+                                                  self.extra_basis):
                     yield (Requirement(gp.patt, gp.pos),)
 
 
@@ -126,10 +127,7 @@ class CellInsertion(RequirementInsertionWithRestriction):
             basis = bdict[cell][0] + self.extra_basis
             yield from ((Requirement.single_cell(patt, cell),) for patt in
                         Av(basis).of_length(length) if
-                        not any(patt in perm for perm in bdict[cell][1]) and
-                        (self.tiling.dimensions != (1, 1) or
-                         all(patt > perm for perm in bdict[cell][1]))
-                        )
+                        not any(patt in perm for perm in bdict[cell][1]))
 
 
 class RequirementExtension(RequirementInsertionWithRestriction):
