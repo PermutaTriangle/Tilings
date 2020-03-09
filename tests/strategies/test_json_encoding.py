@@ -10,6 +10,7 @@ from tilings.strategies.batch import (AllCellInsertionStrategy,
                                       AllRequirementExtensionStrategy,
                                       AllRequirementInsertionStrategy,
                                       RequirementCorroborationStrategy,
+                                      RootInsertionStrategy,
                                       RowAndColumnPlacementStrategy)
 from tilings.strategies.decomposition import FactorStrategy
 from tilings.strategies.equivalence import RequirementPlacementStrategy
@@ -63,6 +64,8 @@ strategy_objects = [
     AllRequirementExtensionStrategy(maxreqlen=4),
     AllRequirementInsertionStrategy(),
     RequirementCorroborationStrategy(),
+    RootInsertionStrategy(),
+    RootInsertionStrategy(max_num_req=3, maxreqlen=4),
     RowAndColumnPlacementStrategy(place_col=True, place_row=True),
     RowAndColumnPlacementStrategy(place_col=True, place_row=True,
                                   partial=False),

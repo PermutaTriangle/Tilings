@@ -30,6 +30,7 @@ class AllCellInsertionStrategy(Strategy):
     and returns two tilings; one which requires the pattern in the cell and
     one where the pattern is obstructed.
     """
+
     def __init__(self, maxreqlen: int = 1,
                  extra_basis: Optional[List[Perm]] = None,
                  ignore_parent: bool = False,
@@ -80,30 +81,73 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
     """
     The cell insertion strategy performed only on 1 by 1 tilings.
     """
+
+    def __init__(self, maxreqlen: int = 3,
+                 extra_basis: Optional[List[Perm]] = None,
+                 ignore_parent: bool = False,
+                 max_num_req: Optional[int] = None,
+                 ) -> None:
+        super().__init__(maxreqlen, extra_basis, ignore_parent)
+        self.max_num_req = max_num_req
+
+    def _good_rule(self, rule: Rule) -> bool:
+        """
+        Check the number of requirements in the rule's tilings satisfy the
+        max_num_req
+        """
+        if self.max_num_req is None:
+            return True
+        return all(len(t.requirements) <= self.max_num_req
+                   for t in rule.comb_classes)
+
     def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         if tiling.dimensions != (1, 1):
             return
-        yield from (CellInsertion(tiling, self.maxreqlen, self.extra_basis)
-                    .rules(self.ignore_parent))
+        rules = (CellInsertion(tiling, self.maxreqlen, self.extra_basis)
+                 .rules(self.ignore_parent))
+        yield from filter(self._good_rule, rules)
 
     def __str__(self) -> str:
         if self.extra_basis is None:
-            return 'root insertion up to length {}'.format(self.maxreqlen)
-
-        perm_class = Av(self.extra_basis)
-        return ('root insertion from {} up to '
-                'length {}'.format(perm_class, self.maxreqlen))
+            s = 'root insertion up to length {}'.format(self.maxreqlen)
+        else:
+            perm_class = Av(self.extra_basis)
+            s = ('root insertion from {} up to length {}'
+                 .format(perm_class, self.maxreqlen))
+        if self.max_num_req is not None:
+            s += ' (up to {} requirements)'.format(self.max_num_req)
+        return s
 
     def __repr__(self) -> str:
         return ('RootInsertionStrategy(maxreqlen={}, extra_basis={}, '
-                'ignore_parent={})'.format(self.maxreqlen, self.extra_basis,
-                                           self.ignore_parent))
+                'ignore_parent={}, max_num_req={})'
+                .format(self.maxreqlen, self.extra_basis, self.ignore_parent,
+                        self.max_num_req))
+
+    def to_jsonable(self):
+        d = super().to_jsonable()
+        d['max_num_req'] = self.max_num_req
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> 'RootInsertionStrategy':
+        if d['extra_basis'] is None:
+            extra_basis = None
+        else:
+            extra_basis = [Perm(p) for p in d['extra_basis']]
+        return cls(
+            maxreqlen=d['maxreqlen'],
+            extra_basis=extra_basis,
+            ignore_parent=d['ignore_parent'],
+            max_num_req=d.get('max_num_req', None)
+        )
 
 
 class AllRequirementExtensionStrategy(Strategy):
     """
     Insert longer requirements in to cells which contain a requirement
     """
+
     def __init__(self, maxreqlen: int = 2,
                  extra_basis: Optional[List[Perm]] = None,
                  ignore_parent: bool = False,
@@ -156,6 +200,7 @@ class AllRequirementInsertionStrategy(Strategy):
     Insert all possible requirements the obstruction allows if the tiling does
     not have requirements.
     """
+
     def __init__(self, maxreqlen: int = 2,
                  extra_basis: Optional[List[Perm]] = None,
                  ignore_parent: bool = False,
@@ -209,6 +254,7 @@ class AllFactorInsertionStrategy(Strategy):
     """
     Insert all proper factor of the requirement or obstructions on the tiling.
     """
+
     def __init__(self, ignore_parent: bool = True) -> None:
         self.ignore_parent = ignore_parent
 
@@ -248,6 +294,7 @@ class RequirementCorroborationStrategy(Strategy):
     that avoid the requirement, must therefore satisfy another requirement from
     the same list and hence the requirement list must be of length at least 2.
     """
+
     def __init__(self, ignore_parent: bool = True):
         self.ignore_parent = ignore_parent
 
