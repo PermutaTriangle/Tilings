@@ -2288,6 +2288,21 @@ class TestGetGenf:
         t = Tiling([Obstruction(Perm((0, 1)), ((0, 0), (0, 0)))])
         assert sympy.simplify(t.get_genf() - sympy.sympify("1/(1-x)")) == 0
 
+    def test_finite(self):
+        t = Tiling(
+            obstructions=[
+                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
+                Obstruction(Perm((1, 0)), ((0, 0),) * 2),
+                Obstruction(Perm((0, 1)), ((1, 0),) * 2),
+                Obstruction(Perm((1, 0)), ((1, 0),) * 2),
+                Obstruction(Perm((0, 1)), ((0, 1),) * 2),
+                Obstruction(Perm((1, 0)), ((0, 1),) * 2),
+                Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+            ]
+        )
+        genf = sympy.sympify("2*x**3 + 4*x**2 + 3*x + 1")
+        assert t.get_genf() == genf
+
     def test_with_req(self):
         t = Tiling(
             [Obstruction(Perm((0, 1)), ((0, 0), (0, 0)))],
@@ -2295,7 +2310,6 @@ class TestGetGenf:
         )
         assert sympy.simplify(t.get_genf() - sympy.sympify("x/(1-x)")) == 0
 
-    @pytest.mark.xfail
     def test_adjacent_monotone(self):
         t = Tiling(
             [

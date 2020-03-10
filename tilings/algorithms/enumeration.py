@@ -8,7 +8,7 @@ import sympy
 
 from comb_spec_searcher import ProofTree, StrategyPack, VerificationRule
 from comb_spec_searcher.utils import taylor_expand
-from permuta import Perm
+from permuta import Av, Perm
 from tilings.exception import InvalidOperationError
 from tilings.misc import is_tree
 
@@ -133,13 +133,6 @@ class LocallyFactorableEnumeration(Enumeration):
     verified tiling.
     """
 
-    # pack = StrategyPack(
-    #     name="LocallyFactorable",
-    #     initial_strats=[factor, requirement_corroboration],
-    #     inferral_strats=[],
-    #     expansion_strats=[all_factor_insertions],
-    #     ver_strats=[subset_verified]
-    # )
     @property
     def pack(self):
         raise NotImplementedError
@@ -533,3 +526,50 @@ class OneByOneEnumeration(Enumeration):
         """
         # pylint: disable=useless-super-delegation
         return super().get_genf(**kwargs)
+
+
+class FiniteEnumeration(Enumeration):
+    """
+    Enumeration a finite tilings.
+
+    The algorithm is not guarateed to catch all finite tilings. At the moment
+    it works only with tiling where each cell contain an decreasing and an
+    increasing obstruction.
+    """
+
+    formal_step = "Tiling is finite."
+
+    def verified(self):
+        return all(
+            self._cell_max_point(c) is not None for c in self.tiling.active_cells
+        )
+
+    def _cell_max_point(self, cell):
+        """
+        Return the maximal number of point in the cell. Return None if the cell
+        is not finite.
+        """
+        inc_ob = None
+        dec_ob = None
+        for ob in self.tiling.cell_basis()[cell][0]:
+            if ob in Av(Perm((0, 1))):
+                dec_ob = ob
+            if ob in Av(Perm((1, 0))):
+                inc_ob = ob
+        if inc_ob is None or dec_ob is None:
+            return None
+        return len(inc_ob) * len(dec_ob)
+
+    @property
+    def pack(self):
+        raise NotImplementedError
+
+    def get_genf(self, **kwargs):
+        if not self.verified():
+            raise InvalidOperationError("Tiling is not verified")
+        max_len = sum(self._cell_max_point(cell) for cell in self.tiling.active_cells)
+        terms = []
+        for i in range(max_len + 1):
+            coeff = len(list(self.tiling.objects_of_length(i)))
+            terms.append("{}*x**{}".format(coeff, i))
+        return sympy.sympify("+".join(terms))

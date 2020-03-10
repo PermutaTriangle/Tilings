@@ -12,6 +12,7 @@ from tilings.algorithms import (
     BasicEnumeration,
     DatabaseEnumeration,
     ElementaryEnumeration,
+    FiniteEnumeration,
     LocalEnumeration,
     LocallyFactorableEnumeration,
     MonotoneTreeEnumeration,
@@ -717,3 +718,43 @@ class TestOneByOneEnumeration(CommonTest):
     @pytest.mark.xfail
     def test_get_genf(self, enum_verified):
         raise NotImplementedError
+
+
+class TestFiniteEnumeration(CommonTest):
+    @pytest.fixture
+    def enum_not_verified(self):
+        t = Tiling.from_string("012")
+        return FiniteEnumeration(t)
+
+    @pytest.fixture
+    def enum_verified(self):
+        t = Tiling.from_string("012_3210")
+        return FiniteEnumeration(t)
+
+    def test_formal_step(self, enum_verified):
+        assert enum_verified.formal_step == "Tiling is finite."
+
+    def test_get_genf(self, enum_verified):
+        assert enum_verified.get_genf() == sympy.sympify(
+            "1+1*x+2*x**2+5*x**3+13*x**4+25*x**5+25*x**6"
+        )
+        t = Tiling(
+            obstructions=[
+                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
+                Obstruction(Perm((1, 0)), ((0, 0),) * 2),
+                Obstruction(Perm((0, 1)), ((1, 0),) * 2),
+                Obstruction(Perm((1, 0)), ((1, 0),) * 2),
+                Obstruction(Perm((0, 1)), ((0, 1),) * 2),
+                Obstruction(Perm((1, 0)), ((0, 1),) * 2),
+            ]
+        )
+        enum = FiniteEnumeration(t)
+        assert enum.get_genf() == sympy.sympify("4*x**3+5*x**2+3*x+1")
+
+    def test_pack(self, enum_verified):
+        with pytest.raises(NotImplementedError):
+            enum_verified.pack
+
+    def test_get_tree(self, enum_verified):
+        with pytest.raises(NotImplementedError):
+            enum_verified.pack

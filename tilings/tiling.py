@@ -35,7 +35,7 @@ from .algorithms import (
 from .algorithms.enumeration import (
     BasicEnumeration,
     DatabaseEnumeration,
-    LocallyFactorableEnumeration,
+    FiniteEnumeration,
     MonotoneTreeEnumeration,
 )
 from .db_conf import check_database
@@ -1355,7 +1355,7 @@ class Tiling(CombinatorialClass):
         # Try using some of the enumeration strategy
         enum_stragies = [
             BasicEnumeration,
-            LocallyFactorableEnumeration,
+            FiniteEnumeration,
             MonotoneTreeEnumeration,
             DatabaseEnumeration,
         ]
