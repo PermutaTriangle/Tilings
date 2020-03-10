@@ -261,6 +261,42 @@ class TileScopePack(StrategyPack):
         new_pack.symmetries = list(TileScopePack.ALL_SYMMETRIES_FUNCTIONS)
         return new_pack
 
+    def expansion_pack(self) -> "TileScopePack":
+        """
+        Returns an appropriate expansion pack for the TileScopePack.
+
+        An expansion pack should a pack with a finite search space that expand
+        all the verified tilings that could not be enumerated directly into
+        enumerable tilings.
+        """
+        ver_strats = [
+            strat.BasicVerificationStrategy(),
+        ]  # type: List[Strategy]
+        if strat.OneByOneVerificationStrategy() in self.ver_strats:
+            ver_strats.append(strat.OneByOneVerificationStrategy())
+        if (
+            strat.LocallyFactorableVerificationStrategy() in self.ver_strats
+            or strat.LocalVerificationStrategy() in self.ver_strats
+        ):
+            ver_strats.append(strat.MonotoneTreeVerificationStrategy())
+        if strat.DatabaseVerificationStrategy() in self.ver_strats:
+            ver_strats.append(strat.DatabaseVerificationStrategy())
+        name = self.name + "_expansion"
+        return TileScopePack(
+            initial_strats=[
+                strat.FactorStrategy(),
+                strat.RequirementCorroborationStrategy(),
+                strat.AllFactorInsertionStrategy(),
+            ],
+            ver_strats=ver_strats,
+            inferral_strats=[
+                strat.RowColumnSeparationStrategy(),
+                strat.ObstructionTransitivityStrategy(),
+            ],
+            expansion_strats=[],
+            name=name,
+        )
+
     # Creation of the base pack
     @classmethod
     def all_the_strategies(cls, length: int = 1) -> "TileScopePack":
