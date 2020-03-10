@@ -8,6 +8,7 @@ from tilings.algorithms.enumeration import (
     DatabaseEnumeration,
     ElementaryEnumeration,
     Enumeration,
+    FiniteEnumeration,
     LocalEnumeration,
     LocallyFactorableEnumeration,
     OneByOneEnumeration,
@@ -18,6 +19,7 @@ __all__ = [
     "BasicVerificationStrategy",
     "OneByOneVerificationStrategy",
     "DatabaseVerificationStrategy",
+    "FiniteVerificationStrategy",
     "LocallyFactorableVerificationStrategy",
     "ElementaryVerificationStrategy",
     "LocalVerificationStrategy",
@@ -123,3 +125,14 @@ class LocalVerificationStrategy(_VerificationStrategy):
 
     def __str__(self) -> str:
         return "local verification"
+
+
+class FiniteVerificationStrategy(_VerificationStrategy):
+    """
+    Verify some of the tiling that are finite.
+    """
+
+    VERIFICATION_CLASS = FiniteEnumeration
+
+    def __str__(self) -> str:
+        return "finite verification"
