@@ -416,7 +416,7 @@ class TileScopePack(StrategyPack):
             initial_strats=[
                 strat.RootInsertionStrategy(maxreqlen=length,
                                             max_num_req=max_num_req),
-                strat.RequirementPlacementStrategy(ignore_parent=True),
+                strat.FactorStrategy(union=True, workable=False),
             ], ver_strats=[
                 strat.BasicVerificationStrategy(),
                 strat.OneByOneVerificationStrategy(),
@@ -425,9 +425,14 @@ class TileScopePack(StrategyPack):
             ], inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityStrategy(),
-            ], expansion_strats=[[
-                strat.FactorStrategy(union=True),
-            ]],
+            ], expansion_strats=[
+                [
+                    strat.RequirementPlacementStrategy(),
+                ],
+                [
+                    strat.RequirementCorroborationStrategy(
+                                                        ignore_parent=False),
+                ]],
             name=name)
 
     @classmethod
