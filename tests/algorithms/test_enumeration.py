@@ -297,16 +297,14 @@ class TestMonotoneTreeEnumeration(CommonTest):
         return MonotoneTreeEnumeration(t)
 
     @pytest.fixture
-    def enum_with_req(self):
+    def enum_with_list_req(self):
         t = Tiling(obstructions=[
-            Obstruction(Perm((0, 1)), ((0, 0),)*2),
-            Obstruction(Perm((0, 1)), ((0, 1),)*2),
-            Obstruction(Perm((0, 1)), ((0, 2),)*2),
-            Obstruction(Perm((0, 1)), ((2, 0),)*2),
-            Obstruction(Perm((0, 1, 2)), ((1, 1),)*3),
-        ], requirements=[
-            [Requirement(Perm((0,)), ((0, 1),))]
-        ])
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+            Obstruction(Perm((0, 1)), ((1, 0), (1, 0)))
+        ], requirements=[[
+            Requirement(Perm((0,)), ((0, 0),)),
+            Requirement(Perm((0,)), ((1, 0),)),
+        ]])
         return MonotoneTreeEnumeration(t)
 
     @pytest.fixture
@@ -341,10 +339,10 @@ class TestMonotoneTreeEnumeration(CommonTest):
         assert order[3] == (2, 0)
         assert set(order[1:3]) == {(0, 0), (0, 2)}
 
-    def test_not_verified(self, enum_with_req, onebyone_enum,
+    def test_not_verified(self, enum_with_list_req, onebyone_enum,
                           enum_with_crossing):
         assert not enum_with_crossing.verified()
-        assert enum_with_req.verified()
+        assert not enum_with_list_req.verified()
         assert not onebyone_enum.verified()
 
     @pytest.mark.xfail(reason='No database setup')

@@ -230,9 +230,10 @@ class MonotoneTreeEnumeration(Enumeration):
 
     def verified(self):
         local_verified = LocalEnumeration(self.tiling).verified()
+        no_req_list = all(len(rl) == 1 for rl in self.tiling.requirements)
         num_non_monotone = sum(1 for c in self.tiling.active_cells
                                if not self.tiling.is_monotone_cell(c))
-        return (local_verified and num_non_monotone <= 1 and
+        return (local_verified and no_req_list and num_non_monotone <= 1 and
                 is_tree(self.tiling.cell_graph()))
 
     def _cell_tree_traversal(self, start):
