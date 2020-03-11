@@ -5,6 +5,7 @@ import sympy
 
 from comb_spec_searcher import StrategyPack
 from comb_spec_searcher.strategies.rule import VerificationRule
+from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
 from tilings.algorithms import (BasicEnumeration, DatabaseEnumeration,
@@ -343,7 +344,7 @@ class TestMonotoneTreeEnumeration(CommonTest):
     def test_not_verified(self, enum_with_req, onebyone_enum,
                           enum_with_crossing):
         assert not enum_with_crossing.verified()
-        assert not enum_with_req.verified()
+        assert enum_with_req.verified()
         assert not onebyone_enum.verified()
 
     @pytest.mark.xfail(reason='No database setup')
@@ -370,6 +371,76 @@ class TestMonotoneTreeEnumeration(CommonTest):
         pack = enum_verified.pack
         assert isinstance(pack, StrategyPack)
         assert pack.name == 'MonotoneTree'
+
+    def test_get_genf_simple(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0),)*2),
+            Obstruction(Perm((1, 0)), ((1, 0),)*2),
+        ])
+        enum = MonotoneTreeEnumeration(t)
+        print(t)
+        assert enum.verified()
+        assert sympy.simplify(enum.get_genf()-sympy.sympify('1/(1-2*x)')) == 0
+
+    def test_with_finite_monotone_cell(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0),)*2),
+            Obstruction(Perm((1, 0)), ((0, 0),)*2),
+            Obstruction(Perm((0, 1)), ((1, 0),)*2),
+            Obstruction(Perm((1, 0)), ((1, 0),)*2),
+        ])
+        enum = MonotoneTreeEnumeration(t)
+        print(t)
+        assert enum.verified()
+        assert enum.get_genf().expand() == sympy.sympify('1+2*x+2*x**2')
+
+    def test_with_finite_monotone_cell2(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0),)*2),
+            Obstruction(Perm((1, 0)), ((0, 1),)*2),
+            Obstruction(Perm((0, 1)), ((0, 1),)*2),
+            Obstruction(Perm((1, 0)), ((1, 1),)*2),
+        ])
+        enum = MonotoneTreeEnumeration(t)
+        print(t)
+        assert enum.verified()
+        assert (sympy.sympify('x/(1-x)**4 + 1/(1-x)**2')
+                - enum.get_genf()).simplify() == 0
+
+    def test_interleave_fixed_length(self, enum_verified):
+        track_var = MonotoneTreeEnumeration._tracking_var
+        cell_var = enum_verified._cell_variable((1, 0))
+        dummy_var = enum_verified._cell_variable((0, 0))
+        x = sympy.var('x')
+        F = x**8 * track_var**3 * dummy_var**3
+        assert (enum_verified._interleave_fixed_lengths(F, (1, 0), 1, 1) ==
+                4 * x**9 * dummy_var**3 * cell_var**1)
+        assert (enum_verified._interleave_fixed_lengths(F, (1, 0), 3, 3) ==
+                4**3 * x**11 * dummy_var**3 * cell_var**3)
+        assert (enum_verified._interleave_fixed_lengths(F, (1, 0), 0, 0) ==
+                x**8 * dummy_var**3)
+        assert (enum_verified._interleave_fixed_lengths(F, (1, 0), 0, 2) ==
+                x**8*dummy_var**3 + 4*x**9*dummy_var**3*cell_var**1
+                + 16*x**10*dummy_var**3*cell_var**2)
+        assert (enum_verified._interleave_fixed_lengths(F, (1, 0), 1, 3) ==
+                4*x**9*dummy_var**3*cell_var**1
+                + 16*x**10*dummy_var**3*cell_var**2
+                + 64*x**11*dummy_var**3*cell_var**3)
+
+    def test_genf_with_req(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0),)*2),
+            Obstruction(Perm((0, 1)), ((1, 0),)*2),
+        ], requirements=[
+            [Requirement(Perm((1, 0)), ((0, 0),)*2)],
+            [Requirement(Perm((0,)), ((1, 0),))],
+        ])
+        enum = MonotoneTreeEnumeration(t)
+        print(t)
+        assert enum.verified()
+        genf = enum.get_genf().expand()
+        terms = [0, 0, 0, 3, 10, 25, 56, 119, 246, 501, 1012]
+        assert taylor_expand(genf) == terms
 
 
 class TestElementaryEnumeration(CommonTest):

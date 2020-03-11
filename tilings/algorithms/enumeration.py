@@ -7,12 +7,15 @@ import requests
 import sympy
 
 from comb_spec_searcher import ProofTree, StrategyPack, VerificationRule
+from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
 from tilings.exception import InvalidOperationError
 from tilings.misc import is_tree
 
 if TYPE_CHECKING:
     from tilings import Tiling
+
+x = sympy.Symbol('x')
 
 
 class Enumeration(abc.ABC):
@@ -106,9 +109,9 @@ class BasicEnumeration(Enumeration):
         if self.tiling.is_epsilon():
             return sympy.sympify('1')
         if self.tiling.is_point_tiling():
-            return sympy.sympify('x')
+            return x
         if self.tiling.is_point_or_empty():
-            return sympy.sympify('x + 1')
+            return x + 1
         raise InvalidOperationError('Not an atom')
 
     def verified(self):
@@ -212,35 +215,24 @@ class MonotoneTreeEnumeration(Enumeration):
     """
     Enumeration strategy for a monotone tree tiling.
 
-    A tiling is a monotone tree if its cell graph is a tree and all but
-    possibly one cell are monotone. To be a monotone tree, a tiling also
-    should not be equivalent to a 1x1 tiling. The tiling can't have any
-    requirement.
+    A tiling is a monotone tree if it is local, its cell graph is a tree and
+    all but possibly one cell are monotone.
 
     A monotone tree tiling can be described by a tree where the verified object
     are the cells of the tiling.
     """
-    # pack = StrategyPack(
-    #     name="MontoneTree",
-    #     initial_strats=[factor],
-    #     inferral_strats=[],
-    #     expansion_strats=[factor_monotone_leaves],
-    #     ver_strats=[1x1verified]
-    # )
     @property
     def pack(self):
         raise NotImplementedError
 
     formal_step = "Tiling is a monotone tree"
+    _tracking_var = sympy.var('t')
 
     def verified(self):
-        if self.tiling.requirements:
-            return False
-        obs_localized = all(ob.is_single_cell() for ob in
-                            self.tiling.obstructions)
+        local_verified = LocalEnumeration(self.tiling).verified()
         num_non_monotone = sum(1 for c in self.tiling.active_cells
                                if not self.tiling.is_monotone_cell(c))
-        return (obs_localized and num_non_monotone <= 1 and
+        return (local_verified and num_non_monotone <= 1 and
                 is_tree(self.tiling.cell_graph()))
 
     def _cell_tree_traversal(self, start):
@@ -279,23 +271,94 @@ class MonotoneTreeEnumeration(Enumeration):
         except StopIteration:
             start = next(iter(self.tiling.active_cells))
         start_basis = self.tiling.cell_basis()[start][0]
-        start_tiling = self.tiling.from_perms(obstructions=start_basis)
+        start_reqs = [[p] for p in self.tiling.cell_basis()[start][1]]
+        print(start_reqs)
+        start_tiling = self.tiling.from_perms(obstructions=start_basis,
+                                              requirements=start_reqs)
         start_gf = start_tiling.get_genf()
-        variables = {c: sympy.Symbol('y_{}_{}'.format(*c)) for c in
-                     self.tiling.active_cells}
-        x = sympy.Symbol('x')
-        F = start_gf.subs({x: x * variables[start]})
+        F = start_gf.subs({x: x * self._cell_variable(start)})
         visited = set([start])
-        for c in self._cell_tree_traversal(start):
-            cv = variables[c]
-            gap_filler = 1 / (1 - x*cv)
-            cell_to_substitute = self._visted_cells_aligned(c, visited)
-            substitutions = {scv: scv * gap_filler
-                             for scv in map(variables.get, cell_to_substitute)}
-            F = gap_filler * F.subs(substitutions)
-            visited.add(c)
-        F = sympy.simplify(F.subs({v: 1 for v in variables.values()}))
+        for cell in self._cell_tree_traversal(start):
+            interleaving_cells = self._visted_cells_aligned(cell, visited)
+            substitutions = {scv: scv * self._tracking_var for scv in
+                             map(self._cell_variable, interleaving_cells)}
+            F_tracked = F.subs(substitutions)
+            minlen, maxlen = self._cell_num_point(cell)
+            if maxlen is None:
+                F = self._interleave_any_length(F_tracked, cell)
+                if minlen > 0:
+                    F -= self._interleave_fixed_lengths(F_tracked, cell, 0,
+                                                        minlen-1)
+            else:
+                F = self._interleave_fixed_lengths(F_tracked, cell, minlen,
+                                                   maxlen)
+            visited.add(cell)
+        F = sympy.simplify(F.subs({v: 1 for v in F.free_symbols if v != x}))
+        # A simple test to warn us if the code is wrong
+        assert taylor_expand(F) == [len(list(self.tiling.objects_of_length(i)))
+                                    for i in range(11)], 'Bad genf'
         return F
+
+    @staticmethod
+    def _cell_variable(cell):
+        """
+        Return the appropriate variable to track the number of point in the
+        given cell.
+        """
+        return sympy.var('y_{}_{}'.format(*cell))
+
+    def _interleave_any_length(self, F, cell):
+        """
+        Return the generating function for interleaving any number of point of
+        a monotone sequence into the region tracked by
+        `MonotoneTreeEnumeration._tracking_var` in `F`.
+        A variable is added to track the number of point in cell.
+        """
+        cell_var = self._cell_variable(cell)
+        gap_filler = 1 / (1 - x*cell_var)
+        return F.subs({self._tracking_var: gap_filler}) * gap_filler
+
+    def _interleave_fixed_lengths(self, F, cell, min_length, max_length):
+        """
+        Return the generating function for interleaving between min_point and
+        max_point (both included) number of point of
+        a monotone sequence into the region tracked by
+        `MonotoneTreeEnumeration._tracking_var` in `F`.
+        A variable is added to track the number of point in cell.
+        """
+        cell_var = self._cell_variable(cell)
+        new_genf = F if min_length == 0 else 0
+        for i in range(1, max_length+1):
+            F = sympy.diff(self._tracking_var*F, self._tracking_var)
+            if min_length <= i:
+                new_genf += F * cell_var**i * x**i
+        return new_genf.subs({self._tracking_var: 1})
+
+    def _cell_num_point(self, cell):
+        """
+        Return a pair of interger `(min, max)` that describe the possible
+        number of point in the cell. If the number of point is unbounded,
+        `max` is None.
+
+        We assume that the cell is monotone
+        """
+        obs, reqs = self.tiling.cell_basis()[cell]
+        ob_lens = sorted(map(len, obs))
+        assert ob_lens[0] == 2, 'Unexpected obstruction'
+        assert len(reqs) <= 1, 'Unexpected number of requirement'
+        if len(obs) == 1:
+            maxlen = None
+        elif len(obs) == 2:
+            maxlen = ob_lens[1] - 1
+        else:
+            raise RuntimeError('Unexepcted number of obstructions')
+        if not reqs:
+            minlen = 0
+        elif len(reqs) == 1:
+            minlen = len(reqs[0])
+        else:
+            raise RuntimeError('Unexepcted number of requirements')
+        return minlen, maxlen
 
 
 class ElementaryEnumeration(Enumeration):
