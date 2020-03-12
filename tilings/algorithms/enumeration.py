@@ -273,7 +273,6 @@ class MonotoneTreeEnumeration(Enumeration):
             start = next(iter(self.tiling.active_cells))
         start_basis = self.tiling.cell_basis()[start][0]
         start_reqs = [[p] for p in self.tiling.cell_basis()[start][1]]
-        print(start_reqs)
         start_tiling = self.tiling.from_perms(obstructions=start_basis,
                                               requirements=start_reqs)
         start_gf = start_tiling.get_genf()
@@ -327,17 +326,26 @@ class MonotoneTreeEnumeration(Enumeration):
         `MonotoneTreeEnumeration._tracking_var` in `F`.
         A variable is added to track the number of point in cell.
         """
-        cell_var = self._cell_variable(cell)
-        new_genf = F if min_length == 0 else 0
-        for i in range(1, max_length+1):
-            F = sympy.diff(self._tracking_var*F, self._tracking_var)
-            if min_length <= i:
-                new_genf += F * cell_var**i * x**i
+        return sum(self._interleave_fixed_length(F, cell, i) for i in
+                   range(min_length, max_length+1))
+
+    def _interleave_fixed_length(self, F, cell, num_point):
+        """
+        Return the generating function for interleaving num_point
+        number of point of a monotone sequence into the region tracked by
+        `MonotoneTreeEnumeration._tracking_var` in `F`.
+        A variable is added to track the number of point in cell.
+        """
+        new_genf = self._tracking_var**num_point * F
+        for i in range(1, num_point+1):
+            new_genf = sympy.diff(new_genf, self._tracking_var) / i
+        new_genf *= self._cell_variable(cell)**num_point
+        new_genf *= x**num_point
         return new_genf.subs({self._tracking_var: 1})
 
     def _cell_num_point(self, cell):
         """
-        Return a pair of interger `(min, max)` that describe the possible
+        Return a pair of integer `(min, max)` that describe the possible
         number of point in the cell. If the number of point is unbounded,
         `max` is None.
 
@@ -352,13 +360,13 @@ class MonotoneTreeEnumeration(Enumeration):
         elif len(obs) == 2:
             maxlen = ob_lens[1] - 1
         else:
-            raise RuntimeError('Unexepcted number of obstructions')
+            raise RuntimeError('Unexpected number of obstructions')
         if not reqs:
             minlen = 0
         elif len(reqs) == 1:
             minlen = len(reqs[0])
         else:
-            raise RuntimeError('Unexepcted number of requirements')
+            raise RuntimeError('Unexpected number of requirements')
         return minlen, maxlen
 
 

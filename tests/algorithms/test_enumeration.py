@@ -411,19 +411,33 @@ class TestMonotoneTreeEnumeration(CommonTest):
         dummy_var = enum_verified._cell_variable((0, 0))
         x = sympy.var('x')
         F = x**8 * track_var**3 * dummy_var**3
+        assert (enum_verified._interleave_fixed_length(F, (1, 0), 1) ==
+                4 * x**9 * dummy_var**3 * cell_var**1)
+        assert (enum_verified._interleave_fixed_length(F, (1, 0), 3) ==
+                20 * x**11 * dummy_var**3 * cell_var**3)
+        assert (enum_verified._interleave_fixed_length(F, (1, 0), 0) ==
+                x**8 * dummy_var**3)
+
+    def test_interleave_fixed_lengths(self, enum_verified):
+        track_var = MonotoneTreeEnumeration._tracking_var
+        cell_var = enum_verified._cell_variable((1, 0))
+        dummy_var = enum_verified._cell_variable((0, 0))
+        x = sympy.var('x')
+        F = x**8 * track_var**3 * dummy_var**3
         assert (enum_verified._interleave_fixed_lengths(F, (1, 0), 1, 1) ==
                 4 * x**9 * dummy_var**3 * cell_var**1)
         assert (enum_verified._interleave_fixed_lengths(F, (1, 0), 3, 3) ==
-                4**3 * x**11 * dummy_var**3 * cell_var**3)
+                20 * x**11 * dummy_var**3 * cell_var**3)
         assert (enum_verified._interleave_fixed_lengths(F, (1, 0), 0, 0) ==
                 x**8 * dummy_var**3)
         assert (enum_verified._interleave_fixed_lengths(F, (1, 0), 0, 2) ==
-                x**8*dummy_var**3 + 4*x**9*dummy_var**3*cell_var**1
-                + 16*x**10*dummy_var**3*cell_var**2)
+                x**8 * dummy_var**3
+                + 4 * x**9 * dummy_var**3 * cell_var**1
+                + 10 * x**10 * dummy_var**3 * cell_var**2)
         assert (enum_verified._interleave_fixed_lengths(F, (1, 0), 1, 3) ==
                 4*x**9*dummy_var**3*cell_var**1
-                + 16*x**10*dummy_var**3*cell_var**2
-                + 64*x**11*dummy_var**3*cell_var**3)
+                + 10*x**10*dummy_var**3*cell_var**2
+                + 20*x**11*dummy_var**3*cell_var**3)
 
     def test_genf_with_req(self):
         t = Tiling(obstructions=[
@@ -439,6 +453,20 @@ class TestMonotoneTreeEnumeration(CommonTest):
         genf = enum.get_genf().expand()
         terms = [0, 0, 0, 3, 10, 25, 56, 119, 246, 501, 1012]
         assert taylor_expand(genf) == terms
+
+    def test_genf_with_big_finite_cell(self):
+        t = Tiling(obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0),)*2),
+            Obstruction(Perm((0, 1)), ((1, 0),)*2),
+            Obstruction(Perm((3, 2, 1, 0)), ((0, 0),)*4),
+            Obstruction(Perm((3, 2, 1, 0)), ((1, 0),)*4),
+        ])
+        enum = MonotoneTreeEnumeration(t)
+        print(t)
+        assert enum.verified()
+        genf = enum.get_genf().expand()
+        x = sympy.var('x')
+        assert genf == 1 + 2*x + 4*x**2 + 8*x**3 + 14*x**4 + 20*x**5 + 20*x**6
 
 
 class TestElementaryEnumeration(CommonTest):
