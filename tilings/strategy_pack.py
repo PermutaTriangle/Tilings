@@ -404,7 +404,7 @@ class TileScopePack(StrategyPack):
 
     @classmethod
     def only_root_placements(
-        cls, length: int = 1, max_num_req: Optional[int] = None,
+        cls, length: int = 3, max_num_req: Optional[int] = 1,
     ) -> 'TileScopePack':
         name = "only_length_{}_root_placements".format(length)
         return TileScopePack(
