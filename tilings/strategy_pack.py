@@ -244,9 +244,8 @@ class TileScopePack(StrategyPack):
                 strat.FactorStrategy(union=True),
                 strat.RequirementCorroborationStrategy(),
             ], ver_strats=[
-                strat.LocalVerificationStrategy(),
-                strat.LocallyFactorableVerificationStrategy(),
                 strat.OneByOneVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
             ], inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityStrategy(),
@@ -274,7 +273,6 @@ class TileScopePack(StrategyPack):
                 strat.RequirementPlacementStrategy(partial=partial_placements)
             ], ver_strats=[
                 strat.OneByOneVerificationStrategy(),
-                strat.LocalVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
             ], inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
@@ -303,7 +301,6 @@ class TileScopePack(StrategyPack):
                 strat.RequirementCorroborationStrategy(),
             ], ver_strats=[
                 strat.OneByOneVerificationStrategy(),
-                strat.LocalVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
             ], inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
@@ -332,7 +329,6 @@ class TileScopePack(StrategyPack):
                                                ignore_parent=True),
             ], ver_strats=[
                 strat.OneByOneVerificationStrategy(),
-                strat.LocalVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
             ], inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
@@ -387,7 +383,6 @@ class TileScopePack(StrategyPack):
                 strat.RequirementCorroborationStrategy(),
             ], ver_strats=[
                 strat.OneByOneVerificationStrategy(),
-                strat.LocalVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy()
             ], inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
@@ -418,9 +413,7 @@ class TileScopePack(StrategyPack):
                                             max_num_req=max_num_req),
                 strat.FactorStrategy(union=True, workable=False),
             ], ver_strats=[
-                strat.BasicVerificationStrategy(),
                 strat.OneByOneVerificationStrategy(),
-                strat.LocalVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
             ], inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
@@ -430,8 +423,7 @@ class TileScopePack(StrategyPack):
                     strat.RequirementPlacementStrategy(),
                 ],
                 [
-                    strat.RequirementCorroborationStrategy(
-                                                        ignore_parent=False),
+                    strat.RequirementCorroborationStrategy(),
                 ]],
             name=name)
 
@@ -450,7 +442,6 @@ class TileScopePack(StrategyPack):
                 strat.RequirementCorroborationStrategy(),
             ], ver_strats=[
                 strat.OneByOneVerificationStrategy(),
-                strat.LocalVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
             ], inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
