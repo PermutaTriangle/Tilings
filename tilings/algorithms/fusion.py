@@ -7,7 +7,7 @@ from permuta import Perm
 from tilings import Obstruction
 
 
-class Fusion(object):
+class Fusion():
     """
     Fusion algorithm container class.
 
@@ -22,6 +22,8 @@ class Fusion(object):
 
     def __init__(self, tiling, row_idx=None, col_idx=None):
         self._tiling = tiling
+        self._obstruction_fuse_counter = None
+        self._requirements_fuse_counters = None
         if row_idx is None and col_idx is not None:
             self._col_idx = col_idx
             self._fuse_row = False
@@ -88,7 +90,7 @@ class Fusion(object):
         """
         Counter of multiplicities of fused obstructions.
         """
-        if hasattr(self, '_obstruction_fuse_counter'):
+        if self._obstruction_fuse_counter is not None:
             return self._obstruction_fuse_counter
         fuse_counter = self._fuse_counter(self._tiling.obstructions)
         self._obstruction_fuse_counter = fuse_counter
@@ -99,7 +101,7 @@ class Fusion(object):
         """
         List of fuse counters for each of the requirements list of the tiling.
         """
-        if hasattr(self, '_requirements_fuse_counters'):
+        if self._requirements_fuse_counters is not None:
             return self._requirements_fuse_counters
         counters = [self._fuse_counter(req_list) for req_list in
                     self._tiling.requirements]
@@ -118,7 +120,7 @@ class Fusion(object):
         Check if the fuse count `count` for a given gridded permutation `gp` is
         valid.
         """
-        return (self._point_in_fuse_region(gp) + 1 == count)
+        return self._point_in_fuse_region(gp) + 1 == count
 
     def _point_in_fuse_region(self, fused_gp):
         """
@@ -127,8 +129,7 @@ class Fusion(object):
         """
         if self._fuse_row:
             return sum(1 for cell in fused_gp.pos if cell[1] == self._row_idx)
-        else:
-            return sum(1 for cell in fused_gp.pos if cell[0] == self._col_idx)
+        return sum(1 for cell in fused_gp.pos if cell[0] == self._col_idx)
 
     def fusable(self):
         """
@@ -192,6 +193,8 @@ class ComponentFusion(Fusion):
             raise NotImplementedError('Component fusion does not handle '
                                       'requirements at the moment')
         super().__init__(tiling, row_idx=row_idx, col_idx=col_idx)
+        self._first_cell = None
+        self._second_cell = None
 
     def _pre_check(self):
         """
@@ -231,9 +234,9 @@ class ComponentFusion(Fusion):
         The first cell of the fusion. This cell is in the bottommost row or the
         leftmost column of the fusion.
         """
-        if hasattr(self, '_first_cell'):
+        if self._first_cell is not None:
             return self._first_cell
-        elif not self._pre_check():
+        if not self._pre_check():
             raise RuntimeError('Pre-check failed. No component fusion '
                                'possible and no first cell')
         return self._first_cell
@@ -244,9 +247,9 @@ class ComponentFusion(Fusion):
         The second cell of the fusion. This cell is in the topmost row or the
         rightmost column of the fusion.
         """
-        if hasattr(self, '_second_cell'):
+        if self._second_cell is not None:
             return self._second_cell
-        elif not self._pre_check():
+        if not self._pre_check():
             raise RuntimeError('Pre-check failed. No component fusion '
                                'possible and no second cell')
         return self._second_cell
@@ -286,7 +289,7 @@ class ComponentFusion(Fusion):
         Crossing length 2 obstructions between first cell and second cell
         are ignored.
         """
-        if hasattr(self, '_obstruction_fuse_counter'):
+        if self._obstruction_fuse_counter is not None:
             return self._obstruction_fuse_counter
         obs = (ob for ob in self._tiling.obstructions if not
                self.is_crossing_len2(ob))

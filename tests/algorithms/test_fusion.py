@@ -1,8 +1,5 @@
-from itertools import chain
-
 import pytest
 
-from comb_spec_searcher import Rule
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
 from tilings.algorithms import ComponentFusion, Fusion

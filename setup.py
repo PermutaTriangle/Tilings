@@ -27,12 +27,8 @@ setup(
     install_requires=['comb-spec-searcher==0.4.0',
                       'permuta==1.3.0',
                       'pymongo==3.10.1',
+                      'requests==2.20.0',
                       'sympy==1.5.1'],
-    setup_requires=['pytest-runner==5.2'],
-    tests_require=['pytest==5.4.0',
-                   'pytest-cov==2.8.1',
-                   'pytest-pep8==1.0.6',
-                   'pytest-isort==0.3.1'],
     python_requires='>=3.5',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -50,4 +46,10 @@ setup(
         'Topic :: Education',
         'Topic :: Scientific/Engineering :: Mathematics',
     ],
+    entry_points={
+        'console_scripts': [
+            'tilescope=tilings.cli:main',
+        ]
+    }
+
 )

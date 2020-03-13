@@ -1,11 +1,19 @@
+"""
+The row and columns separation algorithm.
+
+The main algorithm for the separation is contained in the class
+`_RowColSeparationSingleApplication`. The new separated tiling have new
+length 2 crossing obstructions that would allow more separation.
+The role of the class `RowColSeparation` is to make sure that row columns
+separation is idempotent by applying the core algorithm until it stabilises.
+"""
 import heapq
 from itertools import combinations, product
-from operator import xor
 
 from comb_spec_searcher import InferralRule
 
 
-class Graph(object):
+class Graph():
     """
     A weighted directed graph implemented with an adjacency matrix.
 
@@ -89,11 +97,7 @@ class Graph(object):
         assert self._reduced, "Graph must first be reduced"
         if self._is_acyclic or self.num_vertices == 0:
             return True
-        for row in self._matrix:
-            if row.count(0) == self.num_vertices:
-                self._is_acyclic = True
-                return True
-        return False
+        return self.find_cycle() is None
 
     def find_cycle(self):
         """
@@ -126,6 +130,7 @@ class Graph(object):
         Generator over Graph object obtained by removing one edge of the
         `edges` iterator.
         """
+        # pylint: disable=protected-access
         for e in edges:
             new_graph = Graph.__new__(Graph)
             new_graph._vertex_labels = [vl.copy()
@@ -237,10 +242,16 @@ class Graph(object):
         return self.num_vertices >= other.num_vertices
 
 
-class RowColSeparation(object):
+class _RowColSeparationSingleApplication():
+    """
+    Make the row separation of the tiling.
+    """
     def __init__(self, tiling):
         self._tiling = tiling
         self._active_cells = tuple(sorted(tiling.active_cells))
+        self._ineq_matrices = None
+        self._max_row_order = None
+        self._max_col_order = None
 
     def cell_at_idx(self, idx):
         """Return the cell at index `idx`."""
@@ -257,7 +268,6 @@ class RowColSeparation(object):
         otherwise return if for the columns.
         """
         idx = 1 if row else 0
-        num_cell = len(self._active_cells)
         m = []
         for c1 in self._active_cells:
             row = [1 if c1[idx] < c2[idx] else 0 for c2 in self._active_cells]
@@ -283,8 +293,7 @@ class RowColSeparation(object):
         assert c1[0] != c2[0], "Obstruction is single cell"
         if ob.patt[0] == 0:
             return c2, c1
-        else:
-            return c1, c2
+        return c1, c2
 
     @staticmethod
     def _col_cell_order(ob):
@@ -319,7 +328,7 @@ class RowColSeparation(object):
         OUTPUT:
             tuple `(row_matrix, col_matrix)`
         """
-        if hasattr(self, '_ineq_matrices'):
+        if self._ineq_matrices is not None:
             return self._ineq_matrices
         row_m = self._basic_matrix(row=True)
         col_m = self._basic_matrix(row=False)
@@ -357,10 +366,10 @@ class RowColSeparation(object):
         heap = [graph]
         while heap and (not only_max or max_sep_seen <= graph.num_vertices):
             graph = heapq.heappop(heap)
-            if graph.is_acyclic():
+            cycle = graph.find_cycle()
+            if cycle is None:
                 yield graph.vertex_order()
             else:
-                cycle = graph.find_cycle()
                 for g in graph.break_cycle_in_all_ways(cycle):
                     g.reduce()
                     heapq.heappush(heap, g)
@@ -368,7 +377,7 @@ class RowColSeparation(object):
     @staticmethod
     def _maximal_order(graph):
         """ Returns a order that maximise separation. """
-        return next(RowColSeparation._all_order(graph))
+        return next(_RowColSeparationSingleApplication._all_order(graph))
 
     def _separates_tiling(self, row_order, col_order):
         cell_map = self._get_cell_map(row_order, col_order)
@@ -407,7 +416,7 @@ class RowColSeparation(object):
     @property
     def max_row_order(self):
         """A maximal order on the rows."""
-        if hasattr(self, '_max_row_order'):
+        if self._max_row_order is not None:
             return self._max_row_order
         self._max_row_order = self._maximal_order(self.row_ineq_graph())
         return self._max_row_order
@@ -415,7 +424,7 @@ class RowColSeparation(object):
     @property
     def max_col_order(self):
         """A maximal order on the columns."""
-        if hasattr(self, '_max_col_order'):
+        if self._max_col_order is not None:
             return self._max_col_order
         self._max_col_order = self._maximal_order(self.col_ineq_graph())
         return self._max_col_order
@@ -461,11 +470,49 @@ class RowColSeparation(object):
         for row_order, col_order in orders:
             yield self._separates_tiling(row_order, col_order)
 
+
+class RowColSeparation():
+    """
+    This is basically a simple wrapper around
+    `_RowColSeparationSingleApplication` to ensure the separation is
+    idempotent.
+
+    It applies the row columns separation until it does not change the tiling.
+    """
+    def __init__(self, tiling):
+        self._tiling = tiling
+        self._separated_tilings = []
+        separation_algo = _RowColSeparationSingleApplication(self._tiling)
+        while separation_algo.separable():
+            new_sep = separation_algo.separated_tiling()
+            self._separated_tilings.append(new_sep)
+            separation_algo = _RowColSeparationSingleApplication(new_sep)
+
+    def separable(self):
+        """
+        Test if the tiling is separable.
+
+        A tiling is not separable the separation does not creates any new row
+        or column.
+        """
+        return bool(self._separated_tilings)
+
+    def separated_tiling(self):
+        """
+        Return the one the possible maximal separation of the tiling.
+        """
+        if not self._separated_tilings:
+            return self._tiling
+        return self._separated_tilings[-1]
+
     def formal_step(self):
         """
         Returns a string describing the operation that was performed.
         """
-        return 'Row and column separation'
+        s = 'Row and column separation'
+        if len(self._separated_tilings) > 1:
+            s += ' ({} times)'.format(len(self._separated_tilings))
+        return s
 
     def rule(self):
         """

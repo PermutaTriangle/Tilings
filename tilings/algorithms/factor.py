@@ -6,7 +6,7 @@ from permuta.misc import UnionFind
 from tilings.misc import partitions_iterator
 
 
-class Factor(object):
+class Factor():
     """
     Algorithm to compute the factorisation of a tiling.
 
@@ -20,6 +20,8 @@ class Factor(object):
         nrow = tiling.dimensions[1]
         ncol = tiling.dimensions[0]
         self._cell_unionfind = UnionFind(nrow * ncol)
+        self._components = None
+        self._factors_obs_and_reqs = None
 
     def _cell_to_int(self, cell):
         nrow = self._tiling.dimensions[1]
@@ -93,7 +95,7 @@ class Factor(object):
         Returns the tuple of all the components. Each component is set of
         cells.
         """
-        if hasattr(self, '_components'):
+        if self._components is not None:
             return self._components
         self._unite_all()
         all_components = defaultdict(set)
@@ -108,7 +110,7 @@ class Factor(object):
         Returns a list of all the irreducible factors of the tiling.
         Each factor is a tuple (obstructions, requirements)
         """
-        if hasattr(self, '_factors_obs_and_reqs'):
+        if self._factors_obs_and_reqs is not None:
             return self._factors_obs_and_reqs
         factors = []
         for component in self._get_components():
@@ -156,7 +158,8 @@ class Factor(object):
                 )
             yield factors
 
-    def formal_step(self, union=False):
+    @staticmethod
+    def formal_step(union=False):
         """
         Return a string that describe the operation performed on the tiling.
         """
@@ -274,7 +277,6 @@ class FactorWithInterleaving(Factor):
         Override the `Factor._unite_rows_and_cols` to do nothing since
         interleaving is allowed on row and column.
         """
-        pass
 
     def _unite_all(self):
         """
