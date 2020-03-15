@@ -5,6 +5,7 @@ from .enumeration import (BasicEnumeration, DatabaseEnumeration,
 from .factor import (Factor, FactorWithInterleaving,
                      FactorWithMonotoneInterleaving)
 from .fusion import ComponentFusion, Fusion
+from .gridded_perm_generation import GriddedPermsOnTiling
 from .obstruction_inferral import (AllObstructionInferral, EmptyCellInferral,
                                    SubobstructionInferral)
 from .obstruction_transitivity import ObstructionTransitivity
@@ -34,6 +35,7 @@ __all__ = [
     'CellInsertion',
     'CrossingInsertion',
     'FactorInsertion',
+    'GriddedPermsOnTiling',
     'RequirementCorroboration',
     'RequirementExtension',
     'RequirementPlacement',
