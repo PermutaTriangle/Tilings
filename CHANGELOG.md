@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Adding `Factor`, `FactorWithInterleaving` and
   `FactorWithMonotoneInterleaving` algorithm. They are available by setting the
   right `interleaving` flag in the `find_factors` method of tilings
+- Added `GriddedPermsOnTiling` algorithm, that is now used
+  for `Tiling.gridded_perms`.
+- Added `GriddedPerm.get_gridded_perm_at_indices` method.
 
 ### Changed
 - Update permuta to 1.2.1

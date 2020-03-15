@@ -1,5 +1,6 @@
 import json
 from itertools import chain, combinations
+from typing import Iterable
 
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, UnionFind
@@ -175,6 +176,18 @@ class GriddedPerm():
         for i in range(len(self)):
             if self._pos[i][0] > col:
                 yield (i, self._patt[i])
+
+    def get_gridded_perm_at_indices(self,
+                                    indices: Iterable[int]) -> 'GriddedPerm':
+        """
+        Returns the subgridded perm that contains only the point at the given
+        indices.
+
+        Indices must be sorted.
+        """
+        return self.__class__(
+            Perm.to_standard(self.patt[i] for i in indices),
+            (self.pos[i] for i in indices))
 
     def get_gridded_perm_in_cells(self, cells):
         """Returns the subgridded permutation of points in cells."""
