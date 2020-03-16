@@ -6,7 +6,7 @@ from .batch import (AllCellInsertionStrategy, AllFactorInsertionStrategy,
 from .decomposition import FactorStrategy
 from .equivalence import RequirementPlacementStrategy
 from .fusion import ComponentFusionStrategy, FusionStrategy
-from .inferral import (EmptyCellInferralStrategy,
+from .inferral import (EmptyCellInferralStrategy, ObstructionInferralStrategy,
                        ObstructionTransitivityStrategy,
                        RowColumnSeparationStrategy,
                        SubobstructionInferralStrategy)
@@ -40,6 +40,7 @@ __all__ = [
 
     # Inferral
     'EmptyCellInferralStrategy',
+    'ObstructionInferralStrategy',
     'ObstructionTransitivityStrategy',
     'RowColumnSeparationStrategy',
     'SubobstructionInferralStrategy',
