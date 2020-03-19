@@ -3,6 +3,7 @@ from heapq import heapify, heappop, heappush
 from itertools import chain, product
 from typing import Iterator, List, Optional, Tuple
 
+from permuta import Perm
 from tilings import GriddedPerm
 from tilings.misc import union_reduce
 
@@ -39,17 +40,41 @@ class MinimalGriddedPerms(object):
         """Add cell counters with gridded permutations to the queue."""
         if len(self.requirements) <= 1:
             return
-        first_req = self.requirements[0]
-
-        for gp in first_req:
-            max_cell_counts = []
-            cells = set()  # Set[Cell]
-            for gps in product(*self.requirements[1:]):
-                max_cell_count = self.cell_counter(*gps, gp)
-                max_cell_counts.append(max_cell_count)
-                cells.update(max_cell_count)
-            new_info = Info([gp, max_cell_counts, cells])
+        for gps in product(*self.requirements):
+            max_cell_count = self.cell_counter(*gps)
+            new_info = Info([self.initial_gp(*gps), max_cell_count])
             heappush(self.queue, new_info)
+
+    @staticmethod
+    def initial_gp(*gps):
+        """
+        Return the gridded perm that initialises with the first argument,
+        then adds as many points as possible from the left to right, such that
+        the cells don't share a row or column. In this instance, to contain
+        both you must contain the respective subgridded perm in the independent
+        cell.
+        """
+        res = gps[0]
+        active_cols = set(i for i, j in res.pos)
+        active_rows = set(j for i, j in res.pos)
+        for gp in gps[1:]:
+            indep_cells = [(i, j) for i, j in gp.pos
+                           if i not in active_cols and j not in active_rows]
+            if indep_cells:
+                subgp = gp.get_gridded_perm_in_cells(indep_cells)
+                active_cols.update(i for i, j in subgp.pos)
+                active_rows.update(j for i, j in subgp.pos)
+                temp = ([(cell, (idx, val))
+                         for (idx, val), cell in zip(enumerate(res.patt),
+                                                     res.pos)] +
+                        [(cell, (idx, val))
+                         for (idx, val), cell in zip(enumerate(subgp.patt),
+                                                     subgp.pos)])
+                temp.sort()
+                new_pos = [cell for cell, _ in temp]
+                new_patt = Perm.to_standard(temp)
+                res = GriddedPerm(new_patt, new_pos)
+        return res
 
     @staticmethod
     def cell_counter(*gps: GriddedPerm) -> Counter:
@@ -59,17 +84,12 @@ class MinimalGriddedPerms(object):
 
     def get_cells_to_try(
                          self, gp: GriddedPerm,
-                         max_cell_counts: List[Counter],
-                         cells: List[Cell]) -> Iterator[Cell]:
+                         max_cell_count: Counter
+                        ) -> Iterator[Cell]:
         """Yield cells that a gridded permutation could be extended by."""
         currcellcounts = self.cell_counter(gp)
-        if any(all(currcellcounts[cell] >= max_cell_count[cell]
-                   for cell, count in max_cell_count.items())
-               for max_cell_count in max_cell_counts):
-            return
-        for cell in cells:
-            if any(currcellcounts[cell] < max_cell_count[cell]
-                   for max_cell_count in max_cell_counts):
+        for cell, count in max_cell_count.items():
+            if count > currcellcounts[cell]:
                 yield cell
 
     def minimal_gridded_perms(self) -> Iterator[GriddedPerm]:
@@ -83,8 +103,8 @@ class MinimalGriddedPerms(object):
             return
         self.prepare_queue()
         while self.queue:
-            startgp, max_cell_counts, cells = heappop(self.queue)
-            for cell in self.get_cells_to_try(startgp, max_cell_counts, cells):
+            startgp, max_cell_count = heappop(self.queue)
+            for cell in self.get_cells_to_try(startgp, max_cell_count):
                 for gp in startgp.insert_point(cell):
                     if gp not in self.seen:
                         self.seen.add(gp)
@@ -95,4 +115,4 @@ class MinimalGriddedPerms(object):
                                 yield gp
                             else:
                                 heappush(self.queue,
-                                         Info([gp, max_cell_counts, cells]))
+                                         Info([gp, max_cell_count]))
