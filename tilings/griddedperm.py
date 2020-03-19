@@ -71,12 +71,21 @@ class GriddedPerm():
 
     def occurrences_in(self, other):
         """Returns all occurrences of self in other."""
-        for occ in self._patt.occurrences_in(other.patt, self.pos, other.pos):
-            yield occ
+        yield from self._patt.occurrences_in(other.patt, self.pos, other.pos)
+
 
     def occurs_in(self, other):
         """Checks if self occurs in other."""
         return any(self.occurrences_in(other))
+
+    def avoids(self, *patts):
+        """Return true if self avoids all of the patts."""
+        return not self.contains(*patts)
+
+    def contains(self, *patts):
+        """Return true if self contains an occurrence of any of patts."""
+        return any(any(True for _ in patt.occurrences_in(self))
+                       for patt in patts)
 
     def remove_cells(self, cells):
         """Remove any points in the cell given and return a new gridded
