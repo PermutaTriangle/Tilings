@@ -63,8 +63,8 @@ class MinimalGriddedPerms(object):
                          cells: List[Cell]) -> Iterator[Cell]:
         """Yield cells that a gridded permutation could be extended by."""
         currcellcounts = self.cell_counter(gp)
-        if any(all(count >= max_cell_count[cell]
-                   for cell, count in currcellcounts.items())
+        if any(all(currcellcounts[cell] >= max_cell_count[cell]
+                   for cell, count in max_cell_count.items())
                for max_cell_count in max_cell_counts):
             return
         for cell in cells:
