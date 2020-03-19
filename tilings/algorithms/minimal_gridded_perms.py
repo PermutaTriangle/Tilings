@@ -1,11 +1,10 @@
 from collections import Counter
 from heapq import heapify, heappop, heappush
 from itertools import chain, product
-from typing import Iterator, List, Optional, Tuple, Union
+from typing import Iterator, List, Optional, Tuple
 
 from tilings import GriddedPerm
 from tilings.misc import union_reduce
-
 
 Cell = Tuple[int, int]
 
@@ -19,8 +18,6 @@ class MinimalGriddedPerms(object):
     def __init__(self, tiling):
         self.obstructions = tiling.obstructions
         self.requirements = tiling.requirements
-        self.active_cells = union_reduce(union_reduce(gp.pos for gp in req)
-                                         for req in self.requirements)
         self.seen = set()
         self.yielded = set()
         self.queue = []
@@ -46,7 +43,7 @@ class MinimalGriddedPerms(object):
 
         for gp in first_req:
             max_cell_counts = []
-            cells = set()
+            cells = set()  # Set[Cell]
             for gps in product(*self.requirements[1:]):
                 max_cell_count = self.cell_counter(*gps, gp)
                 max_cell_counts.append(max_cell_count)
@@ -78,6 +75,8 @@ class MinimalGriddedPerms(object):
     def minimal_gridded_perms(self) -> Iterator[GriddedPerm]:
         """Yield all minimal gridded perms on the tiling."""
         if not self.requirements:
+            if GriddedPerm.empty_perm() not in self.obstructions:
+                yield GriddedPerm.empty_perm()
             return
         if len(self.requirements) == 1:
             yield from iter(self.requirements[0])
@@ -97,7 +96,3 @@ class MinimalGriddedPerms(object):
                             else:
                                 heappush(self.queue,
                                          Info([gp, max_cell_counts, cells]))
-
-
-
-
