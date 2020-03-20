@@ -82,15 +82,15 @@ class MinimalGriddedPerms(object):
                 # after sorting temp, the cells will indicate the future
                 # positions and upon standardising we will get the underlying
                 # permutation
-                temp = ([(cell, (idx, val))
+                temp = ([((cell[0], idx), (cell[1], val))
                          for (idx, val), cell in zip(enumerate(res.patt),
                                                      res.pos)] +
-                        [(cell, (idx, val))
+                        [((cell[0], idx), (cell[1], val))
                          for (idx, val), cell in zip(enumerate(subgp.patt),
                                                      subgp.pos)])
                 temp.sort()
                 # update the res
-                new_pos = [cell for cell, _ in temp]
+                new_pos = [(idx[0], val[0]) for idx, val in temp]
                 new_patt = Perm.to_standard(temp)
                 res = GriddedPerm(new_patt, new_pos)
         return res
