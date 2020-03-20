@@ -46,6 +46,8 @@ class MinimalGriddedPerms(object):
             # try to stitch together as much of the independent cells of the
             # gridded permutation together first
             initial_gp = self.initial_gp(*gps)
+            if not self.satisfies_obstructions(initial_gp):
+                continue
             # max_cell_count is the theoretical bound on the size of the
             # largest minimal gridded permutation that contains each
             # gridded permutation in gps.
