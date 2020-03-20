@@ -19,7 +19,6 @@ class MinimalGriddedPerms(object):
     def __init__(self, tiling):
         self.obstructions = tiling.obstructions
         self.requirements = tiling.requirements
-        self.seen = set()
         self.yielded = set()
         self.queue = []
         # a priority queue sorted by length of the gridded perm. This is
@@ -42,32 +41,19 @@ class MinimalGriddedPerms(object):
         """Add cell counters with gridded permutations to the queue."""
         if len(self.requirements) <= 1:
             return
-        to_yield = set()
         for gps in product(*self.requirements):
             # try to stitch together as much of the independent cells of the
             # gridded permutation together first
             initial_gp = self.initial_gp(*gps)
-            self.seen.add(initial_gp)
-            if (self.satisfies_obstructions(initial_gp) and
-                    self.satisfies_requirements(initial_gp)):
-                to_yield.add(initial_gp)
-            else:
-                # max_cell_count is the theoretical bound on the size of the
-                # largest minimal gridded permutation that contains each
-                # gridded permutation in gps.
-                max_cell_count = self.cell_counter(*gps)
-                # we pass on this information, together with the target gps
-                # will be used to guide us in choosing smartly which cells to
-                # insert into - see the 'get_cells_to_try' method.
-                new_info = Info([initial_gp, max_cell_count, list(gps)])
-                heappush(self.queue, new_info)
-        # make sure it is minimal, then yield!
-        for gp in sorted(to_yield, key=len):
-            if not self.yielded_subgridded_perm(gp):
-                self.yielded.add(gp)
-                yield gp
-            else:
-                print("SKIPPED", gp, "="*50)
+            # max_cell_count is the theoretical bound on the size of the
+            # largest minimal gridded permutation that contains each
+            # gridded permutation in gps.
+            max_cell_count = self.cell_counter(*gps)
+            # we pass on this information, together with the target gps
+            # will be used to guide us in choosing smartly which cells to
+            # insert into - see the 'get_cells_to_try' method.
+            new_info = Info([initial_gp, max_cell_count, list(gps)])
+            heappush(self.queue, new_info)
 
     @staticmethod
     def initial_gp(*gps):
@@ -151,36 +137,31 @@ class MinimalGriddedPerms(object):
             yield from iter(self.requirements[0])
             return
         # will yield any that satisfy all the requirements.
-        yield from self.prepare_queue()
+        self.prepare_queue()
         while self.queue:
             # take the next gridded permutation of the queue, together with the
             # theoretical counts to create a gridded permutation containing
             # each of gps.
-            startgp, max_cell_count, gps = heappop(self.queue)
-            for cell in self.get_cells_to_try(startgp, max_cell_count, gps):
-                # this function places a new point into the cell in every
-                # possible way.
-                for gp in startgp.insert_point(cell):
-                    # if the newly created gridded permutation has been seen
-                    # then skip it
-                    if gp not in self.seen:
-                        self.seen.add(gp)
-                        # if we the gridded perm doesn't avoid the obstructions
-                        # then it, and all that can be reached by adding
-                        # further points will not be on the tiling.
-                        if (self.satisfies_obstructions(gp) and
-                                # if a subgridded perm has been yielded then
-                                # the new gridded perm is not minimal.
-                                not self.yielded_subgridded_perm(gp)):
-                            # if it satisfies all the requirements it is
-                            # minimal, and inserting a further point will break
-                            # the minimality condition
-                            if self.satisfies_requirements(gp):
-                                self.yielded.add(gp)
-                                yield gp
-                            else:
-                                # the gridded permutation still doesn't contain
-                                # all of the requirement, so add to the queue
-                                # in order to insert another point.
+            gp, max_cell_count, gps = heappop(self.queue)
+            # only consider gridded perms where a subgridded perm has not been
+            # yielded.
+            if not self.yielded_subgridded_perm(gp):
+                if (self.satisfies_requirements(gp)):
+                    # if it satisfies all the requirements it is
+                    # minimal, and inserting a further point will break
+                    # the minimality condition
+                    self.yielded.add(gp)
+                    yield gp
+                else:
+                    # otherwise we must try to insert a new point into a cell
+                    for cell in self.get_cells_to_try(gp, max_cell_count, gps):
+                        # this function places a new point into the cell in
+                        # possible way.
+                        for nextgp in gp.insert_point(cell):
+                            # if we the gridded perm doesn't avoid the
+                            # obstructions then it, and all that can be reached
+                            # by adding further points will not be on the
+                            # tiling.
+                            if self.satisfies_obstructions(nextgp):
                                 heappush(self.queue,
-                                         Info([gp, max_cell_count, gps]))
+                                         Info([nextgp, max_cell_count, gps]))
