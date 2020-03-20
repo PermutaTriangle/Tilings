@@ -79,9 +79,15 @@ class MinimalGriddedPerms(object):
                 # update future active rows and cols
                 active_cols.update(i for i, j in subgp.pos)
                 active_rows.update(j for i, j in subgp.pos)
-                # after sorting temp, the cells will indicate the future
-                # positions and upon standardising we will get the underlying
-                # permutation
+                # temp will be sorted, and standardised to create the unique
+                # minimal gridded permutation containing both res and subgp.
+                # We want cells at lower index front - if they are in the same
+                # column, then they come from the same gridded permutation, so
+                # we sort second by the index of its original perm.
+                # We will standardise based on values. Those in lower cells
+                # will have smaller value, and if they are in the same row then
+                # they come from the same gridded permutation so the second
+                # entry is the value from its original gridded perm.
                 temp = ([((cell[0], idx), (cell[1], val))
                          for (idx, val), cell in zip(enumerate(res.patt),
                                                      res.pos)] +
@@ -91,7 +97,7 @@ class MinimalGriddedPerms(object):
                 temp.sort()
                 # update the res
                 new_pos = [(idx[0], val[0]) for idx, val in temp]
-                new_patt = Perm.to_standard(temp)
+                new_patt = Perm.to_standard(val for _, val in temp)
                 res = GriddedPerm(new_patt, new_pos)
         return res
 
