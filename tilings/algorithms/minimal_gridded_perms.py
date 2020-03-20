@@ -43,15 +43,32 @@ class MinimalGriddedPerms(object):
         if len(self.requirements) <= 1:
             return
         for gps in product(*self.requirements):
-            # max_cell_count is the theoretical bound on the size of the
-            # largest minimal gridded permutation that contains each gridded
-            # permutation in gps.
-            max_cell_count = self.cell_counter(*gps)
-            # we pass on this information, together with the target gps. This
-            # will be used to guide us in choosing smartly which cells to
-            # insert into - see the 'get_cells_to_try' method.
-            new_info = Info([self.initial_gp(*gps), max_cell_count, list(gps)])
-            heappush(self.queue, new_info)
+            # try to stitch together as much of the independent cells of the
+            # gridded permutation together first
+            to_yield = set()
+            initial_gp = self.initial_gp(*gps)
+            # ensures it is not added to the queue twice
+            self.seen.add(initial_gp)
+            if (self.satisfies_obstructions(initial_gp) and
+                    self.satisfies_requirements(initial_gp)):
+                to_yield.add(initial_gp)
+            else:
+                # max_cell_count is the theoretical bound on the size of the
+                # largest minimal gridded permutation that contains each gridded
+                # permutation in gps.
+                max_cell_count = self.cell_counter(*gps)
+                # we pass on this information, together with the target gps
+                # will be used to guide us in choosing smartly which cells to
+                # insert into - see the 'get_cells_to_try' method.
+                new_info = Info([initial_gp, max_cell_count, list(gps)])
+                heappush(self.queue, new_info)
+            # make sure it is minimal, then yield!
+            for gp in sorted(to_yield, key=len):
+                if not self.yielded_subgridded_perm(gp):
+                    self.yielded.add(gp)
+                    yield gp
+
+
 
     @staticmethod
     def initial_gp(*gps):
@@ -83,7 +100,7 @@ class MinimalGriddedPerms(object):
                 # minimal gridded permutation containing both res and subgp.
                 # We want cells at lower index front - if they are in the same
                 # column, then they come from the same gridded permutation, so
-                # we sort second by the index of its original perm.
+                # we sort second by the index of its original gridded perm.
                 # We will standardise based on values. Those in lower cells
                 # will have smaller value, and if they are in the same row then
                 # they come from the same gridded permutation so the second
@@ -134,7 +151,8 @@ class MinimalGriddedPerms(object):
         if len(self.requirements) == 1:
             yield from iter(self.requirements[0])
             return
-        self.prepare_queue()
+        # will yield any that satisfy all the requirements.
+        yield from self.prepare_queue()
         while self.queue:
             # take the next gridded permutation of the queue, together with the
             # theoretical counts to create a gridded permutation containing
