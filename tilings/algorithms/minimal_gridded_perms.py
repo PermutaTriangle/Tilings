@@ -22,6 +22,8 @@ class MinimalGriddedPerms(object):
         self.seen = set()
         self.yielded = set()
         self.queue = []
+        # a priority queue sorted by length of the gridded perm. This is
+        # ensured by overwriting the __lt__ operator in the Info class.
         heapify(self.queue)
 
     def satisfies_obstructions(self, gp: GriddedPerm) -> bool:
