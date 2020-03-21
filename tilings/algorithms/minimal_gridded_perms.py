@@ -58,7 +58,6 @@ class MinimalGriddedPerms(object):
             # we pass on this information, together with the target gps
             # will be used to guide us in choosing smartly which cells to
             # insert into - see the 'get_cells_to_try' method.
-
             new_info = Info([initial_gp, localised_patts,
                             max_cell_count, tuple(gps)])
             heappush(self.queue, new_info)
