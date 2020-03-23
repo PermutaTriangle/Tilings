@@ -28,6 +28,7 @@ __all__ = [
     'FactorWithMonotoneInterleaving',
     'ComponentFusion',
     'Fusion',
+    'MinimalGriddedPerms',
     'AllObstructionInferral',
     'EmptyCellInferral',
     'SubobstructionInferral',

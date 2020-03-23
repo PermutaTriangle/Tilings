@@ -997,13 +997,13 @@ class Tiling(CombinatorialClass):
 
         yield from bt(GriddedPerm.empty_perm(), 0, self.requirements)
 
-    def merge(self):
+    def merge(self) -> 'Tiling':
         """Return an equivalent tiling with a single requirement list."""
         if len(self.requirements) <= 1:
             return self
         mgps = MinimalGriddedPerms(self)
         requirements = tuple(mgps.minimal_gridded_perms())
-        return self.__class__(self, self.obstructions, [requirements])
+        return self.__class__(self.obstructions, [requirements])
 
     def minimal_gridded_perms(self):
         """An iterator over all minimal gridded permutations."""

@@ -1,11 +1,13 @@
 from collections import Counter, defaultdict
 from heapq import heapify, heappop, heappush
 from itertools import chain, product
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Iterator, List, Set, Tuple
 
 from permuta import Perm
 from tilings import GriddedPerm
-from tilings.misc import union_reduce
+
+if TYPE_CHECKING:
+    from tilings import Tiling
 
 Cell = Tuple[int, int]
 
@@ -15,13 +17,13 @@ class Info(tuple):
         return self[0].__lt__(other[0])
 
 
-class MinimalGriddedPerms(object):
-    def __init__(self, tiling):
+class MinimalGriddedPerms():
+    def __init__(self, tiling: 'Tiling'):
         self.obstructions = tiling.obstructions
         self.requirements = tiling.requirements
-        self.yielded = set()
-        self.queue = []
-        self.cells_tried = defaultdict(set)
+        self.yielded = set()  # type: Set[GriddedPerm]
+        self.queue = []  # type: List[Info]
+        self.cells_tried = defaultdict(set)  # type: Dict[Cell, Set[Cell]]
         # a priority queue sorted by length of the gridded perm. This is
         # ensured by overwriting the __lt__ operator in the Info class.
         heapify(self.queue)
@@ -75,7 +77,7 @@ class MinimalGriddedPerms(object):
         # the sort here is a heuristic. the idea is to try avoid having to
         # insert into more cells in the future.
         # gps = sorted(gps, key=lambda x: -len(x))
-        res = gps[0]
+        res = GriddedPerm(gps[0].patt, gps[0].pos)
         active_cols = set(i for i, j in res.pos)
         active_rows = set(j for i, j in res.pos)
         for gp in gps[1:]:
@@ -122,7 +124,7 @@ class MinimalGriddedPerms(object):
     @staticmethod
     def localised_patts(*gps: GriddedPerm) -> Dict[Cell, List[GriddedPerm]]:
         """Return the localised patts that gps must contain."""
-        res = defaultdict(set)
+        res = defaultdict(set)  # type: Dict[Cell, Set[GriddedPerm]]
         # for each gp, and cell find the localised subgridded perm in the cell
         for gp in gps:
             for cell in set(gp.pos):
@@ -135,7 +137,7 @@ class MinimalGriddedPerms(object):
     def upward_closure(*gps: GriddedPerm) -> List[GriddedPerm]:
         """Return list of gridded perms such that every gridded perm contained
         in another is removed."""
-        res = []
+        res = []  # type: List[GriddedPerm]
         for gp in sorted(gps, key=len, reverse=True):
             if all(gp not in g for g in res):
                 res.append(gp)
@@ -149,7 +151,7 @@ class MinimalGriddedPerms(object):
                          gps: List[GriddedPerm]
                         ) -> Iterator[Cell]:
         """Yield cells that a gridded permutation could be extended by."""
-        cells = set()
+        cells = set()  # type: Set[Cell]
         for g, req in zip(gps, self.requirements):
             if gp.avoids(*req):
                 # Only insert into cells in the requirements that are not
@@ -162,6 +164,7 @@ class MinimalGriddedPerms(object):
                 # not be found by another target.
                 return
         currcellcounts = self.cell_counter(gp)
+
         def try_yield(*cells):
             # Only insert into cells if we have not gone above the theoretical
             # bound on the number of points needed to contains all gridded
@@ -202,7 +205,7 @@ class MinimalGriddedPerms(object):
             # yielded.
             if (not self.yielded_subgridded_perm(gp) and
                     self.satisfies_obstructions(gp)):
-                if (self.satisfies_requirements(gp)):
+                if self.satisfies_requirements(gp):
                     # if it satisfies all the requirements it is
                     # minimal, and inserting a further point will break
                     # the minimality condition
@@ -220,5 +223,5 @@ class MinimalGriddedPerms(object):
                             # by adding further points will not be on the
                             # tiling.
                             heappush(self.queue,
-                                        Info([nextgp, localised_patts,
-                                            max_cell_count, gps]))
+                                     Info([nextgp, localised_patts,
+                                           max_cell_count, gps]))
