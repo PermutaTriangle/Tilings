@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 from functools import partial
 from itertools import chain, product
 from operator import xor
-from typing import List, Iterable, Tuple
+from typing import Iterable, List, Tuple
 
 import sympy
 
@@ -48,7 +48,7 @@ class Tiling(CombinatorialClass):
 
     def __init__(self, obstructions: Iterable[Obstruction] = tuple(),
                  requirements: Iterable[Iterable[Requirement]] = tuple(),
-                 remove_empty:bool = True, derive_empty: bool = True,
+                 remove_empty: bool = True, derive_empty: bool = True,
                  minimize: bool = True,
                  sorted_input: bool = False):
         super().__init__()
