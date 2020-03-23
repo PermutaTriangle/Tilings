@@ -1007,6 +1007,7 @@ def test_is_finite(compresstil, empty_tiling, finite_tiling):
 
 def test_merge(compresstil, finite_tiling, empty_tiling):
     assert finite_tiling.merge() == finite_tiling
+    print(compresstil)
     print(compresstil.merge().requirements)
     assert (compresstil.merge() ==
             Tiling(obstructions=compresstil.obstructions,
