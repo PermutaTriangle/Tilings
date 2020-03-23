@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 from functools import partial
 from itertools import chain, product
 from operator import xor
-from typing import List, Tuple
+from typing import Iterable, List, Tuple
 
 import sympy
 
@@ -46,9 +46,11 @@ class Tiling(CombinatorialClass):
     cells and the active cells.
     """
 
-    def __init__(self, obstructions=tuple(), requirements=tuple(),
-                 remove_empty=True, derive_empty=True, minimize=True,
-                 sorted_input=False):
+    def __init__(self, obstructions: Iterable[Obstruction] = tuple(),
+                 requirements: Iterable[Iterable[Requirement]] = tuple(),
+                 remove_empty: bool = True, derive_empty: bool = True,
+                 minimize: bool = True,
+                 sorted_input: bool = False):
         super().__init__()
         if sorted_input:
             # Set of obstructions
@@ -1002,8 +1004,9 @@ class Tiling(CombinatorialClass):
         if len(self.requirements) <= 1:
             return self
         mgps = MinimalGriddedPerms(self)
-        requirements = tuple(mgps.minimal_gridded_perms())
-        return self.__class__(self.obstructions, [requirements])
+        requirements = tuple(Requirement(gp.patt, gp.pos) for gp in
+                             mgps.minimal_gridded_perms())
+        return self.__class__(self.obstructions, (requirements,))
 
     def minimal_gridded_perms(self):
         """An iterator over all minimal gridded permutations."""
