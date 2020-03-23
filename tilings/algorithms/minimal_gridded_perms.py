@@ -61,7 +61,7 @@ class MinimalGriddedPerms():
             # will be used to guide us in choosing smartly which cells to
             # insert into - see the 'get_cells_to_try' method.
             new_info = Info([initial_gp, localised_patts,
-                            max_cell_count, tuple(gps)])
+                             max_cell_count, tuple(gps), (-1, -1)])
             heappush(self.queue, new_info)
 
     @staticmethod
@@ -200,7 +200,7 @@ class MinimalGriddedPerms():
             # take the next gridded permutation of the queue, together with the
             # theoretical counts to create a gridded permutation containing
             # each of gps.
-            gp, localised_patts, max_cell_count, gps = heappop(self.queue)
+            gp, localised_patts, max_cell_count, gps, last_cell = heappop(self.queue)
             # only consider gridded perms where a subgridded perm has not been
             # yielded.
             if (not self.yielded_subgridded_perm(gp) and
@@ -215,6 +215,8 @@ class MinimalGriddedPerms():
                     # otherwise we must try to insert a new point into a cell
                     for cell in self.get_cells_to_try(gp, localised_patts,
                                                       max_cell_count, gps):
+                        if cell < last_cell:
+                            continue
                         # this function places a new point into the cell in
                         # possible way.
                         for nextgp in set(gp.insert_point(cell)):
@@ -224,4 +226,4 @@ class MinimalGriddedPerms():
                             # tiling.
                             heappush(self.queue,
                                      Info([nextgp, localised_patts,
-                                           max_cell_count, gps]))
+                                           max_cell_count, gps, cell]))
