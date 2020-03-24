@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 
 Cell = Tuple[int, int]
 
+VERBOSE = False
+
 
 class Info(tuple):
     def __lt__(self, other):
@@ -19,18 +21,62 @@ class Info(tuple):
 
 class MinimalGriddedPerms():
     def __init__(self, tiling: 'Tiling'):
+        self.tiling = tiling
         self.obstructions = tiling.obstructions
         self.requirements = tiling.requirements
         self.yielded = set()  # type: Set[GriddedPerm]
         self.queue = []  # type: List[Info]
         self.cells_tried = defaultdict(set)  # type: Dict[Cell, Set[Cell]]
+        self.work_packets_done = set()
+        self.num_work_packets = 0
+        self.relevant_obstructions = dict()
+
+        # given a cell (x,y), this contains those obstructions that are
+        #   **fully contained** in the cells <= (x,y)
+        # self.obstructions_up_to_cell = dict()
+
+        # given a goal gps and cell (x,y), this contains **truncations** of
+        #   the reqs in gps to the cells < (x,y)
+        self.requirements_up_to_cell = dict()
+
+        # Note the difference in the last two variables:
+        #   (1) "fully contained" vs "truncations"
+        #   (2) "<=" vs "<"
+
         # a priority queue sorted by length of the gridded perm. This is
         # ensured by overwriting the __lt__ operator in the Info class.
         heapify(self.queue)
 
-    def satisfies_obstructions(self, gp: GriddedPerm) -> bool:
-        """Check if a gridded permutation avoids all obstructions."""
-        return gp.avoids(*self.obstructions)
+    # def get_obstructions_up_to_cell(self, cell: Cell) -> List[GriddedPerm]:
+    #     if cell not in self.obstructions_up_to_cell:
+    #         self.obstructions_up_to_cell[cell] = [
+    #                 obs for obs in self.obstructions
+    #                 if all(p <= cell for p in obs.pos)]
+    #     return self.obstructions_up_to_cell[cell]
+
+    def get_requirements_up_to_cell(self, cell: Cell, gps: Tuple[GriddedPerm]) -> List[GriddedPerm]:
+        if (cell, gps) not in self.requirements_up_to_cell:
+            all_cells = product(range(self.tiling.dimensions[0]),
+                                range(self.tiling.dimensions[1]))
+            relevant_cells = [p for p in all_cells if p < cell]
+            self.requirements_up_to_cell[(cell,gps)] = [
+                req.get_gridded_perm_in_cells(relevant_cells)
+                for req in gps]
+        return self.requirements_up_to_cell[(cell, gps)]
+
+    # def satisfies_obstructions(self, gp: GriddedPerm) -> bool:
+    #     """Check if a gridded permutation avoids all obstructions."""
+    #     return gp.avoids(*self.obstructions)
+
+    # Get just the obstructions that involve only cells involved in requirements
+    def get_relevant_obstructions(self, gps):
+        if gps not in self.relevant_obstructions:
+            relevant_cells = set(chain.from_iterable(gp.pos for gp in gps))
+            self.relevant_obstructions[gps] = [
+                ob for ob in self.obstructions
+                if all(p in relevant_cells for p in ob.pos)]
+        return self.relevant_obstructions[gps]
+
 
     def satisfies_requirements(self, gp: GriddedPerm) -> bool:
         """Check if a gridded permutation contains all requirements."""
@@ -60,8 +106,10 @@ class MinimalGriddedPerms():
             # we pass on this information, together with the target gps
             # will be used to guide us in choosing smartly which cells to
             # insert into - see the 'get_cells_to_try' method.
+            if VERBOSE:
+                print("-- initial --: {}".format(initial_gp))
             new_info = Info([initial_gp, localised_patts,
-                             max_cell_count, tuple(gps), (-1, -1)])
+                             max_cell_count, tuple(gps), (-1, -1), True])
             heappush(self.queue, new_info)
 
     @staticmethod
@@ -148,7 +196,8 @@ class MinimalGriddedPerms():
                          gp: GriddedPerm,
                          localised_patts: Dict[Cell, List[GriddedPerm]],
                          max_cell_count: Counter,
-                         gps: List[GriddedPerm]
+                         gps: List[GriddedPerm],
+                         try_localized: bool
                         ) -> Iterator[Cell]:
         """Yield cells that a gridded permutation could be extended by."""
         cells = set()  # type: Set[Cell]
@@ -163,27 +212,40 @@ class MinimalGriddedPerms():
                 # further will not result in a minimal gridded perm that will
                 # not be found by another target.
                 return
+
+        cells = sorted(list(cells))
+        if VERBOSE:
+            print("\tcandidate cells: {}".format(cells))
         currcellcounts = self.cell_counter(gp)
 
-        def try_yield(*cells):
+        def try_yield(cells, localized):
             # Only insert into cells if we have not gone above the theoretical
             # bound on the number of points needed to contains all gridded
             # permutations in gps, and not yielded before.
             for cell in cells:
+                if VERBOSE:
+                    print("\t\t\tcell={}\tmcc > ccc ({} > {})\t{}".format(cell,max_cell_count[cell],currcellcounts[cell],self.cells_tried[(gp,gps)]))
                 if (max_cell_count[cell] > currcellcounts[cell] and
                         cell not in self.cells_tried[(gp, gps)]):
-                    yield cell
                     # store this to prevent yielding same cell twice.
                     self.cells_tried[(gp, gps)].add(cell)
-        for cell in cells:
-            # try to insert into a cell that doesn't contain all of the
-            # localised patterns frist
-            if gp.avoids(*localised_patts[cell]):
-                yield from try_yield(cell)
-                return
+                    yield (cell, localized)
+
+        if try_localized:
+            for cell in cells:
+                # try to insert into a cell that doesn't contain all of the
+                # localised patterns frist
+                if gp.avoids(*localised_patts[cell]):
+                    if VERBOSE:
+                        print("\t\twill try to yield {}".format(cell))
+                    yield from try_yield([cell], True)
+                    return
+                else:
+                    if VERBOSE:
+                        print("\t\tcan't yield {}\n\t\t\tlp={}".format(cell,localised_patts[cell]))
         # otherwise, we are non the wiser which cell to insert into so try
         # all possible cells
-        yield from try_yield(*cells)
+        yield from try_yield(cells, False)
 
     def minimal_gridded_perms(self) -> Iterator[GriddedPerm]:
         """Yield all minimal gridded perms on the tiling."""
@@ -200,30 +262,53 @@ class MinimalGriddedPerms():
             # take the next gridded permutation of the queue, together with the
             # theoretical counts to create a gridded permutation containing
             # each of gps.
-            gp, localised_patts, max_cell_count, gps, last_cell = heappop(self.queue)
+            gp, localised_patts, max_cell_count, gps, last_cell, still_localizing = heappop(self.queue)
+            if VERBOSE:
+                print("processing {} ({})".format(gp, last_cell))
             # only consider gridded perms where a subgridded perm has not been
             # yielded.
-            if (not self.yielded_subgridded_perm(gp) and
-                    self.satisfies_obstructions(gp)):
-                if self.satisfies_requirements(gp):
-                    # if it satisfies all the requirements it is
-                    # minimal, and inserting a further point will break
-                    # the minimality condition
-                    self.yielded.add(gp)
-                    yield gp
-                else:
-                    # otherwise we must try to insert a new point into a cell
-                    for cell in self.get_cells_to_try(gp, localised_patts,
-                                                      max_cell_count, gps):
-                        if cell < last_cell:
-                            continue
-                        # this function places a new point into the cell in
-                        # possible way.
-                        for nextgp in set(gp.insert_point(cell)):
-                            # if we the gridded perm doesn't avoid the
-                            # obstructions then it, and all that can be reached
-                            # by adding further points will not be on the
-                            # tiling.
-                            heappush(self.queue,
-                                     Info([nextgp, localised_patts,
-                                           max_cell_count, gps, cell]))
+            # if gp.avoids(*self.obstructions):
+            if gp.avoids(*self.get_relevant_obstructions(gps)):
+                if not self.yielded_subgridded_perm(gp):
+                    if self.satisfies_requirements(gp):
+                        # if it satisfies all the requirements it is
+                        # minimal, and inserting a further point will break
+                        # the minimality condition
+                        if VERBOSE:
+                            print(" -- yielding --")
+                        self.yielded.add(gp)
+                        yield gp
+                    else:
+                        # otherwise we must try to insert a new point into a cell
+                        for (cell,localized) in self.get_cells_to_try(gp, localised_patts,
+                                                          max_cell_count, gps, still_localizing):
+                            if not localized and cell < last_cell:
+                                if VERBOSE:
+                                    print("\t\tcell {} is no good".format(cell))
+                                continue
+                            if VERBOSE:
+                                print("\tcell {} good".format(cell))
+                            if not localized and cell > last_cell:
+                                if not all(gp.contains(req) for req in self.get_requirements_up_to_cell(cell, gps)):
+                                    if VERBOSE:
+                                        print("\tpassing because of prior reqs  ")
+                                    continue
+                            # this function places a new point into the cell in
+                            # possible way.
+                            for nextgp in set(gp.insert_point(cell)):
+                                # if we the gridded perm doesn't avoid the
+                                # obstructions then it, and all that can be reached
+                                # by adding further points will not be on the
+                                # tiling.
+                                next_cell = last_cell if localized else cell
+                                if (nextgp, gps, next_cell) not in self.work_packets_done:
+                                    if VERBOSE:
+                                        print("\tpushing {}".format(nextgp))
+                                    self.work_packets_done.add((nextgp, gps, next_cell))
+                                    heappush(self.queue,
+                                             Info([nextgp, localised_patts,
+                                                   max_cell_count, gps, next_cell, localized]))
+                                else:
+                                    if VERBOSE:
+                                        print("\twork packet {} already made".format(nextgp))
+        print("{} work packets".format(len(self.work_packets_done)))
