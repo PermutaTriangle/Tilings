@@ -1,5 +1,5 @@
 import json
-from itertools import chain, combinations
+from itertools import chain, combinations, product
 
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, UnionFind
@@ -227,16 +227,19 @@ class GriddedPerm():
         return (mindex, maxdex, minval, maxval)
 
     def insert_point(self, cell):
-        """Insert a new point into cell of the obstruction, such that the point
-        is added to the underlying pattern with the position at the cell.
-        Yields all obstruction where the point has been mixed into the points
+        """Insert a new point into cell of the gridded perm, such that the
+        point is added to the underlying pattern with the position at the cell.
+        Yields all gridded perms where the point has been mixed into the points
         in the cell."""
         mindex, maxdex, minval, maxval = self.get_bounding_box(cell)
-        for idx in range(mindex, maxdex + 1):
-            for val in range(minval, maxval + 1):
-                yield self.__class__(
-                    self._patt.insert(idx, val),
-                    self._pos[:idx] + (cell,) + self._pos[idx:])
+        for idx, val in product(range(mindex, maxdex + 1),
+                                range(minval, maxval + 1)):
+            yield self.insert_specific_point(cell, idx, val)
+
+    def insert_specific_point(self, cell, idx, val):
+        """Insert a point in the given cell with the given idx and val."""
+        return self.__class__(self._patt.insert(idx, val),
+                              self._pos[:idx] + (cell,) + self._pos[idx:])
 
     def remove_point(self, index):
         """Remove the point at index from the gridded permutation."""

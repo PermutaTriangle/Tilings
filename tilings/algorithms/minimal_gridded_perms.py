@@ -106,10 +106,12 @@ class MinimalGriddedPerms():
             # we pass on this information, together with the target gps
             # will be used to guide us in choosing smartly which cells to
             # insert into - see the 'get_cells_to_try' method.
+            mindices = {cell: -1 for cell in max_cell_count}
             if VERBOSE:
                 print("-- initial --: {}".format(initial_gp))
             new_info = Info([initial_gp, localised_patts,
-                             max_cell_count, tuple(gps), (-1, -1), True])
+                             max_cell_count, tuple(gps), (-1, -1), True,
+                             mindices])
             heappush(self.queue, new_info)
 
     @staticmethod
@@ -262,7 +264,8 @@ class MinimalGriddedPerms():
             # take the next gridded permutation of the queue, together with the
             # theoretical counts to create a gridded permutation containing
             # each of gps.
-            gp, localised_patts, max_cell_count, gps, last_cell, still_localizing = heappop(self.queue)
+            (gp, localised_patts, max_cell_count, gps, last_cell,
+             still_localizing, last_mindices) = heappop(self.queue)
             if VERBOSE:
                 print("processing {} ({})".format(gp, last_cell))
             # only consider gridded perms where a subgridded perm has not been
@@ -280,7 +283,7 @@ class MinimalGriddedPerms():
                         yield gp
                     else:
                         # otherwise we must try to insert a new point into a cell
-                        for (cell,localized) in self.get_cells_to_try(gp, localised_patts,
+                        for (cell, localized) in self.get_cells_to_try(gp, localised_patts,
                                                           max_cell_count, gps, still_localizing):
                             if not localized and cell < last_cell:
                                 if VERBOSE:
@@ -295,7 +298,13 @@ class MinimalGriddedPerms():
                                     continue
                             # this function places a new point into the cell in
                             # possible way.
-                            for nextgp in set(gp.insert_point(cell)):
+
+                            # for nextgp in set(gp.insert_point(cell)):
+                            mindex, maxdex, minval, maxval = gp.get_bounding_box(cell)
+                            mindex = max(mindex, last_mindices[cell])
+                            for idx, val in product(range(maxdex, mindex - 1, -1),
+                                                    range(minval, maxval + 1)):
+                                nextgp = gp.insert_specific_point(cell, idx, val)
                                 # if we the gridded perm doesn't avoid the
                                 # obstructions then it, and all that can be reached
                                 # by adding further points will not be on the
@@ -304,10 +313,13 @@ class MinimalGriddedPerms():
                                 if (nextgp, gps, next_cell) not in self.work_packets_done:
                                     if VERBOSE:
                                         print("\tpushing {}".format(nextgp))
+                                    next_mindices = {c: i if i <= idx else i + 1
+                                                     for c, i in last_mindices.items() if c != cell}
+                                    next_mindices[cell] = idx + 1
                                     self.work_packets_done.add((nextgp, gps, next_cell))
                                     heappush(self.queue,
                                              Info([nextgp, localised_patts,
-                                                   max_cell_count, gps, next_cell, localized]))
+                                                   max_cell_count, gps, next_cell, localized, next_mindices]))
                                 else:
                                     if VERBOSE:
                                         print("\twork packet {} already made".format(nextgp))
