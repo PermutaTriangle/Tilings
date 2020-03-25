@@ -29,6 +29,7 @@ from tilings.strategies.verification import (
     ElementaryVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
+    MonotoneTreeVerificationStrategy,
     OneByOneVerificationStrategy,
 )
 
@@ -96,6 +97,7 @@ strategy_objects = [
     ElementaryVerificationStrategy(),
     LocallyFactorableVerificationStrategy(),
     LocalVerificationStrategy(),
+    MonotoneTreeVerificationStrategy(),
     OneByOneVerificationStrategy(),
     # Equivalent Strategy
     RequirementPlacementStrategy(),
