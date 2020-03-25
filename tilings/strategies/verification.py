@@ -10,6 +10,7 @@ from tilings.algorithms.enumeration import (
     Enumeration,
     LocalEnumeration,
     LocallyFactorableEnumeration,
+    MonotoneTreeEnumeration,
     OneByOneEnumeration,
 )
 from tilings.strategies.abstract_strategy import Strategy
@@ -21,6 +22,7 @@ __all__ = [
     "LocallyFactorableVerificationStrategy",
     "ElementaryVerificationStrategy",
     "LocalVerificationStrategy",
+    "MonotoneTreeVerificationStrategy",
 ]
 
 
@@ -123,3 +125,14 @@ class LocalVerificationStrategy(_VerificationStrategy):
 
     def __str__(self) -> str:
         return "local verification"
+
+
+class MonotoneTreeVerificationStrategy(_VerificationStrategy):
+    """
+    Verify all tiling that is a monotone tree.
+    """
+
+    VERIFICATION_CLASS = MonotoneTreeEnumeration
+
+    def __str__(self) -> str:
+        return "monotone tree verification"
