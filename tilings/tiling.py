@@ -893,7 +893,7 @@ class Tiling(CombinatorialClass):
         """
         return sum(max(map(len, reqs)) for reqs in self.requirements)
 
-    def is_empty(self):
+    def is_empty(self, new_bounds=False):
         """Checks if the tiling is empty.
 
         Tiling is empty if it has been inferred to be contradictory due to
@@ -905,7 +905,7 @@ class Tiling(CombinatorialClass):
         if len(self.requirements) <= 1:
             return False
         try:
-            next(self.minimal_gridded_perms())
+            next(self.minimal_gridded_perms(new_bounds=new_bounds))
             return False
         except StopIteration:
             return True
@@ -1008,9 +1008,9 @@ class Tiling(CombinatorialClass):
                              mgps.minimal_gridded_perms())
         return self.__class__(self.obstructions, (requirements,))
 
-    def minimal_gridded_perms(self):
+    def minimal_gridded_perms(self, new_bounds=False):
         """An iterator over all minimal gridded permutations."""
-        yield from MinimalGriddedPerms(self).minimal_gridded_perms()
+        yield from MinimalGriddedPerms(self).minimal_gridded_perms(new_bounds=new_bounds)
 
     def is_epsilon(self):
         """Returns True if the generating function for the tiling is 1."""

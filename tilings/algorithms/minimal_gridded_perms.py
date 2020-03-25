@@ -13,6 +13,8 @@ Cell = Tuple[int, int]
 
 VERBOSE = False
 
+hardcode = [set([Perm((0,1)),Perm((1,0))]),set([Perm((1,0)),Perm((0,1,2))]),set([Perm((0,1)),Perm((2,1,0))]),set([Perm((0,2,1)),Perm((1,2,0))]),set([Perm((1,0,2)),Perm((2,0,1))]),set([Perm((0,2,1)),Perm((2,0,1))]),set([Perm((0,2,1)),Perm((2,1,0))]),set([Perm((0,1,2)),Perm((2,0,1))]),set([Perm((1,0,2)),Perm((1,2,0))]),set([Perm((0,1,2)),Perm((1,2,0))]),set([Perm((1,0,2)),Perm((2,1,0))]),set([Perm((0,1,2)),Perm((2,1,0))]),set([Perm((1,0)),Perm((0,1,2,3))]),set([Perm((0,1)),Perm((3,2,1,0))]),set([Perm((1,2,0)),Perm((0,1,2,3))]),set([Perm((2,1,0)),Perm((0,1,2,3))]),set([Perm((0,2,1)),Perm((2,3,0,1))]),set([Perm((2,1,0)),Perm((1,0,2,3))]),set([Perm((0,1,2)),Perm((3,2,1,0))]),set([Perm((0,1,2)),Perm((3,1,2,0))]),set([Perm((1,0,2)),Perm((2,3,0,1))]),set([Perm((2,0,1)),Perm((1,0,2,3))]),set([Perm((2,0,1)),Perm((0,1,2,3))]),set([Perm((1,0,2)),Perm((2,3,1,0))]),set([Perm((1,0,2)),Perm((3,2,1,0))]),set([Perm((1,2,0)),Perm((0,1,3,2))]),set([Perm((1,0,2)),Perm((3,2,0,1))]),set([Perm((1,2,0)),Perm((0,2,1,3))]),set([Perm((0,2,1)),Perm((3,1,2,0))]),set([Perm((0,2,1)),Perm((3,2,1,0))]),set([Perm((1,0,2)),Perm((3,1,2,0))]),set([Perm((0,1,2)),Perm((3,2,0,1))]),set([Perm((1,2,0)),Perm((1,0,2,3))]),set([Perm((2,0,1)),Perm((0,1,3,2))]),set([Perm((0,2,1)),Perm((2,3,1,0))]),set([Perm((0,2,1)),Perm((3,2,0,1))]),set([Perm((2,1,0)),Perm((0,2,1,3))]),set([Perm((2,0,1)),Perm((1,0,3,2))]),set([Perm((2,1,0)),Perm((0,1,3,2))]),set([Perm((0,1,2)),Perm((2,3,1,0))]),set([Perm((1,2,0)),Perm((1,0,3,2))]),set([Perm((2,0,1)),Perm((0,2,1,3))]),set([Perm((1,0,2,3)),Perm((3,1,2,0))]),set([Perm((0,2,1,3)),Perm((2,3,1,0))]),set([Perm((0,1,3,2)),Perm((2,3,1,0))]),set([Perm((0,1,2,3)),Perm((2,3,1,0))]),set([Perm((1,0,2,3)),Perm((3,2,0,1))]),set([Perm((0,1,2,3)),Perm((3,2,0,1))]),set([Perm((1,0,2,3)),Perm((2,3,1,0))])]
+
 
 class Info(tuple):
     def __lt__(self, other):
@@ -86,7 +88,7 @@ class MinimalGriddedPerms():
         """Return True if a subgridded perm was yielded."""
         return gp.contains(*self.yielded)
 
-    def prepare_queue(self) -> None:
+    def prepare_queue(self, new_bounds=False) -> None:
         """Add cell counters with gridded permutations to the queue."""
         if len(self.requirements) <= 1:
             return
@@ -103,6 +105,29 @@ class MinimalGriddedPerms():
             # largest minimal gridded permutation that contains each
             # gridded permutation in gps.
             max_cell_count = self.cell_counter(*upward_closure)
+
+            if new_bounds:
+                for cell in set(chain.from_iterable(gp.pos for gp in gps)):
+                    in_this_cell = set()
+                    good = True
+                    for req in gps:
+                        if len(req) == 1:
+                            continue
+                        if set(req.pos) == set([cell]):
+                            in_this_cell.add(req.patt)
+                        elif cell in req.pos:
+                            good = False
+                            continue
+                    if good:
+                        if len(in_this_cell) >= 2:
+                            # I think "upward closure" obviates this check, but I'll do it anyway
+                            if not any(any(p != q and p.contains(q) for p in in_this_cell) for q in in_this_cell):
+                                # isolated_patts[frozenset(in_this_cell)] += 1
+                                if in_this_cell in hardcode:
+                                    max_cell_count[cell] -= 1
+
+
+
             # we pass on this information, together with the target gps
             # will be used to guide us in choosing smartly which cells to
             # insert into - see the 'get_cells_to_try' method.
@@ -249,7 +274,7 @@ class MinimalGriddedPerms():
         # all possible cells
         yield from try_yield(cells, False)
 
-    def minimal_gridded_perms(self) -> Iterator[GriddedPerm]:
+    def minimal_gridded_perms(self, new_bounds=False) -> Iterator[GriddedPerm]:
         """Yield all minimal gridded perms on the tiling."""
         if not self.requirements:
             if GriddedPerm.empty_perm() not in self.obstructions:
@@ -259,7 +284,7 @@ class MinimalGriddedPerms():
             yield from iter(self.requirements[0])
             return
         # will yield any that satisfy all the requirements.
-        self.prepare_queue()
+        self.prepare_queue(new_bounds   )
         while self.queue:
             # take the next gridded permutation of the queue, together with the
             # theoretical counts to create a gridded permutation containing
