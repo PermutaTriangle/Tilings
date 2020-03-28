@@ -13,13 +13,16 @@ Cell = Tuple[int, int]
 
 VERBOSE = False
 
-hardcode = [set([Perm((0,1)),Perm((1,0))]),set([Perm((1,0)),Perm((0,1,2))]),set([Perm((0,1)),Perm((2,1,0))]),set([Perm((0,2,1)),Perm((1,2,0))]),set([Perm((1,0,2)),Perm((2,0,1))]),set([Perm((0,2,1)),Perm((2,0,1))]),set([Perm((0,2,1)),Perm((2,1,0))]),set([Perm((0,1,2)),Perm((2,0,1))]),set([Perm((1,0,2)),Perm((1,2,0))]),set([Perm((0,1,2)),Perm((1,2,0))]),set([Perm((1,0,2)),Perm((2,1,0))]),set([Perm((0,1,2)),Perm((2,1,0))]),set([Perm((1,0)),Perm((0,1,2,3))]),set([Perm((0,1)),Perm((3,2,1,0))]),set([Perm((1,2,0)),Perm((0,1,2,3))]),set([Perm((2,1,0)),Perm((0,1,2,3))]),set([Perm((0,2,1)),Perm((2,3,0,1))]),set([Perm((2,1,0)),Perm((1,0,2,3))]),set([Perm((0,1,2)),Perm((3,2,1,0))]),set([Perm((0,1,2)),Perm((3,1,2,0))]),set([Perm((1,0,2)),Perm((2,3,0,1))]),set([Perm((2,0,1)),Perm((1,0,2,3))]),set([Perm((2,0,1)),Perm((0,1,2,3))]),set([Perm((1,0,2)),Perm((2,3,1,0))]),set([Perm((1,0,2)),Perm((3,2,1,0))]),set([Perm((1,2,0)),Perm((0,1,3,2))]),set([Perm((1,0,2)),Perm((3,2,0,1))]),set([Perm((1,2,0)),Perm((0,2,1,3))]),set([Perm((0,2,1)),Perm((3,1,2,0))]),set([Perm((0,2,1)),Perm((3,2,1,0))]),set([Perm((1,0,2)),Perm((3,1,2,0))]),set([Perm((0,1,2)),Perm((3,2,0,1))]),set([Perm((1,2,0)),Perm((1,0,2,3))]),set([Perm((2,0,1)),Perm((0,1,3,2))]),set([Perm((0,2,1)),Perm((2,3,1,0))]),set([Perm((0,2,1)),Perm((3,2,0,1))]),set([Perm((2,1,0)),Perm((0,2,1,3))]),set([Perm((2,0,1)),Perm((1,0,3,2))]),set([Perm((2,1,0)),Perm((0,1,3,2))]),set([Perm((0,1,2)),Perm((2,3,1,0))]),set([Perm((1,2,0)),Perm((1,0,3,2))]),set([Perm((2,0,1)),Perm((0,2,1,3))]),set([Perm((1,0,2,3)),Perm((3,1,2,0))]),set([Perm((0,2,1,3)),Perm((2,3,1,0))]),set([Perm((0,1,3,2)),Perm((2,3,1,0))]),set([Perm((0,1,2,3)),Perm((2,3,1,0))]),set([Perm((1,0,2,3)),Perm((3,2,0,1))]),set([Perm((0,1,2,3)),Perm((3,2,0,1))]),set([Perm((1,0,2,3)),Perm((2,3,1,0))])]
-
+# better_bounds is a dict. the entry k:v means that if a cell contains the
+#   full requirments in k, and no others touch it, then the upper bound for
+#   the number of points that will need to be placed in that cell is the sum
+#   of the lenths of the perms in k, minus v
+# for example, a cell containing 01 and 10 has an upper bound of 3, not 4
+better_bounds = {frozenset({Perm((0, 1)), Perm((1, 0))}): 1, frozenset({Perm((1, 0)), Perm((0, 1, 2))}): 1, frozenset({Perm((0, 1)), Perm((2, 1, 0))}): 1, frozenset({Perm((0, 1)), Perm((3, 2, 1, 0))}): 1, frozenset({Perm((1, 0)), Perm((0, 1, 2, 3))}): 1, frozenset({Perm((1, 0)), Perm((0, 1, 2, 3, 4))}): 1, frozenset({Perm((0, 1)), Perm((4, 3, 2, 1, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((2, 1, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((1, 2, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((2, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((2, 0, 1))}): 1, frozenset({Perm((0, 2, 1)), Perm((2, 0, 1))}): 1, frozenset({Perm((0, 1, 2)), Perm((2, 0, 1))}): 1, frozenset({Perm((1, 0, 2)), Perm((1, 2, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((2, 1, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((1, 2, 0))}): 1, frozenset({Perm((0, 1, 3, 2)), Perm((2, 3, 1, 0))}): 1, frozenset({Perm((0, 1, 3, 2)), Perm((3, 1, 2, 0))}): 1, frozenset({Perm((0, 2, 1, 3)), Perm((2, 3, 1, 0))}): 1, frozenset({Perm((0, 2, 1, 3)), Perm((3, 2, 0, 1))}): 1, frozenset({Perm((1, 0, 2, 3)), Perm((3, 2, 1, 0))}): 1, frozenset({Perm((0, 1, 3, 2)), Perm((3, 2, 0, 1))}): 1, frozenset({Perm((0, 1, 2, 3)), Perm((2, 3, 1, 0))}): 1, frozenset({Perm((1, 0, 3, 2)), Perm((2, 3, 0, 1))}): 2, frozenset({Perm((1, 0, 2, 3)), Perm((3, 2, 0, 1))}): 1, frozenset({Perm((1, 0, 2, 3)), Perm((2, 3, 1, 0))}): 1, frozenset({Perm((0, 1, 3, 2)), Perm((3, 2, 1, 0))}): 1, frozenset({Perm((0, 1, 2, 3)), Perm((3, 2, 0, 1))}): 1, frozenset({Perm((1, 0, 2, 3)), Perm((3, 1, 2, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((1, 2, 0)), Perm((2, 1, 0))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((1, 2, 0))}): 3, frozenset({Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((2, 1, 0))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((2, 1, 0))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((2, 0, 1))}): 3, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((2, 1, 0))}): 3, frozenset({Perm((0, 1, 2)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 3, frozenset({Perm((0, 1, 2)), Perm((1, 0, 2)), Perm((2, 1, 0))}): 3, frozenset({Perm((0, 1, 2)), Perm((1, 0, 2)), Perm((1, 2, 0))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((2, 1, 0))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 3, frozenset({Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((2, 0, 1))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 3, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((2, 0, 1))}): 3, frozenset({Perm((0, 1, 2)), Perm((1, 2, 0)), Perm((2, 0, 1))}): 3, frozenset({Perm((0, 1, 2)), Perm((1, 0, 2)), Perm((2, 0, 1))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((2, 0, 1))}): 3, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((1, 2, 0))}): 3, frozenset({Perm((1, 2, 0)), Perm((1, 0, 3, 2))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 1, 3, 2))}): 1, frozenset({Perm((1, 0, 2)), Perm((3, 2, 1, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((2, 3, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((2, 3, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((3, 2, 0, 1))}): 1, frozenset({Perm((0, 1, 2)), Perm((3, 2, 0, 1))}): 1, frozenset({Perm((0, 2, 1)), Perm((3, 2, 1, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((3, 2, 1, 0))}): 1, frozenset({Perm((2, 0, 1)), Perm((1, 0, 2, 3))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 1, 3, 2))}): 1, frozenset({Perm((0, 1, 2)), Perm((2, 3, 1, 0))}): 1, frozenset({Perm((1, 2, 0)), Perm((1, 0, 2, 3))}): 1, frozenset({Perm((0, 2, 1)), Perm((3, 2, 0, 1))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 1, 2, 3))}): 1, frozenset({Perm((0, 1, 2)), Perm((3, 1, 2, 0))}): 1, frozenset({Perm((2, 1, 0)), Perm((1, 0, 2, 3))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 2, 1, 3))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 1, 2, 3))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 2, 1, 3))}): 1, frozenset({Perm((0, 2, 1)), Perm((3, 1, 2, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((2, 3, 0, 1))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 1, 3, 2))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 2, 1, 3))}): 1, frozenset({Perm((2, 0, 1)), Perm((1, 0, 3, 2))}): 1, frozenset({Perm((1, 0, 2)), Perm((2, 3, 0, 1))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 1, 2, 3))}): 1, frozenset({Perm((1, 0, 2)), Perm((3, 1, 2, 0))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 1, 2, 4, 3))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 1, 2, 4, 3))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 2, 1, 4, 3))}): 1, frozenset({Perm((0, 1, 2)), Perm((4, 2, 3, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 3, 2, 0, 1))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 3, 1, 2, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((3, 4, 2, 1, 0))}): 1, frozenset({Perm((2, 0, 1)), Perm((1, 0, 2, 3, 4))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 2, 3, 1, 4))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 3, 2, 0, 1))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 1, 3, 2, 4))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 1, 3, 2, 4))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 3, 2, 1, 4))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 2, 3, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 1, 2, 3, 0))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 1, 2, 3, 4))}): 1, frozenset({Perm((2, 1, 0)), Perm((1, 0, 2, 4, 3))}): 1, frozenset({Perm((0, 1, 2)), Perm((4, 3, 2, 1, 0))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 1, 2, 4, 3))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 2, 1, 3, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((3, 4, 2, 0, 1))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 1, 3, 2, 0))}): 1, frozenset({Perm((2, 0, 1)), Perm((1, 0, 2, 4, 3))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 2, 3, 0, 1))}): 1, frozenset({Perm((0, 1, 2)), Perm((4, 3, 1, 2, 0))}): 1, frozenset({Perm((1, 2, 0)), Perm((1, 0, 2, 4, 3))}): 1, frozenset({Perm((1, 0, 2)), Perm((3, 4, 2, 1, 0))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 3, 2, 1, 4))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 2, 3, 0, 1))}): 1, frozenset({Perm((2, 0, 1)), Perm((1, 0, 3, 2, 4))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 3, 1, 2, 4))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 2, 1, 3, 4))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 1, 2, 3, 4))}): 1, frozenset({Perm((0, 1, 2)), Perm((4, 1, 3, 2, 0))}): 1, frozenset({Perm((1, 2, 0)), Perm((1, 0, 3, 2, 4))}): 1, frozenset({Perm((2, 1, 0)), Perm((1, 0, 2, 3, 4))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 3, 1, 2, 4))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 1, 2, 3, 4))}): 1, frozenset({Perm((0, 1, 2)), Perm((3, 4, 2, 1, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((4, 3, 2, 0, 1))}): 1, frozenset({Perm((0, 2, 1)), Perm((3, 4, 1, 2, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 3, 2, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 3, 2, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((3, 4, 1, 2, 0))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 1, 3, 2, 4))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 3, 1, 2, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((3, 4, 2, 0, 1))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 2, 3, 1, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 1, 2, 3, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((4, 2, 1, 3, 0))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 2, 1, 3, 4))}): 1, frozenset({Perm((1, 0, 2)), Perm((3, 4, 2, 0, 1))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 2, 1, 4, 3))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 2, 1, 3, 4))}): 1, frozenset({Perm((1, 2, 0)), Perm((1, 0, 2, 3, 4))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 2, 3, 1, 4))}): 1, frozenset({Perm((2, 3, 1, 0)), Perm((1, 0, 2, 4, 3))}): 1, frozenset({Perm((2, 3, 1, 0)), Perm((0, 2, 3, 1, 4))}): 1, frozenset({Perm((3, 1, 2, 0)), Perm((1, 0, 2, 4, 3))}): 1, frozenset({Perm((3, 2, 0, 1)), Perm((1, 0, 2, 3, 4))}): 1, frozenset({Perm((2, 3, 1, 0)), Perm((0, 3, 2, 1, 4))}): 1, frozenset({Perm((0, 1, 3, 2)), Perm((4, 3, 1, 2, 0))}): 1, frozenset({Perm((0, 1, 3, 2)), Perm((4, 2, 1, 3, 0))}): 1, frozenset({Perm((3, 2, 0, 1)), Perm((0, 3, 2, 1, 4))}): 1, frozenset({Perm((2, 3, 1, 0)), Perm((1, 0, 2, 3, 4))}): 1, frozenset({Perm((1, 0, 2, 3)), Perm((4, 3, 1, 2, 0))}): 1, frozenset({Perm((0, 1, 3, 2)), Perm((4, 1, 3, 2, 0))}): 1, frozenset({Perm((0, 1, 3, 2)), Perm((4, 1, 2, 3, 0))}): 1, frozenset({Perm((1, 0, 2, 3)), Perm((4, 3, 2, 0, 1))}): 1, frozenset({Perm((0, 1, 3, 2)), Perm((3, 4, 2, 1, 0))}): 1, frozenset({Perm((0, 1, 3, 2)), Perm((4, 3, 2, 1, 0))}): 1, frozenset({Perm((2, 3, 1, 0)), Perm((0, 1, 2, 3, 4))}): 1, frozenset({Perm((1, 0, 2, 3)), Perm((4, 2, 1, 3, 0))}): 1, frozenset({Perm((1, 0, 2, 3)), Perm((4, 1, 2, 3, 0))}): 1, frozenset({Perm((3, 2, 0, 1)), Perm((0, 3, 1, 2, 4))}): 1, frozenset({Perm((1, 0, 2, 3)), Perm((3, 4, 2, 0, 1))}): 1, frozenset({Perm((2, 3, 1, 0)), Perm((0, 1, 2, 4, 3))}): 1, frozenset({Perm((0, 2, 1, 3)), Perm((3, 4, 2, 0, 1))}): 1, frozenset({Perm((1, 0, 2, 3)), Perm((4, 2, 3, 1, 0))}): 1, frozenset({Perm((3, 2, 0, 1)), Perm((0, 2, 3, 1, 4))}): 1, frozenset({Perm((2, 3, 1, 0)), Perm((0, 2, 1, 3, 4))}): 1, frozenset({Perm((1, 0, 2, 3)), Perm((4, 1, 3, 2, 0))}): 1, frozenset({Perm((0, 1, 3, 2)), Perm((3, 4, 2, 0, 1))}): 1, frozenset({Perm((0, 1, 3, 2)), Perm((4, 3, 2, 0, 1))}): 1, frozenset({Perm((1, 0, 2, 3)), Perm((4, 3, 2, 1, 0))}): 1, frozenset({Perm((3, 2, 0, 1)), Perm((1, 0, 2, 4, 3))}): 1, frozenset({Perm((2, 3, 1, 0)), Perm((0, 1, 3, 2, 4))}): 1, frozenset({Perm((3, 2, 1, 0)), Perm((1, 0, 2, 4, 3))}): 1, frozenset({Perm((3, 2, 0, 1)), Perm((0, 1, 2, 4, 3))}): 1, frozenset({Perm((1, 0, 2, 3)), Perm((3, 4, 2, 1, 0))}): 1, frozenset({Perm((0, 1, 2, 3)), Perm((3, 4, 2, 0, 1))}): 1, frozenset({Perm((3, 2, 0, 1)), Perm((0, 2, 1, 3, 4))}): 1, frozenset({Perm((3, 2, 0, 1)), Perm((0, 1, 3, 2, 4))}): 1, frozenset({Perm((2, 3, 1, 0)), Perm((0, 3, 1, 2, 4))}): 1, frozenset({Perm((0, 1, 3, 2)), Perm((4, 2, 3, 1, 0))}): 1, frozenset({Perm((3, 2, 0, 1)), Perm((0, 1, 2, 3, 4))}): 1, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 9, frozenset({Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((2, 0, 1))}): 6, frozenset({Perm((0, 1, 2)), Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((2, 0, 1))}): 6, frozenset({Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 3, frozenset({Perm((0, 1, 2)), Perm((1, 2, 0)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 3, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((2, 0, 1))}): 6, frozenset({Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((2, 1, 0))}): 6, frozenset({Perm((0, 1, 2)), Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((2, 1, 0))}): 6, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((1, 2, 0))}): 3, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((2, 1, 0))}): 6, frozenset({Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 6, frozenset({Perm((0, 1, 2)), Perm((1, 0, 2)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 6, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((2, 0, 1))}): 3, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 6, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((2, 1, 0))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 6, frozenset({Perm((0, 1, 2)), Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 6, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((2, 0, 1))}): 6, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 6, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((2, 1, 0))}): 6, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((2, 0, 1)), Perm((2, 1, 0))}): 6, frozenset({Perm((1, 2, 0)), Perm((2, 0, 1)), Perm((1, 0, 3, 2))}): 4, frozenset({Perm((1, 2, 0)), Perm((2, 0, 1)), Perm((1, 0, 2, 3))}): 4, frozenset({Perm((1, 2, 0)), Perm((2, 0, 1)), Perm((0, 2, 1, 3))}): 2, frozenset({Perm((1, 2, 0)), Perm((2, 0, 1)), Perm((0, 1, 3, 2))}): 4, frozenset({Perm((1, 2, 0)), Perm((2, 0, 1)), Perm((0, 1, 2, 3))}): 4, frozenset({Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((3, 2, 0, 1))}): 3, frozenset({Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((3, 0, 1, 2))}): 3, frozenset({Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((3, 0, 2, 1))}): 3, frozenset({Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((3, 2, 1, 0))}): 3, frozenset({Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((0, 3, 1, 2))}): 3, frozenset({Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((0, 3, 2, 1))}): 3, frozenset({Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((0, 1, 3, 2))}): 3, frozenset({Perm((1, 0, 2)), Perm((1, 2, 0)), Perm((0, 1, 2, 3))}): 3, frozenset({Perm((1, 2, 0)), Perm((2, 1, 0)), Perm((1, 0, 3, 2))}): 3, frozenset({Perm((1, 2, 0)), Perm((2, 1, 0)), Perm((1, 0, 2, 3))}): 2, frozenset({Perm((1, 2, 0)), Perm((2, 1, 0)), Perm((0, 2, 1, 3))}): 2, frozenset({Perm((1, 2, 0)), Perm((2, 1, 0)), Perm((0, 1, 3, 2))}): 2, frozenset({Perm((1, 2, 0)), Perm((2, 1, 0)), Perm((0, 1, 2, 3))}): 2, frozenset({Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((3, 2, 0, 1))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((3, 0, 1, 2))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((2, 0, 1, 3))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((1, 0, 2, 3))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((3, 1, 0, 2))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((2, 1, 0, 3))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((3, 2, 1, 0))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 2, 0)), Perm((0, 1, 2, 3))}): 3, frozenset({Perm((0, 1, 2)), Perm((1, 2, 0)), Perm((3, 2, 0, 1))}): 3, frozenset({Perm((0, 1, 2)), Perm((1, 2, 0)), Perm((3, 0, 2, 1))}): 3, frozenset({Perm((0, 1, 2)), Perm((1, 2, 0)), Perm((1, 0, 3, 2))}): 3, frozenset({Perm((0, 1, 2)), Perm((1, 2, 0)), Perm((3, 1, 0, 2))}): 3, frozenset({Perm((0, 1, 2)), Perm((1, 2, 0)), Perm((2, 1, 0, 3))}): 3, frozenset({Perm((0, 1, 2)), Perm((1, 2, 0)), Perm((3, 2, 1, 0))}): 3, frozenset({Perm((0, 1, 2)), Perm((1, 2, 0)), Perm((0, 3, 2, 1))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 0, 1)), Perm((1, 2, 3, 0))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 0, 1)), Perm((2, 3, 1, 0))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 0, 1)), Perm((1, 3, 2, 0))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 0, 1)), Perm((3, 2, 1, 0))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 0, 1)), Perm((0, 2, 3, 1))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 0, 1)), Perm((0, 3, 2, 1))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 0, 1)), Perm((0, 1, 3, 2))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 0, 1)), Perm((0, 1, 2, 3))}): 3, frozenset({Perm((2, 0, 1)), Perm((2, 1, 0)), Perm((1, 0, 3, 2))}): 3, frozenset({Perm((2, 0, 1)), Perm((2, 1, 0)), Perm((1, 0, 2, 3))}): 2, frozenset({Perm((2, 0, 1)), Perm((2, 1, 0)), Perm((0, 2, 1, 3))}): 2, frozenset({Perm((2, 0, 1)), Perm((2, 1, 0)), Perm((0, 1, 3, 2))}): 2, frozenset({Perm((2, 0, 1)), Perm((2, 1, 0)), Perm((0, 1, 2, 3))}): 2, frozenset({Perm((0, 2, 1)), Perm((2, 0, 1)), Perm((1, 2, 3, 0))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 0, 1)), Perm((1, 2, 0, 3))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 0, 1)), Perm((2, 3, 1, 0))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 0, 1)), Perm((1, 0, 2, 3))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 0, 1)), Perm((2, 1, 3, 0))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 0, 1)), Perm((2, 1, 0, 3))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 0, 1)), Perm((3, 2, 1, 0))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 0, 1)), Perm((0, 1, 2, 3))}): 3, frozenset({Perm((0, 1, 2)), Perm((2, 0, 1)), Perm((2, 3, 1, 0))}): 3, frozenset({Perm((0, 1, 2)), Perm((2, 0, 1)), Perm((1, 3, 2, 0))}): 3, frozenset({Perm((0, 1, 2)), Perm((2, 0, 1)), Perm((1, 0, 3, 2))}): 3, frozenset({Perm((0, 1, 2)), Perm((2, 0, 1)), Perm((2, 1, 3, 0))}): 3, frozenset({Perm((0, 1, 2)), Perm((2, 0, 1)), Perm((2, 1, 0, 3))}): 3, frozenset({Perm((0, 1, 2)), Perm((2, 0, 1)), Perm((3, 2, 1, 0))}): 3, frozenset({Perm((0, 1, 2)), Perm((2, 0, 1)), Perm((0, 3, 2, 1))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 1, 0)), Perm((1, 2, 3, 0))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 1, 0)), Perm((3, 0, 1, 2))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 1, 0)), Perm((2, 3, 0, 1))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 1, 0)), Perm((0, 2, 3, 1))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 1, 0)), Perm((0, 3, 1, 2))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 1, 0)), Perm((0, 1, 3, 2))}): 3, frozenset({Perm((1, 0, 2)), Perm((2, 1, 0)), Perm((0, 1, 2, 3))}): 3, frozenset({Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((3, 2, 0, 1))}): 4, frozenset({Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((2, 3, 1, 0))}): 4, frozenset({Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((2, 3, 0, 1))}): 4, frozenset({Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((3, 2, 1, 0))}): 4, frozenset({Perm((0, 2, 1)), Perm((1, 0, 2)), Perm((3, 1, 2, 0))}): 2, frozenset({Perm((0, 1, 2)), Perm((1, 0, 2)), Perm((3, 2, 0, 1))}): 2, frozenset({Perm((0, 1, 2)), Perm((1, 0, 2)), Perm((2, 3, 1, 0))}): 2, frozenset({Perm((0, 1, 2)), Perm((1, 0, 2)), Perm((2, 3, 0, 1))}): 3, frozenset({Perm((0, 1, 2)), Perm((1, 0, 2)), Perm((3, 2, 1, 0))}): 2, frozenset({Perm((0, 1, 2)), Perm((1, 0, 2)), Perm((3, 1, 2, 0))}): 2, frozenset({Perm((0, 2, 1)), Perm((2, 1, 0)), Perm((1, 2, 3, 0))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 1, 0)), Perm((1, 2, 0, 3))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 1, 0)), Perm((3, 0, 1, 2))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 1, 0)), Perm((2, 0, 1, 3))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 1, 0)), Perm((1, 0, 2, 3))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 1, 0)), Perm((2, 3, 0, 1))}): 3, frozenset({Perm((0, 2, 1)), Perm((2, 1, 0)), Perm((0, 1, 2, 3))}): 3, frozenset({Perm((0, 1, 2)), Perm((2, 1, 0)), Perm((1, 3, 0, 2))}): 3, frozenset({Perm((0, 1, 2)), Perm((2, 1, 0)), Perm((2, 0, 3, 1))}): 3, frozenset({Perm((0, 1, 2)), Perm((2, 1, 0)), Perm((1, 0, 3, 2))}): 3, frozenset({Perm((0, 1, 2)), Perm((2, 1, 0)), Perm((2, 3, 0, 1))}): 3, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((3, 2, 0, 1))}): 2, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((2, 3, 1, 0))}): 2, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((2, 3, 0, 1))}): 3, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((3, 2, 1, 0))}): 2, frozenset({Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((3, 1, 2, 0))}): 2, frozenset({Perm((1, 0)), Perm((0, 1, 2, 3, 4, 5))}): 1, frozenset({Perm((0, 1)), Perm((5, 4, 3, 2, 1, 0))}): 1, frozenset({Perm((1, 0)), Perm((0, 1, 2, 3, 4, 5, 6))}): 1, frozenset({Perm((0, 1)), Perm((6, 5, 4, 3, 2, 1, 0))}): 1, frozenset({Perm((1, 2, 0)), Perm((1, 0, 4, 2, 3, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((1, 0, 3, 2, 5, 4))}): 1, frozenset({Perm((1, 2, 0)), Perm((1, 0, 3, 2, 4, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((1, 0, 4, 3, 2, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((1, 0, 2, 4, 3, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((1, 0, 2, 3, 5, 4))}): 1, frozenset({Perm((1, 2, 0)), Perm((1, 0, 2, 3, 4, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 4, 1, 2, 3, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 3, 1, 2, 5, 4))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 3, 1, 2, 4, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 4, 1, 3, 2, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 2, 1, 3, 5, 4))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 2, 1, 3, 4, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 4, 2, 1, 3, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 3, 2, 1, 5, 4))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 3, 2, 1, 4, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 1, 4, 2, 3, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 1, 3, 2, 5, 4))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 1, 3, 2, 4, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 1, 4, 3, 2, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 1, 2, 4, 3, 5))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 1, 2, 3, 5, 4))}): 1, frozenset({Perm((1, 2, 0)), Perm((0, 1, 2, 3, 4, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((1, 0, 3, 4, 2, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((1, 0, 3, 2, 5, 4))}): 1, frozenset({Perm((2, 0, 1)), Perm((1, 0, 3, 2, 4, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((1, 0, 4, 3, 2, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((1, 0, 2, 4, 3, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((1, 0, 2, 3, 5, 4))}): 1, frozenset({Perm((2, 0, 1)), Perm((1, 0, 2, 3, 4, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 2, 3, 4, 1, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 2, 3, 1, 5, 4))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 2, 3, 1, 4, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 2, 4, 3, 1, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 2, 1, 3, 5, 4))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 2, 1, 3, 4, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 3, 2, 4, 1, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 3, 2, 1, 5, 4))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 3, 2, 1, 4, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 1, 3, 4, 2, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 1, 3, 2, 5, 4))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 1, 3, 2, 4, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 1, 4, 3, 2, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 1, 2, 4, 3, 5))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 1, 2, 3, 5, 4))}): 1, frozenset({Perm((2, 0, 1)), Perm((0, 1, 2, 3, 4, 5))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 2, 3, 4, 0, 1))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 3, 4, 2, 0, 1))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 2, 4, 3, 0, 1))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 5, 3, 1, 2, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 5, 1, 2, 3, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 5, 1, 3, 2, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 4, 3, 2, 0, 1))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 5, 3, 2, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 4, 2, 3, 0, 1))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 5, 2, 3, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 2, 3, 4, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 4, 3, 1, 2, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 3, 4, 2, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 4, 1, 2, 3, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 2, 4, 3, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 4, 1, 3, 2, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 5, 3, 2, 0, 1))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 4, 3, 2, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 1, 3, 4, 2, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 1, 4, 2, 3, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((4, 5, 2, 3, 0, 1))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 4, 2, 3, 1, 0))}): 1, frozenset({Perm((1, 0, 2)), Perm((5, 1, 4, 3, 2, 0))}): 1, frozenset({Perm((2, 1, 0)), Perm((1, 0, 2, 4, 3, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((1, 0, 2, 3, 5, 4))}): 1, frozenset({Perm((2, 1, 0)), Perm((1, 0, 2, 3, 4, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 2, 3, 4, 1, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 2, 4, 1, 3, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 2, 3, 1, 4, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 3, 1, 4, 2, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 4, 1, 2, 3, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 3, 1, 2, 4, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 2, 1, 3, 5, 4))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 2, 1, 3, 4, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 3, 4, 1, 2, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 1, 3, 4, 2, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 1, 4, 2, 3, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 1, 3, 2, 4, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 1, 2, 4, 3, 5))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 1, 2, 3, 5, 4))}): 1, frozenset({Perm((2, 1, 0)), Perm((0, 1, 2, 3, 4, 5))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 2, 3, 4, 0, 1))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 3, 4, 2, 0, 1))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 5, 3, 1, 2, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 5, 1, 2, 3, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 3, 2, 4, 0, 1))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 5, 2, 1, 3, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 4, 3, 2, 0, 1))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 5, 3, 2, 1, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 4, 2, 3, 0, 1))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 5, 2, 3, 1, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 2, 3, 4, 1, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 4, 3, 1, 2, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 2, 3, 1, 4, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 3, 4, 2, 1, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 4, 1, 2, 3, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 3, 1, 2, 4, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 3, 2, 4, 1, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 4, 2, 1, 3, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 3, 2, 1, 4, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 5, 3, 2, 0, 1))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 4, 3, 2, 1, 0))}): 1, frozenset({Perm((0, 2, 1)), Perm((4, 5, 2, 3, 0, 1))}): 1, frozenset({Perm((0, 2, 1)), Perm((5, 4, 2, 3, 1, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 3, 4, 2, 0, 1))}): 1, frozenset({Perm((0, 1, 2)), Perm((4, 5, 3, 1, 2, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 4, 3, 2, 0, 1))}): 1, frozenset({Perm((0, 1, 2)), Perm((4, 5, 3, 2, 1, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 4, 3, 1, 2, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 2, 4, 1, 3, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 3, 4, 2, 1, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 3, 1, 4, 2, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 2, 4, 3, 1, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 4, 1, 3, 2, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 2, 1, 4, 3, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 3, 2, 4, 1, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 4, 2, 1, 3, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 3, 2, 1, 4, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((4, 5, 3, 2, 0, 1))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 4, 3, 2, 1, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 4, 2, 3, 1, 0))}): 1, frozenset({Perm((0, 1, 2)), Perm((5, 1, 4, 3, 2, 0))}): 1}
 
 class Info(tuple):
     def __lt__(self, other):
         return self[0].__lt__(other[0])
-
 
 class MinimalGriddedPerms():
     def __init__(self, tiling: 'Tiling'):
@@ -32,29 +35,16 @@ class MinimalGriddedPerms():
         self.work_packets_done = set()
         self.num_work_packets = 0
         self.relevant_obstructions = dict()
+        self.relevant_obstructions_by_cell = dict()
+        self.initial_gps_to_auto_yield = set()
 
-        # given a cell (x,y), this contains those obstructions that are
-        #   **fully contained** in the cells <= (x,y)
-        # self.obstructions_up_to_cell = dict()
-
-        # given a goal gps and cell (x,y), this contains **truncations** of
-        #   the reqs in gps to the cells < (x,y)
+        # given a goal gps and cell (x,y), this contains truncations of
+        #   the reqs in gps to the cells < (x,y) in normal sort order
         self.requirements_up_to_cell = dict()
-
-        # Note the difference in the last two variables:
-        #   (1) "fully contained" vs "truncations"
-        #   (2) "<=" vs "<"
 
         # a priority queue sorted by length of the gridded perm. This is
         # ensured by overwriting the __lt__ operator in the Info class.
         heapify(self.queue)
-
-    # def get_obstructions_up_to_cell(self, cell: Cell) -> List[GriddedPerm]:
-    #     if cell not in self.obstructions_up_to_cell:
-    #         self.obstructions_up_to_cell[cell] = [
-    #                 obs for obs in self.obstructions
-    #                 if all(p <= cell for p in obs.pos)]
-    #     return self.obstructions_up_to_cell[cell]
 
     def get_requirements_up_to_cell(self, cell: Cell, gps: Tuple[GriddedPerm]) -> List[GriddedPerm]:
         if (cell, gps) not in self.requirements_up_to_cell:
@@ -66,10 +56,6 @@ class MinimalGriddedPerms():
                 for req in gps]
         return self.requirements_up_to_cell[(cell, gps)]
 
-    # def satisfies_obstructions(self, gp: GriddedPerm) -> bool:
-    #     """Check if a gridded permutation avoids all obstructions."""
-    #     return gp.avoids(*self.obstructions)
-
     # Get just the obstructions that involve only cells involved in requirements
     def get_relevant_obstructions(self, gps):
         if gps not in self.relevant_obstructions:
@@ -79,6 +65,15 @@ class MinimalGriddedPerms():
                 if all(p in relevant_cells for p in ob.pos)]
         return self.relevant_obstructions[gps]
 
+    # Get just the obstructions that involve only cells involved in the
+    #   requirements in [gps] and involve [cell]
+    def get_relevant_obstructions_by_cell(self, gps, cell):
+        if (gps, cell) not in self.relevant_obstructions_by_cell:
+            relevant_obstructions = self.get_relevant_obstructions(gps)
+            self.relevant_obstructions_by_cell[(gps,cell)] = [
+                    ob for ob in relevant_obstructions
+                    if cell in ob.pos]
+        return self.relevant_obstructions_by_cell[(gps,cell)]
 
     def satisfies_requirements(self, gp: GriddedPerm) -> bool:
         """Check if a gridded permutation contains all requirements."""
@@ -86,47 +81,67 @@ class MinimalGriddedPerms():
 
     def yielded_subgridded_perm(self, gp: GriddedPerm) -> bool:
         """Return True if a subgridded perm was yielded."""
-        return gp.contains(*self.yielded)
+        return gp.contains(*self.initial_gps_to_auto_yield) or gp.contains(*self.yielded)
 
-    def prepare_queue(self, new_bounds=False) -> None:
+    def prepare_queue(self) -> None:
         """Add cell counters with gridded permutations to the queue."""
         if len(self.requirements) <= 1:
             return
         for gps in product(*self.requirements):
             # upward clousure
             upward_closure = self.upward_closure(*gps)
+
             # try to stitch together as much of the independent cells of the
             # gridded permutation together first
             initial_gp = self.initial_gp(*upward_closure)
+
+            if not initial_gp.avoids(*self.get_relevant_obstructions(gps)):
+                continue
+            if self.satisfies_requirements(initial_gp):
+                # even if [initial_gp] meets the requirements yet, we can't
+                #   yield it yet, because it might not be minimal
+                # so, we add it to a list, and yield it when we see it later
+                #   if it actually is minimal
+                if VERBOSE:
+                    print(" -- setting up to auto-yield --")
+                self.initial_gps_to_auto_yield.add(initial_gp)
+
             # collect the localised subgridded perms as we will insert into
             # cells not containing thest first as they are needed.
             localised_patts = self.localised_patts(*upward_closure)
+
             # max_cell_count is the theoretical bound on the size of the
             # largest minimal gridded permutation that contains each
             # gridded permutation in gps.
             max_cell_count = self.cell_counter(*upward_closure)
 
-            if new_bounds:
-                for cell in set(chain.from_iterable(gp.pos for gp in gps)):
-                    in_this_cell = set()
-                    good = True
-                    for req in gps:
-                        if len(req) == 1:
-                            continue
-                        if set(req.pos) == set([cell]):
-                            in_this_cell.add(req.patt)
-                        elif cell in req.pos:
-                            good = False
-                            continue
-                    if good:
-                        if len(in_this_cell) >= 2:
-                            # I think "upward closure" obviates this check, but I'll do it anyway
-                            if not any(any(p != q and p.contains(q) for p in in_this_cell) for q in in_this_cell):
-                                # isolated_patts[frozenset(in_this_cell)] += 1
-                                if in_this_cell in hardcode:
-                                    max_cell_count[cell] -= 1
-
-
+            # now we look for any cells containing more than one full req and
+            #   are not involved with any other requirements, because we may be
+            #   able to apply a better upper bound to the number of points
+            #   required in the cell
+            for cell in set(chain.from_iterable(gp.pos for gp in gps)):
+                in_this_cell = set()
+                good = True
+                for req in gps:
+                    # we ignore point requirements
+                    if len(req) == 1:
+                        continue
+                    if set(req.pos) == set([cell]):
+                        # [req] is entirely in [cell]
+                        in_this_cell.add(req.patt)
+                    elif cell in req.pos:
+                        # [req] involves [cell], but also some other cell, so
+                        #   this cell won't have a usable upper bound
+                        good = False
+                        continue
+                if good:
+                    if len(in_this_cell) >= 2:
+                        # I think "upward closure" obviates this check, but I'll do it anyway
+                        #   Christian: please weigh in here!
+                        if not any(any(p != q and p.contains(q) for p in in_this_cell) for q in in_this_cell):
+                            in_this_cell = frozenset(in_this_cell)
+                            if in_this_cell in better_bounds:
+                                max_cell_count[cell] -= better_bounds[in_this_cell]
 
             # we pass on this information, together with the target gps
             # will be used to guide us in choosing smartly which cells to
@@ -152,6 +167,7 @@ class MinimalGriddedPerms():
         # the sort here is a heuristic. the idea is to try avoid having to
         # insert into more cells in the future.
         # gps = sorted(gps, key=lambda x: -len(x))
+        # note from jay: some testing showed the heuristic made it a little worse
         res = GriddedPerm(gps[0].patt, gps[0].pos)
         active_cols = set(i for i, j in res.pos)
         active_rows = set(j for i, j in res.pos)
@@ -224,7 +240,7 @@ class MinimalGriddedPerms():
                          localised_patts: Dict[Cell, List[GriddedPerm]],
                          max_cell_count: Counter,
                          gps: List[GriddedPerm],
-                         try_localized: bool
+                         try_localised: bool
                         ) -> Iterator[Cell]:
         """Yield cells that a gridded permutation could be extended by."""
         cells = set()  # type: Set[Cell]
@@ -245,7 +261,7 @@ class MinimalGriddedPerms():
             print("\tcandidate cells: {}".format(cells))
         currcellcounts = self.cell_counter(gp)
 
-        def try_yield(cells, localized):
+        def try_yield(cells, localised):
             # Only insert into cells if we have not gone above the theoretical
             # bound on the number of points needed to contains all gridded
             # permutations in gps, and not yielded before.
@@ -256,9 +272,9 @@ class MinimalGriddedPerms():
                         cell not in self.cells_tried[(gp, gps)]):
                     # store this to prevent yielding same cell twice.
                     self.cells_tried[(gp, gps)].add(cell)
-                    yield (cell, localized)
+                    yield (cell, localised)
 
-        if try_localized:
+        if try_localised:
             for cell in cells:
                 # try to insert into a cell that doesn't contain all of the
                 # localised patterns frist
@@ -270,11 +286,11 @@ class MinimalGriddedPerms():
                 else:
                     if VERBOSE:
                         print("\t\tcan't yield {}\n\t\t\tlp={}".format(cell,localised_patts[cell]))
-        # otherwise, we are non the wiser which cell to insert into so try
+        # otherwise, we are none the wiser which cell to insert into so try
         # all possible cells
         yield from try_yield(cells, False)
 
-    def minimal_gridded_perms(self, new_bounds=False) -> Iterator[GriddedPerm]:
+    def minimal_gridded_perms(self) -> Iterator[GriddedPerm]:
         """Yield all minimal gridded perms on the tiling."""
         if not self.requirements:
             if GriddedPerm.empty_perm() not in self.obstructions:
@@ -283,58 +299,67 @@ class MinimalGriddedPerms():
         if len(self.requirements) == 1:
             yield from iter(self.requirements[0])
             return
-        # will yield any that satisfy all the requirements.
-        self.prepare_queue(new_bounds   )
+
+        self.prepare_queue()
+
         while self.queue:
             # take the next gridded permutation of the queue, together with the
             # theoretical counts to create a gridded permutation containing
             # each of gps.
             (gp, localised_patts, max_cell_count, gps, last_cell,
-             still_localizing, last_mindices) = heappop(self.queue)
+             still_localising, last_mindices) = heappop(self.queue)
             if VERBOSE:
-                print("processing {} ({})".format(gp, last_cell))
-            # only consider gridded perms where a subgridded perm has not been
-            # yielded.
-            # if gp.avoids(*self.obstructions):
-            if gp.avoids(*self.get_relevant_obstructions(gps)):
-                if not self.yielded_subgridded_perm(gp):
-                    if self.satisfies_requirements(gp):
-                        # if it satisfies all the requirements it is
-                        # minimal, and inserting a further point will break
-                        # the minimality condition
-                        if VERBOSE:
-                            print(" -- yielding --")
-                        self.yielded.add(gp)
-                        yield gp
-                    else:
-                        # otherwise we must try to insert a new point into a cell
-                        for (cell, localized) in self.get_cells_to_try(gp, localised_patts,
-                                                          max_cell_count, gps, still_localizing):
-                            if not localized and cell < last_cell:
-                                if VERBOSE:
-                                    print("\t\tcell {} is no good".format(cell))
-                                continue
-                            if VERBOSE:
-                                print("\tcell {} good".format(cell))
-                            if not localized and cell > last_cell:
-                                if not all(gp.contains(req) for req in self.get_requirements_up_to_cell(cell, gps)):
-                                    if VERBOSE:
-                                        print("\tpassing because of prior reqs  ")
-                                    continue
-                            # this function places a new point into the cell in
-                            # possible way.
+                print("processing {} ({})".format(gp, last_cell, last_mindices))
 
-                            # for nextgp in set(gp.insert_point(cell)):
-                            mindex, maxdex, minval, maxval = gp.get_bounding_box(cell)
-                            mindex = max(mindex, last_mindices[cell])
-                            for idx, val in product(range(maxdex, mindex - 1, -1),
-                                                    range(minval, maxval + 1)):
-                                nextgp = gp.insert_specific_point(cell, idx, val)
-                                # if we the gridded perm doesn't avoid the
-                                # obstructions then it, and all that can be reached
-                                # by adding further points will not be on the
-                                # tiling.
-                                next_cell = last_cell if localized else cell
+            # if gp was one of the initial_gps that satisfied obs/reqs, but
+            #   we weren't sure at the time if it was minimal, then now is the
+            #   time to check and yield!
+            if gp in self.initial_gps_to_auto_yield:
+                # removing this speed up a later check by a tiny bit
+                self.initial_gps_to_auto_yield.remove(gp)
+                if not self.yielded_subgridded_perm(gp):
+                    if VERBOSE:
+                        print(" -- yielding --")
+                    self.yielded.add(gp)
+                    yield gp
+                continue
+
+            # now we try inserting a new point into the cell
+            for (cell, localised) in self.get_cells_to_try(gp, localised_patts,
+                                              max_cell_count, gps, still_localising):
+                # [localised] tells us whether we've been given a cell to try
+                #   to build a localised_patt, or not. If not, then we must
+                #   always be moving to greater cells
+                if not localised and cell < last_cell:
+                    if VERBOSE:
+                        print("\t\tcell {} is no good".format(cell))
+                    continue
+                if VERBOSE:
+                    print("\tcell {} good".format(cell))
+                if not localised and cell > last_cell:
+                    if not all(gp.contains(req) for req in self.get_requirements_up_to_cell(cell, gps)):
+                        if VERBOSE:
+                            print("\tpassing because of prior reqs  ")
+                        continue
+
+                # in this cell, we always insert to the right of all previously
+                #   placed points
+                mindex, maxdex, minval, maxval = gp.get_bounding_box(cell)
+                mindex = max(mindex, last_mindices[cell])
+                for idx, val in product(range(maxdex, mindex - 1, -1),
+                                        range(minval, maxval + 1)):
+                    nextgp = gp.insert_specific_point(cell, idx, val)
+
+                    if nextgp.avoids(*self.get_relevant_obstructions_by_cell(gps,cell)):
+                        if not self.yielded_subgridded_perm(nextgp):
+                            if self.satisfies_requirements(nextgp):
+                                if VERBOSE:
+                                    print(" -- yielding --")
+                                self.yielded.add(nextgp)
+                                yield nextgp
+                            else:
+
+                                next_cell = last_cell if localised else cell
                                 if (nextgp, gps, next_cell) not in self.work_packets_done:
                                     if VERBOSE:
                                         print("\tpushing {}".format(nextgp))
@@ -344,8 +369,9 @@ class MinimalGriddedPerms():
                                     self.work_packets_done.add((nextgp, gps, next_cell))
                                     heappush(self.queue,
                                              Info([nextgp, localised_patts,
-                                                   max_cell_count, gps, next_cell, localized, next_mindices]))
+                                                   max_cell_count, gps, next_cell, localised, next_mindices]))
                                 else:
                                     if VERBOSE:
                                         print("\twork packet {} already made".format(nextgp))
-        print("{} work packets".format(len(self.work_packets_done)))
+        if VERBOSE:
+            print("{} work packets".format(len(self.work_packets_done)))

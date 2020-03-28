@@ -794,7 +794,7 @@ class Tiling(CombinatorialClass):
         obs_inf = AllObstructionInferral(self, obstruction_length)
         return obs_inf.obstruction_inferral()
 
-    def emtpy_cell_inferral(self):
+    def empty_cell_inferral(self):
         """
         Adds point obstruction in the cell of the tilings that should be empty.
 
@@ -893,7 +893,7 @@ class Tiling(CombinatorialClass):
         """
         return sum(max(map(len, reqs)) for reqs in self.requirements)
 
-    def is_empty(self, new_bounds=False):
+    def is_empty(self):
         """Checks if the tiling is empty.
 
         Tiling is empty if it has been inferred to be contradictory due to
@@ -905,7 +905,7 @@ class Tiling(CombinatorialClass):
         if len(self.requirements) <= 1:
             return False
         try:
-            next(self.minimal_gridded_perms(new_bounds=new_bounds))
+            next(self.minimal_gridded_perms())
             return False
         except StopIteration:
             return True
@@ -1008,9 +1008,9 @@ class Tiling(CombinatorialClass):
                              mgps.minimal_gridded_perms())
         return self.__class__(self.obstructions, (requirements,))
 
-    def minimal_gridded_perms(self, new_bounds=False):
+    def minimal_gridded_perms(self):
         """An iterator over all minimal gridded permutations."""
-        yield from MinimalGriddedPerms(self).minimal_gridded_perms(new_bounds=new_bounds)
+        yield from MinimalGriddedPerms(self).minimal_gridded_perms()
 
     def is_epsilon(self):
         """Returns True if the generating function for the tiling is 1."""
