@@ -905,7 +905,7 @@ class Tiling(CombinatorialClass):
         if len(self.requirements) <= 1:
             return False
         try:
-            next(self.minimal_gridded_perms())
+            next(self.minimal_gridded_perms(yield_if_non_minimal=True))
             return False
         except StopIteration:
             return True
@@ -1008,9 +1008,9 @@ class Tiling(CombinatorialClass):
                              mgps.minimal_gridded_perms())
         return self.__class__(self.obstructions, (requirements,))
 
-    def minimal_gridded_perms(self):
+    def minimal_gridded_perms(self, yield_if_non_minimal=False):
         """An iterator over all minimal gridded permutations."""
-        yield from MinimalGriddedPerms(self).minimal_gridded_perms()
+        yield from MinimalGriddedPerms(self).minimal_gridded_perms(yield_if_non_minimal=yield_if_non_minimal)
 
     def is_epsilon(self):
         """Returns True if the generating function for the tiling is 1."""

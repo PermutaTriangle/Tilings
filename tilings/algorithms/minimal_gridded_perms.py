@@ -4,7 +4,7 @@ from itertools import chain, product
 from typing import TYPE_CHECKING, Dict, Iterator, List, Set, Tuple
 
 from permuta import Perm
-from tilings import GriddedPerm
+from tilings import GriddedPerm, Obstruction
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -83,7 +83,7 @@ class MinimalGriddedPerms():
         """Return True if a subgridded perm was yielded."""
         return gp.contains(*self.initial_gps_to_auto_yield) or gp.contains(*self.yielded)
 
-    def prepare_queue(self) -> None:
+    def prepare_queue(self, yield_if_non_minimal=False) -> None:
         """Add cell counters with gridded permutations to the queue."""
         if len(self.requirements) <= 1:
             return
@@ -98,13 +98,16 @@ class MinimalGriddedPerms():
             if not initial_gp.avoids(*self.get_relevant_obstructions(gps)):
                 continue
             if self.satisfies_requirements(initial_gp):
-                # even if [initial_gp] meets the requirements yet, we can't
-                #   yield it yet, because it might not be minimal
-                # so, we add it to a list, and yield it when we see it later
-                #   if it actually is minimal
-                if VERBOSE:
-                    print(" -- setting up to auto-yield --")
-                self.initial_gps_to_auto_yield.add(initial_gp)
+                if yield_if_non_minimal:
+                    yield initial_gp
+                else:
+                    # even if [initial_gp] meets the requirements yet, we can't
+                    #   yield it yet, because it might not be minimal
+                    # so, we add it to a list, and yield it when we see it later
+                    #   if it actually is minimal
+                    if VERBOSE:
+                        print(" -- setting up to auto-yield --")
+                    self.initial_gps_to_auto_yield.add(initial_gp)
 
             # collect the localised subgridded perms as we will insert into
             # cells not containing thest first as they are needed.
@@ -290,17 +293,21 @@ class MinimalGriddedPerms():
         # all possible cells
         yield from try_yield(cells, False)
 
-    def minimal_gridded_perms(self) -> Iterator[GriddedPerm]:
+    # the "yield_if_non_minimal" flag is passed to prepare_queue, instructing
+    #   it to yield an initial_gp that is on the tiling immediately, even
+    #   though it may not be minimal. this is useful when trying to just
+    #   determine whether or not a tiling is empty.
+    def minimal_gridded_perms(self, yield_if_non_minimal=False) -> Iterator[GriddedPerm]:
         """Yield all minimal gridded perms on the tiling."""
         if not self.requirements:
-            if GriddedPerm.empty_perm() not in self.obstructions:
+            if Obstruction.empty_perm() not in self.obstructions:
                 yield GriddedPerm.empty_perm()
             return
         if len(self.requirements) == 1:
-            yield from iter(self.requirements[0])
+            yield from map(lambda req : GriddedPerm(req.patt, req.pos), self.requirements[0])
             return
 
-        self.prepare_queue()
+        yield from self.prepare_queue(yield_if_non_minimal=yield_if_non_minimal)
 
         while self.queue:
             # take the next gridded permutation of the queue, together with the
