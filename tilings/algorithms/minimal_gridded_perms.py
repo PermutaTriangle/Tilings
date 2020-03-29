@@ -95,67 +95,39 @@ class MinimalGriddedPerms():
             # gridded permutation together first
             initial_gp = self.initial_gp(*upward_closure)
 
-            if not initial_gp.avoids(*self.get_relevant_obstructions(gps)):
-                continue
-            if self.satisfies_requirements(initial_gp):
-                if yield_if_non_minimal:
-                    yield initial_gp
-                else:
-                    # even if [initial_gp] meets the requirements yet, we can't
-                    #   yield it yet, because it might not be minimal
-                    # so, we add it to a list, and yield it when we see it later
-                    #   if it actually is minimal
-                    if VERBOSE:
-                        print(" -- setting up to auto-yield --")
-                    self.initial_gps_to_auto_yield.add(initial_gp)
+            if initial_gp.avoids(*self.get_relevant_obstructions(gps)):
+                # We will now prepare to add it to the queue.
+                if self.satisfies_requirements(initial_gp):
+                    if yield_if_non_minimal:
+                        yield initial_gp
+                    else:
+                        # even if [initial_gp] meets the requirements, we can't
+                        #   yield it yet, because it might not be minimal
+                        # so, we add it to a list, and yield it when we see it
+                        # later if it is actually is minimal
+                        if VERBOSE:
+                            print(" -- setting up to auto-yield --")
+                        self.initial_gps_to_auto_yield.add(initial_gp)
 
-            # collect the localised subgridded perms as we will insert into
-            # cells not containing thest first as they are needed.
-            localised_patts = self.localised_patts(*upward_closure)
+                # collect the localised subgridded perms as we will insert into
+                # cells not containing thest first as they are needed.
+                localised_patts = self.localised_patts(*upward_closure)
 
-            # max_cell_count is the theoretical bound on the size of the
-            # largest minimal gridded permutation that contains each
-            # gridded permutation in gps.
-            max_cell_count = self.cell_counter(*upward_closure)
+                # max_cell_count is the theoretical bound on the size of the
+                # largest minimal gridded permutation that contains each
+                # gridded permutation in gps.
+                max_cell_count = self.max_cell_count(*upward_closure)
 
-            # now we look for any cells containing more than one full req and
-            #   are not involved with any other requirements, because we may be
-            #   able to apply a better upper bound to the number of points
-            #   required in the cell
-            for cell in set(chain.from_iterable(gp.pos for gp in gps)):
-                in_this_cell = set()
-                good = True
-                for req in gps:
-                    # we ignore point requirements
-                    if len(req) == 1:
-                        continue
-                    if set(req.pos) == set([cell]):
-                        # [req] is entirely in [cell]
-                        in_this_cell.add(req.patt)
-                    elif cell in req.pos:
-                        # [req] involves [cell], but also some other cell, so
-                        #   this cell won't have a usable upper bound
-                        good = False
-                        continue
-                if good:
-                    if len(in_this_cell) >= 2:
-                        # I think "upward closure" obviates this check, but I'll do it anyway
-                        #   Christian: please weigh in here!
-                        if not any(any(p != q and p.contains(q) for p in in_this_cell) for q in in_this_cell):
-                            in_this_cell = frozenset(in_this_cell)
-                            if in_this_cell in better_bounds:
-                                max_cell_count[cell] -= better_bounds[in_this_cell]
-
-            # we pass on this information, together with the target gps
-            # will be used to guide us in choosing smartly which cells to
-            # insert into - see the 'get_cells_to_try' method.
-            mindices = {cell: -1 for cell in max_cell_count}
-            if VERBOSE:
-                print("-- initial --: {}".format(initial_gp))
-            new_info = Info([initial_gp, localised_patts,
-                             max_cell_count, tuple(gps), (-1, -1), True,
-                             mindices])
-            heappush(self.queue, new_info)
+                # we pass on this information, together with the target gps
+                # will be used to guide us in choosing smartly which cells to
+                # insert into - see the 'get_cells_to_try' method.
+                mindices = {cell: -1 for cell in max_cell_count}
+                if VERBOSE:
+                    print("-- initial --: {}".format(initial_gp))
+                new_info = Info([initial_gp, localised_patts,
+                                max_cell_count, tuple(gps), (-1, -1), True,
+                                mindices])
+                heappush(self.queue, new_info)
 
     @staticmethod
     def initial_gp(*gps):
@@ -216,6 +188,37 @@ class MinimalGriddedPerms():
         return Counter(chain.from_iterable(gp.pos for gp in gps))
 
     @staticmethod
+    def max_cell_count(*gps: GriddedPerm) -> Counter:
+        """Return the theoretical maximum number of points needed in each cell.
+        It assumes that gps is closed upwards."""
+        max_cell_count = MinimalGriddedPerms.cell_counter(*gps)
+        # now we look for any cells containing more than one full req and
+        #   are not involved with any other requirements, because we may be
+        #   able to apply a better upper bound to the number of points
+        #   required in the cell
+        for cell in set(chain.from_iterable(gp.pos for gp in gps)):
+            in_this_cell = set()
+            good = True
+            for req in gps:
+                # we ignore point requirements
+                if len(req) == 1:
+                    continue
+                if set(req.pos) == set([cell]):
+                    # [req] is entirely in [cell]
+                    in_this_cell.add(req.patt)
+                elif cell in req.pos:
+                    # [req] involves [cell], but also some other cell, so
+                    #   this cell won't have a usable upper bound
+                    good = False
+                    break
+            if good:
+                if len(in_this_cell) >= 2:
+                    in_this_cell = frozenset(in_this_cell)
+                    if in_this_cell in better_bounds:
+                        max_cell_count[cell] -= better_bounds[in_this_cell]
+        return max_cell_count
+
+    @staticmethod
     def localised_patts(*gps: GriddedPerm) -> Dict[Cell, List[GriddedPerm]]:
         """Return the localised patts that gps must contain."""
         res = defaultdict(set)  # type: Dict[Cell, Set[GriddedPerm]]
@@ -253,6 +256,7 @@ class MinimalGriddedPerms():
                 # already satisfied.
                 cells.update(g.pos)
             elif gp.avoids(g):
+                print("="*1000)
                 # If any requirement contains a requirement, but not the target
                 # gridded perm from that requirement in gps, then inserting
                 # further will not result in a minimal gridded perm that will
