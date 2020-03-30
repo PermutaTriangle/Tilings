@@ -1,8 +1,8 @@
 import abc
-from itertools import chain, product
+from itertools import chain
 
 from comb_spec_searcher import InferralRule
-from permuta import Perm, PermSet
+from permuta import Perm
 from tilings import Obstruction
 
 
@@ -13,6 +13,7 @@ class ObstructionInferral(abc.ABC):
     """
     def __init__(self, tiling):
         self._tiling = tiling
+        self._new_obs = None
 
     @abc.abstractmethod
     def potential_new_obs(self):
@@ -20,13 +21,12 @@ class ObstructionInferral(abc.ABC):
         Return an iterable of new obstructions that should be added to the
         tiling if possible.
         """
-        pass
 
     def new_obs(self):
         """
         Returns the list of new obstructions that can be added to the tiling.
         """
-        if hasattr(self, '_new_obs'):
+        if self._new_obs is not None:
             return self._new_obs
         newobs = []
         for ob in sorted(self.potential_new_obs(), key=len):
@@ -85,22 +85,15 @@ class SubobstructionInferral(ObstructionInferral):
 class AllObstructionInferral(ObstructionInferral):
     """
     Algorithm to compute the tiling created by adding all
-    obstruction of given length which can be added.
+    obstruction of length up to obstruction_length which can be added.
     """
-    def __init__(self, tiling, obstrucion_length):
+    def __init__(self, tiling, obstruction_length):
         super().__init__(tiling)
-        self._obs_len = obstrucion_length
+        self._obs_len = obstruction_length
 
     @property
-    def obstrucion_length(self):
+    def obstruction_length(self):
         return self._obs_len
-
-    def avoids_obstructions(self, gp):
-        """
-        Return True if the gridded perm `gp` does not contains any obstruction
-        of the tiling.
-        """
-        return all(ob not in gp for ob in self._tiling.obstructions)
 
     def not_required(self, gp):
         """
@@ -114,10 +107,12 @@ class AllObstructionInferral(ObstructionInferral):
         """
         Iterator over all possible obstruction of `self.obstruction_length`.
         """
+        if not self._tiling.requirements:
+            return []
         no_req_tiling = self._tiling.__class__(self._tiling.obstructions)
         n = self._obs_len
         pot_obs = filter(self.not_required,
-                         no_req_tiling.gridded_perms_of_length(n))
+                         no_req_tiling.gridded_perms(n))
         return (Obstruction(gp.patt, gp.pos) for gp in pot_obs)
 
 

@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 import pytest
 
 from permuta import Perm
