@@ -785,8 +785,8 @@ class Tiling(CombinatorialClass):
 
     def all_obstruction_inferral(self, obstruction_length):
         """
-        Adds all the obstruction of length `obstruction_length` that doesn't
-        change the set of gridded permutations of the tiling.
+        Adds all the obstruction of length up to `obstruction_length` that
+        does not change the set of gridded permutations of the tiling.
         """
         obs_inf = AllObstructionInferral(self, obstruction_length)
         return obs_inf.obstruction_inferral()
