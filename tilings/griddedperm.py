@@ -41,6 +41,11 @@ class GriddedPerm():
         return cls(pattern, [cell for _ in range(len(pattern))])
 
     @classmethod
+    def from_gridded_perm(cls, gp):
+        """Contruct a gridded permutation from another gridded permutation."""
+        return cls(gp.patt, gp.pos)
+
+    @classmethod
     def empty_perm(cls):
         """Construct the empty gridded permutation."""
         return cls(Perm(tuple()), tuple())
