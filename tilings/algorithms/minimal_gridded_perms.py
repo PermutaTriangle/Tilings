@@ -1,17 +1,19 @@
 from collections import Counter, defaultdict
 from heapq import heapify, heappop, heappush
 from itertools import chain, product
-from typing import TYPE_CHECKING, Dict, Iterator, List, Set, Tuple
+from typing import TYPE_CHECKING, Dict, FrozenSet, Iterator, Tuple
 
 from permuta import Perm
 from tilings import GriddedPerm, Obstruction
 
 if TYPE_CHECKING:
     from tilings import Tiling
+    from typing import List, Set # Only used in comments
 
 Cell = Tuple[int, int]
-OBS = Tuple[GriddedPerm]
-REQS = Tuple[Tuple[GriddedPerm]]
+GPTuple = Tuple[GriddedPerm, ...]
+Reqs = Tuple[GPTuple, ...]
+WorkPackets = Tuple[GriddedPerm, GPTuple, Cell]
 
 VERBOSE = False
 
@@ -26,43 +28,34 @@ class MinimalGriddedPerms():
         self.requirements = tiling.requirements
         self.yielded = set()  # type: Set[GriddedPerm]
         self.queue = []  # type: List[Info]
-        self.work_packets_done = set()
+        self.work_packets_done = set() # Set[WorkPackets]
         self.num_work_packets = 0
-        self.relevant_obstructions = dict()
-        self.relevant_requirements = dict()
-        self.relevant_obstructions_by_cell = dict()
-        self.initial_gps_to_auto_yield = set()
-
-
+        self.relevant_obstructions = dict() # Dict[GPTuple, GPTuple]
+        self.relevant_requirements = dict() # Dict[GPTuple, Reqs]
+        self.relevant_obstructions_by_cell = dict() # Dict[Tuple[Cell, GPTuple], GPTuple]
+        self.requirements_up_to_cell = dict() # Dict[Tuple[Cell, GPTuple], GPTuple]
+        self.initial_gps_to_auto_yield = set() # Set[GriddedPerm]
         # Delay computing until needed - these could all be stored on
         # MinimalGriddedPerms, as none of these are tiling specific.
-        self.localised_patts = dict()
-        self.max_cell_counts = dict()
-        self.upward_closures = dict()
-
-        # given a goal gps and cell (x,y), this contains truncations of
-        #   the reqs in gps to the cells < (x,y) in normal sort order
-        self.requirements_up_to_cell = dict()
-
+        self.localised_patts = dict() # Dict[GPTuple, GPTuple]
+        self.max_cell_counts = dict() # Dict[GPTuple, Counter]
+        self.upward_closures = dict() # Dict[GPTuple, GPTuple]
         # a priority queue sorted by length of the gridded perm. This is
         # ensured by overwriting the __lt__ operator in the Info class.
         heapify(self.queue)
 
-    def get_requirements_up_to_cell(
-                                    self, cell: Cell, gps: Tuple[GriddedPerm]
-                                   ) -> Tuple[GriddedPerm]:
+    def get_requirements_up_to_cell(self, cell: Cell, gps: GPTuple) -> GPTuple:
+        """Given a goal gps and cell (x,y), return the truncations of the reqs
+        in gps to the cells < (x, y) in normal sort order."""
         res = self.requirements_up_to_cell.get((cell, gps))
         if res is None:
-            # all_cells = product(range(self.tiling.dimensions[0]),
-            #                     range(self.tiling.dimensions[1]))
-            # relevant_cells = [p for p in all_cells if p < cell]
             res = tuple(req.get_gridded_perm_in_cells(
                                     frozenset(c for c in req.pos if c < cell))
                         for req in gps)
             self.requirements_up_to_cell[(cell, gps)] = res
         return res
 
-    def get_relevant_obstructions(self, gp: GriddedPerm) -> OBS:
+    def get_relevant_obstructions(self, gp: GriddedPerm) -> GPTuple:
         """Get the requirements that involve only cells in the gp."""
         cells = frozenset(gp.pos)
         res = self.relevant_obstructions.get(cells)
@@ -74,7 +67,7 @@ class MinimalGriddedPerms():
 
     def get_relevant_obstructions_by_cell(
                                           self, gp: GriddedPerm, cell: Cell
-                                         ) -> OBS:
+                                         ) -> GPTuple:
         """ Get the obstructions that involve only cells in gp
         and involve cell"""
         cells = frozenset(gp.pos)
@@ -85,7 +78,7 @@ class MinimalGriddedPerms():
             self.relevant_obstructions_by_cell[(cell, cells)] = res
         return res
 
-    def get_relevant_requirements(self, gp: GriddedPerm) -> REQS:
+    def get_relevant_requirements(self, gp: GriddedPerm) -> Reqs:
         """Get the requirements that involve only cells in gp."""
         cells = frozenset(gp.pos)
         res = self.relevant_requirements.get(cells)
@@ -211,7 +204,7 @@ class MinimalGriddedPerms():
         permutations. If 'counter' is given, will update this Counter."""
         return Counter(chain.from_iterable(gp.pos for gp in gps))
 
-    def get_max_cell_count(self, gps: Tuple[GriddedPerm]) -> Counter:
+    def get_max_cell_count(self, gps: GPTuple) -> Counter:
         """Return the theoretical maximum number of points needed in each cell.
         It assumes that gps is closed upwards."""
         res = self.max_cell_counts.get(gps)
@@ -220,24 +213,23 @@ class MinimalGriddedPerms():
             gps = self.get_upward_closure(gps)
             res = MinimalGriddedPerms.cell_counter(*gps)
             # now we look for any cells containing more than one full req and
-            #   are not involved with any other requirements, because we may be
-            #   able to apply a better upper bound to the number of points
-            #   required in the cell
+            # are not involved with any other requirements, because we may be
+            # able to apply a better upper bound to the number of points
+            # required in the cell
             for cell in set(chain.from_iterable(gp.pos for gp in gps)):
                 in_this_cell = set()
                 good = True
                 for req in gps:
                     # we ignore point requirements
-                    if len(req) == 1:
-                        continue
-                    if set(req.pos) == set([cell]):
-                        # [req] is entirely in [cell]
-                        in_this_cell.add(req.patt)
-                    elif cell in req.pos:
-                        # [req] involves [cell], but also some other cell, so
-                        #   this cell won't have a usable upper bound
-                        good = False
-                        break
+                    if len(req) > 1 and cell in req.pos:
+                        if req.is_single_cell():
+                            # [req] is entirely in [cell]
+                            in_this_cell.add(req.patt)
+                        else:
+                            # [req] involves [cell], but also some other cell,
+                            # so this cell won't have a usable upper bound
+                            good = False
+                            break
                 if good:
                     better_bounds = MinimalGriddedPerms.better_bounds()
                     if len(in_this_cell) >= 2:
@@ -249,7 +241,7 @@ class MinimalGriddedPerms():
 
     _better_bounds = None
     @staticmethod
-    def better_bounds() -> Dict[Set[Perm], int]:
+    def better_bounds() -> Dict[FrozenSet[Perm], int]:
         """
         Return a dictionary. The entry k:v means that if a cell contains
         the full requirments in k, and no others touch it, then the upper
@@ -263,9 +255,7 @@ class MinimalGriddedPerms():
             MinimalGriddedPerms._better_bounds = better_bounds
         return MinimalGriddedPerms._better_bounds
 
-    def get_localised_patts(
-                            self, cell: Cell, gps: Tuple[GriddedPerm]
-                           ) -> Tuple[GriddedPerm]:
+    def get_localised_patts(self, cell: Cell, gps: GPTuple) -> GPTuple:
         """Return the localised patts that gps must contain."""
         res = self.localised_patts.get(cell, gps)
         if res is None:
@@ -277,9 +267,7 @@ class MinimalGriddedPerms():
             self.localised_patts[(cell, gps)] = res
         return res
 
-    def get_upward_closure(
-                           self, gps: Tuple[GriddedPerm]
-                          ) -> Tuple[GriddedPerm]:
+    def get_upward_closure(self, gps: GPTuple) -> GPTuple:
         """Return list of gridded perms such that every gridded perm contained
         in another is removed."""
         res = self.upward_closures.get(gps)
@@ -295,7 +283,7 @@ class MinimalGriddedPerms():
     def get_cells_to_try(
                          self,
                          gp: GriddedPerm,
-                         gps: Tuple[GriddedPerm],
+                         gps: GPTuple,
                          try_localised: bool
                         ) -> Iterator[Cell]:
         """Yield cells that a gridded permutation could be extended by."""
@@ -344,9 +332,9 @@ class MinimalGriddedPerms():
         yield from try_yield(cells, False)
 
     # the "yield_if_non_minimal" flag is passed to prepare_queue, instructing
-    #   it to yield an initial_gp that is on the tiling immediately, even
-    #   though it may not be minimal. this is useful when trying to just
-    #   determine whether or not a tiling is empty.
+    # it to yield an initial_gp that is on the tiling immediately, even
+    # though it may not be minimal. this is useful when trying to just
+    # determine whether or not a tiling is empty.
     def minimal_gridded_perms(
                               self, yield_if_non_minimal: bool = False
                              ) -> Iterator[GriddedPerm]:
@@ -437,8 +425,7 @@ class MinimalGriddedPerms():
                                     heappush(self.queue,
                                              Info([nextgp, gps, next_cell,
                                                    localised, next_mindices]))
-                                else:
-                                    if VERBOSE:
-                                        print("\twork packet {} already made".format(nextgp))
+                                elif VERBOSE:
+                                    print("\twork packet {} already made".format(nextgp))
         if VERBOSE:
             print("{} work packets".format(len(self.work_packets_done)))
