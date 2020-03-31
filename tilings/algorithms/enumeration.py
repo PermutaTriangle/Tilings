@@ -234,7 +234,7 @@ class MonotoneTreeEnumeration(Enumeration):
         num_non_monotone = sum(1 for c in self.tiling.active_cells
                                if not self.tiling.is_monotone_cell(c))
         return (local_verified and no_req_list and num_non_monotone <= 1 and
-                is_tree(self.tiling.cell_graph()))
+                is_tree(self.tiling.active_cells, self.tiling.cell_graph()))
 
     def _cell_tree_traversal(self, start):
         """

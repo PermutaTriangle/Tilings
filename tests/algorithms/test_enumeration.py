@@ -344,6 +344,16 @@ class TestMonotoneTreeEnumeration(CommonTest):
         assert not enum_with_crossing.verified()
         assert not enum_with_list_req.verified()
         assert not onebyone_enum.verified()
+        forest_tiling = Tiling(obstructions=[
+            Obstruction(Perm((0,)), ((0, 0),)),
+            Obstruction(Perm((0,)), ((1, 1),)),
+            Obstruction(Perm((0,)), ((2, 1),)),
+            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
+            Obstruction(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 1))),
+        ], requirements=[[Requirement(Perm((0,)), ((0, 1),))]]
+        )
+        assert not MonotoneTreeEnumeration(forest_tiling).verified()
 
     @pytest.mark.xfail(reason='No database setup')
     def test_get_genf(self, enum_verified):
