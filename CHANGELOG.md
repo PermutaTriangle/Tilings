@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added `GriddedPermsOnTiling` algorithm, that is now used
   for `Tiling.gridded_perms`.
 - Added `GriddedPerm.get_gridded_perm_at_indices` method.
+- Added `MinimalGriddedPerms` algorithm used by the new
+  `Tiling.minimal_gridded_perms` method.
 
 ### Changed
 - Update permuta to 1.2.1
