@@ -257,13 +257,13 @@ class MinimalGriddedPerms():
 
     def get_localised_patts(self, cell: Cell, gps: GPTuple) -> GPTuple:
         """Return the localised patts that gps must contain."""
-        res = self.localised_patts.get(cell, gps)
+        res = self.localised_patts.get((cell, gps))
         if res is None:
             res = set()
             for gp in gps:
                 res.add(gp.get_gridded_perm_in_cells([cell]))
             # Only keep the upward closure.
-            res = self.get_upward_closure(res)
+            res = self.get_upward_closure(frozenset(res))
             self.localised_patts[(cell, gps)] = res
         return res
 
