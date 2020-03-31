@@ -2,8 +2,11 @@
 Collection of function that are not directly related to the code but still
 useful.
 """
-from collections import defaultdict
 from functools import reduce
+from typing import Dict, Sequence, Set, Tuple, TypeVar
+
+Vertex = TypeVar('Vertex')
+AdjTable = Dict[Vertex, Set[Vertex]]
 
 
 def map_cell(col_mapping, row_mapping, cell):
@@ -32,44 +35,44 @@ def intersection_reduce(iterable):
         return set()
 
 
-def is_tree(edges):
+def is_tree(vertices: Sequence[Vertex],
+            edges: Sequence[Tuple[Vertex, Vertex]]) -> bool:
     """
     Return True if the undirected graph is a tree.
 
     That is, it is has no cycles and is connected.
     """
-    adj_table = adjacency_table(edges)
-    return len(edges) + 1 == len(adj_table) and is_connected(adj_table)
+    if not vertices:
+        return True
+    adj_table = adjacency_table(vertices, edges)
+    return len(edges) + 1 == len(vertices) and is_connected(adj_table)
 
 
-def adjacency_table(edges):
+def adjacency_table(vertices: Sequence[Vertex],
+                    edges: Sequence[Tuple[Vertex, Vertex]]) -> AdjTable:
     """Return adjacency table of edges."""
-    adj_table = defaultdict(set)
+    adj_table = {v: set() for v in vertices}  # type: AdjTable
     for c1, c2 in edges:
         adj_table[c1].add(c2)
         adj_table[c2].add(c1)
     return adj_table
 
 
-def is_connected(adj_table):
+def is_connected(adj_table: AdjTable) -> bool:
     """Return True if graph with adjacency table is connected."""
     if not adj_table:
         return True
     visited = {cell: False for cell in adj_table}
-
-    # pick some start vertex
-
-    for start in adj_table:
-        break
-    # pylint: disable=undefined-loop-variable
-    queue = [start]
-    while queue:
-        curr = queue.pop()
+    start_vertex = next(iter(adj_table.keys()))
+    visited[start_vertex] = True
+    stack = [start_vertex]
+    while stack:
+        curr = stack.pop()
         for vertex in adj_table[curr]:
             if not visited[vertex]:
-                queue.append(vertex)
+                stack.append(vertex)
                 visited[vertex] = True
-    return all(x for x in visited.values())
+    return all(visited.values())
 
 # The code below is magical and comes from
 # https://codereview.stackexchange.com/questions/1526/finding-all-k-subset-partitions
