@@ -1,4 +1,4 @@
-from collections import Counter, defaultdict
+from collections import Counter
 from heapq import heapify, heappop, heappush
 from itertools import chain, product
 from typing import TYPE_CHECKING, Dict, FrozenSet, Iterator, Tuple
@@ -9,6 +9,7 @@ from tilings import GriddedPerm, Obstruction
 if TYPE_CHECKING:
     from tilings import Tiling
     from typing import List, Set # Only used in comments
+
 
 Cell = Tuple[int, int]
 GPTuple = Tuple[GriddedPerm, ...]
@@ -29,7 +30,6 @@ class MinimalGriddedPerms():
         self.yielded = set()  # type: Set[GriddedPerm]
         self.queue = []  # type: List[Info]
         self.work_packets_done = set() # Set[WorkPackets]
-        self.num_work_packets = 0
         self.relevant_obstructions = dict() # Dict[GPTuple, GPTuple]
         self.relevant_requirements = dict() # Dict[GPTuple, Reqs]
         self.relevant_obstructions_by_cell = dict() # Dict[Tuple[Cell, GPTuple], GPTuple]
@@ -38,7 +38,7 @@ class MinimalGriddedPerms():
         # Delay computing until needed - these could all be stored on
         # MinimalGriddedPerms, as none of these are tiling specific.
         self.localised_patts = dict() # Dict[GPTuple, GPTuple]
-        self.max_cell_counts = dict() # Dict[GPTuple, Counter]
+        self.max_cell_counts = dict() # Dict[GPTuple, Dict[Cell, int]]
         self.upward_closures = dict() # Dict[GPTuple, GPTuple]
         # a priority queue sorted by length of the gridded perm. This is
         # ensured by overwriting the __lt__ operator in the Info class.
@@ -199,12 +199,12 @@ class MinimalGriddedPerms():
         return res
 
     @staticmethod
-    def cell_counter(*gps: GriddedPerm) -> Counter:
+    def cell_counter(*gps: GriddedPerm) -> Dict[Cell, int]:
         """Returns a counter of the sum of number of cells used by the gridded
         permutations. If 'counter' is given, will update this Counter."""
         return Counter(chain.from_iterable(gp.pos for gp in gps))
 
-    def get_max_cell_count(self, gps: GPTuple) -> Counter:
+    def get_max_cell_count(self, gps: GPTuple) -> Dict[Cell, int]:
         """Return the theoretical maximum number of points needed in each cell.
         It assumes that gps is closed upwards."""
         res = self.max_cell_counts.get(gps)
@@ -325,7 +325,7 @@ class MinimalGriddedPerms():
                         print("\t\twill try to yield {}".format(cell))
                     yield from try_yield([cell], True)
                     return
-                elif VERBOSE:
+                if VERBOSE:
                     print("\t\tcan't yield {}\n\t\t\tlp={}".format(cell, self.get_localised_patts(cell, gps)))
         # otherwise, we are none the wiser which cell to insert into so try
         # all possible cells
@@ -403,29 +403,31 @@ class MinimalGriddedPerms():
                                         range(minval, maxval + 1)):
                     nextgp = gp.insert_specific_point(cell, idx, val)
 
-                    if self.satisfies_obstructions(nextgp, must_contain=cell): # nextgp.avoids(*self.get_relevant_obstructions_by_cell(gps,cell)):
-                        if not self.yielded_subgridded_perm(nextgp):
-                            if self.satisfies_requirements(nextgp):
+                    # This was nextgp.avoids(*self.get_relevant_obstructions_by_cell(gps,cell))
+                    if (self.satisfies_obstructions(nextgp,
+                                                    must_contain=cell) and
+                            not self.yielded_subgridded_perm(nextgp)):
+                        if self.satisfies_requirements(nextgp):
+                            if VERBOSE:
+                                print(" -- yielding --")
+                            self.yielded.add(nextgp)
+                            yield nextgp
+                        else:
+                            next_cell = last_cell if localised else cell
+                            key = (nextgp, gps, next_cell)
+                            if key not in self.work_packets_done:
                                 if VERBOSE:
-                                    print(" -- yielding --")
-                                self.yielded.add(nextgp)
-                                yield nextgp
-                            else:
-                                next_cell = last_cell if localised else cell
-                                key = (nextgp, gps, next_cell)
-                                if key not in self.work_packets_done:
-                                    if VERBOSE:
-                                        print("\tpushing {}".format(nextgp))
-                                    next_mindices = {
-                                            c: i if i <= idx else i + 1
-                                            for c, i in last_mindices.items()
-                                            if c != cell}
-                                    next_mindices[cell] = idx + 1
-                                    self.work_packets_done.add(key)
-                                    heappush(self.queue,
-                                             Info([nextgp, gps, next_cell,
-                                                   localised, next_mindices]))
-                                elif VERBOSE:
-                                    print("\twork packet {} already made".format(nextgp))
+                                    print("\tpushing {}".format(nextgp))
+                                next_mindices = {
+                                        c: i if i <= idx else i + 1
+                                        for c, i in last_mindices.items()
+                                        if c != cell}
+                                next_mindices[cell] = idx + 1
+                                self.work_packets_done.add(key)
+                                heappush(self.queue,
+                                            Info([nextgp, gps, next_cell,
+                                                localised, next_mindices]))
+                            elif VERBOSE:
+                                print("\twork packet {} already made".format(nextgp))
         if VERBOSE:
             print("{} work packets".format(len(self.work_packets_done)))
