@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 from functools import partial
 from itertools import chain, product
 from operator import xor
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 import sympy
 
@@ -20,9 +20,9 @@ from permuta.misc import DIR_EAST, DIR_WEST
 from .algorithms import (AllObstructionInferral, ComponentFusion,
                          EmptyCellInferral, Factor, FactorWithInterleaving,
                          FactorWithMonotoneInterleaving, Fusion,
-                         MinimalGriddedPerms, ObstructionTransitivity,
-                         RequirementPlacement, RowColSeparation,
-                         SubobstructionInferral)
+                         GriddedPermsOnTiling, MinimalGriddedPerms,
+                         ObstructionTransitivity, RequirementPlacement,
+                         RowColSeparation, SubobstructionInferral)
 from .algorithms.enumeration import (BasicEnumeration, DatabaseEnumeration,
                                      LocallyFactorableEnumeration,
                                      MonotoneTreeEnumeration)
@@ -788,8 +788,8 @@ class Tiling(CombinatorialClass):
 
     def all_obstruction_inferral(self, obstruction_length):
         """
-        Adds all the obstruction of length `obstruction_length` that doesn't
-        change the set of gridded permutations of the tiling.
+        Adds all the obstruction of length up to `obstruction_length` that
+        does not change the set of gridded permutations of the tiling.
         """
         obs_inf = AllObstructionInferral(self, obstruction_length)
         return obs_inf.obstruction_inferral()
@@ -887,13 +887,13 @@ class Tiling(CombinatorialClass):
     # Properties and getters
     # -------------------------------------------------------------
 
-    def maximum_length_of_minimum_gridded_perm(self):
+    def maximum_length_of_minimum_gridded_perm(self) -> int:
         """Returns the maximum length of the minimum gridded permutation that
         can be gridded on the tiling.
         """
         return sum(max(map(len, reqs)) for reqs in self.requirements)
 
-    def is_empty(self):
+    def is_empty(self) -> bool:
         """Checks if the tiling is empty.
 
         Tiling is empty if it has been inferred to be contradictory due to
@@ -904,11 +904,8 @@ class Tiling(CombinatorialClass):
             return True
         if len(self.requirements) <= 1:
             return False
-        try:
-            next(self.minimal_gridded_perms(yield_non_minimal=True))
-            return False
-        except StopIteration:
-            return True
+        return all(False
+                   for _ in self.minimal_gridded_perms(yield_non_minimal=True))
 
     def is_finite(self):
         """Returns True if all active cells have finite basis."""
@@ -931,73 +928,15 @@ class Tiling(CombinatorialClass):
             if len(gp) == length:
                 yield gp
 
-    def gridded_perms(self, maxlen=None):
-        """Returns all gridded permutations griddable on the tiling.
+    def gridded_perms(self,
+                      maxlen: Optional[int] = None) -> Iterable[GriddedPerm]:
+        """
+        Iterable of all gridded permutations griddable on the tiling.
 
         The gridded permutations are up to length of the longest minimum
         gridded permutations that is griddable on the tiling.
         """
-        if Obstruction(Perm(tuple()), tuple()) in self.obstructions:
-            return
-
-        if maxlen is None:
-            maxlen = max(self.maximum_length_of_minimum_gridded_perm(), 1)
-
-        def insert_next_point(gp, col):
-            for cell in self.active_cells:
-                if cell[0] != col:
-                    continue
-                _, _, minval, maxval = gp.get_bounding_box(cell)
-                for val in range(minval, maxval + 1):
-                    yield gp.__class__(
-                        gp.patt.insert(new_element=val), gp.pos + (cell,))
-
-        positive_cells = frozenset(self.positive_cells)
-
-        def can_satisfy_positive_cells(gp):
-            pos_cells = positive_cells - frozenset(gp.pos)
-            return len(pos_cells) <= (maxlen - len(gp))
-
-        def can_satisfy(gp, col, req):
-            return req.get_subperm_left_col(col) in gp
-
-        def can_satisfy_all(gp, col, reqs):
-            return all(any(can_satisfy(gp, col, req) for req in reqlist)
-                       for reqlist in reqs)
-
-        def satisfies(gp, reqlist):
-            return any(req in gp for req in reqlist)
-        forbidden = satisfies
-
-        def bt(curgp, curcol, reqs, yielded=False):
-            # If all requirements have been satisfied, then yield
-            if len(reqs) == 0 and not yielded:
-                yield curgp
-                yielded = True
-            # If maximum length reached, then bail
-            if len(curgp) >= maxlen or curcol >= self.dimensions[0]:
-                return
-            # Prune away unsatisfiable requirements and remove lists that have
-            # already been satisfied
-            satisfiable = [
-                [req for req in reqlist if can_satisfy(curgp, curcol, req)]
-                for reqlist in reqs]
-            if any(len(reqlist) == 0 for reqlist in satisfiable):
-                return
-
-            if not can_satisfy_positive_cells(curgp):
-                return
-
-            if can_satisfy_all(curgp, curcol + 1, satisfiable):
-                yield from bt(curgp, curcol + 1, satisfiable, yielded)
-
-            for nextgp in insert_next_point(curgp, curcol):
-                if not forbidden(nextgp, self.obstructions):
-                    yield from bt(nextgp, curcol,
-                                  [reqlist for reqlist in reqs
-                                   if not satisfies(nextgp, reqlist)])
-
-        yield from bt(GriddedPerm.empty_perm(), 0, self.requirements)
+        return GriddedPermsOnTiling(self, maxlen=maxlen)
 
     def merge(self) -> 'Tiling':
         """Return an equivalent tiling with a single requirement list."""

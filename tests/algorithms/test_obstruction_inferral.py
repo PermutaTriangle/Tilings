@@ -255,13 +255,7 @@ class TestAllObstructionInferral(CommonTest):
         return AllObstructionInferral(tiling_not_inf, 3)
 
     def test_obstruction_length(self, obs_inf1):
-        assert obs_inf1.obstrucion_length == 2
-
-    def test_avoids_obstruction(self, obs_inf1):
-        assert obs_inf1.avoids_obstructions(Obstruction(Perm((0, 1)),
-                                                        ((0, 0), (1, 0))))
-        assert not obs_inf1.avoids_obstructions(
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))))
+        assert obs_inf1.obstruction_length == 2
 
     def test_not_required(self, obs_inf1):
         assert not obs_inf1.not_required(Requirement(Perm((0,)), ((1, 0),)))
@@ -283,18 +277,13 @@ class TestAllObstructionInferral(CommonTest):
 
     def test_potential_new_obs(self, obs_inf1, obs_not_inf):
         assert set(obs_inf1.potential_new_obs()) == set([
+            Obstruction(Perm((0,)), ((0, 0),)),
             Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
             Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
             Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
         ])
-        assert set(obs_not_inf.potential_new_obs()) == set([
-            Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-            Obstruction(Perm((0, 2, 1)), ((0, 0),)*3),
-            Obstruction(Perm((1, 0, 2)), ((0, 0),)*3),
-            Obstruction(Perm((1, 2, 0)), ((0, 0),)*3),
-            Obstruction(Perm((2, 0, 1)), ((0, 0),)*3),
-            Obstruction(Perm((2, 1, 0)), ((0, 0),)*3),
-        ])
+        print(obs_not_inf._tiling)
+        assert set(obs_not_inf.potential_new_obs()) == set([])
 
     def test_new_obs(self, obs_inf1, obs_not_inf):
         assert set(obs_inf1.new_obs()) == set([
