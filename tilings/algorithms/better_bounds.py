@@ -1,6 +1,5 @@
 from permuta import Perm
 
-
 better_bounds = {
     frozenset({Perm((0, 1)), Perm((1, 0))}): 1,
     frozenset({Perm((1, 0)), Perm((0, 1, 2))}): 1,
