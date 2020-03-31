@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 from heapq import heapify, heappop, heappush
 from itertools import chain, product
 from typing import TYPE_CHECKING, Dict, FrozenSet, Iterator, Set, Tuple
@@ -8,7 +8,7 @@ from tilings import GriddedPerm, Obstruction
 
 if TYPE_CHECKING:
     from tilings import Tiling
-    from typing import List, Set  # Only used in comments
+    from typing import DefaultDict, List  # Only used in comments
 
 
 Cell = Tuple[int, int]
@@ -39,7 +39,7 @@ class MinimalGriddedPerms():
         self.localised_patts = dict()  # Dict[GPTuple, GPTuple]
         self.max_cell_counts = dict()  # Dict[GPTuple, Dict[Cell, int]]
         self.upward_closures = dict()  # Dict[GPTuple, GPTuple]
-
+        self.known_patts = defaultdict(set)  # DefaultDict[GriddedPerm, Set[GriddedPerm]]
         # a priority queue sorted by length of the gridded perm. This is
         # ensured by overwriting the __lt__ operator in the Info class.
         heapify(self.queue)
@@ -98,29 +98,32 @@ class MinimalGriddedPerms():
             obs = self.get_relevant_obstructions_by_cell(gp, must_contain)
         return gp.avoids(*obs)
 
-    def satisfies_requirements(self, gp: GriddedPerm, known_patts: Set[GriddedPerm]) -> bool:
+    def satisfies_requirements(self, gp: GriddedPerm) -> bool:
         """Check if a gridded permutation contains all requirements."""
         reqs = self.get_relevant_requirements(gp)
-        # return all(reqs) and all(gp.contains(*req) for req in reqs)
-        return all(reqs) and all(MinimalGriddedPerms.check_containment_list_short_circuit(gp, req, known_patts) for req in reqs)
+        return (all(reqs) and all(self.contains(gp, *req) for req in reqs))
 
     def yielded_subgridded_perm(self, gp: GriddedPerm) -> bool:
         """Return True if a subgridded perm was yielded."""
         return gp.contains(*self.yielded, *self.initial_gps_to_auto_yield)
 
-    @staticmethod
-    def check_containment(gp: GriddedPerm, patt: GriddedPerm, known_patts: Set[GriddedPerm]) -> bool:
-        """Return True if gp contains patt, using a dict to remember"""
-        # if patt in known_patts:
-            # return True
-        if gp.contains(patt):
-            known_patts.add(patt)
-            return True
-        return False
+    def avoids(self, gp: GriddedPerm, *patts: GriddedPerm) -> bool:
+        """An avoidance check. See contains method."""
+        return not self.contains(gp, *patts)
 
-    @staticmethod
-    def check_containment_list_short_circuit(gp: GriddedPerm, req: GriddedPerm, known_patts: Set[GriddedPerm]) -> bool:
-        return any(patt in known_patts for patt in req) or any(MinimalGriddedPerms.check_containment(gp, patt, known_patts) for patt in req)
+    def contains(self, gp: GriddedPerm, *patts: GriddedPerm) -> bool:
+        """This is a an alternative containment check.
+        It will return True if any element of patts is contained in gp, and add
+        it to the known_patts. Only use this if it is worth caching, so in the
+        usage case, if the check is related to the target gps requirement."""
+        known_patts = self.known_patts[gp]
+        if any(patt in known_patts for patt in patts):
+            return True
+        for patt in patts:
+            if gp.contains(patt):
+                known_patts.add(patt)
+                return True
+        return False
 
     def prepare_queue(
                       self, yield_non_minimal: bool = False
@@ -133,11 +136,9 @@ class MinimalGriddedPerms():
             # gridded permutation together first
             initial_gp = self.initial_gp(*gps)
 
-            # EDIT: initial_gp.avoids(*self.get_relevant_obstructions(gps)):
-            known_patts = set()
             if self.satisfies_obstructions(initial_gp):
                 # We will now prepare to add it to the queue.
-                if self.satisfies_requirements(initial_gp, known_patts):
+                if self.satisfies_requirements(initial_gp):
                     if yield_non_minimal:
                         yield initial_gp
                     else:
@@ -162,7 +163,7 @@ class MinimalGriddedPerms():
                 # add all of this information the queue. The Info class ensures
                 # we sort by initial_gp only.
                 new_info = Info([initial_gp, tuple(gps), last_cell, localised,
-                                 mindices, known_patts])
+                                 mindices])
                 heappush(self.queue, new_info)
 
     def initial_gp(self, *gps: GriddedPerm) -> GriddedPerm:
@@ -305,19 +306,16 @@ class MinimalGriddedPerms():
                          gp: GriddedPerm,
                          gps: GPTuple,
                          last_cell: Cell,
-                         try_localised: bool,
-                         known_patts: Set[GriddedPerm]
+                         try_localised: bool
                         ) -> Iterator[Cell]:
         """Yield cells that a gridded permutation could be extended by."""
         cells = set()  # type: Set[Cell]
         for g, req in zip(gps, self.get_relevant_requirements(gp)):
-            # if gp.avoids(*req):
-            if not MinimalGriddedPerms.check_containment_list_short_circuit(gp, req, known_patts):
+            if not self.contains(gp, *req):
                 # Only insert into cells in the requirements that are not
                 # already satisfied.
                 cells.update(g.pos)
-            elif g not in req or gp.avoids(g):
-            # elif g not in req or not MinimalGriddedPerms.check_containment(gp, g, known_patts):
+            elif (g not in req or self.avoids(gp, g)):
                 # If any requirement contains a requirement, but not the target
                 # gridded perm from that requirement in gps, then inserting
                 # further will not result in a minimal gridded perm that will
@@ -345,15 +343,14 @@ class MinimalGriddedPerms():
                 # the gps restricted to smaller cells
                 elif cell > last_cell:
                     prior_reqs = self.get_requirements_up_to_cell(cell, gps)
-                    if all(gp.contains(req) for req in prior_reqs):
-                    # if all(MinimalGriddedPerms.check_containment(gp, req, known_patts) for req in prior_reqs):
+                    if all(self.contains(gp, req)
+                           for req in prior_reqs):
                         yield (cell, localised)
         if try_localised:
             for cell in cells:
                 # try to insert into a cell that doesn't contain all of the
                 # localised patterns frist
-                if gp.avoids(*self.get_localised_patts(cell, gps)):
-                if not MinimalGriddedPerms.check_containment_list_short_circuit(gp, self.get_localised_patts(cell, gps), known_patts):
+                if self.avoids(gp, *self.get_localised_patts(cell, gps)):
                     yield from try_yield([cell], True)
                     return
         # otherwise, we are none the wiser which cell to insert into so try
@@ -386,8 +383,8 @@ class MinimalGriddedPerms():
             # take the next gridded permutation of the queue, together with the
             # theoretical counts to create a gridded permutation containing
             # each of gps.
-            (gp, gps, last_cell,
-             still_localising, last_mindices, known_patts) = heappop(self.queue)
+            (gp, gps, last_cell, still_localising,
+             last_mindices) = heappop(self.queue)
             # if gp was one of the initial_gps that satisfied obs/reqs, but
             # we weren't sure at the time if it was minimal, then now is the
             # time to check and yield
@@ -401,7 +398,7 @@ class MinimalGriddedPerms():
                 continue
             # now we try inserting a new point into the cell
             for (cell, localised) in self.get_cells_to_try(gp, gps, last_cell,
-                                                           still_localising, known_patts):
+                                                           still_localising):
                 # Find the bounding box of where the point can be inserted.
                 mindex, maxdex, minval, maxval = gp.get_bounding_box(cell)
                 # We make sure we only insert to the right of where the last
@@ -418,12 +415,16 @@ class MinimalGriddedPerms():
                             not self.yielded_subgridded_perm(nextgp)):
                         # If it satisfies the requirements, then it is a
                         # a minimal gridded permutation
-                        if self.satisfies_requirements(nextgp, known_patts):
+                        if self.satisfies_requirements(nextgp):
                             # Keep track to ensure we don't yield a gridded
                             # perm containing it.
                             self.yielded.add(nextgp)
                             yield nextgp
                         else:
+                            # Update the nextgp about the patterns that are
+                            # contained in the subgridded permutation gp.
+                            self.known_patts[nextgp].update(
+                                                        self.known_patts[gp])
                             # The `localised` bool tells us if we inserted into
                             # a cell as it didn't contain the patterns in the
                             # cell. If not, then we update the last cell, to
@@ -432,6 +433,7 @@ class MinimalGriddedPerms():
                             # The work_packets_done is used to ensure the same
                             # task is not added to the queue twice.
                             key = (nextgp, gps, next_cell)
+
                             if key not in self.work_packets_done:
                                 # Update the minimum index that we inserted a
                                 # a point into each cell.
@@ -444,4 +446,4 @@ class MinimalGriddedPerms():
                                 # Add the work to the queue
                                 heappush(self.queue,
                                          Info([nextgp, gps, next_cell,
-                                               localised, next_mindices, set(known_patts)]))
+                                               localised, next_mindices]))
