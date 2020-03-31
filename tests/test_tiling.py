@@ -1470,7 +1470,7 @@ def test_empty_cell_inferral():
     ], requirements=[[
         Requirement(Perm((0, 1)), ((1, 0), (2, 0)))
     ]])
-    assert t.emtpy_cell_inferral() == Tiling(obstructions=[
+    assert t.empty_cell_inferral() == Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
         Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
         Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
