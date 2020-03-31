@@ -5,8 +5,8 @@ from .enumeration import (BasicEnumeration, DatabaseEnumeration,
 from .factor import (Factor, FactorWithInterleaving,
                      FactorWithMonotoneInterleaving)
 from .fusion import ComponentFusion, Fusion
-from .minimal_gridded_perms import MinimalGriddedPerms
 from .gridded_perm_generation import GriddedPermsOnTiling
+from .minimal_gridded_perms import MinimalGriddedPerms
 from .obstruction_inferral import (AllObstructionInferral, EmptyCellInferral,
                                    SubobstructionInferral)
 from .obstruction_transitivity import ObstructionTransitivity
