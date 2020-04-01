@@ -417,15 +417,15 @@ class MinimalGriddedPerms():
                     key = (nextgp, gps, next_cell)
                     if key not in self.work_packets_done:
                         self.work_packets_done.add(key)
-                        # Update the nextgp about the patterns that are
-                        # contained in the subgridded permutation gp.
-                        self.known_patts[nextgp].update(self.known_patts[gp])
                         # Only work with gridded permutations avoiding the
                         # obstructions, and those which we haven't yielded a
                         # subgridded permutation.
                         if (self.satisfies_obstructions(nextgp,
                                                         must_contain=cell) and
                                 not self.yielded_subgridded_perm(nextgp)):
+                            # Update the nextgp about the patterns that are
+                            # contained in the subgridded permutation gp.
+                            self.known_patts[nextgp].update(self.known_patts[gp])
                             # If it satisfies the requirements, then it is a
                             # a minimal gridded permutation
                             if self.satisfies_requirements(nextgp):
