@@ -399,6 +399,11 @@ class MinimalGriddedPerms():
             # now we try inserting a new point into the cell
             for (cell, localised) in self.get_cells_to_try(gp, gps, last_cell,
                                                            still_localising):
+                # The `localised` bool tells us if we inserted into
+                # a cell as it didn't contain the patterns in the
+                # cell. If not, then we update the last cell, to
+                # ensure we only insert into greater or equal cells
+                next_cell = last_cell if localised else cell
                 # Find the bounding box of where the point can be inserted.
                 mindex, maxdex, minval, maxval = gp.get_bounding_box(cell)
                 # We make sure we only insert to the right of where the last
@@ -407,34 +412,28 @@ class MinimalGriddedPerms():
                 for idx, val in product(range(maxdex, mindex - 1, -1),
                                         range(minval, maxval + 1)):
                     nextgp = gp.insert_specific_point(cell, idx, val)
-                    # Only work with gridded permutations avoiding the
-                    # obstructions, and those which we haven't yielded a
-                    # subgridded permutation.
-                    if (self.satisfies_obstructions(nextgp,
-                                                    must_contain=cell) and
-                            not self.yielded_subgridded_perm(nextgp)):
-                        # If it satisfies the requirements, then it is a
-                        # a minimal gridded permutation
-                        if self.satisfies_requirements(nextgp):
-                            # Keep track to ensure we don't yield a gridded
-                            # perm containing it.
-                            self.yielded.add(nextgp)
-                            yield nextgp
-                        else:
+                    # The work_packets_done is used to ensure the same
+                    # task is not processed twice.
+                    key = (nextgp, gps, next_cell)
+                    if key not in self.work_packets_done:
+                        self.work_packets_done.add(key)
+                        # Only work with gridded permutations avoiding the
+                        # obstructions, and those which we haven't yielded a
+                        # subgridded permutation.
+                        if (self.satisfies_obstructions(nextgp,
+                                                        must_contain=cell) and
+                                not self.yielded_subgridded_perm(nextgp)):
                             # Update the nextgp about the patterns that are
                             # contained in the subgridded permutation gp.
-                            self.known_patts[nextgp].update(
-                                                        self.known_patts[gp])
-                            # The `localised` bool tells us if we inserted into
-                            # a cell as it didn't contain the patterns in the
-                            # cell. If not, then we update the last cell, to
-                            # ensure we only insert into greater or equal cells
-                            next_cell = last_cell if localised else cell
-                            # The work_packets_done is used to ensure the same
-                            # task is not added to the queue twice.
-                            key = (nextgp, gps, next_cell)
-
-                            if key not in self.work_packets_done:
+                            self.known_patts[nextgp].update(self.known_patts[gp])
+                            # If it satisfies the requirements, then it is a
+                            # a minimal gridded permutation
+                            if self.satisfies_requirements(nextgp):
+                                # Keep track to ensure we don't yield a gridded
+                                # perm containing it.
+                                self.yielded.add(nextgp)
+                                yield nextgp
+                            else:
                                 # Update the minimum index that we inserted a
                                 # a point into each cell.
                                 next_mindices = {
@@ -442,7 +441,6 @@ class MinimalGriddedPerms():
                                         for c, i in last_mindices.items()
                                         if c != cell}
                                 next_mindices[cell] = idx + 1
-                                self.work_packets_done.add(key)
                                 # Add the work to the queue
                                 heappush(self.queue,
                                          Info([nextgp, gps, next_cell,
