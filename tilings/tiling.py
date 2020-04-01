@@ -936,7 +936,7 @@ class Tiling(CombinatorialClass):
         The gridded permutations are up to length of the longest minimum
         gridded permutations that is griddable on the tiling.
         """
-        return GriddedPermsOnTiling(self, maxlen=maxlen)
+        yield from GriddedPermsOnTiling(self, maxlen=maxlen)
 
     def merge(self) -> 'Tiling':
         """Return an equivalent tiling with a single requirement list."""
