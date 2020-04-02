@@ -28,16 +28,26 @@ class MinimalGriddedPerms():
         self.obstructions = tiling.obstructions
         self.requirements = tiling.requirements
         self.queue = []  # type: List[Info]
-        self.relevant_obstructions = dict()  # Dict[FrozenSet[Cell], GPTuple]
-        self.relevant_requirements = dict()  # Dict[FrozenSet[Cell], Reqs]
-        self.relevant_obstructions_by_cell = dict()  # Dict[Tuple[Cell, FrozenSet[Cell]], GPTuple]
-        self.requirements_up_to_cell = dict()  # Dict[Tuple[Cell, FrozenSet[Cell]], GPTuple]
+        self.relevant_obstructions = (
+            dict()
+          )  # type: Dict[FrozenSet[Cell], GPTuple]
+        self.relevant_requirements = (
+            dict()
+          )  # type: Dict[FrozenSet[Cell], Reqs]
+        self.relevant_obstructions_by_cell = (
+            dict()
+          )  # type: Dict[Tuple[Cell, FrozenSet[Cell]], GPTuple]
+        self.requirements_up_to_cell = (
+            dict()
+          )  # type: Dict[Tuple[Cell, FrozenSet[Cell]], GPTuple]
         # Delay computing until needed - these could all be stored on
         # MinimalGriddedPerms, as none of these are tiling specific.
-        self.localised_patts = dict()  # Dict[GPTuple, GPTuple]
-        self.max_cell_counts = dict()  # Dict[GPTuple, Dict[Cell, int]]
-        self.upward_closures = dict()  # Dict[GPTuple, GPTuple]
-        self.known_patts = defaultdict(set)  # DefaultDict[GriddedPerm, Set[GriddedPerm]]
+        self.localised_patts = dict()  # type: Dict[GPTuple, GPTuple]
+        self.max_cell_counts = dict()  # type: Dict[GPTuple, Dict[Cell, int]]
+        self.upward_closures = dict()  # type: Dict[GPTuple, GPTuple]
+        self.known_patts = (
+            defaultdict(set)
+          )  # DefaultDict[GriddedPerm, Set[GriddedPerm]]
         # a priority queue sorted by length of the gridded perm. This is
         # ensured by overwriting the __lt__ operator in the Info class.
         heapify(self.queue)
@@ -128,7 +138,6 @@ class MinimalGriddedPerms():
             # try to stitch together as much of the independent cells of the
             # gridded permutation together first
             initial_gp = self.initial_gp(*gps)
-
             if self.satisfies_obstructions(initial_gp):
                 # We will now prepare to add it to the queue.
                 if self.satisfies_requirements(initial_gp):
@@ -137,7 +146,7 @@ class MinimalGriddedPerms():
                 # will be used to guide us in choosing smartly which cells to
                 # insert into - see the 'get_cells_to_try' method.
                 # mindices ensure we insert left to right in each cell
-                mindices = dict()
+                mindices = dict()  # Dict[Cell, int]
                 # last_cell ensures that we insert into cells in order after
                 # we have satisfied the local patterns needed
                 last_cell = (-1, -1)
@@ -291,7 +300,7 @@ class MinimalGriddedPerms():
                           gps: GPTuple,
                           last_cell: Cell,
                           try_localised: bool
-                         ) -> Iterator[Cell]:
+                         ) -> Iterator[Tuple[Cell, bool]]:
         """Yield cells that a gridded permutation could be extended by."""
         cells = set()  # type: Set[Cell]
         for g, req in zip(gps, self.get_relevant_requirements(gp)):
@@ -341,7 +350,8 @@ class MinimalGriddedPerms():
         # all possible cells
         yield from try_yield(cells, False)
 
-    def insert_point(self, gp: GriddedPerm, cell: Cell, minimumdex: int
+    @staticmethod
+    def insert_point(gp: GriddedPerm, cell: Cell, minimumdex: int
                     ) -> Iterator[Tuple[int, GriddedPerm]]:
         """Yield all possible gridded perms where a point is inserted into
         the given cell, where the minimum index is mindex if given. We insert
