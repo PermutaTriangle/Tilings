@@ -6,15 +6,14 @@ from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, UnionFind
 
 
-class GriddedPerm():
+class GriddedPerm:
     # TODO: Intersection of griddedperms
     def __init__(self, pattern, positions):
         # TODO: Write check to verify gridded permutation makes sense, that is,
         #       pattern can be mapped on the positions given.
 
         if not isinstance(pattern, Perm):
-            raise ValueError(
-                "Variable 'pattern' should be an instance of permuta.Perm")
+            raise ValueError("Variable 'pattern' should be an instance of permuta.Perm")
         if not pattern:
             self._patt = pattern
             self._pos = tuple(positions)
@@ -29,8 +28,7 @@ class GriddedPerm():
             self._pos = tuple(positions)
 
             if len(self._patt) != len(self._pos):
-                raise ValueError(("Pattern and position list have unequal"
-                                  "lengths."))
+                raise ValueError(("Pattern and position list have unequal" "lengths."))
 
             # Immutable set of cells which the gridded permutation spans.
             self._cells = frozenset(self._pos)
@@ -63,11 +61,9 @@ class GriddedPerm():
             for j in range(i + 1, len(self)):
                 if self.pos[i][0] > self.pos[j][0]:
                     return True
-                if (self.patt[i] < self.patt[j] and
-                        self.pos[i][1] > self.pos[j][1]):
+                if self.patt[i] < self.patt[j] and self.pos[i][1] > self.pos[j][1]:
                     return True
-                if (self.patt[i] > self.patt[j] and
-                        self.pos[i][1] < self.pos[j][1]):
+                if self.patt[i] > self.patt[j] and self.pos[i][1] < self.pos[j][1]:
                     return True
         return False
 
@@ -83,14 +79,13 @@ class GriddedPerm():
         """Checks if self occurs in other."""
         return any(self.occurrences_in(other))
 
-    def avoids(self, *patts: 'GriddedPerm') -> bool:
+    def avoids(self, *patts: "GriddedPerm") -> bool:
         """Return true if self avoids all of the patts."""
         return not self.contains(*patts)
 
-    def contains(self, *patts: 'GriddedPerm') -> bool:
+    def contains(self, *patts: "GriddedPerm") -> bool:
         """Return true if self contains an occurrence of any of patts."""
-        return any(any(True for _ in patt.occurrences_in(self))
-                   for patt in patts)
+        return any(any(True for _ in patt.occurrences_in(self)) for patt in patts)
 
     def remove_cells(self, cells):
         """Remove any points in the cell given and return a new gridded
@@ -98,7 +93,8 @@ class GriddedPerm():
         remaining = [i for i in range(len(self)) if self._pos[i] not in cells]
         return self.__class__(
             Perm.to_standard(self._patt[i] for i in remaining),
-            (self._pos[i] for i in remaining))
+            (self._pos[i] for i in remaining),
+        )
 
     def points_in_cell(self, cell):
         """Yields the indices of the points in the cell given."""
@@ -114,8 +110,10 @@ class GriddedPerm():
             for j in range(len(self)):
                 if i == j:
                     continue
-                if (self._pos[i][0] == self._pos[j][0] or
-                        self._pos[i][1] == self._pos[j][1]):
+                if (
+                    self._pos[i][0] == self._pos[j][0]
+                    or self._pos[i][1] == self._pos[j][1]
+                ):
                     isolated = False
                     break
             if isolated:
@@ -127,8 +125,13 @@ class GriddedPerm():
         for i in range(len(self)):
             if i in indices:
                 continue
-            if any((self._pos[i][0] == self._pos[j][0] or
-                    self._pos[i][1] == self._pos[j][1]) for j in indices):
+            if any(
+                (
+                    self._pos[i][0] == self._pos[j][0]
+                    or self._pos[i][1] == self._pos[j][1]
+                )
+                for j in indices
+            ):
                 return False
         return True
 
@@ -180,9 +183,11 @@ class GriddedPerm():
     def get_subperm_left_col(self, col):
         """Returns the gridded subpermutation of points left of column col."""
         return self.__class__(
-            Perm.to_standard(self.patt[i] for i in range(len(self))
-                             if self.pos[i][0] < col),
-            (self.pos[i] for i in range(len(self)) if self.pos[i][0] < col))
+            Perm.to_standard(
+                self.patt[i] for i in range(len(self)) if self.pos[i][0] < col
+            ),
+            (self.pos[i] for i in range(len(self)) if self.pos[i][0] < col),
+        )
 
     def get_points_right_col(self, col):
         """Yields all points of the gridded permutation right of column col."""
@@ -190,8 +195,7 @@ class GriddedPerm():
             if self._pos[i][0] > col:
                 yield (i, self._patt[i])
 
-    def get_gridded_perm_at_indices(self,
-                                    indices: Iterable[int]) -> 'GriddedPerm':
+    def get_gridded_perm_at_indices(self, indices: Iterable[int]) -> "GriddedPerm":
         """
         Returns the subgridded perm that contains only the point at the given
         indices.
@@ -200,14 +204,17 @@ class GriddedPerm():
         """
         return self.__class__(
             Perm.to_standard(self.patt[i] for i in indices),
-            (self.pos[i] for i in indices))
+            (self.pos[i] for i in indices),
+        )
 
     def get_gridded_perm_in_cells(self, cells):
         """Returns the subgridded permutation of points in cells."""
         return self.__class__(
-            Perm.to_standard(self.patt[i] for i in range(len(self))
-                             if self.pos[i] in cells),
-            (self.pos[i] for i in range(len(self)) if self.pos[i] in cells))
+            Perm.to_standard(
+                self.patt[i] for i in range(len(self)) if self.pos[i] in cells
+            ),
+            (self.pos[i] for i in range(len(self)) if self.pos[i] in cells),
+        )
 
     def get_bounding_box(self, cell):
         """Determines the indices and values of the gridded permutation in
@@ -250,19 +257,19 @@ class GriddedPerm():
         Yields all gridded perms where the point has been mixed into the points
         in the cell."""
         mindex, maxdex, minval, maxval = self.get_bounding_box(cell)
-        for idx, val in product(range(mindex, maxdex + 1),
-                                range(minval, maxval + 1)):
+        for idx, val in product(range(mindex, maxdex + 1), range(minval, maxval + 1)):
             yield self.insert_specific_point(cell, idx, val)
 
     def insert_specific_point(self, cell, idx, val):
         """Insert a point in the given cell with the given idx and val."""
-        return self.__class__(self._patt.insert(idx, val),
-                              self._pos[:idx] + (cell,) + self._pos[idx:])
+        return self.__class__(
+            self._patt.insert(idx, val), self._pos[:idx] + (cell,) + self._pos[idx:]
+        )
 
     def remove_point(self, index):
         """Remove the point at index from the gridded permutation."""
-        patt = Perm.to_standard(self.patt[:index] + self.patt[index + 1:])
-        pos = self.pos[:index] + self.pos[index + 1:]
+        patt = Perm.to_standard(self.patt[:index] + self.patt[index + 1 :])
+        pos = self.pos[:index] + self.pos[index + 1 :]
         return self.__class__(patt, pos)
 
     def all_subperms(self, proper=True):
@@ -271,13 +278,13 @@ class GriddedPerm():
             for subidx in combinations(range(len(self)), r):
                 yield self.__class__(
                     Perm.to_standard(self._patt[i] for i in subidx),
-                    (self._pos[i] for i in subidx))
+                    (self._pos[i] for i in subidx),
+                )
 
     def minimize(self, cell_mapping):
         """Map the coordinates to a new list of coordinates according to the
         cell_mapping given."""
-        return self.__class__(self._patt,
-                              [cell_mapping(cell) for cell in self._pos])
+        return self.__class__(self._patt, [cell_mapping(cell) for cell in self._pos])
 
     def is_point_perm(self):
         """Checks if the gridded permutation is of length 1."""
@@ -326,7 +333,7 @@ class GriddedPerm():
         and columns."""
         uf = UnionFind(len(self.pos))
         for i in range(len(self.pos)):
-            for j in range(i+1, len(self.pos)):
+            for j in range(i + 1, len(self.pos)):
                 c1, c2 = self.pos[i], self.pos[j]
                 if c1[0] == c2[0] or c1[1] == c2[1]:
                     uf.unite(i, j)
@@ -339,8 +346,7 @@ class GriddedPerm():
             else:
                 all_factors[x] = [cell]
         factor_cells = list(set(cells) for cells in all_factors.values())
-        return [self.get_gridded_perm_in_cells(comp)
-                for comp in factor_cells]
+        return [self.get_gridded_perm_in_cells(comp) for comp in factor_cells]
 
     def compress(self):
         """Compresses the gridded permutation into a list of integers.
@@ -355,8 +361,8 @@ class GriddedPerm():
         """Decompresses a list of integers in the form outputted by the
         compress method and constructs an Obstruction."""
         n = len(array)
-        patt = Perm(array[i] for i in range(n//3))
-        pos = zip(array[n//3::2], array[n//3+1::2])
+        patt = Perm(array[i] for i in range(n // 3))
+        pos = zip(array[n // 3 :: 2], array[n // 3 + 1 :: 2])
         return cls(patt, pos)
 
     # Symmetries
@@ -364,14 +370,14 @@ class GriddedPerm():
         """
         Reverses the tiling within its boundary. Every cell and obstruction
         gets flipped over the vertical middle axis."""
-        return self.__class__(self._patt.reverse(),
-                              reversed(list(map(transf, self._pos))))
+        return self.__class__(
+            self._patt.reverse(), reversed(list(map(transf, self._pos)))
+        )
 
     def complement(self, transf):
         """ -
         Flip over the horizontal axis.  """
-        return self.__class__(self._patt.complement(),
-                              map(transf, self._pos))
+        return self.__class__(self._patt.complement(), map(transf, self._pos))
 
     def inverse(self, transf):
         """ /
@@ -395,21 +401,23 @@ class GriddedPerm():
 
     def rotate180(self, transf):
         """Rotate 180 degrees"""
-        return self.__class__(self._patt.rotate(2),
-                              reversed(list(map(transf, self._pos))))
+        return self.__class__(
+            self._patt.rotate(2), reversed(list(map(transf, self._pos)))
+        )
 
     def rotate90(self, transf):
         """Rotate 90 degrees"""
         return self.__class__(
             self._patt.rotate_right(),
-            map(transf, self._patt.inverse().apply(self._pos)))
+            map(transf, self._patt.inverse().apply(self._pos)),
+        )
 
     def to_jsonable(self):
         """Returns a dictionary object which is JSON serializable representing
         a GriddedPerm."""
         output = dict()
-        output['patt'] = self._patt
-        output['pos'] = self._pos
+        output["patt"] = self._patt
+        output["pos"] = self._pos
         return output
 
     @classmethod
@@ -422,7 +430,7 @@ class GriddedPerm():
     def from_dict(cls, jsondict):
         """Returns a GriddedPerm object from a dictionary loaded from a JSON
         serialized GriddedPerm object."""
-        return cls(Perm(jsondict['patt']), map(tuple, jsondict['pos']))
+        return cls(Perm(jsondict["patt"]), map(tuple, jsondict["pos"]))
 
     @property
     def patt(self):
@@ -436,12 +444,10 @@ class GriddedPerm():
         return len(self._patt)
 
     def __repr__(self):
-        return "{}({}, {})".format(self.__class__.__name__,
-                                   repr(self._patt), self._pos)
+        return "{}({}, {})".format(self.__class__.__name__, repr(self._patt), self._pos)
 
     def __str__(self):
-        return "{}: {}".format(str(self._patt), ", ".join(str(c)
-                                                          for c in self.pos))
+        return "{}: {}".format(str(self._patt), ", ".join(str(c) for c in self.pos))
 
     def __hash__(self):
         return hash(self._patt) ^ hash(self._pos)

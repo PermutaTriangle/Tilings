@@ -13,7 +13,7 @@ from itertools import combinations, product
 from comb_spec_searcher import InferralRule
 
 
-class Graph():
+class Graph:
     """
     A weighted directed graph implemented with an adjacency matrix.
 
@@ -133,8 +133,7 @@ class Graph():
         # pylint: disable=protected-access
         for e in edges:
             new_graph = Graph.__new__(Graph)
-            new_graph._vertex_labels = [vl.copy()
-                                        for vl in self._vertex_labels]
+            new_graph._vertex_labels = [vl.copy() for vl in self._vertex_labels]
             new_graph._vertex_weights = self._vertex_weights.copy()
             new_graph._matrix = [row.copy() for row in self._matrix]
             new_graph._matrix[e[0]][e[1]] = 0
@@ -154,9 +153,7 @@ class Graph():
         assert self._reduced, "Graph must first be reduced"
         assert self.is_acyclic(), "Graph must be acyclic"
         vert_num_parent = [row.count(0) for row in self._matrix]
-        return [
-            p[1] for p in sorted(zip(vert_num_parent, self._vertex_labels))
-        ]
+        return [p[1] for p in sorted(zip(vert_num_parent, self._vertex_labels))]
 
     def _add_matrix_rows(self, row1_idx, row2_idx):
         """
@@ -211,8 +208,10 @@ class Graph():
         Return the edges of a length 3 cycle containing the three vertices if
         such a cycle exist. Otherwise return None
         """
+
         def is_cycle(edges):
             return all(self._is_edge(*e) for e in edges)
+
         orientation1 = ((v1, v2), (v2, v3), (v3, v1))
         if is_cycle(orientation1):
             return orientation1
@@ -221,10 +220,10 @@ class Graph():
             return orientation2
 
     def __repr__(self):
-        s = 'Graph over the vertices {}\n'.format(self._vertex_labels)
-        s += 'Vertex weight is {}\n'.format(self._vertex_weights)
+        s = "Graph over the vertices {}\n".format(self._vertex_labels)
+        s += "Vertex weight is {}\n".format(self._vertex_weights)
         for row in self._matrix:
-            s += '{}\n'.format(row)
+            s += "{}\n".format(row)
         return s
 
     def __lt__(self, other):
@@ -242,10 +241,11 @@ class Graph():
         return self.num_vertices >= other.num_vertices
 
 
-class _RowColSeparationSingleApplication():
+class _RowColSeparationSingleApplication:
     """
     Make the row separation of the tiling.
     """
+
     def __init__(self, tiling):
         self._tiling = tiling
         self._active_cells = tuple(sorted(tiling.active_cells))
@@ -332,8 +332,11 @@ class _RowColSeparationSingleApplication():
             return self._ineq_matrices
         row_m = self._basic_matrix(row=True)
         col_m = self._basic_matrix(row=False)
-        filtered_obs = (ob for ob in self._tiling.obstructions
-                        if len(ob) == 2 and not ob.is_single_cell())
+        filtered_obs = (
+            ob
+            for ob in self._tiling.obstructions
+            if len(ob) == 2 and not ob.is_single_cell()
+        )
         for ob in filtered_obs:
             c1, c2 = ob.pos
             if c1[1] == c2[1]:
@@ -471,7 +474,7 @@ class _RowColSeparationSingleApplication():
             yield self._separates_tiling(row_order, col_order)
 
 
-class RowColSeparation():
+class RowColSeparation:
     """
     This is basically a simple wrapper around
     `_RowColSeparationSingleApplication` to ensure the separation is
@@ -479,6 +482,7 @@ class RowColSeparation():
 
     It applies the row columns separation until it does not change the tiling.
     """
+
     def __init__(self, tiling):
         self._tiling = tiling
         self._separated_tilings = []
@@ -509,9 +513,9 @@ class RowColSeparation():
         """
         Returns a string describing the operation that was performed.
         """
-        s = 'Row and column separation'
+        s = "Row and column separation"
         if len(self._separated_tilings) > 1:
-            s += ' ({} times)'.format(len(self._separated_tilings))
+            s += " ({} times)".format(len(self._separated_tilings))
         return s
 
     def rule(self):

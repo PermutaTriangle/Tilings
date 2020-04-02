@@ -6,7 +6,10 @@ from comb_spec_searcher import Rule
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
 from tilings.algorithms.row_col_separation import (
-    Graph, RowColSeparation, _RowColSeparationSingleApplication)
+    Graph,
+    RowColSeparation,
+    _RowColSeparationSingleApplication,
+)
 
 # ----------------------------------------------------------------------------
 #           Test for the Graph class
@@ -20,11 +23,13 @@ def matrix():
 
 @pytest.fixture
 def matrix2():
-    m = [[0, 1, 0, 1, 0],
-         [0, 0, 0, 0, 0],
-         [0, 0, 0, 1, 0],
-         [0, 0, 0, 1, 0],
-         [0, 0, 0, 0, 0]]
+    m = [
+        [0, 1, 0, 1, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0],
+        [0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0],
+    ]
     return m
 
 
@@ -42,19 +47,14 @@ def graph1(matrix2):
 
 @pytest.fixture
 def graph2():
-    m = [[0, 0, 1, 0],
-         [1, 0, 1, 1],
-         [1, 0, 0, 1],
-         [0, 0, 1, 0]]
+    m = [[0, 0, 1, 0], [1, 0, 1, 1], [1, 0, 0, 1], [0, 0, 1, 0]]
     g = Graph(range(4), matrix=m)
     return g
 
 
 @pytest.fixture
 def graph3():
-    m = [[0, 1, 1],
-         [0, 0, 0],
-         [0, 0, 0]]
+    m = [[0, 1, 1], [0, 0, 0], [0, 0, 0]]
     g = Graph(range(3), matrix=m)
     return g
 
@@ -65,9 +65,9 @@ def empty_graph():
 
 
 def test_init_graph(matrix2):
-    G = Graph('abcde', matrix=matrix2)
+    G = Graph("abcde", matrix=matrix2)
     assert G._matrix == matrix2
-    assert G._vertex_labels == [set(c) for c in 'abcde']
+    assert G._vertex_labels == [set(c) for c in "abcde"]
     assert G._vertex_weights == [1 for _ in range(5)]
     assert not G._reduced
     assert not G._is_acyclic
@@ -112,30 +112,30 @@ def test_merge_vertices(graph1, graph2):
     assert graph1.num_vertices == 4
     assert graph1._vertex_labels == [{0}, {1}, {2, 4}, {3}]
     assert graph1._vertex_weights == [1, 1, 2, 1]
-    assert (graph1._matrix == [
+    assert graph1._matrix == [
         [0, 1, 0, 1],
         [0, 0, 0, 0],
         [0, 0, 0, 0],
         [0, 0, 0, 1],
-    ])
+    ]
     graph1._merge_vertices(0, 2)
     assert graph1.num_vertices == 3
     assert graph1._vertex_labels == [{0, 2, 4}, {1}, {3}]
     assert graph1._vertex_weights == [3, 1, 1]
-    assert (graph1._matrix == [
+    assert graph1._matrix == [
         [0, 0, 0],
         [0, 0, 0],
         [0, 0, 1],
-    ])
+    ]
     graph2._merge_vertices(0, 3)
     assert graph2.num_vertices == 3
     assert graph2._vertex_labels == [{0, 3}, {1}, {2}]
     assert graph2._vertex_weights == [2, 1, 1]
-    assert (graph2._matrix == [
+    assert graph2._matrix == [
         [0, 0, 2],
         [2, 0, 1],
         [2, 0, 0],
-    ])
+    ]
 
 
 def test_delete_edge_if_smaller(graph_with_matrix):
@@ -151,11 +151,11 @@ def test_delete_edge_if_smaller(graph_with_matrix):
 def test_trim_edges(graph_with_matrix):
     graph_with_matrix._vertex_weights[1] = 3
     graph_with_matrix._trim_edges(1)
-    assert (graph_with_matrix._matrix == [
+    assert graph_with_matrix._matrix == [
         [1, 0, 3],
         [4, 0, 6],
         [7, 8, 9],
-    ])
+    ]
 
 
 def test_find_non_edges(graph2, empty_graph):
@@ -186,8 +186,7 @@ def test_is_acyclic(graph1, graph2, graph3, empty_graph):
     assert graph3.is_acyclic()
     empty_graph.reduce()
     assert empty_graph.is_acyclic()
-    g = Graph(range(4), [[0, 0, 1, 1], [1, 0, 0, 1],
-                         [0, 1, 0, 1], [0, 0, 0, 0]])
+    g = Graph(range(4), [[0, 0, 1, 1], [1, 0, 0, 1], [0, 1, 0, 1], [0, 0, 0, 0]])
     g.reduce()
     assert not g.is_acyclic()
 
@@ -226,8 +225,7 @@ def test_break_cycle_in_all_ways(graph2):
 
 
 def test_length3_cycle():
-    g = Graph([1, 2, 3, 4], [[0, 1, 0, 0], [0, 0, 1, 0],
-                             [1, 0, 0, 0], [1, 1, 1, 0]])
+    g = Graph([1, 2, 3, 4], [[0, 1, 0, 0], [0, 0, 1, 0], [1, 0, 0, 0], [1, 1, 1, 0]])
     cycle = set([(0, 1), (1, 2), (2, 0)])
     assert set(g._length3_cycle(0, 1, 2)) == cycle
     assert set(g._length3_cycle(0, 2, 1)) == cycle
@@ -257,6 +255,7 @@ def test_le(graph2, graph3):
     assert graph2 < graph3
     assert graph2 <= graph3
 
+
 # ----------------------------------------------------------------------------
 #           Test for the _RowColSeparationSingleApplication class
 # ----------------------------------------------------------------------------
@@ -264,124 +263,142 @@ def test_le(graph2, graph3):
 
 @pytest.fixture
 def not_separable_tilings():
-    t1 = Tiling(obstructions=[
-        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
-        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (2, 0)))
-    ])
-    t2 = Tiling(obstructions=[
-        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((3, 0),)*3),
-        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
-    ])
-    t3 = Tiling(obstructions=[
-        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((3, 0),)*3),
-        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (3, 0))),
-        Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
-    ])
-    t4 = Tiling(obstructions=(
-        Obstruction(Perm((0,)), ((1, 1),)),
-        Obstruction(Perm((0,)), ((1, 2),)),
-        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
-        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-        Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
-        Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
-        Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-        Obstruction(Perm((1, 0)), ((0, 2), (0, 0))),
-    ), requirements=((Requirement(Perm((0,)), ((0, 1),)),),))
+    t1 = Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((1, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((2, 0),) * 3),
+            Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+            Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
+        ]
+    )
+    t2 = Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((1, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((2, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((3, 0),) * 3),
+            Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+            Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
+            Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
+            Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
+        ]
+    )
+    t3 = Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((1, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((2, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((3, 0),) * 3),
+            Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
+            Obstruction(Perm((0, 1)), ((0, 0), (3, 0))),
+            Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
+            Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
+        ]
+    )
+    t4 = Tiling(
+        obstructions=(
+            Obstruction(Perm((0,)), ((1, 1),)),
+            Obstruction(Perm((0,)), ((1, 2),)),
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+            Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+            Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
+            Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
+            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+            Obstruction(Perm((1, 0)), ((0, 2), (0, 0))),
+        ),
+        requirements=((Requirement(Perm((0,)), ((0, 1),)),),),
+    )
     return [t1, t2, t3, t4]
 
 
 @pytest.fixture
 def separable_tiling1():
-    t1 = Tiling(obstructions=[
-        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
-        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
-    ])
+    t1 = Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((1, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((2, 0),) * 3),
+            Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+            Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
+            Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
+        ]
+    )
     return t1
 
 
 @pytest.fixture
 def separable_tiling2():
-    t2 = Tiling(obstructions=[
-        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((3, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((0, 1),)*3),
-        Obstruction(Perm((0, 1, 2)), ((1, 1),)*3),
-        Obstruction(Perm((0, 1, 2)), ((2, 1),)*3),
-        Obstruction(Perm((0,)), ((3, 1),)),
-        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
-        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (3, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
-        Obstruction(Perm((0, 1)), ((0, 1), (1, 1))),
-        Obstruction(Perm((0, 1)), ((0, 1), (2, 1))),
-        Obstruction(Perm((0, 1)), ((0, 1), (3, 1))),
-        Obstruction(Perm((0, 1)), ((1, 1), (2, 1))),
-        Obstruction(Perm((0, 1)), ((2, 1), (3, 1))),
-    ])
+    t2 = Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((1, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((2, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((3, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((0, 1),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((1, 1),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((2, 1),) * 3),
+            Obstruction(Perm((0,)), ((3, 1),)),
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+            Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+            Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
+            Obstruction(Perm((0, 1)), ((0, 0), (3, 0))),
+            Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
+            Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
+            Obstruction(Perm((0, 1)), ((0, 1), (1, 1))),
+            Obstruction(Perm((0, 1)), ((0, 1), (2, 1))),
+            Obstruction(Perm((0, 1)), ((0, 1), (3, 1))),
+            Obstruction(Perm((0, 1)), ((1, 1), (2, 1))),
+            Obstruction(Perm((0, 1)), ((2, 1), (3, 1))),
+        ]
+    )
     return t2
 
 
 @pytest.fixture
 def separable_tiling3():
-    t3 = Tiling(obstructions=[
-        Obstruction(Perm((0, 1, 2)), ((0, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((1, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((2, 0),)*3),
-        Obstruction(Perm((0, 1, 2)), ((3, 0),)*3),
-        Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (3, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
-    ])
+    t3 = Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((1, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((2, 0),) * 3),
+            Obstruction(Perm((0, 1, 2)), ((3, 0),) * 3),
+            Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
+            Obstruction(Perm((0, 1)), ((0, 0), (3, 0))),
+            Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
+            Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
+        ]
+    )
     return t3
 
 
 @pytest.fixture
 def separable_tiling4():
-    return Tiling(obstructions=(
-        Obstruction(Perm((0,)), ((1, 1),)),
-        Obstruction(Perm((0,)), ((1, 2),)),
-        Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
-        Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-        Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
-        Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
-        Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-        Obstruction(Perm((1, 0)), ((0, 2), (0, 0))),
-        Obstruction(Perm((0, 1)), ((0, 0), (0, 2))),
-    ), requirements=((Requirement(Perm((0,)), ((0, 1),)),),))
+    return Tiling(
+        obstructions=(
+            Obstruction(Perm((0,)), ((1, 1),)),
+            Obstruction(Perm((0,)), ((1, 2),)),
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
+            Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+            Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
+            Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
+            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+            Obstruction(Perm((1, 0)), ((0, 2), (0, 0))),
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 2))),
+        ),
+        requirements=((Requirement(Perm((0,)), ((0, 1),)),),),
+    )
 
 
 def assert_matrix_entry_is(rcs, matrix, cell1, cell2, value):
     i1 = rcs.cell_idx(cell1)
     i2 = rcs.cell_idx(cell2)
     if matrix[i1][i2] != value:
-        m = "Value matrix[{}][{}] is {}, not {}".format(cell1, cell2,
-                                                        matrix[i1][i2],
-                                                        value)
+        m = "Value matrix[{}][{}] is {}, not {}".format(
+            cell1, cell2, matrix[i1][i2], value
+        )
         raise AssertionError(m)
 
 
@@ -438,14 +455,16 @@ def test_complete_inequalities_matrices(separable_tiling2):
     rcs = _RowColSeparationSingleApplication(separable_tiling2)
     row_m, col_m = rcs._complete_ineq_matrices()
     # Row basic matrix
-    ob_ineq = [((1, 0), (0, 0)),
-               ((2, 0), (0, 0)),
-               ((3, 0), (0, 0)),
-               ((1, 1), (0, 1)),
-               ((2, 1), (0, 1)),
-               ((2, 0), (1, 0)),
-               ((2, 1), (1, 1)),
-               ((3, 0), (2, 0))]
+    ob_ineq = [
+        ((1, 0), (0, 0)),
+        ((2, 0), (0, 0)),
+        ((3, 0), (0, 0)),
+        ((1, 1), (0, 1)),
+        ((2, 1), (0, 1)),
+        ((2, 0), (1, 0)),
+        ((2, 1), (1, 1)),
+        ((3, 0), (2, 0)),
+    ]
     for c1, c2 in product(separable_tiling2.active_cells, repeat=2):
         if c1[1] < c2[1] or (c1, c2) in ob_ineq:
             print(1, c1, c2)
@@ -476,28 +495,29 @@ def test_col_ineq_graph(separable_tiling2):
 def test_all_order():
     t = Tiling(obstructions=[Obstruction(Perm((0, 1)), ((0, 0), (1, 0)))])
     rcs = _RowColSeparationSingleApplication(t)
-    assert (list(rcs._all_order(rcs.row_ineq_graph())) ==
-            [[{(1, 0)}, {(0, 0)}]])
-    assert (list(rcs._all_order(rcs.col_ineq_graph())) ==
-            [[{(0, 0)}, {(1, 0)}]])
-    t = Tiling(obstructions=[
-        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-        Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
-    ])
+    assert list(rcs._all_order(rcs.row_ineq_graph())) == [[{(1, 0)}, {(0, 0)}]]
+    assert list(rcs._all_order(rcs.col_ineq_graph())) == [[{(0, 0)}, {(1, 0)}]]
+    t = Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+            Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
+        ]
+    )
     rcs = _RowColSeparationSingleApplication(t)
-    assert (sorted(rcs._all_order(rcs.row_ineq_graph())) == [
+    assert sorted(rcs._all_order(rcs.row_ineq_graph())) == [
         [{(1, 0)}, {(0, 0)}],
         [{(0, 0)}, {(1, 0)}],
-    ])
-    assert (list(rcs._all_order(rcs.col_ineq_graph())) ==
-            [[{(0, 0)}, {(1, 0)}]])
+    ]
+    assert list(rcs._all_order(rcs.col_ineq_graph())) == [[{(0, 0)}, {(1, 0)}]]
 
 
 def test_maximal_order():
-    t = Tiling(obstructions=[
-        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-        Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
-    ])
+    t = Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+            Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
+        ]
+    )
     rcs = _RowColSeparationSingleApplication(t)
     possible_order = [
         [{(1, 0)}, {(0, 0)}],
@@ -505,140 +525,171 @@ def test_maximal_order():
     ]
     assert sorted(rcs._maximal_order(rcs.row_ineq_graph())) in possible_order
     assert rcs.max_row_order in possible_order
-    assert (list(rcs._maximal_order(rcs.col_ineq_graph())) ==
-            [{(0, 0)}, {(1, 0)}])
+    assert list(rcs._maximal_order(rcs.col_ineq_graph())) == [{(0, 0)}, {(1, 0)}]
     assert rcs.max_col_order == [{(0, 0)}, {(1, 0)}]
 
 
 def test_separates_tiling():
-    t = Tiling(obstructions=[
-        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-        Obstruction(Perm((2, 0, 1)), ((0, 0), (1, 0), (1, 0))),
-        Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
-        Obstruction(Perm((2, 0, 1)), ((1, 0), (1, 0), (1, 0))),
-    ], requirements=[
-        [Requirement(Perm((0,)), ((1, 0),))]
-    ])
+    t = Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+            Obstruction(Perm((2, 0, 1)), ((0, 0), (1, 0), (1, 0))),
+            Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
+            Obstruction(Perm((2, 0, 1)), ((1, 0), (1, 0), (1, 0))),
+        ],
+        requirements=[[Requirement(Perm((0,)), ((1, 0),))]],
+    )
     print(t)
     rcs = _RowColSeparationSingleApplication(t)
     row_order = [{(1, 0)}, {(0, 0)}]
     col_order = [{(0, 0)}, {(1, 0)}]
     sep_t = rcs._separates_tiling(row_order, col_order)
     print(sep_t)
-    assert sep_t == Tiling(obstructions=[
-        Obstruction(Perm((2, 0, 1)), ((0, 1), (1, 0), (1, 0))),
-        Obstruction(Perm((2, 0, 1)), ((0, 1), (0, 1), (0, 1))),
-        Obstruction(Perm((2, 0, 1)), ((1, 0), (1, 0), (1, 0))),
-    ], requirements=[
-        [Requirement(Perm((0,)), ((1, 0),))]
-    ])
+    assert sep_t == Tiling(
+        obstructions=[
+            Obstruction(Perm((2, 0, 1)), ((0, 1), (1, 0), (1, 0))),
+            Obstruction(Perm((2, 0, 1)), ((0, 1), (0, 1), (0, 1))),
+            Obstruction(Perm((2, 0, 1)), ((1, 0), (1, 0), (1, 0))),
+        ],
+        requirements=[[Requirement(Perm((0,)), ((1, 0),))]],
+    )
 
 
 def test_map_gridded_perm(separable_tiling1):
     rcs = _RowColSeparationSingleApplication(separable_tiling1)
     ob = Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0)))
     cell_map = {(0, 0): (0, 0), (1, 0): (1, 1)}
-    assert (rcs._map_gridded_perm(cell_map, ob) ==
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))))
+    assert rcs._map_gridded_perm(cell_map, ob) == Obstruction(
+        Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))
+    )
     ob = Requirement(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0)))
-    assert (rcs._map_gridded_perm(cell_map, ob) ==
-            Requirement(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))))
+    assert rcs._map_gridded_perm(cell_map, ob) == Requirement(
+        Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))
+    )
 
 
 def test_all_separation():
-    t = Tiling(obstructions=[
-        Obstruction(Perm((0, 1)), ((0, 0),)*2),
-        Obstruction(Perm((0, 1)), ((1, 0),)*2),
-        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-        Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
-    ])
-    assert len(list(
-        _RowColSeparationSingleApplication(t).all_separated_tiling())) == 2
-    assert (len(list(
-        _RowColSeparationSingleApplication(t).all_separated_tiling(
-            only_max=False)
-    )) == 2)
+    t = Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0),) * 2),
+            Obstruction(Perm((0, 1)), ((1, 0),) * 2),
+            Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+            Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
+        ]
+    )
+    assert len(list(_RowColSeparationSingleApplication(t).all_separated_tiling())) == 2
+    assert (
+        len(
+            list(
+                _RowColSeparationSingleApplication(t).all_separated_tiling(
+                    only_max=False
+                )
+            )
+        )
+        == 2
+    )
 
 
 # ----------------------------------------------------------------------------
 #           Test for the RowColSeparation class
 # ----------------------------------------------------------------------------
 
-def test_separated_tiling(not_separable_tilings, separable_tiling1,
-                          separable_tiling2, separable_tiling3,
-                          separable_tiling4):
-    t = Tiling(obstructions=[
-        Obstruction(Perm((0, 1)), ((0, 0),)*2),
-        Obstruction(Perm((0, 1)), ((1, 0),)*2),
-        Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-    ])
+
+def test_separated_tiling(
+    not_separable_tilings,
+    separable_tiling1,
+    separable_tiling2,
+    separable_tiling3,
+    separable_tiling4,
+):
+    t = Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0),) * 2),
+            Obstruction(Perm((0, 1)), ((1, 0),) * 2),
+            Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+        ]
+    )
     rcs = RowColSeparation(t)
     print(t)
     print(rcs.separated_tiling())
-    assert rcs.separated_tiling() == Tiling(obstructions=[
-        Obstruction(Perm((0, 1)), ((0, 1),)*2),
-        Obstruction(Perm((0, 1)), ((1, 0),)*2),
-    ])
+    assert rcs.separated_tiling() == Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 1),) * 2),
+            Obstruction(Perm((0, 1)), ((1, 0),) * 2),
+        ]
+    )
     for t in not_separable_tilings:
         rcs = RowColSeparation(t)
         assert t == rcs.separated_tiling()
-    t1_sep = Tiling(obstructions=(
-        Obstruction(Perm((0,)), ((0, 0),)),
-        Obstruction(Perm((0,)), ((0, 1),)),
-        Obstruction(Perm((0,)), ((1, 0),)),
-        Obstruction(Perm((0,)), ((1, 2),)),
-        Obstruction(Perm((0,)), ((2, 1),)),
-        Obstruction(Perm((0,)), ((2, 2),)),
-        Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 2), (0, 2))),
-        Obstruction(Perm((0, 1, 2)), ((1, 1), (1, 1), (1, 1))),
-        Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0)))
-    ), requirements=())
-    t2_sep = Tiling(obstructions=(
-        Obstruction(Perm((0,)), ((0, 0),)),
-        Obstruction(Perm((0,)), ((0, 1),)),
-        Obstruction(Perm((0,)), ((0, 2),)),
-        Obstruction(Perm((0,)), ((0, 3),)),
-        Obstruction(Perm((0,)), ((1, 0),)),
-        Obstruction(Perm((0,)), ((1, 2),)),
-        Obstruction(Perm((0,)), ((1, 3),)),
-        Obstruction(Perm((0,)), ((1, 4),)),
-        Obstruction(Perm((0,)), ((2, 1),)),
-        Obstruction(Perm((0,)), ((2, 2),)),
-        Obstruction(Perm((0,)), ((2, 4),)),
-        Obstruction(Perm((0,)), ((3, 1),)),
-        Obstruction(Perm((0,)), ((3, 3),)),
-        Obstruction(Perm((0,)), ((3, 4),)),
-        Obstruction(Perm((0,)), ((4, 1),)),
-        Obstruction(Perm((0,)), ((4, 2),)),
-        Obstruction(Perm((0,)), ((4, 3),)),
-        Obstruction(Perm((0,)), ((4, 4),)),
-        Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
-        Obstruction(Perm((0, 1)), ((3, 0), (4, 0))),
-        Obstruction(Perm((0, 1, 2)), ((0, 4), (0, 4), (0, 4))),
-        Obstruction(Perm((0, 1, 2)), ((1, 1), (1, 1), (1, 1))),
-        Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
-        Obstruction(Perm((0, 1, 2)), ((2, 3), (2, 3), (2, 3))),
-        Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
-        Obstruction(Perm((0, 1, 2)), ((3, 2), (3, 2), (3, 2))),
-        Obstruction(Perm((0, 1, 2)), ((4, 0), (4, 0), (4, 0)))
-    ), requirements=())
-    t3_sep = Tiling(obstructions=(
-        Obstruction(Perm((0,)), ((0, 0),)),
-        Obstruction(Perm((0,)), ((1, 0),)),
-        Obstruction(Perm((0,)), ((2, 1),)),
-        Obstruction(Perm((0,)), ((3, 1),)),
-        Obstruction(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 1))),
-        Obstruction(Perm((0, 1, 2)), ((1, 1), (1, 1), (1, 1))),
-        Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
-        Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0)))
-    ), requirements=())
-    t4_sep = Tiling(obstructions=(
-        Obstruction(Perm((0, 1)), ((0, 2),)*2),
-        Obstruction(Perm((0, 1)), ((1, 1),)*2),
-        Obstruction(Perm((0, 1)), ((2, 0),)*2),
-        Obstruction(Perm((0, 1)), ((3, 0),)*2),
-        Obstruction(Perm((1, 0)), ((0, 2), (2, 0))),
-    ), requirements=((Requirement(Perm((0,)), ((1, 1),)),),))
+    t1_sep = Tiling(
+        obstructions=(
+            Obstruction(Perm((0,)), ((0, 0),)),
+            Obstruction(Perm((0,)), ((0, 1),)),
+            Obstruction(Perm((0,)), ((1, 0),)),
+            Obstruction(Perm((0,)), ((1, 2),)),
+            Obstruction(Perm((0,)), ((2, 1),)),
+            Obstruction(Perm((0,)), ((2, 2),)),
+            Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 2), (0, 2))),
+            Obstruction(Perm((0, 1, 2)), ((1, 1), (1, 1), (1, 1))),
+            Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
+        ),
+        requirements=(),
+    )
+    t2_sep = Tiling(
+        obstructions=(
+            Obstruction(Perm((0,)), ((0, 0),)),
+            Obstruction(Perm((0,)), ((0, 1),)),
+            Obstruction(Perm((0,)), ((0, 2),)),
+            Obstruction(Perm((0,)), ((0, 3),)),
+            Obstruction(Perm((0,)), ((1, 0),)),
+            Obstruction(Perm((0,)), ((1, 2),)),
+            Obstruction(Perm((0,)), ((1, 3),)),
+            Obstruction(Perm((0,)), ((1, 4),)),
+            Obstruction(Perm((0,)), ((2, 1),)),
+            Obstruction(Perm((0,)), ((2, 2),)),
+            Obstruction(Perm((0,)), ((2, 4),)),
+            Obstruction(Perm((0,)), ((3, 1),)),
+            Obstruction(Perm((0,)), ((3, 3),)),
+            Obstruction(Perm((0,)), ((3, 4),)),
+            Obstruction(Perm((0,)), ((4, 1),)),
+            Obstruction(Perm((0,)), ((4, 2),)),
+            Obstruction(Perm((0,)), ((4, 3),)),
+            Obstruction(Perm((0,)), ((4, 4),)),
+            Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
+            Obstruction(Perm((0, 1)), ((3, 0), (4, 0))),
+            Obstruction(Perm((0, 1, 2)), ((0, 4), (0, 4), (0, 4))),
+            Obstruction(Perm((0, 1, 2)), ((1, 1), (1, 1), (1, 1))),
+            Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
+            Obstruction(Perm((0, 1, 2)), ((2, 3), (2, 3), (2, 3))),
+            Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
+            Obstruction(Perm((0, 1, 2)), ((3, 2), (3, 2), (3, 2))),
+            Obstruction(Perm((0, 1, 2)), ((4, 0), (4, 0), (4, 0))),
+        ),
+        requirements=(),
+    )
+    t3_sep = Tiling(
+        obstructions=(
+            Obstruction(Perm((0,)), ((0, 0),)),
+            Obstruction(Perm((0,)), ((1, 0),)),
+            Obstruction(Perm((0,)), ((2, 1),)),
+            Obstruction(Perm((0,)), ((3, 1),)),
+            Obstruction(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 1))),
+            Obstruction(Perm((0, 1, 2)), ((1, 1), (1, 1), (1, 1))),
+            Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
+            Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
+        ),
+        requirements=(),
+    )
+    t4_sep = Tiling(
+        obstructions=(
+            Obstruction(Perm((0, 1)), ((0, 2),) * 2),
+            Obstruction(Perm((0, 1)), ((1, 1),) * 2),
+            Obstruction(Perm((0, 1)), ((2, 0),) * 2),
+            Obstruction(Perm((0, 1)), ((3, 0),) * 2),
+            Obstruction(Perm((1, 0)), ((0, 2), (2, 0))),
+        ),
+        requirements=((Requirement(Perm((0,)), ((1, 1),)),),),
+    )
     assert RowColSeparation(separable_tiling1).separated_tiling() == t1_sep
     assert RowColSeparation(separable_tiling2).separated_tiling() == t2_sep
     assert RowColSeparation(separable_tiling3).separated_tiling() == t3_sep
@@ -648,8 +699,9 @@ def test_separated_tiling(not_separable_tilings, separable_tiling1,
     assert RowColSeparation(empty_tiling).separated_tiling() == empty_tiling
 
 
-def test_separable(not_separable_tilings, separable_tiling1, separable_tiling2,
-                   separable_tiling3):
+def test_separable(
+    not_separable_tilings, separable_tiling1, separable_tiling2, separable_tiling3
+):
     for t in not_separable_tilings:
         rcs = RowColSeparation(t)
         assert not rcs.separable()
@@ -659,8 +711,9 @@ def test_separable(not_separable_tilings, separable_tiling1, separable_tiling2,
 
 
 def test_formal_step(separable_tiling1):
-    assert (RowColSeparation(separable_tiling1).formal_step() ==
-            'Row and column separation')
+    assert (
+        RowColSeparation(separable_tiling1).formal_step() == "Row and column separation"
+    )
 
 
 def test_rule(separable_tiling1, not_separable_tilings):
@@ -670,7 +723,7 @@ def test_rule(separable_tiling1, not_separable_tilings):
     assert rule.comb_classes == [rcs.separated_tiling()]
     assert rule.ignore_parent
     assert rule.workable == [True]
-    assert rule.constructor == 'equiv'
+    assert rule.constructor == "equiv"
     assert rule.possibly_empty == [False]
     assert RowColSeparation(not_separable_tilings[0]).rule() is None
 
@@ -680,151 +733,157 @@ def test_multiple_separation():
     Test that the row column separation is idempotent. This tilings needs two
     pass of the algorithm to stabilize.
     """
-    t = Tiling(obstructions=(
-        Obstruction(Perm((0,)), ((0, 0),)),
-        Obstruction(Perm((0,)), ((0, 1),)),
-        Obstruction(Perm((0,)), ((0, 3),)),
-        Obstruction(Perm((0,)), ((1, 0),)),
-        Obstruction(Perm((0,)), ((1, 2),)),
-        Obstruction(Perm((0,)), ((1, 3),)),
-        Obstruction(Perm((0,)), ((1, 4),)),
-        Obstruction(Perm((0,)), ((2, 1),)),
-        Obstruction(Perm((0,)), ((2, 3),)),
-        Obstruction(Perm((0,)), ((3, 0),)),
-        Obstruction(Perm((0,)), ((3, 1),)),
-        Obstruction(Perm((0,)), ((3, 2),)),
-        Obstruction(Perm((0,)), ((3, 4),)),
-        Obstruction(Perm((0,)), ((4, 1),)),
-        Obstruction(Perm((0,)), ((4, 3),)),
-        Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
-        Obstruction(Perm((0, 1)), ((0, 2), (2, 2))),
-        Obstruction(Perm((0, 1)), ((0, 4), (4, 4))),
-        Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
-        Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((2, 2), (2, 2))),
-        Obstruction(Perm((0, 1)), ((2, 2), (2, 4))),
-        Obstruction(Perm((0, 1)), ((2, 4), (2, 4))),
-        Obstruction(Perm((0, 1)), ((2, 4), (4, 4))),
-        Obstruction(Perm((0, 1)), ((3, 3), (3, 3))),
-        Obstruction(Perm((0, 1)), ((4, 0), (4, 4))),
-        Obstruction(Perm((0, 1)), ((4, 2), (4, 2))),
-        Obstruction(Perm((0, 1)), ((4, 2), (4, 4))),
-        Obstruction(Perm((1, 0)), ((0, 2), (2, 2))),
-        Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
-        Obstruction(Perm((1, 0)), ((2, 2), (2, 0))),
-        Obstruction(Perm((1, 0)), ((2, 2), (2, 2))),
-        Obstruction(Perm((1, 0)), ((2, 2), (4, 2))),
-        Obstruction(Perm((1, 0)), ((2, 4), (2, 2))),
-        Obstruction(Perm((1, 0)), ((2, 4), (4, 4))),
-        Obstruction(Perm((1, 0)), ((3, 3), (3, 3))),
-        Obstruction(Perm((1, 0)), ((4, 4), (4, 2))),
-        Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 4), (0, 4))),
-        Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 4), (2, 4))),
-        Obstruction(Perm((0, 1, 2)), ((0, 4), (0, 4), (0, 4))),
-        Obstruction(Perm((0, 1, 2)), ((0, 4), (0, 4), (2, 4))),
-        Obstruction(Perm((0, 1, 2)), ((2, 0), (4, 0), (4, 0))),
-        Obstruction(Perm((0, 1, 2)), ((2, 0), (4, 0), (4, 2))),
-        Obstruction(Perm((0, 1, 2)), ((4, 0), (4, 0), (4, 2))),
-        Obstruction(Perm((0, 2, 1)), ((0, 2), (0, 4), (4, 4))),
-        Obstruction(Perm((0, 2, 1)), ((2, 0), (2, 2), (4, 0))),
-        Obstruction(Perm((0, 2, 1)), ((2, 0), (4, 4), (4, 0))),
-        Obstruction(Perm((1, 0, 2)), ((2, 2), (4, 0), (4, 2))),
-        Obstruction(Perm((1, 0, 2)), ((4, 4), (4, 4), (4, 4))),
-        Obstruction(Perm((1, 2, 0)), ((4, 4), (4, 4), (4, 4))),
-        Obstruction(Perm((2, 0, 1)), ((4, 4), (4, 4), (4, 4))),
-        Obstruction(Perm((0, 2, 1, 3)), ((4, 0), (4, 0), (4, 0), (4, 0))),
-        Obstruction(Perm((0, 2, 3, 1)), ((4, 0), (4, 0), (4, 0), (4, 0))),
-        Obstruction(Perm((0, 3, 1, 2)), ((4, 0), (4, 0), (4, 0), (4, 0))),
-        Obstruction(Perm((0, 3, 1, 2)), ((4, 0), (4, 2), (4, 0), (4, 0))),
-        Obstruction(Perm((1, 2, 0, 3)), ((4, 0), (4, 0), (4, 0), (4, 0))),
-        Obstruction(Perm((2, 0, 1, 3)), ((2, 0), (4, 0), (4, 0), (4, 0))),
-        Obstruction(Perm((2, 0, 1, 3)), ((4, 0), (4, 0), (4, 0), (4, 0)))
-    ), requirements=(
-        (Requirement(Perm((0,)), ((1, 1),)),),
-        (Requirement(Perm((0,)), ((2, 2),)),),
-        (Requirement(Perm((0,)), ((3, 3),)),)
-    ))
+    t = Tiling(
+        obstructions=(
+            Obstruction(Perm((0,)), ((0, 0),)),
+            Obstruction(Perm((0,)), ((0, 1),)),
+            Obstruction(Perm((0,)), ((0, 3),)),
+            Obstruction(Perm((0,)), ((1, 0),)),
+            Obstruction(Perm((0,)), ((1, 2),)),
+            Obstruction(Perm((0,)), ((1, 3),)),
+            Obstruction(Perm((0,)), ((1, 4),)),
+            Obstruction(Perm((0,)), ((2, 1),)),
+            Obstruction(Perm((0,)), ((2, 3),)),
+            Obstruction(Perm((0,)), ((3, 0),)),
+            Obstruction(Perm((0,)), ((3, 1),)),
+            Obstruction(Perm((0,)), ((3, 2),)),
+            Obstruction(Perm((0,)), ((3, 4),)),
+            Obstruction(Perm((0,)), ((4, 1),)),
+            Obstruction(Perm((0,)), ((4, 3),)),
+            Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
+            Obstruction(Perm((0, 1)), ((0, 2), (2, 2))),
+            Obstruction(Perm((0, 1)), ((0, 4), (4, 4))),
+            Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
+            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
+            Obstruction(Perm((0, 1)), ((2, 2), (2, 2))),
+            Obstruction(Perm((0, 1)), ((2, 2), (2, 4))),
+            Obstruction(Perm((0, 1)), ((2, 4), (2, 4))),
+            Obstruction(Perm((0, 1)), ((2, 4), (4, 4))),
+            Obstruction(Perm((0, 1)), ((3, 3), (3, 3))),
+            Obstruction(Perm((0, 1)), ((4, 0), (4, 4))),
+            Obstruction(Perm((0, 1)), ((4, 2), (4, 2))),
+            Obstruction(Perm((0, 1)), ((4, 2), (4, 4))),
+            Obstruction(Perm((1, 0)), ((0, 2), (2, 2))),
+            Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
+            Obstruction(Perm((1, 0)), ((2, 2), (2, 0))),
+            Obstruction(Perm((1, 0)), ((2, 2), (2, 2))),
+            Obstruction(Perm((1, 0)), ((2, 2), (4, 2))),
+            Obstruction(Perm((1, 0)), ((2, 4), (2, 2))),
+            Obstruction(Perm((1, 0)), ((2, 4), (4, 4))),
+            Obstruction(Perm((1, 0)), ((3, 3), (3, 3))),
+            Obstruction(Perm((1, 0)), ((4, 4), (4, 2))),
+            Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 4), (0, 4))),
+            Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 4), (2, 4))),
+            Obstruction(Perm((0, 1, 2)), ((0, 4), (0, 4), (0, 4))),
+            Obstruction(Perm((0, 1, 2)), ((0, 4), (0, 4), (2, 4))),
+            Obstruction(Perm((0, 1, 2)), ((2, 0), (4, 0), (4, 0))),
+            Obstruction(Perm((0, 1, 2)), ((2, 0), (4, 0), (4, 2))),
+            Obstruction(Perm((0, 1, 2)), ((4, 0), (4, 0), (4, 2))),
+            Obstruction(Perm((0, 2, 1)), ((0, 2), (0, 4), (4, 4))),
+            Obstruction(Perm((0, 2, 1)), ((2, 0), (2, 2), (4, 0))),
+            Obstruction(Perm((0, 2, 1)), ((2, 0), (4, 4), (4, 0))),
+            Obstruction(Perm((1, 0, 2)), ((2, 2), (4, 0), (4, 2))),
+            Obstruction(Perm((1, 0, 2)), ((4, 4), (4, 4), (4, 4))),
+            Obstruction(Perm((1, 2, 0)), ((4, 4), (4, 4), (4, 4))),
+            Obstruction(Perm((2, 0, 1)), ((4, 4), (4, 4), (4, 4))),
+            Obstruction(Perm((0, 2, 1, 3)), ((4, 0), (4, 0), (4, 0), (4, 0))),
+            Obstruction(Perm((0, 2, 3, 1)), ((4, 0), (4, 0), (4, 0), (4, 0))),
+            Obstruction(Perm((0, 3, 1, 2)), ((4, 0), (4, 0), (4, 0), (4, 0))),
+            Obstruction(Perm((0, 3, 1, 2)), ((4, 0), (4, 2), (4, 0), (4, 0))),
+            Obstruction(Perm((1, 2, 0, 3)), ((4, 0), (4, 0), (4, 0), (4, 0))),
+            Obstruction(Perm((2, 0, 1, 3)), ((2, 0), (4, 0), (4, 0), (4, 0))),
+            Obstruction(Perm((2, 0, 1, 3)), ((4, 0), (4, 0), (4, 0), (4, 0))),
+        ),
+        requirements=(
+            (Requirement(Perm((0,)), ((1, 1),)),),
+            (Requirement(Perm((0,)), ((2, 2),)),),
+            (Requirement(Perm((0,)), ((3, 3),)),),
+        ),
+    )
     rcs = RowColSeparation(t)
-    assert rcs.formal_step() == 'Row and column separation (2 times)'
+    assert rcs.formal_step() == "Row and column separation (2 times)"
     seprated_tiling = rcs.separated_tiling()
-    expected_tiling = Tiling(obstructions=(
-        Obstruction(Perm((0,)), ((0, 0),)),
-        Obstruction(Perm((0,)), ((0, 1),)),
-        Obstruction(Perm((0,)), ((0, 2),)),
-        Obstruction(Perm((0,)), ((0, 3),)),
-        Obstruction(Perm((0,)), ((0, 4),)),
-        Obstruction(Perm((0,)), ((0, 5),)),
-        Obstruction(Perm((0,)), ((0, 6),)),
-        Obstruction(Perm((0,)), ((1, 0),)),
-        Obstruction(Perm((0,)), ((1, 1),)),
-        Obstruction(Perm((0,)), ((1, 3),)),
-        Obstruction(Perm((0,)), ((1, 4),)),
-        Obstruction(Perm((0,)), ((1, 5),)),
-        Obstruction(Perm((0,)), ((1, 6),)),
-        Obstruction(Perm((0,)), ((1, 7),)),
-        Obstruction(Perm((0,)), ((2, 0),)),
-        Obstruction(Perm((0,)), ((2, 2),)),
-        Obstruction(Perm((0,)), ((2, 3),)),
-        Obstruction(Perm((0,)), ((2, 4),)),
-        Obstruction(Perm((0,)), ((2, 5),)),
-        Obstruction(Perm((0,)), ((2, 6),)),
-        Obstruction(Perm((0,)), ((2, 7),)),
-        Obstruction(Perm((0,)), ((3, 0),)),
-        Obstruction(Perm((0,)), ((3, 1),)),
-        Obstruction(Perm((0,)), ((3, 2),)),
-        Obstruction(Perm((0,)), ((3, 4),)),
-        Obstruction(Perm((0,)), ((3, 5),)),
-        Obstruction(Perm((0,)), ((3, 6),)),
-        Obstruction(Perm((0,)), ((3, 7),)),
-        Obstruction(Perm((0,)), ((4, 0),)),
-        Obstruction(Perm((0,)), ((4, 1),)),
-        Obstruction(Perm((0,)), ((4, 2),)),
-        Obstruction(Perm((0,)), ((4, 3),)),
-        Obstruction(Perm((0,)), ((4, 4),)),
-        Obstruction(Perm((0,)), ((4, 6),)),
-        Obstruction(Perm((0,)), ((4, 7),)),
-        Obstruction(Perm((0,)), ((5, 0),)),
-        Obstruction(Perm((0,)), ((5, 1),)),
-        Obstruction(Perm((0,)), ((5, 2),)),
-        Obstruction(Perm((0,)), ((5, 3),)),
-        Obstruction(Perm((0,)), ((5, 4),)),
-        Obstruction(Perm((0,)), ((5, 5),)),
-        Obstruction(Perm((0,)), ((5, 7),)),
-        Obstruction(Perm((0,)), ((6, 0),)),
-        Obstruction(Perm((0,)), ((6, 1),)),
-        Obstruction(Perm((0,)), ((6, 2),)),
-        Obstruction(Perm((0,)), ((6, 3),)),
-        Obstruction(Perm((0,)), ((6, 5),)),
-        Obstruction(Perm((0,)), ((6, 6),)),
-        Obstruction(Perm((0,)), ((6, 7),)),
-        Obstruction(Perm((0,)), ((7, 1),)),
-        Obstruction(Perm((0,)), ((7, 2),)),
-        Obstruction(Perm((0,)), ((7, 3),)),
-        Obstruction(Perm((0,)), ((7, 4),)),
-        Obstruction(Perm((0,)), ((7, 5),)),
-        Obstruction(Perm((0,)), ((7, 6),)),
-        Obstruction(Perm((0,)), ((7, 7),)),
-        Obstruction(Perm((0, 1)), ((1, 2), (1, 2))),
-        Obstruction(Perm((0, 1)), ((2, 1), (2, 1))),
-        Obstruction(Perm((0, 1)), ((3, 3), (3, 3))),
-        Obstruction(Perm((0, 1)), ((4, 5), (4, 5))),
-        Obstruction(Perm((0, 1)), ((6, 4), (6, 4))),
-        Obstruction(Perm((1, 0)), ((1, 2), (1, 2))),
-        Obstruction(Perm((1, 0)), ((3, 3), (3, 3))),
-        Obstruction(Perm((1, 0)), ((4, 5), (4, 5))),
-        Obstruction(Perm((1, 0)), ((5, 6), (6, 4))),
-        Obstruction(Perm((0, 1, 2)), ((0, 7), (0, 7), (0, 7))),
-        Obstruction(Perm((1, 0, 2)), ((5, 6), (5, 6), (5, 6))),
-        Obstruction(Perm((1, 2, 0)), ((5, 6), (5, 6), (5, 6))),
-        Obstruction(Perm((2, 0, 1)), ((5, 6), (5, 6), (5, 6))),
-        Obstruction(Perm((0, 2, 1, 3)), ((7, 0), (7, 0), (7, 0), (7, 0))),
-        Obstruction(Perm((0, 2, 3, 1)), ((7, 0), (7, 0), (7, 0), (7, 0))),
-        Obstruction(Perm((0, 3, 1, 2)), ((7, 0), (7, 0), (7, 0), (7, 0))),
-        Obstruction(Perm((1, 2, 0, 3)), ((7, 0), (7, 0), (7, 0), (7, 0))),
-        Obstruction(Perm((2, 0, 1, 3)), ((7, 0), (7, 0), (7, 0), (7, 0)))
-        ), requirements=(
+    expected_tiling = Tiling(
+        obstructions=(
+            Obstruction(Perm((0,)), ((0, 0),)),
+            Obstruction(Perm((0,)), ((0, 1),)),
+            Obstruction(Perm((0,)), ((0, 2),)),
+            Obstruction(Perm((0,)), ((0, 3),)),
+            Obstruction(Perm((0,)), ((0, 4),)),
+            Obstruction(Perm((0,)), ((0, 5),)),
+            Obstruction(Perm((0,)), ((0, 6),)),
+            Obstruction(Perm((0,)), ((1, 0),)),
+            Obstruction(Perm((0,)), ((1, 1),)),
+            Obstruction(Perm((0,)), ((1, 3),)),
+            Obstruction(Perm((0,)), ((1, 4),)),
+            Obstruction(Perm((0,)), ((1, 5),)),
+            Obstruction(Perm((0,)), ((1, 6),)),
+            Obstruction(Perm((0,)), ((1, 7),)),
+            Obstruction(Perm((0,)), ((2, 0),)),
+            Obstruction(Perm((0,)), ((2, 2),)),
+            Obstruction(Perm((0,)), ((2, 3),)),
+            Obstruction(Perm((0,)), ((2, 4),)),
+            Obstruction(Perm((0,)), ((2, 5),)),
+            Obstruction(Perm((0,)), ((2, 6),)),
+            Obstruction(Perm((0,)), ((2, 7),)),
+            Obstruction(Perm((0,)), ((3, 0),)),
+            Obstruction(Perm((0,)), ((3, 1),)),
+            Obstruction(Perm((0,)), ((3, 2),)),
+            Obstruction(Perm((0,)), ((3, 4),)),
+            Obstruction(Perm((0,)), ((3, 5),)),
+            Obstruction(Perm((0,)), ((3, 6),)),
+            Obstruction(Perm((0,)), ((3, 7),)),
+            Obstruction(Perm((0,)), ((4, 0),)),
+            Obstruction(Perm((0,)), ((4, 1),)),
+            Obstruction(Perm((0,)), ((4, 2),)),
+            Obstruction(Perm((0,)), ((4, 3),)),
+            Obstruction(Perm((0,)), ((4, 4),)),
+            Obstruction(Perm((0,)), ((4, 6),)),
+            Obstruction(Perm((0,)), ((4, 7),)),
+            Obstruction(Perm((0,)), ((5, 0),)),
+            Obstruction(Perm((0,)), ((5, 1),)),
+            Obstruction(Perm((0,)), ((5, 2),)),
+            Obstruction(Perm((0,)), ((5, 3),)),
+            Obstruction(Perm((0,)), ((5, 4),)),
+            Obstruction(Perm((0,)), ((5, 5),)),
+            Obstruction(Perm((0,)), ((5, 7),)),
+            Obstruction(Perm((0,)), ((6, 0),)),
+            Obstruction(Perm((0,)), ((6, 1),)),
+            Obstruction(Perm((0,)), ((6, 2),)),
+            Obstruction(Perm((0,)), ((6, 3),)),
+            Obstruction(Perm((0,)), ((6, 5),)),
+            Obstruction(Perm((0,)), ((6, 6),)),
+            Obstruction(Perm((0,)), ((6, 7),)),
+            Obstruction(Perm((0,)), ((7, 1),)),
+            Obstruction(Perm((0,)), ((7, 2),)),
+            Obstruction(Perm((0,)), ((7, 3),)),
+            Obstruction(Perm((0,)), ((7, 4),)),
+            Obstruction(Perm((0,)), ((7, 5),)),
+            Obstruction(Perm((0,)), ((7, 6),)),
+            Obstruction(Perm((0,)), ((7, 7),)),
+            Obstruction(Perm((0, 1)), ((1, 2), (1, 2))),
+            Obstruction(Perm((0, 1)), ((2, 1), (2, 1))),
+            Obstruction(Perm((0, 1)), ((3, 3), (3, 3))),
+            Obstruction(Perm((0, 1)), ((4, 5), (4, 5))),
+            Obstruction(Perm((0, 1)), ((6, 4), (6, 4))),
+            Obstruction(Perm((1, 0)), ((1, 2), (1, 2))),
+            Obstruction(Perm((1, 0)), ((3, 3), (3, 3))),
+            Obstruction(Perm((1, 0)), ((4, 5), (4, 5))),
+            Obstruction(Perm((1, 0)), ((5, 6), (6, 4))),
+            Obstruction(Perm((0, 1, 2)), ((0, 7), (0, 7), (0, 7))),
+            Obstruction(Perm((1, 0, 2)), ((5, 6), (5, 6), (5, 6))),
+            Obstruction(Perm((1, 2, 0)), ((5, 6), (5, 6), (5, 6))),
+            Obstruction(Perm((2, 0, 1)), ((5, 6), (5, 6), (5, 6))),
+            Obstruction(Perm((0, 2, 1, 3)), ((7, 0), (7, 0), (7, 0), (7, 0))),
+            Obstruction(Perm((0, 2, 3, 1)), ((7, 0), (7, 0), (7, 0), (7, 0))),
+            Obstruction(Perm((0, 3, 1, 2)), ((7, 0), (7, 0), (7, 0), (7, 0))),
+            Obstruction(Perm((1, 2, 0, 3)), ((7, 0), (7, 0), (7, 0), (7, 0))),
+            Obstruction(Perm((2, 0, 1, 3)), ((7, 0), (7, 0), (7, 0), (7, 0))),
+        ),
+        requirements=(
             (Requirement(Perm((0,)), ((1, 2),)),),
             (Requirement(Perm((0,)), ((3, 3),)),),
-            (Requirement(Perm((0,)), ((4, 5),)),)
-        ))
+            (Requirement(Perm((0,)), ((4, 5),)),),
+        ),
+    )
     assert seprated_tiling == expected_tiling

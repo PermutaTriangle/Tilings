@@ -6,7 +6,7 @@ from permuta import Perm
 from tilings import Obstruction
 
 
-class ObstructionTransitivity():
+class ObstructionTransitivity:
     """
     The obstruction transitivity algorithm.
 
@@ -123,8 +123,10 @@ class ObstructionTransitivity():
                 return Obstruction(Perm((1, 0)), [left, right])
             return Obstruction(Perm((0, 1)), [right, left])
         raise ValueError(
-            ("Can not construct an obstruction from inequality {} < {}"
-             ).format(left, right))
+            ("Can not construct an obstruction from inequality {} < {}").format(
+                left, right
+            )
+        )
 
     @staticmethod
     def ineq_closure(positive_cells, ineqs):
@@ -148,8 +150,7 @@ class ObstructionTransitivity():
         while to_analyse:
             cur = to_analyse.pop()
             not_existing_ineq = filter(
-                lambda x: x not in ineqs,
-                product(gtlist[cur], ltlist[cur])
+                lambda x: x not in ineqs, product(gtlist[cur], ltlist[cur])
             )
             for gt, lt in not_existing_ineq:
                 gtlist[lt].append(gt)
@@ -187,11 +188,9 @@ class ObstructionTransitivity():
         """
         Return the tiling with the new obstructions.
         """
-        obs = chain(self._tiling.obstructions,
-                    map(self.ineq_ob, self.new_ineq()))
+        obs = chain(self._tiling.obstructions, map(self.ineq_ob, self.new_ineq()))
         return self._tiling.__class__(
-            obstructions=obs,
-            requirements=self._tiling.requirements
+            obstructions=obs, requirements=self._tiling.requirements
         )
 
     def rule(self):
@@ -203,11 +202,10 @@ class ObstructionTransitivity():
         if not self.new_ineq():
             return None
         return InferralRule(
-            "Computing transitivity of inequalities.",
-            self.obstruction_transitivity()
+            "Computing transitivity of inequalities.", self.obstruction_transitivity()
         )
 
     def __str__(self):
-        s = 'ObstructionTransitivity object for the tiling:\n'
+        s = "ObstructionTransitivity object for the tiling:\n"
         s += self._tiling.__str__()
         return s

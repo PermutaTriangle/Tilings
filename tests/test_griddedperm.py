@@ -7,8 +7,7 @@ from tilings import GriddedPerm
 
 @pytest.fixture
 def simpleob():
-    return GriddedPerm(Perm((1, 0, 3, 2)),
-                       ((0, 0), (0, 0), (2, 2), (2, 1)))
+    return GriddedPerm(Perm((1, 0, 3, 2)), ((0, 0), (0, 0), (2, 2), (2, 1)))
 
 
 @pytest.fixture
@@ -18,22 +17,20 @@ def singlecellob():
 
 @pytest.fixture
 def everycellob():
-    return GriddedPerm(Perm((0, 3, 6, 1, 4, 7, 2, 5, 8)),
-                       ((0, 0), (0, 1), (0, 2),
-                        (1, 0), (1, 1), (1, 2),
-                        (2, 0), (2, 1), (2, 2)))
+    return GriddedPerm(
+        Perm((0, 3, 6, 1, 4, 7, 2, 5, 8)),
+        ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)),
+    )
 
 
 @pytest.fixture
 def typicalob():
-    return GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                       ((0, 0), (0, 0), (1, 0), (1, 1), (1, 1)))
+    return GriddedPerm(Perm((1, 0, 2, 4, 3)), ((0, 0), (0, 0), (1, 0), (1, 1), (1, 1)))
 
 
 @pytest.fixture
 def isolatedob():
-    return GriddedPerm(Perm((0, 1, 2)),
-                       ((0, 0), (1, 1), (2, 2)))
+    return GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 1), (2, 2)))
 
 
 def test_single_cell():
@@ -98,10 +95,10 @@ def test_occurrences_in(simpleob):
 
 
 def test_remove_cells(simpleob):
-    assert (simpleob.remove_cells([(0, 0)]) ==
-            GriddedPerm(Perm((1, 0)), ((2, 2), (2, 1))))
-    assert (simpleob.remove_cells([(0, 0), (2, 2)]) ==
-            GriddedPerm(Perm((0,)), ((2, 1),)))
+    assert simpleob.remove_cells([(0, 0)]) == GriddedPerm(
+        Perm((1, 0)), ((2, 2), (2, 1))
+    )
+    assert simpleob.remove_cells([(0, 0), (2, 2)]) == GriddedPerm(Perm((0,)), ((2, 1),))
     assert simpleob.remove_cells([(0, 1), (1, 2)]) == simpleob
 
 
@@ -159,29 +156,36 @@ def test_get_rowcol(everycellob, simpleob, typicalob):
     assert list(everycellob.get_points_row(1)) == [(1, 3), (4, 4), (7, 5)]
     assert list(everycellob.get_points_col(1)) == [(3, 1), (4, 4), (5, 7)]
     assert list(everycellob.get_points_above_row(2)) == []
-    assert list(everycellob.get_points_below_row(2)) == [(0, 0), (1, 3),
-                                                         (3, 1), (4, 4),
-                                                         (6, 2), (7, 5)]
-    assert (list(everycellob.get_points_right_col(1)) ==
-            [(6, 2), (7, 5), (8, 8)])
+    assert list(everycellob.get_points_below_row(2)) == [
+        (0, 0),
+        (1, 3),
+        (3, 1),
+        (4, 4),
+        (6, 2),
+        (7, 5),
+    ]
+    assert list(everycellob.get_points_right_col(1)) == [(6, 2), (7, 5), (8, 8)]
     assert list(everycellob.get_points_left_col(1)) == [(0, 0), (1, 3), (2, 6)]
 
 
 def test_get_subperm_left_col(everycellob, simpleob, typicalob):
-    assert (everycellob.get_subperm_left_col(0) == GriddedPerm(Perm(()), ()))
-    assert (everycellob.get_subperm_left_col(1) ==
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 1), (0, 2))))
-    assert (everycellob.get_subperm_left_col(2) ==
-            GriddedPerm(Perm((0, 2, 4, 1, 3, 5)),
-                        ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2))))
+    assert everycellob.get_subperm_left_col(0) == GriddedPerm(Perm(()), ())
+    assert everycellob.get_subperm_left_col(1) == GriddedPerm(
+        Perm((0, 1, 2)), ((0, 0), (0, 1), (0, 2))
+    )
+    assert everycellob.get_subperm_left_col(2) == GriddedPerm(
+        Perm((0, 2, 4, 1, 3, 5)), ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2))
+    )
     assert everycellob.get_subperm_left_col(3) == everycellob
 
-    assert simpleob.get_subperm_left_col(1) == GriddedPerm(Perm((1, 0)),
-                                                           ((0, 0), (0, 0)))
+    assert simpleob.get_subperm_left_col(1) == GriddedPerm(
+        Perm((1, 0)), ((0, 0), (0, 0))
+    )
     assert simpleob.get_subperm_left_col(10) == simpleob
 
-    assert typicalob.get_subperm_left_col(1) == GriddedPerm(Perm((1, 0)),
-                                                            ((0, 0), (0, 0)))
+    assert typicalob.get_subperm_left_col(1) == GriddedPerm(
+        Perm((1, 0)), ((0, 0), (0, 0))
+    )
     assert typicalob.get_subperm_left_col(100) == typicalob
 
 
@@ -205,123 +209,158 @@ def test_is_single_cell(typicalob, simpleob, singlecellob):
 
 
 def test_insert_point():
-    ob = GriddedPerm(Perm((0, 4, 1, 2, 3, 5)),
-                     [(0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (2, 2)])
+    ob = GriddedPerm(
+        Perm((0, 4, 1, 2, 3, 5)), [(0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (2, 2)]
+    )
     assert list(ob.insert_point((1, 1))) == [
-        GriddedPerm(Perm((0, 5, 1, 2, 3, 4, 6)),
-                    ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        GriddedPerm(Perm((0, 5, 1, 3, 2, 4, 6)),
-                    ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        GriddedPerm(Perm((0, 5, 1, 4, 2, 3, 6)),
-                    ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        GriddedPerm(Perm((0, 4, 1, 5, 2, 3, 6)),
-                    ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        GriddedPerm(Perm((0, 5, 1, 3, 2, 4, 6)),
-                    ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        GriddedPerm(Perm((0, 5, 1, 2, 3, 4, 6)),
-                    ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        GriddedPerm(Perm((0, 5, 1, 2, 4, 3, 6)),
-                    ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        GriddedPerm(Perm((0, 4, 1, 2, 5, 3, 6)),
-                    ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        GriddedPerm(Perm((0, 5, 1, 3, 4, 2, 6)),
-                    ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        GriddedPerm(Perm((0, 5, 1, 2, 4, 3, 6)),
-                    ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        GriddedPerm(Perm((0, 5, 1, 2, 3, 4, 6)),
-                    ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2))),
-        GriddedPerm(Perm((0, 4, 1, 2, 3, 5, 6)),
-                    ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)))]
+        GriddedPerm(
+            Perm((0, 5, 1, 2, 3, 4, 6)),
+            ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+        ),
+        GriddedPerm(
+            Perm((0, 5, 1, 3, 2, 4, 6)),
+            ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+        ),
+        GriddedPerm(
+            Perm((0, 5, 1, 4, 2, 3, 6)),
+            ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+        ),
+        GriddedPerm(
+            Perm((0, 4, 1, 5, 2, 3, 6)),
+            ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+        ),
+        GriddedPerm(
+            Perm((0, 5, 1, 3, 2, 4, 6)),
+            ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+        ),
+        GriddedPerm(
+            Perm((0, 5, 1, 2, 3, 4, 6)),
+            ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+        ),
+        GriddedPerm(
+            Perm((0, 5, 1, 2, 4, 3, 6)),
+            ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+        ),
+        GriddedPerm(
+            Perm((0, 4, 1, 2, 5, 3, 6)),
+            ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+        ),
+        GriddedPerm(
+            Perm((0, 5, 1, 3, 4, 2, 6)),
+            ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+        ),
+        GriddedPerm(
+            Perm((0, 5, 1, 2, 4, 3, 6)),
+            ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+        ),
+        GriddedPerm(
+            Perm((0, 5, 1, 2, 3, 4, 6)),
+            ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+        ),
+        GriddedPerm(
+            Perm((0, 4, 1, 2, 3, 5, 6)),
+            ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+        ),
+    ]
 
 
 def test_all_subperms(simpleob):
-    assert (list(sorted(simpleob.all_subperms())) ==
-            [GriddedPerm(Perm(()), ()),
-             GriddedPerm(Perm((0, )), ((0, 0),)),
-             GriddedPerm(Perm((0, )), ((0, 0),)),
-             GriddedPerm(Perm((0, )), ((2, 1),)),
-             GriddedPerm(Perm((0, )), ((2, 2),)),
-             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 1))),
-             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 1))),
-             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
-             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
-             GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
-             GriddedPerm(Perm((1, 0)), ((2, 2), (2, 1))),
-             GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
-             GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
-             GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 1))),
-             GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 2)))])
-    assert (list(sorted(simpleob.all_subperms(proper=False))) ==
-            [GriddedPerm(Perm(()), ()),
-             GriddedPerm(Perm((0, )), ((0, 0),)),
-             GriddedPerm(Perm((0, )), ((0, 0),)),
-             GriddedPerm(Perm((0, )), ((2, 1),)),
-             GriddedPerm(Perm((0, )), ((2, 2),)),
-             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 1))),
-             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 1))),
-             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
-             GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
-             GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
-             GriddedPerm(Perm((1, 0)), ((2, 2), (2, 1))),
-             GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
-             GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
-             GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 1))),
-             GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 2))),
-             GriddedPerm(Perm((1, 0, 3, 2)),
-                         ((0, 0), (0, 0), (2, 2), (2, 1)))])
+    assert list(sorted(simpleob.all_subperms())) == [
+        GriddedPerm(Perm(()), ()),
+        GriddedPerm(Perm((0,)), ((0, 0),)),
+        GriddedPerm(Perm((0,)), ((0, 0),)),
+        GriddedPerm(Perm((0,)), ((2, 1),)),
+        GriddedPerm(Perm((0,)), ((2, 2),)),
+        GriddedPerm(Perm((0, 1)), ((0, 0), (2, 1))),
+        GriddedPerm(Perm((0, 1)), ((0, 0), (2, 1))),
+        GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
+        GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
+        GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+        GriddedPerm(Perm((1, 0)), ((2, 2), (2, 1))),
+        GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
+        GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
+        GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 1))),
+        GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 2))),
+    ]
+    assert list(sorted(simpleob.all_subperms(proper=False))) == [
+        GriddedPerm(Perm(()), ()),
+        GriddedPerm(Perm((0,)), ((0, 0),)),
+        GriddedPerm(Perm((0,)), ((0, 0),)),
+        GriddedPerm(Perm((0,)), ((2, 1),)),
+        GriddedPerm(Perm((0,)), ((2, 2),)),
+        GriddedPerm(Perm((0, 1)), ((0, 0), (2, 1))),
+        GriddedPerm(Perm((0, 1)), ((0, 0), (2, 1))),
+        GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
+        GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
+        GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+        GriddedPerm(Perm((1, 0)), ((2, 2), (2, 1))),
+        GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
+        GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
+        GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 1))),
+        GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (2, 2))),
+        GriddedPerm(Perm((1, 0, 3, 2)), ((0, 0), (0, 0), (2, 2), (2, 1))),
+    ]
 
 
 def test_remove_point(typicalob, simpleob, singlecellob):
     assert simpleob.remove_point(0) == GriddedPerm(
-        Perm((0, 2, 1)), [(0, 0), (2, 2), (2, 1)])
+        Perm((0, 2, 1)), [(0, 0), (2, 2), (2, 1)]
+    )
     assert simpleob.remove_point(1) == GriddedPerm(
-        Perm((0, 2, 1)), [(0, 0), (2, 2), (2, 1)])
+        Perm((0, 2, 1)), [(0, 0), (2, 2), (2, 1)]
+    )
     assert simpleob.remove_point(2) == GriddedPerm(
-        Perm((1, 0, 2)), [(0, 0), (0, 0), (2, 1)])
+        Perm((1, 0, 2)), [(0, 0), (0, 0), (2, 1)]
+    )
     assert simpleob.remove_point(3) == GriddedPerm(
-        Perm((1, 0, 2)), [(0, 0), (0, 0), (2, 2)])
+        Perm((1, 0, 2)), [(0, 0), (0, 0), (2, 2)]
+    )
 
     assert typicalob.remove_point(0) == GriddedPerm(
-        Perm((0, 1, 3, 2)), [(0, 0), (1, 0), (1, 1), (1, 1)])
+        Perm((0, 1, 3, 2)), [(0, 0), (1, 0), (1, 1), (1, 1)]
+    )
     assert typicalob.remove_point(1) == GriddedPerm(
-        Perm((0, 1, 3, 2)), [(0, 0), (1, 0), (1, 1), (1, 1)])
+        Perm((0, 1, 3, 2)), [(0, 0), (1, 0), (1, 1), (1, 1)]
+    )
     assert typicalob.remove_point(2) == GriddedPerm(
-        Perm((1, 0, 3, 2)), [(0, 0), (0, 0), (1, 1), (1, 1)])
+        Perm((1, 0, 3, 2)), [(0, 0), (0, 0), (1, 1), (1, 1)]
+    )
     assert typicalob.remove_point(3) == GriddedPerm(
-        Perm((1, 0, 2, 3)), [(0, 0), (0, 0), (1, 0), (1, 1)])
+        Perm((1, 0, 2, 3)), [(0, 0), (0, 0), (1, 0), (1, 1)]
+    )
     assert typicalob.remove_point(4) == GriddedPerm(
-        Perm((1, 0, 2, 3)), [(0, 0), (0, 0), (1, 0), (1, 1)])
+        Perm((1, 0, 2, 3)), [(0, 0), (0, 0), (1, 0), (1, 1)]
+    )
 
     assert singlecellob.remove_point(0) == GriddedPerm(
-        Perm((0, 2, 1)), [(2, 2), (2, 2), (2, 2)])
+        Perm((0, 2, 1)), [(2, 2), (2, 2), (2, 2)]
+    )
     assert singlecellob.remove_point(1) == GriddedPerm(
-        Perm((0, 2, 1)), [(2, 2), (2, 2), (2, 2)])
+        Perm((0, 2, 1)), [(2, 2), (2, 2), (2, 2)]
+    )
     assert singlecellob.remove_point(2) == GriddedPerm(
-        Perm((1, 0, 2)), [(2, 2), (2, 2), (2, 2)])
+        Perm((1, 0, 2)), [(2, 2), (2, 2), (2, 2)]
+    )
     assert singlecellob.remove_point(3) == GriddedPerm(
-        Perm((1, 0, 2)), [(2, 2), (2, 2), (2, 2)])
+        Perm((1, 0, 2)), [(2, 2), (2, 2), (2, 2)]
+    )
 
 
 def test_minimize(typicalob, simpleob):
     def cell_mapping(x):
         return (x[0] + 1, x[1] + 2)
-    assert (typicalob.minimize(cell_mapping) ==
-            GriddedPerm(Perm((1, 0, 2, 4, 3)),
-                        ((1, 2), (1, 2), (2, 2), (2, 3), (2, 3))))
-    assert (simpleob.minimize(cell_mapping) ==
-            GriddedPerm(Perm((1, 0, 3, 2)),
-                        ((1, 2), (1, 2), (3, 4), (3, 3))))
+
+    assert typicalob.minimize(cell_mapping) == GriddedPerm(
+        Perm((1, 0, 2, 4, 3)), ((1, 2), (1, 2), (2, 2), (2, 3), (2, 3))
+    )
+    assert simpleob.minimize(cell_mapping) == GriddedPerm(
+        Perm((1, 0, 3, 2)), ((1, 2), (1, 2), (3, 4), (3, 3))
+    )
 
 
-def test_compression(simpleob, singlecellob, everycellob, typicalob,
-                     isolatedob):
-    assert (simpleob ==
-            GriddedPerm.decompress(simpleob.compress()))
-    assert (singlecellob ==
-            GriddedPerm.decompress(singlecellob.compress()))
-    assert (everycellob ==
-            GriddedPerm.decompress(everycellob.compress()))
-    assert (typicalob ==
-            GriddedPerm.decompress(typicalob.compress()))
-    assert (isolatedob ==
-            GriddedPerm.decompress(isolatedob.compress()))
+def test_compression(simpleob, singlecellob, everycellob, typicalob, isolatedob):
+    assert simpleob == GriddedPerm.decompress(simpleob.compress())
+    assert singlecellob == GriddedPerm.decompress(singlecellob.compress())
+    assert everycellob == GriddedPerm.decompress(everycellob.compress())
+    assert typicalob == GriddedPerm.decompress(typicalob.compress())
+    assert isolatedob == GriddedPerm.decompress(isolatedob.compress())
