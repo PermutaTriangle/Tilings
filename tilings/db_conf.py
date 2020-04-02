@@ -16,9 +16,9 @@ from .misc import is_tree
 def taylor_expand(genf, n=10):
     """Return a list of the first n coefficients of genf's taylor expansion."""
     genf = simplify(genf)
-    ser = Poly(genf.series(n=n+1).removeO(), abc.x)
+    ser = Poly(genf.series(n=n + 1).removeO(), abc.x)
     res = ser.all_coeffs()
-    res = res[::-1] + [0]*(n+1-len(res))
+    res = res[::-1] + [0] * (n + 1 - len(res))
     return res
 
 
@@ -27,16 +27,24 @@ def simplify(genf):
     num, den = genf.as_numer_denom()
     num = num.expand()
     den = den.expand()
-    genf = num/den
+    genf = num / den
     return genf.simplify()
 
 
 def tiling_symmetries(tiling):
     """Return a set of the symmetries of a tiling."""
-    return set([tiling.rotate90(), tiling.rotate180(),
-                tiling.rotate270(), tiling.inverse(),
-                tiling.complement(), tiling.antidiagonal(),
-                tiling.reverse(), tiling])
+    return set(
+        [
+            tiling.rotate90(),
+            tiling.rotate180(),
+            tiling.rotate270(),
+            tiling.inverse(),
+            tiling.complement(),
+            tiling.antidiagonal(),
+            tiling.reverse(),
+            tiling,
+        ]
+    )
 
 
 def update_database(tiling, min_poly, genf, tree, force=False, equations=None):
@@ -47,10 +55,9 @@ def update_database(tiling, min_poly, genf, tree, force=False, equations=None):
     Each database entry has three things: tiling, genf, tree.
     """
     try:
-        mongo = MongoClient('mongodb://localhost:27017/permsdb_three')
+        mongo = MongoClient("mongodb://localhost:27017/permsdb_three")
         if not force:
-            info = mongo.permsdb_three.min_poly_db.find_one({'key':
-                                                            tiling.compress()})
+            info = mongo.permsdb_three.min_poly_db.find_one({"key": tiling.compress()})
             if info is not None:
                 return
         if isinstance(genf, str):
@@ -62,43 +69,47 @@ def update_database(tiling, min_poly, genf, tree, force=False, equations=None):
             raise ValueError("Not adding genf or min poly.")
 
         verify = 4
-        count = [len(list(tiling.objects_of_length(i)))
-                 for i in range(verify + 1)]
+        count = [len(list(tiling.objects_of_length(i))) for i in range(verify + 1)]
         if genf is not None:
             if taylor_expand(sympify(genf), verify) != count:
                 print(taylor_expand(sympify(genf), verify), count)
                 raise ValueError("Incorrect generating function.")
 
         if min_poly is not None:
-            if (not check_poly(min_poly, count) and
-                    not check_equation(min_poly, count)):
+            if not check_poly(min_poly, count) and not check_equation(min_poly, count):
                 raise ValueError("Incorrect minimum polynomial.")
 
         for t in tiling_symmetries(tiling):
-            info = {'key': t.compress()}
+            info = {"key": t.compress()}
             if equations is not None:
-                info['eqs'] = equations
+                info["eqs"] = equations
             elif tree is not None:
                 try:
-                    equations = ",\n".join("{} = {}".format(str(eq.lhs),
-                                                            str(eq.rhs))
-                                           for eq in tree.get_equations())
+                    equations = ",\n".join(
+                        "{} = {}".format(str(eq.lhs), str(eq.rhs))
+                        for eq in tree.get_equations()
+                    )
                     equations = equations.replace("(x)", "")
-                    info['eqs'] = equations
+                    info["eqs"] = equations
                 except ValueError:
                     pass
             if tree is not None:
-                info['tree'] = json.dumps(tree.to_jsonable())
+                info["tree"] = json.dumps(tree.to_jsonable())
             if min_poly is not None:
-                info['min_poly'] = str(min_poly)
+                info["min_poly"] = str(min_poly)
             if genf is not None:
-                info['genf'] = str(genf)
-            mongo.permsdb_three.min_poly_db.update({'key': info['key']},
-                                                   info, upsert=True)
+                info["genf"] = str(genf)
+            mongo.permsdb_three.min_poly_db.update(
+                {"key": info["key"]}, info, upsert=True
+            )
         mongo.close()
     except errors.PyMongoError:
-        raise ValueError(("If you wish to save generating functions of tilings"
-                          " you will need to setup MongoDB."))
+        raise ValueError(
+            (
+                "If you wish to save generating functions of tilings"
+                " you will need to setup MongoDB."
+            )
+        )
 
 
 def check_database(tiling, update=True):
@@ -109,16 +120,19 @@ def check_database(tiling, update=True):
         genf: the generating function for the tiling
         tree: a proof tree for the enumeration of the tiling"""
     try:
-        mongo = MongoClient('mongodb://localhost:27017/permsdb_three')
-        info = mongo.permsdb_three.min_poly_db.find_one({'key':
-                                                         tiling.compress()})
+        mongo = MongoClient("mongodb://localhost:27017/permsdb_three")
+        info = mongo.permsdb_three.min_poly_db.find_one({"key": tiling.compress()})
         mongo.close()
     except errors.PyMongoError:
-        raise ValueError(("If you wish to find the generating functions of "
-                          "tilings you will need to setup MongoDB. If you "
-                          "need a copy of the database computed by the "
-                          "Permuta Triangle group contact "
-                          "permutatriangle@gmail.com"))
+        raise ValueError(
+            (
+                "If you wish to find the generating functions of "
+                "tilings you will need to setup MongoDB. If you "
+                "need a copy of the database computed by the "
+                "Permuta Triangle group contact "
+                "permutatriangle@gmail.com"
+            )
+        )
 
     if info is None:
         error = "Tiling not in database."
@@ -128,8 +142,10 @@ def check_database(tiling, update=True):
             elif tiling.requirements:
                 error += " Try special casing requirements first."
             elif any(not ob.is_single_cell() for ob in tiling.obstructions):
-                error += (" Current methods to enumerate factors can't handle "
-                          "non-local obstructions.")
+                error += (
+                    " Current methods to enumerate factors can't handle "
+                    "non-local obstructions."
+                )
             elif tiling.dimensions == (1, 1):
                 return enumerate_one_by_one(tiling)
             elif is_monotone_tree_factor(tiling):
@@ -159,8 +175,7 @@ def is_monotone_tree_factor(tiling, one_non_monotone=False):
         if basis[1]:
             return False
         basis = basis[0]
-        if ((len(basis) == 1 and len(basis[0]) == 1) or
-                (incr in basis or decr in basis)):
+        if (len(basis) == 1 and len(basis[0]) == 1) or (incr in basis or decr in basis):
             # looking for non-monotone starting point
             continue
         if start is None:
@@ -177,29 +192,37 @@ def enumerate_monotone_tree_factor(tiling):
     """Return min_poly, genf, tree, that enumerates a monotone tree factor."""
     try:
         import tilescopethree as t
-        from tilescopethree.strategies import (row_placements,
-                                               col_placements,
-                                               one_by_one_verification,
-                                               factor,
-                                               requirement_corroboration,
-                                               row_and_column_separation,
-                                               obstruction_transitivity)
+        from tilescopethree.strategies import (
+            row_placements,
+            col_placements,
+            one_by_one_verification,
+            factor,
+            requirement_corroboration,
+            row_and_column_separation,
+            obstruction_transitivity,
+        )
         from comb_spec_searcher import StrategyPack
     except ImportError:
-        raise ValueError(("The enumeration of tilings relies on tilescope."
-                          " This has not yet be released. If you need this "
-                          "functionality, then contact "
-                          "permutatriangle@gmail.com"))
-    pack = StrategyPack(initial_strats=[factor,
-                                        requirement_corroboration],
-                        inferral_strats=[row_and_column_separation,
-                                         obstruction_transitivity],
-                        expansion_strats=[[partial(col_placements,
-                                                   positive=False),
-                                           partial(row_placements,
-                                                   positive=False)]],
-                        ver_strats=[one_by_one_verification],
-                        name="restricted_row_col_placements")
+        raise ValueError(
+            (
+                "The enumeration of tilings relies on tilescope."
+                " This has not yet be released. If you need this "
+                "functionality, then contact "
+                "permutatriangle@gmail.com"
+            )
+        )
+    pack = StrategyPack(
+        initial_strats=[factor, requirement_corroboration],
+        inferral_strats=[row_and_column_separation, obstruction_transitivity],
+        expansion_strats=[
+            [
+                partial(col_placements, positive=False),
+                partial(row_placements, positive=False),
+            ]
+        ],
+        ver_strats=[one_by_one_verification],
+        name="restricted_row_col_placements",
+    )
     searcher = t.TileScopeTHREE(tiling, pack)
     tree = searcher.auto_search()
     min_poly, genf = tree.get_min_poly(solve=True)
@@ -214,35 +237,47 @@ def enumerate_one_by_one(tiling):
         import tilescopethree as t
 
         basis = [ob.patt for ob in tiling.obstructions]
-        if any((len(patt) == 3 and
-                not patt.is_increasing() and
-                not patt.is_decreasing()) for patt in basis):
+        if any(
+            (len(patt) == 3 and not patt.is_increasing() and not patt.is_decreasing())
+            for patt in basis
+        ):
             from tilescopethree.strategies import (
-                                all_factor_insertions, factor,
-                                requirement_placement, one_by_one_verification,
-                                root_requirement_insertion,
-                                row_and_column_separation,
-                                requirement_corroboration,
-                                )
+                all_factor_insertions,
+                factor,
+                requirement_placement,
+                one_by_one_verification,
+                root_requirement_insertion,
+                row_and_column_separation,
+                requirement_corroboration,
+            )
             from comb_spec_searcher import StrategyPack
+
             # 231-avoiding
             pack = StrategyPack(
-                    initial_strats=[factor, requirement_corroboration,
-                                    partial(all_factor_insertions,
-                                            ignore_parent=True)],
-                    inferral_strats=[row_and_column_separation],
-                    expansion_strats=[[partial(root_requirement_insertion,
-                                               maxreqlen=1)],
-                                      [requirement_placement]],
-                    ver_strats=[one_by_one_verification],
-                    name="subclass_of_231")
+                initial_strats=[
+                    factor,
+                    requirement_corroboration,
+                    partial(all_factor_insertions, ignore_parent=True),
+                ],
+                inferral_strats=[row_and_column_separation],
+                expansion_strats=[
+                    [partial(root_requirement_insertion, maxreqlen=1)],
+                    [requirement_placement],
+                ],
+                ver_strats=[one_by_one_verification],
+                name="subclass_of_231",
+            )
         else:
             pack = t.strategy_packs_v2.all_the_strategies
     except ImportError:
-        raise ValueError(("The enumeration of tilings relies on tilescope."
-                          " This has not yet be released. If you need this "
-                          "functionality, then contact "
-                          "permutatriangle@gmail.com"))
+        raise ValueError(
+            (
+                "The enumeration of tilings relies on tilescope."
+                " This has not yet be released. If you need this "
+                "functionality, then contact "
+                "permutatriangle@gmail.com"
+            )
+        )
     searcher = t.TileScopeTHREE(tiling, pack)
     tree = searcher.auto_search(status_update=10)
     min_poly, genf = tree.get_min_poly(solve=True)
@@ -259,8 +294,7 @@ def enumerate_tree_factor(tiling, **kwargs):
     basis_array = tiling.cell_basis()
     cell_graph = tiling.cell_graph()
     if not is_tree(cell_graph):
-        raise ValueError(("Can only enumerate factors whose cell graph is a"
-                          "tree."))
+        raise ValueError(("Can only enumerate factors whose cell graph is a" "tree."))
     start = None
     incr = Perm((0, 1))
     decr = Perm((1, 0))
@@ -268,8 +302,7 @@ def enumerate_tree_factor(tiling, **kwargs):
         if basis[1]:
             raise ValueError("Only enumerate factor with no requirements.")
         basis = basis[0]
-        if ((len(basis) == 1 and len(basis[0]) == 1) or
-                (incr in basis or decr in basis)):
+        if (len(basis) == 1 and len(basis[0]) == 1) or (incr in basis or decr in basis):
             # looking for non-monotone starting point
             continue
         if start is None:
@@ -277,27 +310,38 @@ def enumerate_tree_factor(tiling, **kwargs):
         else:
             raise ValueError("Can only handle one non-monotone cell.")
     # variable for every cell
-    variables = [var(["v_{}{}".format(i, j)
-                      for j in range(tiling.dimensions[1])])
-                 for i in range(tiling.dimensions[0])]
+    variables = [
+        var(["v_{}{}".format(i, j) for j in range(tiling.dimensions[1])])
+        for i in range(tiling.dimensions[0])
+    ]
     if start is None:
         # pick some non-empty starting point
         for start, basis in basis_array.items():
             if len(basis[0][0]) != 1:
                 break
     from tilings import Obstruction, Tiling
+
     basis = basis_array[start]
     y = variables[start[0]][start[1]]
-    initial_genf = Tiling([Obstruction.single_cell(p, (0, 0))
-                           for p in basis[0]]).get_genf().subs({abc.x: y})
-    return enumerate_tree_factor_helper(basis_array, cell_graph, initial_genf,
-                                        variables, {start},
-                                        [(start, True), (start, False)],
-                                        **kwargs)
+    initial_genf = (
+        Tiling([Obstruction.single_cell(p, (0, 0)) for p in basis[0]])
+        .get_genf()
+        .subs({abc.x: y})
+    )
+    return enumerate_tree_factor_helper(
+        basis_array,
+        cell_graph,
+        initial_genf,
+        variables,
+        {start},
+        [(start, True), (start, False)],
+        **kwargs,
+    )
 
 
-def enumerate_tree_factor_helper(basis_array, cell_graph, genf,
-                                 variables, visited, queue, **kwargs):
+def enumerate_tree_factor_helper(
+    basis_array, cell_graph, genf, variables, visited, queue, **kwargs
+):
     """
     The heart of factor enumeration function.
 
@@ -317,8 +361,9 @@ def enumerate_tree_factor_helper(basis_array, cell_graph, genf,
             if len(basis) == 1 and len(basis[0]) == 1:
                 # ignore empty cells
                 continue
-            if not ((row and cell[1] == row_index) or
-                    (not row and cell[0] == col_index)):
+            if not (
+                (row and cell[1] == row_index) or (not row and cell[0] == col_index)
+            ):
                 # ignore if not in correct row/col
                 continue
             if cell in visited:
@@ -329,8 +374,8 @@ def enumerate_tree_factor_helper(basis_array, cell_graph, genf,
                 # we will come back and enumerate the cells col/row later.
                 queue.append((cell, not row))
             y = variables[cell[0]][cell[1]]
-            substitutions = {v: v/(1 - y) for v in row_vars if v != y}
-            genf = simplify((genf.subs(substitutions)/(1 - y)))
+            substitutions = {v: v / (1 - y) for v in row_vars if v != y}
+            genf = simplify((genf.subs(substitutions) / (1 - y)))
             if len(basis) != 1:
                 # We have a finite cell, so want the y^0, y^1, ..., y^k terms.
                 max_length = max(len(p) for p in basis)
@@ -338,11 +383,11 @@ def enumerate_tree_factor_helper(basis_array, cell_graph, genf,
                 temp_genf = genf
                 for i in range(max_length):
                     new_genf += temp_genf.subs({y: 0}) * y ** i
-                    temp_genf = ((genf - new_genf)/y**(i + 1))
+                    temp_genf = (genf - new_genf) / y ** (i + 1)
                     temp_genf = simplify(temp_genf)
                 genf = new_genf
 
-    subs = kwargs.get('substitute', True)
+    subs = kwargs.get("substitute", True)
     # make it look a little bit nice
     if subs:
         genf = simplify(genf.subs({v: abc.x for vs in variables for v in vs}))

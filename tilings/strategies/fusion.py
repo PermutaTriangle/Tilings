@@ -6,11 +6,12 @@ from tilings import Tiling
 from tilings.algorithms import ComponentFusion, Fusion
 from tilings.strategies.abstract_strategy import Strategy
 
-__all__ = ['FusionStrategy', 'ComponentFusionStrategy']
+__all__ = ["FusionStrategy", "ComponentFusionStrategy"]
 
 
-def _general_fusion_iterator(tiling: Tiling,
-                             fusion_class: Type[Fusion]) -> Iterator[Rule]:
+def _general_fusion_iterator(
+    tiling: Tiling, fusion_class: Type[Fusion]
+) -> Iterator[Rule]:
     """
     Generator over rules found by fusing rows or columns of `tiling` using
     the fusion defined by `fusion_class`.
@@ -19,8 +20,8 @@ def _general_fusion_iterator(tiling: Tiling,
     ncol = tiling.dimensions[0]
     nrow = tiling.dimensions[1]
     possible_fusion = chain(
-        (fusion_class(tiling, row_idx=r) for r in range(nrow-1)),
-        (fusion_class(tiling, col_idx=c) for c in range(ncol-1))
+        (fusion_class(tiling, row_idx=r) for r in range(nrow - 1)),
+        (fusion_class(tiling, col_idx=c) for c in range(ncol - 1)),
     )
     return (fusion.rule() for fusion in possible_fusion if fusion.fusable())
 
@@ -30,13 +31,13 @@ class FusionStrategy(Strategy):
         return _general_fusion_iterator(tiling, Fusion)
 
     def __str__(self) -> str:
-        return 'fusion'
+        return "fusion"
 
     def __repr__(self) -> str:
-        return 'FusionStrategy()'
+        return "FusionStrategy()"
 
     @classmethod
-    def from_dict(cls, d: dict) -> 'FusionStrategy':
+    def from_dict(cls, d: dict) -> "FusionStrategy":
         return cls()
 
 
@@ -46,17 +47,18 @@ class ComponentFusionStrategy(Strategy):
     unfused tiling obtained by drawing a line through certain heights/indices
     of the row/column.
     """
+
     def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         if tiling.requirements:
             return iter([])
         return _general_fusion_iterator(tiling, ComponentFusion)
 
     def __str__(self) -> str:
-        return 'component fusion'
+        return "component fusion"
 
     def __repr__(self) -> str:
-        return 'ComponentFusion()'
+        return "ComponentFusion()"
 
     @classmethod
-    def from_dict(cls, d: dict) -> 'ComponentFusionStrategy':
+    def from_dict(cls, d: dict) -> "ComponentFusionStrategy":
         return cls()

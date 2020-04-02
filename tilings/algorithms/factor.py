@@ -6,7 +6,7 @@ from permuta.misc import UnionFind
 from tilings.misc import partitions_iterator
 
 
-class Factor():
+class Factor:
     """
     Algorithm to compute the factorisation of a tiling.
 
@@ -76,8 +76,11 @@ class Factor():
         """
         Unite all the active cell that are on the same row or column.
         """
-        cell_pair_to_unite = (c for c in combinations(self._active_cells, r=2)
-                              if self._same_row_or_col(c[0], c[1]))
+        cell_pair_to_unite = (
+            c
+            for c in combinations(self._active_cells, r=2)
+            if self._same_row_or_col(c[0], c[1])
+        )
         for c1, c2 in cell_pair_to_unite:
             self._unite_cells((c1, c2))
 
@@ -114,10 +117,12 @@ class Factor():
             return self._factors_obs_and_reqs
         factors = []
         for component in self._get_components():
-            obstructions = tuple(ob for ob in self._tiling.obstructions
-                                 if ob.pos[0] in component)
-            requirements = tuple(req for req in self._tiling.requirements
-                                 if req[0].pos[0] in component)
+            obstructions = tuple(
+                ob for ob in self._tiling.obstructions if ob.pos[0] in component
+            )
+            requirements = tuple(
+                req for req in self._tiling.requirements if req[0].pos[0] in component
+            )
             factors.append((obstructions, requirements))
         self._factors_obs_and_reqs = factors
         return self._factors_obs_and_reqs
@@ -132,9 +137,10 @@ class Factor():
         """
         Returns all the irreducible factors of the tiling.
         """
-        return [self._tiling.__class__(obstructions=f[0], requirements=f[1],
-                                       minimize=False)
-                for f in self._get_factors_obs_and_reqs()]
+        return [
+            self._tiling.__class__(obstructions=f[0], requirements=f[1], minimize=False)
+            for f in self._get_factors_obs_and_reqs()
+        ]
 
     def reducible_factorisations(self):
         """
@@ -151,10 +157,12 @@ class Factor():
             factors = []
             for part in partition:
                 obstructions, requirements = zip(*part)
-                factors.append(self._tiling.__class__(
-                    obstructions=chain(*obstructions),
-                    requirements=chain(*requirements),
-                    minimize=False)
+                factors.append(
+                    self._tiling.__class__(
+                        obstructions=chain(*obstructions),
+                        requirements=chain(*requirements),
+                        minimize=False,
+                    )
                 )
             yield factors
 
@@ -163,15 +171,15 @@ class Factor():
         """
         Return a string that describe the operation performed on the tiling.
         """
-        union_str = 'unions of ' if union else ''
-        return 'The {}factors of the tiling.'.format(union_str)
+        union_str = "unions of " if union else ""
+        return "The {}factors of the tiling.".format(union_str)
 
     @property
     def constructor(self):
         """
         Returns the type of constructor for the factorisation
         """
-        return 'cartesian'
+        return "cartesian"
 
     def _rule(self, factors, formal_step, workable):
         """
@@ -186,13 +194,15 @@ class Factor():
         if not self.factorable():
             return
         assert isinstance(workable, bool)
-        return Rule(formal_step,
-                    factors,
-                    inferable=[False for _ in factors],
-                    workable=[workable for _ in factors],
-                    possibly_empty=[False for _ in factors],
-                    ignore_parent=workable,
-                    constructor=self.constructor)
+        return Rule(
+            formal_step,
+            factors,
+            inferable=[False for _ in factors],
+            workable=[workable for _ in factors],
+            possibly_empty=[False for _ in factors],
+            ignore_parent=workable,
+            constructor=self.constructor,
+        )
 
     def rule(self, workable=True):
         """
@@ -218,9 +228,7 @@ class Factor():
         """
         for factorisation in self.reducible_factorisations():
             yield self._rule(
-                factorisation,
-                self.formal_step(union=True),
-                workable=workable
+                factorisation, self.formal_step(union=True), workable=workable
             )
 
 
@@ -241,10 +249,15 @@ class FactorWithMonotoneInterleaving(Factor):
 
         Override `Factor._unite_rows_and_cols`.
         """
-        cell_pair_to_unite = (c for c in combinations(self._active_cells, r=2)
-                              if (self._same_row_or_col(c[0], c[1]) and
-                                  not self._tiling.is_monotone_cell(c[0]) and
-                                  not self._tiling.is_monotone_cell(c[1])))
+        cell_pair_to_unite = (
+            c
+            for c in combinations(self._active_cells, r=2)
+            if (
+                self._same_row_or_col(c[0], c[1])
+                and not self._tiling.is_monotone_cell(c[0])
+                and not self._tiling.is_monotone_cell(c[1])
+            )
+        )
         for c1, c2 in cell_pair_to_unite:
             self._unite_cells((c1, c2))
 
@@ -252,16 +265,17 @@ class FactorWithMonotoneInterleaving(Factor):
         """
         Return a string that describe the operation performed on the tiling.
         """
-        union_str = 'unions of ' if union else ''
-        return ("The {}factors with monotone interleaving of the "
-                "tiling.".format(union_str))
+        union_str = "unions of " if union else ""
+        return "The {}factors with monotone interleaving of the " "tiling.".format(
+            union_str
+        )
 
     @property
     def constructor(self):
         """
         Returns the type of constructor for the factorisation
         """
-        return 'other'
+        return "other"
 
 
 class FactorWithInterleaving(Factor):
@@ -289,13 +303,12 @@ class FactorWithInterleaving(Factor):
         """
         Return a string that describe the operation performed on the tiling.
         """
-        union_str = 'unions of ' if union else ''
-        return ("The {}factors with interleaving of the "
-                "tiling.".format(union_str))
+        union_str = "unions of " if union else ""
+        return "The {}factors with interleaving of the " "tiling.".format(union_str)
 
     @property
     def constructor(self):
         """
         Returns the type of constructor for the factorisation
         """
-        return 'other'
+        return "other"

@@ -11,6 +11,7 @@ class ObstructionInferral(abc.ABC):
     Algorithm to compute the tiling created by adding all obstructions from
     `self.potential_new_obs()` that can be added to the tiling.
     """
+
     def __init__(self, tiling):
         self._tiling = tiling
         self._new_obs = None
@@ -39,8 +40,7 @@ class ObstructionInferral(abc.ABC):
     @staticmethod
     def can_add_obstruction(obstruction, tiling):
         """Return true if `obstruction` can be added to `tiling`."""
-        return (tiling.add_requirement(obstruction.patt, obstruction.pos)
-                .is_empty())
+        return tiling.add_requirement(obstruction.patt, obstruction.pos).is_empty()
 
     def obstruction_inferral(self):
         """
@@ -61,8 +61,7 @@ class ObstructionInferral(abc.ABC):
         If no new obstruction is added, returns None.
         """
         if self.new_obs():
-            return InferralRule(self.formal_step(),
-                                self.obstruction_inferral())
+            return InferralRule(self.formal_step(), self.obstruction_inferral())
 
 
 class SubobstructionInferral(ObstructionInferral):
@@ -87,6 +86,7 @@ class AllObstructionInferral(ObstructionInferral):
     Algorithm to compute the tiling created by adding all
     obstruction of length up to obstruction_length which can be added.
     """
+
     def __init__(self, tiling, obstruction_length):
         super().__init__(tiling)
         self._obs_len = obstruction_length
@@ -100,8 +100,10 @@ class AllObstructionInferral(ObstructionInferral):
         Returns True if the gridded perm `gp` is not required by any
         requirement list of the tiling.
         """
-        return all(any(gp not in req for req in req_list)
-                   for req_list in self._tiling.requirements)
+        return all(
+            any(gp not in req for req in req_list)
+            for req_list in self._tiling.requirements
+        )
 
     def potential_new_obs(self):
         """
@@ -111,8 +113,7 @@ class AllObstructionInferral(ObstructionInferral):
             return []
         no_req_tiling = self._tiling.__class__(self._tiling.obstructions)
         n = self._obs_len
-        pot_obs = filter(self.not_required,
-                         no_req_tiling.gridded_perms(n))
+        pot_obs = filter(self.not_required, no_req_tiling.gridded_perms(n))
         return (Obstruction(gp.patt, gp.pos) for gp in pot_obs)
 
 
@@ -120,6 +121,7 @@ class EmptyCellInferral(AllObstructionInferral):
     """
     Try to add a point obstruction to all the active non positive cell
     """
+
     def __init__(self, tiling):
         super().__init__(tiling, 1)
 

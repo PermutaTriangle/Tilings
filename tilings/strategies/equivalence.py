@@ -6,7 +6,7 @@ from tilings import Tiling
 from tilings.algorithms import RequirementPlacement
 from tilings.strategies.abstract_strategy import Strategy
 
-__all__ = ['RequirementPlacementStrategy']
+__all__ = ["RequirementPlacementStrategy"]
 
 
 class RequirementPlacementStrategy(Strategy):
@@ -27,9 +27,14 @@ class RequirementPlacementStrategy(Strategy):
             - `permuta.misc.DIR_EAST`
             - `permuta.misc.DIR_WEST`
     """
-    def __init__(self, point_only: bool = False, partial: bool = False,
-                 ignore_parent: bool = False,
-                 dirs: Iterable[int] = tuple(DIRS)):
+
+    def __init__(
+        self,
+        point_only: bool = False,
+        partial: bool = False,
+        ignore_parent: bool = False,
+        dirs: Iterable[int] = tuple(DIRS),
+    ):
         assert all(d in DIRS for d in dirs), "Got an invalid direction"
         self.point_only = point_only
         self.partial = partial
@@ -38,66 +43,67 @@ class RequirementPlacementStrategy(Strategy):
 
     def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         if self.partial:
-            req_placements = [RequirementPlacement(tiling, own_row=False,
-                                                   dirs=self.dirs),
-                              RequirementPlacement(tiling, own_col=False,
-                                                   dirs=self.dirs)]
+            req_placements = [
+                RequirementPlacement(tiling, own_row=False, dirs=self.dirs),
+                RequirementPlacement(tiling, own_col=False, dirs=self.dirs),
+            ]
         else:
             req_placements = [RequirementPlacement(tiling, dirs=self.dirs)]
         for req_placement in req_placements:
             if self.point_only:
-                yield from req_placement.all_point_placement_rules(
-                    self.ignore_parent)
+                yield from req_placement.all_point_placement_rules(self.ignore_parent)
             else:
                 yield from req_placement.all_requirement_placement_rules(
-                    self.ignore_parent)
+                    self.ignore_parent
+                )
 
     def __str__(self) -> str:
-        s = 'partial ' if self.partial else ''
-        s += 'point' if self.point_only else 'requirement'
-        s += ' placement'
+        s = "partial " if self.partial else ""
+        s += "point" if self.point_only else "requirement"
+        s += " placement"
         if len(self.dirs) < 4:
             dir_str = {
-                DIR_NORTH: 'north',
-                DIR_SOUTH: 'south',
-                DIR_EAST: 'east',
-                DIR_WEST: 'west',
+                DIR_NORTH: "north",
+                DIR_SOUTH: "south",
+                DIR_EAST: "east",
+                DIR_WEST: "west",
             }
             if len(self.dirs) == 1:
-                s += ' in direction {}'.format(dir_str[self.dirs[0]])
+                s += " in direction {}".format(dir_str[self.dirs[0]])
             else:
-                s += ' in directions '.format()
-                s += ', '.join(dir_str[d] for d in self.dirs[:-1])
-                s += ' and {}'.format(dir_str[self.dirs[-1]])
+                s += " in directions ".format()
+                s += ", ".join(dir_str[d] for d in self.dirs[:-1])
+                s += " and {}".format(dir_str[self.dirs[-1]])
         if self.ignore_parent:
-            s += ' (ignore parent)'
+            s += " (ignore parent)"
         return s
 
     def __repr__(self) -> str:
         dir_repr = {
-            DIR_NORTH: 'DIR_NORTH',
-            DIR_SOUTH: 'DIR_SOUTH',
-            DIR_WEST: 'DIR_WEST',
-            DIR_EAST: 'DIR_EAST',
+            DIR_NORTH: "DIR_NORTH",
+            DIR_SOUTH: "DIR_SOUTH",
+            DIR_WEST: "DIR_WEST",
+            DIR_EAST: "DIR_EAST",
         }
         if len(self.dirs) < 4:
-            dir_arg = ', dirs=({},)'.format(
-                ', '.join(dir_repr[d] for d in self.dirs))
+            dir_arg = ", dirs=({},)".format(", ".join(dir_repr[d] for d in self.dirs))
         else:
-            dir_arg = ''
-        return ('RequirementPlacementStrategy(point_only={}, partial={},'
-                ' ignore_parent={}{})'
-                .format(self.point_only, self.partial, self.ignore_parent,
-                        dir_arg))
+            dir_arg = ""
+        return (
+            "RequirementPlacementStrategy(point_only={}, partial={},"
+            " ignore_parent={}{})".format(
+                self.point_only, self.partial, self.ignore_parent, dir_arg
+            )
+        )
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
-        d['point_only'] = self.point_only
-        d['partial'] = self.partial
-        d['ignore_parent'] = self.ignore_parent
-        d['dirs'] = self.dirs
+        d["point_only"] = self.point_only
+        d["partial"] = self.partial
+        d["ignore_parent"] = self.ignore_parent
+        d["dirs"] = self.dirs
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> 'RequirementPlacementStrategy':
+    def from_dict(cls, d: dict) -> "RequirementPlacementStrategy":
         return cls(**d)

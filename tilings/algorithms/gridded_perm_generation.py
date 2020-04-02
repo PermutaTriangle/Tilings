@@ -1,6 +1,14 @@
 from collections import Counter
-from typing import (TYPE_CHECKING, Dict, Iterable, Iterator, Optional,
-                    Sequence, Set, Tuple)
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Iterable,
+    Iterator,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+)
 
 from permuta import Perm
 from tilings.griddedperm import GriddedPerm
@@ -12,7 +20,7 @@ if TYPE_CHECKING:
 Cell = Tuple[int, int]
 
 
-class GriddedPermsOnTiling():
+class GriddedPermsOnTiling:
     """
     An Iterable of all gridded permutations griddable on the tiling.
 
@@ -21,14 +29,16 @@ class GriddedPermsOnTiling():
     specified.
     """
 
-    def __init__(self, tiling: 'Tiling', maxlen: Optional[int] = None):
+    def __init__(self, tiling: "Tiling", maxlen: Optional[int] = None):
         self._active_cells = tiling.active_cells
         self._obstructions = tiling.obstructions
         self._requirements = tiling.requirements
         self._num_columns = tiling.dimensions[0]
-        self._maxlen = (maxlen if maxlen is not None else
-                        max(tiling.maximum_length_of_minimum_gridded_perm(),
-                            1))
+        self._maxlen = (
+            maxlen
+            if maxlen is not None
+            else max(tiling.maximum_length_of_minimum_gridded_perm(), 1)
+        )
         self._cell_counts = self.min_cell_counts()
 
     def patts_contained_in_cell(self, cell: Cell) -> Set[Perm]:
@@ -66,33 +76,34 @@ class GriddedPermsOnTiling():
         on the number of point in each cell.
         """
         points_in_cells = Counter(gp.pos)
-        needed = sum(max(0, (self._cell_counts[cell] - points_in_cells[cell]))
-                     for cell in self._active_cells)
+        needed = sum(
+            max(0, (self._cell_counts[cell] - points_in_cells[cell]))
+            for cell in self._active_cells
+        )
         to_place = self._maxlen - len(gp)
         return needed <= to_place
 
-    def insert_next_point(self, gp: GriddedPerm,
-                          col: int,) -> Iterator[GriddedPerm]:
+    def insert_next_point(self, gp: GriddedPerm, col: int,) -> Iterator[GriddedPerm]:
         """
         Insert the next point in the given column in all possible way.
         """
-        active_cell_in_col = (cell for cell in self._active_cells
-                              if cell[0] == col)
+        active_cell_in_col = (cell for cell in self._active_cells if cell[0] == col)
         for cell in active_cell_in_col:
             _, _, minval, maxval = gp.get_bounding_box(cell)
             for val in range(minval, maxval + 1):
-                next_gp = GriddedPerm(gp.patt.insert(new_element=val),
-                                      gp.pos + (cell,))
+                next_gp = GriddedPerm(gp.patt.insert(new_element=val), gp.pos + (cell,))
                 yield next_gp
 
-    def can_satisfy_all(self, gp: GriddedPerm, col: int,
-                        reqs: Iterable[Iterable[Requirement]]) -> bool:
+    def can_satisfy_all(
+        self, gp: GriddedPerm, col: int, reqs: Iterable[Iterable[Requirement]]
+    ) -> bool:
         """
         Indicate if all the requirement lists can be satisfied by the gridded
         perm if we keep extending from the given column.
         """
-        return all(any(self.can_satisfy(gp, col, req) for req in reqlist)
-                   for reqlist in reqs)
+        return all(
+            any(self.can_satisfy(gp, col, req) for req in reqlist) for reqlist in reqs
+        )
 
     @staticmethod
     def can_satisfy(gp: GriddedPerm, col: int, req: Requirement) -> bool:
@@ -110,9 +121,11 @@ class GriddedPermsOnTiling():
         return any(ob in gp for ob in self._obstructions)
 
     def backtracking(
-        self, curgp: GriddedPerm, curcol: int,
+        self,
+        curgp: GriddedPerm,
+        curcol: int,
         reqs: Sequence[Sequence[Requirement]],
-        yielded: Optional[bool] = False
+        yielded: Optional[bool] = False,
     ) -> Iterator[GriddedPerm]:
         """
         The backtracking algorithm to generate the gridded permutation.
@@ -133,7 +146,8 @@ class GriddedPermsOnTiling():
         # already been satisfied
         satisfiable = tuple(
             tuple(r for r in reqlist if self.can_satisfy(curgp, curcol, r))
-            for reqlist in reqs)
+            for reqlist in reqs
+        )
         if any(not reqlist for reqlist in satisfiable):
             return
 
@@ -141,16 +155,17 @@ class GriddedPermsOnTiling():
             return
 
         if self.can_satisfy_all(curgp, curcol + 1, satisfiable):
-            yield from self.backtracking(curgp, curcol + 1, satisfiable,
-                                         yielded)
+            yield from self.backtracking(curgp, curcol + 1, satisfiable, yielded)
 
         for nextgp in self.insert_next_point(curgp, curcol):
             if not self.forbidden(nextgp):
-                unsatisfied_reqs = tuple(reqlist for reqlist in reqs if
-                                         not self.satisfies(nextgp, reqlist))
+                unsatisfied_reqs = tuple(
+                    reqlist for reqlist in reqs if not self.satisfies(nextgp, reqlist)
+                )
                 yield from self.backtracking(nextgp, curcol, unsatisfied_reqs)
 
     def __iter__(self) -> Iterator[GriddedPerm]:
         if not Obstruction(Perm(tuple()), tuple()) in self._obstructions:
-            yield from self.backtracking(GriddedPerm.empty_perm(), 0,
-                                         self._requirements)
+            yield from self.backtracking(
+                GriddedPerm.empty_perm(), 0, self._requirements
+            )

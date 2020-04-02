@@ -1,8 +1,7 @@
 from collections import Counter, defaultdict
 from heapq import heapify, heappop, heappush
 from itertools import chain, product
-from typing import (TYPE_CHECKING, Dict, FrozenSet, Iterator, List, Optional,
-                    Set, Tuple)
+from typing import TYPE_CHECKING, Dict, FrozenSet, Iterator, List, Optional, Set, Tuple
 
 from permuta import Perm
 from tilings import GriddedPerm, Obstruction
@@ -40,12 +39,8 @@ class MinimalGriddedPerms:
     def __init__(self, tiling: "Tiling"):
         self.obstructions = tiling.obstructions
         self.requirements = tiling.requirements
-        self.relevant_obstructions = (
-            dict()
-        )  # type: Dict[FrozenSet[Cell], GPTuple]
-        self.relevant_requirements = (
-            dict()
-        )  # type: Dict[FrozenSet[Cell], Reqs]
+        self.relevant_obstructions = dict()  # type: Dict[FrozenSet[Cell], GPTuple]
+        self.relevant_requirements = dict()  # type: Dict[FrozenSet[Cell], Reqs]
         self.relevant_obstructions_by_cell = (
             dict()
         )  # type: Dict[Tuple[Cell, FrozenSet[Cell]], GPTuple]
@@ -54,14 +49,10 @@ class MinimalGriddedPerms:
         )  # type: Dict[Tuple[Cell, GPTuple], GPTuple]
         # Delay computing until needed - these could all be stored on
         # MinimalGriddedPerms, as none of these are tiling specific.
-        self.localised_patts = (
-            dict()
-        )  # type: Dict[Tuple[Cell, GPTuple], GPTuple]
+        self.localised_patts = dict()  # type: Dict[Tuple[Cell, GPTuple], GPTuple]
         self.max_cell_counts = dict()  # type: Dict[GPTuple, Dict[Cell, int]]
         self.upward_closures = dict()  # type: Dict[GPTuple, GPTuple]
-        self.known_patts = defaultdict(
-            set
-        )  # type: Dict[GriddedPerm, Set[GriddedPerm]]
+        self.known_patts = defaultdict(set)  # type: Dict[GriddedPerm, Set[GriddedPerm]]
 
     def get_requirements_up_to_cell(self, cell: Cell, gps: GPTuple) -> GPTuple:
         """Given a goal gps and cell (x,y), return the truncations of the reqs
@@ -69,9 +60,7 @@ class MinimalGriddedPerms:
         res = self.requirements_up_to_cell.get((cell, gps))
         if res is None:
             res = tuple(
-                req.get_gridded_perm_in_cells(
-                    frozenset(c for c in req.pos if c < cell)
-                )
+                req.get_gridded_perm_in_cells(frozenset(c for c in req.pos if c < cell))
                 for req in gps
             )
             self.requirements_up_to_cell[(cell, gps)] = res
@@ -83,16 +72,12 @@ class MinimalGriddedPerms:
         res = self.relevant_obstructions.get(cells)
         if res is None:
             res = tuple(
-                ob
-                for ob in self.obstructions
-                if all(c in cells for c in ob.pos)
+                ob for ob in self.obstructions if all(c in cells for c in ob.pos)
             )
             self.relevant_obstructions[cells] = res
         return res
 
-    def get_relevant_obstructions_by_cell(
-        self, gp: GriddedPerm, cell: Cell
-    ) -> GPTuple:
+    def get_relevant_obstructions_by_cell(self, gp: GriddedPerm, cell: Cell) -> GPTuple:
         """ Get the obstructions that involve only cells in gp
         and involve cell"""
         cells = frozenset(gp.pos)
@@ -109,9 +94,7 @@ class MinimalGriddedPerms:
         res = self.relevant_requirements.get(cells)
         if res is None:
             res = tuple(
-                tuple(
-                    req for req in reqlist if all(c in cells for c in req.pos)
-                )
+                tuple(req for req in reqlist if all(c in cells for c in req.pos))
                 for reqlist in self.requirements
             )
             self.relevant_requirements[cells] = res
@@ -150,9 +133,7 @@ class MinimalGriddedPerms:
                 return True
         return False
 
-    def _prepare_queue(
-        self, queue: List[QueuePacket]
-    ) -> Iterator[GriddedPerm]:
+    def _prepare_queue(self, queue: List[QueuePacket]) -> Iterator[GriddedPerm]:
         """Add cell counters with gridded permutations to the queue.
         The function yields all initial_gp that satisfy the requirements."""
         if len(self.requirements) <= 1:
@@ -227,9 +208,7 @@ class MinimalGriddedPerms:
                     for (idx, val), cell in zip(enumerate(res.patt), res.pos)
                 ] + [
                     ((cell[0], idx), (cell[1], val))
-                    for (idx, val), cell in zip(
-                        enumerate(subgp.patt), subgp.pos
-                    )
+                    for (idx, val), cell in zip(enumerate(subgp.patt), subgp.pos)
                 ]
                 temp.sort()
                 # update the res
@@ -277,9 +256,7 @@ class MinimalGriddedPerms:
                     if len(in_this_cell) >= 2:
                         # the dictionary is patt: v, where v is the number we
                         # can subtract from the naive bound
-                        res[cell] -= better_bounds.get(
-                            frozenset(in_this_cell), 0
-                        )
+                        res[cell] -= better_bounds.get(frozenset(in_this_cell), 0)
             self.max_cell_counts[gps] = res
         return res
 
@@ -327,14 +304,10 @@ class MinimalGriddedPerms:
             self.upward_closures[gps] = res
         return res
 
-    def _get_cells_to_try(
-        self, qpacket: QueuePacket
-    ) -> Iterator[Tuple[Cell, bool]]:
+    def _get_cells_to_try(self, qpacket: QueuePacket) -> Iterator[Tuple[Cell, bool]]:
         """Yield cells that a gridded permutation could be extended by."""
         cells = set()  # type: Set[Cell]
-        for g, req in zip(
-            qpacket.gps, self.get_relevant_requirements(qpacket.gp)
-        ):
+        for g, req in zip(qpacket.gps, self.get_relevant_requirements(qpacket.gp)):
             if not self.contains(qpacket.gp, *req):
                 # Only insert into cells in the requirements that are not
                 # already satisfied.
@@ -369,12 +342,8 @@ class MinimalGriddedPerms:
                 # the requirements we are aiming for in gps, and contain all of
                 # the gps restricted to smaller cells
                 elif cell > qpacket.last_cell:
-                    prior_reqs = self.get_requirements_up_to_cell(
-                        cell, qpacket.gps
-                    )
-                    if all(
-                        self.contains(qpacket.gp, req) for req in prior_reqs
-                    ):
+                    prior_reqs = self.get_requirements_up_to_cell(cell, qpacket.gps)
+                    if all(self.contains(qpacket.gp, req) for req in prior_reqs):
                         yield (cell, localised)
 
         if qpacket.still_localising:
@@ -476,15 +445,11 @@ class MinimalGriddedPerms:
                     # subgridded permutation.
                     if yielded_subgridded_perm(
                         nextgp
-                    ) or not self.satisfies_obstructions(
-                        nextgp, must_contain=cell
-                    ):
+                    ) or not self.satisfies_obstructions(nextgp, must_contain=cell):
                         continue
                     # Update the nextgp about the patterns that are
                     # contained in the subgridded permutation gp.
-                    self.known_patts[nextgp].update(
-                        self.known_patts[qpacket.gp]
-                    )
+                    self.known_patts[nextgp].update(self.known_patts[qpacket.gp])
                     # If it satisfies the requirements, then it is a
                     # a minimal gridded permutation
                     if self.satisfies_requirements(nextgp):

@@ -3,21 +3,24 @@ from typing import Iterable, Optional, Type
 from comb_spec_searcher import Rule
 from permuta import Perm
 from tilings import Tiling
-from tilings.algorithms.enumeration import (BasicEnumeration,
-                                            DatabaseEnumeration,
-                                            ElementaryEnumeration, Enumeration,
-                                            LocalEnumeration,
-                                            LocallyFactorableEnumeration,
-                                            OneByOneEnumeration)
+from tilings.algorithms.enumeration import (
+    BasicEnumeration,
+    DatabaseEnumeration,
+    ElementaryEnumeration,
+    Enumeration,
+    LocalEnumeration,
+    LocallyFactorableEnumeration,
+    OneByOneEnumeration,
+)
 from tilings.strategies.abstract_strategy import Strategy
 
 __all__ = [
-    'BasicVerificationStrategy',
-    'OneByOneVerificationStrategy',
-    'DatabaseVerificationStrategy',
-    'LocallyFactorableVerificationStrategy',
-    'ElementaryVerificationStrategy',
-    'LocalVerificationStrategy',
+    "BasicVerificationStrategy",
+    "OneByOneVerificationStrategy",
+    "DatabaseVerificationStrategy",
+    "LocallyFactorableVerificationStrategy",
+    "ElementaryVerificationStrategy",
+    "LocalVerificationStrategy",
 ]
 
 
@@ -27,54 +30,59 @@ class _VerificationStrategy(Strategy):
     verification strategy. Subclass need to have the class attribute
     `VERIFICATION_CLASS`.
     """
+
     # pylint: disable=E1102
     VERIFICATION_CLASS = NotImplemented  # type: Type[Enumeration]
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         if cls.VERIFICATION_CLASS is NotImplemented:
-            raise NotImplementedError('Need to define {}.VERIFICATION_CLASS'
-                                      .format(cls.__name__))
+            raise NotImplementedError(
+                "Need to define {}.VERIFICATION_CLASS".format(cls.__name__)
+            )
 
     def __call__(self, tiling: Tiling, **kwargs) -> Optional[Rule]:
         return self.VERIFICATION_CLASS(tiling).verification_rule()
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + '()'
+        return self.__class__.__name__ + "()"
 
     @classmethod
-    def from_dict(cls, d: dict) -> '_VerificationStrategy':
+    def from_dict(cls, d: dict) -> "_VerificationStrategy":
         return cls()
 
 
 class BasicVerificationStrategy(_VerificationStrategy):
     """Verify the most basics tilings."""
+
     VERIFICATION_CLASS = BasicEnumeration
 
     def __str__(self) -> str:
-        return 'basic verification'
+        return "basic verification"
 
 
 class OneByOneVerificationStrategy(_VerificationStrategy):
     """Return a verification if one-by-one verified."""
+
     VERIFICATION_CLASS = OneByOneEnumeration
 
     def __call__(self, tiling: Tiling, **kwargs):
-        if 'basis' not in kwargs:
-            raise TypeError('Missing basis argument')
-        basis = kwargs['basis']  # type: Iterable[Perm]
+        if "basis" not in kwargs:
+            raise TypeError("Missing basis argument")
+        basis = kwargs["basis"]  # type: Iterable[Perm]
         return self.VERIFICATION_CLASS(tiling, basis).verification_rule()
 
     def __str__(self) -> str:
-        return 'one by one verification'
+        return "one by one verification"
 
 
 class DatabaseVerificationStrategy(_VerificationStrategy):
     """Verify a tiling that is in the database"""
+
     VERIFICATION_CLASS = DatabaseEnumeration
 
     def __str__(self) -> str:
-        return 'database verification'
+        return "database verification"
 
 
 class LocallyFactorableVerificationStrategy(_VerificationStrategy):
@@ -84,10 +92,11 @@ class LocallyFactorableVerificationStrategy(_VerificationStrategy):
     A tiling is locally factorable if every requirement and obstruction is
     non-interleaving, i.e. use a single cell in each row and column.
     """
+
     VERIFICATION_CLASS = LocallyFactorableEnumeration
 
     def __str__(self) -> str:
-        return 'locally factorable verification'
+        return "locally factorable verification"
 
 
 class ElementaryVerificationStrategy(_VerificationStrategy):
@@ -95,10 +104,11 @@ class ElementaryVerificationStrategy(_VerificationStrategy):
     A tiling is elementary verified if it is locally factorable
     and has no interleaving cells.
     """
+
     VERIFICATION_CLASS = ElementaryEnumeration
 
     def __str__(self) -> str:
-        return 'elementary verification'
+        return "elementary verification"
 
 
 class LocalVerificationStrategy(_VerificationStrategy):
@@ -108,7 +118,8 @@ class LocalVerificationStrategy(_VerificationStrategy):
     A tiling is local verified if every obstruction and every requirement is
     localized, i.e. in a single cell and the tiling is not 1x1.
     """
+
     VERIFICATION_CLASS = LocalEnumeration
 
     def __str__(self) -> str:
-        return 'local verification'
+        return "local verification"

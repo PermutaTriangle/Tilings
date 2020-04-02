@@ -5,7 +5,7 @@ useful.
 from functools import reduce
 from typing import Dict, Sequence, Set, Tuple, TypeVar
 
-Vertex = TypeVar('Vertex')
+Vertex = TypeVar("Vertex")
 AdjTable = Dict[Vertex, Set[Vertex]]
 
 
@@ -35,8 +35,7 @@ def intersection_reduce(iterable):
         return set()
 
 
-def is_tree(vertices: Sequence[Vertex],
-            edges: Sequence[Tuple[Vertex, Vertex]]) -> bool:
+def is_tree(vertices: Sequence[Vertex], edges: Sequence[Tuple[Vertex, Vertex]]) -> bool:
     """
     Return True if the undirected graph is a tree.
 
@@ -48,8 +47,9 @@ def is_tree(vertices: Sequence[Vertex],
     return len(edges) + 1 == len(vertices) and is_connected(adj_table)
 
 
-def adjacency_table(vertices: Sequence[Vertex],
-                    edges: Sequence[Tuple[Vertex, Vertex]]) -> AdjTable:
+def adjacency_table(
+    vertices: Sequence[Vertex], edges: Sequence[Tuple[Vertex, Vertex]]
+) -> AdjTable:
     """Return adjacency table of edges."""
     adj_table = {v: set() for v in vertices}  # type: AdjTable
     for c1, c2 in edges:
@@ -73,6 +73,7 @@ def is_connected(adj_table: AdjTable) -> bool:
                 stack.append(vertex)
                 visited[vertex] = True
     return all(visited.values())
+
 
 # The code below is magical and comes from
 # https://codereview.stackexchange.com/questions/1526/finding-all-k-subset-partitions

@@ -17,14 +17,15 @@ def json_encode_decode(sp):
     __tracebackhide__ = True
     d = sp.to_jsonable()
     if not isinstance(d, dict):
-        pytest.fail('to_jsonable does not return a dict. \n'
-                    'Returned: {}'.format(d))
+        pytest.fail("to_jsonable does not return a dict. \n" "Returned: {}".format(d))
     try:
         json_str = json.dumps(d)
     except TypeError as e:
-        pytest.fail('The to_jsonable method returns a dictionnary that can '
-                    'not be encoded as json string\n'
-                    'Got error: {}'.format(e))
+        pytest.fail(
+            "The to_jsonable method returns a dictionnary that can "
+            "not be encoded as json string\n"
+            "Got error: {}".format(e)
+        )
     sp_new = TileScopePack.from_dict(json.loads(json_str))
     return sp_new
 
@@ -38,8 +39,7 @@ pack = [
     TileScopePack.all_the_strategies().make_database(),
     TileScopePack.all_the_strategies().make_elementary(),
     TileScopePack.all_the_strategies().add_symmetry(),
-    (TileScopePack.all_the_strategies().make_fusion().add_symmetry()
-     .make_database()),
+    (TileScopePack.all_the_strategies().make_fusion().add_symmetry().make_database()),
     TileScopePack.point_placements(),
     TileScopePack.pattern_placements(3),
     TileScopePack.insertion_point_placements(),
