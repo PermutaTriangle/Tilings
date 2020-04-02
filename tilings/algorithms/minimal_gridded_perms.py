@@ -17,10 +17,15 @@ Reqs = Tuple[GPTuple, ...]
 WorkPackets = Tuple[GriddedPerm, GPTuple, Cell]
 
 
-class QueuePacket():
-    def __init__(self, gp: GriddedPerm, gps: GPTuple,
-                 last_cell: Cell, still_localising: bool,
-                 mindices: Dict[Cell, int]):
+class QueuePacket:
+    def __init__(
+        self,
+        gp: GriddedPerm,
+        gps: GPTuple,
+        last_cell: Cell,
+        still_localising: bool,
+        mindices: Dict[Cell, int],
+    ):
         self.gp = gp
         self.gps = gps
         self.last_cell = last_cell
@@ -31,29 +36,31 @@ class QueuePacket():
         return self.gp < other.gp
 
 
-class MinimalGriddedPerms():
-    def __init__(self, tiling: 'Tiling'):
+class MinimalGriddedPerms:
+    def __init__(self, tiling: "Tiling"):
         self.obstructions = tiling.obstructions
         self.requirements = tiling.requirements
         self.relevant_obstructions = (
             dict()
-          )  # type: Dict[FrozenSet[Cell], GPTuple]
+        )  # type: Dict[FrozenSet[Cell], GPTuple]
         self.relevant_requirements = (
             dict()
-          )  # type: Dict[FrozenSet[Cell], Reqs]
+        )  # type: Dict[FrozenSet[Cell], Reqs]
         self.relevant_obstructions_by_cell = (
             dict()
-          )  # type: Dict[Tuple[Cell, FrozenSet[Cell]], GPTuple]
+        )  # type: Dict[Tuple[Cell, FrozenSet[Cell]], GPTuple]
         self.requirements_up_to_cell = (
             dict()
-          )  # type: Dict[Tuple[Cell, GPTuple], GPTuple]
+        )  # type: Dict[Tuple[Cell, GPTuple], GPTuple]
         # Delay computing until needed - these could all be stored on
         # MinimalGriddedPerms, as none of these are tiling specific.
-        self.localised_patts = dict()  # type: Dict[GPTuple, GPTuple]
+        self.localised_patts = (
+            dict()
+        )  # type: Dict[Tuple[Cell, GPTuple], GPTuple]
         self.max_cell_counts = dict()  # type: Dict[GPTuple, Dict[Cell, int]]
         self.upward_closures = dict()  # type: Dict[GPTuple, GPTuple]
-        self.known_patts = (
-            defaultdict(set)
+        self.known_patts = defaultdict(
+            set
         )  # type: Dict[GriddedPerm, Set[GriddedPerm]]
 
     def get_requirements_up_to_cell(self, cell: Cell, gps: GPTuple) -> GPTuple:
@@ -61,9 +68,12 @@ class MinimalGriddedPerms():
         in gps to the cells < (x, y) in normal sort order."""
         res = self.requirements_up_to_cell.get((cell, gps))
         if res is None:
-            res = tuple(req.get_gridded_perm_in_cells(
-                                    frozenset(c for c in req.pos if c < cell))
-                        for req in gps)
+            res = tuple(
+                req.get_gridded_perm_in_cells(
+                    frozenset(c for c in req.pos if c < cell)
+                )
+                for req in gps
+            )
             self.requirements_up_to_cell[(cell, gps)] = res
         return res
 
@@ -72,14 +82,17 @@ class MinimalGriddedPerms():
         cells = frozenset(gp.pos)
         res = self.relevant_obstructions.get(cells)
         if res is None:
-            res = tuple(ob for ob in self.obstructions
-                        if all(c in cells for c in ob.pos))
+            res = tuple(
+                ob
+                for ob in self.obstructions
+                if all(c in cells for c in ob.pos)
+            )
             self.relevant_obstructions[cells] = res
         return res
 
     def get_relevant_obstructions_by_cell(
-                                          self, gp: GriddedPerm, cell: Cell
-                                         ) -> GPTuple:
+        self, gp: GriddedPerm, cell: Cell
+    ) -> GPTuple:
         """ Get the obstructions that involve only cells in gp
         and involve cell"""
         cells = frozenset(gp.pos)
@@ -95,14 +108,18 @@ class MinimalGriddedPerms():
         cells = frozenset(gp.pos)
         res = self.relevant_requirements.get(cells)
         if res is None:
-            res = tuple(tuple(req for req in reqlist
-                              if all(c in cells for c in req.pos))
-                        for reqlist in self.requirements)
+            res = tuple(
+                tuple(
+                    req for req in reqlist if all(c in cells for c in req.pos)
+                )
+                for reqlist in self.requirements
+            )
             self.relevant_requirements[cells] = res
         return res
 
-    def satisfies_obstructions(self, gp: GriddedPerm,
-                               must_contain: Optional[Cell] = None) -> bool:
+    def satisfies_obstructions(
+        self, gp: GriddedPerm, must_contain: Optional[Cell] = None
+    ) -> bool:
         """Check if a gridded permutation avoids the obstructions."""
         if must_contain is None:
             obs = self.get_relevant_obstructions(gp)
@@ -134,8 +151,8 @@ class MinimalGriddedPerms():
         return False
 
     def _prepare_queue(
-                       self, queue: List[GriddedPerm]
-                      ) -> Iterator[GriddedPerm]:
+        self, queue: List[QueuePacket]
+    ) -> Iterator[GriddedPerm]:
         """Add cell counters with gridded permutations to the queue.
         The function yields all initial_gp that satisfy the requirements."""
         if len(self.requirements) <= 1:
@@ -161,8 +178,9 @@ class MinimalGriddedPerms():
                 localised = True
                 # add all of this information the queue. The Info class ensures
                 # we sort by initial_gp only.
-                new_info = QueuePacket(initial_gp, tuple(gps), last_cell,
-                                       localised, mindices)
+                new_info = QueuePacket(
+                    initial_gp, tuple(gps), last_cell, localised, mindices
+                )
                 heappush(queue, new_info)
 
     def initial_gp(self, *gps: GriddedPerm) -> GriddedPerm:
@@ -182,8 +200,11 @@ class MinimalGriddedPerms():
         for gp in gps[1:]:
             # for each subsequent gridded perm in gps, find all the cells
             # not on the same row or column
-            indep_cells = [(i, j) for i, j in gp.pos
-                           if i not in active_cols and j not in active_rows]
+            indep_cells = [
+                (i, j)
+                for i, j in gp.pos
+                if i not in active_cols and j not in active_rows
+            ]
             if indep_cells:
                 # take the subgp using the independent cells.
                 # we will now glue together the result, and the new independent
@@ -201,12 +222,15 @@ class MinimalGriddedPerms():
                 # will have smaller value, and if they are in the same row then
                 # they come from the same gridded permutation so the second
                 # entry is the value from its original gridded perm.
-                temp = ([((cell[0], idx), (cell[1], val))
-                         for (idx, val), cell in zip(enumerate(res.patt),
-                                                     res.pos)] +
-                        [((cell[0], idx), (cell[1], val))
-                         for (idx, val), cell in zip(enumerate(subgp.patt),
-                                                     subgp.pos)])
+                temp = [
+                    ((cell[0], idx), (cell[1], val))
+                    for (idx, val), cell in zip(enumerate(res.patt), res.pos)
+                ] + [
+                    ((cell[0], idx), (cell[1], val))
+                    for (idx, val), cell in zip(
+                        enumerate(subgp.patt), subgp.pos
+                    )
+                ]
                 temp.sort()
                 # update the res
                 new_pos = [(idx[0], val[0]) for idx, val in temp]
@@ -233,7 +257,7 @@ class MinimalGriddedPerms():
             # able to apply a better upper bound to the number of points
             # required in the cell
             for cell in res.keys():
-                in_this_cell = set()
+                in_this_cell = set()  # type: Set[Perm]
                 for req in gps:
                     # we ignore point requirements
                     if len(req) > 1 and cell in req.pos:
@@ -251,10 +275,11 @@ class MinimalGriddedPerms():
                     # the bounds can only be better if there are two or more
                     # patterns
                     if len(in_this_cell) >= 2:
-                        in_this_cell = frozenset(in_this_cell)
                         # the dictionary is patt: v, where v is the number we
                         # can subtract from the naive bound
-                        res[cell] -= better_bounds.get(in_this_cell, 0)
+                        res[cell] -= better_bounds.get(
+                            frozenset(in_this_cell), 0
+                        )
             self.max_cell_counts[gps] = res
         return res
 
@@ -273,6 +298,7 @@ class MinimalGriddedPerms():
         if MinimalGriddedPerms._better_bounds is None:
             # pylint: disable=import-outside-toplevel
             from .better_bounds import better_bounds
+
             MinimalGriddedPerms._better_bounds = better_bounds
         return MinimalGriddedPerms._better_bounds
 
@@ -280,11 +306,11 @@ class MinimalGriddedPerms():
         """Return the localised patts that gps must contain."""
         res = self.localised_patts.get((cell, gps))
         if res is None:
-            res = set()
+            local_patts = set()
             for gp in gps:
-                res.add(gp.get_gridded_perm_in_cells([cell]))
+                local_patts.add(gp.get_gridded_perm_in_cells([cell]))
             # Only keep the upward closure.
-            res = self.get_upward_closure(tuple(res))
+            res = self.get_upward_closure(tuple(local_patts))
             self.localised_patts[(cell, gps)] = res
         return res
 
@@ -293,68 +319,81 @@ class MinimalGriddedPerms():
         in another is removed."""
         res = self.upward_closures.get(gps)
         if res is None:
-            res = []
+            upward_closure = []  # type: List[GriddedPerm]
             for gp in sorted(gps, key=len, reverse=True):
-                if all(gp not in g for g in res):
-                    res.append(gp)
-            res = tuple(res)
+                if all(gp not in g for g in upward_closure):
+                    upward_closure.append(gp)
+            res = tuple(upward_closure)
             self.upward_closures[gps] = res
         return res
 
-    def _get_cells_to_try(self, qp: QueuePacket) -> Iterator[Tuple[Cell, bool]]:
+    def _get_cells_to_try(
+        self, qpacket: QueuePacket
+    ) -> Iterator[Tuple[Cell, bool]]:
         """Yield cells that a gridded permutation could be extended by."""
         cells = set()  # type: Set[Cell]
-        for g, req in zip(qp.gps, self.get_relevant_requirements(qp.gp)):
-            if not self.contains(qp.gp, *req):
+        for g, req in zip(
+            qpacket.gps, self.get_relevant_requirements(qpacket.gp)
+        ):
+            if not self.contains(qpacket.gp, *req):
                 # Only insert into cells in the requirements that are not
                 # already satisfied.
                 cells.update(g.pos)
-            elif (g not in req or self.avoids(qp.gp, g)):
+            elif g not in req or self.avoids(qpacket.gp, g):
                 # If any requirement contains a requirement, but not the target
                 # gridded perm from that requirement in gps, then inserting
                 # further will not result in a minimal gridded perm that will
                 # not be found by another target.
                 return
         # Ensure we insert into the smallest cell possible first.
-        currcellcounts = self.cell_counter(qp.gp)
-        max_cell_count = self.get_max_cell_count(qp.gps)
+        currcellcounts = self.cell_counter(qpacket.gp)
+        max_cell_count = self.get_max_cell_count(qpacket.gps)
 
-        def can_insert(cell):
+        def can_insert(cell: Cell) -> bool:
             """only consider cells which don't already have the maximum number
             of points inserted into them"""
             return max_cell_count[cell] > currcellcounts[cell]
-        cells = sorted(filter(can_insert, cells))
 
-        def try_yield(cells, localised):
+        possible_cells = sorted(filter(can_insert, cells))
+
+        def try_yield(
+            cells: List[Cell], localised: bool
+        ) -> Iterator[Tuple[Cell, bool]]:
             for cell in cells:
                 # if this comes from a localised pattern, then yield
                 # otherwise we can only insert into a cell greater or equal to
                 # the last cell inserted into, to avoid duplicate work.
-                if localised or cell == qp.last_cell:
+                if localised or cell == qpacket.last_cell:
                     yield (cell, localised)
                 # if it is greater, then we must ensure that we can satisfy the
                 # the requirements we are aiming for in gps, and contain all of
                 # the gps restricted to smaller cells
-                elif cell > qp.last_cell:
-                    prior_reqs = self.get_requirements_up_to_cell(cell, qp.gps)
-                    if all(self.contains(qp.gp, req)
-                           for req in prior_reqs):
+                elif cell > qpacket.last_cell:
+                    prior_reqs = self.get_requirements_up_to_cell(
+                        cell, qpacket.gps
+                    )
+                    if all(
+                        self.contains(qpacket.gp, req) for req in prior_reqs
+                    ):
                         yield (cell, localised)
-        if qp.still_localising:
-            for cell in cells:
+
+        if qpacket.still_localising:
+            for cell in possible_cells:
                 # try to insert into a cell that doesn't contain all of the
                 # localised patterns frist
-                if self.avoids(qp.gp, *self.get_localised_patts(cell, qp.gps)):
+                if self.avoids(
+                    qpacket.gp, *self.get_localised_patts(cell, qpacket.gps)
+                ):
                     yield from try_yield([cell], True)
                     return
         # otherwise, we are none the wiser which cell to insert into so try
         # all possible cells
-        yield from try_yield(cells, False)
+        yield from try_yield(possible_cells, False)
 
     @staticmethod
     def insert_point(
-                     gp: GriddedPerm, cell: Cell, minimumdex: int
-                    ) -> Iterator[Tuple[int, GriddedPerm]]:
+        gp: GriddedPerm, cell: Cell, minimumdex: int
+    ) -> Iterator[Tuple[int, GriddedPerm]]:
         """Yield all possible gridded perms where a point is inserted into
         the given cell, where the minimum index is mindex if given. We insert
         right to left, to ensure that if a gp is made twice, that with the
@@ -367,14 +406,15 @@ class MinimalGriddedPerms():
         # We make sure we only insert to the right of where the last
         # point was inserted into the cell.
         mindex = max(mindex, minimumdex)
-        for idx, val in product(range(maxdex, mindex - 1, -1),
-                                range(minval, maxval + 1)):
+        for idx, val in product(
+            range(maxdex, mindex - 1, -1), range(minval, maxval + 1)
+        ):
             nextgp = gp.insert_specific_point(cell, idx, val)
             yield idx, nextgp
 
     def minimal_gridded_perms(
-                              self, yield_non_minimal: bool = False
-                             ) -> Iterator[GriddedPerm]:
+        self, yield_non_minimal: bool = False
+    ) -> Iterator[GriddedPerm]:
         """
         Yield all minimal gridded perms on the tiling.
 
@@ -411,36 +451,40 @@ class MinimalGriddedPerms():
             return gp.contains(*yielded, *initial_gps_to_auto_yield)
 
         def _process_work_packet(
-            qp: QueuePacket, queue: List[QueuePacket],
+            qpacket: QueuePacket, queue: List[QueuePacket],
         ) -> Iterator[GriddedPerm]:
             # now we try inserting a new point into the cell
-            for (cell, localised) in self._get_cells_to_try(qp):
+            for (cell, localised) in self._get_cells_to_try(qpacket):
                 # The `localised` bool tells us if we inserted into
                 # a cell as it didn't contain the patterns in the
                 # cell. If not, then we update the last cell, to
                 # ensure we only insert into greater or equal cells
-                next_cell = qp.last_cell if localised else cell
+                next_cell = qpacket.last_cell if localised else cell
                 # Insert a point in every way possible into cell, to the right
                 # of any previously placed points in that cell.
                 for idx, nextgp in self.insert_point(
-                    qp.gp, cell, qp.mindices.get(cell, 0)
+                    qpacket.gp, cell, qpacket.mindices.get(cell, 0)
                 ):
                     # The work_packets_done is used to ensure the same
                     # task is not processed twice.
-                    key = (nextgp, qp.gps, next_cell)
+                    key = (nextgp, qpacket.gps, next_cell)
                     if key in work_packets_done:
                         continue
                     work_packets_done.add(key)
                     # Only work with gridded permutations avoiding the
                     # obstructions, and those which we haven't yielded a
                     # subgridded permutation.
-                    if (yielded_subgridded_perm(nextgp) or
-                        not self.satisfies_obstructions(nextgp,
-                                                        must_contain=cell)):
+                    if yielded_subgridded_perm(
+                        nextgp
+                    ) or not self.satisfies_obstructions(
+                        nextgp, must_contain=cell
+                    ):
                         continue
                     # Update the nextgp about the patterns that are
                     # contained in the subgridded permutation gp.
-                    self.known_patts[nextgp].update(self.known_patts[qp.gp])
+                    self.known_patts[nextgp].update(
+                        self.known_patts[qpacket.gp]
+                    )
                     # If it satisfies the requirements, then it is a
                     # a minimal gridded permutation
                     if self.satisfies_requirements(nextgp):
@@ -451,30 +495,39 @@ class MinimalGriddedPerms():
                     else:
                         # Update the minimum index that we inserted a
                         # a point into each cell.
-                        next_mindices = {c: i if i <= idx else i + 1
-                                         for c, i in qp.mindices.items()
-                                         if c != cell}
+                        next_mindices = {
+                            c: i if i <= idx else i + 1
+                            for c, i in qpacket.mindices.items()
+                            if c != cell
+                        }
                         next_mindices[cell] = idx + 1
                         # Add the work to the queue
-                        heappush(queue,
-                                 QueuePacket(nextgp, qp.gps, next_cell,
-                                             localised, next_mindices))
+                        heappush(
+                            queue,
+                            QueuePacket(
+                                nextgp,
+                                qpacket.gps,
+                                next_cell,
+                                localised,
+                                next_mindices,
+                            ),
+                        )
 
         work_packets_done = set()  # type: Set[WorkPackets]
         while queue:
             # take the next gridded permutation of the queue, together with the
             # theoretical counts to create a gridded permutation containing
             # each of gps.
-            qp = heappop(queue)
+            qpacket = heappop(queue)
             # if gp was one of the initial_gps that satisfied obs/reqs, but
             # we weren't sure at the time if it was minimal, then now is the
             # time to check and yield
-            if qp.gp in initial_gps_to_auto_yield:
+            if qpacket.gp in initial_gps_to_auto_yield:
                 # removing this speed up a later check by a tiny bit
-                initial_gps_to_auto_yield.remove(qp.gp)
-                if not yielded_subgridded_perm(qp.gp):
-                    yielded.add(qp.gp)
-                    yield qp.gp
+                initial_gps_to_auto_yield.remove(qpacket.gp)
+                if not yielded_subgridded_perm(qpacket.gp):
+                    yielded.add(qpacket.gp)
+                    yield qpacket.gp
                 # We move onto the next gridded permutation
                 continue
-            yield from _process_work_packet(qp, queue)
+            yield from _process_work_packet(qpacket, queue)
