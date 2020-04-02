@@ -1,20 +1,20 @@
 from collections import Counter, defaultdict
 from heapq import heapify, heappop, heappush
 from itertools import chain, product
-from typing import (TYPE_CHECKING, Dict, FrozenSet, Iterator, Optional, Set,
-                    Tuple)
+from typing import (TYPE_CHECKING, Dict, FrozenSet, Iterator, List, Optional,
+                    Set, Tuple)
 
 from permuta import Perm
 from tilings import GriddedPerm, Obstruction
 
 if TYPE_CHECKING:
     from tilings import Tiling
-    from typing import DefaultDict, List  # Only used in comments
 
 
 Cell = Tuple[int, int]
 GPTuple = Tuple[GriddedPerm, ...]
 Reqs = Tuple[GPTuple, ...]
+QueuePacket = Tuple[GriddedPerm, GPTuple, Cell, bool, Dict[Cell, int]]
 WorkPackets = Tuple[GriddedPerm, GPTuple, Cell]
 
 
@@ -27,7 +27,6 @@ class MinimalGriddedPerms():
     def __init__(self, tiling: 'Tiling'):
         self.obstructions = tiling.obstructions
         self.requirements = tiling.requirements
-        self.queue = []  # type: List[Info]
         self.relevant_obstructions = (
             dict()
           )  # type: Dict[FrozenSet[Cell], GPTuple]
@@ -47,10 +46,7 @@ class MinimalGriddedPerms():
         self.upward_closures = dict()  # type: Dict[GPTuple, GPTuple]
         self.known_patts = (
             defaultdict(set)
-          )  # DefaultDict[GriddedPerm, Set[GriddedPerm]]
-        # a priority queue sorted by length of the gridded perm. This is
-        # ensured by overwriting the __lt__ operator in the Info class.
-        heapify(self.queue)
+          )  # Dict[GriddedPerm, Set[GriddedPerm]]
 
     def get_requirements_up_to_cell(self, cell: Cell, gps: GPTuple) -> GPTuple:
         """Given a goal gps and cell (x,y), return the truncations of the reqs
@@ -129,7 +125,9 @@ class MinimalGriddedPerms():
                 return True
         return False
 
-    def _prepare_queue(self) -> Iterator[GriddedPerm]:
+    def _prepare_queue(
+                       self, queue: List[GriddedPerm]
+                      ) -> Iterator[GriddedPerm]:
         """Add cell counters with gridded permutations to the queue.
         The function yields all initial_gp that satisfy the requirements."""
         if len(self.requirements) <= 1:
@@ -157,7 +155,7 @@ class MinimalGriddedPerms():
                 # we sort by initial_gp only.
                 new_info = Info([initial_gp, tuple(gps), last_cell, localised,
                                  mindices])
-                heappush(self.queue, new_info)
+                heappush(queue, new_info)
 
     def initial_gp(self, *gps: GriddedPerm) -> GriddedPerm:
         """
@@ -265,6 +263,7 @@ class MinimalGriddedPerms():
         Example: a cell containing 01 and 10 has an upper bound of 3, not 4
         """
         if MinimalGriddedPerms._better_bounds is None:
+            # pylint: disable=import-outside-toplevel
             from .better_bounds import better_bounds
             MinimalGriddedPerms._better_bounds = better_bounds
         return MinimalGriddedPerms._better_bounds
@@ -351,7 +350,8 @@ class MinimalGriddedPerms():
         yield from try_yield(cells, False)
 
     @staticmethod
-    def insert_point(gp: GriddedPerm, cell: Cell, minimumdex: int
+    def insert_point(
+                     gp: GriddedPerm, cell: Cell, minimumdex: int
                     ) -> Iterator[Tuple[int, GriddedPerm]]:
         """Yield all possible gridded perms where a point is inserted into
         the given cell, where the minimum index is mindex if given. We insert
@@ -390,9 +390,14 @@ class MinimalGriddedPerms():
                 yield GriddedPerm.from_gridded_perm(req)
             return
 
+        # a priority queue sorted by length of the gridded perm. This is
+        # ensured by overwriting the __lt__ operator in the Info class.
+        queue = []  # List[QueuePacket]
+        heapify(queue)
+
         initial_gps_to_auto_yield = set()  # Set[GriddedPerm]
         yielded = set()  # Set[GriddedPerm]
-        for gp in self._prepare_queue():
+        for gp in self._prepare_queue(queue):
             if yield_non_minimal:
                 yielded.add(gp)
                 yield gp
@@ -403,24 +408,10 @@ class MinimalGriddedPerms():
             """Return True if a subgridded perm was yielded."""
             return gp.contains(*yielded, *initial_gps_to_auto_yield)
 
-        work_packets_done = set()  # Set[WorkPackets]
-        while self.queue:
-            # take the next gridded permutation of the queue, together with the
-            # theoretical counts to create a gridded permutation containing
-            # each of gps.
-            (gp, gps, last_cell, still_localising,
-             mindices) = heappop(self.queue)
-            # if gp was one of the initial_gps that satisfied obs/reqs, but
-            # we weren't sure at the time if it was minimal, then now is the
-            # time to check and yield
-            if gp in initial_gps_to_auto_yield:
-                # removing this speed up a later check by a tiny bit
-                initial_gps_to_auto_yield.remove(gp)
-                if not yielded_subgridded_perm(gp):
-                    yielded.add(gp)
-                    yield gp
-                # We move onto the next gridded permutation
-                continue
+        def _process_work_packet(gp: GriddedPerm, gps: GPTuple,
+                                 last_cell: Cell, still_localising: bool,
+                                 mindices: Dict[Cell, int],
+                                 queue: List[QueuePacket]) -> None:
             # now we try inserting a new point into the cell
             for (cell, localised) in self._get_cells_to_try(gp, gps, last_cell,
                                                             still_localising):
@@ -464,6 +455,27 @@ class MinimalGriddedPerms():
                                          if c != cell}
                         next_mindices[cell] = idx + 1
                         # Add the work to the queue
-                        heappush(self.queue,
-                                    Info([nextgp, gps, next_cell,
-                                          localised, next_mindices]))
+                        heappush(queue,
+                                 Info([nextgp, gps, next_cell, localised,
+                                       next_mindices]))
+
+        work_packets_done = set()  # Set[WorkPackets]
+        while queue:
+            # take the next gridded permutation of the queue, together with the
+            # theoretical counts to create a gridded permutation containing
+            # each of gps.
+            (gp, gps, last_cell, still_localising,
+             mindices) = heappop(queue)
+            # if gp was one of the initial_gps that satisfied obs/reqs, but
+            # we weren't sure at the time if it was minimal, then now is the
+            # time to check and yield
+            if gp in initial_gps_to_auto_yield:
+                # removing this speed up a later check by a tiny bit
+                initial_gps_to_auto_yield.remove(gp)
+                if not yielded_subgridded_perm(gp):
+                    yielded.add(gp)
+                    yield gp
+                # We move onto the next gridded permutation
+                continue
+            yield from _process_work_packet(gp, gps, last_cell,
+                                            still_localising, mindices, queue)
