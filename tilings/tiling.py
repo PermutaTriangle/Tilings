@@ -904,8 +904,9 @@ class Tiling(CombinatorialClass):
             return True
         if len(self.requirements) <= 1:
             return False
+        MGP = MinimalGriddedPerms(self)
         return all(False
-                   for _ in self.minimal_gridded_perms(yield_non_minimal=True))
+                   for _ in MGP.minimal_gridded_perms(yield_non_minimal=True))
 
     def is_finite(self):
         """Returns True if all active cells have finite basis."""
@@ -947,17 +948,12 @@ class Tiling(CombinatorialClass):
                              mgps.minimal_gridded_perms())
         return self.__class__(self.obstructions, (requirements,))
 
-    def minimal_gridded_perms(self, yield_non_minimal=False):
+    def minimal_gridded_perms(self):
         """
         An iterator over all minimal gridded permutations.
-
-        If `yield_non_minimal` is True, then it will yield some gridded perms
-        that are non-minimal, found by the initial_gp method. Even though it
-        may not be minimal, this is useful when trying to determine whether or
-        not a tiling is empty.
         """
         MGP = MinimalGriddedPerms(self)
-        yield from MGP.minimal_gridded_perms(yield_non_minimal)
+        yield from MGP.minimal_gridded_perms()
 
     def is_epsilon(self):
         """Returns True if the generating function for the tiling is 1."""
