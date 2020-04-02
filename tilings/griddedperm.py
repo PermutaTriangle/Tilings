@@ -1,5 +1,5 @@
 import json
-from itertools import chain, combinations
+from itertools import chain, combinations, product
 from typing import Iterable
 
 from permuta import Perm
@@ -42,6 +42,11 @@ class GriddedPerm():
         return cls(pattern, [cell for _ in range(len(pattern))])
 
     @classmethod
+    def from_gridded_perm(cls, gp):
+        """Contruct a gridded permutation from another gridded permutation."""
+        return cls(gp.patt, gp.pos)
+
+    @classmethod
     def empty_perm(cls):
         """Construct the empty gridded permutation."""
         return cls(Perm(tuple()), tuple())
@@ -72,12 +77,20 @@ class GriddedPerm():
 
     def occurrences_in(self, other):
         """Returns all occurrences of self in other."""
-        for occ in self._patt.occurrences_in(other.patt, self.pos, other.pos):
-            yield occ
+        yield from self._patt.occurrences_in(other.patt, self.pos, other.pos)
 
     def occurs_in(self, other):
         """Checks if self occurs in other."""
         return any(self.occurrences_in(other))
+
+    def avoids(self, *patts: 'GriddedPerm') -> bool:
+        """Return true if self avoids all of the patts."""
+        return not self.contains(*patts)
+
+    def contains(self, *patts: 'GriddedPerm') -> bool:
+        """Return true if self contains an occurrence of any of patts."""
+        return any(any(True for _ in patt.occurrences_in(self))
+                   for patt in patts)
 
     def remove_cells(self, cells):
         """Remove any points in the cell given and return a new gridded
@@ -232,16 +245,19 @@ class GriddedPerm():
         return (mindex, maxdex, minval, maxval)
 
     def insert_point(self, cell):
-        """Insert a new point into cell of the obstruction, such that the point
-        is added to the underlying pattern with the position at the cell.
-        Yields all obstruction where the point has been mixed into the points
+        """Insert a new point into cell of the gridded perm, such that the
+        point is added to the underlying pattern with the position at the cell.
+        Yields all gridded perms where the point has been mixed into the points
         in the cell."""
         mindex, maxdex, minval, maxval = self.get_bounding_box(cell)
-        for idx in range(mindex, maxdex + 1):
-            for val in range(minval, maxval + 1):
-                yield self.__class__(
-                    self._patt.insert(idx, val),
-                    self._pos[:idx] + (cell,) + self._pos[idx:])
+        for idx, val in product(range(mindex, maxdex + 1),
+                                range(minval, maxval + 1)):
+            yield self.insert_specific_point(cell, idx, val)
+
+    def insert_specific_point(self, cell, idx, val):
+        """Insert a point in the given cell with the given idx and val."""
+        return self.__class__(self._patt.insert(idx, val),
+                              self._pos[:idx] + (cell,) + self._pos[idx:])
 
     def remove_point(self, index):
         """Remove the point at index from the gridded permutation."""

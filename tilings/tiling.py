@@ -20,9 +20,9 @@ from permuta.misc import DIR_EAST, DIR_WEST
 from .algorithms import (AllObstructionInferral, ComponentFusion,
                          EmptyCellInferral, Factor, FactorWithInterleaving,
                          FactorWithMonotoneInterleaving, Fusion,
-                         GriddedPermsOnTiling, ObstructionTransitivity,
-                         RequirementPlacement, RowColSeparation,
-                         SubobstructionInferral)
+                         GriddedPermsOnTiling, MinimalGriddedPerms,
+                         ObstructionTransitivity, RequirementPlacement,
+                         RowColSeparation, SubobstructionInferral)
 from .algorithms.enumeration import (BasicEnumeration, DatabaseEnumeration,
                                      LocallyFactorableEnumeration,
                                      MonotoneTreeEnumeration)
@@ -46,9 +46,11 @@ class Tiling(CombinatorialClass):
     cells and the active cells.
     """
 
-    def __init__(self, obstructions=tuple(), requirements=tuple(),
-                 remove_empty=True, derive_empty=True, minimize=True,
-                 sorted_input=False):
+    def __init__(self, obstructions: Iterable[Obstruction] = tuple(),
+                 requirements: Iterable[Iterable[Requirement]] = tuple(),
+                 remove_empty: bool = True, derive_empty: bool = True,
+                 minimize: bool = True,
+                 sorted_input: bool = False):
         super().__init__()
         if sorted_input:
             # Set of obstructions
@@ -792,7 +794,7 @@ class Tiling(CombinatorialClass):
         obs_inf = AllObstructionInferral(self, obstruction_length)
         return obs_inf.obstruction_inferral()
 
-    def emtpy_cell_inferral(self):
+    def empty_cell_inferral(self):
         """
         Adds point obstruction in the cell of the tilings that should be empty.
 
@@ -902,7 +904,9 @@ class Tiling(CombinatorialClass):
             return True
         if len(self.requirements) <= 1:
             return False
-        return not any(True for _ in self.gridded_perms())
+        MGP = MinimalGriddedPerms(self)
+        return all(False
+                   for _ in MGP.minimal_gridded_perms(yield_non_minimal=True))
 
     def is_finite(self):
         """Returns True if all active cells have finite basis."""
@@ -933,28 +937,23 @@ class Tiling(CombinatorialClass):
         The gridded permutations are up to length of the longest minimum
         gridded permutations that is griddable on the tiling.
         """
-        return GriddedPermsOnTiling(self, maxlen=maxlen)
+        yield from GriddedPermsOnTiling(self, maxlen=maxlen)
 
-    def merge(self, remove_empty=True):
+    def merge(self) -> 'Tiling':
         """Return an equivalent tiling with a single requirement list."""
         if len(self.requirements) <= 1:
             return self
-        reqs = sorted(self.requirements, key=len)
-        req1 = reqs[0]
-        req2 = reqs[1]
-        reqs = reqs[2:]
-        new_req = []
-        for gp1 in req1:
-            for gp2 in req2:
-                # TODO: Do this step independent of tilings.
-                temp_tiling = Tiling(self.obstructions, [[gp1], [gp2]],
-                                     remove_empty=False)
-                new_req.extend(Requirement(gp.patt, gp.pos)
-                               for gp in temp_tiling.gridded_perms(
-                    maxlen=len(gp1) + len(gp2)))
-        merged_tiling = Tiling(self.obstructions, reqs + [new_req],
-                               remove_empty=remove_empty)
-        return merged_tiling
+        mgps = MinimalGriddedPerms(self)
+        requirements = tuple(Requirement(gp.patt, gp.pos) for gp in
+                             mgps.minimal_gridded_perms())
+        return self.__class__(self.obstructions, (requirements,))
+
+    def minimal_gridded_perms(self):
+        """
+        An iterator over all minimal gridded permutations.
+        """
+        MGP = MinimalGriddedPerms(self)
+        yield from MGP.minimal_gridded_perms()
 
     def is_epsilon(self):
         """Returns True if the generating function for the tiling is 1."""

@@ -1007,6 +1007,7 @@ def test_is_finite(compresstil, empty_tiling, finite_tiling):
 
 def test_merge(compresstil, finite_tiling, empty_tiling):
     assert finite_tiling.merge() == finite_tiling
+    print(compresstil)
     print(compresstil.merge().requirements)
     assert (compresstil.merge() ==
             Tiling(obstructions=compresstil.obstructions,
@@ -1469,7 +1470,7 @@ def test_empty_cell_inferral():
     ], requirements=[[
         Requirement(Perm((0, 1)), ((1, 0), (2, 0)))
     ]])
-    assert t.emtpy_cell_inferral() == Tiling(obstructions=[
+    assert t.empty_cell_inferral() == Tiling(obstructions=[
         Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
         Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
         Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
