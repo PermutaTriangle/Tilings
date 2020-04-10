@@ -11,6 +11,7 @@ from operator import xor
 from typing import Iterable, List, Optional, Tuple
 
 import sympy
+import zlib
 
 from comb_spec_searcher import CombinatorialClass
 from comb_spec_searcher.utils import check_equation, check_poly
@@ -343,7 +344,7 @@ class Tiling(CombinatorialClass):
                 chain.from_iterable([len(req)] + req.compress() for req in reqlist)
             )
         res = array("B", result)
-        return res.tobytes()
+        return zlib.compress(res.tobytes())
 
     @classmethod
     def decompress(
@@ -363,7 +364,7 @@ class Tiling(CombinatorialClass):
                uh is the upper half."""
             return lh | (uh << 8)
 
-        arr = array("B", arrbytes)
+        arr = array("B", zlib.decompress(arrbytes))
         offset = 2
         nobs = merge_8bit(arr[offset - 2], arr[offset - 1])
         obstructions = []
