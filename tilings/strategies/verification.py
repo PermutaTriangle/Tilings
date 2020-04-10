@@ -1,6 +1,6 @@
 from typing import Iterable, Optional, Type
 
-from comb_spec_searcher import Rule
+from comb_spec_searcher import Rule, VerificationRule
 from permuta import Perm
 from tilings import Tiling
 from tilings.algorithms.enumeration import (
@@ -23,6 +23,7 @@ __all__ = [
     "ElementaryVerificationStrategy",
     "LocalVerificationStrategy",
     "MonotoneTreeVerificationStrategy",
+    "FakeVerificationStrategy",
 ]
 
 
@@ -136,3 +137,34 @@ class MonotoneTreeVerificationStrategy(_VerificationStrategy):
 
     def __str__(self) -> str:
         return "monotone tree verification"
+
+
+class FakeVerificationStrategy(Strategy):
+    """
+    Automatically verify all the tilings that are given
+    """
+
+    def __init__(self, tilings: Iterable[Tiling]):
+        self.tilings = frozenset(tilings)
+
+    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Rule]:
+        if tiling in self.tilings:
+            print(tiling)
+            return VerificationRule("fake verify")
+        return None
+
+    def __repr__(self) -> str:
+        return "FakeVerify({})".format(self.tilings)
+
+    def __str__(self) -> str:
+        return "fake verification of {} tilings".format(len(self.tilings))
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["tilings"] = list(t.to_jsonable() for t in self.tilings)
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "FakeVerificationStrategy":
+        tilings = [Tiling.from_dict(t) for t in d["tilings"]]
+        return cls(tilings)

@@ -3,6 +3,7 @@ import json
 import pytest
 
 from permuta import Perm
+from tilings import Tiling
 from tilings.strategies.abstract_strategy import Strategy
 from tilings.strategies.batch import (
     AllCellInsertionStrategy,
@@ -27,6 +28,7 @@ from tilings.strategies.verification import (
     BasicVerificationStrategy,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
+    FakeVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
@@ -95,6 +97,7 @@ strategy_objects = [
     BasicVerificationStrategy(),
     DatabaseVerificationStrategy(),
     ElementaryVerificationStrategy(),
+    FakeVerificationStrategy([Tiling.from_string("123")]),
     LocallyFactorableVerificationStrategy(),
     LocalVerificationStrategy(),
     MonotoneTreeVerificationStrategy(),
