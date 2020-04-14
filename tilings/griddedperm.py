@@ -2,16 +2,13 @@ import json
 from itertools import chain, combinations, product
 from typing import Iterable
 
+from comb_spec_searcher import CombinatorialObject
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, UnionFind
 
 
-class GriddedPerm:
-    # TODO: Intersection of griddedperms
+class GriddedPerm(CombinatorialObject):
     def __init__(self, pattern, positions):
-        # TODO: Write check to verify gridded permutation makes sense, that is,
-        #       pattern can be mapped on the positions given.
-
         if not isinstance(pattern, Perm):
             raise ValueError("Variable 'pattern' should be an instance of permuta.Perm")
         if not pattern:
