@@ -2,7 +2,7 @@ import abc
 from itertools import chain, product
 from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
 
-from comb_spec_searcher import Rule
+from comb_spec_searcher import Constructor, DisjointUnion, Rule
 from permuta import Av, Perm
 from tilings import GriddedPerm, Obstruction, Requirement
 
@@ -11,6 +11,45 @@ if TYPE_CHECKING:
 ListRequirement = Tuple[Requirement, ...]
 
 EXTRA_BASIS_ERR = "'extra_basis' should be a list of Perm to avoid"
+
+
+class RequirementInsertionRule(Rule):
+    def __init__(self, gps: Iterable[GriddedPerm], ignore_parent: bool = False):
+        self._ignore_parent = ignore_parent
+        self.gps = frozenset(gps)
+
+    @property
+    def ignore_parent(self):
+        return self._ignore_parent
+
+    def constructor(self, tiling: "Tiling") -> Constructor:
+        return DisjointUnion()
+
+    def children(self, tiling: "Tiling") -> Tuple["Tiling", "Tiling"]:
+        """
+        Return a tuple of tiling. The first one avoids all the pattern in the
+        list while the other contain one of the patterns in the list.
+        """
+        obs = tiling.obstructions
+        reqs = tiling.requirements
+        t_co = tiling.add_list_requirement(map(Requirement.from_gridded_perm, self.gps))
+        new_obs = chain(obs, (Obstruction(req.patt, req.pos) for req in self.gps))
+        t_av = tiling.__class__(obstructions=new_obs, requirements=reqs)
+        return (t_av, t_co)
+
+    def backward_map(
+        self, tiling: "Tiling", gps: Tuple[Tuple[GriddedPerm, "Tiling"]]
+    ) -> GriddedPerm:
+        return tiling.backward_map(gp[0])
+
+    def forward_map(
+        self, tiling: "Tiling", gp: GriddedPerm
+    ) -> Tuple[Tuple[GriddedPerm, "Tiling"], ...]:
+        t_av, t_co = self.children(tiling)
+        if gp.avoids(*self.gps):
+            return t_av.forward_map(gp)
+        else:
+            return t_co.forward_map(gp)
 
 
 # Abstract classes
@@ -48,33 +87,12 @@ class RequirementInsertion(abc.ABC):
             return "Insert {} in cell {}.".format(req.patt, req.pos[0])
         return "Insert {}.".format(req)
 
-    def insert_requirement(self, req_list: ListRequirement) -> "Tuple[Tiling, Tiling]":
-        """
-        Return a tuple of tiling. The first one avoids all the pattern in the
-        list while the other contain one of the patterns in the list.
-        """
-        obs = self.tiling.obstructions
-        reqs = self.tiling.requirements
-        t_co = self.tiling.add_list_requirement(req_list)
-        new_obs = chain(obs, (Obstruction(req.patt, req.pos) for req in req_list))
-        t_av = self.tiling.__class__(obstructions=new_obs, requirements=reqs)
-        return (t_av, t_co)
-
     def rules(self, ignore_parent: bool = False) -> Iterable[Rule]:
         """
         Iterator over all the requirement insertion rules.
         """
         for req_list in self.req_lists_to_insert():
-            comb_classes = self.insert_requirement(req_list)
-            yield Rule(
-                formal_step=self.formal_step(req_list),
-                comb_classes=comb_classes,
-                ignore_parent=ignore_parent,
-                inferable=(True, True),
-                possibly_empty=(True, True),
-                workable=(True, True),
-                constructor="disjoint",
-            )
+            yield RequirementInsertionRule(req_list)
 
 
 class RequirementInsertionWithRestriction(RequirementInsertion):

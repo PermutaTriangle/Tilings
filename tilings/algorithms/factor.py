@@ -1,9 +1,85 @@
 from collections import defaultdict
 from itertools import chain, combinations
+from typing import Optional, Tuple, TYPE_CHECKING
 
-from comb_spec_searcher import Rule
+from comb_spec_searcher import CartesianProduct, Constructor, Rule
+from tilings import GriddedPerm, Obstruction, Requirement
 from permuta.misc import UnionFind
 from tilings.misc import partitions_iterator
+
+if TYPE_CHECKING:
+    from tilings import Tiling
+
+
+Cell = Tuple[int, int]
+
+
+class FactorRule(Rule):
+    def __init__(
+        self,
+        partition: Optional[  # TODO: make this cells, rather than gps
+            Tuple[Tuple[Cell, ...], ...]
+        ] = None,
+        workable: bool = True,
+    ):
+        self.partition = partition
+        self._workable = workable
+
+    @property
+    def workable(self):
+        return self._workable
+
+    def constructor(self, tiling: "Tiling") -> Constructor:
+        return CartesianProduct(self.children(tiling))
+
+    def children(self, tiling: "Tiling") -> Tuple["Tiling", ...]:
+        """
+        # TODO: Taken from reducible factorisations function in Factor. Pick where.
+        """
+        return tuple(tiling.sub_tiling(cells) for cells in self.partition)
+
+    def formal_step(self, union=False):
+        """
+        Return a string that describe the operation performed on the tiling.
+        """
+        union_str = "unions of " if union else ""
+        return "Factor with components {}".format(
+            ", ".join(
+                "{{{}}}".format(", ".join(c for c in part)) for part in self.partition
+            )
+        )
+
+    def backward_map(
+        self, tiling: "Tiling", *gps: Tuple[Tuple[GriddedPerm, "Tiling"], ...]
+    ) -> GriddedPerm:
+        gps_to_combine = tuple(tiling.backward_map(gp) for gp, tiling in gps)
+        temp = [
+            ((cell[0], idx), (cell[1], val))
+            for gp in gps_to_combine
+            for (idx, val), cell in zip(enumerate(gp.patt), gp.pos)
+        ]
+        temp.sort()
+        new_pos = [(idx[0], val[0]) for idx, val in temp]
+        new_patt = Perm.to_standard(val for _, val in temp)
+        return GriddedPerm(new_patt, new_pos)
+
+    def forward_map(
+        self, tiling: "Tiling", gp: GriddedPerm
+    ) -> Tuple[Tuple[GriddedPerm, "Tiling"], ...]:
+        return tuple(
+            forward_map(gp.get_gridded_perm_in_cells(tiling.forward_map), tiling)
+            for tiling in self.children(tiling)
+        )
+
+
+class FactorWithInterleavingRule(FactorRule):
+    def constructor(self, tiling: "Tiling"):
+        raise NotImplementedError
+
+
+class FactorWithMonotoneInterleavingRule(FactorRule):
+    def constructor(self, tiling: "Tiling"):
+        raise NotImplementedError
 
 
 class Factor:
@@ -14,7 +90,7 @@ class Factor:
     or column, or they share an obstruction or a requirement.
     """
 
-    def __init__(self, tiling):
+    def __init__(self, tiling: "Tiling"):
         self._tiling = tiling
         self._active_cells = tiling.active_cells
         nrow = tiling.dimensions[1]
@@ -22,6 +98,10 @@ class Factor:
         self._cell_unionfind = UnionFind(nrow * ncol)
         self._components = None
         self._factors_obs_and_reqs = None
+
+    @property
+    def FactorRule(self):
+        return FactorRule
 
     def _cell_to_int(self, cell):
         nrow = self._tiling.dimensions[1]
@@ -93,7 +173,7 @@ class Factor:
         self._unite_requirements()
         self._unite_rows_and_cols()
 
-    def _get_components(self):
+    def get_components(self):
         """
         Returns the tuple of all the components. Each component is set of
         cells.
@@ -116,7 +196,7 @@ class Factor:
         if self._factors_obs_and_reqs is not None:
             return self._factors_obs_and_reqs
         factors = []
-        for component in self._get_components():
+        for component in self.get_components():
             obstructions = tuple(
                 ob for ob in self._tiling.obstructions if ob.pos[0] in component
             )
@@ -131,7 +211,7 @@ class Factor:
         """
         Returns `True` if the tiling has more than one factor.
         """
-        return len(self._get_components()) > 1
+        return len(self.get_components()) > 1
 
     def factors(self):
         """
@@ -166,44 +246,6 @@ class Factor:
                 )
             yield factors
 
-    @staticmethod
-    def formal_step(union=False):
-        """
-        Return a string that describe the operation performed on the tiling.
-        """
-        union_str = "unions of " if union else ""
-        return "The {}factors of the tiling.".format(union_str)
-
-    @property
-    def constructor(self):
-        """
-        Returns the type of constructor for the factorisation
-        """
-        return "cartesian"
-
-    def _rule(self, factors, formal_step, workable):
-        """
-        Return the comb_spec_searcher rule for the factorisation where the list
-        of factors is given as a list of tilings.
-
-        If workable=True,  then we expand the  children, and want to  ignore
-        the parent. If workable=False, then we do  not expand the children,
-        and want to keep working on the parent (perhaps placing points into
-        cells or something).
-        """
-        if not self.factorable():
-            return
-        assert isinstance(workable, bool)
-        return Rule(
-            formal_step,
-            factors,
-            inferable=[False for _ in factors],
-            workable=[workable for _ in factors],
-            possibly_empty=[False for _ in factors],
-            ignore_parent=workable,
-            constructor=self.constructor,
-        )
-
     def rule(self, workable=True):
         """
         Return the comb_spec_searcher rule for the irreducible factorisation.
@@ -213,7 +255,7 @@ class Factor:
         and want to keep working on the parent (perhaps placing points into
         cells or something).
         """
-        return self._rule(self.factors(), self.formal_step(), workable)
+        return self.FactorRule(self.get_components(), workable)
 
     def all_union_rules(self, workable=False):
         """
@@ -226,10 +268,9 @@ class Factor:
         and want to keep working on the parent (perhaps placing points into
         cells or something).
         """
-        for factorisation in self.reducible_factorisations():
-            yield self._rule(
-                factorisation, self.formal_step(union=True), workable=workable
-            )
+        min_comp = self._get_factors_obs_and_reqs()
+        for partition in partitions_iterator(min_comp):
+            return self.FactorRule(partition, workable)
 
 
 class FactorWithMonotoneInterleaving(Factor):
@@ -261,21 +302,9 @@ class FactorWithMonotoneInterleaving(Factor):
         for c1, c2 in cell_pair_to_unite:
             self._unite_cells((c1, c2))
 
-    def formal_step(self, union=False):
-        """
-        Return a string that describe the operation performed on the tiling.
-        """
-        union_str = "unions of " if union else ""
-        return "The {}factors with monotone interleaving of the " "tiling.".format(
-            union_str
-        )
-
     @property
-    def constructor(self):
-        """
-        Returns the type of constructor for the factorisation
-        """
-        return "other"
+    def FactorRule(self):
+        return FactorWithMonotoneInterleavingRule
 
 
 class FactorWithInterleaving(Factor):
@@ -299,16 +328,6 @@ class FactorWithInterleaving(Factor):
         self._unite_obstructions()
         self._unite_requirements()
 
-    def formal_step(self, union=False):
-        """
-        Return a string that describe the operation performed on the tiling.
-        """
-        union_str = "unions of " if union else ""
-        return "The {}factors with interleaving of the " "tiling.".format(union_str)
-
     @property
-    def constructor(self):
-        """
-        Returns the type of constructor for the factorisation
-        """
-        return "other"
+    def FactorRule(self):
+        return FactorWithInterleavingRule

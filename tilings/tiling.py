@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 from functools import partial
 from itertools import chain, product
 from operator import xor
-from typing import Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import sympy
 
@@ -46,6 +46,9 @@ from .obstruction import Obstruction
 from .requirement import Requirement
 
 __all__ = "Tiling"
+
+
+Cell = Tuple[int, int]
 
 
 class Tiling(CombinatorialClass):
@@ -140,7 +143,7 @@ class Tiling(CombinatorialClass):
     def _minimize_tiling(self):
         # Produce the mapping between the two tilings
         if not self.active_cells:
-            self.forward_map = {}
+            self._forward_map = {}
             self._obstructions = (Obstruction.single_cell(Perm((0,)), (0, 0)),)
             self._requirements = tuple()
             self._dimensions = (1, 1)
@@ -149,7 +152,7 @@ class Tiling(CombinatorialClass):
         cell_map = partial(map_cell, col_mapping, row_mapping)
 
         # For tracking regions.
-        self.forward_map = {
+        self._forward_map = {
             (k_x, k_y): (v_x, v_y)
             for k_x, v_x in col_mapping.items()
             for k_y, v_y in row_mapping.items()
@@ -651,6 +654,26 @@ class Tiling(CombinatorialClass):
     def sort_requirements(requirements):
         return tuple(sorted(tuple(sorted(set(reqlist))) for reqlist in requirements))
 
+    def backward_map(self, gp: GriddedPerm) -> GriddedPerm:
+        return GriddedPerm(gp.patt, [self.backward_cell_map[cell] for cell in gp.pos])
+
+    def forward_map(self, gp: GriddedPerm) -> GriddedPerm:
+        return GriddedPerm(gp.patt, [self.forward_cell_map[cell] for cell in gp.pos])
+
+    @property
+    def forward_cell_map(self) -> Dict[Cell, Cell]:
+        if not hasattr(self, "_forward_map"):
+            self._minimize_tiling()
+        return self._forward_map
+
+    @property
+    def backward_cell_map(self) -> Dict[Cell, Cell]:
+        if not hasattr(self, "_backward_map"):
+            if not hasattr(self, "_forward_map"):
+                self._minimize_tiling()
+            self._backward_map = {b: a for a, b in self._forward_map.items()}
+        return self._backward_map
+
     # -------------------------------------------------------------
     # Symmetries
     # -------------------------------------------------------------
@@ -796,6 +819,24 @@ class Tiling(CombinatorialClass):
         If `col` is not `None` then `col` and `col+1` are fused together.
         """
         return self._fusion(row, col, ComponentFusion)
+
+    def sub_tiling(self, cells: Tuple[Cell], factors: bool = False):
+        """Return the tiling using only the obstructions and requirements
+        completely contained in the given cells. If factors is set to True,
+        then it assumes that the first cells confirms if a gridded perm uses only
+        the cells."""
+        obstructions = tuple(
+            ob
+            for ob in self.obstructions
+            if (factors and ob.pos[0] in cells) or all(c in cells for c in ob.pos)
+        )
+        requirements = tuple(
+            req
+            for req in self.requirements
+            if (factors and req[0].pos[0] in cells)
+            or all(c in cells for c in chain.from_iterable(r.pos for r in req))
+        )
+        return self.__class__(obstructions, requirements)
 
     def find_factors(self, interleaving="none"):
         """
