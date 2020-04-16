@@ -37,6 +37,22 @@ class RequirementInsertionRule(Rule):
         t_av = tiling.__class__(obstructions=new_obs, requirements=reqs)
         return (t_av, t_co)
 
+    def formal_step(self) -> str:
+        """
+        Return the formal step for the insertion according to the req_list
+        inserted.
+
+        This needs to be redefined if you want to insert list requirement with
+        more than one requirement.
+        """
+        if len(self.gps) == 1:
+            req = tuple(self.gps)[0]
+            if req.is_localized():
+                return "Insert {} in cell {}.".format(req.patt, req.pos[0])
+            return "Insert {}.".format(req)
+        else:
+            raise NotImplementedError
+
     def backward_map(
         self, tiling: "Tiling", gps: Tuple[Tuple[GriddedPerm, "Tiling"]]
     ) -> GriddedPerm:
@@ -70,22 +86,6 @@ class RequirementInsertion(abc.ABC):
         Iterator over all the requirement list to insert to create the batch
         rules.
         """
-
-    @staticmethod
-    def formal_step(req_list: ListRequirement) -> str:
-        """
-        Return the formal step for the insertion according to the req_list
-        inserted.
-
-        This needs to be redefined if you want to insert list requirement with
-        more than one requirement.
-        """
-        if len(req_list) != 1:
-            raise NotImplementedError
-        req = req_list[0]
-        if req.is_localized():
-            return "Insert {} in cell {}.".format(req.patt, req.pos[0])
-        return "Insert {}.".format(req)
 
     def rules(self, ignore_parent: bool = False) -> Iterable[Rule]:
         """

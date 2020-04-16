@@ -3,7 +3,8 @@ from itertools import chain, combinations
 from typing import Optional, Tuple, TYPE_CHECKING
 
 from comb_spec_searcher import CartesianProduct, Constructor, Rule
-from tilings import GriddedPerm, Obstruction, Requirement
+from permuta import Perm
+from tilings import GriddedPerm
 from permuta.misc import UnionFind
 from tilings.misc import partitions_iterator
 
@@ -22,7 +23,7 @@ class FactorRule(Rule):
         ] = None,
         workable: bool = True,
     ):
-        self.partition = partition
+        self.partition = sorted(partition)
         self._workable = workable
 
     @property
@@ -42,10 +43,10 @@ class FactorRule(Rule):
         """
         Return a string that describe the operation performed on the tiling.
         """
-        union_str = "unions of " if union else ""
-        return "Factor with components {}".format(
-            ", ".join(
-                "{{{}}}".format(", ".join(c for c in part)) for part in self.partition
+        return "Factor with partition {}".format(
+            " / ".join(
+                "{{{}}}".format(", ".join(str(c) for c in part))
+                for part in self.partition
             )
         )
 
@@ -67,8 +68,8 @@ class FactorRule(Rule):
         self, tiling: "Tiling", gp: GriddedPerm
     ) -> Tuple[Tuple[GriddedPerm, "Tiling"], ...]:
         return tuple(
-            forward_map(gp.get_gridded_perm_in_cells(tiling.forward_map), tiling)
-            for tiling in self.children(tiling)
+            tiling.forward_map(gp.get_gridded_perm_in_cells(part))
+            for tiling, part in zip(self.children(tiling), self.partition)
         )
 
 
