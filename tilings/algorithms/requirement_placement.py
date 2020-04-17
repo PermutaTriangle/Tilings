@@ -6,6 +6,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Optional,
     Tuple,
     TypeVar,
 )
@@ -52,7 +53,11 @@ class RequirementPlacementRule(Rule):
     def placement_class(self, tiling: "Tiling"):
         return RequirementPlacement(tiling, own_col=self.own_col, own_row=self.own_row)
 
-    def constructor(self, tiling: "Tiling") -> Constructor:
+    def constructor(
+        self,
+        tiling: 'Tiling',
+        children: Optional[Tuple['Tiling', ...]] = None,
+    ) -> Constructor:
         return DisjointUnion()
 
     def children(self, tiling: "Tiling") -> Tuple["Tiling", ...]:
@@ -102,19 +107,33 @@ class RequirementPlacementRule(Rule):
         maxy = cell[1] + 3 if cell[1] >= y else cell[1]
         return frozenset((i, j) for i in range(minx, maxx) for j in range(miny, maxy))
 
-    def backward_map(self, tiling: "Tiling", gps: Tuple[GriddedPerm]) -> GriddedPerm:
+    def backward_map(
+        self,
+        tiling: 'Tiling',
+        gps: Tuple[GriddedPerm, ...],
+        children: Optional[Tuple['Tiling', ...]] = None,
+    ) -> GriddedPerm:
+        if children is None:
+            children = self.children(tiling)
         gp = gps[0]
-        gp = self.children(tiling)[0].backward_map(gp)
+        gp = children[0].backward_map(gp)
         backmap = self.backward_cell_map(tiling)
         return GriddedPerm(gp.patt, [backmap[cell] for cell in gp.pos])
 
-    def forward_map(self, tiling: "Tiling", gp: GriddedPerm) -> Tuple[GriddedPerm, ...]:
+    def forward_map(
+        self,
+        tiling: 'Tiling',
+        gp: GriddedPerm,
+        children: Optional[Tuple['Tiling', ...]] = None,
+    ) -> Tuple[GriddedPerm, ...]:
+        if children is None:
+            children = self.children(tiling)
         placement_class = self.placement_class(tiling)
         forced_index = None  # TODO: compute index of point being placed
         placed_gp = placement_class._gridded_perm_translation_with_point(
             self.gp, forced_index
         )
-        return self.children(tiling)[0].forward_map(placed_gp)
+        return children[0].forward_map(placed_gp)
 
 
 class RequirementPlacement:

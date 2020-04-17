@@ -22,7 +22,7 @@ class RequirementInsertionRule(Rule):
     def ignore_parent(self):
         return self._ignore_parent
 
-    def constructor(self, tiling: "Tiling") -> Constructor:
+    def constructor(self, tiling: 'Tiling', children: Optional[Tuple['Tiling', ...]] = None) -> Constructor:
         return DisjointUnion()
 
     def children(self, tiling: "Tiling") -> Tuple["Tiling", "Tiling"]:
@@ -53,10 +53,20 @@ class RequirementInsertionRule(Rule):
         else:
             raise NotImplementedError
 
-    def backward_map(self, tiling: "Tiling", gps: Tuple[GriddedPerm]) -> GriddedPerm:
-        return tiling.backward_map(gps[0])
+    def backward_map(
+        self, tiling: 'Tiling', gps: Tuple[GriddedPerm, ...], children: Optional[Tuple['Tiling', ...]] = None
+    ) -> GriddedPerm:
+        if children is None:
+            children = self.children(tiling)
+        gp = gps[0]
+        if gp.avoids(*self.gps): # TODO: think about if we could skip this step.
+            return children[0].backward_map(gp)
+        else:
+            return children[1].backward_map(gp)
 
-    def forward_map(self, tiling: "Tiling", gp: GriddedPerm) -> Tuple[GriddedPerm, ...]:
+    def forward_map(
+        self, tiling: 'Tiling', gp: GriddedPerm, children: Optional[Tuple['Tiling', ...]] = None
+    ) -> Tuple[GriddedPerm, ...]:
         t_av, t_co = self.children(tiling)
         if gp.avoids(*self.gps):
             return t_av.forward_map(gp)

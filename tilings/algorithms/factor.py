@@ -30,8 +30,14 @@ class FactorRule(Rule):
     def workable(self):
         return self._workable
 
-    def constructor(self, tiling: "Tiling") -> Constructor:
-        return CartesianProduct(self.children(tiling))
+    def constructor(
+        self,
+        tiling: 'Tiling',
+        children: Optional[Tuple['Tiling', ...]] = None,
+    ) -> Constructor:
+        if children is None:
+            children = self.children(tiling)
+        return CartesianProduct(children)
 
     def children(self, tiling: "Tiling") -> Tuple["Tiling", ...]:
         """
@@ -51,10 +57,15 @@ class FactorRule(Rule):
         )
 
     def backward_map(
-        self, tiling: "Tiling", gps: Tuple[GriddedPerm, ...]
+        self,
+        tiling: 'Tiling',
+        gps: Tuple[GriddedPerm, ...],
+        children: Optional[Tuple['Tiling', ...]] = None,
     ) -> GriddedPerm:
+        if children is None:
+            children = self.children(tiling)
         gps_to_combine = tuple(
-            tiling.backward_map(gp) for gp, tiling in zip(gps, self.children(tiling))
+            tiling.backward_map(gp) for gp, tiling in zip(gps, children)
         )
         temp = [
             ((cell[0], idx), (cell[1], val))
@@ -67,11 +78,16 @@ class FactorRule(Rule):
         return GriddedPerm(new_patt, new_pos)
 
     def forward_map(
-        self, tiling: "Tiling", gp: GriddedPerm
-    ) -> Tuple[Tuple[GriddedPerm, "Tiling"], ...]:
+        self,
+        tiling: 'Tiling',
+        gp: GriddedPerm,
+        children: Optional[Tuple['Tiling', ...]] = None,
+    ) -> Tuple[GriddedPerm, ...]:
+        if children is None:
+            children = self.children(tiling)
         return tuple(
             tiling.forward_map(gp.get_gridded_perm_in_cells(part))
-            for tiling, part in zip(self.children(tiling), self.partition)
+            for tiling, part in zip(children, self.partition)
         )
 
 
