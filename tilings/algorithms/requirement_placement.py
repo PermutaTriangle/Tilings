@@ -54,9 +54,7 @@ class RequirementPlacementRule(Rule):
         return RequirementPlacement(tiling, own_col=self.own_col, own_row=self.own_row)
 
     def constructor(
-        self,
-        tiling: 'Tiling',
-        children: Optional[Tuple['Tiling', ...]] = None,
+        self, tiling: "Tiling", children: Optional[Tuple["Tiling", ...]] = None,
     ) -> Constructor:
         return DisjointUnion()
 
@@ -109,9 +107,9 @@ class RequirementPlacementRule(Rule):
 
     def backward_map(
         self,
-        tiling: 'Tiling',
+        tiling: "Tiling",
         gps: Tuple[GriddedPerm, ...],
-        children: Optional[Tuple['Tiling', ...]] = None,
+        children: Optional[Tuple["Tiling", ...]] = None,
     ) -> GriddedPerm:
         if children is None:
             children = self.children(tiling)
@@ -122,9 +120,9 @@ class RequirementPlacementRule(Rule):
 
     def forward_map(
         self,
-        tiling: 'Tiling',
+        tiling: "Tiling",
         gp: GriddedPerm,
-        children: Optional[Tuple['Tiling', ...]] = None,
+        children: Optional[Tuple["Tiling", ...]] = None,
     ) -> Tuple[GriddedPerm, ...]:
         if children is None:
             children = self.children(tiling)

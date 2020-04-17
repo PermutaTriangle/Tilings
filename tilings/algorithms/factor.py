@@ -31,9 +31,7 @@ class FactorRule(Rule):
         return self._workable
 
     def constructor(
-        self,
-        tiling: 'Tiling',
-        children: Optional[Tuple['Tiling', ...]] = None,
+        self, tiling: "Tiling", children: Optional[Tuple["Tiling", ...]] = None,
     ) -> Constructor:
         if children is None:
             children = self.children(tiling)
@@ -58,9 +56,9 @@ class FactorRule(Rule):
 
     def backward_map(
         self,
-        tiling: 'Tiling',
+        tiling: "Tiling",
         gps: Tuple[GriddedPerm, ...],
-        children: Optional[Tuple['Tiling', ...]] = None,
+        children: Optional[Tuple["Tiling", ...]] = None,
     ) -> GriddedPerm:
         if children is None:
             children = self.children(tiling)
@@ -79,9 +77,9 @@ class FactorRule(Rule):
 
     def forward_map(
         self,
-        tiling: 'Tiling',
+        tiling: "Tiling",
         gp: GriddedPerm,
-        children: Optional[Tuple['Tiling', ...]] = None,
+        children: Optional[Tuple["Tiling", ...]] = None,
     ) -> Tuple[GriddedPerm, ...]:
         if children is None:
             children = self.children(tiling)
