@@ -53,14 +53,10 @@ class RequirementInsertionRule(Rule):
         else:
             raise NotImplementedError
 
-    def backward_map(
-        self, tiling: "Tiling", gps: Tuple[Tuple[GriddedPerm, "Tiling"]]
-    ) -> GriddedPerm:
-        return tiling.backward_map(gp[0])
+    def backward_map(self, tiling: "Tiling", gps: Tuple[GriddedPerm]) -> GriddedPerm:
+        return tiling.backward_map(gps[0])
 
-    def forward_map(
-        self, tiling: "Tiling", gp: GriddedPerm
-    ) -> Tuple[Tuple[GriddedPerm, "Tiling"], ...]:
+    def forward_map(self, tiling: "Tiling", gp: GriddedPerm) -> Tuple[GriddedPerm, ...]:
         t_av, t_co = self.children(tiling)
         if gp.avoids(*self.gps):
             return t_av.forward_map(gp)

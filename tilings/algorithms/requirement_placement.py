@@ -10,10 +10,12 @@ from typing import (
     TypeVar,
 )
 
-from comb_spec_searcher import BatchRule, Rule
+from comb_spec_searcher import BatchRule, Constructor, DisjointUnion, Rule
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 
+
+from ..griddedperm import GriddedPerm
 from ..obstruction import Obstruction
 from ..requirement import Requirement
 
@@ -23,9 +25,96 @@ if TYPE_CHECKING:
 Cell = Tuple[int, int]
 Dir = int
 ListRequirement = List[Requirement]
-GriddedPerm = TypeVar("GriddedPerm", Obstruction, Requirement)
 ObsCache = Dict[Cell, List[Obstruction]]
 ReqsCache = Dict[Cell, List[ListRequirement]]
+
+
+class RequirementPlacementRule(Rule):
+    def __init__(
+        self,
+        gp: GriddedPerm,
+        index: int,
+        direction: int,
+        own_col: bool = True,
+        own_row: bool = True,
+        ignore_parent: bool = False,
+    ):
+        self.gp = gp
+        self.index = index
+        self.direction = direction
+        self.own_row, self.own_col = own_row, own_col
+        self._ignore_parent = ignore_parent
+
+    @property
+    def ignore_parent(self):
+        return self._ignore_parent
+
+    def placement_class(self, tiling: "Tiling"):
+        return RequirementPlacement(tiling, own_col=self.own_col, own_row=self.own_row)
+
+    def constructor(self, tiling: "Tiling") -> Constructor:
+        return DisjointUnion()
+
+    def children(self, tiling: "Tiling") -> Tuple["Tiling", ...]:
+        placement_class = self.placement_class(tiling)
+        return (
+            placement_class.place_point_of_req(self.gp, self.index, self.direction),
+        )
+
+    def direction_string(self):
+        if self.direction == 0:
+            return "rightmost"
+        if self.direction == 1:
+            return "topmost"
+        if self.direction == 2:
+            return "leftmost"
+        if self.direction == 3:
+            return "bottommost"
+
+    def formal_step(self):
+        if len(self.gp) == 1:
+            return "Placing the {} point in cell {}.".format(
+                self.direction_string(), self.gp.pos[self.index]
+            )
+        if self.gp.is_localized():
+            return "Placing the {} {} point in {} in cell {}.".format(
+                self.direction_string(),
+                (self.index, self.gp.patt[self.index]),
+                self.gp.patt,
+                self.gp.pos[self.index],
+            )
+        return "Placing the {} {} point in {}.".format(
+            self.direction_string(), (self.index, self.gp.patt[self.index]), self.gp
+        )
+
+    def backward_cell_map(self, tiling: "Tiling") -> Dict[Cell, Cell]:
+        return {
+            c: cell
+            for cell in tiling.active_cells
+            for c in self.forward_cell_map(tiling, cell)
+        }
+
+    def forward_cell_map(self, tiling: "Tiling", cell: Cell) -> FrozenSet[Cell]:
+        x, y = self.gp.pos[self.index]
+        minx = cell[0] if cell[0] <= x else cell[0] + 3
+        maxx = cell[0] + 3 if cell[0] >= x else cell[0]
+        miny = cell[1] if cell[1] <= y else cell[1] + 3
+        maxy = cell[1] + 3 if cell[1] >= y else cell[1]
+        return frozenset((i, j) for i in range(minx, maxx) for j in range(miny, maxy))
+
+    def backward_map(self, tiling: "Tiling", gps: Tuple[GriddedPerm]) -> GriddedPerm:
+        gp = gps[0]
+        gp = self.children(tiling)[0].backward_map(gp)
+        backmap = self.backward_cell_map(tiling)
+        return GriddedPerm(gp.patt, [backmap[cell] for cell in gp.pos])
+
+    def forward_map(self, tiling: "Tiling", gp: GriddedPerm) -> Tuple[GriddedPerm, ...]:
+        placement_class = self.placement_class(tiling)
+        forced_index = None  # TODO: compute index of point being placed
+        placed_gp = placement_class._gridded_perm_translation_with_point(
+            self.gp, forced_index
+        )
+        return self.children(tiling)[0].forward_map(placed_gp)
 
 
 class RequirementPlacement:
@@ -455,16 +544,13 @@ class RequirementPlacement:
             if self._already_placed(cell):
                 continue
             for direction in self.directions:
-                placed_tiling = self.place_point_in_cell(cell, direction)
-                formal_step = self._point_placement_formal_step(cell, direction)
-                yield Rule(
-                    formal_step,
-                    [placed_tiling],
-                    [True],
-                    [False],
-                    [True],
+                yield RequirementPlacementRule(
+                    GriddedPerm(Perm((0,)), (cell,)),
+                    0,
+                    direction,
+                    own_col=self._own_col,
+                    own_row=self._own_row,
                     ignore_parent=ignore_parent,
-                    constructor="equiv",
                 )
 
     def all_requirement_placement_rules(
@@ -487,18 +573,13 @@ class RequirementPlacement:
                 if self._already_placed(cell):
                     continue
                 for direction in self.directions:
-                    placed_tiling = self.place_point_of_req(gp, idx, direction)
-                    formal_step = self._pattern_placement_formal_step(
-                        idx, gp, direction
-                    )
-                    yield Rule(
-                        formal_step,
-                        [placed_tiling],
-                        [True],
-                        [False],
-                        workable=[True],
+                    yield RequirementPlacementRule(
+                        gp,
+                        idx,
+                        direction,
+                        own_col=self._own_col,
+                        own_row=self._own_row,
                         ignore_parent=ignore_parent,
-                        constructor="equiv",
                     )
 
     def _col_placement_formal_step(self, idx: int, direction: Dir) -> str:
@@ -515,24 +596,6 @@ class RequirementPlacement:
         if not (self._own_col and self._own_row):
             s += "partially "
         s += "{} points in row {}.".format(dir_str, idx)
-        return s
-
-    def _point_placement_formal_step(self, cell: Cell, direction: Dir) -> str:
-        dir_str = self._direction_string(direction)
-        s = "Placing "
-        if not (self._own_col and self._own_row):
-            s += "partially "
-        s += "{} point in cell {}.".format(dir_str, cell)
-        return s
-
-    def _pattern_placement_formal_step(
-        self, idx: int, gp: GriddedPerm, direction: Dir
-    ) -> str:
-        dir_str = self._direction_string(direction)
-        s = "Placing "
-        if not (self._own_col and self._own_row):
-            s += "partially "
-        s += "the {} point of ({}, {}) in {}.".format(dir_str, idx, gp.patt[idx], gp)
         return s
 
     @staticmethod

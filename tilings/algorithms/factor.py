@@ -51,9 +51,11 @@ class FactorRule(Rule):
         )
 
     def backward_map(
-        self, tiling: "Tiling", *gps: Tuple[Tuple[GriddedPerm, "Tiling"], ...]
+        self, tiling: "Tiling", gps: Tuple[GriddedPerm, ...]
     ) -> GriddedPerm:
-        gps_to_combine = tuple(tiling.backward_map(gp) for gp, tiling in gps)
+        gps_to_combine = tuple(
+            tiling.backward_map(gp) for gp, tiling in zip(gps, self.children(tiling))
+        )
         temp = [
             ((cell[0], idx), (cell[1], val))
             for gp in gps_to_combine
