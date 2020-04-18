@@ -10,8 +10,6 @@ separation is idempotent by applying the core algorithm until it stabilises.
 import heapq
 from itertools import combinations, product
 
-from comb_spec_searcher import InferralRule
-
 
 class Graph:
     """
@@ -508,6 +506,8 @@ class RowColSeparation:
         if not self._separated_tilings:
             return self._tiling
         return self._separated_tilings[-1]
+
+    # TODO: move to strategy class / folder
 
     def formal_step(self):
         """

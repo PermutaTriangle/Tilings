@@ -1,17 +1,16 @@
 from itertools import chain
 from typing import Iterator, Type
 
-from comb_spec_searcher import Rule
+from comb_spec_searcher import Strategy
 from tilings import Tiling
 from tilings.algorithms import ComponentFusion, Fusion
-from tilings.strategies.abstract_strategy import Strategy
 
 __all__ = ["FusionStrategy", "ComponentFusionStrategy"]
 
 
 def _general_fusion_iterator(
     tiling: Tiling, fusion_class: Type[Fusion]
-) -> Iterator[Rule]:
+) -> Iterator[Strategy]:
     """
     Generator over rules found by fusing rows or columns of `tiling` using
     the fusion defined by `fusion_class`.
@@ -27,7 +26,7 @@ def _general_fusion_iterator(
 
 
 class FusionStrategy(Strategy):
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
         return _general_fusion_iterator(tiling, Fusion)
 
     def __str__(self) -> str:
@@ -48,7 +47,7 @@ class ComponentFusionStrategy(Strategy):
     of the row/column.
     """
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
         if tiling.requirements:
             return iter([])
         return _general_fusion_iterator(tiling, ComponentFusion)

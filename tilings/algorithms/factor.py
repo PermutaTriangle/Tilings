@@ -2,7 +2,7 @@ from collections import defaultdict
 from itertools import chain, combinations
 from typing import Optional, Tuple, TYPE_CHECKING
 
-from comb_spec_searcher import CartesianProduct, Constructor, Rule
+from comb_spec_searcher import CartesianProductStrategy
 from permuta import Perm
 from tilings import GriddedPerm
 from permuta.misc import UnionFind
@@ -13,90 +13,6 @@ if TYPE_CHECKING:
 
 
 Cell = Tuple[int, int]
-
-
-class FactorRule(Rule):
-    def __init__(
-        self,
-        partition: Optional[  # TODO: make this cells, rather than gps
-            Tuple[Tuple[Cell, ...], ...]
-        ] = None,
-        workable: bool = True,
-    ):
-        self.partition = sorted(partition)
-        self._workable = workable
-
-    @property
-    def workable(self):
-        return self._workable
-
-    def constructor(
-        self, tiling: "Tiling", children: Optional[Tuple["Tiling", ...]] = None,
-    ) -> Constructor:
-        if children is None:
-            children = self.children(tiling)
-        return CartesianProduct(children)
-
-    def children(self, tiling: "Tiling") -> Tuple["Tiling", ...]:
-        """
-        # TODO: Taken from reducible factorisations function in Factor. Pick where.
-        """
-        return tuple(tiling.sub_tiling(cells) for cells in self.partition)
-
-    def formal_step(self, union=False):
-        """
-        Return a string that describe the operation performed on the tiling.
-        """
-        return "Factor with partition {}".format(
-            " / ".join(
-                "{{{}}}".format(", ".join(str(c) for c in part))
-                for part in self.partition
-            )
-        )
-
-    def backward_map(
-        self,
-        tiling: "Tiling",
-        gps: Tuple[GriddedPerm, ...],
-        children: Optional[Tuple["Tiling", ...]] = None,
-    ) -> GriddedPerm:
-        if children is None:
-            children = self.children(tiling)
-        gps_to_combine = tuple(
-            tiling.backward_map(gp) for gp, tiling in zip(gps, children)
-        )
-        temp = [
-            ((cell[0], idx), (cell[1], val))
-            for gp in gps_to_combine
-            for (idx, val), cell in zip(enumerate(gp.patt), gp.pos)
-        ]
-        temp.sort()
-        new_pos = [(idx[0], val[0]) for idx, val in temp]
-        new_patt = Perm.to_standard(val for _, val in temp)
-        return GriddedPerm(new_patt, new_pos)
-
-    def forward_map(
-        self,
-        tiling: "Tiling",
-        gp: GriddedPerm,
-        children: Optional[Tuple["Tiling", ...]] = None,
-    ) -> Tuple[GriddedPerm, ...]:
-        if children is None:
-            children = self.children(tiling)
-        return tuple(
-            tiling.forward_map(gp.get_gridded_perm_in_cells(part))
-            for tiling, part in zip(children, self.partition)
-        )
-
-
-class FactorWithInterleavingRule(FactorRule):
-    def constructor(self, tiling: "Tiling"):
-        raise NotImplementedError
-
-
-class FactorWithMonotoneInterleavingRule(FactorRule):
-    def constructor(self, tiling: "Tiling"):
-        raise NotImplementedError
 
 
 class Factor:
@@ -117,8 +33,8 @@ class Factor:
         self._factors_obs_and_reqs = None
 
     @property
-    def FactorRule(self):
-        return FactorRule
+    def FactorStrategy(self):
+        return FactorStrategy
 
     def _cell_to_int(self, cell):
         nrow = self._tiling.dimensions[1]
@@ -263,6 +179,7 @@ class Factor:
                 )
             yield factors
 
+    # TODO: the rule methods should be on strategy
     def rule(self, workable=True):
         """
         Return the comb_spec_searcher rule for the irreducible factorisation.
@@ -272,7 +189,7 @@ class Factor:
         and want to keep working on the parent (perhaps placing points into
         cells or something).
         """
-        return self.FactorRule(self.get_components(), workable)
+        return self.FactorStrategy(self.get_components(), workable)
 
     def all_union_rules(self, workable=False):
         """
@@ -287,7 +204,7 @@ class Factor:
         """
         min_comp = self._get_factors_obs_and_reqs()
         for partition in partitions_iterator(min_comp):
-            return self.FactorRule(partition, workable)
+            return self.FactorStrategy(partition, workable)
 
 
 class FactorWithMonotoneInterleaving(Factor):
@@ -320,7 +237,7 @@ class FactorWithMonotoneInterleaving(Factor):
             self._unite_cells((c1, c2))
 
     @property
-    def FactorRule(self):
+    def FactorStrategy(self):
         return FactorWithMonotoneInterleavingRule
 
 
@@ -346,5 +263,5 @@ class FactorWithInterleaving(Factor):
         self._unite_requirements()
 
     @property
-    def FactorRule(self):
+    def FactorStrategy(self):
         return FactorWithInterleavingRule

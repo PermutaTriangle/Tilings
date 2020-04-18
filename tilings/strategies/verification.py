@@ -1,6 +1,6 @@
 from typing import Iterable, Optional, Type
 
-from comb_spec_searcher import Rule
+from comb_spec_searcher import Strategy
 from permuta import Perm
 from tilings import Tiling
 from tilings.algorithms.enumeration import (
@@ -13,7 +13,6 @@ from tilings.algorithms.enumeration import (
     MonotoneTreeEnumeration,
     OneByOneEnumeration,
 )
-from tilings.strategies.abstract_strategy import Strategy
 
 __all__ = [
     "BasicVerificationStrategy",
@@ -43,7 +42,7 @@ class _VerificationStrategy(Strategy):
                 "Need to define {}.VERIFICATION_CLASS".format(cls.__name__)
             )
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Strategy]:
         return self.VERIFICATION_CLASS(tiling).verification_rule()
 
     def __repr__(self) -> str:

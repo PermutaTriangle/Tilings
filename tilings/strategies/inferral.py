@@ -1,6 +1,6 @@
 from typing import Optional
 
-from comb_spec_searcher import Rule
+from comb_spec_searcher import Strategy
 from tilings import Tiling
 from tilings.algorithms import (
     AllObstructionInferral,
@@ -9,7 +9,6 @@ from tilings.algorithms import (
     RowColSeparation,
     SubobstructionInferral,
 )
-from tilings.strategies.abstract_strategy import Strategy
 
 __all__ = [
     "ObstructionTransitivityStrategy",
@@ -31,7 +30,7 @@ class ObstructionTransitivityStrategy(Strategy):
     transitivity applies, i.e. if a < b < c and b is positive, then a < c.
     """
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Strategy]:
         return ObstructionTransitivity(tiling).rule()
 
     def __str__(self) -> str:
@@ -50,7 +49,7 @@ class RowColumnSeparationStrategy(Strategy):
     An inferral function that tries to separate cells in rows and columns.
     """
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Strategy]:
         rcs = RowColSeparation(tiling)
         return rcs.rule()
 
@@ -74,7 +73,7 @@ class EmptyCellInferralStrategy(Strategy):
     obstruction can be added into the cell, i.e. the cell is empty.
     """
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Strategy]:
         return EmptyCellInferral(tiling).rule()
 
     def __str__(self) -> str:
@@ -94,7 +93,7 @@ class SubobstructionInferralStrategy(Strategy):
     added.
     """
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Strategy]:
         return SubobstructionInferral(tiling).rule()
 
     def __str__(self) -> str:
@@ -117,7 +116,7 @@ class ObstructionInferralStrategy(Strategy):
     def __init__(self, maxlen: int = 3) -> None:
         self.maxlen = maxlen
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Strategy]:
         return AllObstructionInferral(tiling, self.maxlen).rule()
 
     def __repr__(self) -> str:

@@ -2,7 +2,6 @@
 from collections import Counter
 from itertools import chain
 
-from comb_spec_searcher import Rule
 from permuta import Perm
 from tilings import Obstruction
 
@@ -158,6 +157,7 @@ class Fusion:
             requirements=self.requirements_fuse_counters,
         )
 
+    # TODO: move to strategy file/class
     def formal_step(self):
         """
         Return a string describing the operation performed on the tiling.

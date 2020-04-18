@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, FrozenSet, Optional
 import requests
 import sympy
 
-from comb_spec_searcher import ProofTree, StrategyPack, VerificationRule
+from comb_spec_searcher import ProofTree, StrategyPack
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
 from tilings.exception import InvalidOperationError
@@ -50,7 +50,7 @@ class Enumeration(abc.ABC):
         """
         raise NotImplementedError
 
-    def verification_rule(self) -> Optional[VerificationRule]:
+    def verification_rule(self):  # TODO -> VerificationRule deprecated
         """
         Return a verification rule if the tiling is verified.
         Otherwise, returns None

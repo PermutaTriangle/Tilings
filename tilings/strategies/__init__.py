@@ -8,7 +8,7 @@ from .batch import (
     RootInsertionStrategy,
     RowAndColumnPlacementStrategy,
 )
-from .decomposition import FactorStrategy
+from .factor import FactorStrategy
 from .equivalence import RequirementPlacementStrategy
 from .fusion import ComponentFusionStrategy, FusionStrategy
 from .inferral import (

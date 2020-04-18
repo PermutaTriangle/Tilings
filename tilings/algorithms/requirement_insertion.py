@@ -2,7 +2,7 @@ import abc
 from itertools import chain, product
 from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
 
-from comb_spec_searcher import Constructor, DisjointUnion, Rule
+from comb_spec_searcher import Constructor, DisjointUnionStrategy, Strategy
 from permuta import Av, Perm
 from tilings import GriddedPerm, Obstruction, Requirement
 
@@ -13,7 +13,10 @@ ListRequirement = Tuple[Requirement, ...]
 EXTRA_BASIS_ERR = "'extra_basis' should be a list of Perm to avoid"
 
 
-class RequirementInsertionRule(Rule):
+# TODO: move to strategy folder along side the class
+
+
+class RequirementInsertionStrategy(DisjointUnionStrategy):
     def __init__(self, gps: Iterable[GriddedPerm], ignore_parent: bool = False):
         self._ignore_parent = ignore_parent
         self.gps = frozenset(gps)
@@ -22,12 +25,7 @@ class RequirementInsertionRule(Rule):
     def ignore_parent(self):
         return self._ignore_parent
 
-    def constructor(
-        self, tiling: "Tiling", children: Optional[Tuple["Tiling", ...]] = None
-    ) -> Constructor:
-        return DisjointUnion()
-
-    def children(self, tiling: "Tiling") -> Tuple["Tiling", "Tiling"]:
+    def decomposition_function(self, tiling: "Tiling") -> Tuple["Tiling", "Tiling"]:
         """
         Return a tuple of tiling. The first one avoids all the pattern in the
         list while the other contain one of the patterns in the list.
@@ -62,7 +60,7 @@ class RequirementInsertionRule(Rule):
         children: Optional[Tuple["Tiling", ...]] = None,
     ) -> GriddedPerm:
         if children is None:
-            children = self.children(tiling)
+            children = self.decomposition_function(tiling)
         gp = gps[0]
         if gp.avoids(*self.gps):  # TODO: think about if we could skip this step.
             return children[0].backward_map(gp)
@@ -75,7 +73,7 @@ class RequirementInsertionRule(Rule):
         gp: GriddedPerm,
         children: Optional[Tuple["Tiling", ...]] = None,
     ) -> Tuple[GriddedPerm, ...]:
-        t_av, t_co = self.children(tiling)
+        t_av, t_co = self.decomposition_function(tiling)
         if gp.avoids(*self.gps):
             return t_av.forward_map(gp)
         else:
@@ -101,12 +99,12 @@ class RequirementInsertion(abc.ABC):
         rules.
         """
 
-    def rules(self, ignore_parent: bool = False) -> Iterable[Rule]:
+    def rules(self, ignore_parent: bool = False) -> Iterable[Strategy]:
         """
         Iterator over all the requirement insertion rules.
         """
         for req_list in self.req_lists_to_insert():
-            yield RequirementInsertionRule(req_list)
+            yield RequirementInsertionStrategy(req_list)
 
 
 class RequirementInsertionWithRestriction(RequirementInsertion):

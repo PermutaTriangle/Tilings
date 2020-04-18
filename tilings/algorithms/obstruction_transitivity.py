@@ -1,7 +1,6 @@
 from collections import defaultdict
 from itertools import chain, product
 
-from comb_spec_searcher import InferralRule
 from permuta import Perm
 from tilings import Obstruction
 
@@ -192,6 +191,8 @@ class ObstructionTransitivity:
         return self._tiling.__class__(
             obstructions=obs, requirements=self._tiling.requirements
         )
+
+    # TODO: move to strategy class
 
     def rule(self):
         """

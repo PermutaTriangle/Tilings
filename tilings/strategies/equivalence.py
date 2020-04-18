@@ -1,10 +1,9 @@
 from typing import Iterable, Iterator
 
-from comb_spec_searcher import Rule
+from comb_spec_searcher import Strategy
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import Tiling
 from tilings.algorithms import RequirementPlacement
-from tilings.strategies.abstract_strategy import Strategy
 
 __all__ = ["RequirementPlacementStrategy"]
 
@@ -41,7 +40,7 @@ class RequirementPlacementStrategy(Strategy):
         self.ignore_parent = ignore_parent
         self.dirs = tuple(dirs)
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
         if self.partial:
             req_placements = [
                 RequirementPlacement(tiling, own_row=False, dirs=self.dirs),

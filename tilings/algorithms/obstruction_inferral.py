@@ -1,7 +1,6 @@
 import abc
 from itertools import chain
 
-from comb_spec_searcher import InferralRule
 from permuta import Perm
 from tilings import Obstruction
 
@@ -49,6 +48,8 @@ class ObstructionInferral(abc.ABC):
         obs = chain(self._tiling.obstructions, self.new_obs())
         reqs = self._tiling.requirements
         return self._tiling.__class__(obs, reqs)
+
+    # TODO: move to strategy class
 
     def formal_step(self):
         """ Return a string describing the operation performed. """

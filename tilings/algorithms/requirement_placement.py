@@ -11,7 +11,7 @@ from typing import (
     TypeVar,
 )
 
-from comb_spec_searcher import BatchRule, Constructor, DisjointUnion, Rule
+from comb_spec_searcher import Constructor, DisjointUnionStrategy, Strategy
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 
@@ -30,7 +30,7 @@ ObsCache = Dict[Cell, List[Obstruction]]
 ReqsCache = Dict[Cell, List[ListRequirement]]
 
 
-class RequirementPlacementRule(Rule):
+class RequirementPlacementStrategy(DisjointUnionStrategy):
     def __init__(
         self,
         gp: GriddedPerm,
@@ -53,12 +53,7 @@ class RequirementPlacementRule(Rule):
     def placement_class(self, tiling: "Tiling"):
         return RequirementPlacement(tiling, own_col=self.own_col, own_row=self.own_row)
 
-    def constructor(
-        self, tiling: "Tiling", children: Optional[Tuple["Tiling", ...]] = None,
-    ) -> Constructor:
-        return DisjointUnion()
-
-    def children(self, tiling: "Tiling") -> Tuple["Tiling", ...]:
+    def decomposition_function(self, tiling: "Tiling") -> Tuple["Tiling", ...]:
         placement_class = self.placement_class(tiling)
         return (
             placement_class.place_point_of_req(self.gp, self.index, self.direction),
@@ -112,7 +107,7 @@ class RequirementPlacementRule(Rule):
         children: Optional[Tuple["Tiling", ...]] = None,
     ) -> GriddedPerm:
         if children is None:
-            children = self.children(tiling)
+            children = self.decomposition_function(tiling)
         gp = gps[0]
         gp = children[0].backward_map(gp)
         backmap = self.backward_cell_map(tiling)
@@ -125,7 +120,7 @@ class RequirementPlacementRule(Rule):
         children: Optional[Tuple["Tiling", ...]] = None,
     ) -> Tuple[GriddedPerm, ...]:
         if children is None:
-            children = self.children(tiling)
+            children = self.decomposition_function(tiling)
         placement_class = self.placement_class(tiling)
         forced_index = None  # TODO: compute index of point being placed
         placed_gp = placement_class._gridded_perm_translation_with_point(
@@ -512,7 +507,7 @@ class RequirementPlacement:
             self._tiling.obstructions + newobs, self._tiling.requirements
         )
 
-    def all_col_placement_rules(self) -> Iterator[Rule]:
+    def all_col_placement_rules(self) -> Iterator[Strategy]:
         """
         Yield all possible rules coming from placing points in a column.
         """
@@ -532,7 +527,7 @@ class RequirementPlacement:
                     formal_step = self._col_placement_formal_step(index, direction)
                     yield BatchRule(formal_step, tilings)
 
-    def all_row_placement_rules(self) -> Iterator[Rule]:
+    def all_row_placement_rules(self) -> Iterator[Strategy]:
         """
         Yield all possible rules coming from placing points in a row.
         """
@@ -552,7 +547,9 @@ class RequirementPlacement:
                     formal_step = self._row_placement_formal_step(index, direction)
                     yield BatchRule(formal_step, tilings)
 
-    def all_point_placement_rules(self, ignore_parent: bool = False) -> Iterator[Rule]:
+    def all_point_placement_rules(
+        self, ignore_parent: bool = False
+    ) -> Iterator[Strategy]:
         """
         Yield all posible rules coming from placing a point in a positive cell
         of the tiling.
@@ -561,7 +558,7 @@ class RequirementPlacement:
             if self._already_placed(cell):
                 continue
             for direction in self.directions:
-                yield RequirementPlacementRule(
+                yield RequirementPlacementStrategy(
                     GriddedPerm(Perm((0,)), (cell,)),
                     0,
                     direction,
@@ -572,7 +569,7 @@ class RequirementPlacement:
 
     def all_requirement_placement_rules(
         self, ignore_parent: bool = False
-    ) -> Iterator[Rule]:
+    ) -> Iterator[Strategy]:
         """
         Yield all possible rules coming from placing a point of a pattern that
         occurs as a subpattern of requirement containing a single pattern.
@@ -590,7 +587,7 @@ class RequirementPlacement:
                 if self._already_placed(cell):
                     continue
                 for direction in self.directions:
-                    yield RequirementPlacementRule(
+                    yield RequirementPlacementStrategy(
                         gp,
                         idx,
                         direction,

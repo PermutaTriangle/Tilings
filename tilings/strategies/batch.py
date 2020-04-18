@@ -1,6 +1,6 @@
 from typing import Iterator, List, Optional
 
-from comb_spec_searcher import Rule
+from comb_spec_searcher import Strategy
 from permuta import Av, Perm
 from tilings import Tiling
 from tilings.algorithms import (
@@ -11,7 +11,6 @@ from tilings.algorithms import (
     RequirementExtension,
     RequirementPlacement,
 )
-from tilings.strategies.abstract_strategy import Strategy
 
 __all__ = [
     "AllCellInsertionStrategy",
@@ -46,7 +45,7 @@ class AllCellInsertionStrategy(Strategy):
         self.extra_basis = extra_basis
         self.ignore_parent = ignore_parent
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
         yield from (
             CellInsertion(tiling, self.maxreqlen, self.extra_basis).rules(
                 self.ignore_parent
@@ -102,7 +101,7 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
         super().__init__(maxreqlen, extra_basis, ignore_parent)
         self.max_num_req = max_num_req
 
-    def _good_rule(self, rule: Rule) -> bool:
+    def _good_rule(self, rule: Strategy) -> bool:
         """
         Check the number of requirements in the rule's tilings satisfy the
         max_num_req
@@ -111,7 +110,7 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
             return True
         return all(len(t.requirements) <= self.max_num_req for t in rule.comb_classes)
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
         if tiling.dimensions != (1, 1):
             return
         rules = CellInsertion(tiling, self.maxreqlen, self.extra_basis).rules(
@@ -173,7 +172,7 @@ class AllRequirementExtensionStrategy(Strategy):
         self.extra_basis = extra_basis
         self.ignore_parent = ignore_parent
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
         yield from (
             RequirementExtension(tiling, self.maxreqlen, self.extra_basis).rules(
                 self.ignore_parent
@@ -230,7 +229,7 @@ class AllRequirementInsertionStrategy(Strategy):
         self.extra_basis = extra_basis
         self.ignore_parent = ignore_parent
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
         if tiling.requirements:
             return
         yield from (
@@ -281,7 +280,7 @@ class AllFactorInsertionStrategy(Strategy):
     def __init__(self, ignore_parent: bool = True) -> None:
         self.ignore_parent = ignore_parent
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
         yield from FactorInsertion(tiling).rules(self.ignore_parent)
 
     def __str__(self) -> str:
@@ -320,7 +319,7 @@ class RequirementCorroborationStrategy(Strategy):
     def __init__(self, ignore_parent: bool = True):
         self.ignore_parent = ignore_parent
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
         yield from (RequirementCorroboration(tiling).rules(self.ignore_parent))
 
     def __str__(self) -> str:
@@ -348,7 +347,7 @@ class RowAndColumnPlacementStrategy(Strategy):
         self.place_col = place_col
         self.partial = partial
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
         if self.partial:
             req_placements = [
                 RequirementPlacement(tiling, own_row=False),
@@ -395,7 +394,7 @@ class RowAndColumnPlacementStrategy(Strategy):
 
 
 class AllPlacementsStrategy(Strategy):
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
         req_placements = (
             RequirementPlacement(tiling),
             RequirementPlacement(tiling, own_row=False),
