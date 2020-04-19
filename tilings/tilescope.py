@@ -4,13 +4,13 @@ from typing import Callable, List, Optional, Union
 
 from comb_spec_searcher import CombinatorialSpecificationSearcher
 from comb_spec_searcher.class_db import ClassDB
-from comb_spec_searcher.class_queue import ClassQueue
+from comb_spec_searcher.class_queue import DefaultQueue
 from comb_spec_searcher.equiv_db import EquivalenceDB
 from comb_spec_searcher.rule_db import RuleDB
 from permuta import Perm
 from permuta.descriptors import Basis
 from tilings import Obstruction, Tiling
-from tilings.strategies.abstract_strategy import Strategy
+from comb_spec_searcher import Strategy, StrategyGenerator
 from tilings.strategy_pack import TileScopePack
 
 
@@ -86,7 +86,7 @@ class TileScope(CombinatorialSpecificationSearcher):
             if k == "is empty":
                 d[k] = v
             else:
-                d[Strategy.from_dict(k)] = v
+                d[StrategyGernerator.from_dict(k)] = v
             values.append(v)
         return defaultdict(int, d)
 
@@ -128,7 +128,7 @@ class TileScope(CombinatorialSpecificationSearcher):
         css = cls(c, strategy_pack, **init_kwargs)
         css.classdb = ClassDB.from_dict(dict_["classdb"], combinatorial_class)
         css.equivdb = EquivalenceDB.from_dict(dict_["equivdb"])
-        css.classqueue = ClassQueue.from_dict(dict_["classqueue"])
+        css.classqueue = DefaultQueue.from_dict(dict_["classqueue"])
         css.ruledb = RuleDB.from_dict(dict_["ruledb"])
         css.start_label = dict_["start_label"]
         css._has_proof_tree = dict_["_has_proof_tree"]

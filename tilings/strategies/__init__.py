@@ -1,11 +1,5 @@
 from .batch import (
-    AllCellInsertionStrategy,
-    AllFactorInsertionStrategy,
     AllPlacementsStrategy,
-    AllRequirementExtensionStrategy,
-    AllRequirementInsertionStrategy,
-    RequirementCorroborationStrategy,
-    RootInsertionStrategy,
     RowAndColumnPlacementStrategy,
 )
 from .factor import FactorStrategy
@@ -17,6 +11,14 @@ from .inferral import (
     ObstructionTransitivityStrategy,
     RowColumnSeparationStrategy,
     SubobstructionInferralStrategy,
+)
+from .requirement_insertion import (
+    AllCellInsertionStrategy,
+    RootInsertionStrategy,
+    AllRequirementExtensionStrategy,
+    AllRequirementInsertionStrategy,
+    AllFactorInsertionStrategy,
+    RequirementCorroborationStrategy,
 )
 from .verification import (
     BasicVerificationStrategy,

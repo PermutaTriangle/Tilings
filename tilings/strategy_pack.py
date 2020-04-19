@@ -5,7 +5,7 @@ from comb_spec_searcher import StrategyPack
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import Tiling
 from tilings import strategies as strat
-from tilings.strategies.abstract_strategy import Strategy
+from comb_spec_searcher import StrategyGenerator
 
 
 class TileScopePack(StrategyPack):
@@ -22,10 +22,10 @@ class TileScopePack(StrategyPack):
 
     def __init__(
         self,
-        initial_strats: List[Strategy],
-        inferral_strats: List[Strategy],
-        expansion_strats: List[List[Strategy]],
-        ver_strats: List[Strategy],
+        initial_strats: List[StrategyGenerator],
+        inferral_strats: List[StrategyGenerator],
+        expansion_strats: List[List[StrategyGenerator]],
+        ver_strats: List[StrategyGenerator],
         name: str,
         **kwargs
     ):
