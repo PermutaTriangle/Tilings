@@ -3,14 +3,7 @@ from typing import Iterator, List, Optional
 from comb_spec_searcher import Strategy
 from permuta import Av, Perm
 from tilings import Tiling
-from tilings.algorithms import (
-    CellInsertion,
-    CrossingInsertion,
-    FactorInsertion,
-    RequirementCorroboration,
-    RequirementExtension,
-    RequirementPlacement,
-)
+from tilings.algorithms import RequirementPlacement
 
 __all__ = [
     "RowAndColumnPlacementStrategy",

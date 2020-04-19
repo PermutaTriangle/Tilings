@@ -17,13 +17,6 @@ from .obstruction_inferral import (
     SubobstructionInferral,
 )
 from .obstruction_transitivity import ObstructionTransitivity
-from .requirement_insertion import (
-    CellInsertion,
-    CrossingInsertion,
-    FactorInsertion,
-    RequirementCorroboration,
-    RequirementExtension,
-)
 from .requirement_placement import RequirementPlacement
 from .row_col_separation import RowColSeparation
 

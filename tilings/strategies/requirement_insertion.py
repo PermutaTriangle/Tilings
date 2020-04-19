@@ -1,6 +1,6 @@
 import abc
 from itertools import chain, product
-from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Iterable, Iterator, List, Optional, Tuple
 
 from comb_spec_searcher import (
     Constructor,
@@ -9,10 +9,8 @@ from comb_spec_searcher import (
     StrategyGenerator,
 )
 from permuta import Av, Perm
-from tilings import GriddedPerm, Obstruction, Requirement
+from tilings import GriddedPerm, Obstruction, Requirement, Tiling
 
-if TYPE_CHECKING:
-    from tilings import Tiling
 ListRequirement = Tuple[Requirement, ...]
 
 EXTRA_BASIS_ERR = "'extra_basis' should be a list of Perm to avoid"
@@ -26,8 +24,6 @@ __all__ = [
     "RequirementCorroborationStrategy",
 ]
 
-# TODO: move to strategy folder along side the class
-
 
 class RequirementInsertionStrategy(DisjointUnionStrategy):
     def __init__(self, gps: Iterable[GriddedPerm], ignore_parent: bool = False):
@@ -38,7 +34,7 @@ class RequirementInsertionStrategy(DisjointUnionStrategy):
     def ignore_parent(self):
         return self._ignore_parent
 
-    def decomposition_function(self, tiling: "Tiling") -> Tuple["Tiling", "Tiling"]:
+    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, Tiling]:
         """
         Return a tuple of tiling. The first one avoids all the pattern in the
         list while the other contain one of the patterns in the list.
@@ -68,9 +64,9 @@ class RequirementInsertionStrategy(DisjointUnionStrategy):
 
     def backward_map(
         self,
-        tiling: "Tiling",
+        tiling: Tiling,
         gps: Tuple[GriddedPerm, ...],
-        children: Optional[Tuple["Tiling", ...]] = None,
+        children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         if children is None:
             children = self.decomposition_function(tiling)
@@ -82,9 +78,9 @@ class RequirementInsertionStrategy(DisjointUnionStrategy):
 
     def forward_map(
         self,
-        tiling: "Tiling",
+        tiling: Tiling,
         gp: GriddedPerm,
-        children: Optional[Tuple["Tiling", ...]] = None,
+        children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm, ...]:
         t_av, t_co = self.decomposition_function(tiling)
         if gp.avoids(*self.gps):
@@ -219,7 +215,7 @@ class AllCellInsertionStrategy(RequirementInsertionWithRestrictionStrategyGenera
         return "cell insertion up to length {}".format(self.maxreqlen)
 
 
-class RootInsertionStrategy(RequirementInsertionWithRestrictionStrategyGenerator):
+class RootInsertionStrategy(AllCellInsertionStrategy):
     """
     The cell insertion strategy performed only on 1 by 1 tilings.
     """
@@ -262,9 +258,13 @@ class RootInsertionStrategy(RequirementInsertionWithRestrictionStrategyGenerator
 
     def __repr__(self) -> str:
         return (
-            "RootInsertionStrategy(maxreqlen={}, extra_basis={}, "
+            "{}(maxreqlen={}, extra_basis={}, "
             "ignore_parent={}, max_num_req={})".format(
-                self.maxreqlen, self.extra_basis, self.ignore_parent, self.max_num_req
+                self.__class__.__name__,
+                self.maxreqlen,
+                self.extra_basis,
+                self.ignore_parent,
+                self.max_num_req,
             )
         )
 
