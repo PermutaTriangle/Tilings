@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Iterable, Iterator, List, Optional, Tuple
 from comb_spec_searcher import (
     Constructor,
     DisjointUnionStrategy,
+    Rule,
     Strategy,
     StrategyGenerator,
 )
@@ -27,12 +28,8 @@ __all__ = [
 
 class RequirementInsertionStrategy(DisjointUnionStrategy):
     def __init__(self, gps: Iterable[GriddedPerm], ignore_parent: bool = False):
-        self._ignore_parent = ignore_parent
+        super().__init__(ignore_parent=ignore_parent)
         self.gps = frozenset(gps)
-
-    @property
-    def ignore_parent(self):
-        return self._ignore_parent
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, Tiling]:
         """
@@ -101,7 +98,7 @@ class RequirementInsertionStrategyGenerator(StrategyGenerator):
         self.ignore_parent = ignore_parent
 
     @abc.abstractmethod
-    def req_lists_to_insert(self) -> Iterable[ListRequirement]:
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterable[ListRequirement]:
         """
         Iterator over all the requirement list to insert to create the batch
         rules.
@@ -111,7 +108,7 @@ class RequirementInsertionStrategyGenerator(StrategyGenerator):
         """
         Iterator over all the requirement insertion rules.
         """
-        for req_list in self.req_lists_to_insert():
+        for req_list in self.req_lists_to_insert(tiling):
             yield RequirementInsertionStrategy(req_list, self.ignore_parent)
 
     def to_jsonable(self) -> dict:
@@ -193,9 +190,9 @@ class AllCellInsertionStrategy(RequirementInsertionWithRestrictionStrategyGenera
     ) -> None:
         super().__init__(maxreqlen, extra_basis, ignore_parent)
 
-    def req_lists_to_insert(self) -> Iterable[ListRequirement]:
-        active = self.tiling.active_cells
-        bdict = self.tiling.cell_basis()
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterable[ListRequirement]:
+        active = tiling.active_cells
+        bdict = tiling.cell_basis()
         for cell, length in product(active, range(1, self.maxreqlen + 1)):
             basis = bdict[cell][0] + self.extra_basis
             yield from (
@@ -207,7 +204,7 @@ class AllCellInsertionStrategy(RequirementInsertionWithRestrictionStrategyGenera
     def __str__(self) -> str:
         if self.maxreqlen == 1:
             return "point insertion"
-        if self.extra_basis is not None:
+        if self.extra_basis:
             perm_class = Av(self.extra_basis)
             return "cell insertion from {} up to " "length {}".format(
                 perm_class, self.maxreqlen
@@ -230,22 +227,25 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
         super().__init__(maxreqlen, extra_basis, ignore_parent)
         self.max_num_req = max_num_req
 
-    def _good_rule(self, rule: Strategy) -> bool:
+    def _good_rule(self, rule: Rule) -> bool:
         """
         Check the number of requirements in the rule's tilings satisfy the
         max_num_req
         """
         if self.max_num_req is None:
             return True
-        return all(len(t.requirements) <= self.max_num_req for t in rule.comb_classes)
+        return all(len(t.requirements) <= self.max_num_req for t in rule.children)
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         if tiling.dimensions != (1, 1):
             return
-        yield from filter(self._good_rule, super().__call__(tiling))
+        for strategy in super().__call__(tiling):
+            rule = strategy(tiling)
+            if self._good_rule(rule):
+                yield rule
 
     def __str__(self) -> str:
-        if self.extra_basis is None:
+        if not self.extra_basis:
             s = "root insertion up to length {}".format(self.maxreqlen)
         else:
             perm_class = Av(self.extra_basis)
@@ -302,8 +302,8 @@ class AllRequirementExtensionStrategy(
     ) -> None:
         super().__init__(maxreqlen, extra_basis, ignore_parent)
 
-    def req_lists_to_insert(self) -> Iterable[ListRequirement]:
-        bdict = self.tiling.cell_basis()
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterable[ListRequirement]:
+        bdict = tiling.cell_basis()
         cell_with_req = (
             (cell, obs, reqlist[0])
             for cell, (obs, reqlist) in bdict.items()
@@ -316,7 +316,7 @@ class AllRequirementExtensionStrategy(
                         yield (Requirement.single_cell(patt, cell),)
 
     def __str__(self) -> str:
-        if self.extra_basis is not None:
+        if self.extra_basis:
             perm_class = Av(self.extra_basis)
             return "requirement extension from {} up to " "length {}".format(
                 perm_class, self.maxreqlen
@@ -342,9 +342,9 @@ class AllRequirementInsertionStrategy(
     ) -> None:
         super().__init__(maxreqlen, extra_basis, ignore_parent)
 
-    def req_lists_to_insert(self) -> Iterable[ListRequirement]:
-        obs_tiling = self.tiling.__class__(
-            self.tiling.obstructions,
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterable[ListRequirement]:
+        obs_tiling = Tiling(
+            tiling.obstructions,
             remove_empty=False,
             derive_empty=False,
             minimize=False,
@@ -365,7 +365,7 @@ class AllRequirementInsertionStrategy(
     def __str__(self) -> str:
         if self.maxreqlen == 1:
             return "point insertion"
-        if self.extra_basis is not None:
+        if self.extra_basis:
             perm_class = Av(self.extra_basis)
             return "requirement insertion from {} up to " "length {}".format(
                 perm_class, self.maxreqlen
@@ -381,10 +381,9 @@ class AllFactorInsertionStrategy(RequirementInsertionStrategyGenerator):
     def __init__(self, ignore_parent: bool = True) -> None:
         super().__init__(ignore_parent)
 
-    def req_lists_to_insert(self) -> Iterable[ListRequirement]:
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterable[ListRequirement]:
         gp_facts = map(
-            GriddedPerm.factors,
-            chain(self.tiling.obstructions, *self.tiling.requirements),
+            GriddedPerm.factors, chain(tiling.obstructions, *tiling.requirements),
         )
         proper_facts = chain.from_iterable(f for f in gp_facts if len(f) > 1)
         for f in proper_facts:
@@ -414,9 +413,9 @@ class RequirementCorroborationStrategy(RequirementInsertionStrategyGenerator):
     def __init__(self, ignore_parent: bool = True):
         super().__init__(ignore_parent)
 
-    def req_lists_to_insert(self) -> Iterable[ListRequirement]:
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterable[ListRequirement]:
         to_insert = chain.from_iterable(
-            reqs for reqs in self.tiling.requirements if len(reqs) > 1
+            reqs for reqs in tiling.requirements if len(reqs) > 1
         )
         for req in to_insert:
             yield (req,)
