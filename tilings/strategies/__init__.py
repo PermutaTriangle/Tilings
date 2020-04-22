@@ -1,9 +1,4 @@
-from .batch import (
-    AllPlacementsStrategy,
-    RowAndColumnPlacementStrategy,
-)
 from .factor import FactorStrategy
-from .equivalence import RequirementPlacementStrategy
 from .fusion import ComponentFusionStrategy, FusionStrategy
 from .inferral import (
     EmptyCellInferralStrategy,
@@ -19,6 +14,11 @@ from .requirement_insertion import (
     AllRequirementInsertionStrategy,
     AllFactorInsertionStrategy,
     RequirementCorroborationStrategy,
+)
+from .requirement_placement import (
+    PatternPlacementStrategy,
+    RowAndColumnPlacementStrategy,
+    AllPlacementsStrategy,
 )
 from .verification import (
     BasicVerificationStrategy,
@@ -43,7 +43,7 @@ __all__ = [
     # Decomposition
     "FactorStrategy",
     # Equivalence
-    "RequirementPlacementStrategy",
+    "PatternPlacementStrategy",
     # Fusion
     "ComponentFusionStrategy",
     "FusionStrategy",

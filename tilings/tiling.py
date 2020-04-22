@@ -478,12 +478,17 @@ class Tiling(CombinatorialClass):
             self._obstructions + (Obstruction(patt, pos),), self._requirements
         )
 
-    def add_list_requirement(self, req_list):
+    def add_obstructions(self, gps: Iterable[GriddedPerm]):
+        """Returns a new tiling with the obstructions added."""
+        new_obs = tuple(map(Obstruction.from_gridded_perm, gps))
+        return Tiling(self._obstructions + new_obs, self._requirements)
+
+    def add_list_requirement(self, req_list: Iterable[GriddedPerm]):
         """
         Return a new tiling with the requirement list added.
         """
-        requirements = self._requirements + (tuple(req_list),)
-        return Tiling(obstructions=self._obstructions, requirements=requirements)
+        new_req = tuple(map(Requirement.from_gridded_perm, req_list))
+        return Tiling(self._obstructions, self._requirements + (new_req,),)
 
     def add_requirement(self, patt, pos):
         """Returns a new tiling with the requirement of the pattern

@@ -172,9 +172,7 @@ class TileScopePack(StrategyPack):
             "pattern" if length > 1 else "point",
         )
         return TileScopePack(
-            initial_strats=[
-                strat.RequirementPlacementStrategy(partial=partial_placements)
-            ],
+            initial_strats=[strat.PatternPlacementStrategy(partial=partial_placements)],
             ver_strats=[
                 strat.OneByOneVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
@@ -216,7 +214,7 @@ class TileScopePack(StrategyPack):
             ],
             expansion_strats=[
                 [strat.AllCellInsertionStrategy(maxreqlen=length)],
-                [strat.RequirementPlacementStrategy()],
+                [strat.PatternPlacementStrategy()],
             ],
             name=name,
         )
@@ -241,7 +239,7 @@ class TileScopePack(StrategyPack):
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityStrategy(),
             ],
-            expansion_strats=[[strat.RequirementPlacementStrategy()]],
+            expansion_strats=[[strat.PatternPlacementStrategy()]],
             name=name,
         )
 
@@ -342,7 +340,7 @@ class TileScopePack(StrategyPack):
                 strat.ObstructionTransitivityStrategy(),
             ],
             expansion_strats=[
-                [strat.RequirementPlacementStrategy()],
+                [strat.PatternPlacementStrategy()],
                 [strat.RequirementCorroborationStrategy()],
             ],
             name=name,
@@ -371,7 +369,7 @@ class TileScopePack(StrategyPack):
             ],
             expansion_strats=[
                 [strat.AllRequirementInsertionStrategy(maxreqlen=length)],
-                [strat.RequirementPlacementStrategy(partial=partial_placements)],
+                [strat.PatternPlacementStrategy(partial=partial_placements)],
             ],
             name=name,
         )
