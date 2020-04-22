@@ -29,6 +29,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
         ignore_parent: bool = False,
         include_empty: bool = False,
     ):
+        print(gps, indices, direction, own_col, own_row, ignore_parent, include_empty)
         self.gps = gps
         self.indices = indices
         self.direction = direction
@@ -63,17 +64,14 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
         )
         if len(self.gps) == 1:
             gp = self.gps[0]
+            index = self.indices[0]
             if len(gp) == 1:
-                return placing + "point in cell {}.".format(self.gp.pos[self.index])
-            if self.gp.is_localized():
+                return placing + "point in cell {}.".format(gp.pos[index])
+            if gp.is_localized():
                 return placing + "{} point in {} in cell {}.".format(
-                    (self.index, self.gp.patt[self.index]),
-                    self.gp.patt,
-                    self.gp.pos[self.index],
+                    (index, gp.patt[index]), gp.patt, gp.pos[index],
                 )
-            return placing + "{} point in {}.".format(
-                (self.index, self.gp.patt[self.index]), self.gp
-            )
+            return placing + "{} point in {}.".format((index, gp.patt[index]), gp)
         if all(len(gp) == 1 for gp in self.gps):
             row_indices = set(x for x, _ in [gp.pos[0] for gp in self.gps])
             if row_indices == 1:
@@ -174,13 +172,14 @@ class RequirementPlacementStrategyGenerator(StrategyGenerator):
             req_placements = (RequirementPlacement(tiling),)
         return req_placements
 
-    def __call__(self, tiling: Tiling) -> Iterator[Rule]:
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
         for req_placement, (gps, indices, direction) in zip(
             self.req_placements(tiling),
             self.req_indices_and_directions_to_place(tiling),
         ):
-            if direction in req_placement.dirs and not req_placement.already_placed(
-                gps, indices
+            if (
+                direction in req_placement.directions
+                and not req_placement.already_placed(gps, indices)
             ):
                 strategy = RequirementPlacementStrategy(
                     gps,
@@ -189,11 +188,9 @@ class RequirementPlacementStrategyGenerator(StrategyGenerator):
                     ignore_parent=self.ignore_parent,
                     include_empty=self.include_empty,
                 )
-                if self.include_empty:
-                    children.append(tiling.add_obstructions(gps))
-                children = req_placement.place_point_of_req_list(
-                    gps, indices, direction
-                )
+                children = (
+                    (tiling.add_obstructions(gps),) if self.include_empty else tuple()
+                ) + req_placement.place_point_of_req(gps, indices, direction)
                 yield strategy(tiling, children)
 
     def to_jsonable(self) -> dict:
@@ -321,7 +318,9 @@ class RowAndColumnPlacementStrategy(RequirementPlacementStrategyGenerator):
         assert place_col or place_row, "Must place column or row"
         self.place_row = place_row
         self.place_col = place_col
-        super().__init__(partial=partial, ignore_parent=ignore_parent, dirs=dirs)
+        super().__init__(
+            partial=partial, ignore_parent=ignore_parent, dirs=dirs, include_empty=True
+        )
 
     def req_indices_and_directions_to_place(
         self, tiling: Tiling
@@ -332,7 +331,7 @@ class RowAndColumnPlacementStrategy(RequirementPlacementStrategyGenerator):
         cols = defaultdict(set)
         rows = defaultdict(set)
         for cell in tiling.active_cells:
-            gp = GriddedPerm(Perm((0,)), cell)
+            gp = GriddedPerm(Perm((0,)), (cell,))
             cols[cell[0]].add(gp)
             rows[cell[1]].add(gp)
         if self.place_col:
@@ -399,19 +398,47 @@ class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
             RequirementPlacement(tiling, own_col=False),
         )
 
-    def req_indices_and_directions_to_place(
-        self, tiling: Tiling
-    ) -> Iterable[Tuple[Tuple[GriddedPerm, ...], Tuple[int, ...], int]]:
-        """
-        Iterator over all requirement lists, indices and directions to place.
-        """
-        other_strats = (
+    def __call__(self, tiling: Tiling, **kwargs):
+        include_empty_for = (
+            RowAndColumnPlacementStrategy(place_col=True, place_row=True),
+        )
+        for other_strat in self.other_strats():
+            for req_placement, (gps, indices, direction) in zip(
+                self.req_placements(tiling),
+                self.req_indices_and_directions_to_place(tiling, other_strat),
+            ):
+                if (
+                    direction in req_placement.directions
+                    and not req_placement.already_placed(gps, indices)
+                ):
+                    strategy = RequirementPlacementStrategy(
+                        gps,
+                        indices,
+                        direction,
+                        ignore_parent=self.ignore_parent,
+                        include_empty=other_strat in include_empty_for,
+                    )
+                    children = (
+                        (tiling.add_obstructions(gps),)
+                        if other_strat in include_empty_for
+                        else tuple()
+                    ) + req_placement.place_point_of_req(gps, indices, direction)
+                    yield strategy(tiling, children)
+
+    def other_strats(self):
+        return (
             PatternPlacementStrategy(point_only=False),
             PatternPlacementStrategy(point_only=True),
             RowAndColumnPlacementStrategy(place_col=True, place_row=True),
         )
-        for other_strat in other_strats:
-            yield from other_strat.req_indices_and_directions_to_place(tiling)
+
+    def req_indices_and_directions_to_place(
+        self, tiling: Tiling, other_strat: RequirementPlacementStrategyGenerator
+    ) -> Iterable[Tuple[Tuple[GriddedPerm, ...], Tuple[int, ...], int]]:
+        """
+        Iterator over all requirement lists, indices and directions to place.
+        """
+        yield from other_strat.req_indices_and_directions_to_place(tiling)
 
     def __str__(self) -> str:
         return "all placements"

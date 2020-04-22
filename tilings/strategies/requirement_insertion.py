@@ -36,12 +36,7 @@ class RequirementInsertionStrategy(DisjointUnionStrategy):
         Return a tuple of tiling. The first one avoids all the pattern in the
         list while the other contain one of the patterns in the list.
         """
-        obs = tiling.obstructions
-        reqs = tiling.requirements
-        t_co = tiling.add_list_requirement(map(Requirement.from_gridded_perm, self.gps))
-        new_obs = chain(obs, (Obstruction(req.patt, req.pos) for req in self.gps))
-        t_av = tiling.__class__(obstructions=new_obs, requirements=reqs)
-        return (t_av, t_co)
+        return tiling.add_obstructions(self.gps), tiling.add_list_requirement(self.gps)
 
     def formal_step(self) -> str:
         """

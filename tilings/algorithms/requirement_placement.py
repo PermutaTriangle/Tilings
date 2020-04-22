@@ -304,7 +304,7 @@ class RequirementPlacement:
         for idx, gp in zip(indices, gps):
             # if cell is farther in the direction than gp[idx], then don't need
             # to avoid any of the stretched grided perms
-            if not self._farther(cell, gp[idx], direction):
+            if not self._farther(cell, gp.pos[idx], direction):
                 for stretched_gp in self._stretch_gridded_perm(
                     Obstruction.from_gridded_perm(gp), cell
                 ):
@@ -330,7 +330,8 @@ class RequirementPlacement:
         (the furtest in the given direction, ex: leftmost point) of an occurrence
         of any point idx, gp(idx) for gridded perms in gp, and idx in indices
         """
-        cells = frozenset(gp[idx] for idx, gp in zip(indices, gps))
+        cells = frozenset(gp.pos[idx] for idx, gp in zip(indices, gps))
+        print(cells)
         res = []  # List[Tiling]
         for cell in cells:
             obs, reqs = self._stretched_obstructions_and_requirements(cell)
