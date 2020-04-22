@@ -925,7 +925,7 @@ class Tiling(CombinatorialClass):
         in the gridded permutaion gp is placed.
         """
         req_placement = RequirementPlacement(self)
-        return req_placement.place_point_of_req(gp, idx, direction)
+        return req_placement.place_point_of_gridded_permutation(gp, idx, direction)
 
     def place_row(self, idx, direction):
         """
@@ -965,7 +965,7 @@ class Tiling(CombinatorialClass):
             req_placement = RequirementPlacement(self, own_row=False)
         else:
             req_placement = RequirementPlacement(self, own_col=False)
-        return req_placement.place_point_of_req(gp, idx, direction)
+        return req_placement.place_point_of_gridded_permutation(gp, idx, direction)
 
     def partial_place_row(self, idx, direction):
         """
