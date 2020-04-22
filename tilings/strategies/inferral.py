@@ -6,13 +6,11 @@ from tilings.algorithms import (
     AllObstructionInferral,
     EmptyCellInferral,
     ObstructionTransitivity,
-    RowColSeparation,
     SubobstructionInferral,
 )
 
 __all__ = [
     "ObstructionTransitivityStrategy",
-    "RowColumnSeparationStrategy",
     "EmptyCellInferralStrategy",
     "SubobstructionInferralStrategy",
     "ObstructionInferralStrategy",
@@ -41,26 +39,6 @@ class ObstructionTransitivityStrategy(Strategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> "ObstructionTransitivityStrategy":
-        return cls()
-
-
-class RowColumnSeparationStrategy(Strategy):
-    """
-    An inferral function that tries to separate cells in rows and columns.
-    """
-
-    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Strategy]:
-        rcs = RowColSeparation(tiling)
-        return rcs.rule()
-
-    def __str__(self) -> str:
-        return "row and column separation"
-
-    def __repr__(self) -> str:
-        return "RowColumnSeparationStrategy()"
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "RowColumnSeparationStrategy":
         return cls()
 
 

@@ -4,7 +4,6 @@ from .inferral import (
     EmptyCellInferralStrategy,
     ObstructionInferralStrategy,
     ObstructionTransitivityStrategy,
-    RowColumnSeparationStrategy,
     SubobstructionInferralStrategy,
 )
 from .requirement_insertion import (
@@ -20,6 +19,7 @@ from .requirement_placement import (
     RowAndColumnPlacementStrategy,
     AllPlacementsStrategy,
 )
+from .row_and_col_separation import RowColumnSeparationStrategy
 from .verification import (
     BasicVerificationStrategy,
     DatabaseVerificationStrategy,

@@ -507,22 +507,4 @@ class RowColSeparation:
             return self._tiling
         return self._separated_tilings[-1]
 
-    # TODO: move to strategy class / folder
 
-    def formal_step(self):
-        """
-        Returns a string describing the operation that was performed.
-        """
-        s = "Row and column separation"
-        if len(self._separated_tilings) > 1:
-            s += " ({} times)".format(len(self._separated_tilings))
-        return s
-
-    def rule(self):
-        """
-        Return a comb_spec_searcher rule for the separation.
-
-        If the tiling is not separable, returns None.
-        """
-        if self.separable():
-            return InferralRule(self.formal_step(), self.separated_tiling())
