@@ -13,6 +13,8 @@ from tilings import Obstruction, Tiling
 from tilings.strategies.abstract_strategy import Strategy
 from tilings.strategy_pack import TileScopePack
 
+import zlib
+
 
 class TileScope(CombinatorialSpecificationSearcher):
     """
@@ -124,6 +126,7 @@ class TileScope(CombinatorialSpecificationSearcher):
             "logger_kwargs": dict_["logger_kwargs"],
         }
         b = b64decode(dict_["start_class"].encode())
+        b = zlib.compress(b, 9)
         c = Tiling.decompress(b)
         css = cls(c, strategy_pack, **init_kwargs)
         css.classdb = ClassDB.from_dict(dict_["classdb"], combinatorial_class)
