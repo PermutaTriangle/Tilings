@@ -1,3 +1,4 @@
+from .enumeration import BasicVerificationStrategy
 from .factor import FactorStrategy
 from .fusion import ComponentFusionStrategy, FusionStrategy
 from .inferral import (
@@ -13,15 +14,16 @@ from .requirement_insertion import (
     AllRequirementInsertionStrategy,
     AllFactorInsertionStrategy,
     RequirementCorroborationStrategy,
+    RequirementInsertionStrategy,
 )
 from .requirement_placement import (
     PatternPlacementStrategy,
+    RequirementPlacementStrategy,
     RowAndColumnPlacementStrategy,
     AllPlacementsStrategy,
 )
 from .row_and_col_separation import RowColumnSeparationStrategy
 from .verification import (
-    BasicVerificationStrategy,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
     LocallyFactorableVerificationStrategy,

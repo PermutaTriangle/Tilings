@@ -62,11 +62,8 @@ class RequirementInsertionStrategy(DisjointUnionStrategy):
     ) -> GriddedPerm:
         if children is None:
             children = self.decomposition_function(tiling)
-        gp = gps[0]
-        if gp.avoids(*self.gps):  # TODO: think about if we could skip this step.
-            return children[0].backward_map(gp)
-        else:
-            return children[1].backward_map(gp)
+        idx = DisjointUnionStrategy.backward_map_index(gps)
+        return children[idx].backward_map(gps[idx])
 
     def forward_map(
         self,
@@ -74,11 +71,12 @@ class RequirementInsertionStrategy(DisjointUnionStrategy):
         gp: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm, ...]:
-        t_av, t_co = self.decomposition_function(tiling)
-        if gp.avoids(*self.gps):
-            return t_av.forward_map(gp)
-        else:
-            return t_co.forward_map(gp)
+        raise NotImplementedError
+        # t_av, t_co = self.decomposition_function(tiling)
+        # if gp.avoids(*self.gps):
+        #     return t_av.forward_map(gp)
+        # else:
+        #     return t_co.forward_map(gp)
 
 
 class RequirementInsertionStrategyGenerator(StrategyGenerator):
