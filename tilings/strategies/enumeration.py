@@ -46,7 +46,7 @@ class BasicVerificationStrategy(VerificationStrategy):
 
     def get_genf(self, tiling: Tiling, **kwargs):
         if tiling.is_epsilon():
-            return sympy.sympify("1")
+            return 1
         if tiling.is_point_tiling():
             return x
         raise InvalidOperationError("Not an atom")
@@ -81,7 +81,9 @@ class BasicVerificationStrategy(VerificationStrategy):
         return "tiling is an atom"
 
     def __repr__(self) -> str:
-        return "{}(ignore_parent={})".format(self.__class__.__name__, self.ignore_parent)
+        return "{}(ignore_parent={})".format(
+            self.__class__.__name__, self.ignore_parent
+        )
 
     def __str__(self) -> str:
         return "verify atoms"

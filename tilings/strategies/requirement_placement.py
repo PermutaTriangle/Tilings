@@ -56,9 +56,8 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
             return "bottommost"
 
     def formal_step(self):
-        # TODO: partial flag!
         placing = "{}lacing the {} ".format(
-            "P" if self.own_col and self.own_row else "Partially p",
+            "P" if (self.own_col and self.own_row) else "Partially p",
             self.direction_string(),
         )
         if len(self.gps) == 1:
@@ -109,6 +108,10 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
             children = self.decomposition_function(tiling)
         idx = DisjointUnionStrategy.backward_map_index(gps)
         gp = children[idx].backward_map(gps[idx])
+        if self.include_empty:
+            if idx == 0:
+                return gp
+            idx -= 1
         placed_cell = self.gps[idx].pos[self.indices[idx]]
         backmap = self.backward_cell_map(tiling, placed_cell)
         return GriddedPerm(gp.patt, [backmap[cell] for cell in gp.pos])
@@ -189,6 +192,8 @@ class RequirementPlacementStrategyGenerator(StrategyGenerator):
                     gps,
                     indices,
                     direction,
+                    own_row=req_placement.own_row,
+                    own_col=req_placement.own_col,
                     ignore_parent=self.ignore_parent,
                     include_empty=self.include_empty,
                 )
@@ -210,7 +215,6 @@ class RequirementPlacementStrategyGenerator(StrategyGenerator):
 
 
 class PatternPlacementStrategy(RequirementPlacementStrategyGenerator):
-    # TODO: changed name of RequirementPlacementStrategy to PatternPlacementStrategy, update the strategy_packs
     """
     Strategy that places a single forced point of a gridded permutation.
     Yield all possible rules coming from placing a point of a pattern that
@@ -246,7 +250,6 @@ class PatternPlacementStrategy(RequirementPlacementStrategyGenerator):
         """
         If point_only, then yield all size one gps, in order to
         """
-        # TODO: continue here, need the req placement class to use the _already placed method
         if self.point_only:
             for cell in tiling.positive_cells:
                 gps = (GriddedPerm(Perm((0,)), (cell,)),)
@@ -298,7 +301,7 @@ class PatternPlacementStrategy(RequirementPlacementStrategyGenerator):
         else:
             dir_arg = ""
         return (
-            "RequirementPlacementStrategy(point_only={}, partial={},"
+            "PatternPlacementStrategy(point_only={}, partial={},"
             " ignore_parent={}{})".format(
                 self.point_only, self.partial, self.ignore_parent, dir_arg
             )
@@ -419,6 +422,8 @@ class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
                         gps,
                         indices,
                         direction,
+                        own_row=req_placement.own_row,
+                        own_col=req_placement.own_col,
                         ignore_parent=self.ignore_parent,
                         include_empty=other_strat in include_empty_for,
                     )

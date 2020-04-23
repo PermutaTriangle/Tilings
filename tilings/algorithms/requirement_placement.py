@@ -62,15 +62,15 @@ class RequirementPlacement:
         self._tiling = tiling
         self._point_row_cells = self._tiling_point_row_cells()
         self._point_col_cells = self._tiling_point_col_cells()
-        self._own_row = own_row
-        self._own_col = own_col
+        self.own_row = own_row
+        self.own_col = own_col
         self._stretched_obstructions_cache = {}  # type: ObsCache
         self._stretched_requirements_cache = {}  # type: ReqsCache
-        if self._own_row and self._own_col:
+        if self.own_row and self.own_col:
             self.directions = frozenset(DIRS)
-        elif self._own_row:
+        elif self.own_row:
             self.directions = frozenset((DIR_NORTH, DIR_SOUTH))
-        elif self._own_col:
+        elif self.own_col:
             self.directions = frozenset((DIR_EAST, DIR_WEST))
         self.directions = frozenset(dirs).intersection(self.directions)
         assert self.directions, "No direction to place"
@@ -103,12 +103,12 @@ class RequirementPlacement:
         if len(cells) != 1:
             return False
         cell = cells.pop()
-        full_placement = self._own_row and self._own_col
+        full_placement = self.own_row and self.own_col
         if full_placement:
             return cell in self._point_col_cells and cell in self._point_row_cells
-        if self._own_row:  # Only placing in own row
+        if self.own_row:  # Only placing in own row
             return cell in self._point_row_cells
-        if self._own_col:  # Only placing in own column
+        if self.own_col:  # Only placing in own column
             return cell in self._point_col_cells
         raise Exception("Not placing at all!!")
 
@@ -140,8 +140,8 @@ class RequirementPlacement:
         """
         x, y = gp.pos[index]
         return (
-            x + 2 if self._own_col and index >= placed_cell[0] else x,
-            y + 2 if (self._own_row and gp.patt[index] >= placed_cell[1]) else y,
+            x + 2 if self.own_col and index >= placed_cell[0] else x,
+            y + 2 if (self.own_row and gp.patt[index] >= placed_cell[1]) else y,
         )
 
     def _gridded_perm_translation(
@@ -181,7 +181,7 @@ class RequirementPlacement:
         If placed on its own column, then the x coordinate is shifted by 1.
         """
         x, y = cell
-        return (x + 1 if self._own_col else x, y + 1 if self._own_row else y)
+        return (x + 1 if self.own_col else x, y + 1 if self.own_row else y)
 
     def _point_obstructions(self, cell: Cell) -> List[Obstruction]:
         """
@@ -210,9 +210,9 @@ class RequirementPlacement:
         stretched assuming that a point is placed into the given cell.
         """
         mindex, maxdex, minval, maxval = gp.get_bounding_box(cell)
-        if not self._own_col:
+        if not self.own_col:
             maxdex = mindex
-        elif not self._own_row:
+        elif not self.own_row:
             maxval = minval
         res = [
             self._gridded_perm_translation(gp, (i, j))
@@ -331,7 +331,6 @@ class RequirementPlacement:
         of any point idx, gp(idx) for gridded perms in gp, and idx in indices
         """
         cells = frozenset(gp.pos[idx] for idx, gp in zip(indices, gps))
-        print(cells)
         res = []  # List[Tiling]
         for cell in cells:
             obs, reqs = self._stretched_obstructions_and_requirements(cell)
