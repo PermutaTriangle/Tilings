@@ -72,11 +72,11 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
             return placing + "{} point in {}.".format((index, gp.patt[index]), gp)
         if all(len(gp) == 1 for gp in self.gps):
             row_indices = set(x for x, _ in [gp.pos[0] for gp in self.gps])
-            if row_indices == 1:
-                return placing + "point in row {}.".format(row_indices.pop())
-            col_indices = set(y for _, y in [gp.pos[0] for gp in self.gps])
-            if col_indices == 1:
+            if len(row_indices) == 1:
                 return placing + "point in col {}.".format(row_indices.pop())
+            col_indices = set(y for _, y in [gp.pos[0] for gp in self.gps])
+            if len(col_indices) == 1:
+                return placing + "point in row {}.".format(row_indices.pop())
         return placing + "point at indices {} from the requirement ({}).".format(
             self.indices, ", ".join(str(gp) for gp in self.gps),
         )
