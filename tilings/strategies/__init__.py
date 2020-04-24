@@ -6,9 +6,9 @@ from .factor import (
     FactorWithMonotoneInterleavingStrategy,
 )
 from .fusion import ComponentFusionStrategy, FusionStrategy
-from .inferral import (
+from .obstruction_inferral import (
+    AllObstructionInferralStrategy,
     EmptyCellInferralStrategy,
-    ObstructionInferralStrategy,
     ObstructionTransitivityStrategy,
     SubobstructionInferralStrategy,
 )
@@ -57,7 +57,7 @@ __all__ = [
     "FusionStrategy",
     # Inferral
     "EmptyCellInferralStrategy",
-    "ObstructionInferralStrategy",
+    "AllObstructionInferralStrategy",
     "ObstructionTransitivityStrategy",
     "RowColumnSeparationStrategy",
     "SubobstructionInferralStrategy",

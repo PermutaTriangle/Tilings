@@ -131,8 +131,3 @@ class EmptyCellInferral(AllObstructionInferral):
         Return an iterator over all cell that where discovered to be empty.
         """
         return (ob.pos[0] for ob in self.new_obs())
-
-    def formal_step(self):
-        """ Return a string describing the operation performed. """
-        empty_cells_str = ", ".join(map(str, self.empty_cells()))
-        return "The cells {} are empty.".format(empty_cells_str)
