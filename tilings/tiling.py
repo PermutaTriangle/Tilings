@@ -161,10 +161,10 @@ class Tiling(CombinatorialClass):
         for ob in self._obstructions:
             cell = ob.is_point_obstr()
             if cell is None or (cell[0] in col_mapping and cell[1] in row_mapping):
-                new_obs.append(ob.minimize(cell_map))
+                new_obs.append(ob.apply_map(cell_map))
         self._obstructions = tuple(new_obs)
         self._requirements = tuple(
-            tuple(req.minimize(cell_map) for req in reqlist)
+            tuple(req.apply_map(cell_map) for req in reqlist)
             for reqlist in self._requirements
         )
         self._dimensions = (

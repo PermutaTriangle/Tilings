@@ -346,14 +346,14 @@ def test_remove_point(typicalob, simpleob, singlecellob):
     )
 
 
-def test_minimize(typicalob, simpleob):
+def test_apply_map(typicalob, simpleob):
     def cell_mapping(x):
         return (x[0] + 1, x[1] + 2)
 
-    assert typicalob.minimize(cell_mapping) == GriddedPerm(
+    assert typicalob.apply_map(cell_mapping) == GriddedPerm(
         Perm((1, 0, 2, 4, 3)), ((1, 2), (1, 2), (2, 2), (2, 3), (2, 3))
     )
-    assert simpleob.minimize(cell_mapping) == GriddedPerm(
+    assert simpleob.apply_map(cell_mapping) == GriddedPerm(
         Perm((1, 0, 3, 2)), ((1, 2), (1, 2), (3, 4), (3, 3))
     )
 

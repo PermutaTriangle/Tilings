@@ -278,7 +278,7 @@ class GriddedPerm(CombinatorialObject):
                     (self._pos[i] for i in subidx),
                 )
 
-    def minimize(self, cell_mapping):
+    def apply_map(self, cell_mapping):
         """Map the coordinates to a new list of coordinates according to the
         cell_mapping given."""
         return self.__class__(self._patt, [cell_mapping(cell) for cell in self._pos])
