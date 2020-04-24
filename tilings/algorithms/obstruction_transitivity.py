@@ -183,27 +183,17 @@ class ObstructionTransitivity:
         self._new_ineq = newineqs
         return self._new_ineq
 
+    def new_obs(self):
+        """Return the obstructions that are implied by the method."""
+        return tuple(map(self.ineq_ob, self.new_ineq()))
+
     def obstruction_transitivity(self):
         """
         Return the tiling with the new obstructions.
         """
-        obs = chain(self._tiling.obstructions, map(self.ineq_ob, self.new_ineq()))
+        obs = chain(self._tiling.obstructions, self.new_obs())
         return self._tiling.__class__(
             obstructions=obs, requirements=self._tiling.requirements
-        )
-
-    # TODO: move to strategy class
-
-    def rule(self):
-        """
-        Return a comb_spec_searcher Rule for the obstruction transitivity.
-
-        If no new obstruction is added return None.
-        """
-        if not self.new_ineq():
-            return None
-        return InferralRule(
-            "Computing transitivity of inequalities.", self.obstruction_transitivity()
         )
 
     def __str__(self):

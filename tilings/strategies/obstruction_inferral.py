@@ -60,6 +60,9 @@ class AllObstructionInferralStrategy(StrategyGenerator):
     """
     A strategy used for adding obstruction that the tiling avoids, but not
     currently in the obstructions.
+
+    Note: it isn't really a generator. This is utilised to avoid the need to
+    recompute new_obs which is needed for the strategy.
     """
 
     def __init__(self, maxlen: int = 3):
@@ -114,8 +117,9 @@ class SubobstructionInferralStrategy(AllObstructionInferralStrategy):
         """
         return SubobstructionInferral(tiling).new_obs()
 
-    def to_jsonable(self):
-        return StrategyGenerator.to_jsonable(self)
+    @classmethod
+    def from_dict(cls):
+        return cls()
 
     def __repr__(self):
         return "{}(maxlen={})".format(self.__class__.__name__, self.maxlen)
@@ -126,10 +130,9 @@ class SubobstructionInferralStrategy(AllObstructionInferralStrategy):
 
 # TODO: obs trans
 # override the new_obs function to return length 2 things
-# raise InvalidOperationError for potential_new_obs
 
 
-class ObstructionTransitivityStrategy(DisjointUnionStrategy):
+class ObstructionTransitivityStrategy(AllObstructionInferralStrategy):
     """
     The obstruction transitivity strategy.
 
@@ -140,8 +143,8 @@ class ObstructionTransitivityStrategy(DisjointUnionStrategy):
     transitivity applies, i.e. if a < b < c and b is positive, then a < c.
     """
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Strategy]:
-        return ObstructionTransitivity(tiling).rule()
+    def new_obs(self, tiling: Tiling):
+        return ObstructionTransitivity(tiling).new_obs()
 
     def __str__(self) -> str:
         return "obstruction transitivity"
