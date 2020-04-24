@@ -141,7 +141,7 @@ class TileScopePack(StrategyPack):
     def all_the_strategies(cls, length: int = 1) -> "TileScopePack":
         return TileScopePack(
             initial_strats=[
-                strat.FactorStrategy(union=True),
+                strat.AllFactorStrategy(union=True),
                 strat.RequirementCorroborationStrategy(),
             ],
             ver_strats=[
@@ -183,7 +183,7 @@ class TileScopePack(StrategyPack):
             ],
             expansion_strats=[
                 [
-                    strat.FactorStrategy(union=True),
+                    strat.AllFactorStrategy(union=True),
                     strat.AllCellInsertionStrategy(maxreqlen=length),
                 ],
                 [strat.RequirementCorroborationStrategy()],
@@ -201,7 +201,7 @@ class TileScopePack(StrategyPack):
         )
         return TileScopePack(
             initial_strats=[
-                strat.FactorStrategy(),
+                strat.AllFactorStrategy(),
                 strat.RequirementCorroborationStrategy(),
             ],
             ver_strats=[
@@ -227,7 +227,7 @@ class TileScopePack(StrategyPack):
         name += "point_placements"
         return TileScopePack(
             initial_strats=[
-                strat.FactorStrategy(),
+                strat.AllFactorStrategy(),
                 strat.RequirementCorroborationStrategy(),
                 strat.AllCellInsertionStrategy(maxreqlen=length, ignore_parent=True),
             ],
@@ -260,7 +260,7 @@ class TileScopePack(StrategyPack):
         )
         return TileScopePack(
             initial_strats=[
-                strat.FactorStrategy(),
+                strat.AllFactorStrategy(),
                 strat.RequirementCorroborationStrategy(),
                 strat.AllCellInsertionStrategy(ignore_parent=True),
             ],
@@ -295,7 +295,7 @@ class TileScopePack(StrategyPack):
         )
         return TileScopePack(
             initial_strats=[
-                strat.FactorStrategy(),
+                strat.AllFactorStrategy(),
                 strat.RequirementCorroborationStrategy(),
             ],
             ver_strats=[
@@ -329,7 +329,7 @@ class TileScopePack(StrategyPack):
         return TileScopePack(
             initial_strats=[
                 strat.RootInsertionStrategy(maxreqlen=length, max_num_req=max_num_req),
-                strat.FactorStrategy(union=True, workable=False),
+                strat.AllFactorStrategy(union=True, workable=False),
             ],
             ver_strats=[
                 strat.OneByOneVerificationStrategy(),
@@ -356,7 +356,7 @@ class TileScopePack(StrategyPack):
         )
         return TileScopePack(
             initial_strats=[
-                strat.FactorStrategy(),
+                strat.AllFactorStrategy(),
                 strat.RequirementCorroborationStrategy(),
             ],
             ver_strats=[

@@ -1,5 +1,10 @@
 from .enumeration import BasicVerificationStrategy
-from .factor import FactorStrategy
+from .factor import (
+    AllFactorStrategy,
+    FactorStrategy,
+    FactorWithInterleavingStrategy,
+    FactorWithMonotoneInterleavingStrategy,
+)
 from .fusion import ComponentFusionStrategy, FusionStrategy
 from .inferral import (
     EmptyCellInferralStrategy,
@@ -36,6 +41,7 @@ __all__ = [
     # Batch
     "AllCellInsertionStrategy",
     "AllFactorInsertionStrategy",
+    "AllFactorStrategy",
     "AllPlacementsStrategy",
     "AllRequirementExtensionStrategy",
     "AllRequirementInsertionStrategy",

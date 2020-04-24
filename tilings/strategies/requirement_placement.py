@@ -81,16 +81,19 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
             self.indices, ", ".join(str(gp) for gp in self.gps),
         )
 
-    def backward_cell_map(self, tiling: Tiling, placed_cell: Cell) -> Dict[Cell, Cell]:
-        return {
-            x: cell
-            for cell in tiling.active_cells
-            for x in self.forward_cell_map(tiling, placed_cell, cell)
-        }
+    def backward_cell_map(self, placed_cell: Cell, cell: Cell) -> Dict[Cell, Cell]:
+        x, y = cell
+        if x > placed_cell[0] + 1:
+            x -= 2
+        elif x == placed_cell[0] + 1:
+            x -= 1
+        if y > placed_cell[1] + 1:
+            y -= 2
+        elif y == placed_cell[1] + 1:
+            y -= 1
+        return x, y
 
-    def forward_cell_map(
-        self, tiling: Tiling, placed_cell: Cell, cell: Cell
-    ) -> FrozenSet[Cell]:
+    def forward_cell_map(self, placed_cell: Cell, cell: Cell) -> FrozenSet[Cell]:
         x, y = placed_cell
         minx = cell[0] if cell[0] <= x else cell[0] + 3
         maxx = cell[0] + 3 if cell[0] >= x else cell[0]
@@ -113,8 +116,9 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
                 return gp
             idx -= 1
         placed_cell = self.gps[idx].pos[self.indices[idx]]
-        backmap = self.backward_cell_map(tiling, placed_cell)
-        return GriddedPerm(gp.patt, [backmap[cell] for cell in gp.pos])
+        return GriddedPerm(
+            gp.patt, [self.backward_cell_map(placed_cell, cell) for cell in gp.pos]
+        )
 
     def forward_map(
         self,

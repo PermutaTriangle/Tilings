@@ -32,10 +32,6 @@ class Factor:
         self._components = None
         self._factors_obs_and_reqs = None
 
-    @property
-    def FactorStrategy(self):
-        return FactorStrategy
-
     def _cell_to_int(self, cell):
         nrow = self._tiling.dimensions[1]
         return cell[0] * nrow + cell[1]
@@ -179,32 +175,32 @@ class Factor:
                 )
             yield factors
 
-    # TODO: the rule methods should be on strategy
-    def rule(self, workable=True):
-        """
-        Return the comb_spec_searcher rule for the irreducible factorisation.
+    # # TODO: the rule methods should be on strategy
+    # def rule(self, workable=True):
+    #     """
+    #     Return the comb_spec_searcher rule for the irreducible factorisation.
 
-        If workable=True,  then we expand the  children, and want to  ignore
-        the parent. If workable=False, then we do  not expand the children,
-        and want to keep working on the parent (perhaps placing points into
-        cells or something).
-        """
-        return self.FactorStrategy(self.get_components(), workable)
+    #     If workable=True,  then we expand the  children, and want to  ignore
+    #     the parent. If workable=False, then we do  not expand the children,
+    #     and want to keep working on the parent (perhaps placing points into
+    #     cells or something).
+    #     """
+    #     return self.FactorStrategy(self.get_components(), workable)
 
-    def all_union_rules(self, workable=False):
-        """
-        Iterator over the rule for all possible union of factors.
+    # def all_union_rules(self, workable=False):
+    #     """
+    #     Iterator over the rule for all possible union of factors.
 
-        A rule is yielded for each reducible factorisations
+    #     A rule is yielded for each reducible factorisations
 
-        If workable=True,  then we expand the  children, and want to  ignore
-        the parent. If workable=False, then we do  not expand the children,
-        and want to keep working on the parent (perhaps placing points into
-        cells or something).
-        """
-        min_comp = self._get_factors_obs_and_reqs()
-        for partition in partitions_iterator(min_comp):
-            return self.FactorStrategy(partition, workable)
+    #     If workable=True,  then we expand the  children, and want to  ignore
+    #     the parent. If workable=False, then we do  not expand the children,
+    #     and want to keep working on the parent (perhaps placing points into
+    #     cells or something).
+    #     """
+    #     min_comp = self._get_factors_obs_and_reqs()
+    #     for partition in partitions_iterator(min_comp):
+    #         return self.FactorStrategy(partition, workable)
 
 
 class FactorWithMonotoneInterleaving(Factor):
@@ -236,10 +232,6 @@ class FactorWithMonotoneInterleaving(Factor):
         for c1, c2 in cell_pair_to_unite:
             self._unite_cells((c1, c2))
 
-    @property
-    def FactorStrategy(self):
-        return FactorWithMonotoneInterleavingRule
-
 
 class FactorWithInterleaving(Factor):
     """
@@ -261,7 +253,3 @@ class FactorWithInterleaving(Factor):
         """
         self._unite_obstructions()
         self._unite_requirements()
-
-    @property
-    def FactorStrategy(self):
-        return FactorWithInterleavingRule

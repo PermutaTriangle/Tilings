@@ -1,3 +1,4 @@
+from itertools import chain
 from typing import Iterator, Optional, Tuple
 
 from comb_spec_searcher import CartesianProductStrategy, Strategy, StrategyGenerator
@@ -8,24 +9,28 @@ from tilings.algorithms import (
     FactorWithInterleaving,
     FactorWithMonotoneInterleaving,
 )
+from tilings.exception import InvalidOperationError
+from tilings.misc import partitions_iterator
 
 
 Cell = Tuple[int, int]
+
+__all__ = (
+    "AllFactorStrategy",
+    "FactorStrategy",
+    "FactorWithInterleavingStrategy",
+    "FactorWithMonotoneInterleavingStrategy",
+)
 
 
 class FactorStrategy(CartesianProductStrategy):
     def __init__(
         self,
-        partition: Optional[Tuple[Tuple[Cell, ...], ...]] = None,
+        partition: Optional[Tuple[Tuple[Cell, ...], ...]],
         workable: bool = True,
         children: Optional[Tuple[Tiling, ...]] = None,
     ):
-        if partition is None:
-            self.partition = tuple(
-                tuple(child.backward_cell_map()) for child in children
-            )
-        else:
-            self.partition = sorted(partition)
+        self.partition = tuple(sorted(partition))
         super().__init__(workable=workable)
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
@@ -34,7 +39,7 @@ class FactorStrategy(CartesianProductStrategy):
         """
         return tuple(tiling.sub_tiling(cells) for cells in self.partition)
 
-    def formal_step(self, union=False):
+    def formal_step(self):
         """
         Return a string that describe the operation performed on the tiling.
         """
@@ -84,67 +89,93 @@ class FactorWithInterleavingStrategy(FactorStrategy):
     def constructor(self, tiling: Tiling):
         raise NotImplementedError
 
+    def backward_map(
+        self,
+        tiling: Tiling,
+        gps: Tuple[GriddedPerm, ...],
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> GriddedPerm:
+        raise NotImplementedError
 
-class FactorWithMonotoneInterleavingStrategy(FactorStrategy):
+    def forward_map(
+        self,
+        tiling: Tiling,
+        gp: GriddedPerm,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[GriddedPerm, ...]:
+        raise NotImplementedError
+
+
+class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
     def constructor(self, tiling: Tiling):
         raise NotImplementedError
 
 
-class FactorStrategyGenerator(StrategyGenerator):
+class AllFactorStrategy(StrategyGenerator):
 
-    factor_class = {
-        None: FactorStrategy,
-        "monotone": FactorWithInterleavingStrategy,
-        "all": FactorWithMonotoneInterleavingStrategy,
+    factor_algo_and_classes = {
+        None: (Factor, FactorStrategy),
+        "monotone": (FactorWithInterleaving, FactorWithInterleavingStrategy),
+        "all": (FactorWithMonotoneInterleaving, FactorWithMonotoneInterleavingStrategy),
     }
 
     def __init__(
         self,
         interleaving: Optional[str] = None,
-        union: bool = False,
+        unions: bool = False,
         workable: bool = True,
     ) -> None:
-        assert (
-            interleaving in FactorStrategy.factor_class
-        ), "Invalid interleaving option. Must be in {}".format(
-            FactorStrategy.factor_class.keys()
-        )
-        self.interleaving = interleaving
-        self.union = union
+        try:
+            self.factor_algo, self.factor_class = self.factor_algo_and_classes[
+                interleaving
+            ]
+        except KeyError:
+            raise InvalidOperationError(
+                "Invalid interleaving option. Must be in {}".format(
+                    FactorStrategy.factor_classes.keys()
+                )
+            )
+        self.unions = unions
         self.workable = workable
 
     def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
-        factor_algo = FactorStrategy.factor_class[self.interleaving](tiling)
+        factor_algo = self.factor_algo(tiling)
         if factor_algo.factorable():
-            yield factor_algo.factor_algo(workable=self.workable)
-            if self.union:
-                yield from factor_algo.all_union_rules(workable=False)
+            min_comp = factor_algo.get_components()
+            if self.unions:
+                min_comp = tuple(tuple(x) for x in min_comp)
+                for partition in partitions_iterator(min_comp):
+                    partition = tuple(
+                        tuple(x for x in chain(*part)) for part in partition
+                    )
+                    yield self.factor_class(partition, workable=False)
+            yield self.factor_class(min_comp, workable=self.workable)
 
     def __str__(self) -> str:
-        if self.interleaving is None:
+        if self.factor_class is FactorStrategy:
             s = "factor"
-        elif self.interleaving == "monotone":
+        elif self.factor_class is FactorWithInterleavingStrategy:
             s = "factor with monotone interleaving"
-        elif self.interleaving == "all":
+        elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
             s = "factor with interleaving"
         else:
             raise Exception("Invalid interleaving type")
-        if self.union:
+        if self.unions:
             s = "unions of " + s
         return s
 
     def __repr__(self) -> str:
-        return "FactorStrategy(interleaving={}, union={}, workable={})".format(
-            self.interleaving, self.union, self.workable
+        return "AllFactorStrategy(interleaving={}, unions={}, workable={})".format(
+            self.interleaving, self.unions, self.workable
         )
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
         d["interleaving"] = self.interleaving
-        d["union"] = self.union
+        d["unions"] = self.unions
         d["workable"] = self.workable
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "FactorStrategy":
+    def from_dict(cls, d: dict) -> "AllFactorStrategy":
         return cls(**d)
