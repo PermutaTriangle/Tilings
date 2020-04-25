@@ -13,6 +13,7 @@ __all__ = [
     "PatternPlacementStrategy",
     "RowAndColumnPlacementStrategy",
     "AllPlacementsStrategy",
+    "AllRequirementPlacementStrategy",
 ]
 
 Cell = Tuple[int, int]
@@ -317,6 +318,102 @@ class PatternPlacementStrategy(RequirementPlacementStrategyGenerator):
         return d
 
 
+class AllRequirementPlacementStrategy(RequirementPlacementStrategyGenerator):
+    """
+    Strategy that places a single forced point of a requirement (a set of
+    gridded permutations).
+    Yield all possible rules coming from placing a point of a pattern that
+    occurs as a subrequirement of a requirement on the tiling.
+
+    INPUTS:
+        - `partial`: places only the point on its own row or its own column.
+        - `ignore_parent`: indicate if the rule should ignore parent
+        - `dirs`: The directions used for placement (default to all
+          directions).
+          The possible directions are:
+            - `permuta.misc.DIR_NORTH`
+            - `permuta.misc.DIR_SOUTH`
+            - `permuta.misc.DIR_EAST`
+            - `permuta.misc.DIR_WEST`
+    """
+
+    def __init__(
+        self,
+        partial: bool = False,
+        ignore_parent: bool = False,
+        dirs: Iterable[int] = tuple(DIRS),
+    ):
+        assert all(d in DIRS for d in dirs), "Got an invalid direction"
+        super().__init__(partial=partial, ignore_parent=ignore_parent, dirs=dirs)
+
+    def downward_sets(self, tiling: Tiling):
+        """Yield all requirements contained in some requirement on the tiling."""
+        queue = set([tuple(sorted(req)) for req in tiling.requirements])
+        all_reqs = set()
+        while queue:
+            req = queue.pop()
+            if req not in all_reqs:
+                all_reqs.add(req)
+                subgps = set(
+                    subgp
+                    for subgp in chain.from_iterable(
+                        gp.all_subperms(proper=True) for gp in req
+                    )
+                    if len(subgp) >= 1
+                )
+                for subgp in subgps:
+                    rest_of_req = tuple(gp for gp in req if gp.avoids(subgp))
+                    newreq = tuple(sorted(rest_of_req + (subgp,)))
+                    if newreq not in all_reqs:
+                        queue.add(newreq)
+        return all_reqs
+
+    def req_indices_and_directions_to_place(
+        self, tiling: Tiling
+    ) -> Iterable[Tuple[Tuple[GriddedPerm, ...], Tuple[int, ...], int]]:
+        all_reqs = self.downward_sets(tiling)
+        for req in all_reqs:
+            for indices, direction in product(
+                product(*[range(len(gp)) for gp in req]), self.dirs
+            ):
+                yield req, tuple(indices), direction
+
+    def __str__(self) -> str:
+        s = "partial requirement placement"
+        if len(self.dirs) < 4:
+            dir_str = {
+                DIR_NORTH: "north",
+                DIR_SOUTH: "south",
+                DIR_EAST: "east",
+                DIR_WEST: "west",
+            }
+            if len(self.dirs) == 1:
+                s += " in direction {}".format(dir_str[self.dirs[0]])
+            else:
+                s += " in directions ".format()
+                s += ", ".join(dir_str[d] for d in self.dirs[:-1])
+                s += " and {}".format(dir_str[self.dirs[-1]])
+        if self.ignore_parent:
+            s += " (ignore parent)"
+        return s
+
+    def __repr__(self) -> str:
+        dir_repr = {
+            DIR_NORTH: "DIR_NORTH",
+            DIR_SOUTH: "DIR_SOUTH",
+            DIR_WEST: "DIR_WEST",
+            DIR_EAST: "DIR_EAST",
+        }
+        if len(self.dirs) < 4:
+            dir_arg = ", dirs=({},)".format(", ".join(dir_repr[d] for d in self.dirs))
+        else:
+            dir_arg = ""
+        return (
+            "AllRequirementPlacementStrategy(partial={},"
+            " ignore_parent={}{})".format(self.partial, self.ignore_parent, dir_arg)
+        )
+
+
 class RowAndColumnPlacementStrategy(RequirementPlacementStrategyGenerator):
     def __init__(
         self,
@@ -439,9 +536,11 @@ class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
                     yield strategy(tiling, children)
 
     def other_strats(self):
+        # TODO: should just be AllRequirementPlacement, and RowAndColumn?
         return (
             PatternPlacementStrategy(point_only=False),
             PatternPlacementStrategy(point_only=True),
+            # AllRequirementPlacementStrategy(),
             RowAndColumnPlacementStrategy(place_col=True, place_row=True),
         )
 

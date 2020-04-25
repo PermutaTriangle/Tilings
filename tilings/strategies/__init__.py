@@ -25,6 +25,7 @@ from .requirement_placement import (
     PatternPlacementStrategy,
     RequirementPlacementStrategy,
     RowAndColumnPlacementStrategy,
+    AllRequirementPlacementStrategy,
     AllPlacementsStrategy,
 )
 from .row_and_col_separation import RowColumnSeparationStrategy
@@ -45,6 +46,7 @@ __all__ = [
     "AllPlacementsStrategy",
     "AllRequirementExtensionStrategy",
     "AllRequirementInsertionStrategy",
+    "AllRequirementPlacementStrategy",
     "RequirementCorroborationStrategy",
     "RootInsertionStrategy",
     "RowAndColumnPlacementStrategy",

@@ -312,6 +312,28 @@ class RequirementPlacement:
                         res.append(stretched_gp)
         return res
 
+    def _remaining_requirement_from_requirement(
+        self, gps: Tuple[GriddedPerm, ...], indices: Tuple[int, ...], cell: Cell,
+    ) -> List[Requirement]:
+        """
+        Return the requirements required to ensure that the placed point can be
+        extended to be direction most occurrece of a point at the index of the
+        gp in gps.
+
+        In particulur, this returns the requirements that come from stretching
+        a gridded permutation in gps, such that the point at idx is the placed
+        cell.
+        """
+        res = []
+        for idx, gp in zip(indices, gps):
+            if gp.pos[idx] == cell:
+                for stretched_gp in self._stretch_gridded_perm(
+                    Requirement.from_gridded_perm(gp), cell
+                ):
+                    if stretched_gp.pos[idx] == placed_cell:
+                        res.append(stretched_gp)
+        return res
+
     def place_point_of_gridded_permutation(
         self, gp: GriddedPerm, idx: int, direction: Dir
     ) -> "Tiling":
@@ -337,7 +359,8 @@ class RequirementPlacement:
             forced_obs = self._forced_obstructions_from_requirement(
                 gps, indices, cell, direction
             )
-            res.append(self._tiling.__class__(obs + forced_obs, reqs))
+            rem_req = self._remaining_requirement_from_requirement(gps, indices, cell)
+            res.append(self._tiling.__class__(obs + forced_obs, reqs + [rem_req]))
         return tuple(res)
 
     def place_point_in_cell(self, cell: Cell, direction: Dir) -> "Tiling":
