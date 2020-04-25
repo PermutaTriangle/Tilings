@@ -28,6 +28,7 @@ from .requirement_placement import (
     AllPlacementsStrategy,
 )
 from .row_and_col_separation import RowColumnSeparationStrategy
+from .symmetry import AllSymmetriesStrategy
 from .verification import (
     BasicVerificationStrategy,
     DatabaseVerificationStrategy,
@@ -63,6 +64,8 @@ __all__ = [
     "ObstructionTransitivityStrategy",
     "RowColumnSeparationStrategy",
     "SubobstructionInferralStrategy",
+    # Symmetry
+    "AllSymmetriesStrategy",
     # Verification
     "BasicVerificationStrategy",
     "DatabaseVerificationStrategy",

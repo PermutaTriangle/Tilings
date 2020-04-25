@@ -138,6 +138,22 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
     #     )
     #     return children[0].forward_map(placed_gp)
 
+    def __str__(self) -> str:
+        return "requirement placement strategy"
+
+    def __repr__(self) -> str:
+        return (
+            "RequirementPlacementStrategy(gps={}, indices={}, direction={},"
+            " own_col={}, own_row={}, ignore_parent={}, include_empty={}".format(
+                self.gps,
+                self.indices,
+                self.direction,
+                self.own_row,
+                self.own_col,
+                self.include_empty,
+            )
+        )
+
 
 class RequirementPlacementStrategyGenerator(StrategyGenerator):
     """

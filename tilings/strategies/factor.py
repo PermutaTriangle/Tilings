@@ -84,6 +84,12 @@ class FactorStrategy(CartesianProductStrategy):
             for tiling, part in zip(children, self.partition)
         )
 
+    def __str__(self):
+        return "factor"
+
+    def __repr__(self):
+        return self.__class__.__name__ + "()"
+
 
 class FactorWithInterleavingStrategy(FactorStrategy):
     def constructor(self, tiling: Tiling):

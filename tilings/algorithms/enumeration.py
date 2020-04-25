@@ -1,7 +1,7 @@
 import abc
 from collections import deque
 from itertools import chain
-from typing import TYPE_CHECKING, FrozenSet, Optional
+from typing import TYPE_CHECKING, FrozenSet, Iterable, Optional
 
 import requests
 import sympy
@@ -9,6 +9,7 @@ import sympy
 from comb_spec_searcher import ProofTree, StrategyPack
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
+from permuta.permutils import all_symmetry_sets
 from tilings.exception import InvalidOperationError
 from tilings.misc import is_tree
 
@@ -504,11 +505,15 @@ class OneByOneEnumeration(Enumeration):
     basis.
     """
 
-    def __init__(self, tiling, basis):
-        self.basis = set(basis)
-        assert all(isinstance(p, Perm) for p in self.basis), (
-            "Element of the " "basis must be " "permutations"
-        )
+    def __init__(self, tiling, basis: Iterable[Perm], symmetry: bool = False):
+
+        assert all(
+            isinstance(p, Perm) for p in basis
+        ), "Element of the basis must be Perm"
+        if symmetry:
+            self.symmetries = all_symmetry_sets(frozenset(basis))
+        else:
+            self.symmetries = set([frozenset(basis)])
         super().__init__(tiling)
 
     formal_step = "This tiling is a subclass of the original tiling."
@@ -523,7 +528,7 @@ class OneByOneEnumeration(Enumeration):
     def verified(self):
         if not self.tiling.dimensions == (1, 1):
             return False
-        return self.basis != set(ob.patt for ob in self.tiling.obstructions)
+        return frozenset(ob.patt for ob in self.tiling.obstructions) in self.symmetries
 
     def get_genf(self, **kwargs):
         """

@@ -78,6 +78,14 @@ class RequirementInsertionStrategy(DisjointUnionStrategy):
         # else:
         #     return t_co.forward_map(gp)
 
+    def __repr__(self) -> str:
+        return "RequirementInsertionStrategy(gps={}, ignore_parent={})".format(
+            self.gps, self.ignore_parent
+        )
+
+    def __str__(self) -> str:
+        return "requirement insertion"
+
 
 class RequirementInsertionStrategyGenerator(StrategyGenerator):
     """

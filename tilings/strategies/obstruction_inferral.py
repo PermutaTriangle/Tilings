@@ -128,10 +128,6 @@ class SubobstructionInferralStrategy(AllObstructionInferralStrategy):
         return "subobstruction inferral"
 
 
-# TODO: obs trans
-# override the new_obs function to return length 2 things
-
-
 class ObstructionTransitivityStrategy(AllObstructionInferralStrategy):
     """
     The obstruction transitivity strategy.

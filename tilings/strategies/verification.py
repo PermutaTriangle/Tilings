@@ -4,6 +4,7 @@ from comb_spec_searcher import (
     Atom,
     CombinatorialSpecification,
     Constructor,
+    StrategyGenerator,
     VerificationRule,
     VerificationStrategy,
 )
@@ -131,16 +132,39 @@ class TileScopeVerificationStrategy(VerificationStrategy):
         return cls()
 
 
-class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
-    """Return a verification if one-by-one verified."""
+class _OneByOneVerificationStrategy(TileScopeVerificationStrategy):
+    def __init__(
+        self,
+        basis: Optional[Iterable[Perm]] = None,
+        symmetry: bool = False,
+        ignore_parent: bool = True,
+    ):
+        self.basis = basis
+        self.symmetry = symmetry
+        super().__init__(ignore_parent=ignore_parent)
 
     VERIFICATION_CLASS = OneByOneEnumeration
 
-    def __init__(
-        self, basis: Optional[Iterable[Perm]] = None, ignore_parent: bool = True
-    ):
-        self.basis = [] if basis is None else basis
-        super().__init__(ignore_parent=ignore_parent)
+    def verified(self, tiling: Tiling):
+        return self.VERIFICATION_CLASS(tiling, self.basis, self.symmetry).verified()
+
+    def __repr__(self) -> str:
+        return (
+            self.__class__.__name__
+            + "(basis={}, symmetry={}, ignore_parent={})".format(
+                self.basis, self.symmetry, self.ignore_parent
+            )
+        )
+
+    def __str__(self) -> str:
+        return "one by one verification"
+
+
+class OneByOneVerificationStrategy(StrategyGenerator):
+    """Return a verification rule if one-by-one verified."""
+
+    def __init__(self, ignore_parent: bool = True):
+        self.ignore_parent = ignore_parent
 
     def __call__(
         self, tiling: Tiling, children: Tuple[Tiling, ...] = None, **kwargs
@@ -148,24 +172,22 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         if "basis" not in kwargs:
             raise TypeError("Missing basis argument")
         basis = kwargs["basis"]  # type: Iterable[Perm]
-        return OneByOneVerificationRule(tiling, basis)
+        symmetry = kwargs.get("symmetry", False)
+        return [
+            _OneByOneVerificationStrategy(
+                basis=basis, symmetry=symmetry, ignore_parent=self.ignore_parent
+            )
+        ]
 
-    def verified(self, tiling: Tiling):
-        return self.VERIFICATION_CLASS(tiling, self.basis).verified()
-
-    def __str__(self) -> str:
+    def __str__(self):
         return "one by one verification"
 
+    def __repr__(self):
+        return self.__class__.__name__ + "()"
 
-class OneByOneVerificationRule(VerificationRule):
-    def __init__(self, tiling: Tiling, basis: Iterable[Perm]):
-        self.basis = basis
-        super().__init__(OneByOneVerificationStrategy(self.basis), tiling)
-
-    @property
-    def children(self):
-        if OneByOneEnumeration(self.comb_class, self.basis).verified():
-            return tuple()
+    @classmethod
+    def from_dict(cls, d):
+        return cls(**d)
 
 
 class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
