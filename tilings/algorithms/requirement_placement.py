@@ -324,6 +324,7 @@ class RequirementPlacement:
         a gridded permutation in gps, such that the point at idx is the placed
         cell.
         """
+        placed_cell = self._placed_cell(cell)
         res = []
         for idx, gp in zip(indices, gps):
             if gp.pos[idx] == cell:
