@@ -185,7 +185,7 @@ class RequirementPlacementStrategyGenerator(StrategyGenerator):
         return req_placements
 
     def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
-        for req_placement, (gps, indices, direction) in zip(
+        for req_placement, (gps, indices, direction) in product(
             self.req_placements(tiling),
             self.req_indices_and_directions_to_place(tiling),
         ):
@@ -339,16 +339,21 @@ class AllRequirementPlacementStrategy(RequirementPlacementStrategyGenerator):
 
     def __init__(
         self,
+        subreqs: bool = False,
         partial: bool = False,
         ignore_parent: bool = False,
         dirs: Iterable[int] = tuple(DIRS),
     ):
         assert all(d in DIRS for d in dirs), "Got an invalid direction"
+        self.subreqs = subreqs
         super().__init__(partial=partial, ignore_parent=ignore_parent, dirs=dirs)
 
     def downward_sets(self, tiling: Tiling):
         """Yield all requirements contained in some requirement on the tiling."""
         queue = set([tuple(sorted(req)) for req in tiling.requirements])
+        # TODO: should we consider minimal gridded perms?
+        #           Optimal is minimal on the factors of the tiling which
+        #           contains only the requirement,
         all_reqs = set()
         while queue:
             req = queue.pop()
@@ -371,7 +376,10 @@ class AllRequirementPlacementStrategy(RequirementPlacementStrategyGenerator):
     def req_indices_and_directions_to_place(
         self, tiling: Tiling
     ) -> Iterable[Tuple[Tuple[GriddedPerm, ...], Tuple[int, ...], int]]:
-        all_reqs = self.downward_sets(tiling)
+        if self.subreqs:
+            all_reqs = self.downward_sets(tiling)
+        else:
+            all_reqs = tiling.requirements
         for req in all_reqs:
             for indices, direction in product(
                 product(*[range(len(gp)) for gp in req]), self.dirs
@@ -379,7 +387,8 @@ class AllRequirementPlacementStrategy(RequirementPlacementStrategyGenerator):
                 yield req, tuple(indices), direction
 
     def __str__(self) -> str:
-        s = "partial requirement placement"
+        s = "partial " if self.partial else ""
+        s += "requirement placement"
         if len(self.dirs) < 4:
             dir_str = {
                 DIR_NORTH: "north",
@@ -409,8 +418,10 @@ class AllRequirementPlacementStrategy(RequirementPlacementStrategyGenerator):
         else:
             dir_arg = ""
         return (
-            "AllRequirementPlacementStrategy(partial={},"
-            " ignore_parent={}{})".format(self.partial, self.ignore_parent, dir_arg)
+            "AllRequirementPlacementStrategy(subreqs={},partial={},"
+            " ignore_parent={}{})".format(
+                self.subreqs, self.partial, self.ignore_parent, dir_arg
+            )
         )
 
 
@@ -536,11 +547,11 @@ class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
                     yield strategy(tiling, children)
 
     def other_strats(self):
-        # TODO: should just be AllRequirementPlacement, and RowAndColumn?
         return (
             PatternPlacementStrategy(point_only=False),
             PatternPlacementStrategy(point_only=True),
-            # AllRequirementPlacementStrategy(),
+            # subreqs=True covers everything but it blows up massively!
+            AllRequirementPlacementStrategy(subreqs=False),
             RowAndColumnPlacementStrategy(place_col=True, place_row=True),
         )
 
