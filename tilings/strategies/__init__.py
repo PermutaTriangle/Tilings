@@ -1,4 +1,3 @@
-from .enumeration import BasicVerificationStrategy
 from .factor import (
     AllFactorStrategy,
     FactorStrategy,
@@ -30,6 +29,7 @@ from .requirement_placement import (
 )
 from .row_and_col_separation import RowColumnSeparationStrategy
 from .verification import (
+    BasicVerificationStrategy,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
     LocallyFactorableVerificationStrategy,

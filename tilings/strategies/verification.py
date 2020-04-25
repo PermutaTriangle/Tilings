@@ -1,10 +1,16 @@
-from typing import Iterable, Optional, Type
+from typing import Iterable, Iterator, Optional, Tuple, Type
 
-from comb_spec_searcher import Strategy
+from comb_spec_searcher import (
+    Atom,
+    CombinatorialSpecification,
+    Constructor,
+    VerificationRule,
+    VerificationStrategy,
+)
 from permuta import Perm
-from tilings import Tiling
+from tilings import GriddedPerm, Tiling
+from tilings.exception import InvalidOperationError
 from tilings.algorithms.enumeration import (
-    BasicEnumeration,
     DatabaseEnumeration,
     ElementaryEnumeration,
     Enumeration,
@@ -13,6 +19,9 @@ from tilings.algorithms.enumeration import (
     MonotoneTreeEnumeration,
     OneByOneEnumeration,
 )
+import sympy
+
+x = sympy.abc.x
 
 __all__ = [
     "BasicVerificationStrategy",
@@ -25,7 +34,63 @@ __all__ = [
 ]
 
 
-class _VerificationStrategy(Strategy):
+class BasicVerificationStrategy(VerificationStrategy):
+    def verified(self, tiling: Tiling) -> bool:
+        return tiling.is_epsilon() or tiling.is_point_tiling()
+
+    @property
+    def pack(self):
+        raise InvalidOperationError("Cannot get a tree for a basic " "verification")
+
+    def get_specfication(self, tiling: Tiling, **kwargs) -> CombinatorialSpecification:
+        raise InvalidOperationError("Cannot get a tree for a basic " "verification")
+
+    def get_genf(self, tiling: Tiling, **kwargs):
+        if tiling.is_epsilon():
+            return 1
+        if tiling.is_point_tiling():
+            return x
+        raise InvalidOperationError("Not an atom")
+
+    def constructor(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        if tiling.is_epsilon():
+            return Atom(n=0)
+        if tiling.is_point_tiling():
+            return Atom(n=1)
+        raise InvalidOperationError("Not an atom")
+
+    def count_objects_of_size(self, tiling: Tiling, **parameters):
+        """Verification strategies must contain a method to count the objects."""
+        if (parameters["n"] == 0 and tiling.is_epsilon()) or (
+            parameters["n"] == 1 and tiling.is_point_tiling()
+        ):
+            return 1
+        return 0
+
+    def generate_objects_of_size(
+        self, tiling: Tiling, **parameters
+    ) -> Iterator[GriddedPerm]:
+        """Verification strategies must contain a method to generate the objects."""
+        if parameters["n"] == 0 and tiling.is_epsilon():
+            yield GriddedPerm.empty_perm()
+        elif parameters["n"] == 1 and tiling.is_point_tiling():
+            yield GriddedPerm(Perm((0,)), ((0, 0),))
+
+    def formal_step(self) -> str:
+        return "tiling is an atom"
+
+    def __repr__(self) -> str:
+        return "{}(ignore_parent={})".format(
+            self.__class__.__name__, self.ignore_parent
+        )
+
+    def __str__(self) -> str:
+        return "verify atoms"
+
+
+class TileScopeVerificationStrategy(VerificationStrategy):
     """
     Abstract verification strategy class the group the shared logic of
     verification strategy. Subclass need to have the class attribute
@@ -35,6 +100,9 @@ class _VerificationStrategy(Strategy):
     # pylint: disable=E1102
     VERIFICATION_CLASS = NotImplemented  # type: Type[Enumeration]
 
+    def __init__(self, ignore_parent: bool = True):
+        super().__init__(ignore_parent=ignore_parent)
+
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         if cls.VERIFICATION_CLASS is NotImplemented:
@@ -42,51 +110,77 @@ class _VerificationStrategy(Strategy):
                 "Need to define {}.VERIFICATION_CLASS".format(cls.__name__)
             )
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Strategy]:
-        return self.VERIFICATION_CLASS(tiling).verification_rule()
+    @property
+    def pack(self, tiling: Tiling):
+        return self.VERIFICATION_CLASS(tiling).pack
+
+    def verified(self, tiling: Tiling):
+        return self.VERIFICATION_CLASS(tiling).verified()
+
+    def get_specification(self, tiling: Tiling):
+        return self.VERIFICATION_CLASS(tiling).get_specification()
+
+    def formal_step(self):
+        return self.VERIFICATION_CLASS.formal_step
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + "()"
 
     @classmethod
-    def from_dict(cls, d: dict) -> "_VerificationStrategy":
+    def from_dict(cls, d: dict) -> "TileScopeVerificationStrategy":
         return cls()
 
 
-class BasicVerificationStrategy(_VerificationStrategy):
-    """Verify the most basics tilings."""
-
-    VERIFICATION_CLASS = BasicEnumeration
-
-    def __str__(self) -> str:
-        return "basic verification"
-
-
-class OneByOneVerificationStrategy(_VerificationStrategy):
+class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
     """Return a verification if one-by-one verified."""
 
     VERIFICATION_CLASS = OneByOneEnumeration
 
-    def __call__(self, tiling: Tiling, **kwargs):
+    def __init__(
+        self, basis: Optional[Iterable[Perm]] = None, ignore_parent: bool = True
+    ):
+        self.basis = [] if basis is None else basis
+        super().__init__(ignore_parent=ignore_parent)
+
+    def __call__(
+        self, tiling: Tiling, children: Tuple[Tiling, ...] = None, **kwargs
+    ) -> "SpecificRule":
         if "basis" not in kwargs:
             raise TypeError("Missing basis argument")
         basis = kwargs["basis"]  # type: Iterable[Perm]
-        return self.VERIFICATION_CLASS(tiling, basis).verification_rule()
+        return OneByOneVerificationRule(tiling, basis)
+
+    def verified(self, tiling: Tiling):
+        return self.VERIFICATION_CLASS(tiling, self.basis).verified()
 
     def __str__(self) -> str:
         return "one by one verification"
 
 
-class DatabaseVerificationStrategy(_VerificationStrategy):
+class OneByOneVerificationRule(VerificationRule):
+    def __init__(self, tiling: Tiling, basis: Iterable[Perm]):
+        self.basis = basis
+        super().__init__(OneByOneVerificationStrategy(self.basis), tiling)
+
+    @property
+    def children(self):
+        if OneByOneEnumeration(self.comb_class, self.basis).verified():
+            return tuple()
+
+
+class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
     """Verify a tiling that is in the database"""
 
     VERIFICATION_CLASS = DatabaseEnumeration
+
+    def get_genf(self, tiling: Tiling):
+        return self.VERIFICATION_CLASS(tiling).get_genf()
 
     def __str__(self) -> str:
         return "database verification"
 
 
-class LocallyFactorableVerificationStrategy(_VerificationStrategy):
+class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
     """
     The locally factorable verified strategy.
 
@@ -100,7 +194,7 @@ class LocallyFactorableVerificationStrategy(_VerificationStrategy):
         return "locally factorable verification"
 
 
-class ElementaryVerificationStrategy(_VerificationStrategy):
+class ElementaryVerificationStrategy(TileScopeVerificationStrategy):
     """
     A tiling is elementary verified if it is locally factorable
     and has no interleaving cells.
@@ -112,7 +206,7 @@ class ElementaryVerificationStrategy(_VerificationStrategy):
         return "elementary verification"
 
 
-class LocalVerificationStrategy(_VerificationStrategy):
+class LocalVerificationStrategy(TileScopeVerificationStrategy):
     """
     The local verified strategy.
 
@@ -126,12 +220,15 @@ class LocalVerificationStrategy(_VerificationStrategy):
         return "local verification"
 
 
-class MonotoneTreeVerificationStrategy(_VerificationStrategy):
+class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
     """
     Verify all tiling that is a monotone tree.
     """
 
     VERIFICATION_CLASS = MonotoneTreeEnumeration
+
+    def get_genf(self, tiling: Tiling):
+        return self.VERIFICATION_CLASS(tiling).get_genf()
 
     def __str__(self) -> str:
         return "monotone tree verification"
