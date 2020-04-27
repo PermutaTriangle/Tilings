@@ -505,15 +505,17 @@ class OneByOneEnumeration(Enumeration):
     basis.
     """
 
-    def __init__(self, tiling, basis: Iterable[Perm], symmetry: bool = False):
-
-        assert all(
-            isinstance(p, Perm) for p in basis
-        ), "Element of the basis must be Perm"
-        if symmetry:
-            self.symmetries = all_symmetry_sets(frozenset(basis))
+    def __init__(self, tiling, basis: Iterable[Perm] = None, symmetry: bool = False):
+        if basis is not None:
+            assert all(
+                isinstance(p, Perm) for p in basis
+            ), "Element of the basis must be Perm"
+            if symmetry:
+                self.symmetries = set(frozenset(b) for b in all_symmetry_sets(basis))
+            else:
+                self.symmetries = set([frozenset(basis)])
         else:
-            self.symmetries = set([frozenset(basis)])
+            self.symmetries = set()
         super().__init__(tiling)
 
     formal_step = "This tiling is a subclass of the original tiling."
@@ -528,7 +530,9 @@ class OneByOneEnumeration(Enumeration):
     def verified(self):
         if not self.tiling.dimensions == (1, 1):
             return False
-        return frozenset(ob.patt for ob in self.tiling.obstructions) in self.symmetries
+        return (
+            frozenset(ob.patt for ob in self.tiling.obstructions) not in self.symmetries
+        )
 
     def get_genf(self, **kwargs):
         """

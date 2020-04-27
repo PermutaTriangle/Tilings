@@ -145,8 +145,27 @@ class _OneByOneVerificationStrategy(TileScopeVerificationStrategy):
 
     VERIFICATION_CLASS = OneByOneEnumeration
 
+    @property
+    def pack(self):
+        raise InvalidOperationError(
+            "Cannot get a specification for one by one verification"
+        )
+
+    def get_specification(self, tiling: Tiling) -> CombinatorialSpecification:
+        raise InvalidOperationError(
+            "Cannot get a specification for one by one verification"
+        )
+
+    def get_genf(self, tiling: Tiling):
+        if not self.verified(tiling):
+            raise InvalidOperationError("tiling not one by one verified")
+        raise NotImplementedError
+
     def verified(self, tiling: Tiling):
-        return self.VERIFICATION_CLASS(tiling, self.basis, self.symmetry).verified()
+        return (
+            tiling.dimensions == (1, 1)
+            and self.VERIFICATION_CLASS(tiling, self.basis, self.symmetry).verified()
+        )
 
     def __repr__(self) -> str:
         return (

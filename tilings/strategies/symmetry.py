@@ -153,7 +153,7 @@ class TilingRotate90(TilingSymmetryStrategy):
 
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         def rotate270_cell(cell):
-            return (tiling.dimensions[1] - cell[1] - 1, cell[0])
+            return (tiling.dimensions[0] - cell[1] - 1, cell[0])
 
         return gp.rotate270(rotate270_cell)
 
@@ -201,7 +201,7 @@ class TilingRotate270(TilingSymmetryStrategy):
 
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         def rotate90_cell(cell):
-            return (cell[1], tiling.dimensions[0] - cell[0] - 1)
+            return (cell[1], tiling.dimensions[1] - cell[0] - 1)
 
         return gp.rotate90(rotate90_cell)
 
