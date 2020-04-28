@@ -419,7 +419,7 @@ class Tiling(CombinatorialClass):
     def to_jsonable(self):
         """Returns a dictionary object which is JSON serializable which
         represents a Tiling."""
-        output = dict()
+        output = super().to_jsonable()
         output["obstructions"] = list(map(lambda x: x.to_jsonable(), self.obstructions))
         output["requirements"] = list(
             map(lambda x: list(map(lambda y: y.to_jsonable(), x)), self.requirements)
