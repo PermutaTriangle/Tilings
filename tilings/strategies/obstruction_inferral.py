@@ -55,6 +55,12 @@ class ObstructionInferralStrategy(DisjointUnionStrategy):
     ) -> Tuple[GriddedPerm, ...]:
         return children[0].forward_map(gps[0])
 
+    def __repr__(self):
+        return self.__class__.__name__ + "(gps={})".format(self.gps)
+
+    def __str__(self):
+        return self.formal_step
+
     # JSON methods
 
     def to_jsonable(self) -> dict:
