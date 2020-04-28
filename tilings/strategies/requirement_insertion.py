@@ -29,7 +29,7 @@ __all__ = [
 class RequirementInsertionStrategy(DisjointUnionStrategy):
     def __init__(self, gps: Iterable[GriddedPerm], ignore_parent: bool = False):
         super().__init__(ignore_parent=ignore_parent)
-        self.gps = frozenset(gps)
+        self.gps = frozenset(GriddedPerm.from_gridded_perm(gp) for gp in gps)
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, Tiling]:
         """
@@ -90,7 +90,7 @@ class RequirementInsertionStrategy(DisjointUnionStrategy):
         """Return a dictionary form of the strategy."""
         d = super().to_jsonable()
         d["gps"] = [gp.to_jsonable() for gp in self.gps]
-        return
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "ObstructionInferralStrategy":

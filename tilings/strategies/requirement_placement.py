@@ -30,8 +30,8 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
         ignore_parent: bool = False,
         include_empty: bool = False,
     ):
-        self.gps = gps
-        self.indices = indices
+        self.gps = tuple(GriddedPerm.from_gridded_perm(gp) for gp in gps)
+        self.indices = tuple(indices)
         self.direction = direction
         self.own_row, self.own_col = own_row, own_col
         self.include_empty = include_empty
@@ -158,7 +158,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
         d = super().to_jsonable()
-        d["gps"] = [gp.to_jsonable() for gp in self.gps]
+        d["gps"] = tuple(gp.to_jsonable() for gp in self.gps)
         d["indices"] = self.indices
         d["direction"] = self.direction
         d["own_col"] = self.own_col
@@ -168,7 +168,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> "ObstructionInferralStrategy":
-        gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
+        gps = tuple(GriddedPerm.from_dict(gp) for gp in d["gps"])
         return cls(
             gps=gps,
             indices=d["indices"],

@@ -140,7 +140,7 @@ class _OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         symmetry: bool = False,
         ignore_parent: bool = True,
     ):
-        self.basis = basis
+        self.basis = tuple(basis)
         self.symmetry = symmetry
         super().__init__(ignore_parent=ignore_parent)
 

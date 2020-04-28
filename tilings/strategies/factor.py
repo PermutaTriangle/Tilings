@@ -27,7 +27,7 @@ class FactorStrategy(CartesianProductStrategy):
     def __init__(
         self, partition: Optional[Tuple[Tuple[Cell, ...], ...]], workable: bool = True,
     ):
-        self.partition = tuple(sorted(partition))
+        self.partition = tuple(sorted(tuple(p) for p in partition))
         super().__init__(workable=workable)
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
@@ -99,7 +99,8 @@ class FactorStrategy(CartesianProductStrategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> "Strategy":
-        return cls(partition=d["partition"], workable=d["workable"])
+        partition = tuple(tuple(tuple(c) for c in p) for p in d["partition"])
+        return cls(partition=partition, workable=d["workable"])
 
 
 class FactorWithInterleavingStrategy(FactorStrategy):
