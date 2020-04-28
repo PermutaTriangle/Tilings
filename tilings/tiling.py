@@ -323,7 +323,7 @@ class Tiling(CombinatorialClass):
     # Compression
     # -------------------------------------------------------------
 
-    def compress(self) -> bytes:
+    def to_bytes(self) -> bytes:
         """Compresses the tiling by flattening the sets of cells into lists of
         integers which are concatenated together, every list preceeded by its
         size. The obstructions are compressed and concatenated to the list, as
@@ -349,7 +349,7 @@ class Tiling(CombinatorialClass):
         return res.tobytes()
 
     @classmethod
-    def decompress(
+    def from_bytes(
         cls,
         arrbytes,
         remove_empty=False,
