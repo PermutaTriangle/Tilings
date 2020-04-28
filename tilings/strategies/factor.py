@@ -25,10 +25,7 @@ __all__ = (
 
 class FactorStrategy(CartesianProductStrategy):
     def __init__(
-        self,
-        partition: Optional[Tuple[Tuple[Cell, ...], ...]],
-        workable: bool = True,
-        children: Optional[Tuple[Tiling, ...]] = None,
+        self, partition: Optional[Tuple[Tuple[Cell, ...], ...]], workable: bool = True,
     ):
         self.partition = tuple(sorted(partition))
         super().__init__(workable=workable)
@@ -88,7 +85,21 @@ class FactorStrategy(CartesianProductStrategy):
         return "factor"
 
     def __repr__(self):
-        return self.__class__.__name__ + "()"
+        return self.__class__.__name__ + "(paritition={}, workable={})".format(
+            self.partition, self.workable
+        )
+
+    # JSON methods
+
+    def to_jsonable(self) -> dict:
+        """Return a dictionary form of the strategy."""
+        d = super().to_jsonable()
+        d["partition"] = self.partition
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Strategy":
+        return cls(partition=d["partition"], workable=d["workable"])
 
 
 class FactorWithInterleavingStrategy(FactorStrategy):
@@ -96,10 +107,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         raise NotImplementedError
 
     def backward_map(
-        self,
-        tiling: Tiling,
-        gps: Tuple[GriddedPerm, ...],
-        children: Optional[Tuple[Tiling, ...]] = None,
+        self, tiling: Tiling, gps: Tuple[GriddedPerm, ...],
     ) -> GriddedPerm:
         raise NotImplementedError
 
@@ -171,17 +179,31 @@ class AllFactorStrategy(StrategyGenerator):
         return s
 
     def __repr__(self) -> str:
+        if self.factor_class is FactorStrategy:
+            interleaving = None
+        elif self.factor_class is FactorWithInterleavingStrategy:
+            interleaving = "all"
+        elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
+            interleaving = "montone"
         return "AllFactorStrategy(interleaving={}, unions={}, workable={})".format(
-            self.interleaving, self.unions, self.workable
+            interleaving, self.unions, self.workable
         )
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
-        d["interleaving"] = self.interleaving
+        if self.factor_class is FactorStrategy:
+            interleaving = None
+        elif self.factor_class is FactorWithInterleavingStrategy:
+            interleaving = "all"
+        elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
+            interleaving = "montone"
+        d["interleaving"] = interleaving
         d["unions"] = self.unions
         d["workable"] = self.workable
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "AllFactorStrategy":
-        return cls(**d)
+        return cls(
+            interleaving=d["interleaving"], unions=d["unions"], workable=d["workable"]
+        )

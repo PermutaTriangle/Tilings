@@ -92,3 +92,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy):
 
     def __repr__(self) -> str:
         return "RowColumnSeparationStrategy()"
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls()

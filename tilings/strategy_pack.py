@@ -9,64 +9,6 @@ from comb_spec_searcher import StrategyGenerator
 
 
 class TileScopePack(StrategyPack):
-    def __init__(
-        self,
-        initial_strats: List[StrategyGenerator],
-        inferral_strats: List[StrategyGenerator],
-        expansion_strats: List[List[StrategyGenerator]],
-        ver_strats: List[StrategyGenerator],
-        name: str,
-        **kwargs
-    ):
-        super().__init__(
-            initial_strats,
-            inferral_strats,
-            expansion_strats,
-            ver_strats,
-            name,
-            **kwargs,
-        )
-
-    # JSON methods
-    def to_jsonable(self) -> dict:
-        return {
-            "name": self.name,
-            "initial_strats": [s.to_jsonable() for s in self.initial_strats],
-            "inferral_strats": [s.to_jsonable() for s in self.inferral_strats],
-            "ver_strats": [s.to_jsonable() for s in self.ver_strats],
-            "expansion_strats": [
-                [s.to_jsonable() for s in strat_list]
-                for strat_list in self.expansion_strats
-            ],
-            "symmetries": [s.to_jsonable() for s in self.symmetries],
-            "forward_equivalence": self.forward_equivalence,
-            "iterative": self.iterative,
-        }
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "TileScopePack":
-        name = d.pop("name")
-        initial_strats = [
-            Strategy.from_dict(strat_dict) for strat_dict in d.pop("initial_strats")
-        ]
-        inferral_strats = [
-            Strategy.from_dict(strat_dict) for strat_dict in d.pop("inferral_strats")
-        ]
-        ver_strats = [
-            Strategy.from_dict(strat_dict) for strat_dict in d.pop("ver_strats")
-        ]
-        expansion_strats = [
-            [Strategy.from_dict(strat_dict) for strat_dict in strat_list]
-            for strat_list in d.pop("expansion_strats")
-        ]
-        symmetries = [
-            [Strategy.from_dict(strat_dict) for strat_dict in strat_list]
-            for strat_list in d.pop("symmetries")
-        ]
-        return cls(
-            initial_strats, inferral_strats, expansion_strats, ver_strats, name, **d
-        )
-
     # Method to add power to a pack
     # Pack are immutable, these methods return a new pack.
 

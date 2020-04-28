@@ -52,6 +52,10 @@ class TilingSymmetryStrategy(SymmetryStrategy):
     def __repr__(self):
         return self.__class__.__name__ + "()"
 
+    @classmethod
+    def from_dict(cls, d):
+        return cls()
+
 
 class TilingReverse(TilingSymmetryStrategy):
     """
@@ -258,5 +262,5 @@ class AllSymmetriesStrategy(StrategyGenerator):
         return self.__class__.__name__ + "()"
 
     @classmethod
-    def from_dict(cls):
+    def from_dict(cls, d):
         return cls()

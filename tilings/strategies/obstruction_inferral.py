@@ -55,6 +55,19 @@ class ObstructionInferralStrategy(DisjointUnionStrategy):
     ) -> Tuple[GriddedPerm, ...]:
         return children[0].forward_map(gps[0])
 
+    # JSON methods
+
+    def to_jsonable(self) -> dict:
+        """Return a dictionary form of the strategy."""
+        d = super().to_jsonable()
+        d["gps"] = [gp.to_jsonable() for gp in self.gps]
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "ObstructionInferralStrategy":
+        gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
+        return cls(gps=gps)
+
 
 class AllObstructionInferralStrategy(StrategyGenerator):
     """
@@ -88,10 +101,11 @@ class AllObstructionInferralStrategy(StrategyGenerator):
     def to_jsonable(self):
         d = super().to_jsonable()
         d["maxlen"] = self.maxlen
+        return d
 
     @classmethod
     def from_dict(cls, d):
-        return cls(**d)
+        return cls(maxlen=d["maxlen"])
 
     def __repr__(self):
         return "{}(maxlen={})".format(self.__class__.__name__, self.maxlen)
@@ -106,6 +120,10 @@ class EmptyCellInferralStrategy(AllObstructionInferralStrategy):
     def __init__(self):
         super().__init__(maxlen=1)
 
+    @classmethod
+    def from_dict(cls, d):
+        return cls()
+
 
 class SubobstructionInferralStrategy(AllObstructionInferralStrategy):
     def __init__(self):
@@ -118,11 +136,11 @@ class SubobstructionInferralStrategy(AllObstructionInferralStrategy):
         return SubobstructionInferral(tiling).new_obs()
 
     @classmethod
-    def from_dict(cls):
+    def from_dict(cls, d):
         return cls()
 
     def __repr__(self):
-        return "{}(maxlen={})".format(self.__class__.__name__, self.maxlen)
+        return self.__class__.__name__ + "()"
 
     def __str__(self):
         return "subobstruction inferral"

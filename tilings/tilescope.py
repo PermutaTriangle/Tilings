@@ -54,17 +54,6 @@ class TileScope(CombinatorialSpecificationSearcher):
             **kwargs,
         )
 
-    def update_status(self, strategy: Callable, time_taken: int):
-        """Update that it took 'time_taken' to expand a combinatorial class
-        with strategy"""
-        # pylint: disable=comparison-with-callable
-        if strategy == self.is_empty:
-            self.strategy_times["is empty"] += time_taken
-            self.strategy_expansions["is empty"] += 1
-        else:
-            self.strategy_times[strategy] += time_taken
-            self.strategy_expansions[strategy] += 1
-
     @staticmethod
     def _strat_dict_to_jsonable(dict_):
         keys = []
@@ -89,56 +78,3 @@ class TileScope(CombinatorialSpecificationSearcher):
                 d[StrategyGernerator.from_dict(k)] = v
             values.append(v)
         return defaultdict(int, d)
-
-    def to_dict(self) -> dict:
-        return {
-            "start_class": b64encode(self.start_class.compress()).decode(),
-            "debug": self.debug,
-            "kwargs": self.kwargs,
-            "logger_kwargs": self.logger_kwargs,
-            "strategy_pack": self.strategy_pack.to_jsonable(),
-            "classdb": self.classdb.to_dict(),
-            "equivdb": self.equivdb.to_dict(),
-            "classqueue": self.classqueue.to_dict(),
-            "ruledb": self.ruledb.to_dict(),
-            "start_label": self.start_label,
-            "_has_proof_tree": self._has_proof_tree,
-            "strategy_times": self._strat_dict_to_jsonable(self.strategy_times),
-            "strategy_expansions": self._strat_dict_to_jsonable(
-                self.strategy_expansions
-            ),
-            "symmetry_time": self.symmetry_time,
-            "tree_search_time": self.tree_search_time,
-            "prep_for_tree_search_time": self.prep_for_tree_search_time,
-            "queue_time": self.queue_time,
-            "_time_taken": self._time_taken,
-        }
-
-    # pylint: disable=arguments-differ
-    @classmethod
-    def from_dict(cls, dict_, combinatorial_class=Tiling):
-        # pylint: disable=protected-access
-        strategy_pack = TileScopePack.from_dict(dict_["strategy_pack"])
-        init_kwargs = {
-            "debug": dict_["debug"],
-            "logger_kwargs": dict_["logger_kwargs"],
-        }
-        b = b64decode(dict_["start_class"].encode())
-        c = Tiling.decompress(b)
-        css = cls(c, strategy_pack, **init_kwargs)
-        css.classdb = ClassDB.from_dict(dict_["classdb"], combinatorial_class)
-        css.equivdb = EquivalenceDB.from_dict(dict_["equivdb"])
-        css.classqueue = DefaultQueue.from_dict(dict_["classqueue"])
-        css.ruledb = RuleDB.from_dict(dict_["ruledb"])
-        css.start_label = dict_["start_label"]
-        css._has_proof_tree = dict_["_has_proof_tree"]
-        css.strategy_times = cls._strat_dict_from_jsonable(dict_["strategy_times"])
-        css.strategy_expansions = cls._strat_dict_from_jsonable(
-            dict_["strategy_expansions"]
-        )
-        css.symmetry_time = dict_["symmetry_time"]
-        css.tree_search_time = dict_["tree_search_time"]
-        css.prep_for_tree_search_time = dict_["prep_for_tree_search_time"]
-        css.queue_time = dict_["queue_time"]
-        css._time_taken = dict_["_time_taken"]
-        return css

@@ -150,8 +150,33 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
                 self.direction,
                 self.own_row,
                 self.own_col,
+                self.ignore_parent,
                 self.include_empty,
             )
+        )
+
+    def to_jsonable(self) -> dict:
+        """Return a dictionary form of the strategy."""
+        d = super().to_jsonable()
+        d["gps"] = [gp.to_jsonable() for gp in self.gps]
+        d["indices"] = self.indices
+        d["direction"] = self.direction
+        d["own_col"] = self.own_col
+        d["own_row"] = self.own_row
+        d["include_empty"] = self.include_empty
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "ObstructionInferralStrategy":
+        gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
+        return cls(
+            gps=gps,
+            indices=d["indices"],
+            direction=d["direction"],
+            own_col=d["own_col"],
+            own_row=d["own_row"],
+            ignore_parent=d["ignore_parent"],
+            include_empty=d["include_empty"],
         )
 
 
@@ -228,11 +253,17 @@ class RequirementPlacementStrategyGenerator(StrategyGenerator):
         d["partial"] = self.partial
         d["ignore_parent"] = self.ignore_parent
         d["dirs"] = self.dirs
+        d["include_empty"] = self.include_empty
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "RequirementPlacementStrategyGenerator":
-        return cls(**d)
+        return cls(
+            partial=d["partial"],
+            ignore_parent=d["ignore_parent"],
+            dirs=d["dirs"],
+            include_empty=d["include_empty"],
+        )
 
 
 class PatternPlacementStrategy(RequirementPlacementStrategyGenerator):
@@ -332,6 +363,15 @@ class PatternPlacementStrategy(RequirementPlacementStrategyGenerator):
         d = super().to_jsonable()
         d["point_only"] = self.point_only
         return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "RequirementPlacementStrategyGenerator":
+        return cls(
+            point_only=d["point_only"],
+            partial=d["partial"],
+            ignore_parent=d["ignore_parent"],
+            dirs=d["dirs"],
+        )
 
 
 class AllRequirementPlacementStrategy(RequirementPlacementStrategyGenerator):
@@ -440,6 +480,20 @@ class AllRequirementPlacementStrategy(RequirementPlacementStrategyGenerator):
             )
         )
 
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["subreqs"] = self.subreqs
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "RequirementPlacementStrategyGenerator":
+        return cls(
+            subreqs=d["subreqs"],
+            partial=d["partial"],
+            ignore_parent=d["ignore_parent"],
+            dirs=d["dirs"],
+        )
+
 
 class RowAndColumnPlacementStrategy(RequirementPlacementStrategyGenerator):
     def __init__(
@@ -513,8 +567,14 @@ class RowAndColumnPlacementStrategy(RequirementPlacementStrategyGenerator):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "RowAndColumnPlacementStrategy":
-        return cls(**d)
+    def from_dict(cls, d: dict) -> "RequirementPlacementStrategyGenerator":
+        return cls(
+            place_row=d["place_row"],
+            place_col=d["place_col"],
+            partial=d["partial"],
+            ignore_parent=d["ignore_parent"],
+            dirs=d["dirs"],
+        )
 
 
 class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
@@ -583,8 +643,8 @@ class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
         return "all placements"
 
     def __repr__(self) -> str:
-        return "AllPlacementsStrategy()"
+        return "AllPlacementsStrategy(ignore_parent={})".format(self.ignore_parent)
 
     @classmethod
     def from_dict(cls, d: dict) -> "AllPlacementsStrategy":
-        return AllPlacementsStrategy()
+        return AllPlacementsStrategy(ignore_parent=d["ignore_parent"])

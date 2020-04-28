@@ -86,6 +86,17 @@ class RequirementInsertionStrategy(DisjointUnionStrategy):
     def __str__(self) -> str:
         return "requirement insertion"
 
+    def to_jsonable(self) -> dict:
+        """Return a dictionary form of the strategy."""
+        d = super().to_jsonable()
+        d["gps"] = [gp.to_jsonable() for gp in self.gps]
+        return
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "ObstructionInferralStrategy":
+        gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
+        return cls(gps=gps, ignore_parent=d["ignore_parent"])
+
 
 class RequirementInsertionStrategyGenerator(StrategyGenerator):
     """
@@ -112,14 +123,14 @@ class RequirementInsertionStrategyGenerator(StrategyGenerator):
         for req_list in self.req_lists_to_insert(tiling):
             yield RequirementInsertionStrategy(req_list, self.ignore_parent)
 
-    def to_jsonable(self) -> dict:
+    def to_jsonable(self):
         d = super().to_jsonable()
         d["ignore_parent"] = self.ignore_parent
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "RequirementInsertionStrategyGenerator":
-        return cls(**d)
+        return cls(ignore_parent=d["ignore_parent"])
 
     def __repr__(self) -> str:
         return "{}(ignore_parent={})".format(
@@ -162,7 +173,11 @@ class RequirementInsertionWithRestrictionStrategyGenerator(
             extra_basis = None
         else:
             extra_basis = [Perm(p) for p in d["extra_basis"]]
-        return cls(d["maxreqlen"], extra_basis, d["ignore_parent"],)
+        return cls(
+            maxreqlen=d["maxreqlen"],
+            extra_basis=extra_basis,
+            ignore_parent=d["ignore_parent"],
+        )
 
     def __repr__(self) -> str:
         return "{}(maxreqlen={}, extra_basis={}, " "ignore_parent={})".format(
