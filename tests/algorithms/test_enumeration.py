@@ -559,6 +559,40 @@ class TestMonotoneTreeEnumeration(CommonTest):
             + 20 * x ** 6
         )
 
+    def test_with_two_reqs(self):
+        t = Tiling(
+            obstructions=(
+                Obstruction(Perm((0,)), ((1, 1),)),
+                Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+                Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+                Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+                Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
+            ),
+            requirements=(
+                (Requirement(Perm((0,)), ((0, 0),)),),
+                (Requirement(Perm((0,)), ((0, 1),)),),
+            ),
+        )
+        enum = MonotoneTreeEnumeration(t)
+        expected_enum = [0, 0, 2, 7, 19, 47, 111, 255, 575, 1279, 2815]
+        assert enum.verified()
+        assert taylor_expand(enum.get_genf()) == expected_enum
+
+    def test_corner(self):
+        t = Tiling(
+            obstructions=(
+                Obstruction(Perm((0,)), ((1, 1),)),
+                Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+                Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+                Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+            ),
+            requirements=((Requirement(Perm((0,)), ((0, 0),)),),),
+        )
+        enum = MonotoneTreeEnumeration(t)
+        expected_enum = [0, 1, 5, 17, 50, 138, 370, 979, 2575, 6755, 17700]
+        assert enum.verified()
+        assert taylor_expand(enum.get_genf()) == expected_enum
+
 
 class TestElementaryEnumeration(CommonTest):
     @pytest.fixture

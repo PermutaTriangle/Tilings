@@ -257,7 +257,7 @@ class MonotoneTreeEnumeration(Enumeration):
         """
         queue = deque(
             chain(
-                self.tiling.cells_in_col(start[1]), self.tiling.cells_in_row(start[0])
+                self.tiling.cells_in_col(start[0]), self.tiling.cells_in_row(start[1])
             )
         )
         visited = set([start])
