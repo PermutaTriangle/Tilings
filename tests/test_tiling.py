@@ -2332,6 +2332,7 @@ class TestGetGenf:
         t = Tiling.from_string("1324")
         with pytest.raises(InvalidOperationError):
             t.get_genf()
+
+    def test_123(self):
         t = Tiling.from_string("123")
-        with pytest.raises(InvalidOperationError):
-            t.get_genf()
+        assert t.get_genf() == sympy.sympify("(1 - sqrt(1 - 4*x)) / (2*x)")

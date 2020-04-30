@@ -542,6 +542,8 @@ class OneByOneEnumeration(Enumeration):
     def get_genf(self):
         # TODO: check the proof tree database for the basis and then try to get
         # a tree.
+        if self.tiling == self.tiling.__class__.from_string("012"):
+            return sympy.sympify("(1 - sqrt(1 - 4*x)) / (2*x)")
         try:
             tree = self.get_tree(max_time=10)
         except InvalidOperationError:
