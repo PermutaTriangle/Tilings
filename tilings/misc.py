@@ -23,6 +23,7 @@ def union_reduce(iterable):
     [0, 2, 4, 6, 8]
     >>> union_reduce(([], []))
     set()
+    # TODO: type annotate
     """
     return reduce(set.__or__, map(set, iterable), set())
 

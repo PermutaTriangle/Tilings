@@ -47,7 +47,7 @@ class TilingSymmetryStrategy(SymmetryStrategy):
         children: Optional[Tuple[GriddedPerm, ...]] = None,
     ) -> Tuple[GriddedPerm, ...]:
         """This function will enable us to have a quick membership test."""
-        return self.gp_transform(tiling, gp)
+        return (self.gp_transform(tiling, gp),)
 
     def __repr__(self):
         return self.__class__.__name__ + "()"

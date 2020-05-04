@@ -9,7 +9,7 @@ import sympy
 from comb_spec_searcher import ProofTree, StrategyPack
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
-from permuta.permutils import all_symmetry_sets
+from permuta.permutils.symmetry import all_symmetry_sets
 from tilings.exception import InvalidOperationError
 from tilings.misc import is_tree
 

@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Iterator, Optional, Tuple
+from typing import Iterable, Iterator, Optional, Tuple
 
 from comb_spec_searcher import CartesianProductStrategy, Strategy, StrategyGenerator
 from permuta import Perm
@@ -23,11 +23,11 @@ __all__ = (
 )
 
 
-class FactorStrategy(CartesianProductStrategy):
+class FactorStrategy(CartesianProductStrategy[Tiling]):
     def __init__(
-        self, partition: Optional[Tuple[Tuple[Cell, ...], ...]], workable: bool = True,
+        self, partition: Iterable[Iterable[Cell]], workable: bool = True,
     ):
-        self.partition = tuple(sorted(tuple(p) for p in partition))
+        self.partition = tuple(sorted(p for p in partition))
         super().__init__(workable=workable)
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
@@ -93,7 +93,7 @@ class FactorStrategy(CartesianProductStrategy):
 
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
-        d = super().to_jsonable()
+        d: dict = super().to_jsonable()
         d["partition"] = self.partition
         return d
 
@@ -108,7 +108,10 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         raise NotImplementedError
 
     def backward_map(
-        self, tiling: Tiling, gps: Tuple[GriddedPerm, ...],
+        self,
+        tiling: Tiling,
+        gps: Tuple[GriddedPerm, ...],
+        children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         raise NotImplementedError
 
@@ -191,7 +194,7 @@ class AllFactorStrategy(StrategyGenerator):
         )
 
     def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
+        d: dict = super().to_jsonable()
         if self.factor_class is FactorStrategy:
             interleaving = None
         elif self.factor_class is FactorWithInterleavingStrategy:

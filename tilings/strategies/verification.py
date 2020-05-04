@@ -1,11 +1,9 @@
 from typing import Iterable, Iterator, Optional, Tuple, Type
 
 from comb_spec_searcher import (
-    Atom,
     CombinatorialSpecification,
     Constructor,
     StrategyGenerator,
-    VerificationRule,
     VerificationStrategy,
 )
 from permuta import Perm
@@ -51,15 +49,6 @@ class BasicVerificationStrategy(VerificationStrategy):
             return 1
         if tiling.is_point_tiling():
             return x
-        raise InvalidOperationError("Not an atom")
-
-    def constructor(
-        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Constructor:
-        if tiling.is_epsilon():
-            return Atom(n=0)
-        if tiling.is_point_tiling():
-            return Atom(n=1)
         raise InvalidOperationError("Not an atom")
 
     def count_objects_of_size(self, tiling: Tiling, **parameters):

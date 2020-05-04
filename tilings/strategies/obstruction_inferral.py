@@ -1,10 +1,9 @@
 from typing import Iterable, Optional, Tuple
 
-from comb_spec_searcher import DisjointUnionStrategy, Strategy, StrategyGenerator
+from comb_spec_searcher import DisjointUnionStrategy, StrategyGenerator
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
     AllObstructionInferral,
-    EmptyCellInferral,
     ObstructionTransitivity,
     SubobstructionInferral,
 )
@@ -18,14 +17,14 @@ __all__ = [
 ]
 
 
-class ObstructionInferralStrategy(DisjointUnionStrategy):
-    def __init__(self, gps):
-        self.gps = gps
+class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling]):
+    def __init__(self, gps: Iterable[GriddedPerm]):
+        self.gps = tuple(sorted(gps))
         super().__init__(
             ignore_parent=True, inferrable=True, possibly_empty=False, workable=True,
         )
 
-    def decomposition_function(self, tiling: Tiling) -> Tiling:
+    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
         return (tiling.add_obstructions(self.gps),)
 
     def formal_step(self) -> str:
@@ -52,20 +51,22 @@ class ObstructionInferralStrategy(DisjointUnionStrategy):
         tiling: Tiling,
         gp: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Tuple[GriddedPerm, ...]:
-        return children[0].forward_map(gps[0])
+    ) -> Tuple[GriddedPerm]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+        return (children[0].forward_map(gp),)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__class__.__name__ + "(gps={})".format(self.gps)
 
-    def __str__(self):
-        return self.formal_step
+    def __str__(self) -> str:
+        return self.formal_step()
 
     # JSON methods
 
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
-        d = super().to_jsonable()
+        d: dict = super().to_jsonable()
         d["gps"] = [gp.to_jsonable() for gp in self.gps]
         return d
 
