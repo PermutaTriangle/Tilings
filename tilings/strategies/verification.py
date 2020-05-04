@@ -187,7 +187,7 @@ class OneByOneVerificationStrategy(StrategyGenerator):
     ) -> List[_OneByOneVerificationStrategy]:
         if "basis" not in kwargs:
             raise TypeError("Missing basis argument")
-        basis = kwargs["basis"]  # type: Iterable[Perm]
+        basis: Iterable[Perm] = kwargs["basis"]
         symmetry = kwargs.get("symmetry", False)
         return [
             _OneByOneVerificationStrategy(

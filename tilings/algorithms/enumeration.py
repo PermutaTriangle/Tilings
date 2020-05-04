@@ -1,7 +1,7 @@
 import abc
 from collections import deque
 from itertools import chain
-from typing import TYPE_CHECKING, FrozenSet, Iterable, Optional
+from typing import TYPE_CHECKING, FrozenSet, Iterable
 
 import requests
 import sympy
@@ -50,14 +50,6 @@ class Enumeration(abc.ABC):
         Return a string that describe the verification strategy.
         """
         raise NotImplementedError
-
-    def verification_rule(self):  # TODO -> VerificationRule deprecated
-        """
-        Return a verification rule if the tiling is verified.
-        Otherwise, returns None
-        """
-        if self.verified():
-            return VerificationRule(formal_step=self.formal_step)
 
     def get_tree(self, **kwargs) -> ProofTree:
         """
@@ -433,7 +425,7 @@ class DatabaseEnumeration(Enumeration):
     """
 
     API_ROOT_URL = "https://api.combopal.ru.is/"
-    all_verified_tilings = frozenset()  # type: FrozenSet[bytes]
+    all_verified_tilings: FrozenSet[bytes] = frozenset()
     num_verified_request = 0
 
     @classmethod

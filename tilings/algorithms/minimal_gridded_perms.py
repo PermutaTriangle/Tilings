@@ -31,7 +31,7 @@ class QueuePacket:
         self.still_localising = still_localising
         self.mindices = mindices
 
-    def __lt__(self, other):
+    def __lt__(self, other: "QueuePacket"):
         return self.gp < other.gp
 
 
@@ -39,20 +39,18 @@ class MinimalGriddedPerms:
     def __init__(self, tiling: "Tiling"):
         self.obstructions = tiling.obstructions
         self.requirements = tiling.requirements
-        self.relevant_obstructions = dict()  # type: Dict[FrozenSet[Cell], GPTuple]
-        self.relevant_requirements = dict()  # type: Dict[FrozenSet[Cell], Reqs]
-        self.relevant_obstructions_by_cell = (
-            dict()
-        )  # type: Dict[Tuple[Cell, FrozenSet[Cell]], GPTuple]
-        self.requirements_up_to_cell = (
-            dict()
-        )  # type: Dict[Tuple[Cell, GPTuple], GPTuple]
+        self.relevant_obstructions: Dict[FrozenSet[Cell], GPTuple] = dict()
+        self.relevant_requirements: Dict[FrozenSet[Cell], Reqs] = dict()
+        self.relevant_obstructions_by_cell: Dict[
+            Tuple[Cell, FrozenSet[Cell]], GPTuple
+        ] = dict()
+        self.requirements_up_to_cell: Dict[Tuple[Cell, GPTuple], GPTuple] = dict()
         # Delay computing until needed - these could all be stored on
         # MinimalGriddedPerms, as none of these are tiling specific.
-        self.localised_patts = dict()  # type: Dict[Tuple[Cell, GPTuple], GPTuple]
-        self.max_cell_counts = dict()  # type: Dict[GPTuple, Dict[Cell, int]]
-        self.upward_closures = dict()  # type: Dict[GPTuple, GPTuple]
-        self.known_patts = defaultdict(set)  # type: Dict[GriddedPerm, Set[GriddedPerm]]
+        self.localised_patts: Dict[Tuple[Cell, GPTuple], GPTuple] = dict()
+        self.max_cell_counts: Dict[GPTuple, Dict[Cell, int]] = dict()
+        self.upward_closures: Dict[GPTuple, GPTuple] = dict()
+        self.known_patts: Dict[GriddedPerm, Set[GriddedPerm]] = defaultdict(set)
 
     def get_requirements_up_to_cell(self, cell: Cell, gps: GPTuple) -> GPTuple:
         """Given a goal gps and cell (x,y), return the truncations of the reqs
@@ -150,7 +148,7 @@ class MinimalGriddedPerms:
                 # will be used to guide us in choosing smartly which cells to
                 # insert into - see the 'get_cells_to_try' method.
                 # mindices ensure we insert left to right in each cell
-                mindices = dict()  # type: Dict[Cell, int]
+                mindices: Dict[Cell, int] = dict()
                 # last_cell ensures that we insert into cells in order after
                 # we have satisfied the local patterns needed
                 last_cell = (-1, -1)
@@ -236,7 +234,7 @@ class MinimalGriddedPerms:
             # able to apply a better upper bound to the number of points
             # required in the cell
             for cell in res.keys():
-                in_this_cell = set()  # type: Set[Perm]
+                in_this_cell: Set[Perm] = set()
                 for req in gps:
                     # we ignore point requirements
                     if len(req) > 1 and cell in req.pos:
@@ -296,7 +294,7 @@ class MinimalGriddedPerms:
         in another is removed."""
         res = self.upward_closures.get(gps)
         if res is None:
-            upward_closure = []  # type: List[GriddedPerm]
+            upward_closure: List[GriddedPerm] = []
             for gp in sorted(gps, key=len, reverse=True):
                 if all(gp not in g for g in upward_closure):
                     upward_closure.append(gp)
@@ -306,7 +304,7 @@ class MinimalGriddedPerms:
 
     def _get_cells_to_try(self, qpacket: QueuePacket) -> Iterator[Tuple[Cell, bool]]:
         """Yield cells that a gridded permutation could be extended by."""
-        cells = set()  # type: Set[Cell]
+        cells: Set[Cell] = set()
         for g, req in zip(qpacket.gps, self.get_relevant_requirements(qpacket.gp)):
             if not self.contains(qpacket.gp, *req):
                 # Only insert into cells in the requirements that are not
@@ -403,11 +401,11 @@ class MinimalGriddedPerms:
 
         # a priority queue sorted by length of the gridded perm. This is
         # ensured by overwriting the __lt__ operator in the Info class.
-        queue = []  # type: List[QueuePacket]
+        queue: List[QueuePacket] = []
         heapify(queue)
 
-        initial_gps_to_auto_yield = set()  # type: Set[GriddedPerm]
-        yielded = set()  # type: Set[GriddedPerm]
+        initial_gps_to_auto_yield: Set[GriddedPerm] = set()
+        yielded: Set[GriddedPerm] = set()
         for gp in self._prepare_queue(queue):
             if yield_non_minimal:
                 yielded.add(gp)
@@ -478,7 +476,7 @@ class MinimalGriddedPerms:
                             ),
                         )
 
-        work_packets_done = set()  # type: Set[WorkPackets]
+        work_packets_done: Set[WorkPackets] = set()
         while queue:
             # take the next gridded permutation of the queue, together with the
             # theoretical counts to create a gridded permutation containing

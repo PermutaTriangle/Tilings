@@ -64,8 +64,8 @@ class RequirementPlacement:
         self._point_col_cells = self._tiling_point_col_cells()
         self.own_row = own_row
         self.own_col = own_col
-        self._stretched_obstructions_cache = {}  # type: ObsCache
-        self._stretched_requirements_cache = {}  # type: ReqsCache
+        self._stretched_obstructions_cache: ObsCache = {}
+        self._stretched_requirements_cache: ReqsCache = {}
         if self.own_row and self.own_col:
             self.directions = frozenset(DIRS)
         elif self.own_row:

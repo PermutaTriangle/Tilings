@@ -46,7 +46,7 @@ class GriddedPermsOnTiling:
         All the patterns that must be contained in the given cell of the
         tiling.
         """
-        res = set()  # type: Set[Perm]
+        res: Set[Perm] = set()
         for req_list in self._requirements:
             subgp = req_list[0].get_gridded_perm_in_cells([cell])
             patts = set(subgp.all_subperms(proper=False))
@@ -61,7 +61,7 @@ class GriddedPermsOnTiling:
         The minimum number of points that must be in each cell of the tiling
         according to the requirements.
         """
-        res = dict()  # type: Dict[Cell, int]
+        res: Dict[Cell, int] = dict()
         for cell in self._active_cells:
             patts_in_cell = self.patts_contained_in_cell(cell)
             points_in_cell = max((len(p) for p in patts_in_cell), default=0)
