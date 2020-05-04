@@ -1,6 +1,6 @@
 import json
 from itertools import chain, combinations, product
-from typing import Callable, Dict, FrozenSet, Iterable, Iterator, List, Tuple
+from typing import Callable, Dict, FrozenSet, Iterable, Iterator, List, Optional, Tuple
 
 from comb_spec_searcher import CombinatorialObject
 from permuta import Perm
@@ -149,6 +149,39 @@ class GriddedPerm(CombinatorialObject):
             if direction == DIR_SOUTH:
                 return min((self._patt[p], p) for p in points)[1]
             raise ValueError("You're lost, no valid direction")
+
+    def forced_point_of_requirement(
+        self, gps: Tuple["GriddedPerm", ...], indices: Tuple[int, ...], direction: int
+    ) -> Optional[Tuple[int, int]]:
+        """
+        Return the pair (x, y) where x is the gridded perm in gps that is
+        farthest in the given direction, and y is index of the forced point
+        with respect to the gps and indices. If gps is avoided, then
+        return None.
+        """
+
+        def directionmost(i1: int, i2: int) -> int:
+            """return the directionmost between i1 and i2."""
+            if direction == DIR_EAST:
+                return max((i1, i2))
+            if direction == DIR_NORTH:
+                return max((self._patt[p], p) for p in (i1, i2))[1]
+            if direction == DIR_WEST:
+                return min((i1, i2))
+            if direction == DIR_SOUTH:
+                return min((self._patt[p], p) for p in (i1, i2))[1]
+            raise ValueError("You're lost, no valid direction")
+
+        res: Optional[Tuple[int, int]] = None
+        for idx, gp in zip(indices, gps):
+            for occurrence in gp.occurrences_in(self):
+                if res is None:
+                    res = idx, occurrence[idx]
+                else:
+                    new_res = directionmost(res[1], occurrence[idx])
+                    if res[1] != new_res:
+                        res = idx, new_res
+        return res
 
     def get_points_col(self, col: int) -> Iterator[Tuple[int, int]]:
         """Yields all points of the gridded permutation in the column col."""

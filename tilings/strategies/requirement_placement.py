@@ -1,6 +1,6 @@
 from collections import defaultdict
 from itertools import chain, product
-from typing import FrozenSet, Iterable, Iterator, Optional, Tuple
+from typing import Iterable, Iterator, List, Optional, Tuple
 import abc
 
 from comb_spec_searcher import DisjointUnionStrategy, Rule, StrategyGenerator
@@ -94,13 +94,20 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling]):
             y -= 1
         return x, y
 
-    def forward_cell_map(self, placed_cell: Cell, cell: Cell) -> FrozenSet[Cell]:
-        x, y = placed_cell
-        minx = cell[0] if cell[0] <= x else cell[0] + 3
-        maxx = cell[0] + 3 if cell[0] >= x else cell[0]
-        miny = cell[1] if cell[1] <= y else cell[1] + 3
-        maxy = cell[1] + 3 if cell[1] >= y else cell[1]
-        return frozenset((i, j) for i in range(minx, maxx) for j in range(miny, maxy))
+    def forward_gp_map(self, gp: GriddedPerm, forced_index: int) -> GriddedPerm:
+        new_pos: List[Cell] = []
+        forced_val = gp.patt[forced_index]
+        for idx, (x, y) in enumerate(gp.pos):
+            if idx == forced_index:
+                new_pos.append((x + 1, y + 1))
+            else:
+                val = gp.patt[idx]
+                if idx >= forced_index:
+                    x += 2
+                if val >= forced_val:
+                    y += 2
+                new_pos.append((x, y))
+        return GriddedPerm(gp.patt, new_pos)
 
     def backward_map(
         self,
@@ -127,7 +134,23 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling]):
         gp: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm, ...]:
-        raise NotImplementedError
+        indices = gp.forced_point_of_requirement(self.gps, self.indices, self.direction)
+        if children is None:
+            children = self.decomposition_function(tiling)
+        if indices is None:
+            return (children[0].forward_map(gp),) + tuple(
+                None for _ in range(len(children) - 1)
+            )
+        else:
+            child_index, forced_index = indices
+            if self.include_empty:
+                forced_index += 1
+            gp = self.forward_gp_map(gp, forced_index)
+            return (
+                tuple(None for _ in range(child_index))
+                + (children[child_index].forward_map(gp),)
+                + tuple(None for _ in range(len(children) - 1))
+            )
 
     #     if children is None:
     #         children = self.decomposition_function(tiling)
