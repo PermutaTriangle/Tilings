@@ -68,6 +68,18 @@ class BasicVerificationStrategy(VerificationStrategy[Tiling]):
         elif parameters["n"] == 1 and tiling.is_point_tiling():
             yield GriddedPerm(Perm((0,)), ((0, 0),))
 
+    def random_sample_object_of_size(
+        self, tiling: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        """
+        A method to sample uniformly at random from a verified combinatorial class.
+        Raises an InvalidOperationError if the combinatorial class is not verified.
+        """
+        if n == 0 and tiling.is_epsilon():
+            return GriddedPerm.empty_perm()
+        if n == 1 and tiling.is_point_tiling():
+            return GriddedPerm(Perm((0,)), ((0, 0),))
+
     def formal_step(self) -> str:
         return "tiling is an atom"
 
