@@ -27,7 +27,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
     def __init__(
         self, partition: Iterable[Iterable[Cell]], workable: bool = True,
     ):
-        self.partition = tuple(sorted(p for p in partition))
+        self.partition = tuple(sorted(tuple(sorted(p)) for p in partition))
         super().__init__(workable=workable)
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:

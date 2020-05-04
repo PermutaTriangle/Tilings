@@ -1,5 +1,7 @@
 from typing import Iterable, Iterator, Optional, Tuple, Type
 
+from sympy import var
+
 from comb_spec_searcher import (
     CombinatorialSpecification,
     Constructor,
@@ -18,9 +20,8 @@ from tilings.algorithms.enumeration import (
     MonotoneTreeEnumeration,
     OneByOneEnumeration,
 )
-import sympy
 
-x = sympy.abc.x
+x = var("x")
 
 __all__ = [
     "BasicVerificationStrategy",
