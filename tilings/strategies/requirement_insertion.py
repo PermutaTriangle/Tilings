@@ -1,16 +1,15 @@
 import abc
 from itertools import chain, product
-from typing import TYPE_CHECKING, Iterable, Iterator, List, Optional, Tuple
+from typing import Iterable, Iterator, List, Optional, Tuple
 
 from comb_spec_searcher import (
-    Constructor,
     DisjointUnionStrategy,
     Rule,
     Strategy,
     StrategyGenerator,
 )
 from permuta import Av, Perm
-from tilings import GriddedPerm, Obstruction, Requirement, Tiling
+from tilings import GriddedPerm, Requirement, Tiling
 
 ListRequirement = Tuple[Requirement, ...]
 
@@ -26,7 +25,7 @@ __all__ = [
 ]
 
 
-class RequirementInsertionStrategy(DisjointUnionStrategy):
+class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling]):
     def __init__(self, gps: Iterable[GriddedPerm], ignore_parent: bool = False):
         super().__init__(ignore_parent=ignore_parent)
         self.gps = frozenset(GriddedPerm.from_gridded_perm(gp) for gp in gps)
@@ -88,12 +87,12 @@ class RequirementInsertionStrategy(DisjointUnionStrategy):
 
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
-        d = super().to_jsonable()
+        d: dict = super().to_jsonable()
         d["gps"] = [gp.to_jsonable() for gp in self.gps]
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "ObstructionInferralStrategy":
+    def from_dict(cls, d: dict) -> "RequirementInsertionStrategy":
         gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
         return cls(gps=gps, ignore_parent=d["ignore_parent"])
 
@@ -123,8 +122,8 @@ class RequirementInsertionStrategyGenerator(StrategyGenerator):
         for req_list in self.req_lists_to_insert(tiling):
             yield RequirementInsertionStrategy(req_list, self.ignore_parent)
 
-    def to_jsonable(self):
-        d = super().to_jsonable()
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
         d["ignore_parent"] = self.ignore_parent
         return d
 
@@ -162,7 +161,7 @@ class RequirementInsertionWithRestrictionStrategyGenerator(
         super().__init__(ignore_parent)
 
     def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
+        d: dict = super().to_jsonable()
         d["maxreqlen"] = self.maxreqlen
         d["extra_basis"] = self.extra_basis
         return d
@@ -284,8 +283,8 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
             )
         )
 
-    def to_jsonable(self):
-        d = super().to_jsonable()
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
         d["max_num_req"] = self.max_num_req
         return d
 

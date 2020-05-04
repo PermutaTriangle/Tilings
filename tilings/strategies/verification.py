@@ -1,11 +1,11 @@
-from typing import Iterable, Iterator, Optional, Tuple, Type
+from typing import Iterable, Iterator, List, Tuple, Type
 
-from sympy import var
+from sympy import Expr, var
 
 from comb_spec_searcher import (
     CombinatorialSpecification,
-    Constructor,
     StrategyGenerator,
+    StrategyPack,
     VerificationStrategy,
 )
 from permuta import Perm
@@ -34,25 +34,24 @@ __all__ = [
 ]
 
 
-class BasicVerificationStrategy(VerificationStrategy):
+class BasicVerificationStrategy(VerificationStrategy[Tiling]):
     def verified(self, tiling: Tiling) -> bool:
         return tiling.is_epsilon() or tiling.is_point_tiling()
 
-    @property
-    def pack(self):
+    def pack(self) -> StrategyPack:
         raise InvalidOperationError("Cannot get a tree for a basic " "verification")
 
     def get_specfication(self, tiling: Tiling, **kwargs) -> CombinatorialSpecification:
         raise InvalidOperationError("Cannot get a tree for a basic " "verification")
 
-    def get_genf(self, tiling: Tiling, **kwargs):
+    def get_genf(self, tiling: Tiling, **kwargs) -> Expr:
         if tiling.is_epsilon():
             return 1
         if tiling.is_point_tiling():
             return x
         raise InvalidOperationError("Not an atom")
 
-    def count_objects_of_size(self, tiling: Tiling, **parameters):
+    def count_objects_of_size(self, tiling: Tiling, **parameters: int) -> int:
         """Verification strategies must contain a method to count the objects."""
         if (parameters["n"] == 0 and tiling.is_epsilon()) or (
             parameters["n"] == 1 and tiling.is_point_tiling()
@@ -61,7 +60,7 @@ class BasicVerificationStrategy(VerificationStrategy):
         return 0
 
     def generate_objects_of_size(
-        self, tiling: Tiling, **parameters
+        self, tiling: Tiling, **parameters: int
     ) -> Iterator[GriddedPerm]:
         """Verification strategies must contain a method to generate the objects."""
         if parameters["n"] == 0 and tiling.is_epsilon():
@@ -81,19 +80,18 @@ class BasicVerificationStrategy(VerificationStrategy):
         return "verify atoms"
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d: dict) -> "BasicVerificationStrategy":
         return cls()
 
 
-class TileScopeVerificationStrategy(VerificationStrategy):
+class TileScopeVerificationStrategy(VerificationStrategy[Tiling]):
     """
     Abstract verification strategy class the group the shared logic of
     verification strategy. Subclass need to have the class attribute
     `VERIFICATION_CLASS`.
     """
 
-    # pylint: disable=E1102
-    VERIFICATION_CLASS = NotImplemented  # type: Type[Enumeration]
+    VERIFICATION_CLASS: Type[Enumeration] = NotImplemented
 
     def __init__(self, ignore_parent: bool = True):
         super().__init__(ignore_parent=ignore_parent)
@@ -105,15 +103,14 @@ class TileScopeVerificationStrategy(VerificationStrategy):
                 "Need to define {}.VERIFICATION_CLASS".format(cls.__name__)
             )
 
-    @property
-    def pack(self, tiling: Tiling):
-        return self.VERIFICATION_CLASS(tiling).pack
+    def pack(self) -> StrategyPack:
+        return self.VERIFICATION_CLASS.pack
 
-    def verified(self, tiling: Tiling):
+    def verified(self, tiling: Tiling) -> bool:
         return self.VERIFICATION_CLASS(tiling).verified()
 
-    def formal_step(self):
-        return self.VERIFICATION_CLASS.formal_step
+    def formal_step(self) -> str:
+        return self.VERIFICATION_CLASS.formal_step()
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + "()"
@@ -125,10 +122,7 @@ class TileScopeVerificationStrategy(VerificationStrategy):
 
 class _OneByOneVerificationStrategy(TileScopeVerificationStrategy):
     def __init__(
-        self,
-        basis: Optional[Iterable[Perm]] = None,
-        symmetry: bool = False,
-        ignore_parent: bool = True,
+        self, basis: Iterable[Perm], symmetry: bool = False, ignore_parent: bool = True,
     ):
         self.basis = tuple(basis)
         self.symmetry = symmetry
@@ -136,8 +130,7 @@ class _OneByOneVerificationStrategy(TileScopeVerificationStrategy):
 
     VERIFICATION_CLASS = OneByOneEnumeration
 
-    @property
-    def pack(self):
+    def pack(self) -> StrategyPack:
         raise InvalidOperationError(
             "Cannot get a specification for one by one verification"
         )
@@ -170,17 +163,14 @@ class _OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         return "one by one verification"
 
     def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
+        d: dict = super().to_jsonable()
         d["basis"] = self.basis
         d["symmetry"] = self.symmetry
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "AllCellInsertionStrategy":
-        if d["basis"] is None:
-            basis = None
-        else:
-            basis = [Perm(p) for p in d["basis"]]
+    def from_dict(cls, d: dict) -> "_OneByOneVerificationStrategy":
+        basis = [Perm(p) for p in d["basis"]]
         return cls(
             basis=basis, symmetry=d["symmetry"], ignore_parent=d["ignore_parent"],
         )
@@ -194,7 +184,7 @@ class OneByOneVerificationStrategy(StrategyGenerator):
 
     def __call__(
         self, tiling: Tiling, children: Tuple[Tiling, ...] = None, **kwargs
-    ) -> "SpecificRule":
+    ) -> List[_OneByOneVerificationStrategy]:
         if "basis" not in kwargs:
             raise TypeError("Missing basis argument")
         basis = kwargs["basis"]  # type: Iterable[Perm]
@@ -205,19 +195,19 @@ class OneByOneVerificationStrategy(StrategyGenerator):
             )
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "one by one verification"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__class__.__name__ + "()"
 
     def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
+        d: dict = super().to_jsonable()
         d["ignore_parent"] = self.ignore_parent
         return d
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d) -> "OneByOneVerificationStrategy":
         return cls(ignore_parent=d["ignore_parent"])
 
 
@@ -226,8 +216,7 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
 
     VERIFICATION_CLASS = DatabaseEnumeration
 
-    @property
-    def pack(self):
+    def pack(self) -> StrategyPack:
         raise InvalidOperationError(
             "Cannot get a specification for database verification"
         )
@@ -237,7 +226,7 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
             "Cannot get a specification for database verification"
         )
 
-    def get_genf(self, tiling: Tiling):
+    def get_genf(self, tiling: Tiling) -> Expr:
         return self.VERIFICATION_CLASS(tiling).get_genf()
 
     def __str__(self) -> str:
@@ -254,8 +243,7 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
 
     VERIFICATION_CLASS = LocallyFactorableEnumeration
 
-    @property
-    def pack(self):
+    def pack(self) -> StrategyPack:
         raise NotImplementedError(
             "No pack for locally factorable verification strategy."
         )
@@ -272,8 +260,7 @@ class ElementaryVerificationStrategy(TileScopeVerificationStrategy):
 
     VERIFICATION_CLASS = ElementaryEnumeration
 
-    @property
-    def pack(self):
+    def pack(self) -> StrategyPack:
         raise InvalidOperationError("No pack for elementary verification strategy")
 
     def __str__(self) -> str:
@@ -290,8 +277,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
 
     VERIFICATION_CLASS = LocalEnumeration
 
-    @property
-    def pack(self):
+    def pack(self) -> StrategyPack:
         raise InvalidOperationError("Cannot get a specification for local verification")
 
     def get_specification(self, tiling: Tiling) -> CombinatorialSpecification:
@@ -308,8 +294,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
 
     VERIFICATION_CLASS = MonotoneTreeEnumeration
 
-    @property
-    def pack(self):
+    def pack(self) -> StrategyPack:
         raise InvalidOperationError(
             "Cannot get a specification for monotone tree verification"
         )
@@ -319,7 +304,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
             "Cannot get a specification for monotone tree verification"
         )
 
-    def get_genf(self, tiling: Tiling):
+    def get_genf(self, tiling: Tiling) -> Expr:
         return self.VERIFICATION_CLASS(tiling).get_genf()
 
     def __str__(self) -> str:

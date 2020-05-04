@@ -1,7 +1,12 @@
 from itertools import chain
 from typing import Iterable, Iterator, Optional, Tuple
 
-from comb_spec_searcher import CartesianProductStrategy, Strategy, StrategyGenerator
+from comb_spec_searcher import (
+    CartesianProductStrategy,
+    Constructor,
+    Strategy,
+    StrategyGenerator,
+)
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
@@ -36,7 +41,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
         """
         return tuple(tiling.sub_tiling(cells) for cells in self.partition)
 
-    def formal_step(self):
+    def formal_step(self) -> str:
         """
         Return a string that describe the operation performed on the tiling.
         """
@@ -81,10 +86,10 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
             for tiling, part in zip(children, self.partition)
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "factor"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__class__.__name__ + "(paritition={}, workable={})".format(
             self.partition, self.workable
         )
@@ -98,13 +103,13 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "Strategy":
+    def from_dict(cls, d: dict) -> "FactorStrategy":
         partition = tuple(tuple(tuple(c) for c in p) for p in d["partition"])
         return cls(partition=partition, workable=d["workable"])
 
 
 class FactorWithInterleavingStrategy(FactorStrategy):
-    def constructor(self, tiling: Tiling):
+    def constructor(self, tiling: Tiling) -> Constructor:
         raise NotImplementedError
 
     def backward_map(
@@ -125,7 +130,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
 
 
 class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
-    def constructor(self, tiling: Tiling):
+    def constructor(self, tiling: Tiling) -> Constructor:
         raise NotImplementedError
 
 

@@ -1,9 +1,9 @@
 from collections import defaultdict
 from itertools import chain, product
-from typing import Dict, FrozenSet, Iterable, Iterator, Optional, Tuple
+from typing import FrozenSet, Iterable, Iterator, Optional, Tuple
 import abc
 
-from comb_spec_searcher import DisjointUnionStrategy, Rule, Strategy, StrategyGenerator
+from comb_spec_searcher import DisjointUnionStrategy, Rule, StrategyGenerator
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
@@ -19,7 +19,7 @@ __all__ = [
 Cell = Tuple[int, int]
 
 
-class RequirementPlacementStrategy(DisjointUnionStrategy):
+class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling]):
     def __init__(
         self,
         gps: Tuple[GriddedPerm, ...],
@@ -82,7 +82,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
             self.indices, ", ".join(str(gp) for gp in self.gps),
         )
 
-    def backward_cell_map(self, placed_cell: Cell, cell: Cell) -> Dict[Cell, Cell]:
+    def backward_cell_map(self, placed_cell: Cell, cell: Cell) -> Cell:
         x, y = cell
         if x > placed_cell[0] + 1:
             x -= 2
@@ -111,7 +111,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
         if children is None:
             children = self.decomposition_function(tiling)
         idx = DisjointUnionStrategy.backward_map_index(gps)
-        gp = children[idx].backward_map(gps[idx])
+        gp: GriddedPerm = children[idx].backward_map(gps[idx])
         if self.include_empty:
             if idx == 0:
                 return gp
@@ -157,7 +157,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
 
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
-        d = super().to_jsonable()
+        d: dict = super().to_jsonable()
         d["gps"] = tuple(gp.to_jsonable() for gp in self.gps)
         d["indices"] = self.indices
         d["direction"] = self.direction
@@ -167,7 +167,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "ObstructionInferralStrategy":
+    def from_dict(cls, d: dict) -> "RequirementPlacementStrategy":
         gps = tuple(GriddedPerm.from_dict(gp) for gp in d["gps"])
         return cls(
             gps=gps,
@@ -212,12 +212,12 @@ class RequirementPlacementStrategyGenerator(StrategyGenerator):
         Iterator over all requirement lists, indices and directions to place.
         """
 
-    def req_placements(self, tiling: Tiling):
+    def req_placements(self, tiling: Tiling) -> Tuple[RequirementPlacement, ...]:
         """
         Return the RequiremntPlacement classes used to place the points.
         """
         if self.partial:
-            req_placements = (
+            req_placements: Tuple[RequirementPlacement, ...] = (
                 RequirementPlacement(tiling, own_row=False),
                 RequirementPlacement(tiling, own_col=False),
             )
@@ -249,7 +249,7 @@ class RequirementPlacementStrategyGenerator(StrategyGenerator):
                 yield strategy(tiling, children)
 
     def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
+        d: dict = super().to_jsonable()
         d["partial"] = self.partial
         d["ignore_parent"] = self.ignore_parent
         d["dirs"] = self.dirs
@@ -526,15 +526,13 @@ class RowAndColumnPlacementStrategy(RequirementPlacementStrategyGenerator):
         if self.place_col:
             col_dirs = tuple(d for d in self.dirs if d in (DIR_EAST, DIR_WEST))
             for gps, direction in zip(cols.values(), col_dirs):
-                gps = tuple(gps)
                 indices = tuple(0 for _ in gps)
-                yield gps, indices, direction
+                yield tuple(gps), indices, direction
         if self.place_row:
             row_dirs = tuple(d for d in self.dirs if d in (DIR_NORTH, DIR_SOUTH))
             for gps, direction in zip(rows.values(), row_dirs):
-                gps = tuple(gps)
                 indices = tuple(0 for _ in gps)
-                yield gps, indices, direction
+                yield tuple(gps), indices, direction
 
     def __str__(self) -> str:
         s = "{} placement"

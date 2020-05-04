@@ -1,14 +1,15 @@
 from functools import partial
-from typing import Optional, Tuple
+from typing import Iterator, Optional, Tuple
+import abc
+
 from comb_spec_searcher import StrategyGenerator, SymmetryStrategy
 from tilings import GriddedPerm, Tiling
-import abc
 
 
 __all__ = ("AllSymmetriesStrategy",)
 
 
-class TilingSymmetryStrategy(SymmetryStrategy):
+class TilingSymmetryStrategy(SymmetryStrategy[Tiling]):
     @abc.abstractmethod
     def gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         pass
@@ -49,11 +50,11 @@ class TilingSymmetryStrategy(SymmetryStrategy):
         """This function will enable us to have a quick membership test."""
         return (self.gp_transform(tiling, gp),)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__class__.__name__ + "()"
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d: dict) -> "TilingSymmetryStrategy":
         return cls()
 
 
@@ -221,8 +222,8 @@ class AllSymmetriesStrategy(StrategyGenerator):
     Yield all symmetry strategies for a tiling.
     """
 
-    def __call__(self, tiling: Tiling, **kwargs):
-        def strategy(rotations: int, inverse: bool):
+    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[TilingSymmetryStrategy]:
+        def strategy(rotations: int, inverse: bool) -> TilingSymmetryStrategy:
             if rotations == 0:
                 if inverse:
                     return TilingInverse()
@@ -262,5 +263,5 @@ class AllSymmetriesStrategy(StrategyGenerator):
         return self.__class__.__name__ + "()"
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d: dict) -> "AllSymmetriesStrategy":
         return cls()

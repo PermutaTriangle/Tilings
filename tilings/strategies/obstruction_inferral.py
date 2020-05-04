@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyGenerator
 from tilings import GriddedPerm, Tiling
@@ -7,7 +7,6 @@ from tilings.algorithms import (
     ObstructionTransitivity,
     SubobstructionInferral,
 )
-from tilings.exception import InvalidOperationError
 
 __all__ = [
     "EmptyCellInferralStrategy",
@@ -89,13 +88,13 @@ class AllObstructionInferralStrategy(StrategyGenerator):
         self.maxlen = maxlen
         super().__init__()
 
-    def new_obs(self, tiling: Tiling) -> Tuple[GriddedPerm]:
+    def new_obs(self, tiling: Tiling) -> List[GriddedPerm]:
         """
         Returns the list of new obstructions that can be added to the tiling.
         """
         return AllObstructionInferral(tiling, self.maxlen).new_obs()
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Tuple[Tiling]:
+    def __call__(self, tiling: Tiling, **kwargs) -> List[Tiling]:
         """
         Return a tuple of tiling. The first one avoids all the pattern in the
         list while the other contain one of the patterns in the list.
@@ -136,7 +135,7 @@ class SubobstructionInferralStrategy(AllObstructionInferralStrategy):
     def __init__(self):
         super().__init__(maxlen=None)
 
-    def new_obs(self, tiling: Tiling) -> Tuple[GriddedPerm]:
+    def new_obs(self, tiling: Tiling) -> List[GriddedPerm]:
         """
         Returns the list of new obstructions that can be added to the tiling.
         """
