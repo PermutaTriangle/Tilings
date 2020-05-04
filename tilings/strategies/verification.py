@@ -51,21 +51,19 @@ class BasicVerificationStrategy(VerificationStrategy[Tiling]):
             return x
         raise InvalidOperationError("Not an atom")
 
-    def count_objects_of_size(self, tiling: Tiling, **parameters: int) -> int:
+    def count_objects_of_size(self, tiling: Tiling, n: int, **parameters: int) -> int:
         """Verification strategies must contain a method to count the objects."""
-        if (parameters["n"] == 0 and tiling.is_epsilon()) or (
-            parameters["n"] == 1 and tiling.is_point_tiling()
-        ):
+        if (n == 0 and tiling.is_epsilon()) or (n == 1 and tiling.is_point_tiling()):
             return 1
         return 0
 
     def generate_objects_of_size(
-        self, tiling: Tiling, **parameters: int
+        self, tiling: Tiling, n: int, **parameters: int
     ) -> Iterator[GriddedPerm]:
         """Verification strategies must contain a method to generate the objects."""
-        if parameters["n"] == 0 and tiling.is_epsilon():
+        if n == 0 and tiling.is_epsilon():
             yield GriddedPerm.empty_perm()
-        elif parameters["n"] == 1 and tiling.is_point_tiling():
+        if n == 1 and tiling.is_point_tiling():
             yield GriddedPerm(Perm((0,)), ((0, 0),))
 
     def random_sample_object_of_size(
