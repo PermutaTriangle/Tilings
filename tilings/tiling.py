@@ -175,7 +175,7 @@ class Tiling(CombinatorialClass):
         new_obs = []
         for ob in self._obstructions:
             cell = ob.pos[0]
-            if not ob.is_point_obstr() or (
+            if not ob.is_point_perm() or (
                 cell[0] in col_mapping and cell[1] in row_mapping
             ):
                 new_obs.append(ob.apply_map(cell_map))
@@ -1117,7 +1117,7 @@ class Tiling(CombinatorialClass):
             return 0
         if len(self.requirements) == 1:
             return min(len(gp) for gp in self.requirements[0])
-        return len(next(self.minimal_gridded_perms()))  
+        return len(next(self.minimal_gridded_perms()))
 
     def is_point_or_empty(self) -> bool:
         point_or_empty_tiling = Tiling(
@@ -1196,7 +1196,7 @@ class Tiling(CombinatorialClass):
         """Returns a set of all cells that contain a point obstruction, i.e.,
         are empty.
         """
-        return frozenset(gp.pos[0] for gp in self.obstructions if gp.is_point_obstr())
+        return frozenset(gp.pos[0] for gp in self.obstructions if gp.is_point_perm())
 
     @property
     def active_cells(self) -> FrozenSet[Cell]:
@@ -1205,7 +1205,7 @@ class Tiling(CombinatorialClass):
         i.e., not empty.
         """
         no_point_obs = union_reduce(
-            ob.pos for ob in self._obstructions if not ob.is_point_obstr()
+            ob.pos for ob in self._obstructions if not ob.is_point_perm()
         )
         with_req = union_reduce(
             union_reduce(req.pos for req in reqs) for reqs in self._requirements

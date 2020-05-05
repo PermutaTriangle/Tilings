@@ -1,5 +1,8 @@
+import warnings
+
 from tilings.griddedperm import GriddedPerm
 
-
-class Requirement(GriddedPerm):
-    pass
+warnings.warn(
+    "Requirement is deprecated, just use GriddedPerm", category=DeprecationWarning
+)
+Requirement = GriddedPerm

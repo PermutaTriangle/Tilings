@@ -1,6 +1,9 @@
-from .griddedperm import GriddedPerm
+import warnings
 
+from tilings.griddedperm import GriddedPerm
 
-class Obstruction(GriddedPerm):
-    def is_point_obstr(self):
-        return super(Obstruction, self).is_point_perm()
+warnings.warn(
+    "Obstruction is deprecated, just use GriddedPerm", category=DeprecationWarning
+)
+
+Obstruction = GriddedPerm
