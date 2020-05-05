@@ -716,18 +716,6 @@ def test_formal_step(separable_tiling1):
     )
 
 
-def test_rule(separable_tiling1, not_separable_tilings):
-    rcs = RowColSeparation(separable_tiling1)
-    rule = rcs.rule()
-    assert isinstance(rule, Rule)
-    assert rule.comb_classes == [rcs.separated_tiling()]
-    assert rule.ignore_parent
-    assert rule.workable == [True]
-    assert rule.constructor == "equiv"
-    assert rule.possibly_empty == [False]
-    assert RowColSeparation(not_separable_tilings[0]).rule() is None
-
-
 def test_multiple_separation():
     """
     Test that the row column separation is idempotent. This tilings needs two

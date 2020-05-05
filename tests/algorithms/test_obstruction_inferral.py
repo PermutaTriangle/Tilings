@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from comb_spec_searcher import Rule
 from permuta import Perm
 from tilings import Obstruction, Requirement, Tiling
 from tilings.algorithms import (
@@ -83,16 +82,6 @@ class CommonTest(abc.ABC):
         assert obs_inf1.formal_step() == "Added the obstructions {}.".format(
             obs_inf1.new_obs()
         )
-
-    def test_rule(self, obs_inf1, obs_not_inf):
-        rule = obs_inf1.rule()
-        assert isinstance(rule, Rule)
-        assert rule.comb_classes == [obs_inf1.obstruction_inferral()]
-        assert rule.ignore_parent
-        assert rule.workable == [True]
-        assert rule.constructor == "equiv"
-        assert rule.possibly_empty == [False]
-        assert obs_not_inf.rule() is None
 
 
 class TestObstructionInferral(CommonTest):

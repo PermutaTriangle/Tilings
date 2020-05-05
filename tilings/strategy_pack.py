@@ -235,10 +235,10 @@ class TileScopePack(StrategyPack):
         cls, row_only=False, col_only=False
     ) -> "TileScopePack":
         pack = cls.row_and_col_placements(row_only, col_only)
-        pack.initial_strats.append(
+        pack.name = "insertion_" + pack.name
+        pack = pack.add_initial(
             strat.AllCellInsertionStrategy(maxreqlen=1, ignore_parent=True)
         )
-        pack.name = "insertion_" + pack.name
         return pack
 
     @classmethod

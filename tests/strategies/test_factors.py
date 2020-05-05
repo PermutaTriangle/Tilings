@@ -99,3 +99,78 @@ def test_factor_all_interleaving(diverse_tiling):
             ),
         ]
     )
+
+
+
+
+# ------------------------------------------------------------
+#       Test for all classes
+# ------------------------------------------------------------
+
+
+def test_formal_step(factor1, factor1_with_mon_int, factor1_with_int):
+    assert factor1.formal_step() == "The factors of the tiling."
+    assert (
+        factor1_with_int.formal_step() == "The factors with interleaving of the tiling."
+    )
+    assert (
+        factor1_with_mon_int.formal_step()
+        == "The factors with monotone interleaving of the tiling."
+    )
+    assert factor1.formal_step(union=True) == "The unions of factors of the tiling."
+    assert (
+        factor1_with_int.formal_step(union=True)
+        == "The unions of factors with interleaving of the tiling."
+    )
+    assert (
+        factor1_with_mon_int.formal_step(union=True)
+        == "The unions of factors with monotone interleaving of the tiling."
+    )
+
+
+def test_constructor(factor1, factor1_with_mon_int, factor1_with_int):
+    assert factor1.constructor == "cartesian"
+    assert factor1_with_int.constructor == "other"
+    assert factor1_with_mon_int.constructor == "other"
+
+
+def test_rule(factor1, factor1_with_mon_int, factor1_with_int, not_fact_tiling):
+    factor_objs = [factor1, factor1_with_mon_int, factor1_with_int]
+    assert all(fo.rule().formal_step == fo.formal_step() for fo in factor_objs)
+    assert all(not any(fo.rule().inferable) for fo in factor_objs)
+    assert all(len(fo.rule().inferable) == len(fo.factors()) for fo in factor_objs)
+    assert all(all(fo.rule().workable) for fo in factor_objs)
+    assert all(len(fo.rule().inferable) == len(fo.factors()) for fo in factor_objs)
+    assert all(not any(fo.rule(workable=False).workable) for fo in factor_objs)
+    assert all(
+        len(fo.rule(workable=False).workable) == len(fo.factors()) for fo in factor_objs
+    )
+    assert all(not any(fo.rule().possibly_empty) for fo in factor_objs)
+    assert all(len(fo.rule().possibly_empty) == len(fo.factors()) for fo in factor_objs)
+    assert all(fo.rule().ignore_parent for fo in factor_objs)
+    assert not any(fo.rule(workable=False).ignore_parent for fo in factor_objs)
+    assert all(fo.rule().constructor == fo.constructor for fo in factor_objs)
+
+    assert Factor(not_fact_tiling).rule() is None
+
+
+def test_all_union_rules():
+    t = Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0),) * 2),
+            Obstruction(Perm((0, 1)), ((1, 1),) * 2),
+            Obstruction(Perm((0, 1)), ((2, 2),) * 2),
+        ]
+    )
+    fo = Factor(t)
+    f2 = Tiling(obstructions=[Obstruction(Perm((0, 1)), ((0, 0),) * 2)])
+    assert all("unions" in rule.formal_step for rule in fo.all_union_rules())
+    # The full factorisation rule is not returned
+    assert all(rule.comb_classes != [f2, f2, f2] for rule in fo.all_union_rules())
+    # The tiling are marked as not workable by default
+    assert all(rule.workable == [False, False] for rule in fo.all_union_rules())
+    # The workable can be turned on for union of factor
+    assert all(
+        rule.workable == [True, True] for rule in fo.all_union_rules(workable=True)
+    )
+

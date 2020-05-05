@@ -323,18 +323,6 @@ class TestFusion:
             ],
         )
 
-    def test_formal_step(self, row_fusion, col_fusion):
-        assert row_fusion.formal_step() == "Fuse rows 0 and 1."
-        assert col_fusion.formal_step() == "Fuse columns 0 and 1."
-
-    def test_rule(self, row_fusion):
-        rule = row_fusion.rule()
-        assert rule.formal_step == row_fusion.formal_step()
-        assert rule.comb_classes == [row_fusion.fused_tiling()]
-        assert rule.inferable == [True]
-        assert rule.workable == [True]
-        assert rule.possibly_empty == [False]
-        assert rule.constructor == "other"
 
 
 class TestComponentFusion(TestFusion):

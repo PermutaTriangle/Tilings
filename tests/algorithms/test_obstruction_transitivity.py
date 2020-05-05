@@ -302,13 +302,3 @@ class TestObstructionTransitivity:
         )
         assert with_empty_inf_cell.obstruction_transitivity() == t
 
-    def test_rule(self, simple_trans_col, no_trans_col):
-        assert no_trans_col.rule() is None
-        rule = simple_trans_col.rule()
-        assert rule.formal_step == "Computing transitivity of inequalities."
-        assert rule.comb_classes == [simple_trans_col.obstruction_transitivity()]
-        assert rule.inferable == [True]
-        assert rule.possibly_empty == [False]
-        assert rule.workable == [True]
-        assert rule.ignore_parent is True
-        assert rule.constructor == "equiv"

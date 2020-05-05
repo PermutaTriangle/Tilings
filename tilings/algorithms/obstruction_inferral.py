@@ -55,15 +55,6 @@ class ObstructionInferral(abc.ABC):
         """ Return a string describing the operation performed. """
         return "Added the obstructions {}.".format(self.new_obs())
 
-    def rule(self):
-        """
-        Return a comb_spec_searcher Rule for the new tiling.
-
-        If no new obstruction is added, returns None.
-        """
-        if self.new_obs():
-            return InferralRule(self.formal_step(), self.obstruction_inferral())
-
 
 class SubobstructionInferral(ObstructionInferral):
     """

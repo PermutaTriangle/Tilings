@@ -423,51 +423,6 @@ def test_requirement_corroboration(
     )
 
 
-def test_row_placement():
-    t = Tiling.from_string("132")
-    row_placement = RowAndColumnPlacementStrategy(
-        place_col=False, place_row=True, partial=False
-    )
-    partial_row_placement = RowAndColumnPlacementStrategy(
-        place_col=False, place_row=True, partial=True
-    )
-    assert len(list(row_placement(t))) == 2
-    assert len(list(partial_row_placement(t))) == 2
-
-
-def test_col_placement():
-    t = Tiling.from_string("132")
-    col_placement = RowAndColumnPlacementStrategy(
-        place_col=True, place_row=False, partial=False
-    )
-    partial_col_placement = RowAndColumnPlacementStrategy(
-        place_col=True, place_row=False, partial=True
-    )
-    assert len(list(col_placement(t))) == 2
-    assert len(list(partial_col_placement(t))) == 2
-
-
-def test_row_col_placement():
-    t = Tiling.from_string("132")
-    cr_placement = RowAndColumnPlacementStrategy(
-        place_col=True, place_row=True, partial=False
-    )
-    partial_cr_placement = RowAndColumnPlacementStrategy(
-        place_col=True, place_row=True, partial=True
-    )
-    assert len(list(cr_placement(t))) == 4
-    assert len(list(partial_cr_placement(t))) == 4
-
-
-def test_all_placements():
-    t = Tiling(
-        obstructions=[Obstruction(Perm((0, 1)), ((0, 0),) * 2)],
-        requirements=[[Requirement(Perm((0,)), ((0, 0),))]],
-    )
-    rules = list(AllPlacementsStrategy()(t))
-    assert len(rules) == 24
-
-
 def test_root_insertion():
     t_2x2 = Tiling(
         obstructions=(
@@ -490,3 +445,72 @@ def test_root_insertion():
     for rule in rules:
         print(rule.comb_classes[1])
     assert len(rules) == 29
+
+
+def test_cell_insertion():
+    t1 = Tiling.from_string("123")
+    ci1 = CellInsertion(t1, maxreqlen=3)
+    assert set(ci1.req_lists_to_insert()) == set(
+        [
+            (Requirement.single_cell(Perm((0,)), (0, 0)),),
+            (Requirement.single_cell(Perm((0, 1)), (0, 0)),),
+            (Requirement.single_cell(Perm((1, 0)), (0, 0)),),
+            (Requirement.single_cell(Perm((0, 2, 1)), (0, 0)),),
+            (Requirement.single_cell(Perm((1, 0, 2)), (0, 0)),),
+            (Requirement.single_cell(Perm((1, 2, 0)), (0, 0)),),
+            (Requirement.single_cell(Perm((2, 0, 1)), (0, 0)),),
+            (Requirement.single_cell(Perm((2, 1, 0)), (0, 0)),),
+        ]
+    )
+    assert len(list(ci1.rules())) == 8
+    t2 = t1.add_single_cell_requirement(Perm((2, 1, 0)), (0, 0))
+    ci2 = CellInsertion(t2, maxreqlen=3)
+    assert set(ci2.req_lists_to_insert()) == set(
+        [
+            (Requirement.single_cell(Perm((0, 1)), (0, 0)),),
+            (Requirement.single_cell(Perm((0, 2, 1)), (0, 0)),),
+            (Requirement.single_cell(Perm((1, 0, 2)), (0, 0)),),
+            (Requirement.single_cell(Perm((1, 2, 0)), (0, 0)),),
+            (Requirement.single_cell(Perm((2, 0, 1)), (0, 0)),),
+        ]
+    )
+    assert len(list(ci2.rules())) == 5
+    ci3 = CellInsertion(t1, maxreqlen=3, extra_basis=[Perm((0, 2, 1))])
+    assert set(ci3.req_lists_to_insert()) == set(
+        [
+            (Requirement.single_cell(Perm((0,)), (0, 0)),),
+            (Requirement.single_cell(Perm((0, 1)), (0, 0)),),
+            (Requirement.single_cell(Perm((1, 0)), (0, 0)),),
+            (Requirement.single_cell(Perm((1, 0, 2)), (0, 0)),),
+            (Requirement.single_cell(Perm((1, 2, 0)), (0, 0)),),
+            (Requirement.single_cell(Perm((2, 0, 1)), (0, 0)),),
+            (Requirement.single_cell(Perm((2, 1, 0)), (0, 0)),),
+        ]
+    )
+    assert len(list(ci3.rules())) == 7
+
+
+def test_crossing_insertion():
+    t = Tiling(
+        obstructions=[
+            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
+            Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
+            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+        ],
+        requirements=[[Requirement(Perm((0,)), ((0, 0),))]],
+    )
+    ci = CrossingInsertion(t, maxreqlen=2)
+    assert set(ci.req_lists_to_insert()) == set(
+        [
+            (Requirement(Perm((0,)), ((0, 0),)),),
+            (Requirement(Perm((0,)), ((1, 0),)),),
+            (Requirement(Perm((1, 0)), ((0, 0), (0, 0))),),
+            (Requirement(Perm((1, 0)), ((1, 0), (1, 0))),),
+            (Requirement(Perm((1, 0)), ((0, 0), (1, 0))),),
+        ]
+    )
+    assert len(list(ci.rules())) == 5
+    ci2 = CrossingInsertion(t, maxreqlen=3)
+    assert len(list(ci2.rules())) == 9
+    ci3 = CrossingInsertion(t, maxreqlen=3, extra_basis=[Perm((2, 1, 0))])
+    assert len(list(ci3.rules())) == 5

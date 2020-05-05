@@ -35,11 +35,11 @@ not_all_sym.symmetries.append(Tiling.inverse)
 not_all_sym.symmetries.append(Tiling.reverse)
 pack = [
     TileScopePack.all_the_strategies(),
-    TileScopePack.all_the_strategies().make_fusion(),
+    # TileScopePack.all_the_strategies().make_fusion(),
     TileScopePack.all_the_strategies().make_database(),
     TileScopePack.all_the_strategies().make_elementary(),
     TileScopePack.all_the_strategies().add_symmetry(),
-    (TileScopePack.all_the_strategies().make_fusion().add_symmetry().make_database()),
+    # (TileScopePack.all_the_strategies().make_fusion().add_symmetry().make_database()),
     TileScopePack.point_placements(),
     TileScopePack.pattern_placements(3),
     TileScopePack.insertion_point_placements(),

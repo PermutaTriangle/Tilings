@@ -3,34 +3,34 @@ import json
 import pytest
 
 from permuta import Perm
-from tilings.strategies.abstract_strategy import Strategy
-from tilings.strategies.batch import (
+from comb_spec_searcher import Strategy
+from tilings.strategies import (
+    AllCellInsertionStrategy,
     AllCellInsertionStrategy,
     AllFactorInsertionStrategy,
+    AllFactorStrategy,
+    AllObstructionInferralStrategy,
     AllPlacementsStrategy,
     AllRequirementExtensionStrategy,
     AllRequirementInsertionStrategy,
-    RequirementCorroborationStrategy,
-    RootInsertionStrategy,
-    RowAndColumnPlacementStrategy,
-)
-from tilings.strategies.decomposition import FactorStrategy
-from tilings.strategies.equivalence import RequirementPlacementStrategy
-from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
-from tilings.strategies.inferral import (
-    EmptyCellInferralStrategy,
-    ObstructionTransitivityStrategy,
-    RowColumnSeparationStrategy,
-    SubobstructionInferralStrategy,
-)
-from tilings.strategies.verification import (
+    AllRequirementPlacementStrategy,
+    AllSymmetriesStrategy,
     BasicVerificationStrategy,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
+    EmptyCellInferralStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
+    ObstructionTransitivityStrategy,
     OneByOneVerificationStrategy,
+    PatternPlacementStrategy,
+    RequirementCorroborationStrategy,
+    RequirementInsertionStrategy,
+    RootInsertionStrategy,
+    RowAndColumnPlacementStrategy,
+    RowColumnSeparationStrategy,
+    SubobstructionInferralStrategy,
 )
 
 
@@ -84,13 +84,13 @@ strategy_objects = [
     RowColumnSeparationStrategy(),
     SubobstructionInferralStrategy(),
     # Decomposition strategies
-    FactorStrategy(),
-    FactorStrategy(interleaving="all"),
-    FactorStrategy(interleaving="monotone", union=True),
-    FactorStrategy(interleaving=None, union=True, workable=False),
-    # Fusion strategies
-    FusionStrategy(),
-    ComponentFusionStrategy(),
+    AllFactorStrategy(),
+    AllFactorStrategy(interleaving="all"),
+    AllFactorStrategy(interleaving="monotone", unions=True),
+    AllFactorStrategy(interleaving=None, unions=True, workable=False),
+    # # Fusion strategies
+    # FusionStrategy(),
+    # ComponentFusionStrategy(),
     # Verification strategies
     BasicVerificationStrategy(),
     DatabaseVerificationStrategy(),
@@ -100,14 +100,14 @@ strategy_objects = [
     MonotoneTreeVerificationStrategy(),
     OneByOneVerificationStrategy(),
     # Equivalent Strategy
-    RequirementPlacementStrategy(),
-    RequirementPlacementStrategy(ignore_parent=True),
-    RequirementPlacementStrategy(ignore_parent=False),
-    RequirementPlacementStrategy(point_only=True),
-    RequirementPlacementStrategy(point_only=False),
-    RequirementPlacementStrategy(partial=True),
-    RequirementPlacementStrategy(partial=False),
-    RequirementPlacementStrategy(dirs=[1, 3, 0]),
+    PatternPlacementStrategy(),
+    PatternPlacementStrategy(ignore_parent=True),
+    PatternPlacementStrategy(ignore_parent=False),
+    PatternPlacementStrategy(point_only=True),
+    PatternPlacementStrategy(point_only=False),
+    PatternPlacementStrategy(partial=True),
+    PatternPlacementStrategy(partial=False),
+    PatternPlacementStrategy(dirs=[1, 3, 0]),
 ]
 
 
