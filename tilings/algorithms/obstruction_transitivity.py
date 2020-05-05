@@ -3,7 +3,7 @@ from itertools import chain, product
 from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Set, Tuple
 
 from permuta import Perm
-from tilings import Obstruction
+from tilings import GriddedPerm
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -111,7 +111,7 @@ class ObstructionTransitivity:
                     self._rowineq[leftrow].add((leftcol, rightcol))
 
     @staticmethod
-    def ineq_ob(ineq) -> Obstruction:
+    def ineq_ob(ineq) -> GriddedPerm:
         """
         Given an inequality of cells compute an obstruction.
 
@@ -120,17 +120,17 @@ class ObstructionTransitivity:
         """
         left, right = ineq
         if left == right:
-            return Obstruction(Perm((0,)), (left,))
+            return GriddedPerm(Perm((0,)), (left,))
         if left[0] == right[0]:
             # same column
             if left[1] < right[1]:
-                return Obstruction(Perm((1, 0)), [right, left])
-            return Obstruction(Perm((0, 1)), [right, left])
+                return GriddedPerm(Perm((1, 0)), [right, left])
+            return GriddedPerm(Perm((0, 1)), [right, left])
         if left[1] == right[1]:
             # same row
             if left[0] < right[0]:
-                return Obstruction(Perm((1, 0)), [left, right])
-            return Obstruction(Perm((0, 1)), [right, left])
+                return GriddedPerm(Perm((1, 0)), [left, right])
+            return GriddedPerm(Perm((0, 1)), [right, left])
         raise ValueError(
             ("Can not construct an obstruction from inequality {} < {}").format(
                 left, right
@@ -195,7 +195,7 @@ class ObstructionTransitivity:
         self._new_ineq = newineqs
         return self._new_ineq
 
-    def new_obs(self) -> Tuple[Obstruction, ...]:
+    def new_obs(self) -> Tuple[GriddedPerm, ...]:
         """Return the obstructions that are implied by the method."""
         return tuple(map(self.ineq_ob, self.new_ineq()))
 

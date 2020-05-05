@@ -7,7 +7,7 @@ from comb_spec_searcher import StrategyPack
 from comb_spec_searcher.strategies.rule import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
-from tilings import Obstruction, Requirement, Tiling
+from tilings import GriddedPerm, Requirement, Tiling
 from tilings.algorithms import (
     BasicEnumeration,
     DatabaseEnumeration,
@@ -119,9 +119,9 @@ class TestLocallyFactorableEnumeration(CommonTest):
     def enum_not_verified(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
-                Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-                Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
             ]
         )
         return LocallyFactorableEnumeration(t)
@@ -130,10 +130,10 @@ class TestLocallyFactorableEnumeration(CommonTest):
     def enum_verified(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0), (1, 1))),
-                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
-                Obstruction(Perm((0, 1)), ((0, 1),) * 2),
-                Obstruction(Perm((0, 1)), ((1, 1),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
+                GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
             ]
         )
         return LocallyFactorableEnumeration(t)
@@ -142,9 +142,9 @@ class TestLocallyFactorableEnumeration(CommonTest):
     def enum_with_tautology(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((1, 1),) * 3),
-                Obstruction(Perm((0, 1)), ((0, 0), (1, 1))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
             ]
         )
         return LocallyFactorableEnumeration(t)
@@ -175,8 +175,8 @@ class TestLocallyFactorableEnumeration(CommonTest):
         assert enum_verified._locally_factorable_requirements()
         t1 = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
-                Obstruction(Perm((0, 1)), ((1, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
             ],
             requirements=[
                 [Requirement(Perm((0, 1)), ((0, 0), (1, 0)))],
@@ -187,8 +187,8 @@ class TestLocallyFactorableEnumeration(CommonTest):
         assert not (enum_with_not_loc_fact_reqs._locally_factorable_requirements())
         t2 = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
-                Obstruction(Perm((0, 1)), ((1, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
             ],
             requirements=[
                 [Requirement(Perm((1, 0)), ((1, 0), (1, 0)))],
@@ -216,10 +216,10 @@ class TestLocalEnumeration(CommonTest):
     def enum_verified(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
-                Obstruction(Perm((0, 2, 1)), ((1, 0),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((1, 0),) * 3),
-                Obstruction(Perm((0, 1)), ((1, 1),) * 2),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+                GriddedPerm(Perm((0, 2, 1)), ((1, 0),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
+                GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
             ],
             requirements=[
                 [
@@ -234,11 +234,11 @@ class TestLocalEnumeration(CommonTest):
     def enum_not_verified(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
-                Obstruction(Perm((0, 2, 1)), ((1, 0),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((1, 0),) * 3),
-                Obstruction(Perm((0, 1)), ((1, 1),) * 2),
-                Obstruction(Perm((0, 1)), ((0, 0), (1, 1))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+                GriddedPerm(Perm((0, 2, 1)), ((1, 0),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
+                GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
             ],
             requirements=[
                 [
@@ -257,10 +257,10 @@ class TestLocalEnumeration(CommonTest):
     def enum_no_req(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
-                Obstruction(Perm((0, 2, 1)), ((1, 0),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((1, 0),) * 3),
-                Obstruction(Perm((0, 1)), ((1, 1),) * 2),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+                GriddedPerm(Perm((0, 2, 1)), ((1, 0),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
+                GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
             ],
             requirements=[
                 [
@@ -305,11 +305,11 @@ class TestMonotoneTreeEnumeration(CommonTest):
     def enum_verified(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
-                Obstruction(Perm((0, 1)), ((0, 1),) * 2),
-                Obstruction(Perm((0, 1)), ((0, 2),) * 2),
-                Obstruction(Perm((0, 1)), ((2, 0),) * 2),
-                Obstruction(Perm((0, 1, 2)), ((1, 1),) * 3),
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 2),) * 2),
+                GriddedPerm(Perm((0, 1)), ((2, 0),) * 2),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
             ]
         )
         return MonotoneTreeEnumeration(t)
@@ -318,12 +318,12 @@ class TestMonotoneTreeEnumeration(CommonTest):
     def enum_not_verified(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
-                Obstruction(Perm((0, 1)), ((0, 1),) * 2),
-                Obstruction(Perm((0, 1)), ((0, 2),) * 2),
-                Obstruction(Perm((0, 1)), ((2, 0),) * 2),
-                Obstruction(Perm((0, 1)), ((2, 2),) * 2),
-                Obstruction(Perm((0, 1, 2)), ((1, 1),) * 3),
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 2),) * 2),
+                GriddedPerm(Perm((0, 1)), ((2, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((2, 2),) * 2),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
             ]
         )
         return MonotoneTreeEnumeration(t)
@@ -332,8 +332,8 @@ class TestMonotoneTreeEnumeration(CommonTest):
     def enum_with_list_req(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-                Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
             ],
             requirements=[
                 [
@@ -352,12 +352,12 @@ class TestMonotoneTreeEnumeration(CommonTest):
     def enum_with_crossing(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
-                Obstruction(Perm((0, 1)), ((0, 1),) * 2),
-                Obstruction(Perm((0, 1)), ((0, 2),) * 2),
-                Obstruction(Perm((0, 1)), ((2, 0),) * 2),
-                Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
-                Obstruction(Perm((0, 1, 2)), ((1, 1),) * 3),
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 2),) * 2),
+                GriddedPerm(Perm((0, 1)), ((2, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
             ]
         )
         return MonotoneTreeEnumeration(t)
@@ -383,12 +383,12 @@ class TestMonotoneTreeEnumeration(CommonTest):
         assert not onebyone_enum.verified()
         forest_tiling = Tiling(
             obstructions=[
-                Obstruction(Perm((0,)), ((0, 0),)),
-                Obstruction(Perm((0,)), ((1, 1),)),
-                Obstruction(Perm((0,)), ((2, 1),)),
-                Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-                Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-                Obstruction(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 1))),
+                GriddedPerm(Perm((0,)), ((0, 0),)),
+                GriddedPerm(Perm((0,)), ((1, 1),)),
+                GriddedPerm(Perm((0,)), ((2, 1),)),
+                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 1))),
             ],
             requirements=[[Requirement(Perm((0,)), ((0, 1),))]],
         )
@@ -406,8 +406,8 @@ class TestMonotoneTreeEnumeration(CommonTest):
         assert sympy.simplify(enum_verified.get_genf() - expected_gf) == 0
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
-                Obstruction(Perm((0, 1)), ((1, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
             ]
         )
         enum_no_start = MonotoneTreeEnumeration(t)
@@ -427,8 +427,8 @@ class TestMonotoneTreeEnumeration(CommonTest):
     def test_get_genf_simple(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
-                Obstruction(Perm((1, 0)), ((1, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((1, 0)), ((1, 0),) * 2),
             ]
         )
         enum = MonotoneTreeEnumeration(t)
@@ -439,10 +439,10 @@ class TestMonotoneTreeEnumeration(CommonTest):
     def test_with_finite_monotone_cell(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
-                Obstruction(Perm((1, 0)), ((0, 0),) * 2),
-                Obstruction(Perm((0, 1)), ((1, 0),) * 2),
-                Obstruction(Perm((1, 0)), ((1, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((1, 0)), ((0, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
+                GriddedPerm(Perm((1, 0)), ((1, 0),) * 2),
             ]
         )
         enum = MonotoneTreeEnumeration(t)
@@ -453,10 +453,10 @@ class TestMonotoneTreeEnumeration(CommonTest):
     def test_with_finite_monotone_cell2(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
-                Obstruction(Perm((1, 0)), ((0, 1),) * 2),
-                Obstruction(Perm((0, 1)), ((0, 1),) * 2),
-                Obstruction(Perm((1, 0)), ((1, 1),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((1, 0)), ((0, 1),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
+                GriddedPerm(Perm((1, 0)), ((1, 1),) * 2),
             ]
         )
         enum = MonotoneTreeEnumeration(t)
@@ -519,8 +519,8 @@ class TestMonotoneTreeEnumeration(CommonTest):
     def test_genf_with_req(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
-                Obstruction(Perm((0, 1)), ((1, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
             ],
             requirements=[
                 [Requirement(Perm((1, 0)), ((0, 0),) * 2)],
@@ -537,10 +537,10 @@ class TestMonotoneTreeEnumeration(CommonTest):
     def test_genf_with_big_finite_cell(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((0, 0),) * 2),
-                Obstruction(Perm((0, 1)), ((1, 0),) * 2),
-                Obstruction(Perm((3, 2, 1, 0)), ((0, 0),) * 4),
-                Obstruction(Perm((3, 2, 1, 0)), ((1, 0),) * 4),
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
+                GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0),) * 4),
+                GriddedPerm(Perm((3, 2, 1, 0)), ((1, 0),) * 4),
             ]
         )
         enum = MonotoneTreeEnumeration(t)
@@ -565,10 +565,10 @@ class TestElementaryEnumeration(CommonTest):
     def enum_verified(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1, 2)), ((0, 1),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((1, 2),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((2, 0),) * 3),
-                Obstruction(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((2, 0),) * 3),
+                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
             ]
         )
         return ElementaryEnumeration(t)
@@ -577,10 +577,10 @@ class TestElementaryEnumeration(CommonTest):
     def enum_not_verified(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1, 2)), ((0, 1),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((1, 2),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((1, 0),) * 3),
-                Obstruction(Perm((1, 2, 0)), ((0, 1), (1, 2), (1, 0))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
+                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (1, 0))),
             ]
         )
         return ElementaryEnumeration(t)
@@ -594,9 +594,9 @@ class TestElementaryEnumeration(CommonTest):
     def enum_with_interleaving(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1, 2)), ((0, 1),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((1, 2),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((1, 0),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
             ]
         )
         return ElementaryEnumeration(t)
@@ -605,10 +605,10 @@ class TestElementaryEnumeration(CommonTest):
     def enum_with_req(self):
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1, 2)), ((0, 1),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((1, 2),) * 3),
-                Obstruction(Perm((0, 1, 2)), ((2, 0),) * 3),
-                Obstruction(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((2, 0),) * 3),
+                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
             ],
             requirements=[
                 [Requirement(Perm((0,)), ((0, 1),))],

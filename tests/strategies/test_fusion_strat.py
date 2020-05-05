@@ -2,7 +2,7 @@ import pytest
 
 from comb_spec_searcher import Rule
 from permuta import Perm
-from tilings import Obstruction, Tiling
+from tilings import GriddedPerm, Tiling
 from tilings.strategies import ComponentFusionStrategy, FusionStrategy
 
 
@@ -10,15 +10,15 @@ from tilings.strategies import ComponentFusionStrategy, FusionStrategy
 # def tiling1():
 #     t = Tiling(
 #         obstructions=[
-#             Obstruction(Perm((1, 0)), ((0, 1), (1, 1))),
-#             Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-#             Obstruction(Perm((1, 0)), ((0, 1), (1, 0))),
-#             Obstruction(Perm((1, 0)), ((0, 1), (0, 0))),
-#             Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-#             Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
-#             Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
-#             Obstruction(Perm((1, 0)), ((1, 1), (1, 0))),
-#             Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
+#             GriddedPerm(Perm((1, 0)), ((0, 1), (1, 1))),
+#             GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+#             GriddedPerm(Perm((1, 0)), ((0, 1), (1, 0))),
+#             GriddedPerm(Perm((1, 0)), ((0, 1), (0, 0))),
+#             GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+#             GriddedPerm(Perm((1, 0)), ((0, 0), (1, 0))),
+#             GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+#             GriddedPerm(Perm((1, 0)), ((1, 1), (1, 0))),
+#             GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
 #         ]
 #     )
 #     return t
@@ -28,14 +28,14 @@ from tilings.strategies import ComponentFusionStrategy, FusionStrategy
 # def tiling2():
 #     t = Tiling(
 #         obstructions=[
-#             Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-#             Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
-#             Obstruction(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
-#             Obstruction(Perm((0, 2, 1, 3)), ((0, 0), (0, 0), (2, 0), (2, 0))),
-#             Obstruction(Perm((0, 2, 1, 3)), ((0, 0), (2, 0), (2, 0), (2, 0))),
-#             Obstruction(Perm((0, 2, 1, 3)), ((1, 0), (1, 0), (2, 0), (2, 0))),
-#             Obstruction(Perm((0, 2, 1, 3)), ((1, 0), (2, 0), (2, 0), (2, 0))),
-#             Obstruction(Perm((0, 2, 1, 3)), ((2, 0), (2, 0), (2, 0), (2, 0))),
+#             GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+#             GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
+#             GriddedPerm(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
+#             GriddedPerm(Perm((0, 2, 1, 3)), ((0, 0), (0, 0), (2, 0), (2, 0))),
+#             GriddedPerm(Perm((0, 2, 1, 3)), ((0, 0), (2, 0), (2, 0), (2, 0))),
+#             GriddedPerm(Perm((0, 2, 1, 3)), ((1, 0), (1, 0), (2, 0), (2, 0))),
+#             GriddedPerm(Perm((0, 2, 1, 3)), ((1, 0), (2, 0), (2, 0), (2, 0))),
+#             GriddedPerm(Perm((0, 2, 1, 3)), ((2, 0), (2, 0), (2, 0), (2, 0))),
 #         ]
 #     )
 #     return t
@@ -50,15 +50,15 @@ from tilings.strategies import ComponentFusionStrategy, FusionStrategy
 # def small_tiling():
 #     t = Tiling(
 #         obstructions=[
-#             Obstruction(Perm((1, 0)), ((0, 1), (1, 1))),
-#             Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-#             Obstruction(Perm((1, 0)), ((0, 1), (1, 0))),
-#             Obstruction(Perm((1, 0)), ((0, 1), (0, 0))),
-#             Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-#             Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
-#             Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
-#             Obstruction(Perm((1, 0)), ((1, 1), (1, 0))),
-#             Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
+#             GriddedPerm(Perm((1, 0)), ((0, 1), (1, 1))),
+#             GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+#             GriddedPerm(Perm((1, 0)), ((0, 1), (1, 0))),
+#             GriddedPerm(Perm((1, 0)), ((0, 1), (0, 0))),
+#             GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+#             GriddedPerm(Perm((1, 0)), ((0, 0), (1, 0))),
+#             GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+#             GriddedPerm(Perm((1, 0)), ((1, 1), (1, 0))),
+#             GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
 #         ]
 #     )
 #     return t
@@ -69,30 +69,30 @@ from tilings.strategies import ComponentFusionStrategy, FusionStrategy
 #     """ The original tiling from Jay's idea """
 #     t = Tiling(
 #         obstructions=(
-#             Obstruction(Perm((0,)), ((0, 1),)),
-#             Obstruction(Perm((0,)), ((0, 2),)),
-#             Obstruction(Perm((0,)), ((0, 3),)),
-#             Obstruction(Perm((0,)), ((1, 2),)),
-#             Obstruction(Perm((0,)), ((1, 3),)),
-#             Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-#             Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
-#             Obstruction(Perm((1, 0)), ((0, 0), (2, 0))),
-#             Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
-#             Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
-#             Obstruction(Perm((1, 0)), ((1, 1), (1, 0))),
-#             Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
-#             Obstruction(Perm((1, 0)), ((1, 1), (2, 0))),
-#             Obstruction(Perm((1, 0)), ((1, 1), (2, 1))),
-#             Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
-#             Obstruction(Perm((1, 0)), ((2, 1), (2, 0))),
-#             Obstruction(Perm((1, 0)), ((2, 1), (2, 1))),
-#             Obstruction(Perm((1, 0)), ((2, 2), (2, 0))),
-#             Obstruction(Perm((1, 0)), ((2, 2), (2, 1))),
-#             Obstruction(Perm((1, 0)), ((2, 2), (2, 2))),
-#             Obstruction(Perm((2, 1, 0)), ((2, 3), (2, 3), (2, 0))),
-#             Obstruction(Perm((2, 1, 0)), ((2, 3), (2, 3), (2, 1))),
-#             Obstruction(Perm((2, 1, 0)), ((2, 3), (2, 3), (2, 2))),
-#             Obstruction(Perm((2, 1, 0)), ((2, 3), (2, 3), (2, 3))),
+#             GriddedPerm(Perm((0,)), ((0, 1),)),
+#             GriddedPerm(Perm((0,)), ((0, 2),)),
+#             GriddedPerm(Perm((0,)), ((0, 3),)),
+#             GriddedPerm(Perm((0,)), ((1, 2),)),
+#             GriddedPerm(Perm((0,)), ((1, 3),)),
+#             GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+#             GriddedPerm(Perm((1, 0)), ((0, 0), (1, 0))),
+#             GriddedPerm(Perm((1, 0)), ((0, 0), (2, 0))),
+#             GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+#             GriddedPerm(Perm((1, 0)), ((1, 0), (2, 0))),
+#             GriddedPerm(Perm((1, 0)), ((1, 1), (1, 0))),
+#             GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+#             GriddedPerm(Perm((1, 0)), ((1, 1), (2, 0))),
+#             GriddedPerm(Perm((1, 0)), ((1, 1), (2, 1))),
+#             GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+#             GriddedPerm(Perm((1, 0)), ((2, 1), (2, 0))),
+#             GriddedPerm(Perm((1, 0)), ((2, 1), (2, 1))),
+#             GriddedPerm(Perm((1, 0)), ((2, 2), (2, 0))),
+#             GriddedPerm(Perm((1, 0)), ((2, 2), (2, 1))),
+#             GriddedPerm(Perm((1, 0)), ((2, 2), (2, 2))),
+#             GriddedPerm(Perm((2, 1, 0)), ((2, 3), (2, 3), (2, 0))),
+#             GriddedPerm(Perm((2, 1, 0)), ((2, 3), (2, 3), (2, 1))),
+#             GriddedPerm(Perm((2, 1, 0)), ((2, 3), (2, 3), (2, 2))),
+#             GriddedPerm(Perm((2, 1, 0)), ((2, 3), (2, 3), (2, 3))),
 #         ),
 #         requirements=(),
 #     )
@@ -107,9 +107,9 @@ from tilings.strategies import ComponentFusionStrategy, FusionStrategy
 #     assert all(rule.constructor == "other" for rule in small_tiling_rules)
 #     t = Tiling(
 #         obstructions=[
-#             Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-#             Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-#             Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+#             GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+#             GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+#             GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
 #         ]
 #     )
 #     t_rules = list(FusionStrategy()(t))

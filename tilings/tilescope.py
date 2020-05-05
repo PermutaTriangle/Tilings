@@ -9,7 +9,7 @@ from comb_spec_searcher.equiv_db import EquivalenceDB
 from comb_spec_searcher.rule_db import RuleDB
 from permuta import Perm
 from permuta.descriptors import Basis
-from tilings import Obstruction, Tiling
+from tilings import GriddedPerm, Tiling
 from comb_spec_searcher import Strategy, StrategyGenerator
 from tilings.strategy_pack import TileScopePack
 
@@ -43,7 +43,7 @@ class TileScope(CombinatorialSpecificationSearcher):
                 basis = []
         if not isinstance(start_class, Tiling):
             start_tiling = Tiling(
-                obstructions=[Obstruction.single_cell(patt, (0, 0)) for patt in basis]
+                obstructions=[GriddedPerm.single_cell(patt, (0, 0)) for patt in basis]
             )
         function_kwargs = {"basis": basis}
         super().__init__(

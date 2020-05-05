@@ -3,7 +3,7 @@ from itertools import chain, combinations
 from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from permuta.misc import UnionFind
-from tilings import Obstruction, Requirement
+from tilings import GriddedPerm, Requirement
 from tilings.misc import partitions_iterator
 
 if TYPE_CHECKING:
@@ -30,7 +30,7 @@ class Factor:
         self._cell_unionfind = UnionFind(nrow * ncol)
         self._components: Optional[Tuple[Set[Cell], ...]] = None
         self._factors_obs_and_reqs: Optional[
-            List[Tuple[Tuple[Obstruction, ...], Tuple[ReqList, ...]]]
+            List[Tuple[Tuple[GriddedPerm, ...], Tuple[ReqList, ...]]]
         ] = None
 
     def _cell_to_int(self, cell: Cell) -> int:
@@ -120,7 +120,7 @@ class Factor:
 
     def _get_factors_obs_and_reqs(
         self,
-    ) -> List[Tuple[Tuple[Obstruction, ...], Tuple[ReqList, ...]]]:
+    ) -> List[Tuple[Tuple[GriddedPerm, ...], Tuple[ReqList, ...]]]:
         """
         Returns a list of all the irreducible factors of the tiling.
         Each factor is a tuple (obstructions, requirements)

@@ -5,7 +5,7 @@ import pytest
 import sympy
 
 from permuta import Perm
-from tilings import GriddedPerm, Obstruction, Requirement, Tiling
+from tilings import GriddedPerm, Requirement, Tiling
 from tilings.exception import InvalidOperationError
 
 
@@ -15,29 +15,29 @@ def compresstil():
     testing compression and json."""
     return Tiling(
         obstructions=(
-            Obstruction(Perm((0,)), ((1, 0),)),
-            Obstruction(Perm((0,)), ((2, 1),)),
-            Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
-            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-            Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
-            Obstruction(Perm((1, 0)), ((1, 1), (2, 0))),
-            Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 1))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 1), (0, 1))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 1), (1, 1))),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (2, 0))),
-            Obstruction(Perm((1, 0, 2)), ((0, 1), (0, 0), (1, 1))),
-            Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 1), (0, 1), (0, 1))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 1), (0, 1), (1, 1))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 1), (0, 1), (0, 1))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 1), (0, 1), (1, 1))),
-            Obstruction(Perm((0, 2, 3, 1)), ((0, 1), (0, 1), (0, 1), (0, 1))),
-            Obstruction(Perm((0, 2, 3, 1)), ((0, 1), (0, 1), (0, 1), (1, 1))),
-            Obstruction(Perm((2, 0, 1, 3)), ((0, 1), (0, 1), (0, 1), (0, 1))),
-            Obstruction(Perm((2, 0, 1, 3)), ((0, 1), (0, 1), (0, 1), (1, 1))),
+            GriddedPerm(Perm((0,)), ((1, 0),)),
+            GriddedPerm(Perm((0,)), ((2, 1),)),
+            GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+            GriddedPerm(Perm((1, 0)), ((1, 1), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 1))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 1), (1, 1))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0, 2)), ((0, 1), (0, 0), (1, 1))),
+            GriddedPerm(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 1), (0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 1), (0, 1), (0, 1), (1, 1))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 1), (0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 1), (0, 1), (0, 1), (1, 1))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 1), (0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 1), (0, 1), (0, 1), (1, 1))),
+            GriddedPerm(Perm((2, 0, 1, 3)), ((0, 1), (0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((2, 0, 1, 3)), ((0, 1), (0, 1), (0, 1), (1, 1))),
         ),
         requirements=(
             (Requirement(Perm((0,)), ((1, 1),)), Requirement(Perm((0,)), ((2, 0),))),
@@ -50,8 +50,8 @@ def compresstil():
 def empty_tiling():
     return Tiling(
         obstructions=(
-            Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
-            Obstruction(Perm((1, 0)), ((0, 1), (0, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
+            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 0))),
         ),
         requirements=(
             (Requirement(Perm((0,)), ((0, 0),)),),
@@ -64,11 +64,11 @@ def empty_tiling():
 def finite_tiling():
     return Tiling(
         obstructions=(
-            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-            Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-            Obstruction(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((2, 1, 0)), ((0, 1), (0, 1), (0, 1))),
-            Obstruction(Perm((3, 2, 1, 0)), ((0, 1), (0, 1), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 1), (0, 1), (0, 0), (0, 0))),
         ),
         requirements=((Requirement(Perm((0,)), ((0, 0),)),),),
     )
@@ -78,18 +78,18 @@ def finite_tiling():
 def factorable_tiling():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
-            Obstruction(Perm((2, 1, 0)), ((2, 2), (2, 2), (2, 2))),
-            Obstruction(Perm((2, 0, 1)), ((2, 3), (2, 3), (2, 3))),
-            Obstruction(Perm((1, 0, 2)), ((5, 4), (5, 4), (5, 4))),
-            Obstruction(Perm((2, 0, 1)), ((5, 4), (5, 4), (5, 4))),
-            Obstruction(Perm((1, 2, 0)), ((4, 6), (4, 6), (4, 6))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 2))),
-            Obstruction(Perm((0, 1, 2, 3)), ((2, 2), (2, 2), (2, 3), (2, 3))),
-            Obstruction(Perm((0, 1)), ((6, 4), (6, 4))),
-            Obstruction(Perm((1, 0)), ((6, 4), (6, 4))),
-            Obstruction(Perm((0, 1)), ((7, 7), (7, 7))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((2, 0, 1)), ((2, 3), (2, 3), (2, 3))),
+            GriddedPerm(Perm((1, 0, 2)), ((5, 4), (5, 4), (5, 4))),
+            GriddedPerm(Perm((2, 0, 1)), ((5, 4), (5, 4), (5, 4))),
+            GriddedPerm(Perm((1, 2, 0)), ((4, 6), (4, 6), (4, 6))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 2))),
+            GriddedPerm(Perm((0, 1, 2, 3)), ((2, 2), (2, 2), (2, 3), (2, 3))),
+            GriddedPerm(Perm((0, 1)), ((6, 4), (6, 4))),
+            GriddedPerm(Perm((1, 0)), ((6, 4), (6, 4))),
+            GriddedPerm(Perm((0, 1)), ((7, 7), (7, 7))),
         ],
         requirements=[
             [
@@ -105,19 +105,19 @@ def factorable_tiling():
 def obs_inf_til():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-            Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-            Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
         ],
         requirements=[[Requirement(Perm((1, 0)), ((0, 1), (0, 0)))]],
     )
@@ -128,26 +128,26 @@ def typical_redundant_obstructions():
     """Returns a very typical list of obstructions clustered together in a
     corner of a tiling.  """
     return [
-        Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
-        Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-        Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
-        Obstruction(Perm((0, 1)), ((3, 1), (3, 1))),
-        Obstruction(Perm((1, 0)), ((3, 0), (3, 0))),
-        Obstruction(Perm((1, 0)), ((3, 1), (3, 0))),
-        Obstruction(Perm((1, 0)), ((3, 1), (3, 1))),
-        Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
-        Obstruction(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 1))),
-        Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
-        Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
-        Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (3, 0))),
-        Obstruction(Perm((2, 1, 0)), ((1, 0), (2, 0), (2, 0))),
-        Obstruction(Perm((2, 1, 0)), ((1, 0), (2, 0), (3, 0))),
-        Obstruction(Perm((2, 1, 0)), ((2, 0), (2, 0), (2, 0))),
-        Obstruction(Perm((2, 1, 0)), ((2, 0), (2, 0), (3, 0))),
-        Obstruction(Perm((3, 2, 1, 0)), ((1, 1), (2, 0), (2, 0), (2, 0))),
-        Obstruction(Perm((3, 2, 1, 0)), ((2, 1), (2, 1), (3, 0), (3, 0))),
+        GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+        GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0))),
+        GriddedPerm(Perm((0, 1)), ((1, 0), (3, 0))),
+        GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+        GriddedPerm(Perm((0, 1)), ((2, 0), (3, 0))),
+        GriddedPerm(Perm((0, 1)), ((3, 1), (3, 1))),
+        GriddedPerm(Perm((1, 0)), ((3, 0), (3, 0))),
+        GriddedPerm(Perm((1, 0)), ((3, 1), (3, 0))),
+        GriddedPerm(Perm((1, 0)), ((3, 1), (3, 1))),
+        GriddedPerm(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
+        GriddedPerm(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 1))),
+        GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
+        GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
+        GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (3, 0))),
+        GriddedPerm(Perm((2, 1, 0)), ((1, 0), (2, 0), (2, 0))),
+        GriddedPerm(Perm((2, 1, 0)), ((1, 0), (2, 0), (3, 0))),
+        GriddedPerm(Perm((2, 1, 0)), ((2, 0), (2, 0), (2, 0))),
+        GriddedPerm(Perm((2, 1, 0)), ((2, 0), (2, 0), (3, 0))),
+        GriddedPerm(Perm((3, 2, 1, 0)), ((1, 1), (2, 0), (2, 0), (2, 0))),
+        GriddedPerm(Perm((3, 2, 1, 0)), ((2, 1), (2, 1), (3, 0), (3, 0))),
     ]
 
 
@@ -275,24 +275,24 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
 
     tiling2 = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-            Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-            Obstruction(Perm((0, 1)), ((0, 0), (2, 0))),
-            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-            Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
-            Obstruction(Perm((0, 1)), ((2, 1), (2, 1))),
-            Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
-            Obstruction(Perm((1, 0)), ((2, 1), (2, 0))),
-            Obstruction(Perm((1, 0)), ((2, 1), (2, 1))),
-            Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
-            Obstruction(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 1))),
-            Obstruction(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((2, 1, 0)), ((0, 0), (0, 0), (1, 0))),
-            Obstruction(Perm((2, 1, 0)), ((0, 0), (0, 0), (2, 0))),
-            Obstruction(Perm((2, 1, 0)), ((0, 0), (1, 0), (1, 0))),
-            Obstruction(Perm((2, 1, 0)), ((0, 0), (1, 0), (2, 0))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((2, 1), (2, 1))),
+            GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((2, 1), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((2, 1), (2, 1))),
+            GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 1))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (1, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 0), (1, 0), (2, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
         ],
         remove_empty=True,
         derive_empty=True,
@@ -445,9 +445,9 @@ def test_from_string():
     string = "123_231_45321"
     assert Tiling.from_string(string) == Tiling(
         [
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((1, 2, 0)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((1, 2, 0)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(
                 Perm((3, 4, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0))
             ),
         ]
@@ -455,13 +455,13 @@ def test_from_string():
     string = "3201_1032"
     assert Tiling.from_string(string) == Tiling(
         [
-            Obstruction(Perm((3, 2, 0, 1)), ((0, 0), (0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((3, 2, 0, 1)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 0), (0, 0), (0, 0), (0, 0))),
         ]
     )
     string = "3142"
     assert Tiling.from_string(string) == Tiling(
-        [Obstruction(Perm((2, 0, 3, 1)), ((0, 0), (0, 0), (0, 0), (0, 0)))]
+        [GriddedPerm(Perm((2, 0, 3, 1)), ((0, 0), (0, 0), (0, 0), (0, 0)))]
     )
 
 
@@ -471,8 +471,8 @@ def test_from_perms():
     )
     assert t == Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 0),) * 4),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 0),) * 4),
         ],
         requirements=[
             [
@@ -536,16 +536,16 @@ def test_empty_cell(typical_redundant_obstructions, typical_redundant_requiremen
     tiling1 = tiling.empty_cell((3, 0))
     tiling2 = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-            Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
-            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-            Obstruction(Perm((0, 1)), ((3, 1), (3, 1))),
-            Obstruction(Perm((1, 0)), ((3, 1), (3, 1))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (2, 0), (2, 0))),
-            Obstruction(Perm((2, 1, 0)), ((2, 0), (2, 0), (2, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((1, 1), (2, 0), (2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((3, 1), (3, 1))),
+            GriddedPerm(Perm((1, 0)), ((3, 1), (3, 1))),
+            GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((1, 0), (2, 0), (2, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((2, 0), (2, 0), (2, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((1, 1), (2, 0), (2, 0), (2, 0))),
         ],
         requirements=[
             [
@@ -575,7 +575,7 @@ def test_insert_cell(typical_redundant_obstructions, typical_redundant_requireme
     )
     assert tiling.insert_cell((3, 1)) == tiling
 
-    assert tiling.insert_cell((1, 1)).obstructions[0] == Obstruction(Perm(tuple()), [])
+    assert tiling.insert_cell((1, 1)).obstructions[0] == GriddedPerm(Perm(tuple()), [])
 
     requirements = typical_redundant_requirements + [
         [
@@ -596,27 +596,27 @@ def test_insert_cell(typical_redundant_obstructions, typical_redundant_requireme
 def test_add_obstruction(compresstil):
     assert compresstil.add_obstruction(Perm((0, 1)), ((0, 0), (0, 1))) == Tiling(
         obstructions=(
-            Obstruction(Perm((0,)), ((1, 0),)),
-            Obstruction(Perm((0,)), ((2, 1),)),
-            Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
-            Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
-            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-            Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
-            Obstruction(Perm((1, 0)), ((1, 1), (2, 0))),
-            Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (2, 0))),
-            Obstruction(Perm((1, 0, 2)), ((0, 1), (0, 0), (1, 1))),
-            Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 1), (0, 1), (0, 1))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 1), (0, 1), (1, 1))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 1), (0, 1), (0, 1))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 1), (0, 1), (1, 1))),
-            Obstruction(Perm((0, 2, 3, 1)), ((0, 1), (0, 1), (0, 1), (0, 1))),
-            Obstruction(Perm((0, 2, 3, 1)), ((0, 1), (0, 1), (0, 1), (1, 1))),
-            Obstruction(Perm((2, 0, 1, 3)), ((0, 1), (0, 1), (0, 1), (0, 1))),
-            Obstruction(Perm((2, 0, 1, 3)), ((0, 1), (0, 1), (0, 1), (1, 1))),
+            GriddedPerm(Perm((0,)), ((1, 0),)),
+            GriddedPerm(Perm((0,)), ((2, 1),)),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
+            GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+            GriddedPerm(Perm((1, 0)), ((1, 1), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0, 2)), ((0, 1), (0, 0), (1, 1))),
+            GriddedPerm(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 1), (0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 1), (0, 1), (0, 1), (1, 1))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 1), (0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 1), (0, 1), (0, 1), (1, 1))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 1), (0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 1), (0, 1), (0, 1), (1, 1))),
+            GriddedPerm(Perm((2, 0, 1, 3)), ((0, 1), (0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((2, 0, 1, 3)), ((0, 1), (0, 1), (0, 1), (1, 1))),
         ),
         requirements=(
             (Requirement(Perm((0,)), ((1, 1),)), Requirement(Perm((0,)), ((2, 0),))),
@@ -636,11 +636,11 @@ def test_add_list_requirement(finite_tiling):
     ]
     assert finite_tiling.add_list_requirement(list_req) == Tiling(
         obstructions=(
-            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-            Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-            Obstruction(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((2, 1, 0)), ((0, 1), (0, 1), (0, 1))),
-            Obstruction(Perm((3, 2, 1, 0)), ((0, 1),) * 2 + ((0, 0),) * 2),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 1),) * 2 + ((0, 0),) * 2),
         ),
         requirements=(
             (Requirement(Perm((0,)), ((0, 0),)),),
@@ -654,22 +654,22 @@ def test_add_list_requirement(finite_tiling):
 
 def test_add_requirement(compresstil, factorable_tiling):
     assert compresstil.add_requirement(Perm((1, 0)), ((1, 1), (2, 0))) == Tiling(
-        obstructions=(Obstruction(Perm(), ()),)
+        obstructions=(GriddedPerm(Perm(), ()),)
     )
     assert factorable_tiling.add_requirement(Perm((0, 1)), ((0, 0), (5, 3))) == Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
-            Obstruction(Perm((2, 1, 0)), ((2, 2), (2, 2), (2, 2))),
-            Obstruction(Perm((2, 0, 1)), ((2, 3), (2, 3), (2, 3))),
-            Obstruction(Perm((1, 0, 2)), ((5, 4), (5, 4), (5, 4))),
-            Obstruction(Perm((2, 0, 1)), ((5, 4), (5, 4), (5, 4))),
-            Obstruction(Perm((1, 2, 0)), ((4, 6), (4, 6), (4, 6))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 2))),
-            Obstruction(Perm((0, 1, 2, 3)), ((2, 2), (2, 2), (2, 3), (2, 3))),
-            Obstruction(Perm((0, 1)), ((6, 4), (6, 4))),
-            Obstruction(Perm((1, 0)), ((6, 4), (6, 4))),
-            Obstruction(Perm((0, 1)), ((7, 7), (7, 7))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((2, 0, 1)), ((2, 3), (2, 3), (2, 3))),
+            GriddedPerm(Perm((1, 0, 2)), ((5, 4), (5, 4), (5, 4))),
+            GriddedPerm(Perm((2, 0, 1)), ((5, 4), (5, 4), (5, 4))),
+            GriddedPerm(Perm((1, 2, 0)), ((4, 6), (4, 6), (4, 6))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 2))),
+            GriddedPerm(Perm((0, 1, 2, 3)), ((2, 2), (2, 2), (2, 3), (2, 3))),
+            GriddedPerm(Perm((0, 1)), ((6, 4), (6, 4))),
+            GriddedPerm(Perm((1, 0)), ((6, 4), (6, 4))),
+            GriddedPerm(Perm((0, 1)), ((7, 7), (7, 7))),
         ],
         requirements=[
             [Requirement(Perm((0, 1)), ((0, 0), (6, 4)))],
@@ -696,25 +696,25 @@ def test_add_single_cell_obstruction(
     tiling1 = Tiling(
         requirements=typical_redundant_requirements,
         obstructions=[
-            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-            Obstruction(Perm((0, 1)), ((1, 0), (2, 0))),
-            Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
-            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-            Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
-            Obstruction(Perm((0, 1)), ((3, 0), (3, 0))),
-            Obstruction(Perm((0, 1)), ((3, 1), (3, 1))),
-            Obstruction(Perm((1, 0)), ((3, 0), (3, 0))),
-            Obstruction(Perm((1, 0)), ((3, 1), (3, 0))),
-            Obstruction(Perm((1, 0)), ((3, 1), (3, 1))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (1, 0), (3, 0))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (2, 0), (2, 0))),
-            Obstruction(Perm((2, 1, 0)), ((1, 0), (2, 0), (3, 0))),
-            Obstruction(Perm((2, 1, 0)), ((2, 0), (2, 0), (2, 0))),
-            Obstruction(Perm((2, 1, 0)), ((2, 0), (2, 0), (3, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((1, 1), (2, 0), (2, 0), (2, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((2, 1), (2, 1), (3, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1)), ((3, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1)), ((3, 1), (3, 1))),
+            GriddedPerm(Perm((1, 0)), ((3, 0), (3, 0))),
+            GriddedPerm(Perm((1, 0)), ((3, 1), (3, 0))),
+            GriddedPerm(Perm((1, 0)), ((3, 1), (3, 1))),
+            GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (3, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((1, 0), (2, 0), (2, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((1, 0), (2, 0), (3, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((2, 0), (2, 0), (2, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((2, 0), (2, 0), (3, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((1, 1), (2, 0), (2, 0), (2, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((2, 1), (2, 1), (3, 0), (3, 0))),
         ],
     )
     assert tiling.add_single_cell_obstruction(Perm((0, 1)), (3, 0)) == tiling1
@@ -729,7 +729,7 @@ def test_add_single_cell_requirement(
     )
     assert tiling.add_single_cell_requirement(Perm((0, 1)), (1, 0)).obstructions[
         0
-    ] == Obstruction(Perm(tuple()), [])
+    ] == GriddedPerm(Perm(tuple()), [])
     tiling1 = Tiling(
         obstructions=typical_redundant_obstructions,
         requirements=[
@@ -768,9 +768,9 @@ def test_add_single_cell_requirement(
 def isolated_tiling():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 2))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 0), (0, 0), (1, 2), (2, 1))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 0), (0, 0), (0, 0), (1, 2))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 2))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 0), (0, 0), (1, 2), (2, 1))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 0), (0, 0), (0, 0), (1, 2))),
         ],
         requirements=[
             [
@@ -883,12 +883,12 @@ def test_cells_in_row_col(
 def test_cell_basis(factorable_tiling):
     tiling = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)]),
-            Obstruction(Perm((0, 2, 1)), [(0, 0), (0, 1), (1, 1)]),
-            Obstruction(Perm((0, 2, 1)), [(0, 0), (1, 1), (1, 0)]),
-            Obstruction(Perm((0, 2, 1)), [(1, 1), (1, 1), (1, 1)]),
-            Obstruction(Perm((1, 0)), [(1, 0), (1, 0)]),
-            Obstruction(Perm((2, 0, 1)), [(0, 1), (0, 1), (0, 1)]),
+            GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)]),
+            GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 1), (1, 1)]),
+            GriddedPerm(Perm((0, 2, 1)), [(0, 0), (1, 1), (1, 0)]),
+            GriddedPerm(Perm((0, 2, 1)), [(1, 1), (1, 1), (1, 1)]),
+            GriddedPerm(Perm((1, 0)), [(1, 0), (1, 0)]),
+            GriddedPerm(Perm((2, 0, 1)), [(0, 1), (0, 1), (0, 1)]),
         ]
     )
     bdict = tiling.cell_basis()
@@ -986,7 +986,7 @@ def test_gridded_perms():
     tiling = Tiling()
     assert len(list(tiling.gridded_perms())) == 1
 
-    tiling = Tiling([Obstruction(Perm(tuple()), tuple())], [])
+    tiling = Tiling([GriddedPerm(Perm(tuple()), tuple())], [])
     assert len(list(tiling.gridded_perms(maxlen=3))) == 0
 
     tiling = Tiling(requirements=[[Requirement(Perm((0,)), [(0, 0)])]])
@@ -1070,14 +1070,14 @@ def test_gridded_perms():
     assert griddable == sorted(list(set(griddable01) | set(griddable10)))
 
     tiling = Tiling(
-        obstructions=[Obstruction(Perm((1, 0)), [(0, 0), (1, 0)])],
+        obstructions=[GriddedPerm(Perm((1, 0)), [(0, 0), (1, 0)])],
         requirements=[[Requirement(Perm((0, 1)), [(0, 0), (1, 0)])]],
     )
     griddable = sorted(list(tiling.gridded_perms(maxlen=3)))
     assert griddable == sorted(list(set(griddable01) - set(griddable10)))
 
     tiling = Tiling(
-        obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (1, 0)])],
+        obstructions=[GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)])],
         requirements=[[Requirement(Perm((1, 0)), [(0, 0), (1, 0)])]],
     )
     griddable = sorted(list(tiling.gridded_perms(maxlen=3)))
@@ -1085,8 +1085,8 @@ def test_gridded_perms():
 
     tiling = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((1, 0)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((1, 0)), [(0, 0), (1, 0)]),
         ],
         requirements=[
             [Requirement(Perm((0,)), [(0, 0)])],
@@ -1098,8 +1098,8 @@ def test_gridded_perms():
 
     tiling = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((1, 0)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((1, 0)), [(0, 0), (1, 0)]),
         ]
     )
     griddable = sorted(list(tiling.gridded_perms(maxlen=2)))
@@ -1118,11 +1118,11 @@ def test_gridded_perms():
 def christian_til():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 2, 3, 1)), [(0, 0), (1, 1), (1, 1), (2, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (1, 0)]),
-            Obstruction(Perm((1, 0)), [(1, 0), (1, 0)]),
-            Obstruction(Perm((0, 1)), [(2, 1), (2, 1)]),
-            Obstruction(Perm((1, 0)), [(2, 1), (2, 1)]),
+            GriddedPerm(Perm((0, 2, 3, 1)), [(0, 0), (1, 1), (1, 1), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (1, 0)]),
+            GriddedPerm(Perm((1, 0)), [(1, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(2, 1), (2, 1)]),
+            GriddedPerm(Perm((1, 0)), [(2, 1), (2, 1)]),
         ],
         requirements=[
             [
@@ -1139,11 +1139,11 @@ def christian_til():
 def test_symmetries(christian_til):
     rotate90til = Tiling(
         obstructions=[
-            Obstruction(Perm((3, 0, 2, 1)), [(0, 2), (0, 0), (1, 1), (1, 1)]),
-            Obstruction(Perm((0, 1)), [(0, 1), (0, 1)]),
-            Obstruction(Perm((1, 0)), [(0, 1), (0, 1)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (1, 0)]),
-            Obstruction(Perm((1, 0)), [(1, 0), (1, 0)]),
+            GriddedPerm(Perm((3, 0, 2, 1)), [(0, 2), (0, 0), (1, 1), (1, 1)]),
+            GriddedPerm(Perm((0, 1)), [(0, 1), (0, 1)]),
+            GriddedPerm(Perm((1, 0)), [(0, 1), (0, 1)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (1, 0)]),
+            GriddedPerm(Perm((1, 0)), [(1, 0), (1, 0)]),
         ],
         requirements=[
             [
@@ -1164,11 +1164,11 @@ def test_symmetries(christian_til):
 
     rotate270til = Tiling(
         obstructions=[
-            Obstruction(Perm((2, 1, 3, 0)), [(1, 1), (1, 1), (2, 2), (2, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 2), (1, 2)]),
-            Obstruction(Perm((1, 0)), [(1, 2), (1, 2)]),
-            Obstruction(Perm((0, 1)), [(2, 1), (2, 1)]),
-            Obstruction(Perm((1, 0)), [(2, 1), (2, 1)]),
+            GriddedPerm(Perm((2, 1, 3, 0)), [(1, 1), (1, 1), (2, 2), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 2), (1, 2)]),
+            GriddedPerm(Perm((1, 0)), [(1, 2), (1, 2)]),
+            GriddedPerm(Perm((0, 1)), [(2, 1), (2, 1)]),
+            GriddedPerm(Perm((1, 0)), [(2, 1), (2, 1)]),
         ],
         requirements=[
             [
@@ -1190,11 +1190,11 @@ def test_symmetries(christian_til):
 
     revtil = Tiling(
         obstructions=[
-            Obstruction(Perm((1, 3, 2, 0)), [(0, 0), (1, 1), (1, 1), (2, 0)]),
-            Obstruction(Perm((0, 1)), [(0, 1), (0, 1)]),
-            Obstruction(Perm((1, 0)), [(0, 1), (0, 1)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (1, 0)]),
-            Obstruction(Perm((1, 0)), [(1, 0), (1, 0)]),
+            GriddedPerm(Perm((1, 3, 2, 0)), [(0, 0), (1, 1), (1, 1), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 1), (0, 1)]),
+            GriddedPerm(Perm((1, 0)), [(0, 1), (0, 1)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (1, 0)]),
+            GriddedPerm(Perm((1, 0)), [(1, 0), (1, 0)]),
         ],
         requirements=[
             [
@@ -1255,7 +1255,7 @@ def test_merge(compresstil, finite_tiling, empty_tiling):
             ),
         ),
     )
-    assert empty_tiling.merge() == Tiling((Obstruction(Perm(()), ()),))
+    assert empty_tiling.merge() == Tiling([GriddedPerm.empty_perm()])
 
 
 def test_point_cells(
@@ -1296,28 +1296,28 @@ def test_dimensions(compresstil, empty_tiling, finite_tiling, christian_til):
 def test_add_obstruction_in_all_ways():
     initial_tiling = Tiling(
         obstructions=(
-            Obstruction(Perm((0,)), ((0, 0),)),
-            Obstruction(Perm((0,)), ((0, 1),)),
-            Obstruction(Perm((0,)), ((0, 3),)),
-            Obstruction(Perm((0,)), ((1, 0),)),
-            Obstruction(Perm((0,)), ((1, 1),)),
-            Obstruction(Perm((0,)), ((1, 2),)),
-            Obstruction(Perm((0,)), ((2, 1),)),
-            Obstruction(Perm((0,)), ((2, 2),)),
-            Obstruction(Perm((0,)), ((2, 3),)),
-            Obstruction(Perm((0,)), ((3, 0),)),
-            Obstruction(Perm((0,)), ((3, 2),)),
-            Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
-            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-            Obstruction(Perm((1, 0)), ((0, 2), (0, 2))),
-            Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
-            Obstruction(
+            GriddedPerm(Perm((0,)), ((0, 0),)),
+            GriddedPerm(Perm((0,)), ((0, 1),)),
+            GriddedPerm(Perm((0,)), ((0, 3),)),
+            GriddedPerm(Perm((0,)), ((1, 0),)),
+            GriddedPerm(Perm((0,)), ((1, 1),)),
+            GriddedPerm(Perm((0,)), ((1, 2),)),
+            GriddedPerm(Perm((0,)), ((2, 1),)),
+            GriddedPerm(Perm((0,)), ((2, 2),)),
+            GriddedPerm(Perm((0,)), ((2, 3),)),
+            GriddedPerm(Perm((0,)), ((3, 0),)),
+            GriddedPerm(Perm((0,)), ((3, 2),)),
+            GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+            GriddedPerm(
                 Perm((3, 0, 2, 4, 1)), ((1, 3), (1, 3), (1, 3), (1, 3), (1, 3))
             ),
-            Obstruction(
+            GriddedPerm(
                 Perm((3, 0, 2, 4, 1)), ((3, 1), (3, 1), (3, 1), (3, 1), (3, 1))
             ),
-            Obstruction(
+            GriddedPerm(
                 Perm((3, 0, 2, 4, 1)), ((3, 3), (3, 3), (3, 3), (3, 3), (3, 3))
             ),
         ),
@@ -1328,43 +1328,43 @@ def test_add_obstruction_in_all_ways():
     )
     final_tiling = Tiling(
         obstructions=(
-            Obstruction(Perm((0,)), ((0, 0),)),
-            Obstruction(Perm((0,)), ((0, 1),)),
-            Obstruction(Perm((0,)), ((0, 3),)),
-            Obstruction(Perm((0,)), ((1, 0),)),
-            Obstruction(Perm((0,)), ((1, 1),)),
-            Obstruction(Perm((0,)), ((1, 2),)),
-            Obstruction(Perm((0,)), ((2, 1),)),
-            Obstruction(Perm((0,)), ((2, 2),)),
-            Obstruction(Perm((0,)), ((2, 3),)),
-            Obstruction(Perm((0,)), ((3, 0),)),
-            Obstruction(Perm((0,)), ((3, 2),)),
-            Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
-            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-            Obstruction(Perm((1, 0)), ((0, 2), (0, 2))),
-            Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
-            Obstruction(Perm((1, 2, 0)), ((3, 1), (3, 3), (3, 1))),
-            Obstruction(Perm((2, 1, 3, 0)), ((1, 3), (3, 3), (3, 3), (3, 1))),
-            Obstruction(Perm((2, 1, 3, 0)), ((1, 3), (3, 3), (3, 3), (3, 3))),
-            Obstruction(
+            GriddedPerm(Perm((0,)), ((0, 0),)),
+            GriddedPerm(Perm((0,)), ((0, 1),)),
+            GriddedPerm(Perm((0,)), ((0, 3),)),
+            GriddedPerm(Perm((0,)), ((1, 0),)),
+            GriddedPerm(Perm((0,)), ((1, 1),)),
+            GriddedPerm(Perm((0,)), ((1, 2),)),
+            GriddedPerm(Perm((0,)), ((2, 1),)),
+            GriddedPerm(Perm((0,)), ((2, 2),)),
+            GriddedPerm(Perm((0,)), ((2, 3),)),
+            GriddedPerm(Perm((0,)), ((3, 0),)),
+            GriddedPerm(Perm((0,)), ((3, 2),)),
+            GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((1, 2, 0)), ((3, 1), (3, 3), (3, 1))),
+            GriddedPerm(Perm((2, 1, 3, 0)), ((1, 3), (3, 3), (3, 3), (3, 1))),
+            GriddedPerm(Perm((2, 1, 3, 0)), ((1, 3), (3, 3), (3, 3), (3, 3))),
+            GriddedPerm(
                 Perm((3, 0, 2, 4, 1)), ((1, 3), (1, 3), (1, 3), (1, 3), (1, 3))
             ),
-            Obstruction(
+            GriddedPerm(
                 Perm((3, 0, 2, 4, 1)), ((1, 3), (1, 3), (1, 3), (1, 3), (3, 3))
             ),
-            Obstruction(
+            GriddedPerm(
                 Perm((3, 0, 2, 4, 1)), ((1, 3), (1, 3), (1, 3), (3, 3), (3, 3))
             ),
-            Obstruction(
+            GriddedPerm(
                 Perm((3, 0, 2, 4, 1)), ((3, 1), (3, 1), (3, 1), (3, 1), (3, 1))
             ),
-            Obstruction(
+            GriddedPerm(
                 Perm((3, 0, 2, 4, 1)), ((3, 3), (3, 1), (3, 3), (3, 3), (3, 1))
             ),
-            Obstruction(
+            GriddedPerm(
                 Perm((3, 0, 2, 4, 1)), ((3, 3), (3, 1), (3, 3), (3, 3), (3, 3))
             ),
-            Obstruction(
+            GriddedPerm(
                 Perm((3, 0, 2, 4, 1)), ((3, 3), (3, 3), (3, 3), (3, 3), (3, 3))
             ),
         ),
@@ -1379,12 +1379,12 @@ def test_add_obstruction_in_all_ways():
 
 def test_sum_decomposition():
     obs = [
-        Obstruction.single_cell(Perm((0, 1)), (0, 0)),
-        Obstruction.single_cell(Perm((0, 1)), (1, 2)),
-        Obstruction.single_cell(Perm((0, 1)), (2, 1)),
-        Obstruction.single_cell(Perm((0, 1)), (3, 2)),
-        Obstruction.single_cell(Perm((0, 1)), (4, 4)),
-        Obstruction.single_cell(Perm((0, 1)), (5, 3)),
+        GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),
+        GriddedPerm.single_cell(Perm((0, 1)), (1, 2)),
+        GriddedPerm.single_cell(Perm((0, 1)), (2, 1)),
+        GriddedPerm.single_cell(Perm((0, 1)), (3, 2)),
+        GriddedPerm.single_cell(Perm((0, 1)), (4, 4)),
+        GriddedPerm.single_cell(Perm((0, 1)), (5, 3)),
     ]
     reqs = []
 
@@ -1421,10 +1421,10 @@ def test_is_monotone_cell(isolated_tiling):
 def test_fusion():
     t = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-            Obstruction(Perm((0, 1)), ((0, 0), (1, 0))),
-            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
         ]
     )
     with pytest.raises(AssertionError):
@@ -1439,8 +1439,8 @@ def test_fusion():
         t.fusion(col=1)
     assert t.fusion(col=0) == Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
         ]
     )
 
@@ -1448,72 +1448,72 @@ def test_fusion():
 def test_component_fusion():
     t = Tiling(
         obstructions=[
-            Obstruction(Perm((0,)), ((1, 0),)),
-            Obstruction(Perm((0,)), ((1, 1),)),
-            Obstruction(Perm((0,)), ((1, 2),)),
-            Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
-            Obstruction(Perm((0, 1)), ((0, 0), (0, 2))),
-            Obstruction(Perm((0, 1)), ((0, 0), (1, 3))),
-            Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 3))),
-            Obstruction(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 3))),
-            Obstruction(Perm((0, 1, 2)), ((0, 1), (0, 1), (1, 3))),
-            Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 2), (0, 3))),
-            Obstruction(Perm((0, 1, 2)), ((0, 2), (0, 2), (1, 3))),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((0, 2, 1)), ((0, 1), (0, 1), (0, 1))),
-            Obstruction(Perm((0, 2, 1)), ((0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 2, 1)), ((1, 3), (1, 3), (1, 3))),
-            Obstruction(Perm((1, 0, 2)), ((1, 3), (1, 3), (1, 3))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 0), (0, 3), (0, 3), (0, 3))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 3), (0, 3), (0, 3))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 3), (0, 3), (1, 3))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 3), (1, 3), (1, 3))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 2), (0, 3), (0, 3), (0, 3))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 2), (0, 3), (0, 3), (1, 3))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 2), (0, 3), (1, 3), (1, 3))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 3), (0, 3), (0, 3), (0, 3))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 3), (0, 3), (0, 3), (1, 3))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 3), (0, 3), (1, 3), (1, 3))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 0), (0, 3), (0, 3), (0, 3))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 3), (0, 3), (0, 3))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 3), (0, 3), (1, 3))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 3), (1, 3), (1, 3))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 2), (0, 3), (0, 3), (0, 3))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 2), (0, 3), (0, 3), (1, 3))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 2), (0, 3), (1, 3), (1, 3))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 3), (0, 3), (0, 3), (0, 3))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 3), (0, 3), (0, 3), (1, 3))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 3), (0, 3), (1, 3), (1, 3))),
+            GriddedPerm(Perm((0,)), ((1, 0),)),
+            GriddedPerm(Perm((0,)), ((1, 1),)),
+            GriddedPerm(Perm((0,)), ((1, 2),)),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 2))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 3))),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 2))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 3))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 3))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 1), (1, 3))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 2), (0, 2), (0, 3))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 2), (0, 2), (1, 3))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((1, 3), (1, 3), (1, 3))),
+            GriddedPerm(Perm((1, 0, 2)), ((1, 3), (1, 3), (1, 3))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 0), (0, 3), (0, 3), (0, 3))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 1), (0, 3), (0, 3), (0, 3))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 1), (0, 3), (0, 3), (1, 3))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 1), (0, 3), (1, 3), (1, 3))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 2), (0, 3), (0, 3), (0, 3))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 2), (0, 3), (0, 3), (1, 3))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 2), (0, 3), (1, 3), (1, 3))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 3), (0, 3), (0, 3), (0, 3))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 3), (0, 3), (0, 3), (1, 3))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 3), (0, 3), (1, 3), (1, 3))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 0), (0, 3), (0, 3), (0, 3))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 1), (0, 3), (0, 3), (0, 3))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 1), (0, 3), (0, 3), (1, 3))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 1), (0, 3), (1, 3), (1, 3))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 2), (0, 3), (0, 3), (0, 3))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 2), (0, 3), (0, 3), (1, 3))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 2), (0, 3), (1, 3), (1, 3))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 3), (0, 3), (0, 3), (0, 3))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 3), (0, 3), (0, 3), (1, 3))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 3), (0, 3), (1, 3), (1, 3))),
         ]
     )
     assert t.component_fusion(row=1) == Tiling(
         obstructions=[
-            Obstruction(Perm((0,)), ((1, 0),)),
-            Obstruction(Perm((0,)), ((1, 1),)),
-            Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
-            Obstruction(Perm((0, 1)), ((0, 0), (1, 2))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 2))),
-            Obstruction(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 2))),
-            Obstruction(Perm((0, 1, 2)), ((0, 1), (0, 1), (1, 2))),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((0, 2, 1)), ((0, 1), (0, 1), (0, 1))),
-            Obstruction(Perm((0, 2, 1)), ((1, 2), (1, 2), (1, 2))),
-            Obstruction(Perm((1, 0, 2)), ((1, 2), (1, 2), (1, 2))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 0), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 2), (0, 2), (1, 2))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 1), (0, 2), (1, 2), (1, 2))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 2), (0, 2), (0, 2), (1, 2))),
-            Obstruction(Perm((0, 1, 3, 2)), ((0, 2), (0, 2), (1, 2), (1, 2))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 0), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 2), (0, 2), (1, 2))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 1), (0, 2), (1, 2), (1, 2))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 2), (0, 2), (0, 2), (1, 2))),
-            Obstruction(Perm((0, 2, 1, 3)), ((0, 2), (0, 2), (1, 2), (1, 2))),
+            GriddedPerm(Perm((0,)), ((1, 0),)),
+            GriddedPerm(Perm((0,)), ((1, 1),)),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 2))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 2))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 2))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 1), (1, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 2, 1)), ((1, 2), (1, 2), (1, 2))),
+            GriddedPerm(Perm((1, 0, 2)), ((1, 2), (1, 2), (1, 2))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 1), (0, 2), (0, 2), (1, 2))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 1), (0, 2), (1, 2), (1, 2))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 2), (0, 2), (0, 2), (1, 2))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 2), (0, 2), (1, 2), (1, 2))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 1), (0, 2), (0, 2), (1, 2))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 1), (0, 2), (1, 2), (1, 2))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 2), (0, 2), (0, 2), (1, 2))),
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 2), (0, 2), (1, 2), (1, 2))),
         ]
     )
     with pytest.raises(AssertionError):
@@ -1537,13 +1537,13 @@ def test_find_factors(compresstil, factorable_tiling):
     actual_factors = [
         Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
-                Obstruction(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
-                Obstruction(Perm((2, 1, 0)), ((2, 1), (2, 1), (2, 1))),
-                Obstruction(Perm((2, 0, 1)), ((2, 2), (2, 2), (2, 2))),
-                Obstruction(Perm((1, 2, 0)), ((3, 3), (3, 3), (3, 3))),
-                Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 1))),
-                Obstruction(Perm((0, 1, 2, 3)), ((2, 1), (2, 1), (2, 2), (2, 2))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((2, 1), (2, 1), (2, 1))),
+                GriddedPerm(Perm((2, 0, 1)), ((2, 2), (2, 2), (2, 2))),
+                GriddedPerm(Perm((1, 2, 0)), ((3, 3), (3, 3), (3, 3))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 1))),
+                GriddedPerm(Perm((0, 1, 2, 3)), ((2, 1), (2, 1), (2, 2), (2, 2))),
             ],
             requirements=[
                 [
@@ -1554,14 +1554,14 @@ def test_find_factors(compresstil, factorable_tiling):
         ),
         Tiling(
             obstructions=[
-                Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
-                Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
-                Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-                Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
             ],
             requirements=[[Requirement(Perm((0,)), ((1, 0),))]],
         ),
-        Tiling(obstructions=[Obstruction(Perm((0, 1)), ((0, 0), (0, 0)))]),
+        Tiling(obstructions=[GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0)))]),
     ]
     assert len(factors) == len(actual_factors)
     assert all(f in factors for f in actual_factors)
@@ -1570,13 +1570,13 @@ def test_find_factors(compresstil, factorable_tiling):
     actual_mon_int_factors = [
         Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
-                Obstruction(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
-                Obstruction(Perm((2, 1, 0)), ((2, 1), (2, 1), (2, 1))),
-                Obstruction(Perm((2, 0, 1)), ((2, 2), (2, 2), (2, 2))),
-                Obstruction(Perm((1, 2, 0)), ((3, 3), (3, 3), (3, 3))),
-                Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 1))),
-                Obstruction(Perm((0, 1, 2, 3)), ((2, 1), (2, 1), (2, 2), (2, 2))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((2, 1), (2, 1), (2, 1))),
+                GriddedPerm(Perm((2, 0, 1)), ((2, 2), (2, 2), (2, 2))),
+                GriddedPerm(Perm((1, 2, 0)), ((3, 3), (3, 3), (3, 3))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 1))),
+                GriddedPerm(Perm((0, 1, 2, 3)), ((2, 1), (2, 1), (2, 2), (2, 2))),
             ],
             requirements=[
                 [
@@ -1587,18 +1587,18 @@ def test_find_factors(compresstil, factorable_tiling):
         ),
         Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-                Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
             ],
             requirements=[[Requirement(Perm((0,)), ((1, 0),))]],
         ),
         Tiling(
             obstructions=[
-                Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
-                Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
             ]
         ),
-        Tiling(obstructions=[Obstruction(Perm((0, 1)), ((0, 0), (0, 0)))]),
+        Tiling(obstructions=[GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0)))]),
     ]
     assert len(mon_int_factors) == len(actual_mon_int_factors)
     assert all(f in mon_int_factors for f in actual_mon_int_factors)
@@ -1607,12 +1607,12 @@ def test_find_factors(compresstil, factorable_tiling):
     actual_int_factors = [
         Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
-                Obstruction(Perm((2, 1, 0)), ((1, 1), (1, 1), (1, 1))),
-                Obstruction(Perm((2, 0, 1)), ((1, 2), (1, 2), (1, 2))),
-                Obstruction(Perm((1, 2, 0)), ((2, 3), (2, 3), (2, 3))),
-                Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 1))),
-                Obstruction(Perm((0, 1, 2, 3)), ((1, 1), (1, 1), (1, 2), (1, 2))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((1, 1), (1, 1), (1, 1))),
+                GriddedPerm(Perm((2, 0, 1)), ((1, 2), (1, 2), (1, 2))),
+                GriddedPerm(Perm((1, 2, 0)), ((2, 3), (2, 3), (2, 3))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 1))),
+                GriddedPerm(Perm((0, 1, 2, 3)), ((1, 1), (1, 1), (1, 2), (1, 2))),
             ],
             requirements=[
                 [
@@ -1621,21 +1621,21 @@ def test_find_factors(compresstil, factorable_tiling):
                 ]
             ],
         ),
-        Tiling(obstructions=[Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0)))]),
+        Tiling(obstructions=[GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0)))]),
         Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-                Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
             ],
             requirements=[[Requirement(Perm((0,)), ((1, 0),))]],
         ),
         Tiling(
             obstructions=[
-                Obstruction(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
-                Obstruction(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
             ]
         ),
-        Tiling(obstructions=[Obstruction(Perm((0, 1)), ((0, 0), (0, 0)))]),
+        Tiling(obstructions=[GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0)))]),
     ]
     for f in int_factors:
         print(f)
@@ -1652,45 +1652,45 @@ def test_find_factors(compresstil, factorable_tiling):
 def test_row_and_column_separation():
     separable_t = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
-            Obstruction(Perm((0, 1, 2)), ((0, 1),) * 3),
-            Obstruction(Perm((0, 1, 2)), ((0, 2),) * 3),
-            Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
-            Obstruction(Perm((0, 1)), ((0, 0), (0, 2))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 2),) * 3),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 2))),
         ]
     )
     assert separable_t.row_and_column_separation() == Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1, 2)), ((1, 0),) * 3),
-            Obstruction(Perm((0, 1, 2)), ((0, 1),) * 3),
-            Obstruction(Perm((0, 1, 2)), ((0, 2),) * 3),
+            GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 2),) * 3),
         ]
     )
     not_sep_t = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
-            Obstruction(Perm((0, 1, 2)), ((0, 1),) * 3),
-            Obstruction(Perm((0, 1, 2)), ((0, 2),) * 3),
-            Obstruction(Perm((0, 1)), ((0, 0), (0, 1))),
-            Obstruction(Perm((0, 1)), ((0, 1), (0, 2))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 2),) * 3),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 2))),
         ]
     )
     assert not_sep_t.row_and_column_separation() == not_sep_t
     need_two_sep_t = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), ((0, 1),) * 2),
-            Obstruction(Perm((1, 0)), ((0, 1), (0, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0),) * 3),
-            Obstruction(Perm((0, 1, 2)), ((1, 0),) * 3),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 1), (1, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
+            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+            GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 1), (1, 0))),
         ],
         requirements=[[Requirement(Perm((0,)), ((0, 1),))]],
     )
     assert need_two_sep_t.row_and_column_separation() == Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), ((1, 2),) * 2),
-            Obstruction(Perm((0, 1, 2)), ((0, 1),) * 3),
-            Obstruction(Perm((0, 1, 2)), ((2, 0),) * 3),
+            GriddedPerm(Perm((0, 1)), ((1, 2),) * 2),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
+            GriddedPerm(Perm((0, 1, 2)), ((2, 0),) * 3),
         ],
         requirements=[[Requirement(Perm((0,)), ((1, 2),))]],
     )
@@ -1699,24 +1699,24 @@ def test_row_and_column_separation():
 def test_obstruction_transitivity():
     t1 = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
         ],
         requirements=[[Requirement(Perm((0,)), [(1, 0)])]],
     )
     assert t1.obstruction_transitivity() == Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
-            Obstruction(Perm((0, 1)), [(0, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (2, 0)]),
         ],
         requirements=[[Requirement(Perm((0,)), [(1, 0)])]],
     )
     # Tiling with no new obstruction
     t2 = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (0, 1)]),
-            Obstruction(Perm((0, 1)), [(0, 1), (0, 2)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (0, 1)]),
+            GriddedPerm(Perm((0, 1)), [(0, 1), (0, 2)]),
         ],
     )
     assert t2.obstruction_transitivity() == t2
@@ -1725,18 +1725,18 @@ def test_obstruction_transitivity():
 def test_subobstruction_inferral(obs_inf_til):
     assert obs_inf_til.subobstruction_inferral() == Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-            Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-            Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 2), (0, 1))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 2), (0, 1))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
         ],
         requirements=[[Requirement(Perm((1, 0)), ((0, 1), (0, 0)))]],
     )
@@ -1745,18 +1745,18 @@ def test_subobstruction_inferral(obs_inf_til):
 def test_all_obstruction_inferral(obs_inf_til):
     assert obs_inf_til.all_obstruction_inferral(3) == Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-            Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-            Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 2), (0, 1))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 2), (0, 1))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
         ],
         requirements=[[Requirement(Perm((1, 0)), ((0, 1), (0, 0)))]],
     )
@@ -1765,47 +1765,47 @@ def test_all_obstruction_inferral(obs_inf_til):
 def test_empty_cell_inferral():
     t = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
-            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-            Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
-            Obstruction(Perm((0, 1)), ((3, 0), (3, 0))),
-            Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
-            Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
-            Obstruction(Perm((1, 0)), ((1, 0), (3, 0))),
-            Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
-            Obstruction(Perm((1, 0)), ((2, 0), (3, 0))),
-            Obstruction(Perm((1, 0)), ((3, 0), (3, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (3, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
-            Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
-            Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (2, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (1, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (2, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1)), ((3, 0), (3, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 0), (3, 0))),
+            GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((2, 0), (3, 0))),
+            GriddedPerm(Perm((1, 0)), ((3, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((1, 0), (1, 0), (2, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (1, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (3, 0))),
         ],
         requirements=[[Requirement(Perm((0, 1)), ((1, 0), (2, 0)))]],
     )
     assert t.empty_cell_inferral() == Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-            Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
-            Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
-            Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
-            Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
-            Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (2, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (1, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((1, 0), (1, 0), (2, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (1, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (2, 0))),
         ],
         requirements=[[Requirement(Perm((0, 1)), ((1, 0), (2, 0)))]],
     )
@@ -1814,28 +1814,28 @@ def test_empty_cell_inferral():
 def place_point_in_cell(obs_inf_til):
     assert obs_inf_til.place_point_in_cell((0, 1), 0) == Tiling(
         obstructions=[
-            Obstruction(Perm((0,)), ((0, 1),)),
-            Obstruction(Perm((0,)), ((1, 0),)),
-            Obstruction(Perm((0,)), ((1, 2),)),
-            Obstruction(Perm((0,)), ((2, 1),)),
-            Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
-            Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-            Obstruction(Perm((1, 0)), ((0, 0), (2, 0))),
-            Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
-            Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 2), (2, 0))),
-            Obstruction(Perm((0, 2, 1)), ((0, 2), (2, 2), (2, 2))),
-            Obstruction(Perm((0, 2, 1)), ((2, 0), (2, 2), (2, 2))),
-            Obstruction(Perm((2, 1, 0)), ((2, 2), (2, 2), (2, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (2, 2), (2, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (2, 2), (2, 2), (2, 0))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (2, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (2, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (2, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((2, 2), (2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((0,)), ((0, 1),)),
+            GriddedPerm(Perm((0,)), ((1, 0),)),
+            GriddedPerm(Perm((0,)), ((1, 2),)),
+            GriddedPerm(Perm((0,)), ((2, 1),)),
+            GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+            GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 2), (2, 0))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((2, 0), (2, 2), (2, 2))),
+            GriddedPerm(Perm((2, 1, 0)), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (2, 2), (2, 2), (2, 0))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (2, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (2, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (2, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((2, 2), (2, 2), (2, 2), (2, 2))),
         ],
         requirements=(
             (Requirement(Perm((0,)), ((1, 1),)),),
@@ -1848,41 +1848,41 @@ def test_place_point_of_gridded_permutation(obs_inf_til):
     gp = GriddedPerm(Perm((1, 0)), ((0, 1), (0, 0)))
     assert obs_inf_til.place_point_of_gridded_permutation(gp, 1, 2) == Tiling(
         obstructions=(
-            Obstruction(Perm((0,)), ((0, 1),)),
-            Obstruction(Perm((0,)), ((0, 2),)),
-            Obstruction(Perm((0,)), ((1, 0),)),
-            Obstruction(Perm((0,)), ((1, 2),)),
-            Obstruction(Perm((0,)), ((1, 3),)),
-            Obstruction(Perm((0,)), ((1, 4),)),
-            Obstruction(Perm((0,)), ((2, 0),)),
-            Obstruction(Perm((0,)), ((2, 1),)),
-            Obstruction(Perm((0, 1)), ((0, 3), (0, 3))),
-            Obstruction(Perm((0, 1)), ((0, 3), (2, 3))),
-            Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
-            Obstruction(Perm((0, 1)), ((2, 3), (2, 3))),
-            Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-            Obstruction(Perm((1, 0)), ((0, 3), (0, 0))),
-            Obstruction(Perm((1, 0)), ((0, 3), (0, 3))),
-            Obstruction(Perm((1, 0)), ((0, 3), (2, 3))),
-            Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
-            Obstruction(Perm((1, 0)), ((2, 2), (2, 2))),
-            Obstruction(Perm((1, 0)), ((2, 3), (2, 3))),
-            Obstruction(Perm((1, 0)), ((2, 4), (2, 4))),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 4), (0, 3))),
-            Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 4), (0, 4))),
-            Obstruction(Perm((2, 1, 0)), ((2, 4), (2, 3), (2, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (2, 3), (2, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (2, 4), (2, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (2, 4), (2, 3))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 3), (0, 4), (0, 4), (0, 4))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 3), (0, 4), (0, 4), (2, 4))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 4), (0, 4), (0, 4), (0, 4))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 4), (0, 4), (0, 4), (2, 4))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 4), (0, 0), (0, 4), (2, 4))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 4), (0, 3), (0, 4), (0, 4))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 4), (0, 3), (0, 4), (2, 4))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 4), (0, 4), (0, 4), (0, 4))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 4), (0, 4), (0, 4), (2, 4))),
+            GriddedPerm(Perm((0,)), ((0, 1),)),
+            GriddedPerm(Perm((0,)), ((0, 2),)),
+            GriddedPerm(Perm((0,)), ((1, 0),)),
+            GriddedPerm(Perm((0,)), ((1, 2),)),
+            GriddedPerm(Perm((0,)), ((1, 3),)),
+            GriddedPerm(Perm((0,)), ((1, 4),)),
+            GriddedPerm(Perm((0,)), ((2, 0),)),
+            GriddedPerm(Perm((0,)), ((2, 1),)),
+            GriddedPerm(Perm((0, 1)), ((0, 3), (0, 3))),
+            GriddedPerm(Perm((0, 1)), ((0, 3), (2, 3))),
+            GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
+            GriddedPerm(Perm((0, 1)), ((2, 3), (2, 3))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 3), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 3), (0, 3))),
+            GriddedPerm(Perm((1, 0)), ((0, 3), (2, 3))),
+            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+            GriddedPerm(Perm((1, 0)), ((2, 2), (2, 2))),
+            GriddedPerm(Perm((1, 0)), ((2, 3), (2, 3))),
+            GriddedPerm(Perm((1, 0)), ((2, 4), (2, 4))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 4), (0, 3))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 4), (0, 4))),
+            GriddedPerm(Perm((2, 1, 0)), ((2, 4), (2, 3), (2, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (2, 3), (2, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (2, 4), (2, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (2, 4), (2, 3))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 3), (0, 4), (0, 4), (0, 4))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 3), (0, 4), (0, 4), (2, 4))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 4), (0, 4), (0, 4), (0, 4))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 4), (0, 4), (0, 4), (2, 4))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 4), (0, 0), (0, 4), (2, 4))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 4), (0, 3), (0, 4), (0, 4))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 4), (0, 3), (0, 4), (2, 4))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 4), (0, 4), (0, 4), (0, 4))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 4), (0, 4), (0, 4), (2, 4))),
         ),
         requirements=(
             (Requirement(Perm((0,)), ((0, 3),)),),
@@ -1896,58 +1896,58 @@ def test_place_row(obs_inf_til):
         [
             Tiling(
                 obstructions=(
-                    Obstruction(Perm((0,)), ((0, 3),)),
-                    Obstruction(Perm((0,)), ((1, 0),)),
-                    Obstruction(Perm((0,)), ((1, 1),)),
-                    Obstruction(Perm((0,)), ((1, 2),)),
-                    Obstruction(Perm((0,)), ((2, 3),)),
-                    Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-                    Obstruction(Perm((0, 1)), ((0, 1), (2, 1))),
-                    Obstruction(Perm((0, 1)), ((1, 3), (1, 3))),
-                    Obstruction(Perm((0, 1)), ((2, 1), (2, 1))),
-                    Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-                    Obstruction(Perm((1, 0)), ((0, 0), (2, 0))),
-                    Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-                    Obstruction(Perm((1, 0)), ((0, 1), (2, 1))),
-                    Obstruction(Perm((1, 0)), ((1, 3), (1, 3))),
-                    Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
-                    Obstruction(Perm((1, 0)), ((2, 1), (2, 1))),
-                    Obstruction(Perm((0, 2, 1)), ((0, 0), (2, 1), (2, 0))),
-                    Obstruction(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 0))),
-                    Obstruction(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
-                    Obstruction(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 2))),
-                    Obstruction(Perm((0, 2, 1)), ((0, 1), (2, 2), (2, 2))),
-                    Obstruction(Perm((0, 2, 1)), ((0, 2), (2, 2), (2, 2))),
-                    Obstruction(Perm((1, 0, 2)), ((0, 1), (0, 0), (2, 2))),
-                    Obstruction(Perm((1, 0, 2)), ((0, 2), (0, 0), (2, 2))),
-                    Obstruction(Perm((1, 0, 2)), ((0, 2), (0, 1), (2, 2))),
-                    Obstruction(Perm((1, 0, 2)), ((0, 2), (0, 2), (2, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (2, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (2, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (2, 1))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (2, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (2, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (2, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((2, 0), (2, 2), (2, 1), (2, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((2, 0), (2, 2), (2, 2), (2, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((2, 0), (2, 2), (2, 2), (2, 1))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((2, 0), (2, 2), (2, 2), (2, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((2, 1), (2, 2), (2, 2), (2, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((2, 2), (2, 2), (2, 2), (2, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((2, 1), (2, 0), (2, 2), (2, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((2, 2), (2, 0), (2, 2), (2, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((2, 2), (2, 1), (2, 2), (2, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((2, 2), (2, 2), (2, 2), (2, 2))),
+                    GriddedPerm(Perm((0,)), ((0, 3),)),
+                    GriddedPerm(Perm((0,)), ((1, 0),)),
+                    GriddedPerm(Perm((0,)), ((1, 1),)),
+                    GriddedPerm(Perm((0,)), ((1, 2),)),
+                    GriddedPerm(Perm((0,)), ((2, 3),)),
+                    GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((0, 1)), ((0, 1), (2, 1))),
+                    GriddedPerm(Perm((0, 1)), ((1, 3), (1, 3))),
+                    GriddedPerm(Perm((0, 1)), ((2, 1), (2, 1))),
+                    GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((1, 0)), ((0, 0), (2, 0))),
+                    GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((1, 0)), ((0, 1), (2, 1))),
+                    GriddedPerm(Perm((1, 0)), ((1, 3), (1, 3))),
+                    GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+                    GriddedPerm(Perm((1, 0)), ((2, 1), (2, 1))),
+                    GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 1), (2, 0))),
+                    GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 0))),
+                    GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 1))),
+                    GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 2), (2, 2))),
+                    GriddedPerm(Perm((0, 2, 1)), ((0, 1), (2, 2), (2, 2))),
+                    GriddedPerm(Perm((0, 2, 1)), ((0, 2), (2, 2), (2, 2))),
+                    GriddedPerm(Perm((1, 0, 2)), ((0, 1), (0, 0), (2, 2))),
+                    GriddedPerm(Perm((1, 0, 2)), ((0, 2), (0, 0), (2, 2))),
+                    GriddedPerm(Perm((1, 0, 2)), ((0, 2), (0, 1), (2, 2))),
+                    GriddedPerm(Perm((1, 0, 2)), ((0, 2), (0, 2), (2, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (2, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (2, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (2, 1))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (2, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (2, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (2, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((2, 0), (2, 2), (2, 1), (2, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((2, 0), (2, 2), (2, 2), (2, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((2, 0), (2, 2), (2, 2), (2, 1))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((2, 0), (2, 2), (2, 2), (2, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((2, 1), (2, 2), (2, 2), (2, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((2, 2), (2, 2), (2, 2), (2, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((2, 1), (2, 0), (2, 2), (2, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((2, 2), (2, 0), (2, 2), (2, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((2, 2), (2, 1), (2, 2), (2, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((2, 2), (2, 2), (2, 2), (2, 2))),
                 ),
                 requirements=(
                     (Requirement(Perm((0,)), ((1, 3),)),),
@@ -1967,15 +1967,15 @@ def test_place_col(obs_inf_til):
         [
             Tiling(
                 obstructions=(
-                    Obstruction(Perm((0,)), ((0, 0),)),
-                    Obstruction(Perm((0,)), ((0, 2),)),
-                    Obstruction(Perm((0,)), ((1, 1),)),
-                    Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-                    Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-                    Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
-                    Obstruction(Perm((0, 2, 1)), ((1, 0), (1, 2), (1, 2))),
-                    Obstruction(Perm((2, 1, 0)), ((1, 2), (1, 2), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 2), (1, 2), (1, 2), (1, 2))),
+                    GriddedPerm(Perm((0,)), ((0, 0),)),
+                    GriddedPerm(Perm((0,)), ((0, 2),)),
+                    GriddedPerm(Perm((0,)), ((1, 1),)),
+                    GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+                    GriddedPerm(Perm((0, 2, 1)), ((1, 0), (1, 2), (1, 2))),
+                    GriddedPerm(Perm((2, 1, 0)), ((1, 2), (1, 2), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 2), (1, 2), (1, 2), (1, 2))),
                 ),
                 requirements=(
                     (Requirement(Perm((0,)), ((0, 1),)),),
@@ -1984,23 +1984,23 @@ def test_place_col(obs_inf_til):
             ),
             Tiling(
                 obstructions=(
-                    Obstruction(Perm((0,)), ((0, 1),)),
-                    Obstruction(Perm((0,)), ((0, 2),)),
-                    Obstruction(Perm((0,)), ((0, 3),)),
-                    Obstruction(Perm((0,)), ((1, 0),)),
-                    Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-                    Obstruction(Perm((0, 1)), ((1, 2), (1, 2))),
-                    Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-                    Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
-                    Obstruction(Perm((1, 0)), ((1, 2), (1, 2))),
-                    Obstruction(Perm((2, 1, 0)), ((1, 3), (1, 2), (1, 1))),
-                    Obstruction(Perm((2, 1, 0)), ((1, 3), (1, 3), (1, 1))),
-                    Obstruction(Perm((2, 1, 0)), ((1, 3), (1, 3), (1, 2))),
-                    Obstruction(Perm((2, 1, 0)), ((1, 3), (1, 3), (1, 3))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 2), (1, 1), (1, 3), (1, 3))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 3), (1, 1), (1, 3), (1, 3))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 3), (1, 2), (1, 3), (1, 3))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 3), (1, 3), (1, 3), (1, 3))),
+                    GriddedPerm(Perm((0,)), ((0, 1),)),
+                    GriddedPerm(Perm((0,)), ((0, 2),)),
+                    GriddedPerm(Perm((0,)), ((0, 3),)),
+                    GriddedPerm(Perm((0,)), ((1, 0),)),
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((0, 1)), ((1, 2), (1, 2))),
+                    GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+                    GriddedPerm(Perm((1, 0)), ((1, 2), (1, 2))),
+                    GriddedPerm(Perm((2, 1, 0)), ((1, 3), (1, 2), (1, 1))),
+                    GriddedPerm(Perm((2, 1, 0)), ((1, 3), (1, 3), (1, 1))),
+                    GriddedPerm(Perm((2, 1, 0)), ((1, 3), (1, 3), (1, 2))),
+                    GriddedPerm(Perm((2, 1, 0)), ((1, 3), (1, 3), (1, 3))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 2), (1, 1), (1, 3), (1, 3))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 3), (1, 1), (1, 3), (1, 3))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 3), (1, 2), (1, 3), (1, 3))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 3), (1, 3), (1, 3), (1, 3))),
                 ),
                 requirements=(
                     (Requirement(Perm((0,)), ((0, 0),)),),
@@ -2009,41 +2009,41 @@ def test_place_col(obs_inf_til):
             ),
             Tiling(
                 obstructions=(
-                    Obstruction(Perm((0,)), ((0, 0),)),
-                    Obstruction(Perm((0,)), ((0, 1),)),
-                    Obstruction(Perm((0,)), ((0, 2),)),
-                    Obstruction(Perm((0,)), ((0, 4),)),
-                    Obstruction(Perm((0,)), ((1, 3),)),
-                    Obstruction(Perm((0, 1)), ((0, 3), (0, 3))),
-                    Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
-                    Obstruction(Perm((1, 0)), ((0, 3), (0, 3))),
-                    Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
-                    Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
-                    Obstruction(Perm((0, 2, 1)), ((1, 0), (1, 4), (1, 4))),
-                    Obstruction(Perm((0, 2, 1)), ((1, 1), (1, 4), (1, 4))),
-                    Obstruction(Perm((0, 2, 1)), ((1, 2), (1, 4), (1, 4))),
-                    Obstruction(Perm((2, 1, 0)), ((1, 4), (1, 4), (1, 4))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((1, 0), (1, 2), (1, 1), (1, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((1, 0), (1, 2), (1, 2), (1, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((1, 0), (1, 2), (1, 2), (1, 1))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((1, 0), (1, 2), (1, 2), (1, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((1, 0), (1, 4), (1, 1), (1, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((1, 0), (1, 4), (1, 2), (1, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((1, 0), (1, 4), (1, 2), (1, 1))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((1, 0), (1, 4), (1, 2), (1, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((1, 1), (1, 2), (1, 2), (1, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((1, 1), (1, 4), (1, 2), (1, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((1, 2), (1, 2), (1, 2), (1, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((1, 2), (1, 4), (1, 2), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 1), (1, 0), (1, 2), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 1), (1, 0), (1, 4), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 2), (1, 0), (1, 2), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 2), (1, 0), (1, 4), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 2), (1, 1), (1, 2), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 2), (1, 1), (1, 4), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 2), (1, 2), (1, 2), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 2), (1, 2), (1, 4), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((1, 4), (1, 4), (1, 4), (1, 4))),
+                    GriddedPerm(Perm((0,)), ((0, 0),)),
+                    GriddedPerm(Perm((0,)), ((0, 1),)),
+                    GriddedPerm(Perm((0,)), ((0, 2),)),
+                    GriddedPerm(Perm((0,)), ((0, 4),)),
+                    GriddedPerm(Perm((0,)), ((1, 3),)),
+                    GriddedPerm(Perm((0, 1)), ((0, 3), (0, 3))),
+                    GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
+                    GriddedPerm(Perm((1, 0)), ((0, 3), (0, 3))),
+                    GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+                    GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+                    GriddedPerm(Perm((0, 2, 1)), ((1, 0), (1, 4), (1, 4))),
+                    GriddedPerm(Perm((0, 2, 1)), ((1, 1), (1, 4), (1, 4))),
+                    GriddedPerm(Perm((0, 2, 1)), ((1, 2), (1, 4), (1, 4))),
+                    GriddedPerm(Perm((2, 1, 0)), ((1, 4), (1, 4), (1, 4))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((1, 0), (1, 2), (1, 1), (1, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((1, 0), (1, 2), (1, 2), (1, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((1, 0), (1, 2), (1, 2), (1, 1))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((1, 0), (1, 2), (1, 2), (1, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((1, 0), (1, 4), (1, 1), (1, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((1, 0), (1, 4), (1, 2), (1, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((1, 0), (1, 4), (1, 2), (1, 1))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((1, 0), (1, 4), (1, 2), (1, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((1, 1), (1, 2), (1, 2), (1, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((1, 1), (1, 4), (1, 2), (1, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((1, 2), (1, 2), (1, 2), (1, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((1, 2), (1, 4), (1, 2), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 1), (1, 0), (1, 2), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 1), (1, 0), (1, 4), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 2), (1, 0), (1, 2), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 2), (1, 0), (1, 4), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 2), (1, 1), (1, 2), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 2), (1, 1), (1, 4), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 2), (1, 2), (1, 2), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 2), (1, 2), (1, 4), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((1, 4), (1, 4), (1, 4), (1, 4))),
                 ),
                 requirements=(
                     (Requirement(Perm((0,)), ((0, 3),)),),
@@ -2057,41 +2057,41 @@ def test_place_col(obs_inf_til):
 def test_partial_place_point_in_cell(obs_inf_til):
     assert obs_inf_til.partial_place_point_in_cell((0, 0), 0) == Tiling(
         obstructions=(
-            Obstruction(Perm((0,)), ((1, 1),)),
-            Obstruction(Perm((0,)), ((1, 2),)),
-            Obstruction(Perm((0,)), ((2, 0),)),
-            Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-            Obstruction(Perm((0, 1)), ((0, 1), (2, 1))),
-            Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-            Obstruction(Perm((0, 1)), ((2, 1), (2, 1))),
-            Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-            Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
-            Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-            Obstruction(Perm((1, 0)), ((0, 1), (2, 1))),
-            Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
-            Obstruction(Perm((1, 0)), ((2, 1), (2, 1))),
-            Obstruction(Perm((1, 0)), ((2, 2), (2, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (1, 0))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (1, 0))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (2, 1))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (2, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (2, 2), (2, 1))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (2, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (2, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (2, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (2, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (2, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (2, 2))),
+            GriddedPerm(Perm((0,)), ((1, 1),)),
+            GriddedPerm(Perm((0,)), ((1, 2),)),
+            GriddedPerm(Perm((0,)), ((2, 0),)),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (2, 1))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1)), ((2, 1), (2, 1))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (1, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((1, 0)), ((0, 1), (2, 1))),
+            GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((1, 0)), ((2, 1), (2, 1))),
+            GriddedPerm(Perm((1, 0)), ((2, 2), (2, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (1, 0))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (1, 0))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (2, 1))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (2, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (2, 2), (2, 1))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (2, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (2, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (2, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (2, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (2, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (2, 2))),
         ),
         requirements=(
             (Requirement(Perm((0,)), ((0, 1),)),),
@@ -2105,38 +2105,38 @@ def test_partial_place_point_of_gridded_permutation(obs_inf_til):
     placed = obs_inf_til.partial_place_point_of_gridded_permutation(gp, 1, 1)
     assert placed == Tiling(
         obstructions=(
-            Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-            Obstruction(Perm((0, 1)), ((0, 3), (0, 3))),
-            Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-            Obstruction(Perm((1, 0)), ((0, 1), (0, 0))),
-            Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-            Obstruction(Perm((1, 0)), ((0, 2), (0, 0))),
-            Obstruction(Perm((1, 0)), ((0, 2), (0, 1))),
-            Obstruction(Perm((1, 0)), ((0, 2), (0, 2))),
-            Obstruction(Perm((1, 0)), ((0, 3), (0, 2))),
-            Obstruction(Perm((1, 0)), ((0, 3), (0, 3))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 3), (0, 0))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 3), (0, 1))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 4), (0, 0))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 4), (0, 1))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 4), (0, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 4), (0, 3))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 4), (0, 4))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 4), (0, 4), (0, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 4), (0, 4), (0, 3))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 4), (0, 4), (0, 4))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 4), (0, 4), (0, 2))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 4), (0, 4), (0, 3))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 4), (0, 4), (0, 4))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 3), (0, 4), (0, 4), (0, 4))),
-            Obstruction(Perm((0, 3, 2, 1)), ((0, 4), (0, 4), (0, 4), (0, 4))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 3), (0, 0), (0, 4), (0, 4))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 3), (0, 1), (0, 4), (0, 4))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 4), (0, 0), (0, 4), (0, 4))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 4), (0, 1), (0, 4), (0, 4))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 4), (0, 2), (0, 4), (0, 4))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 4), (0, 3), (0, 4), (0, 4))),
-            Obstruction(Perm((1, 0, 3, 2)), ((0, 4), (0, 4), (0, 4), (0, 4))),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 1)), ((0, 3), (0, 3))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((1, 0)), ((0, 2), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 2), (0, 1))),
+            GriddedPerm(Perm((1, 0)), ((0, 2), (0, 2))),
+            GriddedPerm(Perm((1, 0)), ((0, 3), (0, 2))),
+            GriddedPerm(Perm((1, 0)), ((0, 3), (0, 3))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 3), (0, 0))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 3), (0, 1))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 4), (0, 0))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 4), (0, 1))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 4), (0, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 4), (0, 3))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 4), (0, 4), (0, 4))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 4), (0, 4), (0, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 4), (0, 4), (0, 3))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 4), (0, 4), (0, 4))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 4), (0, 4), (0, 2))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 4), (0, 4), (0, 3))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 4), (0, 4), (0, 4))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 3), (0, 4), (0, 4), (0, 4))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 4), (0, 4), (0, 4), (0, 4))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 3), (0, 0), (0, 4), (0, 4))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 3), (0, 1), (0, 4), (0, 4))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 4), (0, 0), (0, 4), (0, 4))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 4), (0, 1), (0, 4), (0, 4))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 4), (0, 2), (0, 4), (0, 4))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 4), (0, 3), (0, 4), (0, 4))),
+            GriddedPerm(Perm((1, 0, 3, 2)), ((0, 4), (0, 4), (0, 4), (0, 4))),
         ),
         requirements=((Requirement(Perm((1, 0)), ((0, 3), (0, 1))),),),
     )
@@ -2147,31 +2147,31 @@ def test_partial_place_row(obs_inf_til):
         [
             Tiling(
                 obstructions=(
-                    Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-                    Obstruction(Perm((0, 1)), ((0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-                    Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-                    Obstruction(Perm((1, 0)), ((0, 2), (0, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 1), (0, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 2), (0, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 2), (0, 1))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 3), (0, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 3), (0, 1))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 3), (0, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 3), (0, 3))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 3), (0, 3), (0, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 3), (0, 3), (0, 3))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 3), (0, 3), (0, 3))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 3), (0, 3), (0, 3), (0, 3))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 3), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 3), (0, 3))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 3), (0, 3))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 3), (0, 3))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 3), (0, 0), (0, 3), (0, 3))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 3), (0, 1), (0, 3), (0, 3))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 3), (0, 2), (0, 3), (0, 3))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 3), (0, 3), (0, 3), (0, 3))),
+                    GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((1, 0)), ((0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 1), (0, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 2), (0, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 2), (0, 1))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 3), (0, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 3), (0, 1))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 3), (0, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 3), (0, 3), (0, 3))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 3), (0, 3), (0, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 3), (0, 3), (0, 3))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 3), (0, 3), (0, 3))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 3), (0, 3), (0, 3), (0, 3))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 3), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 3), (0, 3))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 3), (0, 3))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 3), (0, 3))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 3), (0, 0), (0, 3), (0, 3))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 3), (0, 1), (0, 3), (0, 3))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 3), (0, 2), (0, 3), (0, 3))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 3), (0, 3), (0, 3), (0, 3))),
                 ),
                 requirements=(
                     (Requirement(Perm((0,)), ((0, 2),)),),
@@ -2187,21 +2187,21 @@ def test_partial_place_col(obs_inf_til):
         [
             Tiling(
                 obstructions=(
-                    Obstruction(Perm((0,)), ((1, 0),)),
-                    Obstruction(Perm((0,)), ((1, 2),)),
-                    Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-                    Obstruction(Perm((0, 1)), ((0, 1), (1, 1))),
-                    Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
-                    Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-                    Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-                    Obstruction(Perm((1, 0)), ((0, 1), (1, 1))),
-                    Obstruction(Perm((1, 0)), ((1, 1), (1, 1))),
-                    Obstruction(Perm((0, 2, 1)), ((0, 0), (0, 2), (0, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0,)), ((1, 0),)),
+                    GriddedPerm(Perm((0,)), ((1, 2),)),
+                    GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
+                    GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
+                    GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((1, 0)), ((0, 1), (1, 1))),
+                    GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+                    GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
                 ),
                 requirements=(
                     (Requirement(Perm((0,)), ((1, 1),)),),
@@ -2210,26 +2210,26 @@ def test_partial_place_col(obs_inf_til):
             ),
             Tiling(
                 obstructions=(
-                    Obstruction(Perm((0,)), ((1, 1),)),
-                    Obstruction(Perm((0,)), ((1, 2),)),
-                    Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-                    Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-                    Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-                    Obstruction(Perm((1, 0)), ((0, 0), (1, 0))),
-                    Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-                    Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (1, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (1, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0,)), ((1, 1),)),
+                    GriddedPerm(Perm((0,)), ((1, 2),)),
+                    GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                    GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((1, 0)), ((0, 0), (1, 0))),
+                    GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (1, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (1, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
                 ),
                 requirements=(
                     (Requirement(Perm((0,)), ((0, 1),)),),
@@ -2238,30 +2238,30 @@ def test_partial_place_col(obs_inf_til):
             ),
             Tiling(
                 obstructions=(
-                    Obstruction(Perm((0,)), ((1, 0),)),
-                    Obstruction(Perm((0,)), ((1, 1),)),
-                    Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-                    Obstruction(Perm((0, 1)), ((1, 2), (1, 2))),
-                    Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-                    Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
-                    Obstruction(Perm((1, 0)), ((1, 2), (1, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (1, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (1, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (1, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
-                    Obstruction(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (1, 2))),
+                    GriddedPerm(Perm((0,)), ((1, 0),)),
+                    GriddedPerm(Perm((0,)), ((1, 1),)),
+                    GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((0, 1)), ((1, 2), (1, 2))),
+                    GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((1, 0)), ((1, 2), (1, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 1), (0, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 0))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 1))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 2), (0, 2), (1, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 1), (0, 2), (0, 2), (1, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 3, 2, 1)), ((0, 2), (0, 2), (0, 2), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 1), (0, 0), (0, 2), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 0), (0, 2), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 1), (0, 2), (1, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0, 3, 2)), ((0, 2), (0, 2), (0, 2), (1, 2))),
                 ),
                 requirements=(
                     (Requirement(Perm((0,)), ((1, 2),)),),
@@ -2279,18 +2279,18 @@ class TestGetGenf:
 
     def test_empty_tiling(self):
         t = Tiling(
-            [Obstruction(Perm((0, 1)), [(0, 0), (0, 0)])],
+            [GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)])],
             [[Requirement(Perm((0, 1)), [(0, 0), (0, 0)])]],
         )
         assert t.get_genf() == sympy.sympify("0")
 
     def test_monotone_cell(self):
-        t = Tiling([Obstruction(Perm((0, 1)), ((0, 0), (0, 0)))])
+        t = Tiling([GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0)))])
         assert sympy.simplify(t.get_genf() - sympy.sympify("1/(1-x)")) == 0
 
     def test_with_req(self):
         t = Tiling(
-            [Obstruction(Perm((0, 1)), ((0, 0), (0, 0)))],
+            [GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0)))],
             [[Requirement(Perm((0,)), ((0, 0),))]],
         )
         assert sympy.simplify(t.get_genf() - sympy.sympify("x/(1-x)")) == 0
@@ -2299,8 +2299,8 @@ class TestGetGenf:
     def test_adjacent_monotone(self):
         t = Tiling(
             [
-                Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-                Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
             ]
         )
         assert sympy.simplify(t.get_genf() - sympy.sympify("1/(1-2*x)")) == 0
@@ -2309,8 +2309,8 @@ class TestGetGenf:
     def test_with_list_req(self):
         t = Tiling(
             [
-                Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-                Obstruction(Perm((0, 1)), ((1, 1), (1, 1))),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
             ],
             [
                 [Requirement(Perm((0,)), ((1, 1),))],

@@ -1,5 +1,5 @@
 from permuta import Perm
-from tilings import Obstruction, Requirement, Tiling
+from tilings import GriddedPerm, Requirement, Tiling
 from tilings.strategies import FactorStrategy
 
 pytest_plugins = [
@@ -33,7 +33,7 @@ def test_with_union_not_workable(diverse_tiling):
 
 def test_standard_factor(simple_tiling):
     tiling = Tiling(
-        obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (0, 0)])],
+        obstructions=[GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)])],
         requirements=[
             [
                 Requirement(Perm((0, 1)), [(1, 1), (1, 1)]),
@@ -54,7 +54,7 @@ def test_standard_factor(simple_tiling):
                     ]
                 ]
             ),
-            Tiling(obstructions=[Obstruction(Perm((0, 1)), [(0, 0), (0, 0)])]),
+            Tiling(obstructions=[GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)])]),
         ]
     )
 
@@ -71,21 +71,21 @@ def test_factor_all_interleaving(diverse_tiling):
         [
             Tiling(
                 obstructions=[
-                    Obstruction(Perm((0, 2, 3, 1)), [(0, 0), (1, 1), (1, 1), (2, 0)])
+                    GriddedPerm(Perm((0, 2, 3, 1)), [(0, 0), (1, 1), (1, 1), (2, 0)])
                 ],
                 requirements=[[Requirement(Perm((0,)), [(2, 0)])]],
             ),
             Tiling(
                 obstructions=[
-                    Obstruction(Perm((0, 1)), [(0, 0), (0, 0)]),
-                    Obstruction(Perm((1, 0)), [(0, 0), (0, 0)]),
+                    GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)]),
+                    GriddedPerm(Perm((1, 0)), [(0, 0), (0, 0)]),
                 ],
                 requirements=[[Requirement(Perm((0,)), [(0, 0)])]],
             ),
             Tiling(
                 obstructions=[
-                    Obstruction(Perm((0, 1)), [(0, 0), (0, 0)]),
-                    Obstruction(Perm((1, 0)), [(0, 0), (0, 0)]),
+                    GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)]),
+                    GriddedPerm(Perm((1, 0)), [(0, 0), (0, 0)]),
                 ],
                 requirements=[[Requirement(Perm((0,)), [(0, 0)])]],
             ),
@@ -99,8 +99,6 @@ def test_factor_all_interleaving(diverse_tiling):
             ),
         ]
     )
-
-
 
 
 # ------------------------------------------------------------
@@ -157,13 +155,13 @@ def test_rule(factor1, factor1_with_mon_int, factor1_with_int, not_fact_tiling):
 def test_all_union_rules():
     t = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), ((0, 0),) * 2),
-            Obstruction(Perm((0, 1)), ((1, 1),) * 2),
-            Obstruction(Perm((0, 1)), ((2, 2),) * 2),
+            GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+            GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
+            GriddedPerm(Perm((0, 1)), ((2, 2),) * 2),
         ]
     )
     fo = Factor(t)
-    f2 = Tiling(obstructions=[Obstruction(Perm((0, 1)), ((0, 0),) * 2)])
+    f2 = Tiling(obstructions=[GriddedPerm(Perm((0, 1)), ((0, 0),) * 2)])
     assert all("unions" in rule.formal_step for rule in fo.all_union_rules())
     # The full factorisation rule is not returned
     assert all(rule.comb_classes != [f2, f2, f2] for rule in fo.all_union_rules())
@@ -173,4 +171,3 @@ def test_all_union_rules():
     assert all(
         rule.workable == [True, True] for rule in fo.all_union_rules(workable=True)
     )
-

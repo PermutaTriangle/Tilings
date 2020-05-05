@@ -1,7 +1,7 @@
 import pytest
 
 from permuta import Perm
-from tilings import Obstruction, Requirement, Tiling
+from tilings import Requirement, Tiling
 from tilings.strategies import (
     ObstructionTransitivityStrategy,
     RowColumnSeparationStrategy,
@@ -17,9 +17,9 @@ def test_obstruction_transitivity(
     strat = ObstructionTransitivityStrategy()(simple_trans_row)
     assert strat.comb_classes[0] == Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
-            Obstruction(Perm((0, 1)), [(0, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (2, 0)]),
         ],
         requirements=[[Requirement(Perm((0,)), [(1, 0)])]],
     )
@@ -27,9 +27,9 @@ def test_obstruction_transitivity(
     strat = ObstructionTransitivityStrategy()(simple_trans_col)
     assert strat.comb_classes[0] == Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (0, 1)]),
-            Obstruction(Perm((0, 1)), [(0, 1), (0, 2)]),
-            Obstruction(Perm((0, 1)), [(0, 0), (0, 2)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (0, 1)]),
+            GriddedPerm(Perm((0, 1)), [(0, 1), (0, 2)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (0, 2)]),
         ],
         requirements=[[Requirement(Perm((0,)), [(0, 1)])]],
     )
@@ -37,12 +37,12 @@ def test_obstruction_transitivity(
     strat = ObstructionTransitivityStrategy()(simple_trans_row_len2)
     assert strat.comb_classes[0] == Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((0, 1)), [(0, 0), (2, 0)]),
-            Obstruction(Perm((0, 1)), [(0, 0), (3, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (3, 0)]),
-            Obstruction(Perm((0, 1)), [(2, 0), (3, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (3, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (3, 0)]),
+            GriddedPerm(Perm((0, 1)), [(2, 0), (3, 0)]),
         ],
         requirements=[
             [Requirement(Perm((0,)), [(1, 0)])],
@@ -53,16 +53,16 @@ def test_obstruction_transitivity(
     strat = ObstructionTransitivityStrategy()(simple_trans_row_len3)
     assert strat.comb_classes[0] == Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((0, 1)), [(0, 0), (2, 0)]),
-            Obstruction(Perm((0, 1)), [(0, 0), (3, 0)]),
-            Obstruction(Perm((0, 1)), [(0, 0), (4, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (3, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (4, 0)]),
-            Obstruction(Perm((0, 1)), [(2, 0), (3, 0)]),
-            Obstruction(Perm((0, 1)), [(2, 0), (4, 0)]),
-            Obstruction(Perm((0, 1)), [(3, 0), (4, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (3, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (4, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (3, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (4, 0)]),
+            GriddedPerm(Perm((0, 1)), [(2, 0), (3, 0)]),
+            GriddedPerm(Perm((0, 1)), [(2, 0), (4, 0)]),
+            GriddedPerm(Perm((0, 1)), [(3, 0), (4, 0)]),
         ],
         requirements=[
             [Requirement(Perm((0,)), [(1, 0)])],

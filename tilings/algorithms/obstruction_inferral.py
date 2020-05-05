@@ -3,7 +3,7 @@ from itertools import chain
 from typing import TYPE_CHECKING, Iterable, List, Optional, Set, Tuple
 
 from permuta import Perm
-from tilings import GriddedPerm, Obstruction
+from tilings import GriddedPerm
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -19,22 +19,22 @@ class ObstructionInferral(abc.ABC):
 
     def __init__(self, tiling: "Tiling"):
         self._tiling = tiling
-        self._new_obs: Optional[List[Obstruction]] = None
+        self._new_obs: Optional[List[GriddedPerm]] = None
 
     @abc.abstractmethod
-    def potential_new_obs(self) -> Iterable[Obstruction]:
+    def potential_new_obs(self) -> Iterable[GriddedPerm]:
         """
         Return an iterable of new obstructions that should be added to the
         tiling if possible.
         """
 
-    def new_obs(self) -> List[Obstruction]:
+    def new_obs(self) -> List[GriddedPerm]:
         """
         Returns the list of new obstructions that can be added to the tiling.
         """
         if self._new_obs is not None:
             return self._new_obs
-        newobs: List[Obstruction] = []
+        newobs: List[GriddedPerm] = []
         for ob in sorted(self.potential_new_obs(), key=len):
             cont_newob = any(newob in ob for newob in newobs)
             if not cont_newob and self.can_add_obstruction(ob, self._tiling):
@@ -43,7 +43,7 @@ class ObstructionInferral(abc.ABC):
         return self._new_obs
 
     @staticmethod
-    def can_add_obstruction(obstruction: Obstruction, tiling: "Tiling") -> bool:
+    def can_add_obstruction(obstruction: GriddedPerm, tiling: "Tiling") -> bool:
         """Return true if `obstruction` can be added to `tiling`."""
         return tiling.add_requirement(obstruction.patt, obstruction.pos).is_empty()
 
@@ -68,14 +68,14 @@ class SubobstructionInferral(ObstructionInferral):
     subobstructions which can be added.
     """
 
-    def potential_new_obs(self) -> Set[Obstruction]:
+    def potential_new_obs(self) -> Set[GriddedPerm]:
         """
         Return the set of all subobstructions of the tiling.
         """
-        subobs: Set[Obstruction] = set()
+        subobs: Set[GriddedPerm] = set()
         for ob in self._tiling.obstructions:
             subobs.update(ob.all_subperms(proper=True))
-        subobs.remove(Obstruction(Perm(), []))
+        subobs.remove(GriddedPerm.empty_perm())
         return subobs
 
 
@@ -103,7 +103,7 @@ class AllObstructionInferral(ObstructionInferral):
             for req_list in self._tiling.requirements
         )
 
-    def potential_new_obs(self) -> List[Obstruction]:
+    def potential_new_obs(self) -> List[GriddedPerm]:
         """
         Iterator over all possible obstruction of `self.obstruction_length`.
         """
@@ -112,7 +112,7 @@ class AllObstructionInferral(ObstructionInferral):
         no_req_tiling = self._tiling.__class__(self._tiling.obstructions)
         n = self._obs_len
         pot_obs = filter(self.not_required, no_req_tiling.gridded_perms(n))
-        return list(Obstruction(gp.patt, gp.pos) for gp in pot_obs)
+        return list(GriddedPerm(gp.patt, gp.pos) for gp in pot_obs)
 
 
 class EmptyCellInferral(AllObstructionInferral):

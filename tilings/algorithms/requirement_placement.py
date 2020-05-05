@@ -5,7 +5,6 @@ from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 
 from ..griddedperm import GriddedPerm
-from ..obstruction import Obstruction
 from ..requirement import Requirement
 
 if TYPE_CHECKING:
@@ -14,7 +13,7 @@ if TYPE_CHECKING:
 Cell = Tuple[int, int]
 Dir = int
 ListRequirement = List[Requirement]
-ObsCache = Dict[Cell, List[Obstruction]]
+ObsCache = Dict[Cell, List[GriddedPerm]]
 ReqsCache = Dict[Cell, List[ListRequirement]]
 
 
@@ -171,15 +170,15 @@ class RequirementPlacement:
         x, y = cell
         return (x + 1 if self.own_col else x, y + 1 if self.own_row else y)
 
-    def _point_obstructions(self, cell: Cell) -> List[Obstruction]:
+    def _point_obstructions(self, cell: Cell) -> List[GriddedPerm]:
         """
         Return the localised 12 and 21 obstruction required to ensure the
         newly placed point is a point.
         """
         placed_cell = self._placed_cell(cell)
         return [
-            Obstruction(Perm((0, 1)), (placed_cell, placed_cell)),
-            Obstruction(Perm((1, 0)), (placed_cell, placed_cell)),
+            GriddedPerm(Perm((0, 1)), (placed_cell, placed_cell)),
+            GriddedPerm(Perm((1, 0)), (placed_cell, placed_cell)),
         ]
 
     def _point_requirements(self, cell: Cell) -> List[ListRequirement]:
@@ -222,7 +221,7 @@ class RequirementPlacement:
             chain.from_iterable(self._stretch_gridded_perm(gp, cell) for gp in gps)
         )
 
-    def _stretched_obstructions(self, cell: Cell) -> List[Obstruction]:
+    def _stretched_obstructions(self, cell: Cell) -> List[GriddedPerm]:
         """
         Return all of the stretched obstructions that are created if placing a
         point in the given cell.
@@ -247,7 +246,7 @@ class RequirementPlacement:
 
     def _stretched_obstructions_and_requirements(
         self, cell: Cell
-    ) -> Tuple[List[Obstruction], List[ListRequirement]]:
+    ) -> Tuple[List[GriddedPerm], List[ListRequirement]]:
         """
         Return all of the stretched obstruction and requirements assuming that
         a point is placed in cell.
@@ -277,7 +276,7 @@ class RequirementPlacement:
         indices: Iterable[int],
         cell: Cell,
         direction: Dir,
-    ) -> List[Obstruction]:
+    ) -> List[GriddedPerm]:
         """
         Return the obstructions required to ensure that the placed point is
         the direction most occurence of a point used in an occurrence of any
@@ -293,9 +292,7 @@ class RequirementPlacement:
             # if cell is farther in the direction than gp[idx], then don't need
             # to avoid any of the stretched grided perms
             if not self._farther(cell, gp.pos[idx], direction):
-                for stretched_gp in self._stretch_gridded_perm(
-                    Obstruction.from_gridded_perm(gp), cell
-                ):
+                for stretched_gp in self._stretch_gridded_perm(gp, cell):
                     if self._farther(stretched_gp.pos[idx], placed_cell, direction):
                         res.append(stretched_gp)
         return res
@@ -390,7 +387,7 @@ class RequirementPlacement:
         """
         return self._tiling.add_obstructions(
             tuple(
-                Obstruction(Perm((0,)), (cell,))
+                GriddedPerm(Perm((0,)), (cell,))
                 for cell in self._tiling.cells_in_col(index)
             )
         )
@@ -401,7 +398,7 @@ class RequirementPlacement:
         """
         return self._tiling.add_obstructions(
             tuple(
-                Obstruction(Perm((0,)), (cell,))
+                GriddedPerm(Perm((0,)), (cell,))
                 for cell in self._tiling.cells_in_row(index)
             )
         )

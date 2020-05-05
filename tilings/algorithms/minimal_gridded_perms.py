@@ -4,7 +4,7 @@ from itertools import chain, product
 from typing import TYPE_CHECKING, Dict, FrozenSet, Iterator, List, Optional, Set, Tuple
 
 from permuta import Perm
-from tilings import GriddedPerm, Obstruction
+from tilings import GriddedPerm
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -391,7 +391,7 @@ class MinimalGriddedPerms:
         not a tiling is empty.
         """
         if not self.requirements:
-            if Obstruction.empty_perm() not in self.obstructions:
+            if GriddedPerm.empty_perm() not in self.obstructions:
                 yield GriddedPerm.empty_perm()
             return
         if len(self.requirements) == 1:

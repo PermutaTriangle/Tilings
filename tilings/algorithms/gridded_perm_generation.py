@@ -12,7 +12,6 @@ from typing import (
 
 from permuta import Perm
 from tilings.griddedperm import GriddedPerm
-from tilings.obstruction import Obstruction
 from tilings.requirement import Requirement
 
 if TYPE_CHECKING:
@@ -165,7 +164,7 @@ class GriddedPermsOnTiling:
                 yield from self.backtracking(nextgp, curcol, unsatisfied_reqs)
 
     def __iter__(self) -> Iterator[GriddedPerm]:
-        if not Obstruction(Perm(tuple()), tuple()) in self._obstructions:
+        if not GriddedPerm(Perm(tuple()), tuple()) in self._obstructions:
             yield from self.backtracking(
                 GriddedPerm.empty_perm(), 0, self._requirements
             )

@@ -3,7 +3,7 @@ from collections import Counter
 from itertools import chain
 
 from permuta import Perm
-from tilings import Obstruction
+from tilings.griddedperm import GriddedPerm
 
 
 class Fusion:
@@ -283,13 +283,13 @@ class ComponentFusion(Fusion):
         scell = self.second_cell
         if self._fuse_row:
             possible_obs = [
-                Obstruction(Perm((0, 1)), (fcell, scell)),
-                Obstruction(Perm((1, 0)), (scell, fcell)),
+                GriddedPerm(Perm((0, 1)), (fcell, scell)),
+                GriddedPerm(Perm((1, 0)), (scell, fcell)),
             ]
         else:
             possible_obs = [
-                Obstruction(Perm((0, 1)), (fcell, scell)),
-                Obstruction(Perm((1, 0)), (fcell, scell)),
+                GriddedPerm(Perm((0, 1)), (fcell, scell)),
+                GriddedPerm(Perm((1, 0)), (fcell, scell)),
             ]
         return any(ob in possible_obs for ob in self._tiling.obstructions)
 
