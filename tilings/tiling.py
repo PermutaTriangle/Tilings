@@ -1328,6 +1328,15 @@ class Tiling(CombinatorialClass):
         """
         Return generating function of a tiling.
         """
+        # Try using some of the enumeration strategy
+        enum_stragies = [
+            BasicEnumeration,
+            DatabaseEnumeration,
+            MonotoneTreeEnumeration,
+        ]
+        for enum_strat in enum_stragies:
+            if enum_strat(self).verified():
+                return enum_strat(self).get_genf()
         # Can count by counting the tiling with a requirement removed and
         # subtracting the tiling with it added as an obstruction.
         if self.requirements:
@@ -1344,15 +1353,6 @@ class Tiling(CombinatorialClass):
             return ignore.get_genf(*args, **kwargs) - t_avoid_req.get_genf(
                 *args, **kwargs
             )
-        # Try using some of the enumeration strategy
-        enum_stragies = [
-            BasicEnumeration,
-            DatabaseEnumeration,
-            MonotoneTreeEnumeration,
-        ]
-        for enum_strat in enum_stragies:
-            if enum_strat(self).verified():
-                return enum_strat(self).get_genf()
         # Check for 1x1
         obo_enum = OneByOneEnumeration(self, basis=[])
         if obo_enum.verified():
