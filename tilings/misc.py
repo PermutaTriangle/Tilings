@@ -3,7 +3,7 @@ Collection of function that are not directly related to the code but still
 useful.
 """
 from functools import reduce
-from typing import Dict, Sequence, Set, Tuple, TypeVar, AbstractSet, Iterable, Iterator
+from typing import Dict, Iterable, Iterator, Sequence, Set, Tuple, TypeVar
 
 Vertex = TypeVar("Vertex")
 T = TypeVar("T")
@@ -83,7 +83,7 @@ def is_connected(adj_table: AdjTable) -> bool:
 # https://codereview.stackexchange.com/questions/1526/finding-all-k-subset-partitions
 
 
-def partitions_iterator(lst):
+def partitions_iterator(lst: Sequence[T]) -> Iterator[Tuple[Tuple[T, ...], ...]]:
     """
     Iterator over all the possible partitions of a list. A partition is yielded
     as a list of list.
@@ -93,13 +93,13 @@ def partitions_iterator(lst):
 
     >>> for partition in partitions_iterator([1, 2, 3]):
     ...     print(partition)
-    [[1, 2], [3]]
-    [[1], [2, 3]]
-    [[1, 3], [2]]
+    ((1, 2), (3,))
+    ((1,), (2, 3))
+    ((1, 3), (2,))
     """
     for i in range(2, len(lst)):
         for part in algorithm_u(lst, i):
-            yield part
+            yield tuple(map(tuple, part))
 
 
 def algorithm_u(ns, m):

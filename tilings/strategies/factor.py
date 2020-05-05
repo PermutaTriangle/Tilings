@@ -17,7 +17,6 @@ from tilings.algorithms import (
 from tilings.exception import InvalidOperationError
 from tilings.misc import partitions_iterator
 
-
 Cell = Tuple[int, int]
 
 __all__ = (
@@ -108,7 +107,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
     @classmethod
     def from_dict(cls, d: dict) -> "FactorStrategy":
         partition = tuple(tuple(tuple(c) for c in p) for p in d["partition"])
-        return cls(partition=partition, workable=d["workable"])
+        return cls(partition=partition, workable=d["workable"])  # type: ignore
 
 
 class FactorWithInterleavingStrategy(FactorStrategy):
@@ -139,10 +138,13 @@ class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
 
 class AllFactorStrategy(StrategyGenerator):
 
-    factor_algo_and_classes = {
+    FACTOR_ALGO_AND_CLASS = {
         None: (Factor, FactorStrategy),
-        "monotone": (FactorWithInterleaving, FactorWithInterleavingStrategy),
-        "all": (FactorWithMonotoneInterleaving, FactorWithMonotoneInterleavingStrategy),
+        "monotone": (
+            FactorWithMonotoneInterleaving,
+            FactorWithMonotoneInterleavingStrategy,
+        ),
+        "all": (FactorWithInterleaving, FactorWithInterleavingStrategy),
     }
 
     def __init__(
@@ -153,7 +155,7 @@ class AllFactorStrategy(StrategyGenerator):
         workable: bool = True,
     ) -> None:
         try:
-            self.factor_algo, self.factor_class = self.factor_algo_and_classes[
+            self.factor_algo, self.factor_class = self.FACTOR_ALGO_AND_CLASS[
                 interleaving
             ]
         except KeyError:
@@ -171,13 +173,12 @@ class AllFactorStrategy(StrategyGenerator):
         if factor_algo.factorable():
             min_comp = factor_algo.get_components()
             if self.unions:
-                min_comp = tuple(tuple(x) for x in min_comp)
                 for partition in partitions_iterator(min_comp):
-                    partition = tuple(
-                        tuple(x for x in chain(*part)) for part in partition
+                    components = tuple(
+                        tuple(chain.from_iterable(part)) for part in partition
                     )
                     yield self.factor_class(
-                        partition, ignore_parent=self.ignore_parent, workable=False
+                        components, ignore_parent=self.ignore_parent, workable=False
                     )
             yield self.factor_class(
                 min_comp, ignore_parent=self.ignore_parent, workable=self.workable

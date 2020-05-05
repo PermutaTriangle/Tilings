@@ -342,7 +342,7 @@ class RequirementPlacement:
         of any point idx, gp(idx) for gridded perms in gp, and idx in indices
         """
         cells = frozenset(gp.pos[idx] for idx, gp in zip(indices, gps))
-        res = []  # List[Tiling]
+        res = []
         for cell in cells:
             obs, reqs = self._stretched_obstructions_and_requirements(cell)
             forced_obs = self._forced_obstructions_from_requirement(
