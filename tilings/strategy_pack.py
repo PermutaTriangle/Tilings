@@ -61,7 +61,7 @@ class TileScopePack(StrategyPack):
     def all_the_strategies(cls, length: int = 1) -> "TileScopePack":
         return TileScopePack(
             initial_strats=[
-                strat.AllFactorStrategy(union=True),
+                strat.AllFactorStrategy(unions=True),
                 strat.RequirementCorroborationStrategy(),
             ],
             ver_strats=[
@@ -103,7 +103,7 @@ class TileScopePack(StrategyPack):
             ],
             expansion_strats=[
                 [
-                    strat.AllFactorStrategy(union=True),
+                    strat.AllFactorStrategy(unions=True),
                     strat.AllCellInsertionStrategy(maxreqlen=length),
                 ],
                 [strat.RequirementCorroborationStrategy()],
@@ -249,7 +249,7 @@ class TileScopePack(StrategyPack):
         return TileScopePack(
             initial_strats=[
                 strat.RootInsertionStrategy(maxreqlen=length, max_num_req=max_num_req),
-                strat.AllFactorStrategy(union=True, workable=False),
+                strat.AllFactorStrategy(unions=True, workable=False),
             ],
             ver_strats=[
                 strat.OneByOneVerificationStrategy(),

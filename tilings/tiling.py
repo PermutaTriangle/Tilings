@@ -1105,7 +1105,17 @@ class Tiling(CombinatorialClass):
         """
         return self.dimensions == (1, 1) and (0, 0) in self.point_cells
 
-    is_atom = is_point_tiling
+    def is_atom(self) -> bool:
+        """Return True if tiling is a single gridded permutation."""
+        return (self.active_cells == self.point_cells) and self.fully_isolated()
+
+    def minimum_size_of_object(self) -> int:
+        """Return the size of the smallest gridded perm contained on the tiling."""
+        if not self.requirements:
+            return 0
+        if len(self.requirements) == 1:
+            return min(len(gp) for gp in self.requirements[0])
+        return len(next(self.minimal_gridded_perms()))  
 
     def is_point_or_empty(self) -> bool:
         point_or_empty_tiling = Tiling(
