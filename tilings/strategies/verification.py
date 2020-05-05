@@ -120,7 +120,7 @@ class TileScopeVerificationStrategy(VerificationStrategy[Tiling]):
         return self.VERIFICATION_CLASS(tiling).verified()
 
     def formal_step(self) -> str:
-        return self.VERIFICATION_CLASS.formal_step()
+        return self.VERIFICATION_CLASS.formal_step
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + "()"
