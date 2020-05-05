@@ -1,8 +1,14 @@
 import abc
 from itertools import chain
+from typing import TYPE_CHECKING, Iterable, List, Optional, Set, Tuple
 
 from permuta import Perm
-from tilings import Obstruction
+from tilings import GriddedPerm, Obstruction
+
+if TYPE_CHECKING:
+    from tilings import Tiling
+
+Cell = Tuple[int, int]
 
 
 class ObstructionInferral(abc.ABC):
@@ -11,24 +17,24 @@ class ObstructionInferral(abc.ABC):
     `self.potential_new_obs()` that can be added to the tiling.
     """
 
-    def __init__(self, tiling):
+    def __init__(self, tiling: "Tiling"):
         self._tiling = tiling
-        self._new_obs = None
+        self._new_obs: Optional[List[Obstruction]] = None
 
     @abc.abstractmethod
-    def potential_new_obs(self):
+    def potential_new_obs(self) -> Iterable[Obstruction]:
         """
         Return an iterable of new obstructions that should be added to the
         tiling if possible.
         """
 
-    def new_obs(self):
+    def new_obs(self) -> List[Obstruction]:
         """
         Returns the list of new obstructions that can be added to the tiling.
         """
         if self._new_obs is not None:
             return self._new_obs
-        newobs = []
+        newobs: List[Obstruction] = []
         for ob in sorted(self.potential_new_obs(), key=len):
             cont_newob = any(newob in ob for newob in newobs)
             if not cont_newob and self.can_add_obstruction(ob, self._tiling):
@@ -37,11 +43,11 @@ class ObstructionInferral(abc.ABC):
         return self._new_obs
 
     @staticmethod
-    def can_add_obstruction(obstruction, tiling):
+    def can_add_obstruction(obstruction: Obstruction, tiling: "Tiling") -> bool:
         """Return true if `obstruction` can be added to `tiling`."""
         return tiling.add_requirement(obstruction.patt, obstruction.pos).is_empty()
 
-    def obstruction_inferral(self):
+    def obstruction_inferral(self) -> "Tiling":
         """
         Return the tiling with the new obstructions.
         """
@@ -62,11 +68,11 @@ class SubobstructionInferral(ObstructionInferral):
     subobstructions which can be added.
     """
 
-    def potential_new_obs(self):
+    def potential_new_obs(self) -> Set[Obstruction]:
         """
         Return the set of all subobstructions of the tiling.
         """
-        subobs = set()
+        subobs: Set[Obstruction] = set()
         for ob in self._tiling.obstructions:
             subobs.update(ob.all_subperms(proper=True))
         subobs.remove(Obstruction(Perm(), []))
@@ -79,15 +85,15 @@ class AllObstructionInferral(ObstructionInferral):
     obstruction of length up to obstruction_length which can be added.
     """
 
-    def __init__(self, tiling, obstruction_length):
+    def __init__(self, tiling: "Tiling", obstruction_length: int) -> None:
         super().__init__(tiling)
         self._obs_len = obstruction_length
 
     @property
-    def obstruction_length(self):
+    def obstruction_length(self) -> int:
         return self._obs_len
 
-    def not_required(self, gp):
+    def not_required(self, gp: GriddedPerm) -> bool:
         """
         Returns True if the gridded perm `gp` is not required by any
         requirement list of the tiling.
@@ -97,7 +103,7 @@ class AllObstructionInferral(ObstructionInferral):
             for req_list in self._tiling.requirements
         )
 
-    def potential_new_obs(self):
+    def potential_new_obs(self) -> List[Obstruction]:
         """
         Iterator over all possible obstruction of `self.obstruction_length`.
         """
@@ -106,7 +112,7 @@ class AllObstructionInferral(ObstructionInferral):
         no_req_tiling = self._tiling.__class__(self._tiling.obstructions)
         n = self._obs_len
         pot_obs = filter(self.not_required, no_req_tiling.gridded_perms(n))
-        return (Obstruction(gp.patt, gp.pos) for gp in pot_obs)
+        return list(Obstruction(gp.patt, gp.pos) for gp in pot_obs)
 
 
 class EmptyCellInferral(AllObstructionInferral):
@@ -114,11 +120,11 @@ class EmptyCellInferral(AllObstructionInferral):
     Try to add a point obstruction to all the active non positive cell
     """
 
-    def __init__(self, tiling):
+    def __init__(self, tiling: "Tiling"):
         super().__init__(tiling, 1)
 
-    def empty_cells(self):
+    def empty_cells(self) -> List[Cell]:
         """
         Return an iterator over all cell that where discovered to be empty.
         """
-        return (ob.pos[0] for ob in self.new_obs())
+        return list(ob.pos[0] for ob in self.new_obs())

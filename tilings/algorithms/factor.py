@@ -1,11 +1,9 @@
 from collections import defaultdict
 from itertools import chain, combinations
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
-from comb_spec_searcher import CartesianProductStrategy
-from permuta import Perm
-from tilings import GriddedPerm
 from permuta.misc import UnionFind
+from tilings import Obstruction, Requirement
 from tilings.misc import partitions_iterator
 
 if TYPE_CHECKING:
@@ -13,6 +11,7 @@ if TYPE_CHECKING:
 
 
 Cell = Tuple[int, int]
+ReqList = Tuple[Requirement, ...]
 
 
 class Factor:
@@ -23,31 +22,33 @@ class Factor:
     or column, or they share an obstruction or a requirement.
     """
 
-    def __init__(self, tiling: "Tiling"):
+    def __init__(self, tiling: "Tiling") -> None:
         self._tiling = tiling
         self._active_cells = tiling.active_cells
         nrow = tiling.dimensions[1]
         ncol = tiling.dimensions[0]
         self._cell_unionfind = UnionFind(nrow * ncol)
-        self._components = None
-        self._factors_obs_and_reqs = None
+        self._components: Optional[Tuple[Set[Cell], ...]] = None
+        self._factors_obs_and_reqs: Optional[
+            List[Tuple[Tuple[Obstruction, ...], Tuple[ReqList, ...]]]
+        ] = None
 
-    def _cell_to_int(self, cell):
+    def _cell_to_int(self, cell: Cell) -> int:
         nrow = self._tiling.dimensions[1]
         return cell[0] * nrow + cell[1]
 
-    def _int_to_cell(self, i):
+    def _int_to_cell(self, i: int) -> Cell:
         nrow = self._tiling.dimensions[1]
         return (i // nrow, i % nrow)
 
-    def _get_cell_representative(self, cell):
+    def _get_cell_representative(self, cell: Cell) -> Cell:
         """
         Return the representative of a cell in the union find.
         """
         i = self._cell_to_int(cell)
-        return self._cell_unionfind.find(i)
+        return self._cell_unionfind.find(i)  # type: ignore
 
-    def _unite_cells(self, cells):
+    def _unite_cells(self, cells: Iterable[Cell]) -> None:
         """
         Put all the cells of `cells` in the same component of the UnionFind.
         """
@@ -58,14 +59,14 @@ class Factor:
             c2_int = self._cell_to_int(c2)
             self._cell_unionfind.unite(c1_int, c2_int)
 
-    def _unite_obstructions(self):
+    def _unite_obstructions(self) -> None:
         """
         For each obstruction unite all the position of the obstruction.
         """
         for ob in self._tiling.obstructions:
             self._unite_cells(ob.pos)
 
-    def _unite_requirements(self):
+    def _unite_requirements(self) -> None:
         """
         For each requirement unite all the cell in all the requirements of the
         list.
@@ -75,13 +76,13 @@ class Factor:
             self._unite_cells(req_cells)
 
     @staticmethod
-    def _same_row_or_col(cell1, cell2):
+    def _same_row_or_col(cell1: Cell, cell2: Cell) -> bool:
         """
         Test if `cell1` and `cell2` or in the same row or columns
         """
         return cell1[0] == cell2[0] or cell1[1] == cell2[1]
 
-    def _unite_rows_and_cols(self):
+    def _unite_rows_and_cols(self) -> None:
         """
         Unite all the active cell that are on the same row or column.
         """
@@ -93,7 +94,7 @@ class Factor:
         for c1, c2 in cell_pair_to_unite:
             self._unite_cells((c1, c2))
 
-    def _unite_all(self):
+    def _unite_all(self) -> None:
         """
         Unite all the cells that share an obstruction, a requirement list,
         a row or a column.
@@ -102,7 +103,7 @@ class Factor:
         self._unite_requirements()
         self._unite_rows_and_cols()
 
-    def get_components(self):
+    def get_components(self) -> Tuple[Set[Cell], ...]:
         """
         Returns the tuple of all the components. Each component is set of
         cells.
@@ -110,14 +111,16 @@ class Factor:
         if self._components is not None:
             return self._components
         self._unite_all()
-        all_components = defaultdict(set)
+        all_components: Dict[Cell, Set[Cell]] = defaultdict(set)
         for cell in self._active_cells:
             rep = self._get_cell_representative(cell)
             all_components[rep].add(cell)
         self._components = tuple(all_components.values())
         return self._components
 
-    def _get_factors_obs_and_reqs(self):
+    def _get_factors_obs_and_reqs(
+        self,
+    ) -> List[Tuple[Tuple[Obstruction, ...], Tuple[ReqList, ...]]]:
         """
         Returns a list of all the irreducible factors of the tiling.
         Each factor is a tuple (obstructions, requirements)
@@ -136,22 +139,22 @@ class Factor:
         self._factors_obs_and_reqs = factors
         return self._factors_obs_and_reqs
 
-    def factorable(self):
+    def factorable(self) -> bool:
         """
         Returns `True` if the tiling has more than one factor.
         """
         return len(self.get_components()) > 1
 
-    def factors(self):
+    def factors(self) -> Tuple["Tiling", ...]:
         """
         Returns all the irreducible factors of the tiling.
         """
-        return [
+        return tuple(
             self._tiling.__class__(obstructions=f[0], requirements=f[1], minimize=False)
             for f in self._get_factors_obs_and_reqs()
-        ]
+        )
 
-    def reducible_factorisations(self):
+    def reducible_factorisations(self) -> Iterator[Tuple["Tiling", ...]]:
         """
         Iterator over all reducible factorisation that can be obtained by
         grouping of irreducible factors.
@@ -173,7 +176,7 @@ class Factor:
                         minimize=False,
                     )
                 )
-            yield factors
+            yield tuple(factors)
 
     # # TODO: the rule methods should be on strategy
     # def rule(self, workable=True):
@@ -213,7 +216,7 @@ class FactorWithMonotoneInterleaving(Factor):
     non-monotone.
     """
 
-    def _unite_rows_and_cols(self):
+    def _unite_rows_and_cols(self) -> None:
         """
         Unite all active cell that are on the same row or column if both of
         them are not monotone.
@@ -241,13 +244,13 @@ class FactorWithInterleaving(Factor):
     a requirement.
     """
 
-    def _unite_rows_and_cols(self):
+    def _unite_rows_and_cols(self) -> None:
         """
         Override the `Factor._unite_rows_and_cols` to do nothing since
         interleaving is allowed on row and column.
         """
 
-    def _unite_all(self):
+    def _unite_all(self) -> None:
         """
         Unite all the cells that share an obstruction or a requirement list.
         """

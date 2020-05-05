@@ -53,10 +53,11 @@ from .misc import intersection_reduce, map_cell, union_reduce
 from .obstruction import Obstruction
 from .requirement import Requirement
 
-__all__ = "Tiling"
+__all__ = ["Tiling"]
 
 
 Cell = Tuple[int, int]
+ReqList = Tuple[Requirement, ...]
 
 
 class Tiling(CombinatorialClass):
@@ -77,7 +78,7 @@ class Tiling(CombinatorialClass):
         derive_empty: bool = True,
         minimize: bool = True,
         sorted_input: bool = False,
-    ):
+    ) -> None:
         super().__init__()
         if sorted_input:
             # Set of obstructions
@@ -193,9 +194,8 @@ class Tiling(CombinatorialClass):
         equivalent set of rows/columns where empty ones have been removed. """
         active_cells = self.active_cells
         assert active_cells
-
-        col_set, row_set = map(set, zip(*active_cells))
-
+        col_set = set(c[0] for c in active_cells)
+        row_set = set(c[1] for c in active_cells)
         col_list, row_list = sorted(col_set), sorted(row_set)
         col_mapping = {x: actual for actual, x in enumerate(col_list)}
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
@@ -227,11 +227,13 @@ class Tiling(CombinatorialClass):
         return tuple(cleanobs)
 
     def _minimal_reqs(
-        self, obstructions: Tuple[Obstruction, ...]
-    ) -> Tuple[Tuple[Obstruction, ...], Tuple[Tuple[Requirement, ...]]]:
-        """Returns a new set of minimal lists of requirements from the
+        self, obstructions: Iterable[Obstruction]
+    ) -> Tuple[Tuple[Obstruction, ...], Tuple[ReqList, ...]]:
+        """
+        Returns a new set of minimal lists of requirements from the
         requirement set of self, and a list of further reduced obstructions.
-        # TODO: obstruction don't change in the function, so stop returning."""
+        # TODO: obstruction don't change in the function, so stop returning.
+        """
         factored_reqs: List[Tuple[Requirement, ...]] = list()
         for reqs in self._requirements:
             # If any gridded permutation in list is empty then you vacuously
@@ -289,7 +291,7 @@ class Tiling(CombinatorialClass):
             # contain this requirement
             if not all(req_list):
                 continue
-            redundant = set()
+            redundant: Set[int] = set()
             for i, req_i in enumerate(req_list):
                 for j in range(i + 1, len(req_list)):
                     if j not in redundant:
@@ -305,7 +307,7 @@ class Tiling(CombinatorialClass):
                 return (Obstruction.empty_perm(),), tuple()
             cleanreqs.append(cleanreq)
 
-        ind_to_remove = set()
+        ind_to_remove: Set[int] = set()
         for i, req_list in enumerate(cleanreqs):
             if i not in ind_to_remove:
                 for j, req_list2 in enumerate(cleanreqs):
@@ -319,20 +321,20 @@ class Tiling(CombinatorialClass):
             factored = [r.factors() for r in req_list]
             # if every factor of every requirement in a list is implied by
             # another requirement then we can remove this requirement list
-            for factors in factored:
+            for req_factor in factored:
                 if all(
                     any(
                         all(factor in req for req in other_req)
                         for j, other_req in enumerate(cleanreqs)
                         if i != j and j not in ind_to_remove
                     )
-                    for factor in factors
+                    for factor in req_factor
                 ):
                     ind_to_remove.add(i)
                     break
 
         return (
-            obstructions,
+            tuple(obstructions),
             Tiling.sort_requirements(
                 reqs for i, reqs in enumerate(cleanreqs) if i not in ind_to_remove
             ),
@@ -370,7 +372,7 @@ class Tiling(CombinatorialClass):
     @classmethod
     def from_bytes(
         cls,
-        arrbytes,
+        arrbytes: bytes,
         remove_empty=False,
         derive_empty=False,
         minimize=False,
@@ -531,8 +533,8 @@ class Tiling(CombinatorialClass):
 
     def fully_isolated(self) -> bool:
         """Check if all cells are isolated on their rows and columns."""
-        seen_row = []
-        seen_col = []
+        seen_row: List[int] = []
+        seen_col: List[int] = []
         for i, j in self.active_cells:
             if i in seen_col or j in seen_row:
                 return False
@@ -955,7 +957,7 @@ class Tiling(CombinatorialClass):
         req_placement = RequirementPlacement(self)
         return req_placement.place_point_of_gridded_permutation(gp, idx, direction)
 
-    def place_row(self, idx: int, direction: int) -> List["Tiling"]:
+    def place_row(self, idx: int, direction: int) -> Tuple["Tiling", ...]:
         """
         Return the list of tilings in which the directionmost point in the row
         is placed.
@@ -963,7 +965,7 @@ class Tiling(CombinatorialClass):
         req_placement = RequirementPlacement(self)
         return req_placement.row_placement(idx, direction)
 
-    def place_col(self, idx: int, direction: int) -> List["Tiling"]:
+    def place_col(self, idx: int, direction: int) -> Tuple["Tiling", ...]:
         """
         Return the list of tilings in which the directionmost point in the
         column is placed.
@@ -997,7 +999,7 @@ class Tiling(CombinatorialClass):
             req_placement = RequirementPlacement(self, own_col=False)
         return req_placement.place_point_of_gridded_permutation(gp, idx, direction)
 
-    def partial_place_row(self, idx: int, direction: int) -> List["Tiling"]:
+    def partial_place_row(self, idx: int, direction: int) -> Tuple["Tiling", ...]:
         """
         Return the list of tilings in which the directionmost point in the row
         is placed. The points are placed onto thier own row.
@@ -1005,7 +1007,7 @@ class Tiling(CombinatorialClass):
         req_placement = RequirementPlacement(self, own_row=True, own_col=False)
         return req_placement.row_placement(idx, direction)
 
-    def partial_place_col(self, idx: int, direction: int) -> List["Tiling"]:
+    def partial_place_col(self, idx: int, direction: int) -> Tuple["Tiling", ...]:
         """
         Return the list of tilings in which the directionmost point in the
         column is placed. The points are placed onto their own column.
@@ -1198,14 +1200,17 @@ class Tiling(CombinatorialClass):
 
     @property
     def active_cells(self) -> FrozenSet[Cell]:
-        """Returns a set of all cells that do not contain a point obstruction,
+        """
+        Returns a set of all cells that do not contain a point obstruction,
         i.e., not empty.
         """
-        return union_reduce(
+        no_point_obs = union_reduce(
             ob.pos for ob in self._obstructions if not ob.is_point_obstr()
-        ) | union_reduce(
+        )
+        with_req = union_reduce(
             union_reduce(req.pos for req in reqs) for reqs in self._requirements
         )
+        return frozenset(no_point_obs | with_req)
 
     @property
     def dimensions(self) -> Tuple[int, int]:
@@ -1411,15 +1416,15 @@ class Tiling(CombinatorialClass):
 
         # Legend at bottom
         for block, label in sorted(labels.items(), key=lambda x: x[1]):
-            basis, positive = block
+            basis_el, positive = block
             result.append(label)
             result.append(": ")
-            if basis == (Perm((0, 1)), Perm((1, 0))) and positive:
+            if basis_el == (Perm((0, 1)), Perm((1, 0))) and positive:
                 result.append("point")
             else:
                 result.append(
                     "Av{}({})".format(
-                        "+" if positive else "", ", ".join(str(p) for p in basis)
+                        "+" if positive else "", ", ".join(str(p) for p in basis_el)
                     )
                 )
             result.append("\n")

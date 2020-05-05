@@ -9,6 +9,12 @@ separation is idempotent by applying the core algorithm until it stabilises.
 """
 import heapq
 from itertools import combinations, product
+from typing import TYPE_CHECKING, Dict, List, Tuple
+
+if TYPE_CHECKING:
+    from tilings import Tiling
+
+Cell = Tuple[int, int]
 
 
 class Graph:
@@ -481,16 +487,16 @@ class RowColSeparation:
     It applies the row columns separation until it does not change the tiling.
     """
 
-    def __init__(self, tiling):
+    def __init__(self, tiling: "Tiling") -> None:
         self._tiling = tiling
-        self._separated_tilings = []
+        self._separated_tilings: List[Tiling] = []
         separation_algo = _RowColSeparationSingleApplication(self._tiling)
         while separation_algo.separable():
             new_sep = separation_algo.separated_tiling()
             self._separated_tilings.append(new_sep)
             separation_algo = _RowColSeparationSingleApplication(new_sep)
 
-    def separable(self):
+    def separable(self) -> bool:
         """
         Test if the tiling is separable.
 
@@ -499,7 +505,7 @@ class RowColSeparation:
         """
         return bool(self._separated_tilings)
 
-    def separated_tiling(self):
+    def separated_tiling(self) -> "Tiling":
         """
         Return the one the possible maximal separation of the tiling.
         """
@@ -507,7 +513,7 @@ class RowColSeparation:
             return self._tiling
         return self._separated_tilings[-1]
 
-    def get_cell_map(self):
+    def get_cell_map(self) -> Dict[Cell, Cell]:
         """
         Return the cell map obtained by applying the algorithm until no change.
         """

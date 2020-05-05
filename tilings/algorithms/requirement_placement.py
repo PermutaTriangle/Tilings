@@ -1,20 +1,8 @@
 from itertools import chain
-from typing import (
-    TYPE_CHECKING,
-    Dict,
-    FrozenSet,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Tuple
 
-from comb_spec_searcher import Constructor, DisjointUnionStrategy, Strategy
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
-
 
 from ..griddedperm import GriddedPerm
 from ..obstruction import Obstruction
@@ -94,7 +82,7 @@ class RequirementPlacement:
         )
 
     def already_placed(
-        self, gps: Tuple[GriddedPerm, ...], indices: Tuple[int, ...]
+        self, gps: Iterable[GriddedPerm], indices: Iterable[int]
     ) -> bool:
         """
         Determine if this gps is already placed.
@@ -285,8 +273,8 @@ class RequirementPlacement:
 
     def _forced_obstructions_from_requirement(
         self,
-        gps: Tuple[GriddedPerm, ...],
-        indices: Tuple[int, ...],
+        gps: Iterable[GriddedPerm],
+        indices: Iterable[int],
         cell: Cell,
         direction: Dir,
     ) -> List[Obstruction]:
@@ -313,7 +301,7 @@ class RequirementPlacement:
         return res
 
     def _remaining_requirement_from_requirement(
-        self, gps: Tuple[GriddedPerm, ...], indices: Tuple[int, ...], cell: Cell,
+        self, gps: Iterable[GriddedPerm], indices: Iterable[int], cell: Cell,
     ) -> List[Requirement]:
         """
         Return the requirements required to ensure that the placed point can be
@@ -346,7 +334,7 @@ class RequirementPlacement:
         return self.place_point_of_req((gp,), (idx,), direction)[0]
 
     def place_point_of_req(
-        self, gps: Tuple[GriddedPerm, ...], indices: Tuple[int, ...], direction: Dir
+        self, gps: Iterable[GriddedPerm], indices: Iterable[int], direction: Dir
     ) -> Tuple["Tiling", ...]:
         """
         Return the tilings, where the placed point corresponds to the directionmost
@@ -372,7 +360,7 @@ class RequirementPlacement:
         point_req = Requirement(Perm((0,)), (cell,))
         return self.place_point_of_req((point_req,), (0,), direction)[0]
 
-    def col_placement(self, index: int, direction: Dir) -> List["Tiling"]:
+    def col_placement(self, index: int, direction: Dir) -> Tuple["Tiling", ...]:
         """
         Return the list corresponding the index column being placed in the
         given direction.
@@ -384,7 +372,7 @@ class RequirementPlacement:
         ]
         return self.place_point_of_req(req, tuple(0 for _ in req), direction)
 
-    def row_placement(self, index: int, direction: Dir) -> List["Tiling"]:
+    def row_placement(self, index: int, direction: Dir) -> Tuple["Tiling", ...]:
         """
         Return the list corresponding the index row being placed in the given
         direction.
