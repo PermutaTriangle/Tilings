@@ -249,7 +249,9 @@ class TileScopePack(StrategyPack):
         return TileScopePack(
             initial_strats=[
                 strat.RootInsertionStrategy(maxreqlen=length, max_num_req=max_num_req),
-                strat.AllFactorStrategy(unions=True, workable=False),
+                strat.AllFactorStrategy(
+                    unions=True, ignore_parent=False, workable=False
+                ),
             ],
             ver_strats=[
                 strat.OneByOneVerificationStrategy(),

@@ -30,10 +30,13 @@ __all__ = (
 
 class FactorStrategy(CartesianProductStrategy[Tiling]):
     def __init__(
-        self, partition: Iterable[Iterable[Cell]], workable: bool = True,
+        self,
+        partition: Iterable[Iterable[Cell]],
+        ignore_parent: bool = True,
+        workable: bool = True,
     ):
         self.partition = tuple(sorted(tuple(sorted(p)) for p in partition))
-        super().__init__(workable=workable)
+        super().__init__(ignore_parent=ignore_parent, workable=workable)
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
         """
@@ -146,6 +149,7 @@ class AllFactorStrategy(StrategyGenerator):
         self,
         interleaving: Optional[str] = None,
         unions: bool = False,
+        ignore_parent: bool = True,
         workable: bool = True,
     ) -> None:
         try:
@@ -159,6 +163,7 @@ class AllFactorStrategy(StrategyGenerator):
                 )
             )
         self.unions = unions
+        self.ignore_parent = ignore_parent
         self.workable = workable
 
     def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
@@ -171,8 +176,12 @@ class AllFactorStrategy(StrategyGenerator):
                     partition = tuple(
                         tuple(x for x in chain(*part)) for part in partition
                     )
-                    yield self.factor_class(partition, workable=False)
-            yield self.factor_class(min_comp, workable=self.workable)
+                    yield self.factor_class(
+                        partition, ignore_parent=self.ignore_parent, workable=False
+                    )
+            yield self.factor_class(
+                min_comp, ignore_parent=self.ignore_parent, workable=self.workable
+            )
 
     def __str__(self) -> str:
         if self.factor_class is FactorStrategy:
