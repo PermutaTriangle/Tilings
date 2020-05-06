@@ -241,22 +241,14 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
         super().__init__(maxreqlen, extra_basis, ignore_parent)
         self.max_num_req = max_num_req
 
-    def _good_rule(self, rule: Rule) -> bool:
-        """
-        Check the number of requirements in the rule's tilings satisfy the
-        max_num_req
-        """
-        if self.max_num_req is None:
-            return True
-        return all(len(t.requirements) <= self.max_num_req for t in rule.children)
-
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
-        if tiling.dimensions != (1, 1):
+    def __call__(
+        self, comb_class: Tiling, **kwargs
+    ) -> Iterator[RequirementInsertionStrategy]:
+        if comb_class.dimensions != (1, 1):
             return
-        for strategy in super().__call__(tiling):
-            rule = strategy(tiling)
-            if self._good_rule(rule):
-                yield rule
+        for strategy in super().__call__(comb_class):
+            t_with_new_req = comb_class.add_list_requirement(strategy.gps)
+            yield strategy
 
     def __str__(self) -> str:
         if not self.extra_basis:
@@ -371,10 +363,12 @@ class AllRequirementInsertionStrategy(
                 ):
                     yield (GriddedPerm(gp.patt, gp.pos),)
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
-        if tiling.requirements:
+    def __call__(
+        self, comb_class: Tiling, **kwargs
+    ) -> Iterator[RequirementInsertionStrategy]:
+        if comb_class.requirements:
             return
-        yield from super().__call__(tiling, **kwargs)
+        yield from super().__call__(comb_class, **kwargs)
 
     def __str__(self) -> str:
         if self.maxreqlen == 1:
