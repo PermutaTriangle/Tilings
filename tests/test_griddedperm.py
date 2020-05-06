@@ -195,17 +195,17 @@ def test_get_bounding_box(typicalob):
 
 
 def test_is_point_perm(typicalob, singlecellob):
-    assert typicalob.is_point_perm() is None
-    assert singlecellob.is_point_perm() is None
-    assert GriddedPerm(Perm((0,)), ((0, 0),)).is_point_perm() == (0, 0)
-    assert GriddedPerm(Perm((0,)), ((3, 2),)).is_point_perm() == (3, 2)
-    assert GriddedPerm(Perm((0,)), ((100, 10),)).is_point_perm() == (100, 10)
+    assert not typicalob.is_point_perm()
+    assert not singlecellob.is_point_perm()
+    assert GriddedPerm(Perm((0,)), ((0, 0),)).is_point_perm()
+    assert GriddedPerm(Perm((0,)), ((3, 2),)).is_point_perm()
+    assert GriddedPerm(Perm((0,)), ((100, 10),)).is_point_perm()
 
 
 def test_is_single_cell(typicalob, simpleob, singlecellob):
-    assert typicalob.is_single_cell() is None
-    assert simpleob.is_single_cell() is None
-    assert singlecellob.is_single_cell() == (2, 2)
+    assert not typicalob.is_single_cell()
+    assert not simpleob.is_single_cell()
+    assert singlecellob.is_single_cell()
 
 
 def test_insert_point():
