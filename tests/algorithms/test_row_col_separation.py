@@ -4,7 +4,7 @@ import pytest
 
 from comb_spec_searcher import Rule
 from permuta import Perm
-from tilings import GriddedPerm, Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 from tilings.algorithms.row_col_separation import (
     Graph,
     RowColSeparation,
@@ -308,7 +308,7 @@ def not_separable_tilings():
             GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
             GriddedPerm(Perm((1, 0)), ((0, 2), (0, 0))),
         ),
-        requirements=((Requirement(Perm((0,)), ((0, 1),)),),),
+        requirements=((GriddedPerm(Perm((0,)), ((0, 1),)),),),
     )
     return [t1, t2, t3, t4]
 
@@ -388,7 +388,7 @@ def separable_tiling4():
             GriddedPerm(Perm((1, 0)), ((0, 2), (0, 0))),
             GriddedPerm(Perm((0, 1)), ((0, 0), (0, 2))),
         ),
-        requirements=((Requirement(Perm((0,)), ((0, 1),)),),),
+        requirements=((GriddedPerm(Perm((0,)), ((0, 1),)),),),
     )
 
 
@@ -537,7 +537,7 @@ def test_separates_tiling():
             GriddedPerm(Perm((2, 0, 1)), ((0, 0), (0, 0), (0, 0))),
             GriddedPerm(Perm((2, 0, 1)), ((1, 0), (1, 0), (1, 0))),
         ],
-        requirements=[[Requirement(Perm((0,)), ((1, 0),))]],
+        requirements=[[GriddedPerm(Perm((0,)), ((1, 0),))]],
     )
     print(t)
     rcs = _RowColSeparationSingleApplication(t)
@@ -551,7 +551,7 @@ def test_separates_tiling():
             GriddedPerm(Perm((2, 0, 1)), ((0, 1), (0, 1), (0, 1))),
             GriddedPerm(Perm((2, 0, 1)), ((1, 0), (1, 0), (1, 0))),
         ],
-        requirements=[[Requirement(Perm((0,)), ((1, 0),))]],
+        requirements=[[GriddedPerm(Perm((0,)), ((1, 0),))]],
     )
 
 
@@ -562,8 +562,8 @@ def test_map_gridded_perm(separable_tiling1):
     assert rcs._map_gridded_perm(cell_map, ob) == GriddedPerm(
         Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))
     )
-    ob = Requirement(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0)))
-    assert rcs._map_gridded_perm(cell_map, ob) == Requirement(
+    ob = GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0)))
+    assert rcs._map_gridded_perm(cell_map, ob) == GriddedPerm(
         Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 1))
     )
 
@@ -688,7 +688,7 @@ def test_separated_tiling(
             GriddedPerm(Perm((0, 1)), ((3, 0),) * 2),
             GriddedPerm(Perm((1, 0)), ((0, 2), (2, 0))),
         ),
-        requirements=((Requirement(Perm((0,)), ((1, 1),)),),),
+        requirements=((GriddedPerm(Perm((0,)), ((1, 1),)),),),
     )
     assert RowColSeparation(separable_tiling1).separated_tiling() == t1_sep
     assert RowColSeparation(separable_tiling2).separated_tiling() == t2_sep
@@ -783,9 +783,9 @@ def test_multiple_separation():
             GriddedPerm(Perm((2, 0, 1, 3)), ((4, 0), (4, 0), (4, 0), (4, 0))),
         ),
         requirements=(
-            (Requirement(Perm((0,)), ((1, 1),)),),
-            (Requirement(Perm((0,)), ((2, 2),)),),
-            (Requirement(Perm((0,)), ((3, 3),)),),
+            (GriddedPerm(Perm((0,)), ((1, 1),)),),
+            (GriddedPerm(Perm((0,)), ((2, 2),)),),
+            (GriddedPerm(Perm((0,)), ((3, 3),)),),
         ),
     )
     rcs = RowColSeparation(t)
@@ -869,9 +869,9 @@ def test_multiple_separation():
             GriddedPerm(Perm((2, 0, 1, 3)), ((7, 0), (7, 0), (7, 0), (7, 0))),
         ),
         requirements=(
-            (Requirement(Perm((0,)), ((1, 2),)),),
-            (Requirement(Perm((0,)), ((3, 3),)),),
-            (Requirement(Perm((0,)), ((4, 5),)),),
+            (GriddedPerm(Perm((0,)), ((1, 2),)),),
+            (GriddedPerm(Perm((0,)), ((3, 3),)),),
+            (GriddedPerm(Perm((0,)), ((4, 5),)),),
         ),
     )
     assert seprated_tiling == expected_tiling

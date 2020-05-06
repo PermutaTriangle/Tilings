@@ -1,7 +1,7 @@
 import pytest
 
 from permuta import Perm
-from tilings import GriddedPerm, Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 
 
 @pytest.fixture
@@ -11,7 +11,7 @@ def simple_trans_row():
             GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
             GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
         ],
-        requirements=[[Requirement(Perm((0,)), [(1, 0)])]],
+        requirements=[[GriddedPerm(Perm((0,)), [(1, 0)])]],
     )
 
 
@@ -22,7 +22,7 @@ def simple_trans_col():
             GriddedPerm(Perm((0, 1)), [(0, 0), (0, 1)]),
             GriddedPerm(Perm((0, 1)), [(0, 1), (0, 2)]),
         ],
-        requirements=[[Requirement(Perm((0,)), [(0, 1)])]],
+        requirements=[[GriddedPerm(Perm((0,)), [(0, 1)])]],
     )
 
 
@@ -35,8 +35,8 @@ def simple_trans_row_len2():
             GriddedPerm(Perm((0, 1)), [(2, 0), (3, 0)]),
         ],
         requirements=[
-            [Requirement(Perm((0,)), [(1, 0)])],
-            [Requirement(Perm((0,)), [(2, 0)])],
+            [GriddedPerm(Perm((0,)), [(1, 0)])],
+            [GriddedPerm(Perm((0,)), [(2, 0)])],
         ],
     )
 
@@ -51,8 +51,8 @@ def simple_trans_row_len3():
             GriddedPerm(Perm((0, 1)), [(3, 0), (4, 0)]),
         ],
         requirements=[
-            [Requirement(Perm((0,)), [(1, 0)])],
-            [Requirement(Perm((0,)), [(2, 0)])],
-            [Requirement(Perm((0,)), [(3, 0)])],
+            [GriddedPerm(Perm((0,)), [(1, 0)])],
+            [GriddedPerm(Perm((0,)), [(2, 0)])],
+            [GriddedPerm(Perm((0,)), [(3, 0)])],
         ],
     )

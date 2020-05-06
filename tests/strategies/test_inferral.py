@@ -1,7 +1,7 @@
 import pytest
 
 from permuta import Perm
-from tilings import Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 from tilings.strategies import (
     ObstructionTransitivityStrategy,
     RowColumnSeparationStrategy,
@@ -21,7 +21,7 @@ def test_obstruction_transitivity(
             GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
             GriddedPerm(Perm((0, 1)), [(0, 0), (2, 0)]),
         ],
-        requirements=[[Requirement(Perm((0,)), [(1, 0)])]],
+        requirements=[[GriddedPerm(Perm((0,)), [(1, 0)])]],
     )
 
     strat = ObstructionTransitivityStrategy()(simple_trans_col)
@@ -31,7 +31,7 @@ def test_obstruction_transitivity(
             GriddedPerm(Perm((0, 1)), [(0, 1), (0, 2)]),
             GriddedPerm(Perm((0, 1)), [(0, 0), (0, 2)]),
         ],
-        requirements=[[Requirement(Perm((0,)), [(0, 1)])]],
+        requirements=[[GriddedPerm(Perm((0,)), [(0, 1)])]],
     )
 
     strat = ObstructionTransitivityStrategy()(simple_trans_row_len2)
@@ -45,8 +45,8 @@ def test_obstruction_transitivity(
             GriddedPerm(Perm((0, 1)), [(2, 0), (3, 0)]),
         ],
         requirements=[
-            [Requirement(Perm((0,)), [(1, 0)])],
-            [Requirement(Perm((0,)), [(2, 0)])],
+            [GriddedPerm(Perm((0,)), [(1, 0)])],
+            [GriddedPerm(Perm((0,)), [(2, 0)])],
         ],
     )
 
@@ -65,9 +65,9 @@ def test_obstruction_transitivity(
             GriddedPerm(Perm((0, 1)), [(3, 0), (4, 0)]),
         ],
         requirements=[
-            [Requirement(Perm((0,)), [(1, 0)])],
-            [Requirement(Perm((0,)), [(2, 0)])],
-            [Requirement(Perm((0,)), [(3, 0)])],
+            [GriddedPerm(Perm((0,)), [(1, 0)])],
+            [GriddedPerm(Perm((0,)), [(2, 0)])],
+            [GriddedPerm(Perm((0,)), [(3, 0)])],
         ],
     )
 

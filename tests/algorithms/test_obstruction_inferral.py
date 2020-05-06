@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from permuta import Perm
-from tilings import GriddedPerm, Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
     AllObstructionInferral,
     EmptyCellInferral,
@@ -28,7 +28,7 @@ class CommonTest(abc.ABC):
                 GriddedPerm(Perm((2, 1, 0)), ((0, 0), (1, 0), (1, 0))),
                 GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
             ],
-            requirements=[[Requirement(Perm((1, 0)), ((1, 0), (1, 0)))]],
+            requirements=[[GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0)))]],
         )
         return t
 
@@ -57,7 +57,7 @@ class CommonTest(abc.ABC):
                 GriddedPerm(Perm((1, 0, 3, 2)), ((1, 0), (1, 0), (1, 0), (1, 0))),
                 GriddedPerm(Perm((1, 0, 3, 2)), ((2, 0), (2, 0), (2, 0), (2, 0))),
             ],
-            requirements=[[Requirement(Perm((1, 0)), ((1, 0), (1, 0)))]],
+            requirements=[[GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0)))]],
         )
         return t2
 
@@ -192,7 +192,7 @@ class TestSubobstructionInferral(CommonTest):
                 GriddedPerm(Perm((1, 0, 3, 2)), ((1, 0), (1, 0), (1, 0), (1, 0))),
                 GriddedPerm(Perm((1, 0, 3, 2)), ((2, 0), (2, 0), (2, 0), (2, 0))),
             ],
-            requirements=[[Requirement(Perm((1, 0)), ((1, 0), (1, 0)))]],
+            requirements=[[GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0)))]],
         )
         assert obs_inf2.obstruction_inferral() == t
 
@@ -207,7 +207,7 @@ class TestEmptyCellInferral(CommonTest):
                 GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
                 GriddedPerm(Perm((1, 0)), ((0, 0), (1, 0))),
             ],
-            requirements=[[Requirement(Perm((0,)), ((0, 0),))]],
+            requirements=[[GriddedPerm(Perm((0,)), ((0, 0),))]],
         )
         return t
 
@@ -255,15 +255,15 @@ class TestAllObstructionInferral(CommonTest):
         assert obs_inf1.obstruction_length == 2
 
     def test_not_required(self, obs_inf1):
-        assert not obs_inf1.not_required(Requirement(Perm((0,)), ((1, 0),)))
-        assert not obs_inf1.not_required(Requirement(Perm((1, 0)), ((1, 0), (1, 0))))
-        assert obs_inf1.not_required(Requirement(Perm((0, 1)), ((1, 0), (1, 0))))
+        assert not obs_inf1.not_required(GriddedPerm(Perm((0,)), ((1, 0),)))
+        assert not obs_inf1.not_required(GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))))
+        assert obs_inf1.not_required(GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))))
         t = Tiling(
             obstructions=[GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3)],
             requirements=[
                 [
-                    Requirement(Perm((0, 1)), ((0, 0),) * 2),
-                    Requirement(Perm((1, 0)), ((0, 0),) * 2),
+                    GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                    GriddedPerm(Perm((1, 0)), ((0, 0),) * 2),
                 ]
             ],
         )

@@ -3,7 +3,7 @@ from itertools import chain, combinations
 from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from permuta.misc import UnionFind
-from tilings import GriddedPerm, Requirement
+from tilings import GriddedPerm
 from tilings.misc import partitions_iterator
 
 if TYPE_CHECKING:
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 Cell = Tuple[int, int]
-ReqList = Tuple[Requirement, ...]
+ReqList = Tuple[GriddedPerm, ...]
 
 
 class Factor:

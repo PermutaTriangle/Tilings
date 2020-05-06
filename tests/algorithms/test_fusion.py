@@ -1,7 +1,7 @@
 import pytest
 
 from permuta import Perm
-from tilings import GriddedPerm, Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 from tilings.algorithms import ComponentFusion, Fusion
 
 
@@ -34,10 +34,10 @@ class TestFusion:
             ],
             requirements=[
                 [
-                    Requirement(Perm((0, 1)), ((0, 0), (2, 0))),
-                    Requirement(Perm((0, 1)), ((1, 0), (2, 0))),
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (2, 0))),
+                    GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0))),
                 ],
-                [Requirement(Perm((1, 0)), ((2, 0), (2, 0)))],
+                [GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0)))],
             ],
         )
         return t
@@ -224,8 +224,8 @@ class TestFusion:
         assert row_fusion.requirements_fuse_counters == []
         print(fusion_with_req._tiling)
         assert fusion_with_req.requirements_fuse_counters == [
-            {Requirement(Perm((0, 1)), ((0, 0), (1, 0))): 2},
-            {Requirement(Perm((1, 0)), ((1, 0), (1, 0))): 1},
+            {GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))): 2},
+            {GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))): 1},
         ]
 
     def test_can_fuse_set_of_gridded_perms(
@@ -318,8 +318,8 @@ class TestFusion:
                 GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
             ],
             requirements=[
-                [Requirement(Perm((0, 1)), ((0, 0), (1, 0)))],
-                [Requirement(Perm((1, 0)), ((1, 0), (1, 0)))],
+                [GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0)))],
+                [GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0)))],
             ],
         )
 

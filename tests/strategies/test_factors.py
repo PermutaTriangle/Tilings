@@ -1,5 +1,5 @@
 from permuta import Perm
-from tilings import GriddedPerm, Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 from tilings.strategies import FactorStrategy
 
 pytest_plugins = [
@@ -36,8 +36,8 @@ def test_standard_factor(simple_tiling):
         obstructions=[GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)])],
         requirements=[
             [
-                Requirement(Perm((0, 1)), [(1, 1), (1, 1)]),
-                Requirement(Perm((0, 1)), [(1, 1), (1, 2)]),
+                GriddedPerm(Perm((0, 1)), [(1, 1), (1, 1)]),
+                GriddedPerm(Perm((0, 1)), [(1, 1), (1, 2)]),
             ]
         ],
     )
@@ -49,8 +49,8 @@ def test_standard_factor(simple_tiling):
             Tiling(
                 requirements=[
                     [
-                        Requirement(Perm((0, 1)), [(0, 0), (0, 0)]),
-                        Requirement(Perm((0, 1)), [(0, 0), (0, 1)]),
+                        GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)]),
+                        GriddedPerm(Perm((0, 1)), [(0, 0), (0, 1)]),
                     ]
                 ]
             ),
@@ -73,27 +73,27 @@ def test_factor_all_interleaving(diverse_tiling):
                 obstructions=[
                     GriddedPerm(Perm((0, 2, 3, 1)), [(0, 0), (1, 1), (1, 1), (2, 0)])
                 ],
-                requirements=[[Requirement(Perm((0,)), [(2, 0)])]],
+                requirements=[[GriddedPerm(Perm((0,)), [(2, 0)])]],
             ),
             Tiling(
                 obstructions=[
                     GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)]),
                     GriddedPerm(Perm((1, 0)), [(0, 0), (0, 0)]),
                 ],
-                requirements=[[Requirement(Perm((0,)), [(0, 0)])]],
+                requirements=[[GriddedPerm(Perm((0,)), [(0, 0)])]],
             ),
             Tiling(
                 obstructions=[
                     GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)]),
                     GriddedPerm(Perm((1, 0)), [(0, 0), (0, 0)]),
                 ],
-                requirements=[[Requirement(Perm((0,)), [(0, 0)])]],
+                requirements=[[GriddedPerm(Perm((0,)), [(0, 0)])]],
             ),
             Tiling(
                 requirements=[
                     [
-                        Requirement(Perm((1, 0)), [(0, 2), (0, 1)]),
-                        Requirement(Perm((0, 2, 1)), [(0, 1), (0, 2), (1, 2)]),
+                        GriddedPerm(Perm((1, 0)), [(0, 2), (0, 1)]),
+                        GriddedPerm(Perm((0, 2, 1)), [(0, 1), (0, 2), (1, 2)]),
                     ]
                 ]
             ),

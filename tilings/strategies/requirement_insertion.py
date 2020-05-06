@@ -4,9 +4,9 @@ from typing import Iterable, Iterator, List, Optional, Tuple
 
 from comb_spec_searcher import DisjointUnionStrategy, Rule, Strategy, StrategyGenerator
 from permuta import Av, Perm
-from tilings import GriddedPerm, Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 
-ListRequirement = Tuple[Requirement, ...]
+ListRequirement = Tuple[GriddedPerm, ...]
 
 EXTRA_BASIS_ERR = "'extra_basis' should be a list of Perm to avoid"
 
@@ -206,7 +206,7 @@ class AllCellInsertionStrategy(RequirementInsertionWithRestrictionStrategyGenera
         for cell, length in product(active, range(1, self.maxreqlen + 1)):
             basis = bdict[cell][0] + self.extra_basis
             yield from (
-                (Requirement.single_cell(patt, cell),)
+                (GriddedPerm.single_cell(patt, cell),)
                 for patt in Av(basis).of_length(length)
                 if not any(patt in perm for perm in bdict[cell][1])
             )
@@ -323,7 +323,7 @@ class AllRequirementExtensionStrategy(
             for length in range(len(curr_req) + 1, self.maxreqlen + 1):
                 for patt in Av(obs + self.extra_basis).of_length(length):
                     if curr_req in patt:
-                        yield (Requirement.single_cell(patt, cell),)
+                        yield (GriddedPerm.single_cell(patt, cell),)
 
     def __str__(self) -> str:
         if self.extra_basis:
@@ -365,7 +365,7 @@ class AllRequirementInsertionStrategy(
                 if len(gp.factors()) == 1 and all(
                     p not in gp.patt for p in self.extra_basis
                 ):
-                    yield (Requirement(gp.patt, gp.pos),)
+                    yield (GriddedPerm(gp.patt, gp.pos),)
 
     def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
         if tiling.requirements:
@@ -398,7 +398,7 @@ class AllFactorInsertionStrategy(RequirementInsertionStrategyGenerator):
         gp_facts = map(GriddedPerm.factors, reqs_and_obs)
         proper_facts = chain.from_iterable(f for f in gp_facts if len(f) > 1)
         for f in proper_facts:
-            yield (Requirement(f.patt, f.pos),)
+            yield (GriddedPerm(f.patt, f.pos),)
 
     def __str__(self) -> str:
         return "all factor insertion"

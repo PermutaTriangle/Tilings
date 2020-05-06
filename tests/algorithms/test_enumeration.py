@@ -7,7 +7,7 @@ from comb_spec_searcher import StrategyPack
 from comb_spec_searcher.strategies.rule import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
-from tilings import GriddedPerm, Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
     BasicEnumeration,
     DatabaseEnumeration,
@@ -179,8 +179,8 @@ class TestLocallyFactorableEnumeration(CommonTest):
                 GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
             ],
             requirements=[
-                [Requirement(Perm((0, 1)), ((0, 0), (1, 0)))],
-                [Requirement(Perm((1, 0)), ((0, 0), (0, 0)))],
+                [GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0)))],
+                [GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0)))],
             ],
         )
         enum_with_not_loc_fact_reqs = LocallyFactorableEnumeration(t1)
@@ -191,8 +191,8 @@ class TestLocallyFactorableEnumeration(CommonTest):
                 GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
             ],
             requirements=[
-                [Requirement(Perm((1, 0)), ((1, 0), (1, 0)))],
-                [Requirement(Perm((1, 0)), ((0, 0), (0, 0)))],
+                [GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0)))],
+                [GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0)))],
             ],
         )
         enum_with_loc_fact_reqs = LocallyFactorableEnumeration(t2)
@@ -223,8 +223,8 @@ class TestLocalEnumeration(CommonTest):
             ],
             requirements=[
                 [
-                    Requirement(Perm((0, 1)), ((0, 0),) * 2),
-                    Requirement(Perm((0, 1)), ((1, 0),) * 2),
+                    GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                    GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
                 ]
             ],
         )
@@ -242,8 +242,8 @@ class TestLocalEnumeration(CommonTest):
             ],
             requirements=[
                 [
-                    Requirement(Perm((0, 1)), ((0, 0),) * 2),
-                    Requirement(Perm((0, 1)), ((1, 0),) * 2),
+                    GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                    GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
                 ]
             ],
         )
@@ -264,8 +264,8 @@ class TestLocalEnumeration(CommonTest):
             ],
             requirements=[
                 [
-                    Requirement(Perm((0, 1)), ((0, 0),) * 2),
-                    Requirement(Perm((0, 1)), ((1, 0),) * 2),
+                    GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                    GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
                 ]
             ],
         )
@@ -337,8 +337,8 @@ class TestMonotoneTreeEnumeration(CommonTest):
             ],
             requirements=[
                 [
-                    Requirement(Perm((0,)), ((0, 0),)),
-                    Requirement(Perm((0,)), ((1, 0),)),
+                    GriddedPerm(Perm((0,)), ((0, 0),)),
+                    GriddedPerm(Perm((0,)), ((1, 0),)),
                 ]
             ],
         )
@@ -390,7 +390,7 @@ class TestMonotoneTreeEnumeration(CommonTest):
                 GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
                 GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 1))),
             ],
-            requirements=[[Requirement(Perm((0,)), ((0, 1),))]],
+            requirements=[[GriddedPerm(Perm((0,)), ((0, 1),))]],
         )
         assert not MonotoneTreeEnumeration(forest_tiling).verified()
 
@@ -523,8 +523,8 @@ class TestMonotoneTreeEnumeration(CommonTest):
                 GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
             ],
             requirements=[
-                [Requirement(Perm((1, 0)), ((0, 0),) * 2)],
-                [Requirement(Perm((0,)), ((1, 0),))],
+                [GriddedPerm(Perm((1, 0)), ((0, 0),) * 2)],
+                [GriddedPerm(Perm((0,)), ((1, 0),))],
             ],
         )
         enum = MonotoneTreeEnumeration(t)
@@ -611,8 +611,8 @@ class TestElementaryEnumeration(CommonTest):
                 GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
             ],
             requirements=[
-                [Requirement(Perm((0,)), ((0, 1),))],
-                [Requirement(Perm((0, 1)), ((0, 1), (1, 2)))],
+                [GriddedPerm(Perm((0,)), ((0, 1),))],
+                [GriddedPerm(Perm((0, 1)), ((0, 1), (1, 2)))],
             ],
         )
         return ElementaryEnumeration(t)

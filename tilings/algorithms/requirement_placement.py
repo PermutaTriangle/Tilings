@@ -3,16 +3,14 @@ from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Tuple
 
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
-
-from ..griddedperm import GriddedPerm
-from ..requirement import Requirement
+from tilings import GriddedPerm
 
 if TYPE_CHECKING:
     from tilings import Tiling
 
 Cell = Tuple[int, int]
 Dir = int
-ListRequirement = List[Requirement]
+ListRequirement = List[GriddedPerm]
 ObsCache = Dict[Cell, List[GriddedPerm]]
 ReqsCache = Dict[Cell, List[ListRequirement]]
 
@@ -187,7 +185,7 @@ class RequirementPlacement:
         is a point.
         """
         placed_cell = self._placed_cell(cell)
-        return [[Requirement(Perm((0,)), (placed_cell,))]]
+        return [[GriddedPerm(Perm((0,)), (placed_cell,))]]
 
     def _stretch_gridded_perm(
         self, gp: GriddedPerm, cell: Cell
@@ -299,7 +297,7 @@ class RequirementPlacement:
 
     def _remaining_requirement_from_requirement(
         self, gps: Iterable[GriddedPerm], indices: Iterable[int], cell: Cell,
-    ) -> List[Requirement]:
+    ) -> List[GriddedPerm]:
         """
         Return the requirements required to ensure that the placed point can be
         extended to be direction most occurrece of a point at the index of the
@@ -313,9 +311,7 @@ class RequirementPlacement:
         res = []
         for idx, gp in zip(indices, gps):
             if gp.pos[idx] == cell:
-                for stretched_gp in self._stretch_gridded_perm(
-                    Requirement.from_gridded_perm(gp), cell
-                ):
+                for stretched_gp in self._stretch_gridded_perm(gp, cell):
                     if stretched_gp.pos[idx] == placed_cell:
                         res.append(stretched_gp)
         return res
@@ -354,7 +350,7 @@ class RequirementPlacement:
         Return the tiling in which a point is placed in the given direction and
         cell.
         """
-        point_req = Requirement(Perm((0,)), (cell,))
+        point_req = GriddedPerm(Perm((0,)), (cell,))
         return self.place_point_of_req((point_req,), (0,), direction)[0]
 
     def col_placement(self, index: int, direction: Dir) -> Tuple["Tiling", ...]:
@@ -364,7 +360,7 @@ class RequirementPlacement:
         """
         assert direction in (DIR_EAST, DIR_WEST)
         req = [
-            Requirement(Perm((0,)), (cell,))
+            GriddedPerm(Perm((0,)), (cell,))
             for cell in self._tiling.cells_in_col(index)
         ]
         return self.place_point_of_req(req, tuple(0 for _ in req), direction)
@@ -376,7 +372,7 @@ class RequirementPlacement:
         """
         assert direction in (DIR_NORTH, DIR_SOUTH)
         req = [
-            Requirement(Perm((0,)), (cell,))
+            GriddedPerm(Perm((0,)), (cell,))
             for cell in self._tiling.cells_in_row(index)
         ]
         return self.place_point_of_req(req, tuple(0 for _ in req), direction)

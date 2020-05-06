@@ -1,5 +1,5 @@
 from permuta import Perm
-from tilings import GriddedPerm, Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 from tilings.strategies import (
     AllCellInsertionStrategy,
     AllFactorInsertionStrategy,
@@ -29,16 +29,16 @@ def test_all_cell_insertions_points(simple_tiling):
                 obstructions=[GriddedPerm(Perm((0,)), [(0, 1)])],
                 requirements=[
                     [
-                        Requirement(Perm((0, 1)), [(0, 0), (1, 0)]),
-                        Requirement(Perm((0, 1)), [(0, 0), (1, 1)]),
+                        GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+                        GriddedPerm(Perm((0, 1)), [(0, 0), (1, 1)]),
                     ]
                 ],
             ),
             Tiling(
                 obstructions=[GriddedPerm(Perm((0,)), [(1, 0)])],
                 requirements=[
-                    [Requirement(Perm((0,)), [(0, 1)])],
-                    [Requirement(Perm((0, 1)), [(0, 0), (1, 1)])],
+                    [GriddedPerm(Perm((0,)), [(0, 1)])],
+                    [GriddedPerm(Perm((0, 1)), [(0, 0), (1, 1)])],
                 ],
             ),
         )
@@ -51,15 +51,15 @@ def test_all_cell_insertions_points(simple_tiling):
                     GriddedPerm(Perm((0,)), ((0, 1),)),
                     GriddedPerm(Perm((0,)), ((1, 0),)),
                 ],
-                requirements=[[Requirement(Perm((0, 1)), ((0, 0), (1, 1)))]],
+                requirements=[[GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1)))]],
             ),
             Tiling(
                 obstructions=[GriddedPerm(Perm((0,)), ((0, 1),))],
                 requirements=[
-                    [Requirement(Perm((0,)), ((1, 0),))],
+                    [GriddedPerm(Perm((0,)), ((1, 0),))],
                     [
-                        Requirement(Perm((0, 1)), ((0, 0), (1, 0))),
-                        Requirement(Perm((0, 1)), ((0, 0), (1, 1))),
+                        GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+                        GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
                     ],
                 ],
             ),
@@ -72,10 +72,10 @@ def test_all_cell_insertions_points(simple_tiling):
             Tiling(
                 obstructions=[GriddedPerm(Perm((1, 0)), ((0, 1), (1, 0)))],
                 requirements=[
-                    [Requirement(Perm((0,)), ((0, 0),))],
+                    [GriddedPerm(Perm((0,)), ((0, 0),))],
                     [
-                        Requirement(Perm((0, 1)), ((0, 0), (1, 0))),
-                        Requirement(Perm((0, 1)), ((0, 0), (1, 1))),
+                        GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+                        GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
                     ],
                 ],
             ),
@@ -84,14 +84,14 @@ def test_all_cell_insertions_points(simple_tiling):
 
     actual.add(
         (
-            Tiling(requirements=[[Requirement(Perm((0, 1)), ((0, 0), (1, 0)))]]),
+            Tiling(requirements=[[GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0)))]]),
             Tiling(
                 obstructions=[GriddedPerm(Perm((1, 0)), ((0, 1), (1, 0)))],
                 requirements=[
-                    [Requirement(Perm((0,)), ((1, 1),))],
+                    [GriddedPerm(Perm((0,)), ((1, 1),))],
                     [
-                        Requirement(Perm((0, 1)), ((0, 0), (1, 0))),
-                        Requirement(Perm((0, 1)), ((0, 0), (1, 1))),
+                        GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+                        GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
                     ],
                 ],
             ),
@@ -121,7 +121,7 @@ def test_all_cell_insertions(
         Tiling(
             obstructions=typical_redundant_obstructions,
             requirements=typical_redundant_requirements
-            + [[Requirement(Perm((0, 1, 2)), [(0, 1), (0, 1), (0, 1)])]],
+            + [[GriddedPerm(Perm((0, 1, 2)), [(0, 1), (0, 1), (0, 1)])]],
         ),
     ) in strats
 
@@ -348,8 +348,8 @@ def test_requirement_corroboration(
         obstructions=[GriddedPerm(Perm((1, 0)), [(0, 1), (1, 0)])],
         requirements=[
             [
-                Requirement(Perm((0, 1)), [(0, 0), (1, 0)]),
-                Requirement(Perm((0, 1)), [(0, 0), (1, 1)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (1, 1)]),
             ]
         ],
     )
@@ -367,12 +367,12 @@ def test_requirement_corroboration(
             GriddedPerm(Perm((1, 0)), [(0, 1), (1, 0)]),
         ],
         requirements=[
-            [Requirement(Perm((0,)), [(0, 0)])],
-            [Requirement(Perm((0,)), [(1, 1)])],
+            [GriddedPerm(Perm((0,)), [(0, 0)])],
+            [GriddedPerm(Perm((0,)), [(1, 1)])],
         ],
     )
     assert til2 == Tiling(
-        obstructions=[], requirements=[[Requirement(Perm((0, 1)), [(0, 0), (1, 0)])]]
+        obstructions=[], requirements=[[GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)])]]
     )
 
     tiling = Tiling(
@@ -390,28 +390,28 @@ def test_requirement_corroboration(
         [
             Tiling(
                 requirements=[
-                    [Requirement(Perm((0, 1)), ((2, 0), (3, 1)))],
-                    [Requirement(Perm((1, 0)), ((3, 2), (3, 1)))],
-                    [Requirement(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 2)))],
+                    [GriddedPerm(Perm((0, 1)), ((2, 0), (3, 1)))],
+                    [GriddedPerm(Perm((1, 0)), ((3, 2), (3, 1)))],
+                    [GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 2)))],
                     [
-                        Requirement(Perm((0, 1, 2)), ((2, 2), (2, 2), (2, 2))),
-                        Requirement(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
+                        GriddedPerm(Perm((0, 1, 2)), ((2, 2), (2, 2), (2, 2))),
+                        GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
                     ],
                 ],
                 obstructions=typical_redundant_obstructions,
             ),
             Tiling(
                 requirements=[
-                    [Requirement(Perm((0, 1)), ((2, 0), (3, 1)))],
-                    [Requirement(Perm((1, 0)), ((3, 2), (3, 1)))],
+                    [GriddedPerm(Perm((0, 1)), ((2, 0), (3, 1)))],
+                    [GriddedPerm(Perm((1, 0)), ((3, 2), (3, 1)))],
                     [
-                        Requirement(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 3))),
-                        Requirement(Perm((1, 0, 2)), ((0, 0), (1, 0), (2, 2))),
-                        Requirement(Perm((1, 0, 2)), ((0, 1), (1, 0), (2, 2))),
+                        GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 3))),
+                        GriddedPerm(Perm((1, 0, 2)), ((0, 0), (1, 0), (2, 2))),
+                        GriddedPerm(Perm((1, 0, 2)), ((0, 1), (1, 0), (2, 2))),
                     ],
                     [
-                        Requirement(Perm((0, 1, 2)), ((2, 2), (2, 2), (2, 2))),
-                        Requirement(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
+                        GriddedPerm(Perm((0, 1, 2)), ((2, 2), (2, 2), (2, 2))),
+                        GriddedPerm(Perm((1, 0, 2)), ((0, 0), (0, 0), (0, 0))),
                     ],
                 ],
                 obstructions=(
@@ -452,14 +452,14 @@ def test_cell_insertion():
     ci1 = CellInsertion(t1, maxreqlen=3)
     assert set(ci1.req_lists_to_insert()) == set(
         [
-            (Requirement.single_cell(Perm((0,)), (0, 0)),),
-            (Requirement.single_cell(Perm((0, 1)), (0, 0)),),
-            (Requirement.single_cell(Perm((1, 0)), (0, 0)),),
-            (Requirement.single_cell(Perm((0, 2, 1)), (0, 0)),),
-            (Requirement.single_cell(Perm((1, 0, 2)), (0, 0)),),
-            (Requirement.single_cell(Perm((1, 2, 0)), (0, 0)),),
-            (Requirement.single_cell(Perm((2, 0, 1)), (0, 0)),),
-            (Requirement.single_cell(Perm((2, 1, 0)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((0,)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((1, 0)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((0, 2, 1)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((1, 0, 2)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((1, 2, 0)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((2, 0, 1)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((2, 1, 0)), (0, 0)),),
         ]
     )
     assert len(list(ci1.rules())) == 8
@@ -467,24 +467,24 @@ def test_cell_insertion():
     ci2 = CellInsertion(t2, maxreqlen=3)
     assert set(ci2.req_lists_to_insert()) == set(
         [
-            (Requirement.single_cell(Perm((0, 1)), (0, 0)),),
-            (Requirement.single_cell(Perm((0, 2, 1)), (0, 0)),),
-            (Requirement.single_cell(Perm((1, 0, 2)), (0, 0)),),
-            (Requirement.single_cell(Perm((1, 2, 0)), (0, 0)),),
-            (Requirement.single_cell(Perm((2, 0, 1)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((0, 2, 1)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((1, 0, 2)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((1, 2, 0)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((2, 0, 1)), (0, 0)),),
         ]
     )
     assert len(list(ci2.rules())) == 5
     ci3 = CellInsertion(t1, maxreqlen=3, extra_basis=[Perm((0, 2, 1))])
     assert set(ci3.req_lists_to_insert()) == set(
         [
-            (Requirement.single_cell(Perm((0,)), (0, 0)),),
-            (Requirement.single_cell(Perm((0, 1)), (0, 0)),),
-            (Requirement.single_cell(Perm((1, 0)), (0, 0)),),
-            (Requirement.single_cell(Perm((1, 0, 2)), (0, 0)),),
-            (Requirement.single_cell(Perm((1, 2, 0)), (0, 0)),),
-            (Requirement.single_cell(Perm((2, 0, 1)), (0, 0)),),
-            (Requirement.single_cell(Perm((2, 1, 0)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((0,)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((1, 0)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((1, 0, 2)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((1, 2, 0)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((2, 0, 1)), (0, 0)),),
+            (GriddedPerm.single_cell(Perm((2, 1, 0)), (0, 0)),),
         ]
     )
     assert len(list(ci3.rules())) == 7
@@ -497,16 +497,16 @@ def test_crossing_insertion():
             GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
             GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
         ],
-        requirements=[[Requirement(Perm((0,)), ((0, 0),))]],
+        requirements=[[GriddedPerm(Perm((0,)), ((0, 0),))]],
     )
     ci = CrossingInsertion(t, maxreqlen=2)
     assert set(ci.req_lists_to_insert()) == set(
         [
-            (Requirement(Perm((0,)), ((0, 0),)),),
-            (Requirement(Perm((0,)), ((1, 0),)),),
-            (Requirement(Perm((1, 0)), ((0, 0), (0, 0))),),
-            (Requirement(Perm((1, 0)), ((1, 0), (1, 0))),),
-            (Requirement(Perm((1, 0)), ((0, 0), (1, 0))),),
+            (GriddedPerm(Perm((0,)), ((0, 0),)),),
+            (GriddedPerm(Perm((0,)), ((1, 0),)),),
+            (GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),),
+            (GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),),
+            (GriddedPerm(Perm((1, 0)), ((0, 0), (1, 0))),),
         ]
     )
     assert len(list(ci.rules())) == 5

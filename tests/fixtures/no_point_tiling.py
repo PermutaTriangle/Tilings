@@ -1,7 +1,7 @@
 import pytest
 
 from permuta import Perm
-from tilings import GriddedPerm, Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 
 
 @pytest.fixture
@@ -17,13 +17,13 @@ def no_point_tiling():
         ],
         requirements=[
             [
-                Requirement(Perm((0, 1)), [(0, 0), (0, 0)]),
-                Requirement(Perm((0, 1)), [(0, 0), (2, 0)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (2, 0)]),
             ],
-            [Requirement(Perm((0, 2, 1)), [(0, 1), (1, 1), (1, 1)])],
+            [GriddedPerm(Perm((0, 2, 1)), [(0, 1), (1, 1), (1, 1)])],
             [
-                Requirement(Perm((0, 1)), [(1, 1), (2, 1)]),
-                Requirement(Perm((0, 1)), [(1, 1), (2, 2)]),
+                GriddedPerm(Perm((0, 1)), [(1, 1), (2, 1)]),
+                GriddedPerm(Perm((0, 1)), [(1, 1), (2, 2)]),
             ],
         ],
     )

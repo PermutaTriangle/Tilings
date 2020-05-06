@@ -6,7 +6,7 @@ from typing import Iterable, Iterator, List, Optional, Tuple, Set, Dict
 from comb_spec_searcher import DisjointUnionStrategy, Rule, StrategyGenerator
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
-from tilings import GriddedPerm, Tiling, Requirement
+from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
 
 __all__ = [
@@ -431,13 +431,13 @@ class AllRequirementPlacementStrategy(RequirementPlacementStrategyGenerator):
         self.subreqs = subreqs
         super().__init__(partial=partial, ignore_parent=ignore_parent, dirs=dirs)
 
-    def downward_sets(self, tiling: Tiling) -> Set[Tuple[Requirement, ...]]:
+    def downward_sets(self, tiling: Tiling) -> Set[Tuple[GriddedPerm, ...]]:
         """Yield all requirements contained in some requirement on the tiling."""
         queue = set(tuple(sorted(req)) for req in tiling.requirements)
         # TODO: should we consider minimal gridded perms?
         #           Optimal is minimal on the factors of the tiling which
         #           contains only the requirement,
-        all_reqs: Set[Tuple[Requirement, ...]] = set()
+        all_reqs: Set[Tuple[GriddedPerm, ...]] = set()
         while queue:
             req = queue.pop()
             if req not in all_reqs:
@@ -459,7 +459,7 @@ class AllRequirementPlacementStrategy(RequirementPlacementStrategyGenerator):
     def req_indices_and_directions_to_place(
         self, tiling: Tiling
     ) -> Iterator[Tuple[Tuple[GriddedPerm, ...], Tuple[int, ...], int]]:
-        all_reqs: Iterable[Tuple[Requirement, ...]]
+        all_reqs: Iterable[Tuple[GriddedPerm, ...]]
         if self.subreqs:
             all_reqs = self.downward_sets(tiling)
         else:

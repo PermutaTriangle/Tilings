@@ -1,7 +1,7 @@
 import pytest
 
 from permuta import Perm
-from tilings import GriddedPerm, Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 from tilings.strategies import (
     ObstructionTransitivityStrategy,
     RowColumnSeparationStrategy,

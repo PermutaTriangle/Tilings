@@ -12,10 +12,10 @@ from typing import (
 
 from permuta import Perm
 from tilings.griddedperm import GriddedPerm
-from tilings.requirement import Requirement
 
 if TYPE_CHECKING:
     from tilings import Tiling
+
 Cell = Tuple[int, int]
 
 
@@ -94,7 +94,7 @@ class GriddedPermsOnTiling:
                 yield next_gp
 
     def can_satisfy_all(
-        self, gp: GriddedPerm, col: int, reqs: Iterable[Iterable[Requirement]]
+        self, gp: GriddedPerm, col: int, reqs: Iterable[Iterable[GriddedPerm]]
     ) -> bool:
         """
         Indicate if all the requirement lists can be satisfied by the gridded
@@ -105,11 +105,11 @@ class GriddedPermsOnTiling:
         )
 
     @staticmethod
-    def can_satisfy(gp: GriddedPerm, col: int, req: Requirement) -> bool:
+    def can_satisfy(gp: GriddedPerm, col: int, req: GriddedPerm) -> bool:
         return req.get_subperm_left_col(col) in gp
 
     @staticmethod
-    def satisfies(gp: GriddedPerm, reqlist: Iterable[Requirement]) -> bool:
+    def satisfies(gp: GriddedPerm, reqlist: Iterable[GriddedPerm]) -> bool:
         return any(req in gp for req in reqlist)
 
     def forbidden(self, gp: GriddedPerm) -> bool:
@@ -123,7 +123,7 @@ class GriddedPermsOnTiling:
         self,
         curgp: GriddedPerm,
         curcol: int,
-        reqs: Sequence[Sequence[Requirement]],
+        reqs: Sequence[Sequence[GriddedPerm]],
         yielded: Optional[bool] = False,
     ) -> Iterator[GriddedPerm]:
         """

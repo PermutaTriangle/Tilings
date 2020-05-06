@@ -1,7 +1,7 @@
 import pytest
 
 from permuta import Perm
-from tilings import GriddedPerm, Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 from tilings.algorithms import MinimalGriddedPerms
 
 
@@ -28,11 +28,11 @@ def t1():
             GriddedPerm(Perm((2, 3, 0, 1)), ((0, 2), (0, 2), (0, 2), (0, 2))),
         ),
         requirements=(
-            (Requirement(Perm((0,)), ((1, 1),)),),
+            (GriddedPerm(Perm((0,)), ((1, 1),)),),
             (
-                Requirement(Perm((1, 0)), ((0, 2), (0, 2))),
-                Requirement(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
-                Requirement(Perm((2, 1, 0)), ((0, 2), (0, 0), (0, 0))),
+                GriddedPerm(Perm((1, 0)), ((0, 2), (0, 2))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 2), (0, 0), (0, 0))),
             ),
         ),
     )
@@ -96,12 +96,12 @@ def t2():
             GriddedPerm(Perm((3, 0, 2, 1)), ((0, 3), (0, 3), (0, 3), (2, 3))),
         ),
         requirements=(
-            (Requirement(Perm((0,)), ((1, 2),)),),
-            (Requirement(Perm((0,)), ((2, 3),)),),
+            (GriddedPerm(Perm((0,)), ((1, 2),)),),
+            (GriddedPerm(Perm((0,)), ((2, 3),)),),
             (
-                Requirement(Perm((1, 0)), ((0, 3), (0, 1))),
-                Requirement(Perm((1, 0)), ((0, 3), (2, 3))),
-                Requirement(Perm((2, 0, 1)), ((0, 3), (0, 3), (0, 3))),
+                GriddedPerm(Perm((1, 0)), ((0, 3), (0, 1))),
+                GriddedPerm(Perm((1, 0)), ((0, 3), (2, 3))),
+                GriddedPerm(Perm((2, 0, 1)), ((0, 3), (0, 3), (0, 3))),
             ),
         ),
     )
@@ -148,9 +148,9 @@ def t3():
             GriddedPerm(Perm((1, 2, 3, 0)), ((2, 0), (2, 0), (2, 0), (2, 0))),
         ),
         requirements=(
-            (Requirement(Perm((0,)), ((1, 1),)),),
-            (Requirement(Perm((0,)), ((2, 0),)),),
-            (Requirement(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),),
+            (GriddedPerm(Perm((0,)), ((1, 1),)),),
+            (GriddedPerm(Perm((0,)), ((2, 0),)),),
+            (GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),),
         ),
     )
 
@@ -206,12 +206,12 @@ def t4():
             GriddedPerm(Perm((1, 0, 3, 2)), ((0, 1), (0, 1), (2, 3), (2, 3))),
         ),
         requirements=(
-            (Requirement(Perm((0,)), ((1, 2),)),),
-            (Requirement(Perm((0,)), ((2, 3),)),),
+            (GriddedPerm(Perm((0,)), ((1, 2),)),),
+            (GriddedPerm(Perm((0,)), ((2, 3),)),),
             (
-                Requirement(Perm((0,)), ((3, 0),)),
-                Requirement(Perm((1, 2, 0)), ((0, 1), (0, 1), (0, 1))),
-                Requirement(Perm((1, 2, 0)), ((0, 1), (0, 3), (0, 1))),
+                GriddedPerm(Perm((0,)), ((3, 0),)),
+                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (0, 1), (0, 1))),
+                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (0, 3), (0, 1))),
             ),
         ),
     )
@@ -280,14 +280,14 @@ def t5():
             GriddedPerm(Perm((1, 2, 0, 3)), ((0, 2), (0, 2), (0, 2), (0, 2))),
         ),
         requirements=(
-            (Requirement(Perm((0,)), ((1, 1),)),),
-            (Requirement(Perm((0,)), ((2, 0),)),),
+            (GriddedPerm(Perm((0,)), ((1, 1),)),),
+            (GriddedPerm(Perm((0,)), ((2, 0),)),),
             (
-                Requirement(Perm((0, 1)), ((2, 0), (2, 0))),
-                Requirement(Perm((1, 0)), ((0, 2), (0, 0))),
-                Requirement(Perm((1, 0)), ((0, 2), (3, 2))),
-                Requirement(Perm((2, 0, 1)), ((0, 0), (0, 0), (2, 0))),
-                Requirement(Perm((2, 0, 1)), ((0, 2), (0, 2), (0, 2))),
+                GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+                GriddedPerm(Perm((1, 0)), ((0, 2), (0, 0))),
+                GriddedPerm(Perm((1, 0)), ((0, 2), (3, 2))),
+                GriddedPerm(Perm((2, 0, 1)), ((0, 0), (0, 0), (2, 0))),
+                GriddedPerm(Perm((2, 0, 1)), ((0, 2), (0, 2), (0, 2))),
             ),
         ),
     )
@@ -311,7 +311,6 @@ def mg5():
 
 @pytest.fixture
 def t6():
-    """Yield GriddedPerm, not Requirement"""
     return Tiling(
         obstructions=(
             GriddedPerm(Perm((0,)), ((0, 0),)),
@@ -324,7 +323,7 @@ def t6():
             GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 2), (0, 2))),
             GriddedPerm(Perm((0, 1, 2)), ((0, 2), (0, 2), (0, 2))),
         ),
-        requirements=((Requirement(Perm((1, 0)), ((0, 2), (0, 1))),),),
+        requirements=((GriddedPerm(Perm((1, 0)), ((0, 2), (0, 1))),),),
     )
 
 

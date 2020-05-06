@@ -50,13 +50,12 @@ from .algorithms.enumeration import (
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
-from .requirement import Requirement
 
 __all__ = ["Tiling"]
 
 
 Cell = Tuple[int, int]
-ReqList = Tuple[Requirement, ...]
+ReqList = Tuple[GriddedPerm, ...]
 
 
 class Tiling(CombinatorialClass):
@@ -72,7 +71,7 @@ class Tiling(CombinatorialClass):
     def __init__(
         self,
         obstructions: Iterable[GriddedPerm] = tuple(),
-        requirements: Iterable[Iterable[Requirement]] = tuple(),
+        requirements: Iterable[Iterable[GriddedPerm]] = tuple(),
         remove_empty: bool = True,
         derive_empty: bool = True,
         minimize: bool = True,
@@ -119,7 +118,7 @@ class Tiling(CombinatorialClass):
             obstructions=(GriddedPerm(p, ((0, 0),) * len(p)) for p in obstructions)
         )
         for req_list in requirements:
-            req_list = [Requirement(p, ((0, 0),) * len(p)) for p in req_list]
+            req_list = [GriddedPerm(p, ((0, 0),) * len(p)) for p in req_list]
             t = t.add_list_requirement(req_list)
         return t
 
@@ -233,7 +232,7 @@ class Tiling(CombinatorialClass):
         requirement set of self, and a list of further reduced obstructions.
         # TODO: obstruction don't change in the function, so stop returning.
         """
-        factored_reqs: List[Tuple[Requirement, ...]] = list()
+        factored_reqs: List[Tuple[GriddedPerm, ...]] = list()
         for reqs in self._requirements:
             # If any gridded permutation in list is empty then you vacuously
             # contain this requirement
@@ -265,7 +264,7 @@ class Tiling(CombinatorialClass):
             )
             factored_reqs.append(rem_req)
 
-        cleaned_reqs: List[List[Requirement]] = []
+        cleaned_reqs: List[List[GriddedPerm]] = []
         for reqs in factored_reqs:
             if not all(reqs):
                 continue
@@ -284,7 +283,7 @@ class Tiling(CombinatorialClass):
                 cleaned_req.append(req.get_gridded_perm_in_cells(cells))
             cleaned_reqs.append(cleaned_req)
 
-        cleanreqs: List[List[Requirement]] = list()
+        cleanreqs: List[List[GriddedPerm]] = list()
         for req_list in cleaned_reqs:
             # If any gridded permutation in list is empty then you vacuously
             # contain this requirement
@@ -409,7 +408,7 @@ class Tiling(CombinatorialClass):
                 pattlen = arr[offset]
                 offset += 1
                 reqlist.append(
-                    Requirement.decompress(arr[offset : offset + 3 * pattlen])
+                    GriddedPerm.decompress(arr[offset : offset + 3 * pattlen])
                 )
                 offset += 3 * pattlen
             requirements.append(reqlist)
@@ -458,7 +457,7 @@ class Tiling(CombinatorialClass):
         serialized Tiling object."""
         obstructions = map(GriddedPerm.from_dict, jsondict["obstructions"])
         requirements = map(
-            lambda x: map(Requirement.from_dict, x), jsondict["requirements"]
+            lambda x: map(GriddedPerm.from_dict, x), jsondict["requirements"]
         )
         return cls(obstructions=obstructions, requirements=requirements)
 
@@ -501,19 +500,19 @@ class Tiling(CombinatorialClass):
     def add_obstructions(self, gps: Iterable[GriddedPerm]) -> "Tiling":
         """Returns a new tiling with the obstructions added."""
         new_obs = tuple(gps)
-        return Tiling(self._obstructions + tuple(gps), self._requirements)
+        return Tiling(self._obstructions + new_obs, self._requirements)
 
     def add_list_requirement(self, req_list: Iterable[GriddedPerm]) -> "Tiling":
         """
         Return a new tiling with the requirement list added.
         """
-        new_req = tuple(map(Requirement.from_gridded_perm, req_list))
+        new_req = tuple(req_list)
         return Tiling(self._obstructions, self._requirements + (new_req,),)
 
     def add_requirement(self, patt: Perm, pos: Iterable[Cell]) -> "Tiling":
         """Returns a new tiling with the requirement of the pattern
         patt with position pos."""
-        new_req_list = (Requirement(patt, pos),)
+        new_req_list = (GriddedPerm(patt, pos),)
         return self.add_list_requirement(new_req_list)
 
     def add_single_cell_obstruction(self, patt: Perm, cell: Cell) -> "Tiling":
@@ -527,7 +526,7 @@ class Tiling(CombinatorialClass):
     def add_single_cell_requirement(self, patt: Perm, cell: Cell) -> "Tiling":
         """Returns a new tiling with the single cell requirement of the pattern
         patt in the given cell."""
-        new_req_list = (Requirement.single_cell(patt, cell),)
+        new_req_list = (GriddedPerm.single_cell(patt, cell),)
         return self.add_list_requirement(new_req_list)
 
     def fully_isolated(self) -> bool:
@@ -678,8 +677,8 @@ class Tiling(CombinatorialClass):
 
     @staticmethod
     def sort_requirements(
-        requirements: Iterable[Iterable[Requirement]],
-    ) -> Tuple[Tuple[Requirement, ...], ...]:
+        requirements: Iterable[Iterable[GriddedPerm]],
+    ) -> Tuple[Tuple[GriddedPerm, ...], ...]:
         return tuple(sorted(tuple(sorted(set(reqlist))) for reqlist in requirements))
 
     def backward_map(self, gp: GriddedPerm) -> GriddedPerm:
@@ -1076,7 +1075,7 @@ class Tiling(CombinatorialClass):
             return self
         mgps = MinimalGriddedPerms(self)
         requirements = tuple(
-            Requirement(gp.patt, gp.pos) for gp in mgps.minimal_gridded_perms()
+            GriddedPerm(gp.patt, gp.pos) for gp in mgps.minimal_gridded_perms()
         )
         return self.__class__(self.obstructions, (requirements,))
 
@@ -1184,7 +1183,7 @@ class Tiling(CombinatorialClass):
         return len(self._obstructions)
 
     @property
-    def requirements(self) -> Tuple[Tuple[Requirement, ...], ...]:
+    def requirements(self) -> Tuple[Tuple[GriddedPerm, ...], ...]:
         return self._requirements
 
     def total_requirements(self) -> int:
@@ -1289,7 +1288,7 @@ class Tiling(CombinatorialClass):
         """
         return cls(
             requirements=[
-                [Requirement(Perm((0,)), ((i, p[i]),))] for i in range(len(p))
+                [GriddedPerm(Perm((0,)), ((i, p[i]),))] for i in range(len(p))
             ]
         )
 
