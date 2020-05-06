@@ -1,4 +1,3 @@
-from copy import copy
 from typing import List, Optional
 
 from comb_spec_searcher import StrategyPack
@@ -27,19 +26,14 @@ class TileScopePack(StrategyPack):
             strat.ElementaryVerificationStrategy() in self
             and strat.OneByOneVerificationStrategy() in self
             and len(self.ver_strats) == 2
-            and self.forward_equivalence
             and self.iterative
         ):
             raise ValueError("The pack is already elementary.")
-        new_pack = copy(self)
-        new_pack.ver_strats = [
-            strat.ElementaryVerificationStrategy(),
-            strat.OneByOneVerificationStrategy(),
-        ]
-        new_pack.name = "_".join(["elementary", self.name])
-        new_pack.forward_equivalence = True
-        new_pack.iterative = True
-        return new_pack
+        pack = self.make_iterative()
+        pack = pack.add_verification(strat.OneByOneVerificationStrategy(), replace=True)
+        return pack.add_verification(
+            strat.ElementaryVerificationStrategy(), "elementary"
+        )
 
     def make_database(self) -> "TileScopePack":
         """
@@ -51,10 +45,7 @@ class TileScopePack(StrategyPack):
         """Create a new pack by turning on symmetry on the current pack."""
         if self.symmetries:
             raise ValueError("Symmetries already turned on.")
-        new_pack = copy(self)
-        new_pack.name = "_".join(["symmetries", self.name])
-        new_pack.symmetries = [strat.AllSymmetriesStrategy()]
-        return new_pack
+        return super().add_symmetry(strat.AllSymmetriesStrategy(), "symmetries")
 
     # Creation of the base pack
     @classmethod
@@ -84,15 +75,15 @@ class TileScopePack(StrategyPack):
 
     @classmethod
     def pattern_placements(
-        cls, length: int = 1, partial_placements: bool = False,
+        cls, length: int = 1, partial: bool = False,
     ) -> "TileScopePack":
         name = "{}{}{}_placements".format(
             "length_{}_".format(length) if length > 1 else "",
-            "partial_" if partial_placements else "",
+            "partial_" if partial else "",
             "pattern" if length > 1 else "point",
         )
         return TileScopePack(
-            initial_strats=[strat.PatternPlacementStrategy(partial=partial_placements)],
+            initial_strats=[strat.PatternPlacementStrategy(partial=partial)],
             ver_strats=[
                 strat.OneByOneVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
@@ -113,11 +104,11 @@ class TileScopePack(StrategyPack):
 
     @classmethod
     def point_placements(
-        cls, length: int = 1, partial_placements: bool = False
+        cls, length: int = 1, partial: bool = False
     ) -> "TileScopePack":
         name = "{}{}point_placements".format(
             "length_{}_".format(length) if length > 1 else "",
-            "partial_" if partial_placements else "",
+            "partial_" if partial else "",
         )
         return TileScopePack(
             initial_strats=[
@@ -198,20 +189,21 @@ class TileScopePack(StrategyPack):
 
     @classmethod
     def row_and_col_placements(
-        cls, row_only: bool = False, col_only: bool = False
+        cls, row_only: bool = False, col_only: bool = False, partial: bool = False
     ) -> "TileScopePack":
         if row_only and col_only:
             raise ValueError("Can't be row and col only.")
         place_row = not col_only
         place_col = not row_only
         both = place_col and place_row
-        name = "{}{}{}_placements".format(
+        name = "{}{}{}{}_placements".format(
+            "partial_" if partial else "",
             "row" if not col_only else "",
             "_and_" if both else "",
             "col" if not row_only else "",
         )
         rowcol_strat = strat.RowAndColumnPlacementStrategy(
-            place_row=place_row, place_col=place_col
+            place_row=place_row, place_col=place_col, partial=partial
         )
         return TileScopePack(
             initial_strats=[
@@ -270,11 +262,11 @@ class TileScopePack(StrategyPack):
 
     @classmethod
     def requirement_placements(
-        cls, length: int = 2, partial_placements: bool = False
+        cls, length: int = 2, partial: bool = False
     ) -> "TileScopePack":
         name = "{}{}requirement_placements".format(
             "length_{}_".format(length) if length != 2 else "",
-            "partial_" if partial_placements else "",
+            "partial_" if partial else "",
         )
         return TileScopePack(
             initial_strats=[
@@ -291,7 +283,7 @@ class TileScopePack(StrategyPack):
             ],
             expansion_strats=[
                 [strat.AllRequirementInsertionStrategy(maxreqlen=length)],
-                [strat.PatternPlacementStrategy(partial=partial_placements)],
+                [strat.PatternPlacementStrategy(partial=partial)],
             ],
             name=name,
         )

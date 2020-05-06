@@ -48,7 +48,7 @@ def assert_same_strategy(s1, s2):
     if s1.__class__ != s2.__class__:
         pytest.fail(
             "The two strategies have different class\n"
-            "First one is: {}\n Second one is: {}\n".format(s1.__class__, s2.__class)
+            "First one is: {}\n Second one is: {}\n".format(s1.__class__, s2.__class__)
         )
     assert s1.__dict__ == s2.__dict__, "The attributes of the strategies differ"
 
@@ -253,6 +253,7 @@ strategy_objects = (
     + ignoreparent(DatabaseVerificationStrategy)
     + ignoreparent(ElementaryVerificationStrategy)
     + [ElementaryVerificationStrategy()]
+    + [EmptyCellInferralStrategy()]
     + partition_ignoreparent_workable(FactorStrategy)
     + partition_ignoreparent_workable(FactorWithInterleavingStrategy)
     + partition_ignoreparent_workable(FactorWithMonotoneInterleavingStrategy)
