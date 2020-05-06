@@ -1,8 +1,9 @@
 import pytest
-
+from comb_spec_searcher import DisjointUnion
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.strategies import (
+    AllObstructionInferralStrategy,
     ObstructionTransitivityStrategy,
     RowColumnSeparationStrategy,
 )
@@ -10,12 +11,42 @@ from tilings.strategies import (
 pytest_plugins = ["tests.fixtures.simple_trans"]
 
 
+@pytest.fixture
+def tiling1():
+    """
+    A tiling that can be inferred.
+    """
+    t = Tiling(
+        obstructions=[
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
+        ],
+        requirements=[[GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0)))]],
+    )
+    return t
+
+
+@pytest.fixture
+def tiling_not_inf():
+    """
+    A tiling that cannot be inferred.
+    """
+    return Tiling.from_string("1234_2341")
+
+
 # Obstruction transitivity test
 def test_obstruction_transitivity(
     simple_trans_row, simple_trans_col, simple_trans_row_len2, simple_trans_row_len3
 ):
     strat = ObstructionTransitivityStrategy()(simple_trans_row)
-    assert strat.comb_classes[0] == Tiling(
+    assert len(strat) == 1
+    rule = strat[0](simple_trans_row)
+    assert len(rule.children) == 1
+    assert rule.children[0] == Tiling(
         obstructions=[
             GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
             GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
@@ -23,9 +54,18 @@ def test_obstruction_transitivity(
         ],
         requirements=[[GriddedPerm(Perm((0,)), [(1, 0)])]],
     )
+    assert isinstance(rule.constructor, DisjointUnion)
+    assert rule.formal_step == "added the obstructions {01: (0, 0), (2, 0)}"
+    assert rule.inferrable
+    assert not rule.possibly_empty
+    assert rule.ignore_parent
+    assert rule.workable
 
     strat = ObstructionTransitivityStrategy()(simple_trans_col)
-    assert strat.comb_classes[0] == Tiling(
+    assert len(strat) == 1
+    rule = strat[0](simple_trans_col)
+    assert len(rule.children) == 1
+    assert rule.children[0] == Tiling(
         obstructions=[
             GriddedPerm(Perm((0, 1)), [(0, 0), (0, 1)]),
             GriddedPerm(Perm((0, 1)), [(0, 1), (0, 2)]),
@@ -33,9 +73,18 @@ def test_obstruction_transitivity(
         ],
         requirements=[[GriddedPerm(Perm((0,)), [(0, 1)])]],
     )
+    assert isinstance(rule.constructor, DisjointUnion)
+    assert rule.formal_step == "added the obstructions {01: (0, 0), (0, 2)}"
+    assert rule.inferrable
+    assert not rule.possibly_empty
+    assert rule.ignore_parent
+    assert rule.workable
 
     strat = ObstructionTransitivityStrategy()(simple_trans_row_len2)
-    assert strat.comb_classes[0] == Tiling(
+    assert len(strat) == 1
+    rule = strat[0](simple_trans_row_len2)
+    assert len(rule.children) == 1
+    assert rule.children[0] == Tiling(
         obstructions=[
             GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
             GriddedPerm(Perm((0, 1)), [(0, 0), (2, 0)]),
@@ -49,9 +98,22 @@ def test_obstruction_transitivity(
             [GriddedPerm(Perm((0,)), [(2, 0)])],
         ],
     )
+    assert isinstance(rule.constructor, DisjointUnion)
+    assert (
+        rule.formal_step
+        == "added the obstructions {01: (0, 0), (2, 0), 01: (0, 0), (3, 0), "
+        "01: (1, 0), (3, 0)}"
+    )
+    assert rule.inferrable
+    assert not rule.possibly_empty
+    assert rule.ignore_parent
+    assert rule.workable
 
     strat = ObstructionTransitivityStrategy()(simple_trans_row_len3)
-    assert strat.comb_classes[0] == Tiling(
+    assert len(strat) == 1
+    rule = strat[0](simple_trans_row_len3)
+    assert len(rule.children) == 1
+    assert rule.children[0] == Tiling(
         obstructions=[
             GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
             GriddedPerm(Perm((0, 1)), [(0, 0), (2, 0)]),
@@ -70,26 +132,39 @@ def test_obstruction_transitivity(
             [GriddedPerm(Perm((0,)), [(3, 0)])],
         ],
     )
-
-
-def test_rule(simple_trans_col, no_trans_col):
-    assert no_trans_col.rule() is None
-    rule = simple_trans_col.rule()
-    assert rule.formal_step == "Computing transitivity of inequalities."
-    assert rule.comb_classes == [simple_trans_col.obstruction_transitivity()]
-    assert rule.inferable == [True]
-    assert rule.possibly_empty == [False]
-    assert rule.workable == [True]
-    assert rule.ignore_parent is True
-    assert rule.constructor == "equiv"
-
-
-def test_rule(obs_inf1, obs_not_inf):
-    rule = obs_inf1.rule()
-    assert isinstance(rule, Rule)
-    assert rule.comb_classes == [obs_inf1.obstruction_inferral()]
+    assert isinstance(rule.constructor, DisjointUnion)
+    assert (
+        rule.formal_step == "added the obstructions {01: (0, 0), (2, 0), "
+        "01: (0, 0), (3, 0), 01: (0, 0), (4, 0), 01: (1, 0), (3, 0), "
+        "01: (1, 0), (4, 0), 01: (2, 0), (4, 0)}"
+    )
+    assert rule.inferrable
+    assert not rule.possibly_empty
     assert rule.ignore_parent
-    assert rule.workable == [True]
-    assert rule.constructor == "equiv"
-    assert rule.possibly_empty == [False]
-    assert obs_not_inf.rule() is None
+    assert rule.workable
+
+
+def test_obstruction_inferral(tiling1, tiling_not_inf):
+    strat = AllObstructionInferralStrategy(maxlen=4)(tiling1)
+    assert len(strat) == 1
+    rule = strat[0](tiling1)
+    assert len(rule.children) == 1
+    assert rule.children[0] == Tiling(
+        obstructions=(
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
+        ),
+        requirements=((GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),),),
+    )
+    assert isinstance(rule.constructor, DisjointUnion)
+    assert rule.formal_step == "added the obstructions {01: (0, 0), (0, 0)}"
+    assert rule.inferrable
+    assert not rule.possibly_empty
+    assert rule.ignore_parent
+    assert rule.workable
+
+    strat = AllObstructionInferralStrategy(maxlen=4)(tiling_not_inf)
+    assert len(strat) == 0

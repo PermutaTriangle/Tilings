@@ -16,6 +16,7 @@ __all__ = [
 ]
 
 
+
 class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling]):
     def __init__(self, gps: Iterable[GriddedPerm]):
         self.gps = tuple(sorted(gps))
@@ -30,8 +31,8 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling]):
         """ Return a string describing the operation performed. """
         if all(len(gp) == 1 for gp in self.gps):
             empty_cells_str = ", ".join(map(str, (gp.pos[0] for gp in self.gps)))
-            return "The cells {{{}}} are empty.".format(empty_cells_str)
-        return "Added the obstructions {{{}}}.".format(
+            return "the cells {{{}}} are empty".format(empty_cells_str)
+        return "added the obstructions {{{}}}".format(
             ", ".join(str(p) for p in self.gps),
         )
 
