@@ -83,8 +83,8 @@ packs.extend(
     [pack.make_database() for pack in packs]
     + [pack.make_elementary() for pack in packs]
     # + [pack.make_fusion() for pack in packs]
-    + [pack.add_symmetry() for pack in packs]
-    + [pack.make_database().add_symmetry() for pack in packs]
+    + [pack.add_all_symmetry() for pack in packs]
+    + [pack.make_database().add_all_symmetry() for pack in packs]
 )
 
 # TODO add fusion packs

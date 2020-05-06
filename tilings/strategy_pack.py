@@ -41,7 +41,7 @@ class TileScopePack(StrategyPack):
         """
         return self.add_verification(strat.DatabaseVerificationStrategy(), "database")
 
-    def add_symmetry(self) -> "TileScopePack":
+    def add_all_symmetry(self) -> "TileScopePack":
         """Create a new pack by turning on symmetry on the current pack."""
         if self.symmetries:
             raise ValueError("Symmetries already turned on.")
