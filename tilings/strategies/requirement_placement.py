@@ -22,15 +22,15 @@ Cell = Tuple[int, int]
 class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling]):
     def __init__(
         self,
-        gps: Tuple[GriddedPerm, ...],
-        indices: Tuple[int, ...],
+        gps: Iterable[GriddedPerm],
+        indices: Iterable[int],
         direction: int,
         own_col: bool = True,
         own_row: bool = True,
         ignore_parent: bool = False,
         include_empty: bool = False,
     ):
-        self.gps = tuple(GriddedPerm.from_gridded_perm(gp) for gp in gps)
+        self.gps = tuple(gps)
         self.indices = tuple(indices)
         self.direction = direction
         self.own_row, self.own_col = own_row, own_col

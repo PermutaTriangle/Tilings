@@ -40,11 +40,6 @@ class GriddedPerm(CombinatorialObject):
         return cls(pattern, [cell for _ in range(len(pattern))])
 
     @classmethod
-    def from_gridded_perm(cls, gp: "GriddedPerm") -> "GriddedPerm":
-        """Contruct a gridded permutation from another gridded permutation."""
-        return cls(gp.patt, gp.pos)
-
-    @classmethod
     def empty_perm(cls) -> "GriddedPerm":
         """Construct the empty gridded permutation."""
         return cls(Perm(tuple()), tuple())

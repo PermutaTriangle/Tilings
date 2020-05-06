@@ -23,7 +23,7 @@ __all__ = [
 class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling]):
     def __init__(self, gps: Iterable[GriddedPerm], ignore_parent: bool = False):
         super().__init__(ignore_parent=ignore_parent)
-        self.gps = frozenset(GriddedPerm.from_gridded_perm(gp) for gp in gps)
+        self.gps = frozenset(gps)
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, Tiling]:
         """

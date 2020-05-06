@@ -396,7 +396,7 @@ class MinimalGriddedPerms:
             return
         if len(self.requirements) == 1:
             for req in self.requirements[0]:
-                yield GriddedPerm.from_gridded_perm(req)
+                yield req
             return
 
         # a priority queue sorted by length of the gridded perm. This is
