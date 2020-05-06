@@ -62,30 +62,31 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling]):
 
     def formal_step(self):
         placing = "{}lacing the {} ".format(
-            "P" if (self.own_col and self.own_row) else "Partially p",
+            "p" if (self.own_col and self.own_row) else "partially p",
             self.direction_string(),
         )
         if len(self.gps) == 1:
             gp = self.gps[0]
             index = self.indices[0]
             if len(gp) == 1:
-                return placing + "point in cell {}.".format(gp.pos[index])
+                return placing + "point in cell {}".format(gp.pos[index])
             if gp.is_localized():
-                return placing + "{} point in {} in cell {}.".format(
+                return placing + "{} point in {} in cell {}".format(
                     (index, gp.patt[index]), gp.patt, gp.pos[index],
                 )
-            return placing + "{} point in {}.".format((index, gp.patt[index]), gp)
+            return placing + "{} point in {}".format((index, gp.patt[index]), gp)
         if all(len(gp) == 1 for gp in self.gps):
-            row_indices = set(x for x, _ in [gp.pos[0] for gp in self.gps])
-            if len(row_indices) == 1:
-                return placing + "point in col {}.".format(row_indices.pop())
-            col_indices = set(y for _, y in [gp.pos[0] for gp in self.gps])
+            col_indices = set(x for x, _ in [gp.pos[0] for gp in self.gps])
             if len(col_indices) == 1:
-                return placing + "point in row {}.".format(row_indices.pop())
-        return placing + "point at indices {} from the requirement ({}).".format(
+                return placing + "point in col {}".format(col_indices.pop())
+            row_indices = set(y for _, y in [gp.pos[0] for gp in self.gps])
+            if len(row_indices) == 1:
+                return placing + "point in row {}".format(row_indices.pop())
+        return placing + "point at indices {} from the requirement ({})".format(
             self.indices, ", ".join(str(gp) for gp in self.gps),
         )
 
+    # TODO: consider partial/own_row/own_col
     def backward_cell_map(self, placed_cell: Cell, cell: Cell) -> Cell:
         x, y = cell
         if x > placed_cell[0] + 1:
@@ -155,15 +156,6 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling]):
                 + (children[child_index].forward_map(gp),)
                 + tuple(None for _ in range(len(children) - 1))
             )
-
-    #     if children is None:
-    #         children = self.decomposition_function(tiling)
-    #     placement_class = self.placement_class(tiling)
-    #     forced_index = None  # TODO: compute index of point being placed
-    #     placed_gp = placement_class._gridded_perm_translation_with_point(
-    #         self.gp, forced_index
-    #     )
-    #     return children[0].forward_map(placed_gp)
 
     def __str__(self) -> str:
         return "requirement placement strategy"
@@ -272,7 +264,7 @@ class RequirementPlacementStrategyGenerator(StrategyGenerator):
                 )
                 children = req_placement.place_point_of_req(gps, indices, direction)
                 if self.include_empty:
-                    children = (tiling.add_obstructions(gps),)
+                    children = (tiling.add_obstructions(gps),) + children
                 yield strategy(tiling, children)
 
     def to_jsonable(self) -> dict:
@@ -526,8 +518,8 @@ class AllRequirementPlacementStrategy(RequirementPlacementStrategyGenerator):
 class RowAndColumnPlacementStrategy(RequirementPlacementStrategyGenerator):
     def __init__(
         self,
-        place_row: bool,
-        place_col: bool,
+        place_row: bool = True,
+        place_col: bool = True,
         partial: bool = False,
         ignore_parent: bool = False,
         dirs: Iterable[int] = tuple(DIRS),
@@ -553,12 +545,12 @@ class RowAndColumnPlacementStrategy(RequirementPlacementStrategyGenerator):
             rows[cell[1]].add(gp)
         if self.place_col:
             col_dirs = tuple(d for d in self.dirs if d in (DIR_EAST, DIR_WEST))
-            for gps, direction in zip(cols.values(), col_dirs):
+            for gps, direction in product(cols.values(), col_dirs):
                 indices = tuple(0 for _ in gps)
                 yield tuple(gps), indices, direction
         if self.place_row:
             row_dirs = tuple(d for d in self.dirs if d in (DIR_NORTH, DIR_SOUTH))
-            for gps, direction in zip(rows.values(), row_dirs):
+            for gps, direction in product(rows.values(), row_dirs):
                 indices = tuple(0 for _ in gps)
                 yield tuple(gps), indices, direction
 
@@ -623,8 +615,9 @@ class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
         include_empty_for = (
             RowAndColumnPlacementStrategy(place_col=True, place_row=True),
         )
+        seen = set()
         for other_strat in self.other_strats():
-            for req_placement, (gps, indices, direction) in zip(
+            for req_placement, (gps, indices, direction) in product(
                 self.req_placements(tiling),
                 self.req_indices_and_directions_to_place(tiling, other_strat),
             ):
@@ -632,6 +625,16 @@ class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
                     direction in req_placement.directions
                     and not req_placement.already_placed(gps, indices)
                 ):
+                    key = (
+                        gps,
+                        indices,
+                        direction,
+                        req_placement.own_row,
+                        req_placement.own_col,
+                    )
+                    if key in seen:
+                        continue
+                    seen.add(key)
                     strategy = RequirementPlacementStrategy(
                         gps,
                         indices,
