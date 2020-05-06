@@ -309,18 +309,18 @@ def test_unite_all(factor1, factor2):
 def test_get_components(factor1, factor2):
     comp1 = {(1, 1), (1, 2), (2, 2)}
     comp2 = {(0, 0), (3, 0)}
-    assert comp1 in factor1._get_components()
-    assert comp2 in factor1._get_components()
-    assert len(factor1._get_components()) == 2
+    assert comp1 in factor1.get_components()
+    assert comp2 in factor1.get_components()
+    assert len(factor1.get_components()) == 2
 
     comp1 = {(0, 0), (0, 1), (1, 0), (1, 1)}
     comp2 = {(2, 2), (3, 2), (4, 2), (2, 3), (3, 3), (4, 3)}
-    assert comp1 in factor2._get_components()
-    assert comp2 in factor2._get_components()
-    assert len(factor1._get_components()) == 2
+    assert comp1 in factor2.get_components()
+    assert comp2 in factor2.get_components()
+    assert len(factor1.get_components()) == 2
 
     empty_tiling = Tiling()
-    assert Factor(empty_tiling)._get_components() == tuple()
+    assert Factor(empty_tiling).get_components() == tuple()
 
     point_tiling = Tiling(
         obstructions=[
@@ -329,7 +329,7 @@ def test_get_components(factor1, factor2):
         ],
         requirements=[[GriddedPerm(Perm((0,)), ((0, 0),))]],
     )
-    assert Factor(point_tiling)._get_components() == ({(0, 0)},)
+    assert Factor(point_tiling).get_components() == ({(0, 0)},)
 
 
 def test_get_factor_obs_and_reqs(factor1, factor2):
