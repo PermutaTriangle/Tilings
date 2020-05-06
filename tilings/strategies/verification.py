@@ -35,6 +35,9 @@ __all__ = [
 
 
 class BasicVerificationStrategy(VerificationStrategy[Tiling]):
+    def __init__(self):
+        super().__init__()
+
     def verified(self, tiling: Tiling) -> bool:
         return tiling.is_epsilon() or tiling.is_point_tiling()
 

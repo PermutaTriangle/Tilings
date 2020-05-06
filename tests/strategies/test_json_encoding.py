@@ -1,11 +1,13 @@
+from itertools import product
 import json
 
 import pytest
 
 from permuta import Perm
+from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from comb_spec_searcher import Strategy
+from tilings import GriddedPerm
 from tilings.strategies import (
-    AllCellInsertionStrategy,
     AllCellInsertionStrategy,
     AllFactorInsertionStrategy,
     AllFactorStrategy,
@@ -16,9 +18,14 @@ from tilings.strategies import (
     AllRequirementPlacementStrategy,
     AllSymmetriesStrategy,
     BasicVerificationStrategy,
+    # ComponentFusionStrategy,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
     EmptyCellInferralStrategy,
+    FactorStrategy,
+    FactorWithInterleavingStrategy,
+    FactorWithMonotoneInterleavingStrategy,
+    # FusionStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
@@ -27,6 +34,7 @@ from tilings.strategies import (
     PatternPlacementStrategy,
     RequirementCorroborationStrategy,
     RequirementInsertionStrategy,
+    RequirementPlacementStrategy,
     RootInsertionStrategy,
     RowAndColumnPlacementStrategy,
     RowColumnSeparationStrategy,
@@ -63,52 +71,208 @@ def json_encode_decode(s):
     return s_new
 
 
-strategy_objects = [
-    # Batch strategies
-    AllCellInsertionStrategy(),
-    AllCellInsertionStrategy(1, [Perm((0, 1, 2))], ignore_parent=True),
-    AllFactorInsertionStrategy(),
-    AllPlacementsStrategy(),
-    AllRequirementExtensionStrategy(),
-    AllRequirementExtensionStrategy(maxreqlen=4),
-    AllRequirementInsertionStrategy(),
-    RequirementCorroborationStrategy(),
-    RootInsertionStrategy(),
-    RootInsertionStrategy(max_num_req=3, maxreqlen=4),
-    RowAndColumnPlacementStrategy(place_col=True, place_row=True),
-    RowAndColumnPlacementStrategy(place_col=True, place_row=True, partial=False),
-    RowAndColumnPlacementStrategy(place_col=False, place_row=True),
-    # Inferral strategies
-    EmptyCellInferralStrategy(),
-    ObstructionTransitivityStrategy(),
-    RowColumnSeparationStrategy(),
-    SubobstructionInferralStrategy(),
-    # Decomposition strategies
-    AllFactorStrategy(),
-    AllFactorStrategy(interleaving="all"),
-    AllFactorStrategy(interleaving="monotone", unions=True),
-    AllFactorStrategy(interleaving=None, unions=True, workable=False),
-    # # Fusion strategies
-    # FusionStrategy(),
-    # ComponentFusionStrategy(),
-    # Verification strategies
-    BasicVerificationStrategy(),
-    DatabaseVerificationStrategy(),
-    ElementaryVerificationStrategy(),
-    LocallyFactorableVerificationStrategy(),
-    LocalVerificationStrategy(),
-    MonotoneTreeVerificationStrategy(),
-    OneByOneVerificationStrategy(),
-    # Equivalent Strategy
-    PatternPlacementStrategy(),
-    PatternPlacementStrategy(ignore_parent=True),
-    PatternPlacementStrategy(ignore_parent=False),
-    PatternPlacementStrategy(point_only=True),
-    PatternPlacementStrategy(point_only=False),
-    PatternPlacementStrategy(partial=True),
-    PatternPlacementStrategy(partial=False),
-    PatternPlacementStrategy(dirs=[1, 3, 0]),
-]
+def maxreqlen_extrabasis_ignoreparent(strategy):
+    return [
+        strategy(
+            maxreqlen=maxreqlen, extra_basis=extra_basis, ignore_parent=ignore_parent
+        )
+        for maxreqlen, extra_basis, ignore_parent in product(
+            (1, 2, 3),
+            (None, [Perm((0, 1))], [Perm((0, 2, 1)), Perm((0, 1, 2))]),
+            (True, False),
+        )
+    ]
+
+
+def maxreqlen_extrabasis_ignoreparent_maxnumreq(strategy):
+    return [
+        strategy(
+            maxreqlen=maxreqlen,
+            extra_basis=extra_basis,
+            ignore_parent=ignore_parent,
+            max_num_req=max_num_req,
+        )
+        for maxreqlen, extra_basis, ignore_parent, max_num_req in product(
+            (1, 2, 3),
+            (None, [Perm((0, 1))], [Perm((0, 2, 1)), Perm((0, 1, 2))]),
+            (True, False),
+            (1, 2, 3, None),
+        )
+    ]
+
+
+def ignoreparent(strategy):
+    return [strategy(ignore_parent=True), strategy(ignore_parent=False)]
+
+
+def interleaving_unions_ignoreparent_workable(strategy):
+    return [
+        strategy(
+            interleaving=interleaving,
+            unions=unions,
+            ignore_parent=ignore_parent,
+            workable=workable,
+        )
+        for interleaving, unions, ignore_parent, workable in product(
+            (None, "all", "monotone"), (True, False), (True, False), (True, False),
+        )
+    ]
+
+
+def maxlen(strategy):
+    return [strategy(maxlen=maxlen) for maxlen in (1, 2, 3)]
+
+
+def subreqs_partial_ignoreparent_dirs(strategy):
+    return [
+        strategy(
+            subreqs=subreqs, partial=partial, ignore_parent=ignore_parent, dirs=dirs
+        )
+        for subreqs, partial, ignore_parent, dirs in product(
+            (True, False),
+            (True, False),
+            (True, False),
+            ([DIR_SOUTH], [DIR_EAST, DIR_WEST], [DIR_NORTH, DIR_SOUTH], DIRS),
+        )
+    ]
+
+
+def pointonly_partial_ignoreparent_dirs(strategy):
+    return [
+        strategy(
+            point_only=point_only,
+            partial=partial,
+            ignore_parent=ignore_parent,
+            dirs=dirs,
+        )
+        for point_only, partial, ignore_parent, dirs in product(
+            (True, False),
+            (True, False),
+            (True, False),
+            ([DIR_SOUTH], [DIR_EAST, DIR_WEST], [DIR_NORTH, DIR_SOUTH], DIRS),
+        )
+    ]
+
+
+def partition_ignoreparent_workable(strategy):
+    return [
+        strategy(partition=partition, ignore_parent=ignore_parent, workable=workable)
+        for partition, ignore_parent, workable in product(
+            (
+                [[(2, 1), (0, 1)], [(1, 0)]],
+                (((0, 0), (0, 2)), ((0, 1),), ((3, 3), (4, 3))),
+            ),
+            (True, False),
+            (True, False),
+        )
+    ]
+
+
+def gps_ignoreparent(strategy):
+    return [
+        strategy(gps=gps, ignore_parent=ignore_parent)
+        for gps, ignore_parent in product(
+            (
+                (GriddedPerm(Perm((0,)), ((0, 0),)),),
+                (GriddedPerm.single_cell(Perm((0, 1, 2)), (2, 1)),),
+                (
+                    GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
+                    GriddedPerm(Perm((1, 0)), ((2, 2), (3, 1))),
+                ),
+            ),
+            (True, False),
+        )
+    ]
+
+
+def gps_indices_direction_owncol_ownrow_ignoreparent_includeempty(strategy):
+    return [
+        strategy(
+            gps=gps,
+            indices=indices,
+            direction=direction,
+            own_col=own_col,
+            own_row=own_row,
+            ignore_parent=ignore_parent,
+            include_empty=include_empty,
+        )
+        for (
+            gps,
+            indices,
+        ), direction, own_col, own_row, ignore_parent, include_empty in product(
+            (
+                ((GriddedPerm(Perm((0,)), ((0, 0),)),), (0,)),
+                ((GriddedPerm.single_cell(Perm((0, 1, 2)), (2, 1)),), (1,)),
+                (
+                    (
+                        GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
+                        GriddedPerm(Perm((1, 0)), ((2, 2), (3, 1))),
+                    ),
+                    (1, 0),
+                ),
+            ),
+            (DIR_EAST, DIR_WEST, DIR_NORTH, DIR_SOUTH),
+            (True, False),
+            (True, False),
+            (True, False),
+            (True, False),
+        )
+    ]
+
+
+def row_col_partial_ignoreparent_direction(strategy):
+    return [
+        strategy(
+            place_row=place_row,
+            place_col=place_col,
+            partial=partial,
+            ignore_parent=ignore_parent,
+            dirs=dirs,
+        )
+        for place_row, place_col, partial, ignore_parent, dirs in product(
+            (True, False),
+            (True, False),
+            (True, False),
+            (True, False),
+            ([DIR_SOUTH], [DIR_EAST, DIR_WEST], [DIR_NORTH, DIR_SOUTH], DIRS),
+        )
+        if place_row or place_col
+    ]
+
+
+strategy_objects = (
+    maxreqlen_extrabasis_ignoreparent(AllCellInsertionStrategy)
+    + ignoreparent(AllFactorInsertionStrategy)
+    + interleaving_unions_ignoreparent_workable(AllFactorStrategy)
+    + maxlen(AllObstructionInferralStrategy)
+    + ignoreparent(AllPlacementsStrategy)
+    + maxreqlen_extrabasis_ignoreparent(AllRequirementExtensionStrategy)
+    + maxreqlen_extrabasis_ignoreparent(AllRequirementInsertionStrategy)
+    + subreqs_partial_ignoreparent_dirs(AllRequirementPlacementStrategy)
+    + [AllSymmetriesStrategy(), BasicVerificationStrategy()]
+    + ignoreparent(DatabaseVerificationStrategy)
+    + ignoreparent(ElementaryVerificationStrategy)
+    + [ElementaryVerificationStrategy()]
+    + partition_ignoreparent_workable(FactorStrategy)
+    + partition_ignoreparent_workable(FactorWithInterleavingStrategy)
+    + partition_ignoreparent_workable(FactorWithMonotoneInterleavingStrategy)
+    + ignoreparent(LocallyFactorableVerificationStrategy)
+    + ignoreparent(LocalVerificationStrategy)
+    + ignoreparent(MonotoneTreeVerificationStrategy)
+    + [ObstructionTransitivityStrategy()]
+    + ignoreparent(OneByOneVerificationStrategy)
+    + pointonly_partial_ignoreparent_dirs(PatternPlacementStrategy)
+    + ignoreparent(RequirementCorroborationStrategy)
+    + gps_ignoreparent(RequirementInsertionStrategy)
+    + gps_indices_direction_owncol_ownrow_ignoreparent_includeempty(
+        RequirementPlacementStrategy
+    )
+    + maxreqlen_extrabasis_ignoreparent_maxnumreq(RootInsertionStrategy)
+    + row_col_partial_ignoreparent_direction(RowAndColumnPlacementStrategy)
+    + [RowColumnSeparationStrategy(), SubobstructionInferralStrategy()]
+)
+
+# TODO add tests for: ComponentFusionStrategy, FusionStrategy
 
 
 @pytest.mark.parametrize("strategy", strategy_objects)

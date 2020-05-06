@@ -163,6 +163,9 @@ class ObstructionTransitivityStrategy(AllObstructionInferralStrategy):
     transitivity applies, i.e. if a < b < c and b is positive, then a < c.
     """
 
+    def __init__(self):
+        super().__init__(maxlen=2)
+
     def new_obs(self, tiling: Tiling):
         return ObstructionTransitivity(tiling).new_obs()
 

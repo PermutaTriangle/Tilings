@@ -107,7 +107,11 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
     @classmethod
     def from_dict(cls, d: dict) -> "FactorStrategy":
         partition = tuple(tuple(tuple(c) for c in p) for p in d["partition"])
-        return cls(partition=partition, workable=d["workable"])  # type: ignore
+        return cls(
+            partition=partition,
+            ignore_parent=d["ignore_parent"],
+            workable=d["workable"],
+        )
 
 
 class FactorWithInterleavingStrategy(FactorStrategy):
@@ -160,8 +164,8 @@ class AllFactorStrategy(StrategyGenerator):
             ]
         except KeyError:
             raise InvalidOperationError(
-                "Invalid interleaving option. Must be in {}".format(
-                    FactorStrategy.factor_classes.keys()
+                "Invalid interleaving option. Must be in {}, used {}".format(
+                    AllFactorStrategy.FACTOR_ALGO_AND_CLASS.keys(), interleaving
                 )
             )
         self.unions = unions
@@ -203,9 +207,9 @@ class AllFactorStrategy(StrategyGenerator):
         elif self.factor_class is FactorWithInterleavingStrategy:
             interleaving = "all"
         elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
-            interleaving = "montone"
-        return "AllFactorStrategy(interleaving={}, unions={}, workable={})".format(
-            interleaving, self.unions, self.workable
+            interleaving = "monotone"
+        return "AllFactorStrategy(interleaving={}, unions={}, ignore_parent={}, workable={})".format(
+            interleaving, self.ignore_parent, self.unions, self.workable
         )
 
     def to_jsonable(self) -> dict:
@@ -215,14 +219,18 @@ class AllFactorStrategy(StrategyGenerator):
         elif self.factor_class is FactorWithInterleavingStrategy:
             interleaving = "all"
         elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
-            interleaving = "montone"
+            interleaving = "monotone"
         d["interleaving"] = interleaving
         d["unions"] = self.unions
+        d["ignore_parent"] = self.ignore_parent
         d["workable"] = self.workable
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "AllFactorStrategy":
         return cls(
-            interleaving=d["interleaving"], unions=d["unions"], workable=d["workable"]
+            interleaving=d["interleaving"],
+            unions=d["unions"],
+            ignore_parent=d["ignore_parent"],
+            workable=d["workable"],
         )
