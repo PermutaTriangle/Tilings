@@ -1,12 +1,17 @@
 from itertools import chain
+from sympy import Eq, Function
+
 from typing import Iterable, Iterator, Optional, Tuple
 
 from comb_spec_searcher import (
+    CartesianProduct,
     CartesianProductStrategy,
+    CombinatorialObject,
     Constructor,
     Strategy,
     StrategyGenerator,
 )
+from comb_spec_searcher.strategies.constructor import SubGens, SubRecs, SubSamplers
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
@@ -47,7 +52,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
         """
         Return a string that describe the operation performed on the tiling.
         """
-        return "Factor with partition {}".format(
+        return "factor with partition {}".format(
             " / ".join(
                 "{{{}}}".format(", ".join(str(c) for c in part))
                 for part in self.partition
@@ -61,7 +66,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         if children is None:
-            children = self.children(tiling)
+            children = self.decomposition_function(tiling)
         gps_to_combine = tuple(
             tiling.backward_map(gp) for gp, tiling in zip(gps, children)
         )
@@ -82,7 +87,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm, ...]:
         if children is None:
-            children = self.children(tiling)
+            children = self.decomposition_function(tiling)
         return tuple(
             tiling.forward_map(gp.get_gridded_perm_in_cells(part))
             for tiling, part in zip(children, self.partition)
@@ -114,9 +119,50 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
         )
 
 
-class FactorWithInterleavingStrategy(FactorStrategy):
-    def constructor(self, tiling: Tiling) -> Constructor:
+class Interleaving(CartesianProduct):
+    def __init__(self, children: Tuple[Tiling, ...]):
+        super().__init__(children)
+
+    def is_equivalence(self) -> bool:
+        return False
+
+    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         raise NotImplementedError
+
+    def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
+        raise NotImplementedError
+
+    def get_sub_objects(
+        self, subgens: SubGens, n: int, **parameters: int
+    ) -> Iterator[Tuple[CombinatorialObject, ...]]:
+        raise NotImplementedError
+
+    def random_sample_sub_objects(
+        self,
+        parent_count: int,
+        subsamplers: SubSamplers,
+        subrecs: SubRecs,
+        n: int,
+        **parameters: int
+    ):
+        raise NotImplementedError
+
+    @staticmethod
+    def get_eq_symbol() -> str:
+        return "="
+
+    @staticmethod
+    def get_op_symbol() -> str:
+        return "*"
+
+
+class FactorWithInterleavingStrategy(FactorStrategy):
+    def constructor(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Interleaving:
+        if children is None:
+            children = self.decomposition_function(tiling)
+        return Interleaving(children)
 
     def backward_map(
         self,
@@ -135,9 +181,50 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         raise NotImplementedError
 
 
-class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
-    def constructor(self, tiling: Tiling) -> Constructor:
+class MonotoneInterleaving(CartesianProduct):
+    def __init__(self, children: Tuple[Tiling, ...]):
+        super().__init__(children)
+
+    def is_equivalence(self) -> bool:
+        return False
+
+    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         raise NotImplementedError
+
+    def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
+        raise NotImplementedError
+
+    def get_sub_objects(
+        self, subgens: SubGens, n: int, **parameters: int
+    ) -> Iterator[Tuple[CombinatorialObject, ...]]:
+        raise NotImplementedError
+
+    def random_sample_sub_objects(
+        self,
+        parent_count: int,
+        subsamplers: SubSamplers,
+        subrecs: SubRecs,
+        n: int,
+        **parameters: int
+    ):
+        raise NotImplementedError
+
+    @staticmethod
+    def get_eq_symbol() -> str:
+        return "="
+
+    @staticmethod
+    def get_op_symbol() -> str:
+        return "*"
+
+
+class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
+    def constructor(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Constructor:
+        if children is None:
+            children = self.decomposition_function(tiling)
+        return MonotoneInterleaving(children)
 
 
 class AllFactorStrategy(StrategyGenerator):
