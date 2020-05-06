@@ -3,6 +3,7 @@ from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
 from tilings.strategies import (
     AllPlacementsStrategy,
+    PatternPlacementStrategy,
     RequirementPlacementStrategy,
     RowAndColumnPlacementStrategy,
 )
@@ -57,12 +58,14 @@ def test_all_placements():
         requirements=[[GriddedPerm(Perm((0,)), ((0, 0),))]],
     )
     rules = list(AllPlacementsStrategy()(t))
-    assert len(rules) == 24
+    for rule in rules:
+        print(rule)
+    assert len(rules) == 8
 
 
 def test_point_placement(diverse_tiling, no_point_tiling):
-    point_placement = RequirementPlacementStrategy(point_only=True)
-    requirement_placement = RequirementPlacementStrategy(point_only=False)
+    point_placement = PatternPlacementStrategy(point_only=True)
+    requirement_placement = PatternPlacementStrategy(point_only=False)
     strats = list(point_placement(diverse_tiling))
     assert len(strats) == 5 * len(DIRS)
     strats = list(requirement_placement(no_point_tiling))
@@ -243,12 +246,18 @@ def test_place_point_of_requirement(no_point_tiling):
     assert tiling == tiling2
 
 
-# ------------------------------------------------------------
-#       Tests for RequirementPlacement Class
-# ------------------------------------------------------------
+# # ------------------------------------------------------------
+# #       Tests for RequirementPlacement Class
+# # ------------------------------------------------------------
 
 
-def test_formal_step(placement1):
+def test_formal_step():
+    row_gps = [GriddedPerm(Perm((0,)), ((0, 0),)), GriddedPerm(Perm((0,)), ((1, 0),))]
+    placement_class = RequirementPlacementStrategy(
+        gps=row_gps, indices=(0, 0), direction=1, own_col=True, own_row=True,
+    )
+    assert placement_class.formal_step() == "placing the topmost point in row 0"
+
     assert (
         placement1._col_placement_formal_step(1, 0)
         == "Placing rightmost points in column 1."
@@ -314,56 +323,6 @@ def test_formal_step(placement1):
     assert placement1._pattern_placement_formal_step(1, gp, 3) == (
         "Placing the bottommost point of (1, 1) in " "012: (0, 0), (1, 1), (1, 2)."
     )
-
-
-def test_col_placement(placement1):
-    print(placement1._tiling)
-    tilings = placement1.col_placement(1, DIR_WEST)
-    assert len(tilings) == 2
-    assert all(isinstance(t, Tiling) for t in tilings)
-
-
-def test_row_placement(placement1):
-    print(placement1._tiling)
-    tilings = placement1.row_placement(1, DIR_NORTH)
-    assert len(tilings) == 1
-    assert all(isinstance(t, Tiling) for t in tilings)
-
-
-def test_empty_row(placement1):
-    t = Tiling(
-        obstructions=(
-            GriddedPerm(Perm((0,)), ((0, 1),)),
-            GriddedPerm(Perm((0,)), ((1, 0),)),
-            GriddedPerm(Perm((0,)), ((2, 0),)),
-            GriddedPerm(Perm((0,)), ((3, 1),)),
-            GriddedPerm(Perm((1, 0)), ((2, 1), (2, 1))),
-            GriddedPerm(Perm((0, 1, 2)), ((1, 1), (1, 1), (1, 1))),
-            GriddedPerm(Perm((2, 0, 1)), ((3, 0), (3, 0), (3, 0))),
-            GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
-        ),
-    )
-    assert placement1.empty_row(1) == t
-
-
-def test_empty_col(placement1):
-    t = Tiling(
-        obstructions=(
-            GriddedPerm(Perm((0,)), ((0, 1),)),
-            GriddedPerm(Perm((0,)), ((0, 2),)),
-            GriddedPerm(Perm((0,)), ((1, 0),)),
-            GriddedPerm(Perm((0,)), ((1, 1),)),
-            GriddedPerm(Perm((0,)), ((2, 1),)),
-            GriddedPerm(Perm((0,)), ((2, 2),)),
-            GriddedPerm(Perm((1, 0)), ((1, 2), (1, 2))),
-            GriddedPerm(Perm((2, 0, 1)), ((2, 0), (2, 0), (2, 0))),
-            GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
-        ),
-        requirements=(),
-    )
-    print(t)
-    print(placement1._tiling)
-    assert placement1.empty_col(1) == t
 
 
 def test_all_col_placement_rules(placement1):
@@ -508,8 +467,7 @@ def test_all_requirement_placement_rules():
         obstructions=[GriddedPerm(Perm((1, 0)), ((0, 0),) * 2)],
         requirements=[[GriddedPerm(Perm((0, 1)), ((0, 0),) * 2)]],
     )
-    placement = RequirementPlacement(t)
-    rules = list(placement.all_requirement_placement_rules())
+    rules = list(PatternPlacementStrategy(t))
     assert len(rules) == 12
     for rule in rules:
         assert isinstance(rule, Rule)
@@ -597,121 +555,161 @@ def test_not_equivalent_to_itself():
         ],
         requirements=[[GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0)))]],
     )
-    placement_fully_placed = RequirementPlacement(t_fully_placed)
-    placement_fully_placed_partial_col = RequirementPlacement(
-        t_fully_placed, own_row=False
+    placement_fully_placed = list(PatternPlacementStrategy()(t_fully_placed))
+    placement_fully_placed_partial_col = list(
+        PatternPlacementStrategy(partial=True, dirs=(DIR_WEST, DIR_EAST))(
+            t_fully_placed
+        )
     )
-    placement_fully_placed_partial_row = RequirementPlacement(
-        t_fully_placed, own_col=False
+    placement_fully_placed_partial_row = list(
+        PatternPlacementStrategy(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(
+            t_fully_placed
+        )
     )
-    placement_row_placed = RequirementPlacement(t_row_placed)
-    placement_row_placed_partial_col = RequirementPlacement(t_row_placed, own_row=False)
-    placement_row_placed_partial_row = RequirementPlacement(t_row_placed, own_col=False)
-    placement_row_placed2 = RequirementPlacement(t_row_placed2)
-    placement_col_placed = RequirementPlacement(t_col_placed)
-    placement_col_placed_partial_col = RequirementPlacement(t_col_placed, own_row=False)
-    placement_col_placed_partial_row = RequirementPlacement(t_col_placed, own_col=False)
-    placement_col_placed2 = RequirementPlacement(t_col_placed2)
+    placement_row_placed = list(PatternPlacementStrategy()(t_row_placed))
+    placement_row_placed_partial_col = list(
+        PatternPlacementStrategy(partial=True, dirs=(DIR_EAST, DIR_WEST))(t_row_placed)
+    )
+    placement_row_placed_partial_row = list(
+        PatternPlacementStrategy(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(
+            t_row_placed
+        )
+    )
+    placement_row_placed2 = list(PatternPlacementStrategy()(t_row_placed2))
+    placement_col_placed = list(PatternPlacementStrategy()(t_col_placed))
+    placement_col_placed_partial_col = list(
+        PatternPlacementStrategy(partial=True, dirs=(DIR_EAST, DIR_WEST))(t_col_placed)
+    )
+    placement_col_placed_partial_row = list(
+        PatternPlacementStrategy(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(
+            t_col_placed
+        )
+    )
+    placement_col_placed2 = list(PatternPlacementStrategy()(t_col_placed2))
+    print("fully placed")
     print(t_fully_placed)
+    print("row placed")
     print(t_row_placed)
+    print("row placed 2")
     print(t_row_placed2)
+    print("col placed")
     print(t_col_placed)
+    print("cold placed 2")
     print(t_col_placed2)
     # Requirement placements
-    assert len(list(placement_fully_placed.all_requirement_placement_rules())) == 0
-    assert (
-        len(list(placement_fully_placed_partial_row.all_requirement_placement_rules()))
-        == 0
-    )
-    assert (
-        len(list(placement_fully_placed_partial_col.all_requirement_placement_rules()))
-        == 0
-    )
-    assert len(list(placement_row_placed.all_requirement_placement_rules())) == 4
-    assert (
-        len(list(placement_row_placed_partial_col.all_requirement_placement_rules()))
-        == 2
-    )
-    assert (
-        len(list(placement_row_placed_partial_row.all_requirement_placement_rules()))
-        == 0
-    )
-    assert len(list(placement_row_placed2.all_requirement_placement_rules())) == 16
-    assert len(list(placement_col_placed.all_requirement_placement_rules())) == 4
-    assert (
-        len(list(placement_col_placed_partial_col.all_requirement_placement_rules()))
-        == 0
-    )
-    assert (
-        len(list(placement_col_placed_partial_row.all_requirement_placement_rules()))
-        == 2
-    )
-    assert len(list(placement_col_placed2.all_requirement_placement_rules())) == 16
+    assert len(placement_fully_placed) == 0
+    assert len(placement_fully_placed_partial_row) == 0
+    assert len(placement_fully_placed_partial_col) == 0
+    assert len(placement_row_placed) == 4
+    assert len(placement_row_placed_partial_col) == 2
+    assert len(placement_row_placed_partial_row) == 0
+    assert len(placement_row_placed2) == 16
+    assert len(placement_col_placed) == 4
+    assert len(placement_col_placed_partial_col) == 0
+    assert len(placement_col_placed_partial_row) == 2
+    assert len(placement_col_placed2) == 16
     # Check that the class are correct
-    assert all(
-        r.comb_classes[0] != t_fully_placed
-        for r in placement_fully_placed.all_requirement_placement_rules()
+    assert all(r.children[0] != t_fully_placed for r in placement_fully_placed)
+    assert all(r.children[0] != t_row_placed for r in placement_row_placed)
+    assert all(r.children[0] != t_row_placed2 for r in placement_row_placed2)
+    assert all(r.children[0] != t_col_placed for r in placement_col_placed)
+    assert all(r.children[0] != t_col_placed2 for r in placement_col_placed2)
+
+    placement_fully_placed = list(
+        PatternPlacementStrategy(point_only=True)(t_fully_placed)
     )
-    assert all(
-        r.comb_classes[0] != t_row_placed
-        for r in placement_row_placed.all_requirement_placement_rules()
+    placement_row_placed = list(PatternPlacementStrategy(point_only=True)(t_row_placed))
+    placement_row_placed2 = list(
+        PatternPlacementStrategy(point_only=True)(t_row_placed2)
     )
-    assert all(
-        r.comb_classes[0] != t_row_placed2
-        for r in placement_row_placed2.all_requirement_placement_rules()
-    )
-    assert all(
-        r.comb_classes[0] != t_col_placed
-        for r in placement_col_placed.all_requirement_placement_rules()
-    )
-    assert all(
-        r.comb_classes[0] != t_col_placed2
-        for r in placement_col_placed2.all_requirement_placement_rules()
+    placement_col_placed = list(PatternPlacementStrategy(point_only=True)(t_col_placed))
+    placement_col_placed2 = list(
+        PatternPlacementStrategy(point_only=True)(t_col_placed2)
     )
     # Point placements
-    assert len(list(placement_fully_placed.all_point_placement_rules())) == 0
-    assert len(list(placement_row_placed.all_point_placement_rules())) == 4
-    assert len(list(placement_row_placed2.all_point_placement_rules())) == 8
-    assert len(list(placement_col_placed.all_point_placement_rules())) == 4
-    assert len(list(placement_col_placed2.all_point_placement_rules())) == 8
+    assert len(placement_fully_placed) == 0
+    assert len(placement_row_placed) == 4
+    assert len(placement_row_placed2) == 8
+    assert len(placement_col_placed) == 4
+    assert len(placement_col_placed2) == 8
     # Check that the class are correct
-    assert all(
-        r.comb_classes[0] != t_fully_placed
-        for r in placement_fully_placed.all_point_placement_rules()
+    assert all(r.children[0] != t_fully_placed for r in placement_fully_placed)
+    assert all(r.children[0] != t_row_placed for r in placement_row_placed)
+    assert all(r.children[0] != t_row_placed2 for r in placement_row_placed2)
+    assert all(r.children[0] != t_col_placed for r in placement_col_placed)
+    assert all(r.children[0] != t_col_placed2 for r in placement_col_placed2)
+
+    placement_fully_placed = list(
+        RowAndColumnPlacementStrategy(place_col=False)(t_fully_placed)
     )
-    assert all(
-        r.comb_classes[0] != t_row_placed
-        for r in placement_row_placed.all_point_placement_rules()
+    placement_fully_placed_partial_col = list(
+        RowAndColumnPlacementStrategy(place_col=False, partial=True)(t_fully_placed)
     )
-    assert all(
-        r.comb_classes[0] != t_row_placed2
-        for r in placement_row_placed2.all_point_placement_rules()
+    placement_fully_placed_partial_row = list(
+        RowAndColumnPlacementStrategy(place_col=False, partial=True)(t_fully_placed)
     )
-    assert all(
-        r.comb_classes[0] != t_col_placed
-        for r in placement_col_placed.all_point_placement_rules()
+    placement_row_placed = list(
+        RowAndColumnPlacementStrategy(place_col=False)(t_row_placed)
     )
-    assert all(
-        r.comb_classes[0] != t_col_placed2
-        for r in placement_col_placed2.all_point_placement_rules()
+    placement_row_placed_partial_col = list(
+        RowAndColumnPlacementStrategy(place_col=False, partial=True)(t_row_placed)
     )
+    placement_row_placed_partial_row = list(
+        RowAndColumnPlacementStrategy(place_col=False, partial=True)(t_col_placed)
+    )
+    placement_row_placed2 = list(
+        RowAndColumnPlacementStrategy(place_col=False)(t_row_placed2)
+    )
+    placement_col_placed = list(
+        RowAndColumnPlacementStrategy(place_col=False)(t_col_placed)
+    )
+    placement_col_placed2 = list(
+        RowAndColumnPlacementStrategy(place_col=False)(t_col_placed2)
+    )
+    for rule in placement_col_placed:
+        print("=" * 20)
+        print(rule)
+        print(repr(rule.strategy))
     # Row placement
-    assert len(list(placement_fully_placed.all_row_placement_rules())) == 2
-    assert len(list(placement_fully_placed_partial_col.all_row_placement_rules())) == 0
-    assert len(list(placement_fully_placed_partial_row.all_row_placement_rules())) == 2
-    assert len(list(placement_fully_placed.all_row_placement_rules())) == 2
-    assert len(list(placement_row_placed.all_row_placement_rules())) == 2
-    assert len(list(placement_row_placed_partial_col.all_row_placement_rules())) == 0
-    assert len(list(placement_row_placed_partial_row.all_row_placement_rules())) == 2
-    assert len(list(placement_row_placed2.all_row_placement_rules())) == 2
-    assert len(list(placement_col_placed.all_row_placement_rules())) == 2
-    assert len(list(placement_col_placed2.all_row_placement_rules())) == 2
+    assert len(placement_fully_placed) == 2
+    assert len(placement_fully_placed_partial_col) == 2
+    assert len(placement_fully_placed_partial_row) == 2
+    assert len(placement_row_placed) == 4
+    assert len(placement_row_placed_partial_col) == 2
+    assert len(placement_row_placed_partial_row) == 2
+    assert len(placement_row_placed2) == 4
+    assert len(placement_col_placed) == 2
+    assert len(placement_col_placed2) == 2
+
+    placement_fully_placed = list(
+        RowAndColumnPlacementStrategy(place_row=False)(t_fully_placed)
+    )
+    placement_fully_placed_partial_col = list(
+        RowAndColumnPlacementStrategy(place_row=False, partial=True)(t_fully_placed)
+    )
+    placement_fully_placed_partial_row = list(
+        RowAndColumnPlacementStrategy(place_row=False, partial=True)(t_fully_placed)
+    )
+    placement_row_placed = list(
+        RowAndColumnPlacementStrategy(place_row=False)(t_row_placed)
+    )
+    placement_row_placed2 = list(
+        RowAndColumnPlacementStrategy(place_row=False)(t_row_placed2)
+    )
+    placement_col_placed = list(
+        RowAndColumnPlacementStrategy(place_row=False)(t_col_placed)
+    )
+    placement_col_placed2 = list(
+        RowAndColumnPlacementStrategy(place_row=False)(t_col_placed2)
+    )
     # Col placement
-    assert len(list(placement_fully_placed.all_col_placement_rules())) == 2
-    assert len(list(placement_row_placed.all_col_placement_rules())) == 2
-    assert len(list(placement_row_placed2.all_col_placement_rules())) == 2
-    assert len(list(placement_col_placed.all_col_placement_rules())) == 2
-    assert len(list(placement_col_placed2.all_col_placement_rules())) == 2
+    assert len(placement_fully_placed) == 2
+    assert len(placement_fully_placed_partial_col) == 2
+    assert len(placement_fully_placed_partial_row) == 2
+    assert len(placement_row_placed) == 2
+    assert len(placement_row_placed2) == 2
+    assert len(placement_col_placed) == 4
+    assert len(placement_col_placed2) == 4
 
 
 def test_all_requirement_placement_rules_partial(placement2owncol, placement2ownrow):

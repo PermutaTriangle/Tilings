@@ -106,6 +106,56 @@ def gp1():
 # ------------------------------------------------------------
 
 
+def test_col_placement(placement1):
+    print(placement1._tiling)
+    tilings = placement1.col_placement(1, DIR_WEST)
+    assert len(tilings) == 2
+    assert all(isinstance(t, Tiling) for t in tilings)
+
+
+def test_row_placement(placement1):
+    print(placement1._tiling)
+    tilings = placement1.row_placement(1, DIR_NORTH)
+    assert len(tilings) == 1
+    assert all(isinstance(t, Tiling) for t in tilings)
+
+
+def test_empty_row(placement1):
+    t = Tiling(
+        obstructions=(
+            GriddedPerm(Perm((0,)), ((0, 1),)),
+            GriddedPerm(Perm((0,)), ((1, 0),)),
+            GriddedPerm(Perm((0,)), ((2, 0),)),
+            GriddedPerm(Perm((0,)), ((3, 1),)),
+            GriddedPerm(Perm((1, 0)), ((2, 1), (2, 1))),
+            GriddedPerm(Perm((0, 1, 2)), ((1, 1), (1, 1), (1, 1))),
+            GriddedPerm(Perm((2, 0, 1)), ((3, 0), (3, 0), (3, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
+        ),
+    )
+    assert placement1.empty_row(1) == t
+
+
+def test_empty_col(placement1):
+    t = Tiling(
+        obstructions=(
+            GriddedPerm(Perm((0,)), ((0, 1),)),
+            GriddedPerm(Perm((0,)), ((0, 2),)),
+            GriddedPerm(Perm((0,)), ((1, 0),)),
+            GriddedPerm(Perm((0,)), ((1, 1),)),
+            GriddedPerm(Perm((0,)), ((2, 1),)),
+            GriddedPerm(Perm((0,)), ((2, 2),)),
+            GriddedPerm(Perm((1, 0)), ((1, 2), (1, 2))),
+            GriddedPerm(Perm((2, 0, 1)), ((2, 0), (2, 0), (2, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
+        ),
+        requirements=(),
+    )
+    print(t)
+    print(placement1._tiling)
+    assert placement1.empty_col(1) == t
+
+
 def test_point_translation(gp1, placement1, placement1owncol, placement1ownrow):
     assert placement1._point_translation(gp1, 2, (0, 3)) == (3, 1)
     assert placement1._point_translation(gp1, 2, (1, 2)) == (3, 3)
