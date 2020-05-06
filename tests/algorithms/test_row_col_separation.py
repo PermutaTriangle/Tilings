@@ -710,10 +710,6 @@ def test_separable(
         assert rcs.separable()
 
 
-def test_formal_step(separable_tiling1):
-    assert (
-        RowColSeparation(separable_tiling1).formal_step() == "Row and column separation"
-    )
 
 
 def test_multiple_separation():
@@ -789,7 +785,6 @@ def test_multiple_separation():
         ),
     )
     rcs = RowColSeparation(t)
-    assert rcs.formal_step() == "Row and column separation (2 times)"
     seprated_tiling = rcs.separated_tiling()
     expected_tiling = Tiling(
         obstructions=(

@@ -308,7 +308,7 @@ class MonotoneTreeEnumeration(Enumeration):
         F = sympy.simplify(F.subs({v: 1 for v in F.free_symbols if v != x}))
         # A simple test to warn us if the code is wrong
         assert taylor_expand(F) == [
-            len(list(self.tiling.objects_of_length(i))) for i in range(11)
+            len(list(self.tiling.objects_of_size(i))) for i in range(11)
         ], "Bad genf"
         return F
 

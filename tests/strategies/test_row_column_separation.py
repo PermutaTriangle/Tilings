@@ -202,3 +202,13 @@ def test_rule(separable_tiling1, not_separable_tilings):
     assert rule.constructor == "equiv"
     assert rule.possibly_empty == [False]
     assert RowColSeparation(not_separable_tilings[0]).rule() is None
+
+
+def test_formal_step(separable_tiling1):
+    assert (
+        RowColSeparation(separable_tiling1).formal_step() == "Row and column separation"
+    )
+
+
+# TODO: bring forward the idempotent test to here.
+# assert rcs.formal_step() == "Row and column separation (2 times)"

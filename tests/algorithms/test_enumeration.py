@@ -4,7 +4,6 @@ import pytest
 import sympy
 
 from comb_spec_searcher import StrategyPack
-from comb_spec_searcher.strategies.rule import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
@@ -38,17 +37,6 @@ class CommonTest(abc.ABC):
     def test_verified(self, enum_verified, enum_not_verified):
         assert enum_verified.verified()
         assert not enum_not_verified.verified()
-
-    @abc.abstractmethod
-    def test_formal_step(self, enum_verified):
-        raise NotImplementedError
-
-    def test_verification_rule(self, enum_verified, enum_not_verified):
-        assert isinstance(enum_verified.verification_rule(), VerificationRule)
-        assert (
-            enum_verified.verification_rule().formal_step == enum_verified.formal_step
-        )
-        assert enum_not_verified.verification_rule() is None
 
     @abc.abstractmethod
     def test_get_tree(self, enum_verified):
@@ -96,9 +84,6 @@ class TestBasicEnumeration(CommonTest):
 
     def test_point_or_empty_is_verified(self, point_or_empty_enum):
         assert point_or_empty_enum.verified()
-
-    def test_formal_step(self, enum_verified):
-        assert enum_verified.formal_step == "Base cases"
 
     def test_pack(self, enum_verified):
         with pytest.raises(InvalidOperationError):
@@ -158,9 +143,6 @@ class TestLocallyFactorableEnumeration(CommonTest):
         pack = enum_verified.pack
         assert isinstance(pack, StrategyPack)
         assert pack.name == "LocallyFactorable"
-
-    def test_formal_step(self, enum_verified):
-        assert enum_verified.formal_step == "Tiling is locally factorable"
 
     @pytest.mark.xfail
     def test_get_tree(self, enum_verified):
@@ -278,9 +260,6 @@ class TestLocalEnumeration(CommonTest):
         assert enum_verified.verified()
         assert not enum_not_verified.verified()
 
-    def test_formal_step(self, enum_verified):
-        assert enum_verified.formal_step == "Tiling is locally enumerable"
-
     def test_get_tree(self, enum_verified):
         with pytest.raises(NotImplementedError):
             enum_verified.get_tree()
@@ -361,9 +340,6 @@ class TestMonotoneTreeEnumeration(CommonTest):
             ]
         )
         return MonotoneTreeEnumeration(t)
-
-    def test_formal_step(self, enum_verified):
-        assert enum_verified.formal_step == "Tiling is a monotone tree"
 
     def test_visited_cells_aligned(self, enum_verified):
         visited = {(1, 1), (0, 1)}
@@ -623,9 +599,6 @@ class TestElementaryEnumeration(CommonTest):
         assert isinstance(pack, StrategyPack)
         assert pack.name == "LocallyFactorable"
 
-    def test_formal_step(self, enum_verified):
-        assert enum_verified.formal_step == "Tiling is elementary"
-
     @pytest.mark.xfail
     def test_get_tree(self, enum_verified):
         raise NotImplementedError
@@ -653,9 +626,6 @@ class TestDatabaseEnumeration(CommonTest):
         t = Tiling.from_string("1324")
         return DatabaseEnumeration(t)
 
-    def test_formal_step(self, enum_verified):
-        assert enum_verified.formal_step == "Tiling is in the database"
-
     def test_get_genf(self, enum_verified):
         assert enum_verified.get_genf() == sympy.sympify(
             "(x**2 - x + 1)/(x**2 - 2*x + 1)"
@@ -675,7 +645,7 @@ class TestDatabaseEnumeration(CommonTest):
         DatabaseEnumeration.load_verified_tiling()
         assert DatabaseEnumeration.all_verified_tilings
         sample = next(iter(DatabaseEnumeration.all_verified_tilings))
-        Tiling.decompress(sample)
+        Tiling.from_bytes(sample)
 
     def test_verification_with_cache(self):
         t = Tiling.from_string("123_132_231")
@@ -683,7 +653,7 @@ class TestDatabaseEnumeration(CommonTest):
         assert DatabaseEnumeration(t).verified()
         DatabaseEnumeration.all_verified_tilings = frozenset([1, 2, 3, 4])
         assert not DatabaseEnumeration(t).verified()
-        DatabaseEnumeration.all_verified_tilings = frozenset([t.compress()])
+        DatabaseEnumeration.all_verified_tilings = frozenset([t.to_bytes()])
         assert DatabaseEnumeration(t).verified()
 
 
@@ -703,12 +673,6 @@ class TestOneByOneEnumeration(CommonTest):
         pack = enum_verified.pack
         assert isinstance(pack, StrategyPack)
         assert pack.name == "LocallyFactorable"
-
-    def test_formal_step(self, enum_verified):
-        assert (
-            enum_verified.formal_step
-            == "This tiling is a subclass of the original tiling."
-        )
 
     @pytest.mark.xfail
     def test_get_tree(self, enum_verified):
