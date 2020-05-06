@@ -1,4 +1,4 @@
-from typing import Iterable, Iterator, List, Tuple, Type
+from typing import Iterable, Iterator, List, Tuple, Type, TypeVar
 
 from sympy import Expr, var
 
@@ -10,7 +10,6 @@ from comb_spec_searcher import (
 )
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
-from tilings.exception import InvalidOperationError
 from tilings.algorithms.enumeration import (
     DatabaseEnumeration,
     ElementaryEnumeration,
@@ -19,6 +18,11 @@ from tilings.algorithms.enumeration import (
     LocallyFactorableEnumeration,
     MonotoneTreeEnumeration,
     OneByOneEnumeration,
+)
+from tilings.exception import InvalidOperationError
+
+TileScopeVerificationStrategyType = TypeVar(
+    "TileScopeVerificationStrategyType", bound="TileScopeVerificationStrategy"
 )
 
 x = var("x")
@@ -47,38 +51,42 @@ class BasicVerificationStrategy(VerificationStrategy[Tiling]):
     def get_specfication(self, tiling: Tiling, **kwargs) -> CombinatorialSpecification:
         raise InvalidOperationError("Cannot get a tree for a basic " "verification")
 
-    def get_genf(self, tiling: Tiling, **kwargs) -> Expr:
+    def get_genf(self, tiling: Tiling) -> Expr:
         if tiling.is_epsilon():
             return 1
         if tiling.is_point_tiling():
             return x
         raise InvalidOperationError("Not an atom")
 
-    def count_objects_of_size(self, tiling: Tiling, n: int, **parameters: int) -> int:
+    def count_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> int:
         """Verification strategies must contain a method to count the objects."""
-        if (n == 0 and tiling.is_epsilon()) or (n == 1 and tiling.is_point_tiling()):
+        if (n == 0 and comb_class.is_epsilon()) or (
+            n == 1 and comb_class.is_point_tiling()
+        ):
             return 1
         return 0
 
     def generate_objects_of_size(
-        self, tiling: Tiling, n: int, **parameters: int
+        self, comb_class: Tiling, n: int, **parameters: int
     ) -> Iterator[GriddedPerm]:
         """Verification strategies must contain a method to generate the objects."""
-        if n == 0 and tiling.is_epsilon():
+        if n == 0 and comb_class.is_epsilon():
             yield GriddedPerm.empty_perm()
-        if n == 1 and tiling.is_point_tiling():
+        if n == 1 and comb_class.is_point_tiling():
             yield GriddedPerm(Perm((0,)), ((0, 0),))
 
     def random_sample_object_of_size(
-        self, tiling: Tiling, n: int, **parameters: int
+        self, comb_class: Tiling, n: int, **parameters: int
     ) -> GriddedPerm:
         """
         A method to sample uniformly at random from a verified combinatorial class.
         Raises an InvalidOperationError if the combinatorial class is not verified.
         """
-        if n == 0 and tiling.is_epsilon():
+        if n == 0 and comb_class.is_epsilon():
             return GriddedPerm.empty_perm()
-        if n == 1 and tiling.is_point_tiling():
+        if n == 1 and comb_class.is_point_tiling():
             return GriddedPerm(Perm((0,)), ((0, 0),))
 
     def formal_step(self) -> str:
@@ -129,7 +137,9 @@ class TileScopeVerificationStrategy(VerificationStrategy[Tiling]):
         return self.__class__.__name__ + "()"
 
     @classmethod
-    def from_dict(cls, d: dict) -> "TileScopeVerificationStrategy":
+    def from_dict(
+        cls: Type[TileScopeVerificationStrategyType], d: dict
+    ) -> TileScopeVerificationStrategyType:
         return cls(ignore_parent=d["ignore_parent"])
 
 
@@ -189,24 +199,22 @@ class _OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         )
 
 
-class OneByOneVerificationStrategy(StrategyGenerator):
+class OneByOneVerificationStrategy(StrategyGenerator[Tiling]):
     """Return a verification rule if one-by-one verified."""
 
     def __init__(self, ignore_parent: bool = True):
         self.ignore_parent = ignore_parent
 
     def __call__(
-        self, tiling: Tiling, children: Tuple[Tiling, ...] = None, **kwargs
-    ) -> List[_OneByOneVerificationStrategy]:
+        self, comb_class: Tiling, **kwargs
+    ) -> Iterator[_OneByOneVerificationStrategy]:
         if "basis" not in kwargs:
             raise TypeError("Missing basis argument")
         basis: Iterable[Perm] = kwargs["basis"]
         symmetry = kwargs.get("symmetry", False)
-        return [
-            _OneByOneVerificationStrategy(
-                basis=basis, symmetry=symmetry, ignore_parent=self.ignore_parent
-            )
-        ]
+        yield _OneByOneVerificationStrategy(
+            basis=basis, symmetry=symmetry, ignore_parent=self.ignore_parent
+        )
 
     def __str__(self) -> str:
         return "one by one verification"

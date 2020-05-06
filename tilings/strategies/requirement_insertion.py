@@ -92,7 +92,7 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling]):
         return cls(gps=gps, ignore_parent=d["ignore_parent"])
 
 
-class RequirementInsertionStrategyGenerator(StrategyGenerator):
+class RequirementInsertionStrategyGenerator(StrategyGenerator[Tiling]):
     """
     Bases class for requirement insertion on tilings.
 
@@ -110,11 +110,13 @@ class RequirementInsertionStrategyGenerator(StrategyGenerator):
         rules.
         """
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
+    def __call__(
+        self, comb_class: Tiling, **kwargs
+    ) -> Iterator[RequirementInsertionStrategy]:
         """
         Iterator over all the requirement insertion rules.
         """
-        for req_list in self.req_lists_to_insert(tiling):
+        for req_list in self.req_lists_to_insert(comb_class):
             yield RequirementInsertionStrategy(req_list, self.ignore_parent)
 
     def to_jsonable(self) -> dict:
@@ -162,7 +164,9 @@ class RequirementInsertionWithRestrictionStrategyGenerator(
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "AllCellInsertionStrategy":
+    def from_dict(
+        cls, d: dict
+    ) -> "RequirementInsertionWithRestrictionStrategyGenerator":
         if d["extra_basis"] is None:
             extra_basis = None
         else:
