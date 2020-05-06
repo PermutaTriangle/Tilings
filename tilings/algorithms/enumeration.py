@@ -448,7 +448,7 @@ class DatabaseEnumeration(Enumeration):
         Retrieve the tiling entry from the database. Returns None if the tiling
         is not in the database.
         """
-        key = self.tiling.compress().hex()
+        key = self.tiling.to_bytes().hex()
         search_url = DatabaseEnumeration.API_ROOT_URL + "verified_tiling/key/{}".format(
             key
         )
@@ -467,7 +467,7 @@ class DatabaseEnumeration(Enumeration):
         """
         DatabaseEnumeration.num_verified_request += 1
         if DatabaseEnumeration.all_verified_tilings:
-            return self.tiling.compress() in DatabaseEnumeration.all_verified_tilings
+            return self.tiling.to_bytes() in DatabaseEnumeration.all_verified_tilings
         if DatabaseEnumeration.num_verified_request > 100:
             DatabaseEnumeration.load_verified_tiling()
         return self._get_tiling_entry() is not None

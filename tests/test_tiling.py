@@ -410,15 +410,15 @@ def test_constructor_with_requirements(
 
 
 @pytest.mark.filterwarnings("ignore::UserWarning")
-def test_compression_noreq(typical_redundant_obstructions):
+def test_bytes_noreq(typical_redundant_obstructions):
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
         remove_empty=False,
         derive_empty=False,
     )
 
-    assert tiling == Tiling.decompress(
-        tiling.compress(), remove_empty=False, derive_empty=False
+    assert tiling == Tiling.from_bytes(
+        tiling.to_bytes(), remove_empty=False, derive_empty=False
     )
 
     tiling = Tiling(
@@ -427,8 +427,8 @@ def test_compression_noreq(typical_redundant_obstructions):
         derive_empty=True,
     )
 
-    assert tiling == Tiling.decompress(
-        tiling.compress(), remove_empty=False, derive_empty=True
+    assert tiling == Tiling.from_bytes(
+        tiling.to_bytes(), remove_empty=False, derive_empty=True
     )
 
     tiling = Tiling(
@@ -436,8 +436,8 @@ def test_compression_noreq(typical_redundant_obstructions):
         remove_empty=True,
         derive_empty=True,
     )
-    assert tiling == Tiling.decompress(
-        tiling.compress(), remove_empty=True, derive_empty=True
+    assert tiling == Tiling.from_bytes(
+        tiling.to_bytes(), remove_empty=True, derive_empty=True
     )
 
 
@@ -483,12 +483,12 @@ def test_from_perms():
     )
 
 
-def test_compression(compresstil):
-    assert compresstil == Tiling.decompress(compresstil.compress())
-    assert compresstil.compress() == compresstil.compress()
+def test_bytes(compresstil):
+    assert compresstil == Tiling.from_bytes(compresstil.to_bytes())
+    assert compresstil.to_bytes() == compresstil.to_bytes()
     assert (
-        compresstil.compress()
-        == Tiling(compresstil.obstructions, compresstil.requirements).compress()
+        compresstil.to_bytes()
+        == Tiling(compresstil.obstructions, compresstil.requirements).to_bytes()
     )
 
 
