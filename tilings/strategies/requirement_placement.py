@@ -199,7 +199,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling]):
         )
 
 
-class RequirementPlacementStrategyGenerator(StrategyGenerator):
+class RequirementPlacementStrategyGenerator(StrategyGenerator[Tiling]):
     """
     Base class for requirement placement on tilings.
 
@@ -244,10 +244,10 @@ class RequirementPlacementStrategyGenerator(StrategyGenerator):
             req_placements = (RequirementPlacement(tiling),)
         return req_placements
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         for req_placement, (gps, indices, direction) in product(
-            self.req_placements(tiling),
-            self.req_indices_and_directions_to_place(tiling),
+            self.req_placements(comb_class),
+            self.req_indices_and_directions_to_place(comb_class),
         ):
             if (
                 direction in req_placement.directions
@@ -264,8 +264,8 @@ class RequirementPlacementStrategyGenerator(StrategyGenerator):
                 )
                 children = req_placement.place_point_of_req(gps, indices, direction)
                 if self.include_empty:
-                    children = (tiling.add_obstructions(gps),) + children
-                yield strategy(tiling, children)
+                    children = (comb_class.add_obstructions(gps),) + children
+                yield strategy(comb_class, children)
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
@@ -596,6 +596,15 @@ class RowAndColumnPlacementStrategy(RequirementPlacementStrategyGenerator):
 
 
 class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
+
+    PLACEMENT_STRATS = (
+        PatternPlacementStrategy(point_only=False),
+        PatternPlacementStrategy(point_only=True),
+        # subreqs=True covers everything but it blows up massively!
+        AllRequirementPlacementStrategy(subreqs=False),
+        RowAndColumnPlacementStrategy(place_col=True, place_row=True),
+    )
+
     def __init__(
         self, ignore_parent: bool = False,
     ):
@@ -611,62 +620,14 @@ class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
             RequirementPlacement(tiling, own_col=False),
         )
 
-    def __call__(self, tiling: Tiling, **kwargs):
-        include_empty_for = (
-            RowAndColumnPlacementStrategy(place_col=True, place_row=True),
-        )
-        seen = set()
-        for other_strat in self.other_strats():
-            for req_placement, (gps, indices, direction) in product(
-                self.req_placements(tiling),
-                self.req_indices_and_directions_to_place(tiling, other_strat),
-            ):
-                if (
-                    direction in req_placement.directions
-                    and not req_placement.already_placed(gps, indices)
-                ):
-                    key = (
-                        gps,
-                        indices,
-                        direction,
-                        req_placement.own_row,
-                        req_placement.own_col,
-                    )
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    strategy = RequirementPlacementStrategy(
-                        gps,
-                        indices,
-                        direction,
-                        own_row=req_placement.own_row,
-                        own_col=req_placement.own_col,
-                        ignore_parent=self.ignore_parent,
-                        include_empty=other_strat in include_empty_for,
-                    )
-                    children = (
-                        (tiling.add_obstructions(gps),)
-                        if other_strat in include_empty_for
-                        else tuple()
-                    ) + req_placement.place_point_of_req(gps, indices, direction)
-                    yield strategy(tiling, children)
-
-    def other_strats(self):
-        return (
-            PatternPlacementStrategy(point_only=False),
-            PatternPlacementStrategy(point_only=True),
-            # subreqs=True covers everything but it blows up massively!
-            AllRequirementPlacementStrategy(subreqs=False),
-            RowAndColumnPlacementStrategy(place_col=True, place_row=True),
-        )
-
     def req_indices_and_directions_to_place(
-        self, tiling: Tiling, other_strat: RequirementPlacementStrategyGenerator
+        self, tiling: Tiling
     ) -> Iterator[Tuple[Tuple[GriddedPerm, ...], Tuple[int, ...], int]]:
         """
         Iterator over all requirement lists, indices and directions to place.
         """
-        yield from other_strat.req_indices_and_directions_to_place(tiling)
+        for other_strat in AllPlacementsStrategy.PLACEMENT_STRATS:
+            yield from other_strat.req_indices_and_directions_to_place(tiling)
 
     def __str__(self) -> str:
         return "all placements"
