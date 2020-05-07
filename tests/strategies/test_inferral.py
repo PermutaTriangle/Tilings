@@ -42,7 +42,7 @@ def tiling_not_inf():
 def test_obstruction_transitivity(
     simple_trans_row, simple_trans_col, simple_trans_row_len2, simple_trans_row_len3
 ):
-    strat = ObstructionTransitivityStrategy()(simple_trans_row)
+    strat = list(ObstructionTransitivityStrategy()(simple_trans_row))
     assert len(strat) == 1
     rule = strat[0](simple_trans_row)
     assert len(rule.children) == 1
@@ -61,7 +61,7 @@ def test_obstruction_transitivity(
     assert rule.ignore_parent
     assert rule.workable
 
-    strat = ObstructionTransitivityStrategy()(simple_trans_col)
+    strat = list(ObstructionTransitivityStrategy()(simple_trans_col))
     assert len(strat) == 1
     rule = strat[0](simple_trans_col)
     assert len(rule.children) == 1
@@ -80,7 +80,7 @@ def test_obstruction_transitivity(
     assert rule.ignore_parent
     assert rule.workable
 
-    strat = ObstructionTransitivityStrategy()(simple_trans_row_len2)
+    strat = list(ObstructionTransitivityStrategy()(simple_trans_row_len2))
     assert len(strat) == 1
     rule = strat[0](simple_trans_row_len2)
     assert len(rule.children) == 1
@@ -109,7 +109,7 @@ def test_obstruction_transitivity(
     assert rule.ignore_parent
     assert rule.workable
 
-    strat = ObstructionTransitivityStrategy()(simple_trans_row_len3)
+    strat = list(ObstructionTransitivityStrategy()(simple_trans_row_len3))
     assert len(strat) == 1
     rule = strat[0](simple_trans_row_len3)
     assert len(rule.children) == 1
@@ -145,7 +145,7 @@ def test_obstruction_transitivity(
 
 
 def test_obstruction_inferral(tiling1, tiling_not_inf):
-    strat = AllObstructionInferralStrategy(maxlen=4)(tiling1)
+    strat = list(AllObstructionInferralStrategy(maxlen=4)(tiling1))
     assert len(strat) == 1
     rule = strat[0](tiling1)
     assert len(rule.children) == 1
@@ -166,5 +166,5 @@ def test_obstruction_inferral(tiling1, tiling_not_inf):
     assert rule.ignore_parent
     assert rule.workable
 
-    strat = AllObstructionInferralStrategy(maxlen=4)(tiling_not_inf)
+    strat = list(AllObstructionInferralStrategy(maxlen=4)(tiling_not_inf))
     assert len(strat) == 0

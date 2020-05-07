@@ -35,7 +35,8 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling]):
         self.direction = direction
         self.own_row, self.own_col = own_row, own_col
         self.include_empty = include_empty
-        super().__init__(ignore_parent=ignore_parent)
+        possibly_empty = self.include_empty or len(self.gps) > 1
+        super().__init__(ignore_parent=ignore_parent, possibly_empty=possibly_empty)
 
     def placement_class(self, tiling: Tiling) -> RequirementPlacement:
         return RequirementPlacement(tiling, own_col=self.own_col, own_row=self.own_row)
@@ -78,7 +79,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling]):
         if all(len(gp) == 1 for gp in self.gps):
             col_indices = set(x for x, _ in [gp.pos[0] for gp in self.gps])
             if len(col_indices) == 1:
-                return placing + "point in col {}".format(col_indices.pop())
+                return placing + "point in column {}".format(col_indices.pop())
             row_indices = set(y for _, y in [gp.pos[0] for gp in self.gps])
             if len(row_indices) == 1:
                 return placing + "point in row {}".format(row_indices.pop())
