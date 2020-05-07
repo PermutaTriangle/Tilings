@@ -1,4 +1,4 @@
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple, Iterator
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyGenerator
 from tilings import GriddedPerm, Tiling
@@ -94,15 +94,12 @@ class AllObstructionInferralStrategy(StrategyGenerator[Tiling]):
         """
         return AllObstructionInferral(tiling, self.maxlen).new_obs()
 
-    def __call__(self, tiling: Tiling, **kwargs) -> List[Tiling]:
-        """
-        Return a tuple of tiling. The first one avoids all the pattern in the
-        list while the other contain one of the patterns in the list.
-        """
-        gps = self.new_obs(tiling)
+    def __call__(
+        self, comb_class: Tiling, **kwargs
+    ) -> Iterator[ObstructionInferralStrategy]:
+        gps = self.new_obs(comb_class)
         if gps:
-            return [ObstructionInferralStrategy(gps)]
-        return []
+            yield ObstructionInferralStrategy(gps)
 
     def to_jsonable(self):
         d = super().to_jsonable()
