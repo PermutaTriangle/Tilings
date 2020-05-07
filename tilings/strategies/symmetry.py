@@ -217,12 +217,14 @@ class TilingRotate270(TilingSymmetryStrategy):
         return "rotate270"
 
 
-class AllSymmetriesStrategy(StrategyGenerator):
+class AllSymmetriesStrategy(StrategyGenerator[Tiling]):
     """
     Yield all symmetry strategies for a tiling.
     """
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[TilingSymmetryStrategy]:
+    def __call__(
+        self, comb_class: Tiling, **kwargs
+    ) -> Iterator[TilingSymmetryStrategy]:
         def strategy(rotations: int, inverse: bool) -> TilingSymmetryStrategy:
             if rotations == 0:
                 if inverse:
@@ -243,17 +245,16 @@ class AllSymmetriesStrategy(StrategyGenerator):
                 else:
                     return TilingRotate270()
 
-        t = tiling
-        symmetries = set([t])
+        symmetries = set([comb_class])
         for rotations in range(4):
-            if t not in symmetries:
+            if comb_class not in symmetries:
                 yield strategy(rotations, False)
-            symmetries.add(t)
-            if t not in symmetries:
+            symmetries.add(comb_class)
+            if comb_class not in symmetries:
                 yield strategy(rotations, True)
-            symmetries.add(t.inverse())
-            t = t.rotate90()
-            if t in symmetries:
+            symmetries.add(comb_class.inverse())
+            t = comb_class.rotate90()
+            if comb_class in symmetries:
                 break
 
     def __str__(self) -> str:

@@ -16,7 +16,6 @@ __all__ = [
 ]
 
 
-
 class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling]):
     def __init__(self, gps: Iterable[GriddedPerm]):
         self.gps = tuple(sorted(gps))
@@ -76,7 +75,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling]):
         return cls(gps=gps)
 
 
-class AllObstructionInferralStrategy(StrategyGenerator):
+class AllObstructionInferralStrategy(StrategyGenerator[Tiling]):
     """
     A strategy used for adding obstruction that the tiling avoids, but not
     currently in the obstructions.
