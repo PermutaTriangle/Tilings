@@ -627,8 +627,13 @@ class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
         """
         Iterator over all requirement lists, indices and directions to place.
         """
-        for other_strat in AllPlacementsStrategy.PLACEMENT_STRATS:
-            yield from other_strat.req_indices_and_directions_to_place(tiling)
+        res = frozenset(
+            chain.from_iterable(
+                other_strat.req_indices_and_directions_to_place(tiling)
+                for other_strat in AllPlacementsStrategy.PLACEMENT_STRATS
+            )
+        )
+        yield from res
 
     def __str__(self) -> str:
         return "all placements"
