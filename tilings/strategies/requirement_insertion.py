@@ -248,7 +248,11 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
             return
         for strategy in super().__call__(comb_class):
             t_with_new_req = comb_class.add_list_requirement(strategy.gps)
-            yield strategy
+            if (
+                self.max_num_req is None
+                or len(t_with_new_req.requirements) <= self.max_num_req
+            ):
+                yield strategy
 
     def __str__(self) -> str:
         if not self.extra_basis:
