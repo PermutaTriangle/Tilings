@@ -1,7 +1,7 @@
 from itertools import chain
 from sympy import Eq, Function
 
-from typing import Iterable, Iterator, Optional, Tuple
+from typing import Iterable, Iterator, Optional, Tuple, cast
 
 from comb_spec_searcher import (
     CartesianProduct,
@@ -111,7 +111,10 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "FactorStrategy":
-        partition = tuple(tuple(tuple(c) for c in p) for p in d["partition"])
+        partition = cast(
+            Tuple[Tuple[Cell]],
+            tuple(tuple(tuple(c) for c in p) for p in d["partition"]),
+        )
         return cls(
             partition=partition,
             ignore_parent=d["ignore_parent"],
@@ -227,7 +230,7 @@ class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
         return MonotoneInterleaving(children)
 
 
-class AllFactorStrategy(StrategyGenerator):
+class AllFactorStrategy(StrategyGenerator[Tiling]):
 
     FACTOR_ALGO_AND_CLASS = {
         None: (Factor, FactorStrategy),
@@ -259,8 +262,8 @@ class AllFactorStrategy(StrategyGenerator):
         self.ignore_parent = ignore_parent
         self.workable = workable
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
-        factor_algo = self.factor_algo(tiling)
+    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Strategy]:
+        factor_algo = self.factor_algo(comb_class)
         if factor_algo.factorable():
             min_comp = factor_algo.get_components()
             if self.unions:
