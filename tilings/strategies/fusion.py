@@ -1,7 +1,7 @@
 from itertools import chain
-from typing import Iterator, Type
+from typing import Iterator, Type, Tuple
 
-from comb_spec_searcher import Strategy
+from comb_spec_searcher import StrategyGenerator, Strategy
 from tilings import Tiling
 from tilings.algorithms import ComponentFusion, Fusion
 
@@ -25,9 +25,9 @@ def _general_fusion_iterator(
     return (fusion.rule() for fusion in possible_fusion if fusion.fusable())
 
 
-class FusionStrategy(Strategy):
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
-        return _general_fusion_iterator(tiling, Fusion)
+class FusionStrategy(StrategyGenerator[Tiling]):
+    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Strategy]:
+        return _general_fusion_iterator(comb_class, Fusion)
 
     def __str__(self) -> str:
         return "fusion"
@@ -40,17 +40,17 @@ class FusionStrategy(Strategy):
         return cls()
 
 
-class ComponentFusionStrategy(Strategy):
+class ComponentFusionStrategy(StrategyGenerator[Tiling]):
     """
     Yield rules found by fusing rows and columns of a tiling, where the
     unfused tiling obtained by drawing a line through certain heights/indices
     of the row/column.
     """
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Iterator[Strategy]:
-        if tiling.requirements:
+    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Strategy]:
+        if comb_class.requirements:
             return iter([])
-        return _general_fusion_iterator(tiling, ComponentFusion)
+        return _general_fusion_iterator(comb_class, ComponentFusion)
 
     def __str__(self) -> str:
         return "component fusion"
