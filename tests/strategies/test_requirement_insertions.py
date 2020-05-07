@@ -20,8 +20,10 @@ pytest_plugins = [
 def test_all_cell_insertions_points(simple_tiling):
     point_insertion = AllCellInsertionStrategy(maxreqlen=1)
     assert str(point_insertion) == "point insertion"
-    strats = set([tuple(s.comb_classes) for s in point_insertion(simple_tiling)])
-    assert all(len(s) == 2 for s in strats)
+    rules = set(
+        [tuple(s(simple_tiling).children) for s in point_insertion(simple_tiling)]
+    )
+    assert all(len(s) == 2 for s in rules)
     actual = set()
     actual.add(
         (
@@ -98,7 +100,7 @@ def test_all_cell_insertions_points(simple_tiling):
         )
     )
     print(simple_tiling)
-    assert strats == actual
+    assert rules == actual
 
 
 def test_all_cell_insertions(
@@ -108,10 +110,13 @@ def test_all_cell_insertions(
         obstructions=typical_redundant_obstructions,
         requirements=typical_redundant_requirements,
     )
-    strats = set(
-        [tuple(s.comb_classes) for s in AllCellInsertionStrategy(maxreqlen=3)(tiling)]
+    rules = set(
+        [
+            tuple(s(tiling).children)
+            for s in AllCellInsertionStrategy(maxreqlen=3)(tiling)
+        ]
     )
-    assert all(len(s) == 2 for s in strats)
+    assert all(len(s) == 2 for s in rules)
     assert (
         Tiling(
             obstructions=typical_redundant_obstructions
@@ -123,7 +128,7 @@ def test_all_cell_insertions(
             requirements=typical_redundant_requirements
             + [[GriddedPerm(Perm((0, 1, 2)), [(0, 1), (0, 1), (0, 1)])]],
         ),
-    ) in strats
+    ) in rules
 
 
 def test_requirement_extensions(
@@ -131,7 +136,7 @@ def test_requirement_extensions(
 ):
     t = Tiling.from_string("123_132").add_single_cell_requirement(Perm((0, 1)), (0, 0))
     strats = set(
-        [tuple(s.comb_classes) for s in AllRequirementExtensionStrategy(maxreqlen=3)(t)]
+        [tuple(s(t).children) for s in AllRequirementExtensionStrategy(maxreqlen=3)(t)]
     )
     actual = set(
         [
@@ -157,7 +162,7 @@ def test_requirement_extensions(
     )
     strats = set(
         [
-            frozenset(s.comb_classes)
+            frozenset(s(tiling).children)
             for s in AllRequirementExtensionStrategy(maxreqlen=3)(tiling)
         ]
     )
@@ -314,13 +319,13 @@ def test_all_requirement_insertion():
             GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
         ]
     )
-    strats = set(tuple(s.comb_classes) for s in AllRequirementInsertionStrategy(2)(t))
+    strats = set(tuple(s(t).children) for s in AllRequirementInsertionStrategy(2)(t))
     assert len(strats) == 5
     strat_formal_steps = set(
-        s.formal_step for s in AllRequirementInsertionStrategy(2)(t)
+        s(t).formal_step for s in AllRequirementInsertionStrategy(2)(t)
     )
-    assert "Insert 0 in cell (1, 0)." in strat_formal_steps
-    assert "Insert 10: (0, 0), (1, 0)." in strat_formal_steps
+    assert "insert 0 in cell (1, 0)" in strat_formal_steps
+    assert "insert 10: (0, 0), (1, 0)" in strat_formal_steps
 
 
 def test_all_factor_insertions():
@@ -334,11 +339,11 @@ def test_all_factor_insertions():
             GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
         ]
     )
-    strats = set(tuple(s.comb_classes) for s in AllFactorInsertionStrategy()(t))
+    strats = set(tuple(s(t).children) for s in AllFactorInsertionStrategy()(t))
     assert len(strats) == 2
-    strat_formal_steps = set(s.formal_step for s in AllFactorInsertionStrategy()(t))
-    assert "Insert 0 in cell (0, 0)." in strat_formal_steps
-    assert "Insert 01: (1, 1), (1, 2)." in strat_formal_steps
+    strat_formal_steps = set(s(t).formal_step for s in AllFactorInsertionStrategy()(t))
+    assert "insert 0 in cell (0, 0)" in strat_formal_steps
+    assert "insert 01: (1, 1), (1, 2)" in strat_formal_steps
 
 
 def test_requirement_corroboration(
@@ -354,7 +359,7 @@ def test_requirement_corroboration(
         ],
     )
     reqins = list(
-        strat.comb_classes for strat in RequirementCorroborationStrategy()(tiling)
+        strat(tiling).children for strat in RequirementCorroborationStrategy()(tiling)
     )
     assert len(reqins) == 2
     strat1, strat2 = reqins
@@ -380,7 +385,7 @@ def test_requirement_corroboration(
         requirements=typical_redundant_requirements,
     )
     reqins = list(
-        strat.comb_classes for strat in RequirementCorroborationStrategy()(tiling)
+        strat(tiling).children for strat in RequirementCorroborationStrategy()(tiling)
     )
     assert len(reqins) == sum(
         len(reqs) for reqs in tiling.requirements if len(reqs) > 1
@@ -443,14 +448,15 @@ def test_root_insertion():
     assert len(rules) == 9
     rules = list(RootInsertionStrategy(maxreqlen=4, max_num_req=2)(t_w_req2))
     for rule in rules:
-        print(rule.comb_classes[1])
+        rule = rule(t_w_req2)
+        print(rule.children[1])
     assert len(rules) == 29
 
 
 def test_cell_insertion():
     t1 = Tiling.from_string("123")
-    ci1 = CellInsertion(t1, maxreqlen=3)
-    assert set(ci1.req_lists_to_insert()) == set(
+    ci1 = AllCellInsertionStrategy(maxreqlen=3)
+    assert set(ci1.req_lists_to_insert(t1)) == set(
         [
             (GriddedPerm.single_cell(Perm((0,)), (0, 0)),),
             (GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),),
@@ -462,10 +468,10 @@ def test_cell_insertion():
             (GriddedPerm.single_cell(Perm((2, 1, 0)), (0, 0)),),
         ]
     )
-    assert len(list(ci1.rules())) == 8
+    assert len(list(ci1(t1))) == 8
     t2 = t1.add_single_cell_requirement(Perm((2, 1, 0)), (0, 0))
-    ci2 = CellInsertion(t2, maxreqlen=3)
-    assert set(ci2.req_lists_to_insert()) == set(
+    ci2 = AllCellInsertionStrategy(maxreqlen=3)
+    assert set(ci2.req_lists_to_insert(t2)) == set(
         [
             (GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),),
             (GriddedPerm.single_cell(Perm((0, 2, 1)), (0, 0)),),
@@ -474,9 +480,9 @@ def test_cell_insertion():
             (GriddedPerm.single_cell(Perm((2, 0, 1)), (0, 0)),),
         ]
     )
-    assert len(list(ci2.rules())) == 5
-    ci3 = CellInsertion(t1, maxreqlen=3, extra_basis=[Perm((0, 2, 1))])
-    assert set(ci3.req_lists_to_insert()) == set(
+    assert len(list(ci2(t2))) == 5
+    ci3 = AllCellInsertionStrategy(maxreqlen=3, extra_basis=[Perm((0, 2, 1))])
+    assert set(ci3.req_lists_to_insert(t1)) == set(
         [
             (GriddedPerm.single_cell(Perm((0,)), (0, 0)),),
             (GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),),
@@ -487,7 +493,7 @@ def test_cell_insertion():
             (GriddedPerm.single_cell(Perm((2, 1, 0)), (0, 0)),),
         ]
     )
-    assert len(list(ci3.rules())) == 7
+    assert len(list(ci3(t1))) == 7
 
 
 def test_crossing_insertion():
@@ -499,8 +505,8 @@ def test_crossing_insertion():
         ],
         requirements=[[GriddedPerm(Perm((0,)), ((0, 0),))]],
     )
-    ci = CrossingInsertion(t, maxreqlen=2)
-    assert set(ci.req_lists_to_insert()) == set(
+    ci = AllRequirementInsertionStrategy(maxreqlen=2)
+    assert set(ci.req_lists_to_insert(t)) == set(
         [
             (GriddedPerm(Perm((0,)), ((0, 0),)),),
             (GriddedPerm(Perm((0,)), ((1, 0),)),),
@@ -509,8 +515,8 @@ def test_crossing_insertion():
             (GriddedPerm(Perm((1, 0)), ((0, 0), (1, 0))),),
         ]
     )
-    assert len(list(ci.rules())) == 5
-    ci2 = CrossingInsertion(t, maxreqlen=3)
-    assert len(list(ci2.rules())) == 9
-    ci3 = CrossingInsertion(t, maxreqlen=3, extra_basis=[Perm((2, 1, 0))])
-    assert len(list(ci3.rules())) == 5
+    assert len(list(ci(t))) == 5
+    ci2 = AllRequirementInsertionStrategy(maxreqlen=3)
+    assert len(list(ci2(t))) == 9
+    ci3 = AllRequirementInsertionStrategy(maxreqlen=3, extra_basis=[Perm((2, 1, 0))])
+    assert len(list(ci3(t))) == 5

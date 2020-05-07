@@ -164,7 +164,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling]):
     def __repr__(self) -> str:
         return (
             "RequirementPlacementStrategy(gps={}, indices={}, direction={},"
-            " own_col={}, own_row={}, ignore_parent={}, include_empty={}".format(
+            " own_col={}, own_row={}, ignore_parent={}, include_empty={})".format(
                 self.gps,
                 self.indices,
                 self.direction,

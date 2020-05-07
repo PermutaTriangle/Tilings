@@ -43,8 +43,8 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling]):
         if len(self.gps) == 1:
             req = tuple(self.gps)[0]
             if req.is_localized():
-                return "Insert {} in cell {}.".format(req.patt, req.pos[0])
-            return "Insert {}.".format(req)
+                return "insert {} in cell {}".format(req.patt, req.pos[0])
+            return "insert {}".format(req)
         else:
             raise NotImplementedError
 
@@ -370,8 +370,6 @@ class AllRequirementInsertionStrategy(
     def __call__(
         self, comb_class: Tiling, **kwargs
     ) -> Iterator[RequirementInsertionStrategy]:
-        if comb_class.requirements:
-            return
         yield from super().__call__(comb_class, **kwargs)
 
     def __str__(self) -> str:
