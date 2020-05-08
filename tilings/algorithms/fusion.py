@@ -157,31 +157,6 @@ class Fusion:
             requirements=self.requirements_fuse_counters,
         )
 
-    # TODO: move to strategy file/class
-    def formal_step(self):
-        """
-        Return a string describing the operation performed on the tiling.
-        """
-        fusing = "rows" if self._fuse_row else "columns"
-        idx = self._row_idx if self._fuse_row else self._col_idx
-        return "Fuse {} {} and {}.".format(fusing, idx, idx + 1)
-
-    def rule(self):
-        """
-        Return a comb_spec_searcher rule for the fusion.
-
-        If the tiling is not fusable, return None.
-        """
-        if self.fusable():
-            return Rule(
-                formal_step=self.formal_step(),
-                comb_classes=[self.fused_tiling()],
-                inferable=[True],
-                workable=[True],
-                possibly_empty=[False],
-                constructor="other",
-            )
-
 
 class ComponentFusion(Fusion):
     """
@@ -345,14 +320,6 @@ class ComponentFusion(Fusion):
         new_obs = chain(self._tiling.obstructions, self.obstructions_to_add())
         new_tiling = self._tiling.__class__(new_obs, self._tiling.requirements)
         return self._tiling == new_tiling
-
-    def formal_step(self):
-        """
-        Return a string describing the operation performed on the tiling.
-        """
-        fusing = "rows" if self._fuse_row else "columns"
-        idx = self._row_idx if self._fuse_row else self._col_idx
-        return "Component fusion of {} {} and {}.".format(fusing, idx, idx + 1)
 
     def __str__(self):
         s = "ComponentFusion Algorithm for:\n"

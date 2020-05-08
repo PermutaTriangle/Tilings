@@ -12,8 +12,10 @@ class TileScopePack(StrategyPack):
     def make_fusion(self, component: bool = False) -> "TileScopePack":
         """Create a new pack by adding fusion to the current pack."""
         if component:
-            return self.add_initial(strat.ComponentFusionStrategy(), "component_fusion")
-        return self.add_initial(strat.FusionStrategy(), "fusion")
+            return self.add_initial(
+                strat.ComponentFusionStrategyGenerator(), "component_fusion"
+            )
+        return self.add_initial(strat.FusionStrategyGenerator(), "fusion")
 
     def make_elementary(self) -> "TileScopePack":
         """
