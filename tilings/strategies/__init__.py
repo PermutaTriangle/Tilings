@@ -4,7 +4,12 @@ from .factor import (
     FactorWithInterleavingStrategy,
     FactorWithMonotoneInterleavingStrategy,
 )
-from .fusion import ComponentFusionStrategyGenerator, FusionStrategyGenerator
+from .fusion import (
+    ComponentFusionStrategy,
+    ComponentFusionStrategyGenerator,
+    FusionStrategy,
+    FusionStrategyGenerator,
+)
 from .obstruction_inferral import (
     AllObstructionInferralStrategy,
     EmptyCellInferralStrategy,
