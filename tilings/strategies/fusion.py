@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Iterator, Type, Tuple
+from typing import Iterator, Type
 
 from comb_spec_searcher import StrategyGenerator, Strategy
 from tilings import Tiling

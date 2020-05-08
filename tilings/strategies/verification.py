@@ -1,4 +1,4 @@
-from typing import Iterable, Iterator, List, Tuple, Type, TypeVar
+from typing import Iterable, Iterator, Type, TypeVar
 
 from sympy import Expr, var
 

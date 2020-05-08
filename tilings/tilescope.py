@@ -1,16 +1,10 @@
-from base64 import b64decode, b64encode
 from collections import defaultdict
-from typing import Callable, List, Optional, Union
+from typing import List, Optional, Union
 
 from comb_spec_searcher import CombinatorialSpecificationSearcher
-from comb_spec_searcher.class_db import ClassDB
-from comb_spec_searcher.class_queue import DefaultQueue
-from comb_spec_searcher.equiv_db import EquivalenceDB
-from comb_spec_searcher.rule_db import RuleDB
 from permuta import Perm
 from permuta.descriptors import Basis
 from tilings import GriddedPerm, Tiling
-from comb_spec_searcher import Strategy, StrategyGenerator
 from tilings.strategy_pack import TileScopePack
 
 

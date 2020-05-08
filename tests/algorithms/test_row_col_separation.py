@@ -2,7 +2,6 @@ from itertools import product
 
 import pytest
 
-from comb_spec_searcher import Rule
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms.row_col_separation import (
@@ -708,8 +707,6 @@ def test_separable(
     for t in [separable_tiling1, separable_tiling2, separable_tiling3]:
         rcs = RowColSeparation(t)
         assert rcs.separable()
-
-
 
 
 def test_multiple_separation():

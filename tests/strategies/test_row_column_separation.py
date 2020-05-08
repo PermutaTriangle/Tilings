@@ -1,13 +1,11 @@
 import pytest
+
 from comb_spec_searcher import DisjointUnion, Rule
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RowColSeparation
-from tilings.strategies import (
-    ObstructionTransitivityStrategy,
-    RowColumnSeparationStrategy,
-)
+from tilings.strategies import RowColumnSeparationStrategy
 
 pytest_plugins = ["tests.fixtures.simple_trans"]
 

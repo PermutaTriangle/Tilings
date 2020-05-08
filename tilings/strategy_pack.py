@@ -1,10 +1,8 @@
-from typing import List, Optional
+from typing import Optional
 
 from comb_spec_searcher import StrategyPack
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
-from tilings import Tiling
 from tilings import strategies as strat
-from comb_spec_searcher import StrategyGenerator
 
 
 class TileScopePack(StrategyPack):

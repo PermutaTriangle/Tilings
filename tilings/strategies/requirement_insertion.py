@@ -2,7 +2,7 @@ import abc
 from itertools import chain, product
 from typing import Iterable, Iterator, List, Optional, Tuple
 
-from comb_spec_searcher import DisjointUnionStrategy, Rule, Strategy, StrategyGenerator
+from comb_spec_searcher import DisjointUnionStrategy, StrategyGenerator
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 
