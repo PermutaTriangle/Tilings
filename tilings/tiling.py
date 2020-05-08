@@ -42,9 +42,8 @@ from .algorithms import (
     SubobstructionInferral,
 )
 from .algorithms.enumeration import (
-    BasicEnumeration,
     DatabaseEnumeration,
-    LocallyFactorableEnumeration,
+    LocalEnumeration,
     MonotoneTreeEnumeration,
 )
 from .exception import InvalidOperationError
@@ -1293,45 +1292,20 @@ class Tiling(CombinatorialClass):
         )
 
     def get_genf(self, *args, **kwargs) -> sympy.Expr:
-        """
-        Return generating function of a tiling.
-        """
-        # If root has been given a function, return it if you see the root or a
-        # symmetries.
-        if (
-            kwargs.get("root_func") is not None
-            and kwargs.get("root_class") in self.all_symmetries()
-        ):
-            return kwargs["root_func"]
         if self.is_empty():
             return sympy.sympify(0)
-        # Can count by counting the tiling with a requirement removed and
-        # subtracting the tiling with it added as an obstruction.
-        if self.requirements:
-            ignore = Tiling(
-                obstructions=self.obstructions, requirements=self.requirements[1:]
-            )
-            req = self.requirements[0]
-            t_avoid_req = Tiling(
-                obstructions=(
-                    chain(self.obstructions, (GriddedPerm(r.patt, r.pos) for r in req))
-                ),
-                requirements=self.requirements[1:],
-            )
-            return ignore.get_genf(*args, **kwargs) - t_avoid_req.get_genf(
-                *args, **kwargs
-            )
-        # Try using some of the enumeration strategy
         enum_stragies = [
-            BasicEnumeration,
-            LocallyFactorableEnumeration,
             MonotoneTreeEnumeration,
             DatabaseEnumeration,
+            LocalEnumeration,
         ]
         for enum_strat in enum_stragies:
             if enum_strat(self).verified():
                 return enum_strat(self).get_genf()
-        raise ValueError("We were unable to enumerate this tiling:\n" + str(self))
+        # TODO: try verification strategies
+        raise NotImplementedError(
+            "We were unable to enumerate this tiling:\n" + str(self)
+        )
 
     # -------------------------------------------------------------
     # Dunder methods

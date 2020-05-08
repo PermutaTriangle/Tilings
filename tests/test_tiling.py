@@ -2321,5 +2321,5 @@ class TestGetGenf:
 
     def test_not_enumerable(self):
         t = Tiling.from_string("1324")
-        with pytest.raises(ValueError):
+        with pytest.raises(NotImplementedError):
             t.get_genf()

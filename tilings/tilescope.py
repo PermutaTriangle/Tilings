@@ -33,12 +33,16 @@ class TileScope(CombinatorialSpecificationSearcher):
             start_tiling = start_class
             if start_class.dimensions == (1, 1):
                 basis = Basis([o.patt for o in start_class.obstructions])
-            else:
-                basis = []
+
         if not isinstance(start_class, Tiling):
             start_tiling = Tiling(
                 obstructions=[GriddedPerm.single_cell(patt, (0, 0)) for patt in basis]
             )
+
+        if start_tiling.dimensions == (1, 1):
+            print("fixing basis")
+            strategy_pack.fix_one_by_one(basis)
+
         function_kwargs = {"basis": basis}
         super().__init__(
             start_tiling,

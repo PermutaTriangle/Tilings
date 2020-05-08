@@ -251,19 +251,21 @@ strategy_objects = (
     + maxreqlen_extrabasis_ignoreparent(AllRequirementExtensionStrategy)
     + maxreqlen_extrabasis_ignoreparent(AllRequirementInsertionStrategy)
     + subreqs_partial_ignoreparent_dirs(AllRequirementPlacementStrategy)
-    + [AllSymmetriesStrategy(), BasicVerificationStrategy()]
-    + ignoreparent(DatabaseVerificationStrategy)
-    + ignoreparent(ElementaryVerificationStrategy)
-    + [ElementaryVerificationStrategy()]
-    + [EmptyCellInferralStrategy()]
+    + [
+        AllSymmetriesStrategy(),
+        BasicVerificationStrategy(),
+        DatabaseVerificationStrategy(),
+        ElementaryVerificationStrategy(),
+        EmptyCellInferralStrategy(),
+    ]
     + partition_ignoreparent_workable(FactorStrategy)
     + partition_ignoreparent_workable(FactorWithInterleavingStrategy)
     + partition_ignoreparent_workable(FactorWithMonotoneInterleavingStrategy)
     + ignoreparent(LocallyFactorableVerificationStrategy)
-    + ignoreparent(LocalVerificationStrategy)
-    + ignoreparent(MonotoneTreeVerificationStrategy)
+    + [LocalVerificationStrategy()]
+    + [MonotoneTreeVerificationStrategy()]
     + [ObstructionTransitivityStrategy()]
-    + ignoreparent(OneByOneVerificationStrategy)
+    + [OneByOneVerificationStrategy()]
     + pointonly_partial_ignoreparent_dirs(PatternPlacementStrategy)
     + ignoreparent(RequirementCorroborationStrategy)
     + gps_ignoreparent(RequirementInsertionStrategy)
@@ -281,4 +283,5 @@ strategy_objects = (
 @pytest.mark.parametrize("strategy", strategy_objects)
 def test_json_encoding(strategy):
     strategy_new = json_encode_decode(strategy)
+    print(strategy)
     assert_same_strategy(strategy, strategy_new)

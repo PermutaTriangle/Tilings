@@ -1,6 +1,8 @@
-from typing import Optional
+from itertools import chain
+from typing import Iterable, Optional
 
 from comb_spec_searcher import StrategyPack
+from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import strategies as strat
 
@@ -8,6 +10,16 @@ from tilings import strategies as strat
 class TileScopePack(StrategyPack):
     # Method to add power to a pack
     # Pack are immutable, these methods return a new pack.
+
+    def fix_one_by_one(self, basis: Iterable[Perm]):
+        for strategy in chain(
+            self.ver_strats,
+            self.inferral_strats,
+            self.initial_strats,
+            *self.expansion_strats,
+        ):
+            if isinstance(strategy, strat.OneByOneVerificationStrategy):
+                strategy.add_basis(basis, bool(self.symmetries))
 
     def make_fusion(self, component: bool = False) -> "TileScopePack":
         """Create a new pack by adding fusion to the current pack."""
