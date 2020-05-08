@@ -550,10 +550,6 @@ class TestComponentFusion(TestFusion):
             ]
         )
 
-    def test_formal_step(self, col_fusion, row_fusion):
-        assert col_fusion.formal_step() == "Component fusion of columns 0 and 1."
-        assert row_fusion.formal_step() == "Component fusion of rows 0 and 1."
-
     def test_requirements_fuse_counters(self, row_fusion, col_fusion, tiling_with_req):
         assert row_fusion.requirements_fuse_counters == []
         assert col_fusion.requirements_fuse_counters == []

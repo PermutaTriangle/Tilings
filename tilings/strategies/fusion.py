@@ -21,9 +21,6 @@ __all__ = ["FusionStrategy", "ComponentFusionStrategy"]
 
 
 class FusionConstructor(Constructor):
-    # def __init__(self):
-    #     super().__init__()
-
     def is_equivalence(self) -> bool:
         return False
 
@@ -73,8 +70,8 @@ class FusionStrategy(Strategy[Tiling]):
     def fusion_algorithm(self, tiling: Tiling) -> Fusion:
         return Fusion(tiling, row_idx=self.row_idx, col_idx=self.col_idx)
 
-    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
-        algo = self.fusion_algorithm(tiling)
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
+        algo = self.fusion_algorithm(comb_class)
         if algo.fusable():
             return (algo.fused_tiling(),)
 
@@ -142,7 +139,7 @@ class ComponentFusionStrategy(FusionStrategy):
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"
         idx = self.row_idx if self.row_idx is not None else self.col_idx
-        return "fuse component {} {} and {}".format(fusing, idx, idx + 1)
+        return "component fuse {} {} and {}".format(fusing, idx, idx + 1)
 
 
 class FusionStrategyGenerator(StrategyGenerator[Tiling]):
@@ -179,12 +176,16 @@ class ComponentFusionStrategyGenerator(StrategyGenerator[Tiling]):
             algo = ComponentFusion(comb_class, row_idx=row_idx)
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield FusionStrategy(row_idx=row_idx)(comb_class, (fused_tiling,))
+                yield ComponentFusionStrategy(row_idx=row_idx)(
+                    comb_class, (fused_tiling,)
+                )
         for col_idx in range(cols - 1):
             algo = ComponentFusion(comb_class, col_idx=col_idx)
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield FusionStrategy(col_idx=col_idx)(comb_class, (fused_tiling,))
+                yield ComponentFusionStrategy(col_idx=col_idx)(
+                    comb_class, (fused_tiling,)
+                )
 
     def __str__(self) -> str:
         return "fusion"

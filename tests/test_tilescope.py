@@ -2,6 +2,7 @@ import pytest
 import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
+from tilings.strategies.fusion import FusionStrategy, ComponentFusionStrategy
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
 
@@ -71,7 +72,7 @@ def test_123_with_db():
 def test_1342_1423():
     searcher = TileScope("1342_1423", point_placements_component_fusion)
     spec = searcher.auto_search(smallest=True)
-    spec.number_of_nodes() == 14
+    assert spec.number_of_rules() == 9
     assert isinstance(spec, CombinatorialSpecification)
 
 
@@ -79,13 +80,15 @@ def test_1342_1423():
 def test_1324():
     searcher = TileScope("1324", row_and_col_placements_component_fusion_fusion)
     spec = searcher.auto_search(smallest=True)
-    spec.number_of_nodes() == 14
+    assert spec.number_of_rules() == 9
     num_fusion = 0
     num_comp_fusion = 0
-    for node in spec.nodes():
-        if "Fuse" in node.formal_step:
+    for rule in spec.rules_dict.values():
+        if isinstance(rule.strategy, FusionStrategy) and not isinstance(
+            rule.strategy, ComponentFusionStrategy
+        ):
             num_fusion += 1
-        if "Component" in node.formal_step:
+        if isinstance(rule.strategy, ComponentFusionStrategy):
             num_comp_fusion += 1
     assert num_fusion == 1
     assert num_comp_fusion == 1
