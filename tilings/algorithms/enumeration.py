@@ -1,11 +1,10 @@
 import abc
 from collections import deque
 from itertools import chain
-from typing import Dict, TYPE_CHECKING, FrozenSet, Optional
-
-from sympy import diff, Expr, Function, Symbol, sympify, var, simplify
+from typing import TYPE_CHECKING, Dict, FrozenSet, Optional
 
 import requests
+from sympy import Expr, Function, Symbol, diff, simplify, sympify, var
 
 from comb_spec_searcher.utils import taylor_expand
 from tilings.exception import InvalidOperationError
@@ -145,7 +144,7 @@ class MonotoneTreeEnumeration(Enumeration):
         """
         queue = deque(
             chain(
-                self.tiling.cells_in_col(start[1]), self.tiling.cells_in_row(start[0])
+                self.tiling.cells_in_col(start[0]), self.tiling.cells_in_row(start[1])
             )
         )
         visited = set([start])
@@ -202,9 +201,8 @@ class MonotoneTreeEnumeration(Enumeration):
             visited.add(cell)
         F = simplify(F.subs({v: 1 for v in F.free_symbols if v != x}))
         # A simple test to warn us if the code is wrong
-        assert taylor_expand(F) == [
-            len(list(self.tiling.objects_of_size(i))) for i in range(11)
-        ], "Bad genf"
+        expected = [len(list(self.tiling.objects_of_size(i))) for i in range(11)]
+        assert taylor_expand(F) == expected, f"Bad genf\n{taylor_expand(F)}\n{expected}"
         return F
 
     @staticmethod

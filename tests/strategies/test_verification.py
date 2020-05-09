@@ -496,6 +496,13 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
         )
         expected_enum = [0, 0, 2, 7, 19, 47, 111, 255, 575, 1279, 2815]
         assert strategy.verified(t)
+        assert (
+            sympy.simplify(
+                strategy.get_genf(t)
+                - sympy.sympify("x**2*(3*x - 2)/(4*x**3 - 8*x**2 + 5*x - 1)")
+            )
+            == 0
+        )
         assert taylor_expand(strategy.get_genf(t)) == expected_enum
 
     def test_corner(self, strategy):
