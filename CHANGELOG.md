@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Update permuta to 1.2.1
 - Update comb_spec_searcher to 0.2.2
 
+### Removed
+- Support for Python 3.5 and earlier
+
 ## [1.0.2] - 2019-03-30
 ### Changed
 - Update dependency versions
