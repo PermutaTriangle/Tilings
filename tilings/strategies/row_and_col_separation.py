@@ -2,12 +2,11 @@
 The row and column separation strategy. The details of the algorithm can be
 found in the algorithms folder.
 """
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional, Tuple
 
 from comb_spec_searcher import DisjointUnionStrategy
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RowColSeparation
-
 
 __all__ = ["RowColumnSeparationStrategy"]
 

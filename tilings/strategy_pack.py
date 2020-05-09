@@ -1,9 +1,9 @@
 from itertools import chain
-from typing import Iterable, Optional, List
+from typing import Iterable, List, Optional
 
 from logzero import logger
 
-from comb_spec_searcher import StrategyPack, Strategy
+from comb_spec_searcher import Strategy, StrategyPack
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import Tiling

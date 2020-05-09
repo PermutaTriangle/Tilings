@@ -42,7 +42,6 @@ from tilings.strategies import (
     RowColumnSeparationStrategy,
     SubobstructionInferralStrategy,
 )
-
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 
 

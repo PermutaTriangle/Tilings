@@ -1,4 +1,5 @@
 import pytest
+
 from comb_spec_searcher import DisjointUnion, Rule
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS

@@ -1,8 +1,4 @@
-from .enumeration import (
-    DatabaseEnumeration,
-    LocalEnumeration,
-    MonotoneTreeEnumeration,
-)
+from .enumeration import DatabaseEnumeration, LocalEnumeration, MonotoneTreeEnumeration
 from .factor import Factor, FactorWithInterleaving, FactorWithMonotoneInterleaving
 from .fusion import ComponentFusion, Fusion
 from .gridded_perm_generation import GriddedPermsOnTiling

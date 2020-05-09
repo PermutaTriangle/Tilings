@@ -1,10 +1,9 @@
+import abc
 from functools import partial
 from typing import Iterator, Optional, Tuple
-import abc
 
 from comb_spec_searcher import StrategyGenerator, SymmetryStrategy
 from tilings import GriddedPerm, Tiling
-
 
 __all__ = ("AllSymmetriesStrategy",)
 

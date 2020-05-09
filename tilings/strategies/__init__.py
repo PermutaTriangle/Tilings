@@ -18,19 +18,19 @@ from .obstruction_inferral import (
 )
 from .requirement_insertion import (
     AllCellInsertionStrategy,
-    RootInsertionStrategy,
+    AllFactorInsertionStrategy,
     AllRequirementExtensionStrategy,
     AllRequirementInsertionStrategy,
-    AllFactorInsertionStrategy,
     RequirementCorroborationStrategy,
     RequirementInsertionStrategy,
+    RootInsertionStrategy,
 )
 from .requirement_placement import (
+    AllPlacementsStrategy,
+    AllRequirementPlacementStrategy,
     PatternPlacementStrategy,
     RequirementPlacementStrategy,
     RowAndColumnPlacementStrategy,
-    AllRequirementPlacementStrategy,
-    AllPlacementsStrategy,
 )
 from .row_and_col_separation import RowColumnSeparationStrategy
 from .symmetry import AllSymmetriesStrategy

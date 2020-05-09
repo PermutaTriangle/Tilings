@@ -1,4 +1,5 @@
 import pytest
+
 from comb_spec_searcher import DisjointUnion
 from permuta import Perm
 from tilings import GriddedPerm, Tiling

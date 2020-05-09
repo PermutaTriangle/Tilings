@@ -2,7 +2,7 @@ import pytest
 import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
-from tilings.strategies.fusion import FusionStrategy, ComponentFusionStrategy
+from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
 
