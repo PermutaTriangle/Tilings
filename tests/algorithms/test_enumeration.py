@@ -366,15 +366,15 @@ class TestMonotoneTreeEnumeration(CommonTest):
     def test_with_two_reqs(self):
         t = Tiling(
             obstructions=(
-                Obstruction(Perm((0,)), ((1, 1),)),
-                Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-                Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-                Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
-                Obstruction(Perm((1, 0)), ((0, 1), (0, 1))),
+                GriddedPerm(Perm((0,)), ((1, 1),)),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
             ),
             requirements=(
-                (Requirement(Perm((0,)), ((0, 0),)),),
-                (Requirement(Perm((0,)), ((0, 1),)),),
+                (GriddedPerm(Perm((0,)), ((0, 0),)),),
+                (GriddedPerm(Perm((0,)), ((0, 1),)),),
             ),
         )
         enum = MonotoneTreeEnumeration(t)
@@ -385,12 +385,12 @@ class TestMonotoneTreeEnumeration(CommonTest):
     def test_corner(self):
         t = Tiling(
             obstructions=(
-                Obstruction(Perm((0,)), ((1, 1),)),
-                Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-                Obstruction(Perm((0, 1)), ((0, 1), (0, 1))),
-                Obstruction(Perm((0, 1)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((0,)), ((1, 1),)),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
             ),
-            requirements=((Requirement(Perm((0,)), ((0, 0),)),),),
+            requirements=((GriddedPerm(Perm((0,)), ((0, 0),)),),),
         )
         enum = MonotoneTreeEnumeration(t)
         expected_enum = [0, 1, 5, 17, 50, 138, 370, 979, 2575, 6755, 17700]
