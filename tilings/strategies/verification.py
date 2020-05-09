@@ -4,7 +4,7 @@ from typing import Iterable, Iterator, List, Optional
 from sympy import Expr, var
 
 from comb_spec_searcher import AtomStrategy, StrategyPack, VerificationStrategy
-from comb_spec_searcher.exception import InvalidOperationError
+from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
 from permuta import Perm
 from permuta.permutils.symmetry import all_symmetry_sets
 from tilings import GriddedPerm, Tiling
@@ -76,7 +76,7 @@ class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
 
     def get_genf(self, tiling: Tiling):
         if not self.verified(tiling):
-            raise InvalidOperationError("tiling not one by one verified")
+            raise StrategyDoesNotApply("tiling not one by one verified")
         return LocalEnumeration(tiling).get_genf()
 
     def count_objects_of_size(
@@ -149,6 +149,8 @@ class DatabaseVerificationStrategy(VerificationStrategy[Tiling]):
         return "tiling is in the database"
 
     def get_genf(self, tiling: Tiling):
+        if not self.verified(tiling):
+            raise StrategyDoesNotApply("tiling is not in the database")
         return DatabaseEnumeration(tiling).get_genf()
 
     def count_objects_of_size(
@@ -293,6 +295,8 @@ class LocalVerificationStrategy(VerificationStrategy[Tiling]):
         return cls(**d)
 
     def get_genf(self, tiling: Tiling):
+        if not self.verified(tiling):
+            raise StrategyDoesNotApply("tiling not locally verified")
         return LocalEnumeration(tiling).get_genf()
 
     def count_objects_of_size(
@@ -344,6 +348,8 @@ class MonotoneTreeVerificationStrategy(VerificationStrategy[Tiling]):
         return cls(**d)
 
     def get_genf(self, tiling: Tiling) -> Expr:
+        if not self.verified(tiling):
+            raise StrategyDoesNotApply("tiling is not monotone tree verified")
         return MonotoneTreeEnumeration(tiling).get_genf()
 
     def count_objects_of_size(

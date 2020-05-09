@@ -121,7 +121,6 @@ class MonotoneTreeEnumeration(Enumeration):
     are the cells of the tiling.
     """
 
-    formal_step = "Tiling is a monotone tree"
     _tracking_var = var("t")
 
     def verified(self):

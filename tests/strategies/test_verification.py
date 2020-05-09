@@ -78,12 +78,12 @@ class CommonTest(abc.ABC):
 
     def test_get_genf_not_verified(self, strategy, enum_not_verified):
         for tiling in enum_not_verified:
-            with pytest.raises(InvalidOperationError):
+            with pytest.raises(StrategyDoesNotApply):
                 strategy.get_genf(tiling)
 
     def test_get_spec_not_verified(self, strategy, enum_not_verified):
         for tiling in enum_not_verified:
-            with pytest.raises(InvalidOperationError):
+            with pytest.raises(StrategyDoesNotApply):
                 strategy.get_specification(tiling)
 
 
@@ -203,7 +203,6 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
         assert not strategy._locally_factorable_obstructions(enum_not_verified[0])
         assert strategy._locally_factorable_obstructions(enum_verified[0])
 
-
     @pytest.fixture
     def enum_with_tautology(self):
         return Tiling(
@@ -228,7 +227,7 @@ class TestLocalVerificationStrategy(CommonTest):
 
     @pytest.fixture
     def formal_step(self):
-        return "tiling is locally factorable"
+        return "tiling is locally enumerable"
 
     @pytest.fixture
     def enum_verified(self):
@@ -246,10 +245,14 @@ class TestLocalVerificationStrategy(CommonTest):
                 ]
             ],
         )
-        return LocalVerificationStrategy(t)
+        return [t]
 
     @pytest.fixture
-    def enum_not_verified(self):
+    def onebyone_enum(self):
+        return Tiling.from_string("123")
+
+    @pytest.fixture
+    def enum_not_verified(self, onebyone_enum):
         t = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
@@ -265,11 +268,12 @@ class TestLocalVerificationStrategy(CommonTest):
                 ]
             ],
         )
-        return LocalVerificationStrategy(t)
+        return [t, onebyone_enum]
 
-    @pytest.fixture
-    def onebyone_enum(self):
-        return LocalVerificationStrategy(Tiling.from_string("123"))
+    def test_get_genf(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            with pytest.raises(NotImplementedError):
+                strategy.get_genf(tiling)
 
     @pytest.fixture
     def enum_no_req(self):
@@ -287,35 +291,11 @@ class TestLocalVerificationStrategy(CommonTest):
                 ]
             ],
         )
-        return LocalVerificationStrategy(t, no_req=True)
+        return t
 
-    def test_pack(self, enum_verified):
-        assert enum_verified.pack is None
-
-    def test_verified(self, enum_verified, enum_not_verified):
-        assert enum_verified.verified()
-        assert not enum_not_verified.verified()
-
-    def test_formal_step(self, enum_verified):
-        assert enum_verified.formal_step == "Tiling is locally enumerable"
-
-    def test_get_specification(self, enum_verified):
-        with pytest.raises(NotImplementedError):
-            enum_verified.get_specification()
-
-    def test_get_genf(self, enum_verified):
-        with pytest.raises(NotImplementedError):
-            enum_verified.get_genf()
-
-    def test_get_genf_not_verified(self, enum_not_verified):
-        with pytest.raises(InvalidOperationError):
-            enum_not_verified.get_genf()
-
-    def test_1x1_verified(self, onebyone_enum):
-        assert not onebyone_enum.verified()
-
+    @pytest.mark.xfail(reason="the no req flag was removed")
     def test_no_req_option(self, enum_no_req):
-        assert not enum_no_req.verified()
+        assert LocalVerificationStrategy().verified(enum_no_req)
 
 
 class TestMonotoneTreeVerificationStrategy(CommonTest):
@@ -325,11 +305,11 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
 
     @pytest.fixture
     def formal_step(self):
-        return "tiling is locally factorable"
+        return "tiling is a monotone tree"
 
     @pytest.fixture
     def enum_verified(self):
-        t = Tiling(
+        t1 = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
                 GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
@@ -338,21 +318,27 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
                 GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
             ]
         )
-        return MonotoneTreeVerificationStrategy(t)
+        t2 = Tiling(
+            obstructions=[
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
+            ]
+        )
+        return [t1, t2]
 
     @pytest.fixture
-    def enum_not_verified(self):
+    def enum_with_crossing(self):
         t = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
                 GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
                 GriddedPerm(Perm((0, 1)), ((0, 2),) * 2),
                 GriddedPerm(Perm((0, 1)), ((2, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((2, 2),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
                 GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
             ]
         )
-        return MonotoneTreeVerificationStrategy(t)
+        return t
 
     @pytest.fixture
     def enum_with_list_req(self):
@@ -368,45 +354,24 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
                 ]
             ],
         )
-        return MonotoneTreeVerificationStrategy(t)
+        return t
 
     @pytest.fixture
     def onebyone_enum(self):
-        return LocalVerificationStrategy(Tiling.from_string("123"))
+        return Tiling.from_string("123")
 
     @pytest.fixture
-    def enum_with_crossing(self):
+    def enum_not_verified(self, enum_with_crossing, enum_with_list_req, onebyone_enum):
         t = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
                 GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
                 GriddedPerm(Perm((0, 1)), ((0, 2),) * 2),
                 GriddedPerm(Perm((0, 1)), ((2, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
+                GriddedPerm(Perm((0, 1)), ((2, 2),) * 2),
                 GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
             ]
         )
-        return MonotoneTreeVerificationStrategy(t)
-
-    def test_formal_step(self, enum_verified):
-        assert enum_verified.formal_step == "Tiling is a monotone tree"
-
-    def test_visited_cells_aligned(self, enum_verified):
-        visited = {(1, 1), (0, 1)}
-        assert sorted(enum_verified._visted_cells_aligned((0, 2), visited)) == [(0, 1)]
-
-    def test_cell_tree_traversal(self, enum_verified):
-        order = list(enum_verified._cell_tree_traversal((1, 1)))
-        assert len(order) == 4
-        assert (1, 1) not in order
-        assert order[0] == (0, 1)
-        assert order[3] == (2, 0)
-        assert set(order[1:3]) == {(0, 0), (0, 2)}
-
-    def test_not_verified(self, enum_with_list_req, onebyone_enum, enum_with_crossing):
-        assert not enum_with_crossing.verified()
-        assert not enum_with_list_req.verified()
-        assert not onebyone_enum.verified()
         forest_tiling = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0,)), ((0, 0),)),
@@ -418,10 +383,10 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
             ],
             requirements=[[GriddedPerm(Perm((0,)), ((0, 1),))]],
         )
-        assert not MonotoneTreeVerificationStrategy(forest_tiling).verified()
+        return [t, enum_with_crossing, enum_with_list_req, onebyone_enum, forest_tiling]
 
-    @pytest.mark.xfail(reason="No database setup")
-    def test_get_genf(self, enum_verified):
+    @pytest.mark.xfail(reason="combopal database not setup")
+    def test_get_genf(self, strategy, enum_verified):
         x = sympy.Symbol("x")
         expected_gf = -(
             sympy.sqrt(
@@ -429,40 +394,24 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
             )
             - 1
         ) / (2 * x * (x ** 2 - 3 * x + 1))
-        assert sympy.simplify(enum_verified.get_genf() - expected_gf) == 0
-        t = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-            ]
-        )
-        enum_no_start = MonotoneTreeVerificationStrategy(t)
+        assert sympy.simplify(strategy.get_genf(enum_verified[0]) - expected_gf) == 0
+
         expected_gf = -1 / ((x - 1) * (x / (x - 1) + 1))
-        assert sympy.simplify(enum_no_start.get_genf() - expected_gf) == 0
+        assert sympy.simplify(strategy.get_genf(enum_verified[1]) - expected_gf) == 0
 
-    @pytest.mark.xfail(reason="pack does not exist")
-    def test_get_specification(self, enum_verified):
-        raise NotImplementedError
-
-    @pytest.mark.xfail
-    def test_pack(self, enum_verified):
-        pack = enum_verified.pack
-        assert isinstance(pack, StrategyPack)
-        assert pack.name == "MonotoneTree"
-
-    def test_get_genf_simple(self):
+    def test_get_genf_simple(self, strategy):
         t = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
                 GriddedPerm(Perm((1, 0)), ((1, 0),) * 2),
             ]
         )
-        enum = MonotoneTreeVerificationStrategy(t)
-        print(t)
-        assert enum.verified()
-        assert sympy.simplify(enum.get_genf() - sympy.sympify("1/(1-2*x)")) == 0
 
-    def test_with_finite_monotone_cell(self):
+        print(t)
+        assert strategy.verified(t)
+        assert sympy.simplify(strategy.get_genf(t) - sympy.sympify("1/(1-2*x)")) == 0
+
+    def test_with_finite_monotone_cell(self, strategy):
         t = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
@@ -471,12 +420,11 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
                 GriddedPerm(Perm((1, 0)), ((1, 0),) * 2),
             ]
         )
-        enum = MonotoneTreeVerificationStrategy(t)
         print(t)
-        assert enum.verified()
-        assert enum.get_genf().expand() == sympy.sympify("1+2*x+2*x**2")
+        assert strategy.verified(t)
+        assert sympy.simplify(strategy.get_genf(t) - sympy.sympify("1+2*x+2*x**2")) == 0
 
-    def test_with_finite_monotone_cell2(self):
+    def test_with_finite_monotone_cell2(self, strategy):
         t = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
@@ -485,64 +433,13 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
                 GriddedPerm(Perm((1, 0)), ((1, 1),) * 2),
             ]
         )
-        enum = MonotoneTreeVerificationStrategy(t)
         print(t)
-        assert enum.verified()
+        assert strategy.verified(t)
         assert (
-            sympy.sympify("x/(1-x)**4 + 1/(1-x)**2") - enum.get_genf()
+            sympy.sympify("x/(1-x)**4 + 1/(1-x)**2") - strategy.get_genf(t)
         ).simplify() == 0
 
-    def test_interleave_fixed_length(self, enum_verified):
-        track_var = MonotoneTreeVerificationStrategy._tracking_var
-        cell_var = enum_verified._cell_variable((1, 0))
-        dummy_var = enum_verified._cell_variable((0, 0))
-        x = sympy.var("x")
-        F = x ** 8 * track_var ** 3 * dummy_var ** 3
-        assert (
-            enum_verified._interleave_fixed_length(F, (1, 0), 1)
-            == 4 * x ** 9 * dummy_var ** 3 * cell_var ** 1
-        )
-        assert (
-            enum_verified._interleave_fixed_length(F, (1, 0), 3)
-            == 20 * x ** 11 * dummy_var ** 3 * cell_var ** 3
-        )
-        assert (
-            enum_verified._interleave_fixed_length(F, (1, 0), 0)
-            == x ** 8 * dummy_var ** 3
-        )
-
-    def test_interleave_fixed_lengths(self, enum_verified):
-        track_var = MonotoneTreeVerificationStrategy._tracking_var
-        cell_var = enum_verified._cell_variable((1, 0))
-        dummy_var = enum_verified._cell_variable((0, 0))
-        x = sympy.var("x")
-        F = x ** 8 * track_var ** 3 * dummy_var ** 3
-        assert (
-            enum_verified._interleave_fixed_lengths(F, (1, 0), 1, 1)
-            == 4 * x ** 9 * dummy_var ** 3 * cell_var ** 1
-        )
-        assert (
-            enum_verified._interleave_fixed_lengths(F, (1, 0), 3, 3)
-            == 20 * x ** 11 * dummy_var ** 3 * cell_var ** 3
-        )
-        assert (
-            enum_verified._interleave_fixed_lengths(F, (1, 0), 0, 0)
-            == x ** 8 * dummy_var ** 3
-        )
-        assert (
-            enum_verified._interleave_fixed_lengths(F, (1, 0), 0, 2)
-            == x ** 8 * dummy_var ** 3
-            + 4 * x ** 9 * dummy_var ** 3 * cell_var ** 1
-            + 10 * x ** 10 * dummy_var ** 3 * cell_var ** 2
-        )
-        assert (
-            enum_verified._interleave_fixed_lengths(F, (1, 0), 1, 3)
-            == 4 * x ** 9 * dummy_var ** 3 * cell_var ** 1
-            + 10 * x ** 10 * dummy_var ** 3 * cell_var ** 2
-            + 20 * x ** 11 * dummy_var ** 3 * cell_var ** 3
-        )
-
-    def test_genf_with_req(self):
+    def test_genf_with_req(self, strategy):
         t = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
@@ -553,14 +450,14 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
                 [GriddedPerm(Perm((0,)), ((1, 0),))],
             ],
         )
-        enum = MonotoneTreeVerificationStrategy(t)
         print(t)
-        assert enum.verified()
-        genf = enum.get_genf().expand()
+        assert strategy.verified(t)
+        genf = strategy.get_genf(t).expand()
         terms = [0, 0, 0, 3, 10, 25, 56, 119, 246, 501, 1012]
         assert taylor_expand(genf) == terms
 
-    def test_genf_with_big_finite_cell(self):
+    @pytest.mark.xfail(reason="combopal database not setup")
+    def test_genf_with_big_finite_cell(self, strategy):
         t = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
@@ -569,10 +466,9 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
                 GriddedPerm(Perm((3, 2, 1, 0)), ((1, 0),) * 4),
             ]
         )
-        enum = MonotoneTreeVerificationStrategy(t)
         print(t)
-        assert enum.verified()
-        genf = enum.get_genf().expand()
+        assert strategy.verified(t)
+        genf = strategy.get_genf(t).expand()
         x = sympy.var("x")
         assert (
             genf
@@ -585,7 +481,7 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
             + 20 * x ** 6
         )
 
-    def test_with_two_reqs(self):
+    def test_with_two_reqs(self, strategy):
         t = Tiling(
             obstructions=(
                 GriddedPerm(Perm((0,)), ((1, 1),)),
@@ -599,12 +495,11 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
                 (GriddedPerm(Perm((0,)), ((0, 1),)),),
             ),
         )
-        enum = MonotoneTreeVerificationStrategy(t)
         expected_enum = [0, 0, 2, 7, 19, 47, 111, 255, 575, 1279, 2815]
-        assert enum.verified()
-        assert taylor_expand(enum.get_genf()) == expected_enum
+        assert strategy.verified(t)
+        assert taylor_expand(strategy.get_genf(t)) == expected_enum
 
-    def test_corner(self):
+    def test_corner(self, strategy):
         t = Tiling(
             obstructions=(
                 GriddedPerm(Perm((0,)), ((1, 1),)),
@@ -614,10 +509,9 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
             ),
             requirements=((GriddedPerm(Perm((0,)), ((0, 0),)),),),
         )
-        enum = MonotoneTreeVerificationStrategy(t)
         expected_enum = [0, 1, 5, 17, 50, 138, 370, 979, 2575, 6755, 17700]
-        assert enum.verified()
-        assert taylor_expand(enum.get_genf()) == expected_enum
+        assert strategy.verified(t)
+        assert taylor_expand(strategy.get_genf(t)) == expected_enum
 
 
 class TestElementaryVerificationStrategy(CommonTest):
@@ -627,51 +521,11 @@ class TestElementaryVerificationStrategy(CommonTest):
 
     @pytest.fixture
     def formal_step(self):
-        return "tiling is locally factorable"
-
-    @pytest.fixture
-    def enum_verified(self):
-        t = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((2, 0),) * 3),
-                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
-            ]
-        )
-        return ElementaryVerificationStrategy(t)
-
-    @pytest.fixture
-    def enum_not_verified(self):
-        t = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
-                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (1, 0))),
-            ]
-        )
-        return ElementaryVerificationStrategy(t)
-
-    @pytest.fixture
-    def enum_onebyone(self):
-        t = Tiling.from_string("123")
-        return ElementaryVerificationStrategy(t)
-
-    @pytest.fixture
-    def enum_with_interleaving(self):
-        t = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
-            ]
-        )
-        return ElementaryVerificationStrategy(t)
+        return "tiling is elementary verified"
 
     @pytest.fixture
     def enum_with_req(self):
-        t = Tiling(
+        return Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
                 GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
@@ -683,31 +537,59 @@ class TestElementaryVerificationStrategy(CommonTest):
                 [GriddedPerm(Perm((0, 1)), ((0, 1), (1, 2)))],
             ],
         )
-        return ElementaryVerificationStrategy(t)
 
-    @pytest.mark.xfail
-    def test_pack(self, enum_verified):
-        pack = enum_verified.pack
+    @pytest.fixture
+    def enum_verified(self, enum_with_req):
+        t = Tiling(
+            obstructions=[
+                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((2, 0),) * 3),
+                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
+            ]
+        )
+        return [t, enum_with_req]
+
+    @pytest.fixture
+    def enum_onebyone(self):
+        return Tiling.from_string("123")
+
+    @pytest.fixture
+    def enum_with_interleaving(self):
+        return Tiling(
+            obstructions=[
+                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
+            ]
+        )
+
+    @pytest.fixture
+    def enum_not_verified(self, enum_onebyone, enum_with_interleaving):
+        t = Tiling(
+            obstructions=[
+                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
+                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (1, 0))),
+            ]
+        )
+        return [t, enum_onebyone, enum_with_interleaving]
+
+    def test_pack(self, strategy):
+        pack = strategy.pack()
         assert isinstance(pack, StrategyPack)
         assert pack.name == "LocallyFactorable"
 
-    def test_formal_step(self, enum_verified):
-        assert enum_verified.formal_step == "Tiling is elementary"
+    def test_get_specification(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            spec = strategy.get_specification(tiling)
+            assert isinstance(spec, CombinatorialSpecification)
 
-    @pytest.mark.xfail
-    def test_get_specification(self, enum_verified):
-        raise NotImplementedError
-
-    @pytest.mark.xfail
-    def test_get_genf(self, enum_verified):
-        raise NotImplementedError
-
-    def test_more_verified(
-        self, enum_onebyone, enum_with_interleaving, enum_with_req,
-    ):
-        assert not enum_onebyone.verified()
-        assert not enum_with_interleaving.verified()
-        assert enum_with_req.verified()
+    def test_get_genf(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            with pytest.raises(NotImplementedError):
+                strategy.get_genf(tiling)
 
 
 class TestDatabaseVerificationStrategy(CommonTest):
@@ -717,87 +599,40 @@ class TestDatabaseVerificationStrategy(CommonTest):
 
     @pytest.fixture
     def formal_step(self):
-        return "tiling is locally factorable"
+        return "tiling is in the database"
 
     @pytest.fixture
     def enum_verified(self):
-        t = Tiling.from_string("123_132_231")
-        return DatabaseVerificationStrategy(t)
+        return [Tiling.from_string("123_132_231")]
 
     @pytest.fixture
     def enum_not_verified(self):
-        t = Tiling.from_string("1324")
-        return DatabaseVerificationStrategy(t)
+        return [Tiling.from_string("1324")]
 
-    def test_formal_step(self, enum_verified):
-        assert enum_verified.formal_step == "Tiling is in the database"
-
-    def test_get_genf(self, enum_verified):
-        assert enum_verified.get_genf() == sympy.sympify(
+    def test_get_genf(self, strategy, enum_verified):
+        assert strategy.get_genf(enum_verified[0]) == sympy.sympify(
             "(x**2 - x + 1)/(x**2 - 2*x + 1)"
         )
-
-    def test_get_specification(self, enum_verified):
-        with pytest.raises(NotImplementedError):
-            enum_verified.get_specification()
-
-    def test_pack(self, enum_verified):
-        with pytest.raises(NotImplementedError):
-            enum_verified.pack
-
-    @pytest.mark.slow
-    def test_load_verified_tilings(self):
-        assert not DatabaseVerificationStrategy.all_verified_tilings
-        DatabaseVerificationStrategy.load_verified_tiling()
-        assert DatabaseVerificationStrategy.all_verified_tilings
-        sample = next(iter(DatabaseVerificationStrategy.all_verified_tilings))
-        Tiling.decompress(sample)
-
-    def test_verification_with_cache(self):
-        t = Tiling.from_string("123_132_231")
-        DatabaseVerificationStrategy.all_verified_tilings = frozenset()
-        assert DatabaseVerificationStrategy(t).verified()
-        DatabaseVerificationStrategy.all_verified_tilings = frozenset([1, 2, 3, 4])
-        assert not DatabaseVerificationStrategy(t).verified()
-        DatabaseVerificationStrategy.all_verified_tilings = frozenset([t.compress()])
-        assert DatabaseVerificationStrategy(t).verified()
 
 
 class TestOneByOneVerificationStrategy(CommonTest):
     @pytest.fixture
     def strategy(self):
-        return OneByOneVerificationStrategy()
+        return OneByOneVerificationStrategy([Perm((2, 1, 0))])
 
     @pytest.fixture
     def formal_step(self):
-        return "tiling is locally factorable"
+        return "tiling is a subclass of the original tiling"
 
     @pytest.fixture
     def enum_verified(self):
-        t = Tiling.from_string("1324_321")
-        return OneByOneVerificationStrategy(t, [Perm((2, 1, 0))])
+        return [Tiling.from_string("1324_321")]
 
     @pytest.fixture
     def enum_not_verified(self):
-        t = Tiling.from_string("321")
-        return OneByOneVerificationStrategy(t, [Perm((2, 1, 0))])
+        return [Tiling.from_string("321")]
 
-    @pytest.mark.xfail
-    def test_pack(self, enum_verified):
-        pack = enum_verified.pack
-        assert isinstance(pack, StrategyPack)
-        assert pack.name == "LocallyFactorable"
-
-    def test_formal_step(self, enum_verified):
-        assert (
-            enum_verified.formal_step
-            == "This tiling is a subclass of the original tiling."
-        )
-
-    @pytest.mark.xfail
-    def test_get_specification(self, enum_verified):
-        raise NotImplementedError
-
-    @pytest.mark.xfail
-    def test_get_genf(self, enum_verified):
-        raise NotImplementedError
+    def test_get_genf(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            with pytest.raises(NotImplementedError):
+                strategy.get_genf(tiling)

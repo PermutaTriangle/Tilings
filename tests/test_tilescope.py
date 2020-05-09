@@ -23,7 +23,7 @@ def test_132():
     assert isinstance(spec, CombinatorialSpecification)
 
 
-@pytest.mark.xfail(reason="Generating function finding not implemented")
+@pytest.mark.xfail(reason="factoring for generating functions not implemented")
 def test_132_genf():
     searcher = TileScope("132", point_placements)
     spec = searcher.auto_search(smallest=True)
