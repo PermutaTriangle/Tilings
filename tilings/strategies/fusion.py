@@ -1,5 +1,4 @@
-from itertools import chain
-from typing import Iterator, Optional, Tuple, Type
+from typing import Iterator, Optional, Tuple
 
 from sympy import Eq, Function
 

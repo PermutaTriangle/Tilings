@@ -126,24 +126,6 @@ def test_fusion(small_tiling, big_tiling):
 
 
 @pytest.fixture
-def small_tiling():
-    t = Tiling(
-        obstructions=[
-            GriddedPerm(Perm((1, 0)), ((0, 1), (1, 1))),
-            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
-            GriddedPerm(Perm((1, 0)), ((0, 1), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 0))),
-            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((1, 0)), ((0, 0), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
-        ]
-    )
-    return t
-
-
-@pytest.fixture
 def row_fusion(small_tiling):
     return FusionStrategy(row_idx=0)(small_tiling)
 
@@ -153,7 +135,7 @@ def col_fusion(small_tiling):
     return FusionStrategy(col_idx=0)(small_tiling)
 
 
-def test_formal_step(self, row_fusion, col_fusion):
+def test_formal_step_fusion(row_fusion, col_fusion):
     assert row_fusion.formal_step == "fuse rows 0 and 1"
     assert col_fusion.formal_step == "fuse columns 0 and 1"
 
@@ -209,7 +191,7 @@ def component_col_fusion(col_tiling):
     return ComponentFusionStrategy(col_idx=0)(col_tiling)
 
 
-def test_formal_step(component_col_fusion, component_row_fusion):
+def test_formal_step_component(component_col_fusion, component_row_fusion):
     assert component_col_fusion.formal_step == "component fuse columns 0 and 1"
     assert component_row_fusion.formal_step == "component fuse rows 0 and 1"
     assert len(component_col_fusion.children) == 1

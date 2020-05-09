@@ -18,15 +18,10 @@ from tilings.strategies import (
     AllRequirementPlacementStrategy,
     AllSymmetriesStrategy,
     BasicVerificationStrategy,
-    ComponentFusionStrategy,
     ComponentFusionStrategyGenerator,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
     EmptyCellInferralStrategy,
-    FactorStrategy,
-    FactorWithInterleavingStrategy,
-    FactorWithMonotoneInterleavingStrategy,
-    FusionStrategy,
     FusionStrategyGenerator,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
@@ -35,14 +30,20 @@ from tilings.strategies import (
     OneByOneVerificationStrategy,
     PatternPlacementStrategy,
     RequirementCorroborationStrategy,
-    RequirementInsertionStrategy,
-    RequirementPlacementStrategy,
     RootInsertionStrategy,
     RowAndColumnPlacementStrategy,
     RowColumnSeparationStrategy,
     SubobstructionInferralStrategy,
 )
+from tilings.strategies.factor import (
+    FactorStrategy,
+    FactorWithInterleavingStrategy,
+    FactorWithMonotoneInterleavingStrategy,
+)
+from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
+from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
+from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 
 
 def assert_same_strategy(s1, s2):

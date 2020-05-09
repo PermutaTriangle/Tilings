@@ -252,7 +252,7 @@ class AllSymmetriesStrategy(StrategyGenerator[Tiling]):
             if comb_class not in symmetries:
                 yield strategy(rotations, True)
             symmetries.add(comb_class.inverse())
-            t = comb_class.rotate90()
+            comb_class = comb_class.rotate90()
             if comb_class in symmetries:
                 break
 

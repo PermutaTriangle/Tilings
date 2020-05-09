@@ -1,12 +1,10 @@
-from itertools import chain
-from typing import Iterable, List, Optional
+from typing import Iterable, Optional
 
 from logzero import logger
 
-from comb_spec_searcher import Strategy, StrategyPack
+from comb_spec_searcher import StrategyPack
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
-from tilings import Tiling
 from tilings import strategies as strat
 
 

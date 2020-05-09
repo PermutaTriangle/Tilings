@@ -296,8 +296,9 @@ class AllFactorStrategy(StrategyGenerator[Tiling]):
             interleaving = "all"
         elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
             interleaving = "monotone"
-        return "AllFactorStrategy(interleaving={}, unions={}, ignore_parent={}, workable={})".format(
-            interleaving, self.ignore_parent, self.unions, self.workable
+        return (
+            f"AllFactorStrategy(interleaving={interleaving}, unions={self.unions},"
+            f" ignore_parent={self.ignore_parent}, workable={self.workable})"
         )
 
     def to_jsonable(self) -> dict:

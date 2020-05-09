@@ -7,9 +7,9 @@ from tilings import GriddedPerm, Tiling
 from tilings.strategies import (
     AllPlacementsStrategy,
     PatternPlacementStrategy,
-    RequirementPlacementStrategy,
     RowAndColumnPlacementStrategy,
 )
+from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 
 pytest_plugins = [
     "tests.fixtures.obstructions_requirements",

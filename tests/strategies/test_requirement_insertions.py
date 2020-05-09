@@ -3,12 +3,10 @@ from tilings import GriddedPerm, Tiling
 from tilings.strategies import (
     AllCellInsertionStrategy,
     AllFactorInsertionStrategy,
-    AllPlacementsStrategy,
     AllRequirementExtensionStrategy,
     AllRequirementInsertionStrategy,
     RequirementCorroborationStrategy,
     RootInsertionStrategy,
-    RowAndColumnPlacementStrategy,
 )
 
 pytest_plugins = [
