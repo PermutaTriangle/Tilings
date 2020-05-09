@@ -1,13 +1,9 @@
 from itertools import chain
-from typing import Iterable
+from typing import Iterable, List, Optional
 
 from sympy import Expr, var
 
-from comb_spec_searcher import (
-    AtomStrategy,
-    StrategyPack,
-    VerificationStrategy,
-)
+from comb_spec_searcher import AtomStrategy, StrategyPack, VerificationStrategy
 from permuta import Perm
 from permuta.permutils.symmetry import all_symmetry_sets
 from tilings import Tiling
@@ -16,16 +12,12 @@ from tilings.algorithms.enumeration import (
     LocalEnumeration,
     MonotoneTreeEnumeration,
 )
+from tilings.exception import InvalidOperationError
 from tilings.strategies import (
-    AllFactorStrategy,
     AllFactorInsertionStrategy,
+    AllFactorStrategy,
     RequirementCorroborationStrategy,
 )
-from tilings.exception import InvalidOperationError
-
-# TileScopeVerificationStrategyType = TypeVar(
-#     "TileScopeVerificationStrategyType", bound="TileScopeVerificationStrategy"
-# )
 
 x = var("x")
 
@@ -45,21 +37,25 @@ BasicVerificationStrategy = AtomStrategy
 
 class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
     def __init__(
-        self, basis: Iterable[Perm] = None, symmetry: bool = False,
+        self,
+        basis: Optional[Iterable[Perm]] = None,
+        symmetry: bool = False,
+        ignore_parent: bool = True,
     ):
-        if basis is not None:
-            assert all(
-                isinstance(p, Perm) for p in basis
-            ), "Element of the basis must be Perm"
-            if symmetry:
-                self.symmetries = set(frozenset(b) for b in all_symmetry_sets(basis))
-            else:
-                self.symmetries = set([frozenset(basis)])
+        self._basis = tuple(basis) if basis is not None else tuple()
+        self._symmetry = symmetry
+        assert all(
+            isinstance(p, Perm) for p in self._basis
+        ), "Element of the basis must be Perm"
+        if symmetry:
+            self.symmetries = set(frozenset(b) for b in all_symmetry_sets(self._basis))
         else:
-            self.symmetries = set()
-        super().__init__()
+            self.symmetries = set([frozenset(self._basis)])
+        super().__init__(ignore_parent=ignore_parent)
 
     def add_basis(self, basis: Iterable[Perm], symmetry: bool = False):
+        assert not self._basis, "Already have a basis"
+        self._basis = tuple(basis)
         if symmetry:
             self.symmetries.update(frozenset(b) for b in all_symmetry_sets(basis))
         else:
@@ -75,7 +71,7 @@ class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
             raise InvalidOperationError("tiling not one by one verified")
         return LocalEnumeration(tiling).get_genf()
 
-    def verified(self, tiling: Tiling):
+    def verified(self, tiling: Tiling) -> bool:
         return (
             tiling.dimensions == (1, 1)
             and frozenset(ob.patt for ob in tiling.obstructions) not in self.symmetries
@@ -86,10 +82,9 @@ class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
 
     def __repr__(self) -> str:
         if self.symmetries:
-            basis = list(self.symmetries)[0]
-            return self.__class__.__name__ + "(basis={}, symmetry={})".format(
-                basis, True
-            )
+            return self.__class__.__name__ + (
+                "(basis={}, symmetry={}, " "ignore_parent={})"
+            ).format(list(self._basis), True, self.ignore_parent)
         else:
             return self.__class__.__name__ + "()"
 
@@ -97,15 +92,18 @@ class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
         return "one by one verification"
 
     def to_jsonable(self) -> dict:
-        d: dict = super().to_jsonable()
-        d["basis"] = list(list(self.symmetries)[0]) if self.symmetries else None
-        d["symmetry"] = bool(self.symmetries)
+        d = super().to_jsonable()
+        d["basis"] = self._basis
+        d["symmetry"] = self._symmetry
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "OneByOneVerificationStrategy":
-        basis = [Perm(p) for p in d["basis"]] if d["basis"] is not None else None
-        return cls(basis=basis, symmetry=d["symmetry"])
+        if d["basis"] is not None:
+            basis: Optional[List[Perm]] = [Perm(p) for p in d.pop("basis")]
+        else:
+            basis = d.pop("basis")
+        return cls(basis=basis, **d)
 
 
 class DatabaseVerificationStrategy(VerificationStrategy[Tiling]):
@@ -136,7 +134,7 @@ class DatabaseVerificationStrategy(VerificationStrategy[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "DatabaseVerificationStrategy":
-        return cls()
+        return cls(**d)
 
 
 class LocallyFactorableVerificationStrategy(VerificationStrategy[Tiling]):
@@ -191,7 +189,7 @@ class LocallyFactorableVerificationStrategy(VerificationStrategy[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "LocallyFactorableVerificationStrategy":
-        return cls()
+        return cls(**d)
 
     def __str__(self) -> str:
         return "locally factorable verification"
@@ -219,7 +217,7 @@ class ElementaryVerificationStrategy(LocallyFactorableVerificationStrategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> "ElementaryVerificationStrategy":
-        return cls()
+        return cls(**d)
 
     def __str__(self) -> str:
         return "elementary verification"
@@ -250,7 +248,7 @@ class LocalVerificationStrategy(VerificationStrategy[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "LocalVerificationStrategy":
-        return cls()
+        return cls(**d)
 
     def __str__(self) -> str:
         return "local verification"
@@ -275,7 +273,7 @@ class MonotoneTreeVerificationStrategy(VerificationStrategy[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "MonotoneTreeVerificationStrategy":
-        return cls()
+        return cls(**d)
 
     def get_genf(self, tiling: Tiling) -> Expr:
         return MonotoneTreeEnumeration(tiling).get_genf()

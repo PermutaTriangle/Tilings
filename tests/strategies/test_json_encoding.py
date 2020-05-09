@@ -1,11 +1,11 @@
-from itertools import product
 import json
+from itertools import product
 
 import pytest
 
+from comb_spec_searcher import Strategy
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
-from comb_spec_searcher import Strategy
 from tilings import GriddedPerm
 from tilings.strategies import (
     AllCellInsertionStrategy,
@@ -254,18 +254,27 @@ strategy_objects = (
     + [
         AllSymmetriesStrategy(),
         BasicVerificationStrategy(),
-        DatabaseVerificationStrategy(),
-        ElementaryVerificationStrategy(),
         EmptyCellInferralStrategy(),
     ]
     + partition_ignoreparent_workable(FactorStrategy)
     + partition_ignoreparent_workable(FactorWithInterleavingStrategy)
     + partition_ignoreparent_workable(FactorWithMonotoneInterleavingStrategy)
+    + ignoreparent(DatabaseVerificationStrategy)
     + ignoreparent(LocallyFactorableVerificationStrategy)
-    + [LocalVerificationStrategy()]
-    + [MonotoneTreeVerificationStrategy()]
+    + ignoreparent(ElementaryVerificationStrategy)
+    + ignoreparent(LocalVerificationStrategy)
+    + ignoreparent(MonotoneTreeVerificationStrategy)
     + [ObstructionTransitivityStrategy()]
-    + [OneByOneVerificationStrategy()]
+    + [
+        OneByOneVerificationStrategy(
+            basis=[Perm((0, 1, 2)), Perm((2, 1, 0, 3))], ignore_parent=True
+        ),
+        OneByOneVerificationStrategy(
+            basis=[Perm((2, 1, 0, 3))], ignore_parent=False, symmetry=True
+        ),
+        OneByOneVerificationStrategy(basis=[], ignore_parent=False, symmetry=False),
+        OneByOneVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
+    ]
     + pointonly_partial_ignoreparent_dirs(PatternPlacementStrategy)
     + ignoreparent(RequirementCorroborationStrategy)
     + gps_ignoreparent(RequirementInsertionStrategy)
