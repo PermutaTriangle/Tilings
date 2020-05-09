@@ -3,12 +3,14 @@ import abc
 import pytest
 import sympy
 
-from comb_spec_searcher import StrategyPack
+from comb_spec_searcher import CombinatorialSpecification, Rule, StrategyPack
+from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
 from comb_spec_searcher.strategies.rule import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.strategies import (
+    BasicVerificationStrategy,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
     LocalVerificationStrategy,
@@ -16,10 +18,19 @@ from tilings.strategies import (
     MonotoneTreeVerificationStrategy,
     OneByOneVerificationStrategy,
 )
-from tilings.exception import InvalidOperationError
 
 
 class CommonTest(abc.ABC):
+    @abc.abstractmethod
+    @pytest.fixture
+    def strategy(self):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    @pytest.fixture
+    def formal_step(self):
+        pass
+
     @abc.abstractmethod
     @pytest.fixture
     def enum_verified(self):
@@ -30,92 +41,98 @@ class CommonTest(abc.ABC):
     def enum_not_verified(self):
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def test_pack(self, enum_verified):
-        raise NotImplementedError
+    def test_verified(self, strategy, enum_verified, enum_not_verified):
+        for tiling in enum_verified:
+            print(tiling)
+            assert strategy.verified(tiling)
+        for tiling in enum_not_verified:
+            print(tiling)
+            assert not strategy.verified(tiling)
 
-    def test_verified(self, enum_verified, enum_not_verified):
-        assert enum_verified.verified()
-        assert not enum_not_verified.verified()
+    def test_formal_step(self, strategy, formal_step, enum_verified):
+        for tiling in enum_verified:
+            assert strategy(tiling).formal_step == formal_step
 
-    @abc.abstractmethod
-    def test_formal_step(self, enum_verified):
-        raise NotImplementedError
+    def test_verification_rule(self, strategy, enum_verified, enum_not_verified):
+        for tiling in enum_not_verified:
+            with pytest.raises(StrategyDoesNotApply):
+                strategy(tiling).children
+        for tiling in enum_verified:
+            rule = strategy(tiling)
+            assert rule.children == tuple()
+            assert isinstance(rule, Rule)
+            assert rule.formal_step == strategy.formal_step()
 
-    def test_verification_rule(self, enum_verified, enum_not_verified):
-        assert isinstance(enum_verified.verification_rule(), VerificationRule)
-        assert (
-            enum_verified.verification_rule().formal_step == enum_verified.formal_step
-        )
-        assert enum_not_verified.verification_rule() is None
-
-    @abc.abstractmethod
-    def test_get_tree(self, enum_verified):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def test_get_genf(self, enum_verified):
-        raise NotImplementedError
-
-    def test_get_genf_not_verified(self, enum_not_verified):
+    def test_pack(self, strategy):
         with pytest.raises(InvalidOperationError):
-            enum_not_verified.get_genf()
+            strategy.pack()
 
-    def test_get_tree_not_verified(self, enum_not_verified):
-        with pytest.raises(InvalidOperationError):
-            enum_not_verified.get_tree()
+    def test_get_specification(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            with pytest.raises(InvalidOperationError):
+                strategy.get_specification(tiling)
+
+    @abc.abstractmethod
+    def test_get_genf(self, strategy, enum_verified):
+        raise NotImplementedError
+
+    def test_get_genf_not_verified(self, strategy, enum_not_verified):
+        for tiling in enum_not_verified:
+            with pytest.raises(InvalidOperationError):
+                strategy.get_genf(tiling)
+
+    def test_get_spec_not_verified(self, strategy, enum_not_verified):
+        for tiling in enum_not_verified:
+            with pytest.raises(InvalidOperationError):
+                strategy.get_specification(tiling)
 
 
-class TestBasicEnumeration(CommonTest):
+class TestBasicVerificationStrategy(CommonTest):
+    @pytest.fixture
+    def strategy(self):
+        return BasicVerificationStrategy()
+
+    @pytest.fixture
+    def formal_step(self):
+        return "is atom"
+
     @pytest.fixture
     def empty_enum(self):
-        t = Tiling.from_string("1")
-        return BasicEnumeration(t)
-
-    @pytest.fixture
-    def enum_not_verified(self):
-        t = Tiling.from_string("123")
-        return BasicEnumeration(t)
-
-    enum_verified = empty_enum
+        return Tiling.from_string("1")
 
     @pytest.fixture
     def point_enum(self):
         t = Tiling.from_string("12_21")
-        t = t.insert_cell((0, 0))
-        return BasicEnumeration(t)
+        return t.insert_cell((0, 0))
 
     @pytest.fixture
-    def point_or_empty_enum(self):
-        t = Tiling.from_string("12_21")
-        return BasicEnumeration(t)
+    def enum_verified(self, empty_enum, point_enum):
+        return [empty_enum, point_enum]
 
-    def test_point_is_verified(self, point_enum):
-        assert point_enum.verified()
+    @pytest.fixture
+    def enum_not_verified(self):
+        return [Tiling.from_string("123")]
 
-    def test_point_or_empty_is_verified(self, point_or_empty_enum):
-        assert point_or_empty_enum.verified()
-
-    def test_formal_step(self, enum_verified):
-        assert enum_verified.formal_step == "Base cases"
-
-    def test_pack(self, enum_verified):
-        with pytest.raises(InvalidOperationError):
-            enum_verified.pack
-
-    def test_get_tree(self, enum_verified):
-        with pytest.raises(InvalidOperationError):
-            enum_verified.get_tree()
-
-    def test_get_genf(self, empty_enum, point_enum, point_or_empty_enum):
-        assert empty_enum.get_genf() == sympy.sympify("1")
-        assert point_enum.get_genf() == sympy.sympify("x")
-        assert point_or_empty_enum.get_genf() == sympy.sympify("x+1")
+    def test_get_genf(self, strategy, enum_verified):
+        assert strategy.get_genf(enum_verified[0]) == sympy.sympify("1")
+        assert strategy.get_genf(enum_verified[1]) == sympy.sympify("x")
 
 
 class TestLocallyFactorableVerificationStrategy(CommonTest):
     @pytest.fixture
-    def enum_not_verified(self):
+    def strategy(self):
+        return LocallyFactorableVerificationStrategy()
+
+    @pytest.fixture
+    def formal_step(self):
+        return "tiling is locally factorable"
+
+    @pytest.fixture
+    def onebyone_enum(self):
+        return Tiling.from_string("123")
+
+    @pytest.fixture
+    def enum_not_verified(self, onebyone_enum):
         t = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
@@ -123,7 +140,7 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
                 GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
             ]
         )
-        return LocallyFactorableVerificationStrategy(t)
+        return [t, onebyone_enum]
 
     @pytest.fixture
     def enum_verified(self):
@@ -135,43 +152,28 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
                 GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
             ]
         )
-        return LocallyFactorableVerificationStrategy(t)
+        return [t]
 
-    @pytest.fixture
-    def enum_with_tautology(self):
-        t = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
-                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
-            ]
-        )
-        return LocallyFactorableVerificationStrategy(t)
-
-    @pytest.fixture
-    def onebyone_enum(self):
-        return LocallyFactorableVerificationStrategy(Tiling.from_string("123"))
-
-    @pytest.mark.xfail
-    def test_pack(self, enum_verified):
-        pack = enum_verified.pack
+    def test_pack(self, strategy):
+        pack = strategy.pack()
         assert isinstance(pack, StrategyPack)
         assert pack.name == "LocallyFactorable"
 
-    def test_formal_step(self, enum_verified):
-        assert enum_verified.formal_step == "Tiling is locally factorable"
+    def test_get_specification(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            spec = strategy.get_specification(tiling)
+            assert isinstance(spec, CombinatorialSpecification)
 
-    @pytest.mark.xfail
-    def test_get_tree(self, enum_verified):
-        raise NotImplementedError
+    def test_get_genf(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            with pytest.raises(NotImplementedError):
+                strategy.get_genf(tiling)
 
-    @pytest.mark.xfail
-    def test_get_genf(self, enum_verified):
-        raise NotImplementedError
-
-    def test_locally_factorable_requirements(self, enum_verified, enum_not_verified):
-        assert enum_not_verified._locally_factorable_requirements()
-        assert enum_verified._locally_factorable_requirements()
+    def test_locally_factorable_requirements(
+        self, strategy, enum_verified, enum_not_verified
+    ):
+        assert strategy._locally_factorable_requirements(enum_not_verified[0])
+        assert strategy._locally_factorable_requirements(enum_verified[0])
         t1 = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
@@ -182,8 +184,7 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
                 [GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0)))],
             ],
         )
-        enum_with_not_loc_fact_reqs = LocallyFactorableVerificationStrategy(t1)
-        assert not (enum_with_not_loc_fact_reqs._locally_factorable_requirements())
+        assert not (strategy._locally_factorable_requirements(t1))
         t2 = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
@@ -194,23 +195,41 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
                 [GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0)))],
             ],
         )
-        enum_with_loc_fact_reqs = LocallyFactorableVerificationStrategy(t2)
-        assert enum_with_loc_fact_reqs._locally_factorable_requirements()
+        assert strategy._locally_factorable_requirements(t2)
 
-    def test_locally_factorable_obstructions(self, enum_not_verified, enum_verified):
-        assert not enum_not_verified._locally_factorable_obstructions()
-        assert enum_verified._locally_factorable_obstructions()
+    def test_locally_factorable_obstructions(
+        self, strategy, enum_not_verified, enum_verified
+    ):
+        assert not strategy._locally_factorable_obstructions(enum_not_verified[0])
+        assert strategy._locally_factorable_obstructions(enum_verified[0])
+
+
+    @pytest.fixture
+    def enum_with_tautology(self):
+        return Tiling(
+            obstructions=[
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
+            ]
+        )
 
     @pytest.mark.xfail(reason="Cannot think of a tautology")
-    def test_possible_tautology(self, enum_verified, enum_with_tautology):
-        assert not enum_verified._possible_tautology()
-        assert enum_with_tautology._possible_tautology()
-
-    def test_1x1_verified(self, onebyone_enum):
-        assert not onebyone_enum.verified()
+    def test_possible_tautology(self, strategy, enum_verified, enum_with_tautology):
+        for tiling in enum_verified:
+            assert not strategy._possible_tautology(tiling)
+        assert strategy._possible_tautology(enum_with_tautology)
 
 
 class TestLocalVerificationStrategy(CommonTest):
+    @pytest.fixture
+    def strategy(self):
+        return LocalVerificationStrategy()
+
+    @pytest.fixture
+    def formal_step(self):
+        return "tiling is locally factorable"
+
     @pytest.fixture
     def enum_verified(self):
         t = Tiling(
@@ -280,9 +299,9 @@ class TestLocalVerificationStrategy(CommonTest):
     def test_formal_step(self, enum_verified):
         assert enum_verified.formal_step == "Tiling is locally enumerable"
 
-    def test_get_tree(self, enum_verified):
+    def test_get_specification(self, enum_verified):
         with pytest.raises(NotImplementedError):
-            enum_verified.get_tree()
+            enum_verified.get_specification()
 
     def test_get_genf(self, enum_verified):
         with pytest.raises(NotImplementedError):
@@ -300,6 +319,14 @@ class TestLocalVerificationStrategy(CommonTest):
 
 
 class TestMonotoneTreeVerificationStrategy(CommonTest):
+    @pytest.fixture
+    def strategy(self):
+        return MonotoneTreeVerificationStrategy()
+
+    @pytest.fixture
+    def formal_step(self):
+        return "tiling is locally factorable"
+
     @pytest.fixture
     def enum_verified(self):
         t = Tiling(
@@ -414,7 +441,7 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
         assert sympy.simplify(enum_no_start.get_genf() - expected_gf) == 0
 
     @pytest.mark.xfail(reason="pack does not exist")
-    def test_get_tree(self, enum_verified):
+    def test_get_specification(self, enum_verified):
         raise NotImplementedError
 
     @pytest.mark.xfail
@@ -595,6 +622,14 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
 
 class TestElementaryVerificationStrategy(CommonTest):
     @pytest.fixture
+    def strategy(self):
+        return ElementaryVerificationStrategy()
+
+    @pytest.fixture
+    def formal_step(self):
+        return "tiling is locally factorable"
+
+    @pytest.fixture
     def enum_verified(self):
         t = Tiling(
             obstructions=[
@@ -660,7 +695,7 @@ class TestElementaryVerificationStrategy(CommonTest):
         assert enum_verified.formal_step == "Tiling is elementary"
 
     @pytest.mark.xfail
-    def test_get_tree(self, enum_verified):
+    def test_get_specification(self, enum_verified):
         raise NotImplementedError
 
     @pytest.mark.xfail
@@ -676,6 +711,14 @@ class TestElementaryVerificationStrategy(CommonTest):
 
 
 class TestDatabaseVerificationStrategy(CommonTest):
+    @pytest.fixture
+    def strategy(self):
+        return DatabaseVerificationStrategy()
+
+    @pytest.fixture
+    def formal_step(self):
+        return "tiling is locally factorable"
+
     @pytest.fixture
     def enum_verified(self):
         t = Tiling.from_string("123_132_231")
@@ -694,9 +737,9 @@ class TestDatabaseVerificationStrategy(CommonTest):
             "(x**2 - x + 1)/(x**2 - 2*x + 1)"
         )
 
-    def test_get_tree(self, enum_verified):
+    def test_get_specification(self, enum_verified):
         with pytest.raises(NotImplementedError):
-            enum_verified.get_tree()
+            enum_verified.get_specification()
 
     def test_pack(self, enum_verified):
         with pytest.raises(NotImplementedError):
@@ -722,6 +765,14 @@ class TestDatabaseVerificationStrategy(CommonTest):
 
 class TestOneByOneVerificationStrategy(CommonTest):
     @pytest.fixture
+    def strategy(self):
+        return OneByOneVerificationStrategy()
+
+    @pytest.fixture
+    def formal_step(self):
+        return "tiling is locally factorable"
+
+    @pytest.fixture
     def enum_verified(self):
         t = Tiling.from_string("1324_321")
         return OneByOneVerificationStrategy(t, [Perm((2, 1, 0))])
@@ -744,7 +795,7 @@ class TestOneByOneVerificationStrategy(CommonTest):
         )
 
     @pytest.mark.xfail
-    def test_get_tree(self, enum_verified):
+    def test_get_specification(self, enum_verified):
         raise NotImplementedError
 
     @pytest.mark.xfail

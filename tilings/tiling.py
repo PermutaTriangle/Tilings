@@ -23,6 +23,7 @@ from typing import (
 import sympy
 
 from comb_spec_searcher import CombinatorialClass
+from comb_spec_searcher.exception import InvalidOperationError
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_WEST
 
@@ -46,7 +47,6 @@ from .algorithms.enumeration import (
     LocalEnumeration,
     MonotoneTreeEnumeration,
 )
-from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
 

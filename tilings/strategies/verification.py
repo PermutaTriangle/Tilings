@@ -1,18 +1,18 @@
 from itertools import chain
-from typing import Iterable, List, Optional
+from typing import Iterable, Iterator, List, Optional
 
 from sympy import Expr, var
 
 from comb_spec_searcher import AtomStrategy, StrategyPack, VerificationStrategy
+from comb_spec_searcher.exception import InvalidOperationError
 from permuta import Perm
 from permuta.permutils.symmetry import all_symmetry_sets
-from tilings import Tiling
+from tilings import GriddedPerm, Tiling
 from tilings.algorithms.enumeration import (
     DatabaseEnumeration,
     LocalEnumeration,
     MonotoneTreeEnumeration,
 )
-from tilings.exception import InvalidOperationError
 from tilings.strategies import (
     AllFactorInsertionStrategy,
     AllFactorStrategy,
@@ -54,7 +54,6 @@ class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
         super().__init__(ignore_parent=ignore_parent)
 
     def add_basis(self, basis: Iterable[Perm], symmetry: bool = False):
-        assert not self._basis, "Already have a basis"
         self._basis = tuple(basis)
         if symmetry:
             self.symmetries.update(frozenset(b) for b in all_symmetry_sets(basis))
@@ -66,11 +65,6 @@ class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
             "Cannot get a specification for one by one verification"
         )
 
-    def get_genf(self, tiling: Tiling):
-        if not self.verified(tiling):
-            raise InvalidOperationError("tiling not one by one verified")
-        return LocalEnumeration(tiling).get_genf()
-
     def verified(self, tiling: Tiling) -> bool:
         return (
             tiling.dimensions == (1, 1)
@@ -79,6 +73,34 @@ class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
 
     def formal_step(self) -> str:
         return "tiling is a subclass of the original tiling"
+
+    def get_genf(self, tiling: Tiling):
+        if not self.verified(tiling):
+            raise InvalidOperationError("tiling not one by one verified")
+        return LocalEnumeration(tiling).get_genf()
+
+    def count_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> int:
+        raise NotImplementedError(
+            "Not implemented method to count objects for monotone tree "
+            "verified tilings"
+        )
+
+    def generate_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError(
+            "Not implemented method to generate objects for monotone tree "
+            "verified tilings"
+        )
+
+    def random_sample_object_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        raise NotImplementedError(
+            "Not implemented random sample for monotone tree verified tilings"
+        )
 
     def __repr__(self) -> str:
         if self.symmetries:
@@ -120,14 +142,37 @@ class DatabaseVerificationStrategy(VerificationStrategy[Tiling]):
             "Cannot get a specification for a tiling in the database"
         )
 
-    def get_genf(self, tiling: Tiling):
-        return DatabaseEnumeration(tiling).get_genf()
-
     def verified(self, tiling: Tiling):
         return DatabaseEnumeration(tiling).verified()
 
     def formal_step(self) -> str:
         return "tiling is in the database"
+
+    def get_genf(self, tiling: Tiling):
+        return DatabaseEnumeration(tiling).get_genf()
+
+    def count_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> int:
+        raise NotImplementedError(
+            "Not implemented method to count objects for monotone tree "
+            "verified tilings"
+        )
+
+    def generate_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError(
+            "Not implemented method to generate objects for monotone tree "
+            "verified tilings"
+        )
+
+    def random_sample_object_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        raise NotImplementedError(
+            "Not implemented random sample for monotone tree verified tilings"
+        )
 
     def __str__(self) -> str:
         return "database verification"
@@ -237,9 +282,6 @@ class LocalVerificationStrategy(VerificationStrategy[Tiling]):
             "Cannot get a specification for a tiling in the database"
         )
 
-    def get_genf(self, tiling: Tiling):
-        return LocalEnumeration(tiling).get_genf()
-
     def verified(self, tiling: Tiling):
         return tiling.dimensions != (1, 1) and LocalEnumeration(tiling).verified()
 
@@ -249,6 +291,32 @@ class LocalVerificationStrategy(VerificationStrategy[Tiling]):
     @classmethod
     def from_dict(cls, d: dict) -> "LocalVerificationStrategy":
         return cls(**d)
+
+    def get_genf(self, tiling: Tiling):
+        return LocalEnumeration(tiling).get_genf()
+
+    def count_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> int:
+        raise NotImplementedError(
+            "Not implemented method to count objects for monotone tree "
+            "verified tilings"
+        )
+
+    def generate_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError(
+            "Not implemented method to generate objects for monotone tree "
+            "verified tilings"
+        )
+
+    def random_sample_object_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        raise NotImplementedError(
+            "Not implemented random sample for monotone tree verified tilings"
+        )
 
     def __str__(self) -> str:
         return "local verification"
@@ -277,6 +345,29 @@ class MonotoneTreeVerificationStrategy(VerificationStrategy[Tiling]):
 
     def get_genf(self, tiling: Tiling) -> Expr:
         return MonotoneTreeEnumeration(tiling).get_genf()
+
+    def count_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> int:
+        raise NotImplementedError(
+            "Not implemented method to count objects for monotone tree "
+            "verified tilings"
+        )
+
+    def generate_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError(
+            "Not implemented method to generate objects for monotone tree "
+            "verified tilings"
+        )
+
+    def random_sample_object_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        raise NotImplementedError(
+            "Not implemented random sample for monotone tree verified tilings"
+        )
 
     def __str__(self) -> str:
         return "monotone tree verification"
