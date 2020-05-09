@@ -1,9 +1,11 @@
-from itertools import product
 import json
+from itertools import product
 
 import pytest
 
+from permuta import Perm
 from permuta.misc import DIRS
+from tilings import strategies as strat
 from tilings.strategy_pack import TileScopePack
 
 
@@ -92,3 +94,14 @@ packs.extend(
 def test_json_encoding(strategy_pack):
     strategy_pack_new = json_encode_decode(strategy_pack)
     assert_same_pack(strategy_pack, strategy_pack_new)
+
+
+def test_fix_one_by_one():
+    pack = TileScopePack.point_placements()
+    assert not pack.ver_strats[0].basis
+    fixed_pack = pack.fix_one_by_one([Perm((0, 1, 2, 3))])
+    assert isinstance(pack.ver_strats[0], strat.OneByOneVerificationStrategy)
+    assert not pack.ver_strats[0].basis
+    assert isinstance(fixed_pack, TileScopePack)
+    assert isinstance(fixed_pack.ver_strats[0], strat.OneByOneVerificationStrategy)
+    assert fixed_pack.ver_strats[0].basis == (Perm((0, 1, 2, 3)),)

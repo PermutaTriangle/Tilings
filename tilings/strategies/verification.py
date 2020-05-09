@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Iterable, Iterator, List, Optional
+from typing import Iterable, Iterator, List, Optional, Tuple
 
 from sympy import Expr, var
 
@@ -53,12 +53,19 @@ class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
             self.symmetries = set([frozenset(self._basis)])
         super().__init__(ignore_parent=ignore_parent)
 
-    def add_basis(self, basis: Iterable[Perm], symmetry: bool = False):
-        self._basis = tuple(basis)
-        if symmetry:
-            self.symmetries.update(frozenset(b) for b in all_symmetry_sets(basis))
-        else:
-            self.symmetries.add(frozenset(basis))
+    def change_basis(
+        self, basis: Iterable[Perm], symmetry: bool = False
+    ) -> "OneByOneVerificationStrategy":
+        """
+        Return a new version of the verfication strategy with the given basis instead of
+        the current one.
+        """
+        basis = tuple(basis)
+        return self.__class__(basis, self._symmetry, self.ignore_parent)
+
+    @property
+    def basis(self) -> Tuple[Perm, ...]:
+        return self._basis
 
     def pack(self) -> StrategyPack:
         raise InvalidOperationError(

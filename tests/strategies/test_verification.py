@@ -5,7 +5,6 @@ import sympy
 
 from comb_spec_searcher import CombinatorialSpecification, Rule, StrategyPack
 from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
-from comb_spec_searcher.strategies.rule import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
@@ -13,8 +12,8 @@ from tilings.strategies import (
     BasicVerificationStrategy,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
-    LocalVerificationStrategy,
     LocallyFactorableVerificationStrategy,
+    LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
     OneByOneVerificationStrategy,
 )
@@ -631,6 +630,11 @@ class TestOneByOneVerificationStrategy(CommonTest):
     @pytest.fixture
     def enum_not_verified(self):
         return [Tiling.from_string("321")]
+
+    def test_change_basis(self, strategy):
+        new_s = strategy.change_basis([Perm((0, 1, 2))])
+        assert strategy.basis == (Perm((2, 1, 0)),)
+        assert new_s.basis == (Perm((0, 1, 2)),)
 
     def test_get_genf(self, strategy, enum_verified):
         for tiling in enum_verified:
