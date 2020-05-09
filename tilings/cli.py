@@ -50,7 +50,7 @@ def build_pack(args: argparse.Namespace) -> TileScopePack:
     if args.database:
         pack = pack.make_database()
     if args.symmetries:
-        pack = pack.add_symmetry()
+        pack = pack.add_all_symmetry()
     if args.elementary:
         pack = pack.make_elementary()
     return pack
