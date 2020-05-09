@@ -83,13 +83,16 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling]):
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
         d: dict = super().to_jsonable()
+        d.pop("inferrable")
+        d.pop("possibly_empty")
+        d.pop("workable")
         d["gps"] = [gp.to_jsonable() for gp in self.gps]
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "RequirementInsertionStrategy":
-        gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
-        return cls(gps=gps, ignore_parent=d["ignore_parent"])
+        gps = [GriddedPerm.from_dict(gp) for gp in d.pop("gps")]
+        return cls(gps=gps, **d)
 
 
 class RequirementInsertionStrategyGenerator(StrategyGenerator[Tiling]):
@@ -126,7 +129,7 @@ class RequirementInsertionStrategyGenerator(StrategyGenerator[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "RequirementInsertionStrategyGenerator":
-        return cls(ignore_parent=d["ignore_parent"])
+        return cls(**d)
 
     def __repr__(self) -> str:
         return "{}(ignore_parent={})".format(
@@ -171,11 +174,8 @@ class RequirementInsertionWithRestrictionStrategyGenerator(
             extra_basis = None
         else:
             extra_basis = [Perm(p) for p in d["extra_basis"]]
-        return cls(
-            maxreqlen=d["maxreqlen"],
-            extra_basis=extra_basis,
-            ignore_parent=d["ignore_parent"],
-        )
+        d.pop("extra_basis")
+        return cls(extra_basis=extra_basis, **d)
 
     def __repr__(self) -> str:
         return "{}(maxreqlen={}, extra_basis={}, " "ignore_parent={})".format(
@@ -289,12 +289,8 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
             extra_basis = None
         else:
             extra_basis = [Perm(p) for p in d["extra_basis"]]
-        return cls(
-            maxreqlen=d["maxreqlen"],
-            extra_basis=extra_basis,
-            ignore_parent=d["ignore_parent"],
-            max_num_req=d.get("max_num_req", None),
-        )
+        d.pop("extra_basis")
+        return cls(extra_basis=extra_basis, **d)
 
 
 class AllRequirementExtensionStrategy(

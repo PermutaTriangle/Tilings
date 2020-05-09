@@ -1,12 +1,13 @@
 from itertools import chain
-from sympy import Eq, Function
 from typing import Iterator, Optional, Tuple, Type
+
+from sympy import Eq, Function
 
 from comb_spec_searcher import (
     CombinatorialObject,
     Constructor,
-    StrategyGenerator,
     Strategy,
+    StrategyGenerator,
 )
 from comb_spec_searcher.strategies.constructor import (
     RelianceProfile,
@@ -115,12 +116,17 @@ class FusionStrategy(Strategy[Tiling]):
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
+        d.pop("ignore_parent")
+        d.pop("inferrable")
+        d.pop("possibly_empty")
+        d.pop("workable")
         d["row_idx"] = self.row_idx
-        d["col_dix"] = self.col_idx
+        d["col_idx"] = self.col_idx
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "FusionStrategy":
-        return cls(row_idx=d.get("row_idx"), col_idx="col_idx")
+        return cls(**d)
 
 
 class ComponentFusionConstructor(FusionConstructor):
@@ -164,6 +170,7 @@ class FusionStrategyGenerator(StrategyGenerator[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "FusionStrategyGenerator":
+        assert not d, "FusionStrategyGenerator takes not arguments"
         return cls()
 
 
@@ -195,4 +202,5 @@ class ComponentFusionStrategyGenerator(StrategyGenerator[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "ComponentFusionStrategyGenerator":
+        assert not d, "ComponentFusionStrategyGenerator takes not arguments"
         return cls()

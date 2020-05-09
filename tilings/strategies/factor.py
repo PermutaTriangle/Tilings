@@ -106,6 +106,8 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
         d: dict = super().to_jsonable()
+        d.pop("inferrable")
+        d.pop("possibly_empty")
         d["partition"] = self.partition
         return d
 
@@ -113,13 +115,9 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
     def from_dict(cls, d: dict) -> "FactorStrategy":
         partition = cast(
             Tuple[Tuple[Cell]],
-            tuple(tuple(tuple(c) for c in p) for p in d["partition"]),
+            tuple(tuple(tuple(c) for c in p) for p in d.pop("partition")),
         )
-        return cls(
-            partition=partition,
-            ignore_parent=d["ignore_parent"],
-            workable=d["workable"],
-        )
+        return cls(partition=partition, **d)
 
 
 class Interleaving(CartesianProduct):
@@ -318,9 +316,4 @@ class AllFactorStrategy(StrategyGenerator[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "AllFactorStrategy":
-        return cls(
-            interleaving=d["interleaving"],
-            unions=d["unions"],
-            ignore_parent=d["ignore_parent"],
-            workable=d["workable"],
-        )
+        return cls(**d)

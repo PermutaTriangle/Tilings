@@ -43,6 +43,8 @@ from tilings.strategies import (
     SubobstructionInferralStrategy,
 )
 
+from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
+
 
 def assert_same_strategy(s1, s2):
     """Check that two strategy object describe the same strategy."""
@@ -284,6 +286,18 @@ strategy_objects = (
     + maxreqlen_extrabasis_ignoreparent_maxnumreq(RootInsertionStrategy)
     + row_col_partial_ignoreparent_direction(RowAndColumnPlacementStrategy)
     + [RowColumnSeparationStrategy(), SubobstructionInferralStrategy()]
+    + [FusionStrategy(row_idx=1)]
+    + [FusionStrategy(col_idx=3)]
+    + [ComponentFusionStrategy(row_idx=1)]
+    + [ComponentFusionStrategy(col_idx=3)]
+    + [ComponentFusionStrategy(col_idx=3)]
+    + [FusionStrategyGenerator()]
+    + [ComponentFusionStrategyGenerator()]
+    + [
+        ObstructionInferralStrategy(
+            [GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 2)))]
+        )
+    ]
 )
 
 # TODO add tests for: ComponentFusionStrategy, FusionStrategy
