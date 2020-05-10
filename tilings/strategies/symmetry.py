@@ -35,7 +35,7 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling]):
         self,
         tiling: Tiling,
         gps: Tuple[GriddedPerm, ...],
-        children: Optional[Tuple[GriddedPerm, ...]] = None,
+        children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         """This method will enable us to generate objects, and sample. """
         return self.inverse_gp_transform(tiling, gps[0])
@@ -44,7 +44,7 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling]):
         self,
         tiling: Tiling,
         gp: GriddedPerm,
-        children: Optional[Tuple[GriddedPerm, ...]] = None,
+        children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm, ...]:
         """This function will enable us to have a quick membership test."""
         return (self.gp_transform(tiling, gp),)
@@ -71,7 +71,8 @@ class TilingReverse(TilingSymmetryStrategy):
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         return self.gp_transform(tiling, gp)
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "reverse of the tiling"
 
     def __str__(self) -> str:
@@ -92,7 +93,8 @@ class TilingComplement(TilingSymmetryStrategy):
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         return self.gp_transform(tiling, gp)
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "complement of the tiing"
 
     def __str__(self) -> str:
@@ -113,7 +115,8 @@ class TilingInverse(TilingSymmetryStrategy):
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         return self.gp_transform(tiling, gp)
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "inverse of the tiling"
 
     def __str__(self) -> str:
@@ -137,7 +140,8 @@ class TilingAntidiagonal(TilingSymmetryStrategy):
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         return self.gp_transform(tiling, gp)
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "antidiagonal of the tiling"
 
     def __str__(self) -> str:
@@ -161,7 +165,8 @@ class TilingRotate90(TilingSymmetryStrategy):
 
         return gp.rotate270(rotate270_cell)
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "rotate the tiling 90 degrees clockwise"
 
     def __str__(self) -> str:
@@ -185,7 +190,8 @@ class TilingRotate180(TilingSymmetryStrategy):
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         return self.gp_transform(tiling, gp)
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "rotate the tiling 180 degrees clockwise"
 
     def __str__(self) -> str:
@@ -209,7 +215,8 @@ class TilingRotate270(TilingSymmetryStrategy):
 
         return gp.rotate90(rotate90_cell)
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "rotate the tiling 270 degrees clockwise"
 
     def __str__(self) -> str:
@@ -225,6 +232,7 @@ class AllSymmetriesStrategy(StrategyGenerator[Tiling]):
         self, comb_class: Tiling, **kwargs
     ) -> Iterator[TilingSymmetryStrategy]:
         def strategy(rotations: int, inverse: bool) -> TilingSymmetryStrategy:
+            # pylint: disable=too-many-return-statements
             if rotations == 0:
                 if inverse:
                     return TilingInverse()

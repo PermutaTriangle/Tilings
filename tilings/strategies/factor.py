@@ -7,7 +7,6 @@ from comb_spec_searcher import (
     CartesianProduct,
     CartesianProductStrategy,
     CombinatorialObject,
-    Constructor,
     Strategy,
     StrategyGenerator,
 )
@@ -182,47 +181,14 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         raise NotImplementedError
 
 
-class MonotoneInterleaving(CartesianProduct):
-    def __init__(self, children: Tuple[Tiling, ...]):
-        super().__init__(children)
-
-    def is_equivalence(self) -> bool:
-        return False
-
-    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
-        raise NotImplementedError
-
-    def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-        raise NotImplementedError
-
-    def get_sub_objects(
-        self, subgens: SubGens, n: int, **parameters: int
-    ) -> Iterator[Tuple[CombinatorialObject, ...]]:
-        raise NotImplementedError
-
-    def random_sample_sub_objects(
-        self,
-        parent_count: int,
-        subsamplers: SubSamplers,
-        subrecs: SubRecs,
-        n: int,
-        **parameters: int
-    ):
-        raise NotImplementedError
-
-    @staticmethod
-    def get_eq_symbol() -> str:
-        return "="
-
-    @staticmethod
-    def get_op_symbol() -> str:
-        return "*"
+class MonotoneInterleaving(Interleaving):
+    pass
 
 
 class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
     def constructor(
         self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
-    ) -> Constructor:
+    ) -> MonotoneInterleaving:
         if children is None:
             children = self.decomposition_function(tiling)
         return MonotoneInterleaving(children)

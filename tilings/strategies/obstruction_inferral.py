@@ -107,7 +107,7 @@ class AllObstructionInferralStrategy(StrategyGenerator[Tiling]):
             yield ObstructionInferralStrategy(gps)
 
     def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
+        d: dict = super().to_jsonable()
         d["maxlen"] = self.maxlen
         return d
 

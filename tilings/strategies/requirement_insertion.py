@@ -45,14 +45,13 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling]):
             if req.is_localized():
                 return "insert {} in cell {}".format(req.patt, req.pos[0])
             return "insert {}".format(req)
-        else:
-            raise NotImplementedError
+        raise NotImplementedError
 
     def backward_map(
         self,
         tiling: Tiling,
         gps: Tuple[GriddedPerm, ...],
-        children: Optional[Tuple[Tiling, Tiling]] = None,
+        children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         if children is None:
             children = self.decomposition_function(tiling)

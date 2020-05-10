@@ -5,6 +5,7 @@ from sympy import Eq, Function
 from comb_spec_searcher import (
     CombinatorialObject,
     Constructor,
+    Rule,
     Strategy,
     StrategyGenerator,
 )
@@ -75,9 +76,10 @@ class FusionStrategy(Strategy[Tiling]):
         if algo.fusable():
             return (algo.fused_tiling(),)
 
+    @staticmethod
     def constructor(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Constructor:
+        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> FusionConstructor:
         return FusionConstructor()
 
     def formal_step(self) -> str:
@@ -136,9 +138,10 @@ class ComponentFusionStrategy(FusionStrategy):
     def fusion_algorithm(self, tiling: Tiling) -> Fusion:
         return ComponentFusion(tiling, row_idx=self.row_idx, col_idx=self.col_idx)
 
+    @staticmethod
     def constructor(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Constructor:
+        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> ComponentFusionConstructor:
         return ComponentFusionConstructor()
 
     def formal_step(self) -> str:
@@ -148,7 +151,7 @@ class ComponentFusionStrategy(FusionStrategy):
 
 
 class FusionStrategyGenerator(StrategyGenerator[Tiling]):
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[FusionStrategy]:
+    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
             algo = Fusion(comb_class, row_idx=row_idx)
@@ -174,7 +177,7 @@ class FusionStrategyGenerator(StrategyGenerator[Tiling]):
 
 
 class ComponentFusionStrategyGenerator(StrategyGenerator[Tiling]):
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[FusionStrategy]:
+    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         if comb_class.requirements:
             return
         cols, rows = comb_class.dimensions

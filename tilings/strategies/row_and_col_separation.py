@@ -49,11 +49,13 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling]):
         if rcs.separable():
             return (rcs.separated_tiling(),)
 
-    def row_col_sep_algorithm(self, tiling: Tiling) -> RowColSeparation:
+    @staticmethod
+    def row_col_sep_algorithm(tiling: Tiling) -> RowColSeparation:
         """Return the algorithm class using tiling."""
         return RowColSeparation(tiling)
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         """Return formal step."""
         return "row and column separation"
 

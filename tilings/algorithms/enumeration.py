@@ -67,11 +67,11 @@ class LocalEnumeration(Enumeration):
         all_gp = chain(obs, reqs)
         return all(gp.is_single_cell() for gp in all_gp)
 
-    def get_genf(
-        self, funcs: Optional[Dict["Tiling", Function]] = None, **kwargs
-    ) -> Expr:
+    def get_genf(self, **kwargs) -> Expr:
+        # pylint: disable=too-many-return-statements
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
+        funcs: Optional[Dict["Tiling", Function]] = kwargs.get("funcs")
         if funcs is None:
             funcs = dict()
         if self.tiling.requirements:
@@ -82,31 +82,34 @@ class LocalEnumeration(Enumeration):
             without = self.tiling.__class__(
                 self.tiling.obstructions, self.tiling.requirements[1:]
             )
-            avgf = LocalEnumeration(avoided).get_genf(funcs)
-            wogf = LocalEnumeration(without).get_genf(funcs)
+            avgf = LocalEnumeration(avoided).get_genf(funcs=funcs)
+            wogf = LocalEnumeration(without).get_genf(funcs=funcs)
             return wogf - avgf
-        else:
-            if self.tiling in funcs:
-                return funcs[self.tiling]
-            # also return something entirely different if the root class/not verified
-            if self.tiling.dimensions == (1, 1):
-                if self.tiling.is_epsilon():
-                    return 1
-                if self.tiling == self.tiling.__class__.from_string("01_10"):
-                    return 1 + x
-                if self.tiling in (
-                    self.tiling.__class__.from_string("01"),
-                    self.tiling.__class__.from_string("10"),
-                ):
-                    return 1 / (1 - x)
-                raise NotImplementedError("Look up the combopal database")
-            if MonotoneTreeEnumeration(self.tiling).verified():
-                return MonotoneTreeEnumeration(self.tiling).get_genf()
-            if DatabaseEnumeration(self.tiling).verified():
-                return MonotoneTreeEnumeration(self.tiling).get_genf()
-            raise NotImplementedError(
-                "Not sure how to enumerate the tiling:\n{}".format(self.tiling)
-            )
+        if self.tiling in funcs:
+            return funcs[self.tiling]
+        # also return something entirely different if the root class/not verified
+        if self.tiling.dimensions == (1, 1):
+            if self.tiling.is_epsilon():
+                return 1
+            if self.tiling == self.tiling.__class__.from_string("01_10"):
+                return 1 + x
+            if self.tiling in (
+                self.tiling.__class__.from_string("01"),
+                self.tiling.__class__.from_string("10"),
+            ):
+                return 1 / (1 - x)
+            raise NotImplementedError("Look up the combopal database")
+        gf = None
+        if MonotoneTreeEnumeration(self.tiling).verified():
+            gf = MonotoneTreeEnumeration(self.tiling).get_genf()
+        if DatabaseEnumeration(self.tiling).verified():
+            gf = DatabaseEnumeration(self.tiling).get_genf()
+        if gf is not None:
+            funcs[self.tiling] = gf
+            return gf
+        raise NotImplementedError(
+            "Not sure how to enumerate the tiling:\n{}".format(self.tiling)
+        )
 
 
 class MonotoneTreeEnumeration(Enumeration):
@@ -166,6 +169,7 @@ class MonotoneTreeEnumeration(Enumeration):
         return (c for c in visited if (c in row_cells or c in col_cells))
 
     def get_genf(self, **kwargs) -> Expr:
+        # pylint: disable=too-many-locals
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
         try:

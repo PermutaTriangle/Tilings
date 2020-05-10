@@ -67,7 +67,8 @@ class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
     def basis(self) -> Tuple[Perm, ...]:
         return self._basis
 
-    def pack(self) -> StrategyPack:
+    @staticmethod
+    def pack() -> StrategyPack:
         raise InvalidOperationError(
             "Cannot get a specification for one by one verification"
         )
@@ -78,7 +79,8 @@ class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
             and frozenset(ob.patt for ob in tiling.obstructions) not in self.symmetries
         )
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "tiling is a subclass of the original tiling"
 
     def get_genf(self, tiling: Tiling):
@@ -114,14 +116,13 @@ class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
             return self.__class__.__name__ + (
                 "(basis={}, symmetry={}, " "ignore_parent={})"
             ).format(list(self._basis), True, self.ignore_parent)
-        else:
-            return self.__class__.__name__ + "()"
+        return self.__class__.__name__ + "()"
 
     def __str__(self) -> str:
         return "one by one verification"
 
     def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
+        d: dict = super().to_jsonable()
         d["basis"] = self._basis
         d["symmetry"] = self._symmetry
         return d
@@ -143,16 +144,19 @@ class DatabaseVerificationStrategy(VerificationStrategy[Tiling]):
     can always find the generating function by looking up the database.
     """
 
-    def pack(self) -> StrategyPack:
+    @staticmethod
+    def pack() -> StrategyPack:
         # TODO: check database for tiling
         raise InvalidOperationError(
             "Cannot get a specification for a tiling in the database"
         )
 
-    def verified(self, tiling: Tiling):
+    @staticmethod
+    def verified(tiling: Tiling):
         return DatabaseEnumeration(tiling).verified()
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "tiling is in the database"
 
     def get_genf(self, tiling: Tiling):
@@ -204,7 +208,8 @@ class LocallyFactorableVerificationStrategy(VerificationStrategy[Tiling]):
     verified tiling.
     """
 
-    def pack(self) -> StrategyPack:
+    @staticmethod
+    def pack() -> StrategyPack:
         return StrategyPack(
             name="LocallyFactorable",
             initial_strats=[AllFactorStrategy(), RequirementCorroborationStrategy()],
@@ -218,13 +223,15 @@ class LocallyFactorableVerificationStrategy(VerificationStrategy[Tiling]):
             ],
         )
 
-    def _locally_factorable_obstructions(self, tiling: Tiling):
+    @staticmethod
+    def _locally_factorable_obstructions(tiling: Tiling):
         """
         Check if all the obstructions of the tiling are locally factorable.
         """
         return all(not ob.is_interleaving() for ob in tiling.obstructions)
 
-    def _locally_factorable_requirements(self, tiling: Tiling):
+    @staticmethod
+    def _locally_factorable_requirements(tiling: Tiling):
         """
         Check if all the requirements of the tiling are locally factorable.
         """
@@ -238,7 +245,8 @@ class LocallyFactorableVerificationStrategy(VerificationStrategy[Tiling]):
             and self._locally_factorable_requirements(tiling)
         )
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "tiling is locally factorable"
 
     @classmethod
@@ -263,10 +271,12 @@ class ElementaryVerificationStrategy(LocallyFactorableVerificationStrategy):
     verified tiling.
     """
 
-    def verified(self, tiling: Tiling):
+    @staticmethod
+    def verified(tiling: Tiling):
         return tiling.fully_isolated() and not tiling.dimensions == (1, 1)
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "tiling is elementary verified"
 
     @classmethod
@@ -285,16 +295,19 @@ class LocalVerificationStrategy(VerificationStrategy[Tiling]):
     localized, i.e. in a single cell and the tiling is not 1x1.
     """
 
-    def pack(self) -> StrategyPack:
+    @staticmethod
+    def pack() -> StrategyPack:
         # TODO: check database for tiling
         raise InvalidOperationError(
             "Cannot get a specification for a tiling in the database"
         )
 
-    def verified(self, tiling: Tiling):
+    @staticmethod
+    def verified(tiling: Tiling):
         return tiling.dimensions != (1, 1) and LocalEnumeration(tiling).verified()
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "tiling is locally enumerable"
 
     @classmethod
@@ -338,16 +351,19 @@ class MonotoneTreeVerificationStrategy(VerificationStrategy[Tiling]):
     Verify all tiling that is a monotone tree.
     """
 
-    def pack(self) -> StrategyPack:
+    @staticmethod
+    def pack() -> StrategyPack:
         # TODO: check database for tiling
         raise InvalidOperationError(
             "Cannot get a specification for a tiling in the database"
         )
 
-    def verified(self, tiling: Tiling):
+    @staticmethod
+    def verified(tiling: Tiling):
         return MonotoneTreeEnumeration(tiling).verified()
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "tiling is a monotone tree"
 
     @classmethod

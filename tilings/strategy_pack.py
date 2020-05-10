@@ -21,7 +21,7 @@ class TileScopePack(StrategyPack):
             for strategy in strats:
                 if isinstance(strategy, strat.OneByOneVerificationStrategy):
                     if strategy.basis:
-                        logger.warn("Basis changed in OneByOneVerificationStrategy")
+                        logger.warning("Basis changed in OneByOneVerificationStrategy")
                     res.append(strategy.change_basis(basis))
                 else:
                     res.append(strategy)
