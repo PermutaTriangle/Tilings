@@ -59,7 +59,7 @@ class TileScope(CombinatorialSpecificationSearcher):
         Return a list of common strings that may appear in the JSON of the
         strategies to be compressed.
         """
-        strings = []
+        strings: List[str] = []
         strings.append("[0, 0]")
 
         return strings + super().build_zdict()
