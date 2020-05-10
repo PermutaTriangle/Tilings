@@ -239,18 +239,15 @@ class AllSymmetriesStrategy(StrategyGenerator[Tiling]):
             if rotations == 1:
                 if inverse:
                     return TilingReverse()
-                else:
-                    return TilingRotate90()
+                return TilingRotate90()
             if rotations == 2:
                 if inverse:
                     return TilingAntidiagonal()
-                else:
-                    return TilingRotate180()
+                return TilingRotate180()
             if rotations == 3:
                 if inverse:
                     return TilingComplement()
-                else:
-                    return TilingRotate270()
+                return TilingRotate270()
 
         symmetries = set([comb_class])
         for rotations in range(4):
