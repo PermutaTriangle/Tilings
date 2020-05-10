@@ -1,21 +1,49 @@
-from typing import List, Optional
+from typing import Iterable, Optional
+
+from logzero import logger
 
 from comb_spec_searcher import StrategyPack
+from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
-from tilings import Tiling
 from tilings import strategies as strat
-from comb_spec_searcher import StrategyGenerator
 
 
 class TileScopePack(StrategyPack):
     # Method to add power to a pack
     # Pack are immutable, these methods return a new pack.
 
+    def fix_one_by_one(self, basis: Iterable[Perm]) -> "TileScopePack":
+        basis = tuple(basis)
+
+        def replace_list(strats):
+            """Return a new list with the replaced 1x1 strat."""
+            res = []
+            for strategy in strats:
+                if isinstance(strategy, strat.OneByOneVerificationStrategy):
+                    if strategy.basis:
+                        logger.warning("Basis changed in OneByOneVerificationStrategy")
+                    res.append(strategy.change_basis(basis))
+                else:
+                    res.append(strategy)
+            return res
+
+        return self.__class__(
+            ver_strats=replace_list(self.ver_strats),
+            inferral_strats=replace_list(self.inferral_strats),
+            initial_strats=replace_list(self.initial_strats),
+            expansion_strats=list(map(replace_list, self.expansion_strats)),
+            name=self.name,
+            symmetries=self.symmetries,
+            iterative=self.iterative,
+        )
+
     def make_fusion(self, component: bool = False) -> "TileScopePack":
         """Create a new pack by adding fusion to the current pack."""
         if component:
-            return self.add_initial(strat.ComponentFusionStrategy(), "component_fusion")
-        return self.add_initial(strat.FusionStrategy(), "fusion")
+            return self.add_initial(
+                strat.ComponentFusionStrategyGenerator(), "component_fusion"
+            )
+        return self.add_initial(strat.FusionStrategyGenerator(), "fusion")
 
     def make_elementary(self) -> "TileScopePack":
         """

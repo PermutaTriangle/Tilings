@@ -1,16 +1,13 @@
-from base64 import b64decode, b64encode
 from collections import defaultdict
-from typing import Callable, List, Optional, Union
+from typing import List, Optional, Union
+
+from logzero import logger
 
 from comb_spec_searcher import CombinatorialSpecificationSearcher
-from comb_spec_searcher.class_db import ClassDB
-from comb_spec_searcher.class_queue import DefaultQueue
-from comb_spec_searcher.equiv_db import EquivalenceDB
-from comb_spec_searcher.rule_db import RuleDB
+from comb_spec_searcher.strategies import StrategyGenerator
 from permuta import Perm
 from permuta.descriptors import Basis
 from tilings import GriddedPerm, Tiling
-from comb_spec_searcher import Strategy, StrategyGenerator
 from tilings.strategy_pack import TileScopePack
 
 
@@ -20,7 +17,6 @@ class TileScope(CombinatorialSpecificationSearcher):
     respect to the given basis.
     """
 
-    # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         start_class: Union[str, List[Perm], Tiling],
@@ -39,12 +35,16 @@ class TileScope(CombinatorialSpecificationSearcher):
             start_tiling = start_class
             if start_class.dimensions == (1, 1):
                 basis = Basis([o.patt for o in start_class.obstructions])
-            else:
-                basis = []
+
         if not isinstance(start_class, Tiling):
             start_tiling = Tiling(
                 obstructions=[GriddedPerm.single_cell(patt, (0, 0)) for patt in basis]
             )
+
+        if start_tiling.dimensions == (1, 1):
+            logger.info("Fixing basis in OneByOneVerificationStrategy")
+            strategy_pack = strategy_pack.fix_one_by_one(basis)
+
         function_kwargs = {"basis": basis}
         super().__init__(
             start_tiling,
@@ -85,6 +85,6 @@ class TileScope(CombinatorialSpecificationSearcher):
             if k == "is empty":
                 d[k] = v
             else:
-                d[StrategyGernerator.from_dict(k)] = v
+                d[StrategyGenerator.from_dict(k)] = v
             values.append(v)
         return defaultdict(int, d)

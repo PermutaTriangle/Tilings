@@ -1,5 +1,7 @@
 import pytest
+
 from comb_spec_searcher import DisjointUnion
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.strategies import (
@@ -168,3 +170,31 @@ def test_obstruction_inferral(tiling1, tiling_not_inf):
 
     strat = list(AllObstructionInferralStrategy(maxlen=4)(tiling_not_inf))
     assert len(strat) == 0
+
+
+def test_row_col_sep(tiling1):
+    with pytest.raises(StrategyDoesNotApply):
+        print(RowColumnSeparationStrategy()(tiling1))
+    t = Tiling(
+        obstructions=[
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+        ]
+    )
+    rule = RowColumnSeparationStrategy()(t)
+    assert rule is not None
+    print(rule)
+    assert len(rule.children) == 1
+    assert isinstance(rule.constructor, DisjointUnion)
+    assert rule.formal_step == "row and column separation"
+    assert rule.inferrable
+    assert not rule.possibly_empty
+    assert rule.ignore_parent
+    assert rule.workable
+    assert rule.children[0] == Tiling(
+        obstructions=[
+            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+        ]
+    )

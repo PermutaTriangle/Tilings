@@ -489,7 +489,7 @@ class RowColSeparation:
 
     def __init__(self, tiling: "Tiling") -> None:
         self._tiling = tiling
-        self._separated_tilings: List[Tiling] = []
+        self._separated_tilings: List["Tiling"] = []
         separation_algo = _RowColSeparationSingleApplication(self._tiling)
         while separation_algo.separable():
             new_sep = separation_algo.separated_tiling()

@@ -1,4 +1,5 @@
 import pytest
+
 from comb_spec_searcher import DisjointUnion, Rule
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
@@ -6,9 +7,9 @@ from tilings import GriddedPerm, Tiling
 from tilings.strategies import (
     AllPlacementsStrategy,
     PatternPlacementStrategy,
-    RequirementPlacementStrategy,
     RowAndColumnPlacementStrategy,
 )
+from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 
 pytest_plugins = [
     "tests.fixtures.obstructions_requirements",

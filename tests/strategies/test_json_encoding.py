@@ -1,11 +1,11 @@
-from itertools import product
 import json
+from itertools import product
 
 import pytest
 
+from comb_spec_searcher import Strategy
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
-from comb_spec_searcher import Strategy
 from tilings import GriddedPerm
 from tilings.strategies import (
     AllCellInsertionStrategy,
@@ -18,14 +18,11 @@ from tilings.strategies import (
     AllRequirementPlacementStrategy,
     AllSymmetriesStrategy,
     BasicVerificationStrategy,
-    # ComponentFusionStrategy,
+    ComponentFusionStrategyGenerator,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
     EmptyCellInferralStrategy,
-    FactorStrategy,
-    FactorWithInterleavingStrategy,
-    FactorWithMonotoneInterleavingStrategy,
-    # FusionStrategy,
+    FusionStrategyGenerator,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
@@ -33,13 +30,20 @@ from tilings.strategies import (
     OneByOneVerificationStrategy,
     PatternPlacementStrategy,
     RequirementCorroborationStrategy,
-    RequirementInsertionStrategy,
-    RequirementPlacementStrategy,
     RootInsertionStrategy,
     RowAndColumnPlacementStrategy,
     RowColumnSeparationStrategy,
     SubobstructionInferralStrategy,
 )
+from tilings.strategies.factor import (
+    FactorStrategy,
+    FactorWithInterleavingStrategy,
+    FactorWithMonotoneInterleavingStrategy,
+)
+from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
+from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
+from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
+from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 
 
 def assert_same_strategy(s1, s2):
@@ -249,19 +253,30 @@ strategy_objects = (
     + maxreqlen_extrabasis_ignoreparent(AllRequirementExtensionStrategy)
     + maxreqlen_extrabasis_ignoreparent(AllRequirementInsertionStrategy)
     + subreqs_partial_ignoreparent_dirs(AllRequirementPlacementStrategy)
-    + [AllSymmetriesStrategy(), BasicVerificationStrategy()]
-    + ignoreparent(DatabaseVerificationStrategy)
-    + ignoreparent(ElementaryVerificationStrategy)
-    + [ElementaryVerificationStrategy()]
-    + [EmptyCellInferralStrategy()]
+    + [
+        AllSymmetriesStrategy(),
+        BasicVerificationStrategy(),
+        EmptyCellInferralStrategy(),
+    ]
     + partition_ignoreparent_workable(FactorStrategy)
     + partition_ignoreparent_workable(FactorWithInterleavingStrategy)
     + partition_ignoreparent_workable(FactorWithMonotoneInterleavingStrategy)
+    + ignoreparent(DatabaseVerificationStrategy)
     + ignoreparent(LocallyFactorableVerificationStrategy)
+    + ignoreparent(ElementaryVerificationStrategy)
     + ignoreparent(LocalVerificationStrategy)
     + ignoreparent(MonotoneTreeVerificationStrategy)
     + [ObstructionTransitivityStrategy()]
-    + ignoreparent(OneByOneVerificationStrategy)
+    + [
+        OneByOneVerificationStrategy(
+            basis=[Perm((0, 1, 2)), Perm((2, 1, 0, 3))], ignore_parent=True
+        ),
+        OneByOneVerificationStrategy(
+            basis=[Perm((2, 1, 0, 3))], ignore_parent=False, symmetry=True
+        ),
+        OneByOneVerificationStrategy(basis=[], ignore_parent=False, symmetry=False),
+        OneByOneVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
+    ]
     + pointonly_partial_ignoreparent_dirs(PatternPlacementStrategy)
     + ignoreparent(RequirementCorroborationStrategy)
     + gps_ignoreparent(RequirementInsertionStrategy)
@@ -271,6 +286,18 @@ strategy_objects = (
     + maxreqlen_extrabasis_ignoreparent_maxnumreq(RootInsertionStrategy)
     + row_col_partial_ignoreparent_direction(RowAndColumnPlacementStrategy)
     + [RowColumnSeparationStrategy(), SubobstructionInferralStrategy()]
+    + [FusionStrategy(row_idx=1)]
+    + [FusionStrategy(col_idx=3)]
+    + [ComponentFusionStrategy(row_idx=1)]
+    + [ComponentFusionStrategy(col_idx=3)]
+    + [ComponentFusionStrategy(col_idx=3)]
+    + [FusionStrategyGenerator()]
+    + [ComponentFusionStrategyGenerator()]
+    + [
+        ObstructionInferralStrategy(
+            [GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 2)))]
+        )
+    ]
 )
 
 # TODO add tests for: ComponentFusionStrategy, FusionStrategy
@@ -279,4 +306,5 @@ strategy_objects = (
 @pytest.mark.parametrize("strategy", strategy_objects)
 def test_json_encoding(strategy):
     strategy_new = json_encode_decode(strategy)
+    print(strategy)
     assert_same_strategy(strategy, strategy_new)

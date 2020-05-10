@@ -1,10 +1,5 @@
-from .factor import (
-    AllFactorStrategy,
-    FactorStrategy,
-    FactorWithInterleavingStrategy,
-    FactorWithMonotoneInterleavingStrategy,
-)
-from .fusion import ComponentFusionStrategy, FusionStrategy
+from .factor import AllFactorStrategy
+from .fusion import ComponentFusionStrategyGenerator, FusionStrategyGenerator
 from .obstruction_inferral import (
     AllObstructionInferralStrategy,
     EmptyCellInferralStrategy,
@@ -13,19 +8,17 @@ from .obstruction_inferral import (
 )
 from .requirement_insertion import (
     AllCellInsertionStrategy,
-    RootInsertionStrategy,
+    AllFactorInsertionStrategy,
     AllRequirementExtensionStrategy,
     AllRequirementInsertionStrategy,
-    AllFactorInsertionStrategy,
     RequirementCorroborationStrategy,
-    RequirementInsertionStrategy,
+    RootInsertionStrategy,
 )
 from .requirement_placement import (
-    PatternPlacementStrategy,
-    RequirementPlacementStrategy,
-    RowAndColumnPlacementStrategy,
-    AllRequirementPlacementStrategy,
     AllPlacementsStrategy,
+    AllRequirementPlacementStrategy,
+    PatternPlacementStrategy,
+    RowAndColumnPlacementStrategy,
 )
 from .row_and_col_separation import RowColumnSeparationStrategy
 from .symmetry import AllSymmetriesStrategy
@@ -43,7 +36,6 @@ __all__ = [
     # Batch
     "AllCellInsertionStrategy",
     "AllFactorInsertionStrategy",
-    "AllFactorStrategy",
     "AllPlacementsStrategy",
     "AllRequirementExtensionStrategy",
     "AllRequirementInsertionStrategy",
@@ -52,12 +44,12 @@ __all__ = [
     "RootInsertionStrategy",
     "RowAndColumnPlacementStrategy",
     # Decomposition
-    "FactorStrategy",
+    "AllFactorStrategy",
     # Equivalence
     "PatternPlacementStrategy",
     # Fusion
-    "ComponentFusionStrategy",
-    "FusionStrategy",
+    "ComponentFusionStrategyGenerator",
+    "FusionStrategyGenerator",
     # Inferral
     "EmptyCellInferralStrategy",
     "AllObstructionInferralStrategy",

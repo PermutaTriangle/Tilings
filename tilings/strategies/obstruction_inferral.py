@@ -1,4 +1,4 @@
-from typing import Iterable, List, Optional, Tuple, Iterator
+from typing import Iterable, Iterator, List, Optional, Sequence, Tuple
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyGenerator
 from tilings import GriddedPerm, Tiling
@@ -70,12 +70,17 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling]):
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
         d: dict = super().to_jsonable()
+        d.pop("ignore_parent")
+        d.pop("inferrable")
+        d.pop("possibly_empty")
+        d.pop("workable")
         d["gps"] = [gp.to_jsonable() for gp in self.gps]
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "ObstructionInferralStrategy":
-        gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
+        gps = [GriddedPerm.from_dict(gp) for gp in d.pop("gps")]
+        assert not d
         return cls(gps=gps)
 
 
@@ -92,7 +97,7 @@ class AllObstructionInferralStrategy(StrategyGenerator[Tiling]):
         self.maxlen = maxlen
         super().__init__()
 
-    def new_obs(self, tiling: Tiling) -> List[GriddedPerm]:
+    def new_obs(self, tiling: Tiling) -> Sequence[GriddedPerm]:
         """
         Returns the list of new obstructions that can be added to the tiling.
         """
@@ -109,19 +114,19 @@ class AllObstructionInferralStrategy(StrategyGenerator[Tiling]):
     def build_zdict(cls) -> List[str]:
         return ['"maxlen": '] + super().build_zdict()
 
-    def to_jsonable(self):
-        d = super().to_jsonable()
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
         d["maxlen"] = self.maxlen
         return d
 
     @classmethod
-    def from_dict(cls, d):
-        return cls(maxlen=d["maxlen"])
+    def from_dict(cls, d) -> "AllObstructionInferralStrategy":
+        return cls(**d)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "{}(maxlen={})".format(self.__class__.__name__, self.maxlen)
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.maxlen == 1:
             return "empty cell inferral"
         return "obstruction inferral (max length is {})".format(self.maxlen)
@@ -131,9 +136,14 @@ class EmptyCellInferralStrategy(AllObstructionInferralStrategy):
     def __init__(self):
         super().__init__(maxlen=1)
 
+    def to_jsonable(self):
+        d = super().to_jsonable()
+        d.pop("maxlen")
+        return d
+
     @classmethod
     def from_dict(cls, d):
-        return cls()
+        return cls(**d)
 
 
 class SubobstructionInferralStrategy(AllObstructionInferralStrategy):
@@ -146,9 +156,14 @@ class SubobstructionInferralStrategy(AllObstructionInferralStrategy):
         """
         return SubobstructionInferral(tiling).new_obs()
 
+    def to_jsonable(self):
+        d = super().to_jsonable()
+        d.pop("maxlen")
+        return d
+
     @classmethod
     def from_dict(cls, d):
-        return cls()
+        return cls(**d)
 
     def __repr__(self):
         return self.__class__.__name__ + "()"
@@ -171,7 +186,7 @@ class ObstructionTransitivityStrategy(AllObstructionInferralStrategy):
     def __init__(self):
         super().__init__(maxlen=2)
 
-    def new_obs(self, tiling: Tiling):
+    def new_obs(self, tiling: Tiling) -> Tuple[GriddedPerm, ...]:
         return ObstructionTransitivity(tiling).new_obs()
 
     def __str__(self) -> str:
@@ -180,6 +195,12 @@ class ObstructionTransitivityStrategy(AllObstructionInferralStrategy):
     def __repr__(self) -> str:
         return "ObstructionTransitivityStrategy()"
 
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d.pop("maxlen")
+        return d
+
     @classmethod
     def from_dict(cls, d: dict) -> "ObstructionTransitivityStrategy":
+        assert not d, "ObstructionInferralStrategy takes no arguments"
         return cls()

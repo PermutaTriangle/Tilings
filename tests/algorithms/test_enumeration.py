@@ -3,18 +3,13 @@ import abc
 import pytest
 import sympy
 
-from comb_spec_searcher import StrategyPack
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
-    BasicEnumeration,
     DatabaseEnumeration,
-    ElementaryEnumeration,
     LocalEnumeration,
-    LocallyFactorableEnumeration,
     MonotoneTreeEnumeration,
-    OneByOneEnumeration,
 )
 from tilings.exception import InvalidOperationError
 
@@ -30,17 +25,9 @@ class CommonTest(abc.ABC):
     def enum_not_verified(self):
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def test_pack(self, enum_verified):
-        raise NotImplementedError
-
     def test_verified(self, enum_verified, enum_not_verified):
         assert enum_verified.verified()
         assert not enum_not_verified.verified()
-
-    @abc.abstractmethod
-    def test_get_tree(self, enum_verified):
-        raise NotImplementedError
 
     @abc.abstractmethod
     def test_get_genf(self, enum_verified):
@@ -49,148 +36,6 @@ class CommonTest(abc.ABC):
     def test_get_genf_not_verified(self, enum_not_verified):
         with pytest.raises(InvalidOperationError):
             enum_not_verified.get_genf()
-
-    def test_get_tree_not_verified(self, enum_not_verified):
-        with pytest.raises(InvalidOperationError):
-            enum_not_verified.get_tree()
-
-
-class TestBasicEnumeration(CommonTest):
-    @pytest.fixture
-    def empty_enum(self):
-        t = Tiling.from_string("1")
-        return BasicEnumeration(t)
-
-    @pytest.fixture
-    def enum_not_verified(self):
-        t = Tiling.from_string("123")
-        return BasicEnumeration(t)
-
-    enum_verified = empty_enum
-
-    @pytest.fixture
-    def point_enum(self):
-        t = Tiling.from_string("12_21")
-        t = t.insert_cell((0, 0))
-        return BasicEnumeration(t)
-
-    @pytest.fixture
-    def point_or_empty_enum(self):
-        t = Tiling.from_string("12_21")
-        return BasicEnumeration(t)
-
-    def test_point_is_verified(self, point_enum):
-        assert point_enum.verified()
-
-    def test_point_or_empty_is_verified(self, point_or_empty_enum):
-        assert point_or_empty_enum.verified()
-
-    def test_pack(self, enum_verified):
-        with pytest.raises(InvalidOperationError):
-            enum_verified.pack
-
-    def test_get_tree(self, enum_verified):
-        with pytest.raises(InvalidOperationError):
-            enum_verified.get_tree()
-
-    def test_get_genf(self, empty_enum, point_enum, point_or_empty_enum):
-        assert empty_enum.get_genf() == sympy.sympify("1")
-        assert point_enum.get_genf() == sympy.sympify("x")
-        assert point_or_empty_enum.get_genf() == sympy.sympify("x+1")
-
-
-class TestLocallyFactorableEnumeration(CommonTest):
-    @pytest.fixture
-    def enum_not_verified(self):
-        t = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
-                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-                GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
-            ]
-        )
-        return LocallyFactorableEnumeration(t)
-
-    @pytest.fixture
-    def enum_verified(self):
-        t = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
-            ]
-        )
-        return LocallyFactorableEnumeration(t)
-
-    @pytest.fixture
-    def enum_with_tautology(self):
-        t = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
-                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
-            ]
-        )
-        return LocallyFactorableEnumeration(t)
-
-    @pytest.fixture
-    def onebyone_enum(self):
-        return LocallyFactorableEnumeration(Tiling.from_string("123"))
-
-    @pytest.mark.xfail
-    def test_pack(self, enum_verified):
-        pack = enum_verified.pack
-        assert isinstance(pack, StrategyPack)
-        assert pack.name == "LocallyFactorable"
-
-    @pytest.mark.xfail
-    def test_get_tree(self, enum_verified):
-        raise NotImplementedError
-
-    @pytest.mark.xfail
-    def test_get_genf(self, enum_verified):
-        raise NotImplementedError
-
-    def test_locally_factorable_requirements(self, enum_verified, enum_not_verified):
-        assert enum_not_verified._locally_factorable_requirements()
-        assert enum_verified._locally_factorable_requirements()
-        t1 = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-            ],
-            requirements=[
-                [GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0)))],
-                [GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0)))],
-            ],
-        )
-        enum_with_not_loc_fact_reqs = LocallyFactorableEnumeration(t1)
-        assert not (enum_with_not_loc_fact_reqs._locally_factorable_requirements())
-        t2 = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-            ],
-            requirements=[
-                [GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0)))],
-                [GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0)))],
-            ],
-        )
-        enum_with_loc_fact_reqs = LocallyFactorableEnumeration(t2)
-        assert enum_with_loc_fact_reqs._locally_factorable_requirements()
-
-    def test_locally_factorable_obstructions(self, enum_not_verified, enum_verified):
-        assert not enum_not_verified._locally_factorable_obstructions()
-        assert enum_verified._locally_factorable_obstructions()
-
-    @pytest.mark.xfail(reason="Cannot think of a tautology")
-    def test_possible_tautology(self, enum_verified, enum_with_tautology):
-        assert not enum_verified._possible_tautology()
-        assert enum_with_tautology._possible_tautology()
-
-    def test_1x1_verified(self, onebyone_enum):
-        assert not onebyone_enum.verified()
 
 
 class TestLocalEnumeration(CommonTest):
@@ -253,16 +98,9 @@ class TestLocalEnumeration(CommonTest):
         )
         return LocalEnumeration(t, no_req=True)
 
-    def test_pack(self, enum_verified):
-        assert enum_verified.pack is None
-
     def test_verified(self, enum_verified, enum_not_verified):
         assert enum_verified.verified()
         assert not enum_not_verified.verified()
-
-    def test_get_tree(self, enum_verified):
-        with pytest.raises(NotImplementedError):
-            enum_verified.get_tree()
 
     def test_get_genf(self, enum_verified):
         with pytest.raises(NotImplementedError):
@@ -273,7 +111,7 @@ class TestLocalEnumeration(CommonTest):
             enum_not_verified.get_genf()
 
     def test_1x1_verified(self, onebyone_enum):
-        assert not onebyone_enum.verified()
+        assert onebyone_enum.verified()
 
     def test_no_req_option(self, enum_no_req):
         assert not enum_no_req.verified()
@@ -325,7 +163,7 @@ class TestMonotoneTreeEnumeration(CommonTest):
 
     @pytest.fixture
     def onebyone_enum(self):
-        return LocalEnumeration(Tiling.from_string("123"))
+        return MonotoneTreeEnumeration(Tiling.from_string("123"))
 
     @pytest.fixture
     def enum_with_crossing(self):
@@ -389,16 +227,6 @@ class TestMonotoneTreeEnumeration(CommonTest):
         enum_no_start = MonotoneTreeEnumeration(t)
         expected_gf = -1 / ((x - 1) * (x / (x - 1) + 1))
         assert sympy.simplify(enum_no_start.get_genf() - expected_gf) == 0
-
-    @pytest.mark.xfail(reason="pack does not exist")
-    def test_get_tree(self, enum_verified):
-        raise NotImplementedError
-
-    @pytest.mark.xfail
-    def test_pack(self, enum_verified):
-        pack = enum_verified.pack
-        assert isinstance(pack, StrategyPack)
-        assert pack.name == "MonotoneTree"
 
     def test_get_genf_simple(self):
         t = Tiling(
@@ -535,84 +363,39 @@ class TestMonotoneTreeEnumeration(CommonTest):
             + 20 * x ** 6
         )
 
-
-class TestElementaryEnumeration(CommonTest):
-    @pytest.fixture
-    def enum_verified(self):
+    def test_with_two_reqs(self):
         t = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((2, 0),) * 3),
-                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
-            ]
+            obstructions=(
+                GriddedPerm(Perm((0,)), ((1, 1),)),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+            ),
+            requirements=(
+                (GriddedPerm(Perm((0,)), ((0, 0),)),),
+                (GriddedPerm(Perm((0,)), ((0, 1),)),),
+            ),
         )
-        return ElementaryEnumeration(t)
+        enum = MonotoneTreeEnumeration(t)
+        expected_enum = [0, 0, 2, 7, 19, 47, 111, 255, 575, 1279, 2815]
+        assert enum.verified()
+        assert taylor_expand(enum.get_genf()) == expected_enum
 
-    @pytest.fixture
-    def enum_not_verified(self):
+    def test_corner(self):
         t = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
-                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (1, 0))),
-            ]
+            obstructions=(
+                GriddedPerm(Perm((0,)), ((1, 1),)),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+            ),
+            requirements=((GriddedPerm(Perm((0,)), ((0, 0),)),),),
         )
-        return ElementaryEnumeration(t)
-
-    @pytest.fixture
-    def enum_onebyone(self):
-        t = Tiling.from_string("123")
-        return ElementaryEnumeration(t)
-
-    @pytest.fixture
-    def enum_with_interleaving(self):
-        t = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
-            ]
-        )
-        return ElementaryEnumeration(t)
-
-    @pytest.fixture
-    def enum_with_req(self):
-        t = Tiling(
-            obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((2, 0),) * 3),
-                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
-            ],
-            requirements=[
-                [GriddedPerm(Perm((0,)), ((0, 1),))],
-                [GriddedPerm(Perm((0, 1)), ((0, 1), (1, 2)))],
-            ],
-        )
-        return ElementaryEnumeration(t)
-
-    @pytest.mark.xfail
-    def test_pack(self, enum_verified):
-        pack = enum_verified.pack
-        assert isinstance(pack, StrategyPack)
-        assert pack.name == "LocallyFactorable"
-
-    @pytest.mark.xfail
-    def test_get_tree(self, enum_verified):
-        raise NotImplementedError
-
-    @pytest.mark.xfail
-    def test_get_genf(self, enum_verified):
-        raise NotImplementedError
-
-    def test_more_verified(
-        self, enum_onebyone, enum_with_interleaving, enum_with_req,
-    ):
-        assert not enum_onebyone.verified()
-        assert not enum_with_interleaving.verified()
-        assert enum_with_req.verified()
+        enum = MonotoneTreeEnumeration(t)
+        expected_enum = [0, 1, 5, 17, 50, 138, 370, 979, 2575, 6755, 17700]
+        assert enum.verified()
+        assert taylor_expand(enum.get_genf()) == expected_enum
 
 
 class TestDatabaseEnumeration(CommonTest):
@@ -631,14 +414,6 @@ class TestDatabaseEnumeration(CommonTest):
             "(x**2 - x + 1)/(x**2 - 2*x + 1)"
         )
 
-    def test_get_tree(self, enum_verified):
-        with pytest.raises(NotImplementedError):
-            enum_verified.get_tree()
-
-    def test_pack(self, enum_verified):
-        with pytest.raises(NotImplementedError):
-            enum_verified.pack
-
     @pytest.mark.slow
     def test_load_verified_tilings(self):
         assert not DatabaseEnumeration.all_verified_tilings
@@ -655,29 +430,3 @@ class TestDatabaseEnumeration(CommonTest):
         assert not DatabaseEnumeration(t).verified()
         DatabaseEnumeration.all_verified_tilings = frozenset([t.to_bytes()])
         assert DatabaseEnumeration(t).verified()
-
-
-class TestOneByOneEnumeration(CommonTest):
-    @pytest.fixture
-    def enum_verified(self):
-        t = Tiling.from_string("1324_321")
-        return OneByOneEnumeration(t, [Perm((2, 1, 0))])
-
-    @pytest.fixture
-    def enum_not_verified(self):
-        t = Tiling.from_string("321")
-        return OneByOneEnumeration(t, [Perm((2, 1, 0))])
-
-    @pytest.mark.xfail
-    def test_pack(self, enum_verified):
-        pack = enum_verified.pack
-        assert isinstance(pack, StrategyPack)
-        assert pack.name == "LocallyFactorable"
-
-    @pytest.mark.xfail
-    def test_get_tree(self, enum_verified):
-        raise NotImplementedError
-
-    @pytest.mark.xfail
-    def test_get_genf(self, enum_verified):
-        raise NotImplementedError

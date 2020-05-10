@@ -2,7 +2,6 @@ import abc
 from itertools import chain
 from typing import TYPE_CHECKING, Iterable, List, Optional, Set, Tuple
 
-from permuta import Perm
 from tilings import GriddedPerm
 
 if TYPE_CHECKING:
