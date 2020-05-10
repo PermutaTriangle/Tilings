@@ -61,6 +61,10 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling]):
     def __str__(self) -> str:
         return self.formal_step()
 
+    @classmethod
+    def build_zdict(cls) -> List[str]:
+        return ['"gps": [', '"pos": ', '"patt": '] + super().build_zdict()
+
     # JSON methods
 
     def to_jsonable(self) -> dict:
@@ -100,6 +104,10 @@ class AllObstructionInferralStrategy(StrategyGenerator[Tiling]):
         gps = self.new_obs(comb_class)
         if gps:
             yield ObstructionInferralStrategy(gps)
+
+    @classmethod
+    def build_zdict(cls) -> List[str]:
+        return ['"maxlen": '] + super().build_zdict()
 
     def to_jsonable(self):
         d = super().to_jsonable()

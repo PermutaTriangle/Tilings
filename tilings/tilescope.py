@@ -54,6 +54,16 @@ class TileScope(CombinatorialSpecificationSearcher):
             **kwargs,
         )
 
+    def build_zdict(self) -> List[str]:
+        """
+        Return a list of common strings that may appear in the JSON of the
+        strategies to be compressed.
+        """
+        strings = []
+        strings.append("[0, 0]")
+
+        return strings + super().build_zdict()
+
     @staticmethod
     def _strat_dict_to_jsonable(dict_):
         keys = []

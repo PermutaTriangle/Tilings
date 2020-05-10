@@ -222,6 +222,10 @@ class OneByOneVerificationStrategy(StrategyGenerator[Tiling]):
     def __repr__(self) -> str:
         return self.__class__.__name__ + "()"
 
+    @classmethod
+    def build_zdict(cls) -> List[str]:
+        return ['"basis": ', '"symmetry": '] + super().build_zdict()
+
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
         d["ignore_parent"] = self.ignore_parent

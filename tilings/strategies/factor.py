@@ -1,7 +1,7 @@
 from itertools import chain
 from sympy import Eq, Function
 
-from typing import Iterable, Iterator, Optional, Tuple, cast
+from typing import Iterable, Iterator, List, Optional, Tuple, cast
 
 from comb_spec_searcher import (
     CartesianProduct,
@@ -100,6 +100,10 @@ class FactorStrategy(CartesianProductStrategy[Tiling]):
         return self.__class__.__name__ + "(paritition={}, workable={})".format(
             self.partition, self.workable
         )
+
+    @classmethod
+    def build_zdict(cls) -> List[str]:
+        return ['"partition": '] + super().build_zdict()
 
     # JSON methods
 
@@ -301,6 +305,17 @@ class AllFactorStrategy(StrategyGenerator[Tiling]):
         return "AllFactorStrategy(interleaving={}, unions={}, ignore_parent={}, workable={})".format(
             interleaving, self.ignore_parent, self.unions, self.workable
         )
+
+    @classmethod
+    def build_zdict(cls) -> List[str]:
+        return [
+            '"interleaving": ',
+            '"unions": ',
+            '"ignore_parent": ',
+            '"workable": ',
+            "all",
+            "monotone",
+        ] + super().build_zdict()
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()

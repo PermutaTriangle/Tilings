@@ -175,6 +175,17 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling]):
             )
         )
 
+    @classmethod
+    def build_zdict(cls) -> List[str]:
+        return [
+            '"gps": ',
+            '"indices": ',
+            '"direction": ',
+            '"own_col": ',
+            '"own_row": ',
+            '"include_empty": ',
+        ] + super().build_zdict()
+
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
         d: dict = super().to_jsonable()
@@ -267,6 +278,15 @@ class RequirementPlacementStrategyGenerator(StrategyGenerator[Tiling]):
                 if self.include_empty:
                     children = (comb_class.add_obstructions(gps),) + children
                 yield strategy(comb_class, children)
+
+    @classmethod
+    def build_zdict(cls) -> List[str]:
+        return [
+            '"partial": ',
+            '"ignore_parent": ',
+            '"dirs": ',
+            '"include_empty": ',
+        ] + super().build_zdict()
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
@@ -378,6 +398,10 @@ class PatternPlacementStrategy(RequirementPlacementStrategyGenerator):
                 self.point_only, self.partial, self.ignore_parent, dir_arg
             )
         )
+
+    @classmethod
+    def build_zdict(cls) -> List[str]:
+        return ['"point_only": '] + super().build_zdict()
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
@@ -501,6 +525,10 @@ class AllRequirementPlacementStrategy(RequirementPlacementStrategyGenerator):
             )
         )
 
+    @classmethod
+    def build_zdict(cls) -> List[str]:
+        return ['"subreqs": '] + super().build_zdict()
+
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
         d["subreqs"] = self.subreqs
@@ -578,6 +606,10 @@ class RowAndColumnPlacementStrategy(RequirementPlacementStrategyGenerator):
                 self.dirs,
             )
         )
+
+    @classmethod
+    def build_zdict(cls) -> List[str]:
+        return ['"place_row": ', '"place_col": '] + super().build_zdict()
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()

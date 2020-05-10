@@ -2,7 +2,7 @@
 # pylint: disable=arguments-differ,attribute-defined-outside-init,
 # pylint: disable=too-many-return-statements,too-many-statements
 # pylint: disable=import-outside-toplevel
-import json
+import json, zlib
 from array import array
 from collections import Counter, defaultdict
 from functools import partial
@@ -365,7 +365,7 @@ class Tiling(CombinatorialClass):
                 chain.from_iterable([len(req)] + req.compress() for req in reqlist)
             )
         res = array("B", result)
-        return res.tobytes()
+        return zlib.compress(res.tobytes(), 9)
 
     @classmethod
     def from_bytes(
@@ -385,7 +385,7 @@ class Tiling(CombinatorialClass):
                uh is the upper half."""
             return lh | (uh << 8)
 
-        arr = array("B", arrbytes)
+        arr = array("B", zlib.decompress(arrbytes))
         offset = 2
         nobs = merge_8bit(arr[offset - 2], arr[offset - 1])
         obstructions = []

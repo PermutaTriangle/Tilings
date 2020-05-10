@@ -80,6 +80,10 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling]):
     def __str__(self) -> str:
         return "requirement insertion"
 
+    @classmethod
+    def build_zdict(cls) -> List[str]:
+        return ['"gps": [', '"patt": ', '"pos": '] + super().build_zdict()
+
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
         d: dict = super().to_jsonable()
@@ -156,6 +160,10 @@ class RequirementInsertionWithRestrictionStrategyGenerator(
             self.extra_basis = extra_basis
         self.maxreqlen = maxreqlen
         super().__init__(ignore_parent)
+
+    @classmethod
+    def build_zdict(cls) -> List[str]:
+        return ['"maxreqlen": ', '"extra_basis": '] + super().build_zdict()
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
@@ -277,6 +285,10 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
                 self.max_num_req,
             )
         )
+
+    @classmethod
+    def build_zdict(cls) -> List[str]:
+        return ['"max_num_req": '] + super().build_zdict()
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
