@@ -24,7 +24,7 @@ setup(
         "Tracker": "https://github.com/PermutaTriangle/Tilings/issues",
     },
     packages=find_packages(),
-    package_data={"package_a": ["py.typed"]},
+    package_data={"tilings": ["py.typed"]},
     long_description=read("README.rst"),
     install_requires=[
         "comb-spec-searcher==0.5.0",
