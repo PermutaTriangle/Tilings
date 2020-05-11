@@ -8,7 +8,7 @@ from tilings import GriddedPerm, Tiling
 __all__ = ("AllSymmetriesStrategy",)
 
 
-class TilingSymmetryStrategy(SymmetryStrategy[Tiling]):
+class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
     @abc.abstractmethod
     def gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         pass

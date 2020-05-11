@@ -31,7 +31,7 @@ __all__ = (
 )
 
 
-class FactorStrategy(CartesianProductStrategy[Tiling]):
+class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
     def __init__(
         self,
         partition: Iterable[Iterable[Cell]],
@@ -123,10 +123,12 @@ class Interleaving(CartesianProduct):
     def __init__(self, children: Tuple[Tiling, ...]):
         super().__init__(children)
 
-    def is_equivalence(self) -> bool:
+    @staticmethod
+    def is_equivalence() -> bool:
         return False
 
-    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
+    @staticmethod
+    def get_equation(lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         raise NotImplementedError
 
     def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:

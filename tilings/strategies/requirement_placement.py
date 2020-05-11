@@ -19,7 +19,7 @@ __all__ = [
 Cell = Tuple[int, int]
 
 
-class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling]):
+class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def __init__(
         self,
         gps: Iterable[GriddedPerm],

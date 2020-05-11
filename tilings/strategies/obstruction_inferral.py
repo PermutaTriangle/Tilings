@@ -16,7 +16,7 @@ __all__ = [
 ]
 
 
-class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling]):
+class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def __init__(self, gps: Iterable[GriddedPerm]):
         self.gps = tuple(sorted(gps))
         super().__init__(

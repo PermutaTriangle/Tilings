@@ -33,9 +33,10 @@ __all__ = [
 
 
 BasicVerificationStrategy = AtomStrategy
+TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
 
 
-class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
+class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
     def __init__(
         self,
         basis: Optional[Iterable[Perm]] = None,
@@ -136,7 +137,7 @@ class OneByOneVerificationStrategy(VerificationStrategy[Tiling]):
         return cls(basis=basis, **d)
 
 
-class DatabaseVerificationStrategy(VerificationStrategy[Tiling]):
+class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
     """
     Enumeration strategy for a tilings that are in the database.
 
@@ -195,7 +196,7 @@ class DatabaseVerificationStrategy(VerificationStrategy[Tiling]):
         return cls(**d)
 
 
-class LocallyFactorableVerificationStrategy(VerificationStrategy[Tiling]):
+class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
     """
     Verification strategy for a locally factorable tiling.
 
@@ -287,7 +288,7 @@ class ElementaryVerificationStrategy(LocallyFactorableVerificationStrategy):
         return "elementary verification"
 
 
-class LocalVerificationStrategy(VerificationStrategy[Tiling]):
+class LocalVerificationStrategy(TileScopeVerificationStrategy):
     """
     The local verified strategy.
 
@@ -346,7 +347,7 @@ class LocalVerificationStrategy(VerificationStrategy[Tiling]):
         return "local verification"
 
 
-class MonotoneTreeVerificationStrategy(VerificationStrategy[Tiling]):
+class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
     """
     Verify all tiling that is a monotone tree.
     """

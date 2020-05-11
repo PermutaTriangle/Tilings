@@ -20,7 +20,7 @@ __all__ = [
 ]
 
 
-class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling]):
+class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def __init__(self, gps: Iterable[GriddedPerm], ignore_parent: bool = False):
         super().__init__(ignore_parent=ignore_parent)
         self.gps = frozenset(gps)

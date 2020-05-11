@@ -3,7 +3,11 @@ import abc
 import pytest
 import sympy
 
-from comb_spec_searcher import CombinatorialSpecification, Rule, StrategyPack
+from comb_spec_searcher import (
+    CombinatorialSpecification,
+    StrategyPack,
+    VerificationRule,
+)
 from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
@@ -59,7 +63,7 @@ class CommonTest(abc.ABC):
         for tiling in enum_verified:
             rule = strategy(tiling)
             assert rule.children == tuple()
-            assert isinstance(rule, Rule)
+            assert isinstance(rule, VerificationRule)
             assert rule.formal_step == strategy.formal_step()
 
     def test_pack(self, strategy):

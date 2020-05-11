@@ -15,7 +15,7 @@ Cell = Tuple[int, int]
 CellMap = Dict[Cell, Cell]
 
 
-class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling]):
+class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     """
     An inferral strategy that tries to separate cells in rows and columns.
     """

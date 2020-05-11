@@ -58,7 +58,7 @@ class FusionConstructor(Constructor):
         return "↣"
 
 
-class FusionStrategy(Strategy[Tiling]):
+class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def __init__(self, row_idx=None, col_idx=None):
         self.col_idx = col_idx
         self.row_idx = row_idx
