@@ -1,7 +1,6 @@
 from itertools import chain
-from sympy import Eq, Function
-
 from typing import Iterable, Iterator, List, Optional, Tuple, cast
+from sympy import Eq, Function
 
 from comb_spec_searcher import (
     CartesianProduct,

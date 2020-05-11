@@ -2,7 +2,8 @@
 # pylint: disable=arguments-differ,attribute-defined-outside-init,
 # pylint: disable=too-many-return-statements,too-many-statements
 # pylint: disable=import-outside-toplevel
-import json, zlib
+import json
+import zlib
 from array import array
 from collections import Counter, defaultdict
 from functools import partial
