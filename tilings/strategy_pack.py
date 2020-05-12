@@ -40,10 +40,8 @@ class TileScopePack(StrategyPack):
     def make_fusion(self, component: bool = False) -> "TileScopePack":
         """Create a new pack by adding fusion to the current pack."""
         if component:
-            return self.add_initial(
-                strat.ComponentFusionStrategyGenerator(), "component_fusion"
-            )
-        return self.add_initial(strat.FusionStrategyGenerator(), "fusion")
+            return self.add_initial(strat.ComponentFusionFactory(), "component_fusion")
+        return self.add_initial(strat.FusionFactory(), "fusion")
 
     def make_elementary(self) -> "TileScopePack":
         """
@@ -73,15 +71,15 @@ class TileScopePack(StrategyPack):
         """Create a new pack by turning on symmetry on the current pack."""
         if self.symmetries:
             raise ValueError("Symmetries already turned on.")
-        return super().add_symmetry(strat.AllSymmetriesStrategy(), "symmetries")
+        return super().add_symmetry(strat.SymmetriesFactory(), "symmetries")
 
     # Creation of the base pack
     @classmethod
     def all_the_strategies(cls, length: int = 1) -> "TileScopePack":
         return TileScopePack(
             initial_strats=[
-                strat.AllFactorStrategy(unions=True),
-                strat.RequirementCorroborationStrategy(),
+                strat.FactorFactory(unions=True),
+                strat.RequirementCorroborationFactory(),
             ],
             ver_strats=[
                 strat.OneByOneVerificationStrategy(),
@@ -89,14 +87,14 @@ class TileScopePack(StrategyPack):
             ],
             inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
-                strat.ObstructionTransitivityStrategy(),
+                strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
                 [
-                    strat.AllCellInsertionStrategy(maxreqlen=length),
-                    strat.AllRequirementInsertionStrategy(),
+                    strat.CellInsertionFactory(maxreqlen=length),
+                    strat.RequirementInsertionFactory(),
                 ],
-                [strat.AllPlacementsStrategy()],
+                [strat.AllPlacementsFactory()],
             ],
             name="all_the_strategies",
         )
@@ -111,21 +109,21 @@ class TileScopePack(StrategyPack):
             "pattern" if length > 1 else "point",
         )
         return TileScopePack(
-            initial_strats=[strat.PatternPlacementStrategy(partial=partial)],
+            initial_strats=[strat.PatternPlacementFactory(partial=partial)],
             ver_strats=[
                 strat.OneByOneVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
             ],
             inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
-                strat.ObstructionTransitivityStrategy(),
+                strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
                 [
-                    strat.AllFactorStrategy(unions=True),
-                    strat.AllCellInsertionStrategy(maxreqlen=length),
+                    strat.FactorFactory(unions=True),
+                    strat.CellInsertionFactory(maxreqlen=length),
                 ],
-                [strat.RequirementCorroborationStrategy()],
+                [strat.RequirementCorroborationFactory()],
             ],
             name=name,
         )
@@ -140,8 +138,8 @@ class TileScopePack(StrategyPack):
         )
         return TileScopePack(
             initial_strats=[
-                strat.AllFactorStrategy(),
-                strat.RequirementCorroborationStrategy(),
+                strat.FactorFactory(),
+                strat.RequirementCorroborationFactory(),
             ],
             ver_strats=[
                 strat.OneByOneVerificationStrategy(),
@@ -149,11 +147,11 @@ class TileScopePack(StrategyPack):
             ],
             inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
-                strat.ObstructionTransitivityStrategy(),
+                strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
-                [strat.AllCellInsertionStrategy(maxreqlen=length)],
-                [strat.PatternPlacementStrategy()],
+                [strat.CellInsertionFactory(maxreqlen=length)],
+                [strat.PatternPlacementFactory()],
             ],
             name=name,
         )
@@ -166,9 +164,9 @@ class TileScopePack(StrategyPack):
         name += "point_placements"
         return TileScopePack(
             initial_strats=[
-                strat.AllFactorStrategy(),
-                strat.RequirementCorroborationStrategy(),
-                strat.AllCellInsertionStrategy(maxreqlen=length, ignore_parent=True),
+                strat.FactorFactory(),
+                strat.RequirementCorroborationFactory(),
+                strat.CellInsertionFactory(maxreqlen=length, ignore_parent=True),
             ],
             ver_strats=[
                 strat.OneByOneVerificationStrategy(),
@@ -176,9 +174,9 @@ class TileScopePack(StrategyPack):
             ],
             inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
-                strat.ObstructionTransitivityStrategy(),
+                strat.ObstructionTransitivityFactory(),
             ],
-            expansion_strats=[[strat.PatternPlacementStrategy()]],
+            expansion_strats=[[strat.PatternPlacementFactory()]],
             name=name,
         )
 
@@ -199,15 +197,15 @@ class TileScopePack(StrategyPack):
         )
         return TileScopePack(
             initial_strats=[
-                strat.AllFactorStrategy(),
-                strat.RequirementCorroborationStrategy(),
-                strat.AllCellInsertionStrategy(ignore_parent=True),
+                strat.FactorFactory(),
+                strat.RequirementCorroborationFactory(),
+                strat.CellInsertionFactory(ignore_parent=True),
             ],
             ver_strats=[strat.BasicVerificationStrategy()],
             inferral_strats=[],
             expansion_strats=[
                 [
-                    strat.RowAndColumnPlacementStrategy(
+                    strat.RowAndColumnPlacementFactory(
                         place_col=place_col, place_row=place_row
                     )
                 ]
@@ -230,13 +228,13 @@ class TileScopePack(StrategyPack):
             "_and_" if both else "",
             "col" if not row_only else "",
         )
-        rowcol_strat = strat.RowAndColumnPlacementStrategy(
+        rowcol_strat = strat.RowAndColumnPlacementFactory(
             place_row=place_row, place_col=place_col, partial=partial
         )
         return TileScopePack(
             initial_strats=[
-                strat.AllFactorStrategy(),
-                strat.RequirementCorroborationStrategy(),
+                strat.FactorFactory(),
+                strat.RequirementCorroborationFactory(),
             ],
             ver_strats=[
                 strat.OneByOneVerificationStrategy(),
@@ -244,7 +242,7 @@ class TileScopePack(StrategyPack):
             ],
             inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
-                strat.ObstructionTransitivityStrategy(),
+                strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[[rowcol_strat]],
             name=name,
@@ -257,7 +255,7 @@ class TileScopePack(StrategyPack):
         pack = cls.row_and_col_placements(row_only, col_only)
         pack.name = "insertion_" + pack.name
         pack = pack.add_initial(
-            strat.AllCellInsertionStrategy(maxreqlen=1, ignore_parent=True)
+            strat.CellInsertionFactory(maxreqlen=1, ignore_parent=True)
         )
         return pack
 
@@ -268,10 +266,8 @@ class TileScopePack(StrategyPack):
         name = "only_length_{}_root_placements".format(length)
         return TileScopePack(
             initial_strats=[
-                strat.RootInsertionStrategy(maxreqlen=length, max_num_req=max_num_req),
-                strat.AllFactorStrategy(
-                    unions=True, ignore_parent=False, workable=False
-                ),
+                strat.RootInsertionFactory(maxreqlen=length, max_num_req=max_num_req),
+                strat.FactorFactory(unions=True, ignore_parent=False, workable=False),
             ],
             ver_strats=[
                 strat.OneByOneVerificationStrategy(),
@@ -279,11 +275,11 @@ class TileScopePack(StrategyPack):
             ],
             inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
-                strat.ObstructionTransitivityStrategy(),
+                strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
-                [strat.PatternPlacementStrategy()],
-                [strat.RequirementCorroborationStrategy()],
+                [strat.PatternPlacementFactory()],
+                [strat.RequirementCorroborationFactory()],
             ],
             name=name,
         )
@@ -298,8 +294,8 @@ class TileScopePack(StrategyPack):
         )
         return TileScopePack(
             initial_strats=[
-                strat.AllFactorStrategy(),
-                strat.RequirementCorroborationStrategy(),
+                strat.FactorFactory(),
+                strat.RequirementCorroborationFactory(),
             ],
             ver_strats=[
                 strat.OneByOneVerificationStrategy(),
@@ -307,11 +303,11 @@ class TileScopePack(StrategyPack):
             ],
             inferral_strats=[
                 strat.RowColumnSeparationStrategy(),
-                strat.ObstructionTransitivityStrategy(),
+                strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
-                [strat.AllRequirementInsertionStrategy(maxreqlen=length)],
-                [strat.PatternPlacementStrategy(partial=partial)],
+                [strat.RequirementInsertionFactory(maxreqlen=length)],
+                [strat.PatternPlacementFactory(partial=partial)],
             ],
             name=name,
         )

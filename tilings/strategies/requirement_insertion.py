@@ -2,7 +2,7 @@ import abc
 from itertools import chain, product
 from typing import Iterable, Iterator, List, Optional, Tuple
 
-from comb_spec_searcher import DisjointUnionStrategy, StrategyGenerator
+from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 
@@ -11,12 +11,12 @@ ListRequirement = Tuple[GriddedPerm, ...]
 EXTRA_BASIS_ERR = "'extra_basis' should be a list of Perm to avoid"
 
 __all__ = [
-    "AllCellInsertionStrategy",
-    "RootInsertionStrategy",
-    "AllRequirementExtensionStrategy",
-    "AllRequirementInsertionStrategy",
-    "AllFactorInsertionStrategy",
-    "RequirementCorroborationStrategy",
+    "CellInsertionFactory",
+    "RootInsertionFactory",
+    "RequirementExtensionFactory",
+    "RequirementInsertionFactory",
+    "FactorInsertionFactory",
+    "RequirementCorroborationFactory",
 ]
 
 
@@ -94,7 +94,7 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return cls(gps=gps, **d)
 
 
-class RequirementInsertionStrategyGenerator(StrategyGenerator[Tiling]):
+class AbstractRequirementInsertionFactory(StrategyFactory[Tiling]):
     """
     Bases class for requirement insertion on tilings.
 
@@ -127,7 +127,7 @@ class RequirementInsertionStrategyGenerator(StrategyGenerator[Tiling]):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "RequirementInsertionStrategyGenerator":
+    def from_dict(cls, d: dict) -> "AbstractRequirementInsertionFactory":
         return cls(**d)
 
     def __repr__(self) -> str:
@@ -136,9 +136,7 @@ class RequirementInsertionStrategyGenerator(StrategyGenerator[Tiling]):
         )
 
 
-class RequirementInsertionWithRestrictionStrategyGenerator(
-    RequirementInsertionStrategyGenerator
-):
+class RequirementInsertionWithRestrictionFactory(AbstractRequirementInsertionFactory):
     """
     As RequirementInsertion, but a set of pattern to avoids and a maximum
     length can be provided.
@@ -166,9 +164,7 @@ class RequirementInsertionWithRestrictionStrategyGenerator(
         return d
 
     @classmethod
-    def from_dict(
-        cls, d: dict
-    ) -> "RequirementInsertionWithRestrictionStrategyGenerator":
+    def from_dict(cls, d: dict) -> "RequirementInsertionWithRestrictionFactory":
         if d["extra_basis"] is None:
             extra_basis = None
         else:
@@ -185,7 +181,7 @@ class RequirementInsertionWithRestrictionStrategyGenerator(
         )
 
 
-class AllCellInsertionStrategy(RequirementInsertionWithRestrictionStrategyGenerator):
+class CellInsertionFactory(RequirementInsertionWithRestrictionFactory):
     """
     The cell insertion strategy.
 
@@ -225,7 +221,7 @@ class AllCellInsertionStrategy(RequirementInsertionWithRestrictionStrategyGenera
         return "cell insertion up to length {}".format(self.maxreqlen)
 
 
-class RootInsertionStrategy(AllCellInsertionStrategy):
+class RootInsertionFactory(CellInsertionFactory):
     """
     The cell insertion strategy performed only on 1 by 1 tilings.
     """
@@ -283,7 +279,7 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "RootInsertionStrategy":
+    def from_dict(cls, d: dict) -> "RootInsertionFactory":
         if d["extra_basis"] is None:
             extra_basis = None
         else:
@@ -292,9 +288,7 @@ class RootInsertionStrategy(AllCellInsertionStrategy):
         return cls(extra_basis=extra_basis, **d)
 
 
-class AllRequirementExtensionStrategy(
-    RequirementInsertionWithRestrictionStrategyGenerator
-):
+class RequirementExtensionFactory(RequirementInsertionWithRestrictionFactory):
     """
     Insert longer requirements in to cells which contain a requirement
     """
@@ -331,9 +325,7 @@ class AllRequirementExtensionStrategy(
         )
 
 
-class AllRequirementInsertionStrategy(
-    RequirementInsertionWithRestrictionStrategyGenerator
-):
+class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
     """
     Insert all possible requirements the obstruction allows if the tiling does
     not have requirements.
@@ -378,7 +370,7 @@ class AllRequirementInsertionStrategy(
         return "requirement insertion up to " "length {}".format(self.maxreqlen)
 
 
-class AllFactorInsertionStrategy(RequirementInsertionStrategyGenerator):
+class FactorInsertionFactory(AbstractRequirementInsertionFactory):
     """
     Insert all proper factor of the requirement or obstructions on the tiling.
     """
@@ -399,7 +391,7 @@ class AllFactorInsertionStrategy(RequirementInsertionStrategyGenerator):
         return "all factor insertion"
 
 
-class RequirementCorroborationStrategy(RequirementInsertionStrategyGenerator):
+class RequirementCorroborationFactory(AbstractRequirementInsertionFactory):
     """
     The requirement corroboration strategy.
 

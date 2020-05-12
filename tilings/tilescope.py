@@ -4,7 +4,7 @@ from typing import List, Optional, Union
 from logzero import logger
 
 from comb_spec_searcher import CombinatorialSpecificationSearcher
-from comb_spec_searcher.strategies import StrategyGenerator
+from comb_spec_searcher.strategies import StrategyFactory
 from permuta import Perm
 from permuta.descriptors import Basis
 from tilings import GriddedPerm, Tiling
@@ -75,6 +75,6 @@ class TileScope(CombinatorialSpecificationSearcher):
             if k == "is empty":
                 d[k] = v
             else:
-                d[StrategyGenerator.from_dict(k)] = v
+                d[StrategyFactory.from_dict(k)] = v
             values.append(v)
         return defaultdict(int, d)

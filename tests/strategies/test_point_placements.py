@@ -1,13 +1,14 @@
 import pytest
 
-from comb_spec_searcher import DisjointUnion, Rule
+from comb_spec_searcher import DisjointUnion
+from comb_spec_searcher.strategies import Rule
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
 from tilings.strategies import (
-    AllPlacementsStrategy,
-    PatternPlacementStrategy,
-    RowAndColumnPlacementStrategy,
+    AllPlacementsFactory,
+    PatternPlacementFactory,
+    RowAndColumnPlacementFactory,
 )
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 
@@ -126,39 +127,39 @@ def tiling2():
 
 @pytest.fixture
 def placement1(tiling1):
-    return list(PatternPlacementStrategy()(tiling1))
+    return list(PatternPlacementFactory()(tiling1))
 
 
 @pytest.fixture
 def placement1ownrow(tiling1):
     return list(
-        PatternPlacementStrategy(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(tiling1)
+        PatternPlacementFactory(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(tiling1)
     )
 
 
 @pytest.fixture
 def placement1owncol(tiling1):
     return list(
-        PatternPlacementStrategy(partial=True, dirs=(DIR_WEST, DIR_EAST))(tiling1)
+        PatternPlacementFactory(partial=True, dirs=(DIR_WEST, DIR_EAST))(tiling1)
     )
 
 
 @pytest.fixture
 def placement2(tiling2):
-    return list(PatternPlacementStrategy()(tiling2))
+    return list(PatternPlacementFactory()(tiling2))
 
 
 @pytest.fixture
 def placement2ownrow(tiling2):
     return list(
-        PatternPlacementStrategy(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(tiling2)
+        PatternPlacementFactory(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(tiling2)
     )
 
 
 @pytest.fixture
 def placement2owncol(tiling2):
     return list(
-        PatternPlacementStrategy(partial=True, dirs=(DIR_WEST, DIR_EAST))(tiling2)
+        PatternPlacementFactory(partial=True, dirs=(DIR_WEST, DIR_EAST))(tiling2)
     )
 
 
@@ -168,15 +169,15 @@ def placement_only_west():
         obstructions=[GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3)],
         requirements=[[GriddedPerm(Perm((0,)), ((0, 0),))]],
     )
-    return list(PatternPlacementStrategy(dirs=[DIR_WEST])(t))
+    return list(PatternPlacementFactory(dirs=[DIR_WEST])(t))
 
 
 def test_row_placement():
     t = Tiling.from_string("132")
-    row_placement = RowAndColumnPlacementStrategy(
+    row_placement = RowAndColumnPlacementFactory(
         place_col=False, place_row=True, partial=False
     )
-    partial_row_placement = RowAndColumnPlacementStrategy(
+    partial_row_placement = RowAndColumnPlacementFactory(
         place_col=False, place_row=True, partial=True
     )
     assert len(list(row_placement(t))) == 2
@@ -185,10 +186,10 @@ def test_row_placement():
 
 def test_col_placement():
     t = Tiling.from_string("132")
-    col_placement = RowAndColumnPlacementStrategy(
+    col_placement = RowAndColumnPlacementFactory(
         place_col=True, place_row=False, partial=False
     )
-    partial_col_placement = RowAndColumnPlacementStrategy(
+    partial_col_placement = RowAndColumnPlacementFactory(
         place_col=True, place_row=False, partial=True
     )
     assert len(list(col_placement(t))) == 2
@@ -197,10 +198,10 @@ def test_col_placement():
 
 def test_row_col_placement():
     t = Tiling.from_string("132")
-    cr_placement = RowAndColumnPlacementStrategy(
+    cr_placement = RowAndColumnPlacementFactory(
         place_col=True, place_row=True, partial=False
     )
-    partial_cr_placement = RowAndColumnPlacementStrategy(
+    partial_cr_placement = RowAndColumnPlacementFactory(
         place_col=True, place_row=True, partial=True
     )
     assert len(list(cr_placement(t))) == 4
@@ -212,15 +213,15 @@ def test_all_placements():
         obstructions=[GriddedPerm(Perm((0, 1)), ((0, 0),) * 2)],
         requirements=[[GriddedPerm(Perm((0,)), ((0, 0),))]],
     )
-    rules = list(AllPlacementsStrategy()(t))
+    rules = list(AllPlacementsFactory()(t))
     # for rule in rules:
     #     print(rule)
     assert len(rules) == 8
 
 
 def test_point_placement(diverse_tiling, no_point_tiling):
-    point_placement = PatternPlacementStrategy(point_only=True)
-    requirement_placement = PatternPlacementStrategy(point_only=False)
+    point_placement = PatternPlacementFactory(point_only=True)
+    requirement_placement = PatternPlacementFactory(point_only=False)
     strats = list(point_placement(diverse_tiling))
     assert len(strats) == 5 * len(DIRS)
     strats = list(requirement_placement(no_point_tiling))
@@ -731,7 +732,7 @@ def test_formal_step():
 
 def test_all_col_placement_rules(tiling1):
     print(tiling1)
-    rules = list(RowAndColumnPlacementStrategy(place_row=False)(tiling1))
+    rules = list(RowAndColumnPlacementFactory(place_row=False)(tiling1))
     assert len(rules) == 8
     for rule in rules:
         assert isinstance(rule, Rule)
@@ -744,7 +745,7 @@ def test_all_col_placement_rules(tiling1):
 
 
 def test_all_col_placement_rules_partial(tiling1, t_col_placed):
-    rules = list(RowAndColumnPlacementStrategy(place_row=False, partial=True)(tiling1))
+    rules = list(RowAndColumnPlacementFactory(place_row=False, partial=True)(tiling1))
     assert len(rules) == 8
     for rule in rules:
         assert isinstance(rule, Rule)
@@ -757,7 +758,7 @@ def test_all_col_placement_rules_partial(tiling1, t_col_placed):
 
     print(t_col_placed)
     rules = rules = list(
-        RowAndColumnPlacementStrategy(place_row=False, partial=True)(t_col_placed)
+        RowAndColumnPlacementFactory(place_row=False, partial=True)(t_col_placed)
     )
     assert len(rules) == 2
     for rule in rules:
@@ -771,7 +772,7 @@ def test_all_col_placement_rules_partial(tiling1, t_col_placed):
 
 
 def test_all_row_placement_rules(tiling1):
-    rules = list(RowAndColumnPlacementStrategy(place_col=False)(tiling1))
+    rules = list(RowAndColumnPlacementFactory(place_col=False)(tiling1))
     assert len(rules) == 6
     for rule in rules:
         assert isinstance(rule, Rule)
@@ -784,7 +785,7 @@ def test_all_row_placement_rules(tiling1):
 
 
 def test_all_row_placement_rules_partial(tiling1, t_row_placed):
-    rules = list(RowAndColumnPlacementStrategy(place_col=False, partial=True)(tiling1))
+    rules = list(RowAndColumnPlacementFactory(place_col=False, partial=True)(tiling1))
     assert len(rules) == 6
     for rule in rules:
         assert isinstance(rule, Rule)
@@ -798,7 +799,7 @@ def test_all_row_placement_rules_partial(tiling1, t_row_placed):
     # Nothing to do if only not placing on own row
     print(t_row_placed)
     rules = list(
-        RowAndColumnPlacementStrategy(place_col=False, partial=True)(t_row_placed)
+        RowAndColumnPlacementFactory(place_col=False, partial=True)(t_row_placed)
     )
     assert len(rules) == 2
     for rule in rules:
@@ -814,22 +815,22 @@ def test_all_row_placement_rules_partial(tiling1, t_row_placed):
 
 def test_all_point_placement_rules(tiling1, tiling2, placement_only_west):
     all_rules = []
-    rules = list(PatternPlacementStrategy(point_only=True)(tiling1))
+    rules = list(PatternPlacementFactory(point_only=True)(tiling1))
     assert rules == []
 
-    rules = list(PatternPlacementStrategy(point_only=True)(tiling2))
+    rules = list(PatternPlacementFactory(point_only=True)(tiling2))
     assert len(rules) == 12
     all_rules.extend(rules)
 
     rules = list(
-        PatternPlacementStrategy(
+        PatternPlacementFactory(
             point_only=True, partial=True, dirs=(DIR_NORTH, DIR_SOUTH)
         )(tiling2)
     )
     assert len(rules) == 6
     all_rules.extend(rules)
     rules = list(
-        PatternPlacementStrategy(
+        PatternPlacementFactory(
             point_only=True, partial=True, dirs=(DIR_EAST, DIR_WEST)
         )(tiling2)
     )
@@ -865,7 +866,7 @@ def test_all_requirement_placement_rules():
         obstructions=[GriddedPerm(Perm((1, 0)), ((0, 0),) * 2)],
         requirements=[[GriddedPerm(Perm((0, 1)), ((0, 0),) * 2)]],
     )
-    rules = list(PatternPlacementStrategy()(t))
+    rules = list(PatternPlacementFactory()(t))
     assert len(rules) == 12
     for rule in rules:
         assert isinstance(rule, Rule)
@@ -908,37 +909,31 @@ def test_not_equivalent_to_itself(
     The opposite can create situation where the tiling is mark as unworkable
     because of the ignore parent flag.
     """
-    placement_fully_placed = list(PatternPlacementStrategy()(t_fully_placed))
+    placement_fully_placed = list(PatternPlacementFactory()(t_fully_placed))
     placement_fully_placed_partial_col = list(
-        PatternPlacementStrategy(partial=True, dirs=(DIR_WEST, DIR_EAST))(
-            t_fully_placed
-        )
+        PatternPlacementFactory(partial=True, dirs=(DIR_WEST, DIR_EAST))(t_fully_placed)
     )
     placement_fully_placed_partial_row = list(
-        PatternPlacementStrategy(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(
+        PatternPlacementFactory(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(
             t_fully_placed
         )
     )
-    placement_row_placed = list(PatternPlacementStrategy()(t_row_placed))
+    placement_row_placed = list(PatternPlacementFactory()(t_row_placed))
     placement_row_placed_partial_col = list(
-        PatternPlacementStrategy(partial=True, dirs=(DIR_EAST, DIR_WEST))(t_row_placed)
+        PatternPlacementFactory(partial=True, dirs=(DIR_EAST, DIR_WEST))(t_row_placed)
     )
     placement_row_placed_partial_row = list(
-        PatternPlacementStrategy(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(
-            t_row_placed
-        )
+        PatternPlacementFactory(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(t_row_placed)
     )
-    placement_row_placed2 = list(PatternPlacementStrategy()(t_row_placed2))
-    placement_col_placed = list(PatternPlacementStrategy()(t_col_placed))
+    placement_row_placed2 = list(PatternPlacementFactory()(t_row_placed2))
+    placement_col_placed = list(PatternPlacementFactory()(t_col_placed))
     placement_col_placed_partial_col = list(
-        PatternPlacementStrategy(partial=True, dirs=(DIR_EAST, DIR_WEST))(t_col_placed)
+        PatternPlacementFactory(partial=True, dirs=(DIR_EAST, DIR_WEST))(t_col_placed)
     )
     placement_col_placed_partial_row = list(
-        PatternPlacementStrategy(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(
-            t_col_placed
-        )
+        PatternPlacementFactory(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(t_col_placed)
     )
-    placement_col_placed2 = list(PatternPlacementStrategy()(t_col_placed2))
+    placement_col_placed2 = list(PatternPlacementFactory()(t_col_placed2))
     print("fully placed")
     print(t_fully_placed)
     print("row placed")
@@ -969,15 +964,15 @@ def test_not_equivalent_to_itself(
     assert all(r.children[0] != t_col_placed2 for r in placement_col_placed2)
 
     placement_fully_placed = list(
-        PatternPlacementStrategy(point_only=True)(t_fully_placed)
+        PatternPlacementFactory(point_only=True)(t_fully_placed)
     )
-    placement_row_placed = list(PatternPlacementStrategy(point_only=True)(t_row_placed))
+    placement_row_placed = list(PatternPlacementFactory(point_only=True)(t_row_placed))
     placement_row_placed2 = list(
-        PatternPlacementStrategy(point_only=True)(t_row_placed2)
+        PatternPlacementFactory(point_only=True)(t_row_placed2)
     )
-    placement_col_placed = list(PatternPlacementStrategy(point_only=True)(t_col_placed))
+    placement_col_placed = list(PatternPlacementFactory(point_only=True)(t_col_placed))
     placement_col_placed2 = list(
-        PatternPlacementStrategy(point_only=True)(t_col_placed2)
+        PatternPlacementFactory(point_only=True)(t_col_placed2)
     )
     # Point placements
     assert len(placement_fully_placed) == 0
@@ -993,31 +988,31 @@ def test_not_equivalent_to_itself(
     assert all(r.children[0] != t_col_placed2 for r in placement_col_placed2)
 
     placement_fully_placed = list(
-        RowAndColumnPlacementStrategy(place_col=False)(t_fully_placed)
+        RowAndColumnPlacementFactory(place_col=False)(t_fully_placed)
     )
     placement_fully_placed_partial_col = list(
-        RowAndColumnPlacementStrategy(place_col=False, partial=True)(t_fully_placed)
+        RowAndColumnPlacementFactory(place_col=False, partial=True)(t_fully_placed)
     )
     placement_fully_placed_partial_row = list(
-        RowAndColumnPlacementStrategy(place_col=False, partial=True)(t_fully_placed)
+        RowAndColumnPlacementFactory(place_col=False, partial=True)(t_fully_placed)
     )
     placement_row_placed = list(
-        RowAndColumnPlacementStrategy(place_col=False)(t_row_placed)
+        RowAndColumnPlacementFactory(place_col=False)(t_row_placed)
     )
     placement_row_placed_partial_col = list(
-        RowAndColumnPlacementStrategy(place_col=False, partial=True)(t_row_placed)
+        RowAndColumnPlacementFactory(place_col=False, partial=True)(t_row_placed)
     )
     placement_row_placed_partial_row = list(
-        RowAndColumnPlacementStrategy(place_col=False, partial=True)(t_col_placed)
+        RowAndColumnPlacementFactory(place_col=False, partial=True)(t_col_placed)
     )
     placement_row_placed2 = list(
-        RowAndColumnPlacementStrategy(place_col=False)(t_row_placed2)
+        RowAndColumnPlacementFactory(place_col=False)(t_row_placed2)
     )
     placement_col_placed = list(
-        RowAndColumnPlacementStrategy(place_col=False)(t_col_placed)
+        RowAndColumnPlacementFactory(place_col=False)(t_col_placed)
     )
     placement_col_placed2 = list(
-        RowAndColumnPlacementStrategy(place_col=False)(t_col_placed2)
+        RowAndColumnPlacementFactory(place_col=False)(t_col_placed2)
     )
     # Row placement
     assert len(placement_fully_placed) == 2
@@ -1031,25 +1026,25 @@ def test_not_equivalent_to_itself(
     assert len(placement_col_placed2) == 2
 
     placement_fully_placed = list(
-        RowAndColumnPlacementStrategy(place_row=False)(t_fully_placed)
+        RowAndColumnPlacementFactory(place_row=False)(t_fully_placed)
     )
     placement_fully_placed_partial_col = list(
-        RowAndColumnPlacementStrategy(place_row=False, partial=True)(t_fully_placed)
+        RowAndColumnPlacementFactory(place_row=False, partial=True)(t_fully_placed)
     )
     placement_fully_placed_partial_row = list(
-        RowAndColumnPlacementStrategy(place_row=False, partial=True)(t_fully_placed)
+        RowAndColumnPlacementFactory(place_row=False, partial=True)(t_fully_placed)
     )
     placement_row_placed = list(
-        RowAndColumnPlacementStrategy(place_row=False)(t_row_placed)
+        RowAndColumnPlacementFactory(place_row=False)(t_row_placed)
     )
     placement_row_placed2 = list(
-        RowAndColumnPlacementStrategy(place_row=False)(t_row_placed2)
+        RowAndColumnPlacementFactory(place_row=False)(t_row_placed2)
     )
     placement_col_placed = list(
-        RowAndColumnPlacementStrategy(place_row=False)(t_col_placed)
+        RowAndColumnPlacementFactory(place_row=False)(t_col_placed)
     )
     placement_col_placed2 = list(
-        RowAndColumnPlacementStrategy(place_row=False)(t_col_placed2)
+        RowAndColumnPlacementFactory(place_row=False)(t_col_placed2)
     )
     # Col placement
     assert len(placement_fully_placed) == 2
@@ -1063,7 +1058,7 @@ def test_not_equivalent_to_itself(
 
 def test_all_requirement_placement_rules_partial(tiling2):
     rules = list(
-        PatternPlacementStrategy(partial=True, dirs=(DIR_WEST, DIR_EAST))(tiling2)
+        PatternPlacementFactory(partial=True, dirs=(DIR_WEST, DIR_EAST))(tiling2)
     )
     for rule in rules:
         assert isinstance(rule, Rule)
@@ -1072,7 +1067,7 @@ def test_all_requirement_placement_rules_partial(tiling2):
         assert isinstance(rule.constructor, DisjointUnion)
         assert not rule.possibly_empty
     rules = list(
-        PatternPlacementStrategy(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(tiling2)
+        PatternPlacementFactory(partial=True, dirs=(DIR_NORTH, DIR_SOUTH))(tiling2)
     )
     for rule in rules:
         assert isinstance(rule, Rule)

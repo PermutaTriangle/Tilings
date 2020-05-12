@@ -3,17 +3,18 @@ from collections import defaultdict
 from itertools import chain, product
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
-from comb_spec_searcher import DisjointUnionStrategy, Rule, StrategyGenerator
+from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
+from comb_spec_searcher.strategies import Rule
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
 
 __all__ = [
-    "PatternPlacementStrategy",
-    "RowAndColumnPlacementStrategy",
-    "AllPlacementsStrategy",
-    "AllRequirementPlacementStrategy",
+    "PatternPlacementFactory",
+    "RequirementPlacementFactory",
+    "RowAndColumnPlacementFactory",
+    "AllPlacementsFactory",
 ]
 
 Cell = Tuple[int, int]
@@ -195,7 +196,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return cls(gps=gps, **d)
 
 
-class RequirementPlacementStrategyGenerator(StrategyGenerator[Tiling]):
+class AbstractRequirementPlacementFactory(StrategyFactory[Tiling]):
     """
     Base class for requirement placement on tilings.
 
@@ -272,11 +273,11 @@ class RequirementPlacementStrategyGenerator(StrategyGenerator[Tiling]):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "RequirementPlacementStrategyGenerator":
+    def from_dict(cls, d: dict) -> "AbstractRequirementPlacementFactory":
         return cls(**d)
 
 
-class PatternPlacementStrategy(RequirementPlacementStrategyGenerator):
+class PatternPlacementFactory(AbstractRequirementPlacementFactory):
     """
     Strategy that places a single forced point of a gridded permutation.
     Yield all possible rules coming from placing a point of a pattern that
@@ -376,11 +377,11 @@ class PatternPlacementStrategy(RequirementPlacementStrategyGenerator):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "RequirementPlacementStrategyGenerator":
+    def from_dict(cls, d: dict) -> "PatternPlacementFactory":
         return cls(**d)
 
 
-class AllRequirementPlacementStrategy(RequirementPlacementStrategyGenerator):
+class RequirementPlacementFactory(AbstractRequirementPlacementFactory):
     """
     Strategy that places a single forced point of a requirement (a set of
     gridded permutations).
@@ -495,11 +496,11 @@ class AllRequirementPlacementStrategy(RequirementPlacementStrategyGenerator):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "RequirementPlacementStrategyGenerator":
+    def from_dict(cls, d: dict) -> "RequirementPlacementFactory":
         return cls(**d)
 
 
-class RowAndColumnPlacementStrategy(RequirementPlacementStrategyGenerator):
+class RowAndColumnPlacementFactory(AbstractRequirementPlacementFactory):
     def __init__(
         self,
         place_row: bool = True,
@@ -570,18 +571,18 @@ class RowAndColumnPlacementStrategy(RequirementPlacementStrategyGenerator):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "RequirementPlacementStrategyGenerator":
+    def from_dict(cls, d: dict) -> "RowAndColumnPlacementFactory":
         return cls(**d)
 
 
-class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
+class AllPlacementsFactory(AbstractRequirementPlacementFactory):
 
-    PLACEMENT_STRATS: Tuple[RequirementPlacementStrategyGenerator, ...] = (
-        PatternPlacementStrategy(point_only=False),
-        PatternPlacementStrategy(point_only=True),
+    PLACEMENT_STRATS: Tuple[AbstractRequirementPlacementFactory, ...] = (
+        PatternPlacementFactory(point_only=False),
+        PatternPlacementFactory(point_only=True),
         # subreqs=True covers everything but it blows up massively!
-        AllRequirementPlacementStrategy(subreqs=False),
-        RowAndColumnPlacementStrategy(place_col=True, place_row=True),
+        RequirementPlacementFactory(subreqs=False),
+        RowAndColumnPlacementFactory(place_col=True, place_row=True),
     )
 
     def __init__(
@@ -608,7 +609,7 @@ class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
         res = frozenset(
             chain.from_iterable(
                 other_strat.req_indices_and_directions_to_place(tiling)
-                for other_strat in AllPlacementsStrategy.PLACEMENT_STRATS
+                for other_strat in AllPlacementsFactory.PLACEMENT_STRATS
             )
         )
         yield from res
@@ -627,5 +628,5 @@ class AllPlacementsStrategy(RequirementPlacementStrategyGenerator):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "AllPlacementsStrategy":
-        return AllPlacementsStrategy(**d)
+    def from_dict(cls, d: dict) -> "AllPlacementsFactory":
+        return cls(**d)

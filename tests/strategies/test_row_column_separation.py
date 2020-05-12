@@ -1,7 +1,8 @@
 import pytest
 
-from comb_spec_searcher import DisjointUnion, Rule
+from comb_spec_searcher import DisjointUnion
 from comb_spec_searcher.exception import StrategyDoesNotApply
+from comb_spec_searcher.strategies import Rule
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RowColSeparation

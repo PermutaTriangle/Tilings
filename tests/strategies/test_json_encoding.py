@@ -8,32 +8,32 @@ from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm
 from tilings.strategies import (
-    AllCellInsertionStrategy,
-    AllFactorInsertionStrategy,
-    AllFactorStrategy,
-    AllObstructionInferralStrategy,
-    AllPlacementsStrategy,
-    AllRequirementExtensionStrategy,
-    AllRequirementInsertionStrategy,
-    AllRequirementPlacementStrategy,
-    AllSymmetriesStrategy,
+    AllPlacementsFactory,
     BasicVerificationStrategy,
-    ComponentFusionStrategyGenerator,
+    CellInsertionFactory,
+    ComponentFusionFactory,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
-    EmptyCellInferralStrategy,
-    FusionStrategyGenerator,
+    EmptyCellInferralFactory,
+    FactorFactory,
+    FactorInsertionFactory,
+    FusionFactory,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
-    ObstructionTransitivityStrategy,
+    ObstructionInferralFactory,
+    ObstructionTransitivityFactory,
     OneByOneVerificationStrategy,
-    PatternPlacementStrategy,
-    RequirementCorroborationStrategy,
-    RootInsertionStrategy,
-    RowAndColumnPlacementStrategy,
+    PatternPlacementFactory,
+    RequirementCorroborationFactory,
+    RequirementExtensionFactory,
+    RequirementInsertionFactory,
+    RequirementPlacementFactory,
+    RootInsertionFactory,
+    RowAndColumnPlacementFactory,
     RowColumnSeparationStrategy,
-    SubobstructionInferralStrategy,
+    SubobstructionInferralFactory,
+    SymmetriesFactory,
 )
 from tilings.strategies.factor import (
     FactorStrategy,
@@ -245,19 +245,15 @@ def row_col_partial_ignoreparent_direction(strategy):
 
 
 strategy_objects = (
-    maxreqlen_extrabasis_ignoreparent(AllCellInsertionStrategy)
-    + ignoreparent(AllFactorInsertionStrategy)
-    + interleaving_unions_ignoreparent_workable(AllFactorStrategy)
-    + maxlen(AllObstructionInferralStrategy)
-    + ignoreparent(AllPlacementsStrategy)
-    + maxreqlen_extrabasis_ignoreparent(AllRequirementExtensionStrategy)
-    + maxreqlen_extrabasis_ignoreparent(AllRequirementInsertionStrategy)
-    + subreqs_partial_ignoreparent_dirs(AllRequirementPlacementStrategy)
-    + [
-        AllSymmetriesStrategy(),
-        BasicVerificationStrategy(),
-        EmptyCellInferralStrategy(),
-    ]
+    maxreqlen_extrabasis_ignoreparent(CellInsertionFactory)
+    + ignoreparent(FactorInsertionFactory)
+    + interleaving_unions_ignoreparent_workable(FactorFactory)
+    + maxlen(ObstructionInferralFactory)
+    + ignoreparent(AllPlacementsFactory)
+    + maxreqlen_extrabasis_ignoreparent(RequirementExtensionFactory)
+    + maxreqlen_extrabasis_ignoreparent(RequirementInsertionFactory)
+    + subreqs_partial_ignoreparent_dirs(RequirementPlacementFactory)
+    + [SymmetriesFactory(), BasicVerificationStrategy(), EmptyCellInferralFactory()]
     + partition_ignoreparent_workable(FactorStrategy)
     + partition_ignoreparent_workable(FactorWithInterleavingStrategy)
     + partition_ignoreparent_workable(FactorWithMonotoneInterleavingStrategy)
@@ -266,7 +262,7 @@ strategy_objects = (
     + ignoreparent(ElementaryVerificationStrategy)
     + ignoreparent(LocalVerificationStrategy)
     + ignoreparent(MonotoneTreeVerificationStrategy)
-    + [ObstructionTransitivityStrategy()]
+    + [ObstructionTransitivityFactory()]
     + [
         OneByOneVerificationStrategy(
             basis=[Perm((0, 1, 2)), Perm((2, 1, 0, 3))], ignore_parent=True
@@ -277,22 +273,22 @@ strategy_objects = (
         OneByOneVerificationStrategy(basis=[], ignore_parent=False, symmetry=False),
         OneByOneVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
     ]
-    + pointonly_partial_ignoreparent_dirs(PatternPlacementStrategy)
-    + ignoreparent(RequirementCorroborationStrategy)
+    + pointonly_partial_ignoreparent_dirs(PatternPlacementFactory)
+    + ignoreparent(RequirementCorroborationFactory)
     + gps_ignoreparent(RequirementInsertionStrategy)
     + gps_indices_direction_owncol_ownrow_ignoreparent_includeempty(
         RequirementPlacementStrategy
     )
-    + maxreqlen_extrabasis_ignoreparent_maxnumreq(RootInsertionStrategy)
-    + row_col_partial_ignoreparent_direction(RowAndColumnPlacementStrategy)
-    + [RowColumnSeparationStrategy(), SubobstructionInferralStrategy()]
+    + maxreqlen_extrabasis_ignoreparent_maxnumreq(RootInsertionFactory)
+    + row_col_partial_ignoreparent_direction(RowAndColumnPlacementFactory)
+    + [RowColumnSeparationStrategy(), SubobstructionInferralFactory()]
     + [FusionStrategy(row_idx=1)]
     + [FusionStrategy(col_idx=3)]
     + [ComponentFusionStrategy(row_idx=1)]
     + [ComponentFusionStrategy(col_idx=3)]
     + [ComponentFusionStrategy(col_idx=3)]
-    + [FusionStrategyGenerator()]
-    + [ComponentFusionStrategyGenerator()]
+    + [FusionFactory()]
+    + [ComponentFusionFactory()]
     + [
         ObstructionInferralStrategy(
             [GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 2)))]

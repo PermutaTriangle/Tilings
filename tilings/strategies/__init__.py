@@ -1,27 +1,27 @@
-from .factor import AllFactorStrategy
-from .fusion import ComponentFusionStrategyGenerator, FusionStrategyGenerator
+from .factor import FactorFactory
+from .fusion import ComponentFusionFactory, FusionFactory
 from .obstruction_inferral import (
-    AllObstructionInferralStrategy,
-    EmptyCellInferralStrategy,
-    ObstructionTransitivityStrategy,
-    SubobstructionInferralStrategy,
+    EmptyCellInferralFactory,
+    ObstructionInferralFactory,
+    ObstructionTransitivityFactory,
+    SubobstructionInferralFactory,
 )
 from .requirement_insertion import (
-    AllCellInsertionStrategy,
-    AllFactorInsertionStrategy,
-    AllRequirementExtensionStrategy,
-    AllRequirementInsertionStrategy,
-    RequirementCorroborationStrategy,
-    RootInsertionStrategy,
+    CellInsertionFactory,
+    FactorInsertionFactory,
+    RequirementCorroborationFactory,
+    RequirementExtensionFactory,
+    RequirementInsertionFactory,
+    RootInsertionFactory,
 )
 from .requirement_placement import (
-    AllPlacementsStrategy,
-    AllRequirementPlacementStrategy,
-    PatternPlacementStrategy,
-    RowAndColumnPlacementStrategy,
+    AllPlacementsFactory,
+    PatternPlacementFactory,
+    RequirementPlacementFactory,
+    RowAndColumnPlacementFactory,
 )
 from .row_and_col_separation import RowColumnSeparationStrategy
-from .symmetry import AllSymmetriesStrategy
+from .symmetry import SymmetriesFactory
 from .verification import (
     BasicVerificationStrategy,
     DatabaseVerificationStrategy,
@@ -34,30 +34,30 @@ from .verification import (
 
 __all__ = [
     # Batch
-    "AllCellInsertionStrategy",
-    "AllFactorInsertionStrategy",
-    "AllPlacementsStrategy",
-    "AllRequirementExtensionStrategy",
-    "AllRequirementInsertionStrategy",
-    "AllRequirementPlacementStrategy",
-    "RequirementCorroborationStrategy",
-    "RootInsertionStrategy",
-    "RowAndColumnPlacementStrategy",
+    "CellInsertionFactory",
+    "FactorInsertionFactory",
+    "AllPlacementsFactory",
+    "RequirementExtensionFactory",
+    "RequirementInsertionFactory",
+    "RequirementPlacementFactory",
+    "RequirementCorroborationFactory",
+    "RootInsertionFactory",
+    "RowAndColumnPlacementFactory",
     # Decomposition
-    "AllFactorStrategy",
+    "FactorFactory",
     # Equivalence
-    "PatternPlacementStrategy",
+    "PatternPlacementFactory",
     # Fusion
-    "ComponentFusionStrategyGenerator",
-    "FusionStrategyGenerator",
+    "ComponentFusionFactory",
+    "FusionFactory",
     # Inferral
-    "EmptyCellInferralStrategy",
-    "AllObstructionInferralStrategy",
-    "ObstructionTransitivityStrategy",
+    "EmptyCellInferralFactory",
+    "ObstructionInferralFactory",
+    "ObstructionTransitivityFactory",
     "RowColumnSeparationStrategy",
-    "SubobstructionInferralStrategy",
+    "SubobstructionInferralFactory",
     # Symmetry
-    "AllSymmetriesStrategy",
+    "SymmetriesFactory",
     # Verification
     "BasicVerificationStrategy",
     "DatabaseVerificationStrategy",

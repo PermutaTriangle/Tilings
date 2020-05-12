@@ -1,6 +1,6 @@
 from typing import Iterable, Iterator, List, Optional, Sequence, Tuple
 
-from comb_spec_searcher import DisjointUnionStrategy, StrategyGenerator
+from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
     AllObstructionInferral,
@@ -9,10 +9,9 @@ from tilings.algorithms import (
 )
 
 __all__ = [
-    "EmptyCellInferralStrategy",
-    "ObstructionInferralStrategy",
-    "ObstructionTransitivityStrategy",
-    "SubobstructionInferral",
+    "EmptyCellInferralFactory",
+    "ObstructionTransitivityFactory",
+    "SubobstructionInferralFactory",
 ]
 
 
@@ -80,7 +79,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return cls(gps=gps)
 
 
-class AllObstructionInferralStrategy(StrategyGenerator[Tiling]):
+class ObstructionInferralFactory(StrategyFactory[Tiling]):
     """
     A strategy used for adding obstruction that the tiling avoids, but not
     currently in the obstructions.
@@ -112,7 +111,7 @@ class AllObstructionInferralStrategy(StrategyGenerator[Tiling]):
         return d
 
     @classmethod
-    def from_dict(cls, d) -> "AllObstructionInferralStrategy":
+    def from_dict(cls, d) -> "ObstructionInferralFactory":
         return cls(**d)
 
     def __repr__(self) -> str:
@@ -124,7 +123,7 @@ class AllObstructionInferralStrategy(StrategyGenerator[Tiling]):
         return "obstruction inferral (max length is {})".format(self.maxlen)
 
 
-class EmptyCellInferralStrategy(AllObstructionInferralStrategy):
+class EmptyCellInferralFactory(ObstructionInferralFactory):
     def __init__(self):
         super().__init__(maxlen=1)
 
@@ -138,7 +137,7 @@ class EmptyCellInferralStrategy(AllObstructionInferralStrategy):
         return cls(**d)
 
 
-class SubobstructionInferralStrategy(AllObstructionInferralStrategy):
+class SubobstructionInferralFactory(ObstructionInferralFactory):
     def __init__(self):
         super().__init__(maxlen=None)
 
@@ -164,7 +163,7 @@ class SubobstructionInferralStrategy(AllObstructionInferralStrategy):
         return "subobstruction inferral"
 
 
-class ObstructionTransitivityStrategy(AllObstructionInferralStrategy):
+class ObstructionTransitivityFactory(ObstructionInferralFactory):
     """
     The obstruction transitivity strategy.
 
@@ -193,6 +192,6 @@ class ObstructionTransitivityStrategy(AllObstructionInferralStrategy):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "ObstructionTransitivityStrategy":
+    def from_dict(cls, d: dict) -> "ObstructionTransitivityFactory":
         assert not d, "ObstructionInferralStrategy takes no arguments"
         return cls()

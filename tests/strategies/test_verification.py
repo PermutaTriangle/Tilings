@@ -3,12 +3,9 @@ import abc
 import pytest
 import sympy
 
-from comb_spec_searcher import (
-    CombinatorialSpecification,
-    StrategyPack,
-    VerificationRule,
-)
+from comb_spec_searcher import CombinatorialSpecification, StrategyPack
 from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
+from comb_spec_searcher.strategies import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
 from tilings import GriddedPerm, Tiling

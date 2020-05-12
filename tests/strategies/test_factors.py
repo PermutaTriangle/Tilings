@@ -3,7 +3,7 @@ import pytest
 from comb_spec_searcher import CartesianProduct
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
-from tilings.strategies import AllFactorStrategy
+from tilings.strategies import FactorFactory
 from tilings.strategies.factor import Interleaving, MonotoneInterleaving
 
 pytest_plugins = [
@@ -42,27 +42,27 @@ def not_fact_tiling():
 
 @pytest.fixture
 def factor_rules(tiling):
-    return [s(tiling) for s in AllFactorStrategy()(tiling)]
+    return [s(tiling) for s in FactorFactory()(tiling)]
 
 
 @pytest.fixture
 def factor_with_int_rules(tiling):
-    return [s(tiling) for s in AllFactorStrategy(interleaving="all")(tiling)]
+    return [s(tiling) for s in FactorFactory(interleaving="all")(tiling)]
 
 
 @pytest.fixture
 def factor_with_mon_int_rules(tiling):
-    return [s(tiling) for s in AllFactorStrategy(interleaving="monotone")(tiling)]
+    return [s(tiling) for s in FactorFactory(interleaving="monotone")(tiling)]
 
 
 def test_not_factorable(simple_tiling):
-    assert len(list(AllFactorStrategy()(simple_tiling))) == 0
-    assert len(list(AllFactorStrategy(interleaving="monotone")(simple_tiling))) == 0
-    assert len(list(AllFactorStrategy(interleaving="all")(simple_tiling))) == 0
+    assert len(list(FactorFactory()(simple_tiling))) == 0
+    assert len(list(FactorFactory(interleaving="monotone")(simple_tiling))) == 0
+    assert len(list(FactorFactory(interleaving="all")(simple_tiling))) == 0
 
 
 def test_with_unions(diverse_tiling):
-    strats = list(AllFactorStrategy(interleaving="all", unions=True)(diverse_tiling))
+    strats = list(FactorFactory(interleaving="all", unions=True)(diverse_tiling))
     assert len(strats) == 14
     assert sum(1 for s in strats if s.workable) == 1
     assert sum(1 for s in strats if not s.workable) == 13
@@ -70,9 +70,7 @@ def test_with_unions(diverse_tiling):
 
 def test_with_unions_not_workable(diverse_tiling):
     strats = list(
-        AllFactorStrategy(interleaving="all", unions=True, workable=False,)(
-            diverse_tiling
-        )
+        FactorFactory(interleaving="all", unions=True, workable=False,)(diverse_tiling)
     )
     assert sum(1 for s in strats if s.workable) == 0
     assert sum(1 for s in strats if not s.workable) == 14
@@ -88,7 +86,7 @@ def test_standard_factor():
             ]
         ],
     )
-    strats = [s(tiling).children for s in AllFactorStrategy()(tiling)]
+    strats = [s(tiling).children for s in FactorFactory()(tiling)]
     assert len(strats) == 1
     factors = strats[0]
     assert set(factors) == set(
@@ -109,7 +107,7 @@ def test_standard_factor():
 def test_factor_all_interleaving(diverse_tiling):
     strats = [
         s(diverse_tiling).children
-        for s in AllFactorStrategy(interleaving="all")(diverse_tiling)
+        for s in FactorFactory(interleaving="all")(diverse_tiling)
     ]
     assert len(strats) == 1
     factors = strats[0]
@@ -196,7 +194,7 @@ def test_rule(
     assert all(rule.workable for rule in all_rules)
     assert all(not rule.possibly_empty for rule in all_rules)
     assert all(rule.ignore_parent for rule in all_rules)
-    assert not list(AllFactorStrategy(interleaving="all")(not_fact_tiling))
+    assert not list(FactorFactory(interleaving="all")(not_fact_tiling))
 
 
 def test_all_union_rules():
@@ -207,7 +205,7 @@ def test_all_union_rules():
             GriddedPerm(Perm((0, 1)), ((2, 2),) * 2),
         ]
     )
-    fo = AllFactorStrategy(unions=True)(t)
+    fo = FactorFactory(unions=True)(t)
     f2 = Tiling(obstructions=[GriddedPerm(Perm((0, 1)), ((0, 0),) * 2)])
     # The full factorisation rule is not returned
     assert all(rule(t).children != [f2, f2, f2] for rule in fo)

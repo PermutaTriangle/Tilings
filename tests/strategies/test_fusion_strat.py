@@ -1,10 +1,10 @@
 import pytest
 
-from comb_spec_searcher import Rule
+from comb_spec_searcher.strategies import Rule
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
-from tilings.strategies import ComponentFusionStrategyGenerator, FusionStrategyGenerator
+from tilings.strategies import ComponentFusionFactory, FusionFactory
 from tilings.strategies.fusion import (
     ComponentFusionConstructor,
     ComponentFusionStrategy,
@@ -49,8 +49,8 @@ def tiling2():
 
 
 def test_component_fusion(tiling1, tiling2):
-    assert len(list(ComponentFusionStrategyGenerator()(tiling1))) == 0
-    assert len(list(ComponentFusionStrategyGenerator()(tiling2))) == 1
+    assert len(list(ComponentFusionFactory()(tiling1))) == 0
+    assert len(list(ComponentFusionFactory()(tiling2))) == 1
 
 
 @pytest.fixture
@@ -107,8 +107,8 @@ def big_tiling():
 
 
 def test_fusion(small_tiling, big_tiling):
-    assert len(list(FusionStrategyGenerator()(big_tiling))) == 0
-    small_tiling_rules = list(FusionStrategyGenerator()(small_tiling))
+    assert len(list(FusionFactory()(big_tiling))) == 0
+    small_tiling_rules = list(FusionFactory()(small_tiling))
     assert len(small_tiling_rules) == 2
     assert all(isinstance(rule, Rule) for rule in small_tiling_rules)
     assert all(
@@ -121,7 +121,7 @@ def test_fusion(small_tiling, big_tiling):
             GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
         ]
     )
-    t_rules = list(FusionStrategyGenerator()(t))
+    t_rules = list(FusionFactory()(t))
     assert len(t_rules) == 1
 
 

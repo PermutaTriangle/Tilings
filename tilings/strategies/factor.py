@@ -8,7 +8,7 @@ from comb_spec_searcher import (
     CartesianProductStrategy,
     CombinatorialObject,
     Strategy,
-    StrategyGenerator,
+    StrategyFactory,
 )
 from comb_spec_searcher.strategies.constructor import SubGens, SubRecs, SubSamplers
 from permuta import Perm
@@ -24,7 +24,7 @@ from tilings.misc import partitions_iterator
 Cell = Tuple[int, int]
 
 __all__ = (
-    "AllFactorStrategy",
+    "FactorFactory",
     "FactorStrategy",
     "FactorWithInterleavingStrategy",
     "FactorWithMonotoneInterleavingStrategy",
@@ -196,7 +196,7 @@ class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
         return MonotoneInterleaving(children)
 
 
-class AllFactorStrategy(StrategyGenerator[Tiling]):
+class FactorFactory(StrategyFactory[Tiling]):
 
     FACTOR_ALGO_AND_CLASS = {
         None: (Factor, FactorStrategy),
@@ -221,7 +221,7 @@ class AllFactorStrategy(StrategyGenerator[Tiling]):
         except KeyError:
             raise InvalidOperationError(
                 "Invalid interleaving option. Must be in {}, used {}".format(
-                    AllFactorStrategy.FACTOR_ALGO_AND_CLASS.keys(), interleaving
+                    FactorFactory.FACTOR_ALGO_AND_CLASS.keys(), interleaving
                 )
             )
         self.unions = unions
@@ -284,5 +284,5 @@ class AllFactorStrategy(StrategyGenerator[Tiling]):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "AllFactorStrategy":
+    def from_dict(cls, d: dict) -> "FactorFactory":
         return cls(**d)

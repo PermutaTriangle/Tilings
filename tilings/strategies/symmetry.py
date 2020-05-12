@@ -2,10 +2,10 @@ import abc
 from functools import partial
 from typing import Iterator, Optional, Tuple
 
-from comb_spec_searcher import StrategyGenerator, SymmetryStrategy
+from comb_spec_searcher import StrategyFactory, SymmetryStrategy
 from tilings import GriddedPerm, Tiling
 
-__all__ = ("AllSymmetriesStrategy",)
+__all__ = ("SymmetriesFactory",)
 
 
 class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
@@ -223,7 +223,7 @@ class TilingRotate270(TilingSymmetryStrategy):
         return "rotate270"
 
 
-class AllSymmetriesStrategy(StrategyGenerator[Tiling]):
+class SymmetriesFactory(StrategyFactory[Tiling]):
     """
     Yield all symmetry strategies for a tiling.
     """
@@ -268,5 +268,5 @@ class AllSymmetriesStrategy(StrategyGenerator[Tiling]):
         return self.__class__.__name__ + "()"
 
     @classmethod
-    def from_dict(cls, d: dict) -> "AllSymmetriesStrategy":
+    def from_dict(cls, d: dict) -> "SymmetriesFactory":
         return cls()

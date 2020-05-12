@@ -14,9 +14,9 @@ from tilings.algorithms.enumeration import (
     MonotoneTreeEnumeration,
 )
 from tilings.strategies import (
-    AllFactorInsertionStrategy,
-    AllFactorStrategy,
-    RequirementCorroborationStrategy,
+    FactorFactory,
+    FactorInsertionFactory,
+    RequirementCorroborationFactory,
 )
 
 x = var("x")
@@ -213,9 +213,9 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
     def pack() -> StrategyPack:
         return StrategyPack(
             name="LocallyFactorable",
-            initial_strats=[AllFactorStrategy(), RequirementCorroborationStrategy()],
+            initial_strats=[FactorFactory(), RequirementCorroborationFactory()],
             inferral_strats=[],
-            expansion_strats=[[AllFactorInsertionStrategy()]],
+            expansion_strats=[[FactorInsertionFactory()]],
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),

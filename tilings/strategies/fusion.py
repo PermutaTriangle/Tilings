@@ -5,10 +5,10 @@ from sympy import Eq, Function
 from comb_spec_searcher import (
     CombinatorialObject,
     Constructor,
-    Rule,
     Strategy,
-    StrategyGenerator,
+    StrategyFactory,
 )
+from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.strategies.constructor import (
     RelianceProfile,
     SubGens,
@@ -150,7 +150,7 @@ class ComponentFusionStrategy(FusionStrategy):
         return "component fuse {} {} and {}".format(fusing, idx, idx + 1)
 
 
-class FusionStrategyGenerator(StrategyGenerator[Tiling]):
+class FusionFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
@@ -171,12 +171,12 @@ class FusionStrategyGenerator(StrategyGenerator[Tiling]):
         return self.__class__.__name__ + "()"
 
     @classmethod
-    def from_dict(cls, d: dict) -> "FusionStrategyGenerator":
-        assert not d, "FusionStrategyGenerator takes not arguments"
+    def from_dict(cls, d: dict) -> "FusionFactory":
+        assert not d, "FusionFactory takes not arguments"
         return cls()
 
 
-class ComponentFusionStrategyGenerator(StrategyGenerator[Tiling]):
+class ComponentFusionFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         if comb_class.requirements:
             return
@@ -203,6 +203,6 @@ class ComponentFusionStrategyGenerator(StrategyGenerator[Tiling]):
         return self.__class__.__name__ + "()"
 
     @classmethod
-    def from_dict(cls, d: dict) -> "ComponentFusionStrategyGenerator":
-        assert not d, "ComponentFusionStrategyGenerator takes not arguments"
+    def from_dict(cls, d: dict) -> "ComponentFusionFactory":
+        assert not d, "ComponentFusionFactory takes not arguments"
         return cls()
