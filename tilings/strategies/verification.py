@@ -1,19 +1,25 @@
-from typing import Iterable, Optional, Type
+from itertools import chain
+from typing import Iterable, Iterator, List, Optional, Tuple
 
-from comb_spec_searcher import Rule
+from sympy import Expr, var
+
+from comb_spec_searcher import AtomStrategy, StrategyPack, VerificationStrategy
+from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
 from permuta import Perm
-from tilings import Tiling
+from permuta.permutils.symmetry import all_symmetry_sets
+from tilings import GriddedPerm, Tiling
 from tilings.algorithms.enumeration import (
-    BasicEnumeration,
     DatabaseEnumeration,
-    ElementaryEnumeration,
-    Enumeration,
     LocalEnumeration,
-    LocallyFactorableEnumeration,
     MonotoneTreeEnumeration,
-    OneByOneEnumeration,
 )
-from tilings.strategies.abstract_strategy import Strategy
+from tilings.strategies import (
+    FactorFactory,
+    FactorInsertionFactory,
+    RequirementCorroborationFactory,
+)
+
+x = var("x")
 
 __all__ = [
     "BasicVerificationStrategy",
@@ -26,94 +32,263 @@ __all__ = [
 ]
 
 
-class _VerificationStrategy(Strategy):
-    """
-    Abstract verification strategy class the group the shared logic of
-    verification strategy. Subclass need to have the class attribute
-    `VERIFICATION_CLASS`.
-    """
+BasicVerificationStrategy = AtomStrategy
+TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
 
-    # pylint: disable=E1102
-    VERIFICATION_CLASS = NotImplemented  # type: Type[Enumeration]
 
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        if cls.VERIFICATION_CLASS is NotImplemented:
-            raise NotImplementedError(
-                "Need to define {}.VERIFICATION_CLASS".format(cls.__name__)
-            )
+class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
+    def __init__(
+        self,
+        basis: Optional[Iterable[Perm]] = None,
+        symmetry: bool = False,
+        ignore_parent: bool = True,
+    ):
+        self._basis = tuple(basis) if basis is not None else tuple()
+        self._symmetry = symmetry
+        assert all(
+            isinstance(p, Perm) for p in self._basis
+        ), "Element of the basis must be Perm"
+        if symmetry:
+            self.symmetries = set(frozenset(b) for b in all_symmetry_sets(self._basis))
+        else:
+            self.symmetries = set([frozenset(self._basis)])
+        super().__init__(ignore_parent=ignore_parent)
 
-    def __call__(self, tiling: Tiling, **kwargs) -> Optional[Rule]:
-        return self.VERIFICATION_CLASS(tiling).verification_rule()
+    def change_basis(
+        self, basis: Iterable[Perm], symmetry: bool = False
+    ) -> "OneByOneVerificationStrategy":
+        """
+        Return a new version of the verfication strategy with the given basis instead of
+        the current one.
+        """
+        basis = tuple(basis)
+        return self.__class__(basis, self._symmetry, self.ignore_parent)
+
+    @property
+    def basis(self) -> Tuple[Perm, ...]:
+        return self._basis
+
+    @staticmethod
+    def pack() -> StrategyPack:
+        raise InvalidOperationError(
+            "Cannot get a specification for one by one verification"
+        )
+
+    def verified(self, tiling: Tiling) -> bool:
+        return (
+            tiling.dimensions == (1, 1)
+            and frozenset(ob.patt for ob in tiling.obstructions) not in self.symmetries
+        )
+
+    @staticmethod
+    def formal_step() -> str:
+        return "tiling is a subclass of the original tiling"
+
+    def get_genf(self, tiling: Tiling):
+        if not self.verified(tiling):
+            raise StrategyDoesNotApply("tiling not one by one verified")
+        return LocalEnumeration(tiling).get_genf()
+
+    def count_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> int:
+        raise NotImplementedError(
+            "Not implemented method to count objects for monotone tree "
+            "verified tilings"
+        )
+
+    def generate_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError(
+            "Not implemented method to generate objects for monotone tree "
+            "verified tilings"
+        )
+
+    def random_sample_object_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        raise NotImplementedError(
+            "Not implemented random sample for monotone tree verified tilings"
+        )
 
     def __repr__(self) -> str:
+        if self.symmetries:
+            return self.__class__.__name__ + (
+                "(basis={}, symmetry={}, " "ignore_parent={})"
+            ).format(list(self._basis), True, self.ignore_parent)
         return self.__class__.__name__ + "()"
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "_VerificationStrategy":
-        return cls()
-
-
-class BasicVerificationStrategy(_VerificationStrategy):
-    """Verify the most basics tilings."""
-
-    VERIFICATION_CLASS = BasicEnumeration
-
-    def __str__(self) -> str:
-        return "basic verification"
-
-
-class OneByOneVerificationStrategy(_VerificationStrategy):
-    """Return a verification if one-by-one verified."""
-
-    VERIFICATION_CLASS = OneByOneEnumeration
-
-    def __call__(self, tiling: Tiling, **kwargs):
-        if "basis" not in kwargs:
-            raise TypeError("Missing basis argument")
-        basis = kwargs["basis"]  # type: Iterable[Perm]
-        return self.VERIFICATION_CLASS(tiling, basis).verification_rule()
 
     def __str__(self) -> str:
         return "one by one verification"
 
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["basis"] = self._basis
+        d["symmetry"] = self._symmetry
+        return d
 
-class DatabaseVerificationStrategy(_VerificationStrategy):
-    """Verify a tiling that is in the database"""
+    @classmethod
+    def from_dict(cls, d: dict) -> "OneByOneVerificationStrategy":
+        if d["basis"] is not None:
+            basis: Optional[List[Perm]] = [Perm(p) for p in d.pop("basis")]
+        else:
+            basis = d.pop("basis")
+        return cls(basis=basis, **d)
 
-    VERIFICATION_CLASS = DatabaseEnumeration
+
+class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
+    """
+    Enumeration strategy for a tilings that are in the database.
+
+    There is not always a specification for a tiling in the database but you
+    can always find the generating function by looking up the database.
+    """
+
+    @staticmethod
+    def pack() -> StrategyPack:
+        # TODO: check database for tiling
+        raise InvalidOperationError(
+            "Cannot get a specification for a tiling in the database"
+        )
+
+    @staticmethod
+    def verified(tiling: Tiling):
+        return DatabaseEnumeration(tiling).verified()
+
+    @staticmethod
+    def formal_step() -> str:
+        return "tiling is in the database"
+
+    def get_genf(self, tiling: Tiling):
+        if not self.verified(tiling):
+            raise StrategyDoesNotApply("tiling is not in the database")
+        return DatabaseEnumeration(tiling).get_genf()
+
+    def count_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> int:
+        raise NotImplementedError(
+            "Not implemented method to count objects for monotone tree "
+            "verified tilings"
+        )
+
+    def generate_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError(
+            "Not implemented method to generate objects for monotone tree "
+            "verified tilings"
+        )
+
+    def random_sample_object_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        raise NotImplementedError(
+            "Not implemented random sample for monotone tree verified tilings"
+        )
 
     def __str__(self) -> str:
         return "database verification"
 
+    @classmethod
+    def from_dict(cls, d: dict) -> "DatabaseVerificationStrategy":
+        return cls(**d)
 
-class LocallyFactorableVerificationStrategy(_VerificationStrategy):
+
+class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
     """
-    The locally factorable verified strategy.
+    Verification strategy for a locally factorable tiling.
 
-    A tiling is locally factorable if every requirement and obstruction is
-    non-interleaving, i.e. use a single cell in each row and column.
+    A tiling is locally factorable if all its obstructions and requirements are
+    locally factorable, i.e. each obstruction or requirement use at most one
+    cell on each row and column. To be locally factorable, a tiling
+    should not be equivalent to a 1x1 tiling.
+
+    A locally factorable tiling can be describe with a specification with only subset
+    verified tiling.
     """
 
-    VERIFICATION_CLASS = LocallyFactorableEnumeration
+    @staticmethod
+    def pack() -> StrategyPack:
+        return StrategyPack(
+            name="LocallyFactorable",
+            initial_strats=[FactorFactory(), RequirementCorroborationFactory()],
+            inferral_strats=[],
+            expansion_strats=[[FactorInsertionFactory()]],
+            ver_strats=[
+                BasicVerificationStrategy(),
+                OneByOneVerificationStrategy(),
+                MonotoneTreeVerificationStrategy(),  # no factors
+                LocalVerificationStrategy(),  # no factors
+            ],
+        )
+
+    @staticmethod
+    def _locally_factorable_obstructions(tiling: Tiling):
+        """
+        Check if all the obstructions of the tiling are locally factorable.
+        """
+        return all(not ob.is_interleaving() for ob in tiling.obstructions)
+
+    @staticmethod
+    def _locally_factorable_requirements(tiling: Tiling):
+        """
+        Check if all the requirements of the tiling are locally factorable.
+        """
+        reqs = chain.from_iterable(tiling.requirements)
+        return all(not r.is_interleaving() for r in reqs)
+
+    def verified(self, tiling: Tiling):
+        return (
+            not tiling.dimensions == (1, 1)
+            and self._locally_factorable_obstructions(tiling)
+            and self._locally_factorable_requirements(tiling)
+        )
+
+    @staticmethod
+    def formal_step() -> str:
+        return "tiling is locally factorable"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "LocallyFactorableVerificationStrategy":
+        return cls(**d)
 
     def __str__(self) -> str:
         return "locally factorable verification"
 
 
-class ElementaryVerificationStrategy(_VerificationStrategy):
+class ElementaryVerificationStrategy(LocallyFactorableVerificationStrategy):
     """
-    A tiling is elementary verified if it is locally factorable
-    and has no interleaving cells.
+    Verification strategy for elementary tilings.
+
+    A tiling is elementary if each active cell is on its own row and column.
+    To be elementary, a tiling should not be equivalent to a 1x1
+    tiling.
+
+    By definition an elementary tiling is locally factorable.
+
+    A elementary tiling can be describe with a specification with only one by one
+    verified tiling.
     """
 
-    VERIFICATION_CLASS = ElementaryEnumeration
+    @staticmethod
+    def verified(tiling: Tiling):
+        return tiling.fully_isolated() and not tiling.dimensions == (1, 1)
+
+    @staticmethod
+    def formal_step() -> str:
+        return "tiling is elementary verified"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "ElementaryVerificationStrategy":
+        return cls(**d)
 
     def __str__(self) -> str:
         return "elementary verification"
 
 
-class LocalVerificationStrategy(_VerificationStrategy):
+class LocalVerificationStrategy(TileScopeVerificationStrategy):
     """
     The local verified strategy.
 
@@ -121,18 +296,108 @@ class LocalVerificationStrategy(_VerificationStrategy):
     localized, i.e. in a single cell and the tiling is not 1x1.
     """
 
-    VERIFICATION_CLASS = LocalEnumeration
+    @staticmethod
+    def pack() -> StrategyPack:
+        # TODO: check database for tiling
+        raise InvalidOperationError(
+            "Cannot get a specification for a tiling in the database"
+        )
+
+    @staticmethod
+    def verified(tiling: Tiling):
+        return tiling.dimensions != (1, 1) and LocalEnumeration(tiling).verified()
+
+    @staticmethod
+    def formal_step() -> str:
+        return "tiling is locally enumerable"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "LocalVerificationStrategy":
+        return cls(**d)
+
+    def get_genf(self, tiling: Tiling):
+        if not self.verified(tiling):
+            raise StrategyDoesNotApply("tiling not locally verified")
+        return LocalEnumeration(tiling).get_genf()
+
+    def count_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> int:
+        raise NotImplementedError(
+            "Not implemented method to count objects for monotone tree "
+            "verified tilings"
+        )
+
+    def generate_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError(
+            "Not implemented method to generate objects for monotone tree "
+            "verified tilings"
+        )
+
+    def random_sample_object_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        raise NotImplementedError(
+            "Not implemented random sample for monotone tree verified tilings"
+        )
 
     def __str__(self) -> str:
         return "local verification"
 
 
-class MonotoneTreeVerificationStrategy(_VerificationStrategy):
+class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
     """
     Verify all tiling that is a monotone tree.
     """
 
-    VERIFICATION_CLASS = MonotoneTreeEnumeration
+    @staticmethod
+    def pack() -> StrategyPack:
+        # TODO: check database for tiling
+        raise InvalidOperationError(
+            "Cannot get a specification for a tiling in the database"
+        )
+
+    @staticmethod
+    def verified(tiling: Tiling):
+        return MonotoneTreeEnumeration(tiling).verified()
+
+    @staticmethod
+    def formal_step() -> str:
+        return "tiling is a monotone tree"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "MonotoneTreeVerificationStrategy":
+        return cls(**d)
+
+    def get_genf(self, tiling: Tiling) -> Expr:
+        if not self.verified(tiling):
+            raise StrategyDoesNotApply("tiling is not monotone tree verified")
+        return MonotoneTreeEnumeration(tiling).get_genf()
+
+    def count_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> int:
+        raise NotImplementedError(
+            "Not implemented method to count objects for monotone tree "
+            "verified tilings"
+        )
+
+    def generate_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError(
+            "Not implemented method to generate objects for monotone tree "
+            "verified tilings"
+        )
+
+    def random_sample_object_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        raise NotImplementedError(
+            "Not implemented random sample for monotone tree verified tilings"
+        )
 
     def __str__(self) -> str:
         return "monotone tree verification"

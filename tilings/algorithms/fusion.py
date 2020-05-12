@@ -2,9 +2,8 @@
 from collections import Counter
 from itertools import chain
 
-from comb_spec_searcher import Rule
 from permuta import Perm
-from tilings import Obstruction
+from tilings.griddedperm import GriddedPerm
 
 
 class Fusion:
@@ -158,30 +157,6 @@ class Fusion:
             requirements=self.requirements_fuse_counters,
         )
 
-    def formal_step(self):
-        """
-        Return a string describing the operation performed on the tiling.
-        """
-        fusing = "rows" if self._fuse_row else "columns"
-        idx = self._row_idx if self._fuse_row else self._col_idx
-        return "Fuse {} {} and {}.".format(fusing, idx, idx + 1)
-
-    def rule(self):
-        """
-        Return a comb_spec_searcher rule for the fusion.
-
-        If the tiling is not fusable, return None.
-        """
-        if self.fusable():
-            return Rule(
-                formal_step=self.formal_step(),
-                comb_classes=[self.fused_tiling()],
-                inferable=[True],
-                workable=[True],
-                possibly_empty=[False],
-                constructor="other",
-            )
-
 
 class ComponentFusion(Fusion):
     """
@@ -283,13 +258,13 @@ class ComponentFusion(Fusion):
         scell = self.second_cell
         if self._fuse_row:
             possible_obs = [
-                Obstruction(Perm((0, 1)), (fcell, scell)),
-                Obstruction(Perm((1, 0)), (scell, fcell)),
+                GriddedPerm(Perm((0, 1)), (fcell, scell)),
+                GriddedPerm(Perm((1, 0)), (scell, fcell)),
             ]
         else:
             possible_obs = [
-                Obstruction(Perm((0, 1)), (fcell, scell)),
-                Obstruction(Perm((1, 0)), (fcell, scell)),
+                GriddedPerm(Perm((0, 1)), (fcell, scell)),
+                GriddedPerm(Perm((1, 0)), (fcell, scell)),
             ]
         return any(ob in possible_obs for ob in self._tiling.obstructions)
 
@@ -345,14 +320,6 @@ class ComponentFusion(Fusion):
         new_obs = chain(self._tiling.obstructions, self.obstructions_to_add())
         new_tiling = self._tiling.__class__(new_obs, self._tiling.requirements)
         return self._tiling == new_tiling
-
-    def formal_step(self):
-        """
-        Return a string describing the operation performed on the tiling.
-        """
-        fusing = "rows" if self._fuse_row else "columns"
-        idx = self._row_idx if self._fuse_row else self._col_idx
-        return "Component fusion of {} {} and {}.".format(fusing, idx, idx + 1)
 
     def __str__(self):
         s = "ComponentFusion Algorithm for:\n"

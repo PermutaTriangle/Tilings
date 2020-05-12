@@ -1,8 +1,11 @@
 import json
+from itertools import product
 
 import pytest
 
-from tilings import Tiling
+from permuta import Perm
+from permuta.misc import DIRS
+from tilings import strategies as strat
 from tilings.strategy_pack import TileScopePack
 
 
@@ -30,31 +33,75 @@ def json_encode_decode(sp):
     return sp_new
 
 
-not_all_sym = TileScopePack.all_the_strategies()
-not_all_sym.symmetries.append(Tiling.inverse)
-not_all_sym.symmetries.append(Tiling.reverse)
-pack = [
-    TileScopePack.all_the_strategies(),
-    TileScopePack.all_the_strategies().make_fusion(),
-    TileScopePack.all_the_strategies().make_database(),
-    TileScopePack.all_the_strategies().make_elementary(),
-    TileScopePack.all_the_strategies().add_symmetry(),
-    (TileScopePack.all_the_strategies().make_fusion().add_symmetry().make_database()),
-    TileScopePack.point_placements(),
-    TileScopePack.pattern_placements(3),
-    TileScopePack.insertion_point_placements(),
-    TileScopePack.regular_insertion_encoding(3),
-    TileScopePack.row_and_col_placements(),
-    TileScopePack.row_and_col_placements(row_only=True),
-    TileScopePack.insertion_row_and_col_placements(),
-    TileScopePack.only_root_placements(3),
-    TileScopePack.only_root_placements(3),
-    TileScopePack.requirement_placements(2),
-    not_all_sym,
-]
+def length(pack):
+    return [pack(length=length) for length in (1, 2, 3)]
 
 
-@pytest.mark.parametrize("strategy_pack", pack)
+def length_maxnumreq(pack):
+    return [
+        pack(length=length, max_num_req=max_num_req)
+        for length, max_num_req in product((1, 2, 3), (1, 2, 3),)
+    ]
+
+
+def length_partial(pack):
+    return [
+        pack(length=length, partial=partial)
+        for length, partial in product((1, 2, 3), (True, False),)
+    ]
+
+
+def directions(pack):
+    return [pack(direction=direction) for direction in DIRS]
+
+
+def row_col(pack):
+    return [pack(), pack(row_only=True), pack(col_only=True)]
+
+
+def row_col_partial(pack):
+    return [
+        pack(row_only=row_only, col_only=col_only, partial=partial)
+        for row_only, col_only, partial in product(
+            (True, False), (True, False), (True, False)
+        )
+        if not row_only or not col_only
+    ]
+
+
+packs = (
+    length(TileScopePack.all_the_strategies)
+    + length(TileScopePack.insertion_point_placements)
+    + row_col(TileScopePack.insertion_row_and_col_placements)
+    + length_maxnumreq(TileScopePack.only_root_placements)
+    + length_partial(TileScopePack.pattern_placements)
+    + length_partial(TileScopePack.point_placements)
+    + directions(TileScopePack.regular_insertion_encoding)
+    + length_partial(TileScopePack.requirement_placements)
+    + row_col_partial(TileScopePack.row_and_col_placements)
+)
+
+packs.extend(
+    [pack.make_database() for pack in packs]
+    + [pack.make_elementary() for pack in packs]
+    + [pack.make_fusion() for pack in packs]
+    + [pack.add_all_symmetry() for pack in packs]
+    + [pack.make_database().add_all_symmetry() for pack in packs]
+)
+
+
+@pytest.mark.parametrize("strategy_pack", packs)
 def test_json_encoding(strategy_pack):
     strategy_pack_new = json_encode_decode(strategy_pack)
     assert_same_pack(strategy_pack, strategy_pack_new)
+
+
+def test_fix_one_by_one():
+    pack = TileScopePack.point_placements()
+    assert not pack.ver_strats[0].basis
+    fixed_pack = pack.fix_one_by_one([Perm((0, 1, 2, 3))])
+    assert isinstance(pack.ver_strats[0], strat.OneByOneVerificationStrategy)
+    assert not pack.ver_strats[0].basis
+    assert isinstance(fixed_pack, TileScopePack)
+    assert isinstance(fixed_pack.ver_strats[0], strat.OneByOneVerificationStrategy)
+    assert fixed_pack.ver_strats[0].basis == (Perm((0, 1, 2, 3)),)

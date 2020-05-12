@@ -1,9 +1,14 @@
 from collections import defaultdict
 from itertools import chain, product
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Set, Tuple
 
-from comb_spec_searcher import InferralRule
 from permuta import Perm
-from tilings import Obstruction
+from tilings import GriddedPerm
+
+if TYPE_CHECKING:
+    from tilings import Tiling
+
+Cell = Tuple[int, int]
 
 
 class ObstructionTransitivity:
@@ -17,15 +22,15 @@ class ObstructionTransitivity:
     transitivity applies, i.e. if a < b < c and b is positive, then a < c.
     """
 
-    def __init__(self, tiling):
+    def __init__(self, tiling: "Tiling") -> None:
         self._tiling = tiling
-        self._colineq = None
-        self._rowineq = None
-        self._positive_cells_col = None
-        self._positive_cells_row = None
+        self._colineq: Optional[Dict[int, Set[Tuple[int, int]]]] = None
+        self._rowineq: Optional[Dict[int, Set[Tuple[int, int]]]] = None
+        self._positive_cells_col: Optional[Dict[int, List[int]]] = None
+        self._positive_cells_row: Optional[Dict[int, List[int]]] = None
         self._new_ineq = None
 
-    def positive_cells_col(self, col_index):
+    def positive_cells_col(self, col_index: int) -> List[int]:
         """
         Return the row index of all positive cells in the columns.
 
@@ -35,9 +40,10 @@ class ObstructionTransitivity:
         """
         if self._positive_cells_col is None:
             self._init_positive_cells()
+        assert self._positive_cells_col is not None
         return self._positive_cells_col[col_index]
 
-    def positive_cells_row(self, row_index):
+    def positive_cells_row(self, row_index: int) -> List[int]:
         """
         Return the column index of all positive cells in the row.
 
@@ -48,9 +54,10 @@ class ObstructionTransitivity:
         """
         if self._positive_cells_row is None:
             self._init_positive_cells()
+        assert self._positive_cells_row is not None
         return self._positive_cells_row[row_index]
 
-    def ineq_col(self, col_index):
+    def ineq_col(self, col_index: int) -> Set[Tuple[int, int]]:
         """
         Returns a set of inequalities in the specified column.
 
@@ -58,9 +65,10 @@ class ObstructionTransitivity:
         """
         if self._colineq is None:
             self._init_ineq()
+        assert self._colineq is not None
         return self._colineq[col_index]
 
-    def ineq_row(self, row_index):
+    def ineq_row(self, row_index: int) -> Set[Tuple[int, int]]:
         """
         Returns a set of inequalities in the specified row.
 
@@ -68,9 +76,10 @@ class ObstructionTransitivity:
         """
         if self._rowineq is None:
             self._init_ineq()
+        assert self._rowineq is not None
         return self._rowineq[row_index]
 
-    def _init_positive_cells(self):
+    def _init_positive_cells(self) -> None:
         """
         Fill the dictionary of positive cells by rows and columns.
         """
@@ -80,7 +89,7 @@ class ObstructionTransitivity:
             self._positive_cells_col[cell[0]].append(cell[1])
             self._positive_cells_row[cell[1]].append(cell[0])
 
-    def _init_ineq(self):
+    def _init_ineq(self) -> None:
         """
         Fill the dictionary of row and column inequalities.
         """
@@ -102,7 +111,7 @@ class ObstructionTransitivity:
                     self._rowineq[leftrow].add((leftcol, rightcol))
 
     @staticmethod
-    def ineq_ob(ineq):
+    def ineq_ob(ineq) -> GriddedPerm:
         """
         Given an inequality of cells compute an obstruction.
 
@@ -111,17 +120,17 @@ class ObstructionTransitivity:
         """
         left, right = ineq
         if left == right:
-            return Obstruction(Perm((0,)), (left,))
+            return GriddedPerm(Perm((0,)), (left,))
         if left[0] == right[0]:
             # same column
             if left[1] < right[1]:
-                return Obstruction(Perm((1, 0)), [right, left])
-            return Obstruction(Perm((0, 1)), [right, left])
+                return GriddedPerm(Perm((1, 0)), [right, left])
+            return GriddedPerm(Perm((0, 1)), [right, left])
         if left[1] == right[1]:
             # same row
             if left[0] < right[0]:
-                return Obstruction(Perm((1, 0)), [left, right])
-            return Obstruction(Perm((0, 1)), [right, left])
+                return GriddedPerm(Perm((1, 0)), [left, right])
+            return GriddedPerm(Perm((0, 1)), [right, left])
         raise ValueError(
             ("Can not construct an obstruction from inequality {} < {}").format(
                 left, right
@@ -129,7 +138,9 @@ class ObstructionTransitivity:
         )
 
     @staticmethod
-    def ineq_closure(positive_cells, ineqs):
+    def ineq_closure(
+        positive_cells: Iterable[Cell], ineqs: Set[Tuple[Cell, Cell]]
+    ) -> Set[Tuple[Cell, Cell]]:
         """
         Computes the transitive closure over positive cells.
 
@@ -139,8 +150,8 @@ class ObstructionTransitivity:
 
         The list of new inequalities is returned.
         """
-        gtlist = defaultdict(list)
-        ltlist = defaultdict(list)
+        gtlist: Dict[Cell, List[Cell]] = defaultdict(list)
+        ltlist: Dict[Cell, List[Cell]] = defaultdict(list)
         for left, right in ineqs:
             ltlist[left].append(right)
             gtlist[right].append(left)
@@ -184,28 +195,20 @@ class ObstructionTransitivity:
         self._new_ineq = newineqs
         return self._new_ineq
 
-    def obstruction_transitivity(self):
+    def new_obs(self) -> Tuple[GriddedPerm, ...]:
+        """Return the obstructions that are implied by the method."""
+        return tuple(map(self.ineq_ob, self.new_ineq()))
+
+    def obstruction_transitivity(self) -> "Tiling":
         """
         Return the tiling with the new obstructions.
         """
-        obs = chain(self._tiling.obstructions, map(self.ineq_ob, self.new_ineq()))
+        obs = chain(self._tiling.obstructions, self.new_obs())
         return self._tiling.__class__(
             obstructions=obs, requirements=self._tiling.requirements
         )
 
-    def rule(self):
-        """
-        Return a comb_spec_searcher Rule for the obstruction transitivity.
-
-        If no new obstruction is added return None.
-        """
-        if not self.new_ineq():
-            return None
-        return InferralRule(
-            "Computing transitivity of inequalities.", self.obstruction_transitivity()
-        )
-
-    def __str__(self):
+    def __str__(self) -> str:
         s = "ObstructionTransitivity object for the tiling:\n"
         s += self._tiling.__str__()
         return s

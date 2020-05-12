@@ -1,17 +1,17 @@
 import pytest
 
 from permuta import Perm
-from tilings import Obstruction, Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 
 
 @pytest.fixture
 def simple_trans_row():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
         ],
-        requirements=[[Requirement(Perm((0,)), [(1, 0)])]],
+        requirements=[[GriddedPerm(Perm((0,)), [(1, 0)])]],
     )
 
 
@@ -19,10 +19,10 @@ def simple_trans_row():
 def simple_trans_col():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (0, 1)]),
-            Obstruction(Perm((0, 1)), [(0, 1), (0, 2)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (0, 1)]),
+            GriddedPerm(Perm((0, 1)), [(0, 1), (0, 2)]),
         ],
-        requirements=[[Requirement(Perm((0,)), [(0, 1)])]],
+        requirements=[[GriddedPerm(Perm((0,)), [(0, 1)])]],
     )
 
 
@@ -30,13 +30,13 @@ def simple_trans_col():
 def simple_trans_row_len2():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
-            Obstruction(Perm((0, 1)), [(2, 0), (3, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(2, 0), (3, 0)]),
         ],
         requirements=[
-            [Requirement(Perm((0,)), [(1, 0)])],
-            [Requirement(Perm((0,)), [(2, 0)])],
+            [GriddedPerm(Perm((0,)), [(1, 0)])],
+            [GriddedPerm(Perm((0,)), [(2, 0)])],
         ],
     )
 
@@ -45,14 +45,14 @@ def simple_trans_row_len2():
 def simple_trans_row_len3():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
-            Obstruction(Perm((0, 1)), [(2, 0), (3, 0)]),
-            Obstruction(Perm((0, 1)), [(3, 0), (4, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(2, 0), (3, 0)]),
+            GriddedPerm(Perm((0, 1)), [(3, 0), (4, 0)]),
         ],
         requirements=[
-            [Requirement(Perm((0,)), [(1, 0)])],
-            [Requirement(Perm((0,)), [(2, 0)])],
-            [Requirement(Perm((0,)), [(3, 0)])],
+            [GriddedPerm(Perm((0,)), [(1, 0)])],
+            [GriddedPerm(Perm((0,)), [(2, 0)])],
+            [GriddedPerm(Perm((0,)), [(3, 0)])],
         ],
     )

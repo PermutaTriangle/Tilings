@@ -3,17 +3,19 @@ Collection of function that are not directly related to the code but still
 useful.
 """
 from functools import reduce
-from typing import Dict, Sequence, Set, Tuple, TypeVar
+from typing import Dict, Iterable, Iterator, Sequence, Set, Tuple, TypeVar
 
 Vertex = TypeVar("Vertex")
+T = TypeVar("T")
 AdjTable = Dict[Vertex, Set[Vertex]]
+Cell = Tuple[int, int]
 
 
-def map_cell(col_mapping, row_mapping, cell):
+def map_cell(col_mapping: Dict[int, int], row_mapping: Dict[int, int], cell: Cell):
     return (col_mapping[cell[0]], row_mapping[cell[1]])
 
 
-def union_reduce(iterable):
+def union_reduce(iterables: Iterable[Iterable[T]]) -> Set[T]:
     """
     Returns the union of the elements contained in the iterables.
 
@@ -24,13 +26,15 @@ def union_reduce(iterable):
     >>> union_reduce(([], []))
     set()
     """
-    return reduce(set.__or__, map(set, iterable), set())
+    sets: Iterator[Set[T]] = map(set, iterables)
+    return reduce(set.__or__, sets, set())
 
 
-def intersection_reduce(iterable):
+def intersection_reduce(iterables: Iterable[Iterable[T]]) -> Set[T]:
     """Returns the intersection of the iterables."""
     try:
-        return reduce(set.__and__, map(set, iterable))
+        sets: Iterator[Set[T]] = map(set, iterables)
+        return reduce(set.__and__, sets)
     except TypeError:
         return set()
 
@@ -79,7 +83,7 @@ def is_connected(adj_table: AdjTable) -> bool:
 # https://codereview.stackexchange.com/questions/1526/finding-all-k-subset-partitions
 
 
-def partitions_iterator(lst):
+def partitions_iterator(lst: Sequence[T]) -> Iterator[Tuple[Tuple[T, ...], ...]]:
     """
     Iterator over all the possible partitions of a list. A partition is yielded
     as a list of list.
@@ -89,13 +93,13 @@ def partitions_iterator(lst):
 
     >>> for partition in partitions_iterator([1, 2, 3]):
     ...     print(partition)
-    [[1, 2], [3]]
-    [[1], [2, 3]]
-    [[1, 3], [2]]
+    ((1, 2), (3,))
+    ((1,), (2, 3))
+    ((1, 3), (2,))
     """
     for i in range(2, len(lst)):
         for part in algorithm_u(lst, i):
-            yield part
+            yield tuple(map(tuple, part))
 
 
 def algorithm_u(ns, m):

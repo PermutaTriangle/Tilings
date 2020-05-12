@@ -1,7 +1,7 @@
 import pytest
 
 from permuta import Perm
-from tilings import Obstruction, Requirement, Tiling
+from tilings import GriddedPerm, Tiling
 from tilings.algorithms import ObstructionTransitivity
 
 
@@ -9,10 +9,10 @@ from tilings.algorithms import ObstructionTransitivity
 def tiling_simple_trans_row():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
         ],
-        requirements=[[Requirement(Perm((0,)), [(1, 0)])]],
+        requirements=[[GriddedPerm(Perm((0,)), [(1, 0)])]],
     )
 
 
@@ -20,10 +20,10 @@ def tiling_simple_trans_row():
 def tiling_simple_trans_col():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (0, 1)]),
-            Obstruction(Perm((0, 1)), [(0, 1), (0, 2)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (0, 1)]),
+            GriddedPerm(Perm((0, 1)), [(0, 1), (0, 2)]),
         ],
-        requirements=[[Requirement(Perm((0,)), [(0, 1)])]],
+        requirements=[[GriddedPerm(Perm((0,)), [(0, 1)])]],
     )
 
 
@@ -31,13 +31,13 @@ def tiling_simple_trans_col():
 def tiling_simple_trans_row_len2():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
-            Obstruction(Perm((0, 1)), [(2, 0), (3, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(2, 0), (3, 0)]),
         ],
         requirements=[
-            [Requirement(Perm((0,)), [(1, 0)])],
-            [Requirement(Perm((0,)), [(2, 0)])],
+            [GriddedPerm(Perm((0,)), [(1, 0)])],
+            [GriddedPerm(Perm((0,)), [(2, 0)])],
         ],
     )
 
@@ -46,15 +46,15 @@ def tiling_simple_trans_row_len2():
 def tiling_simple_trans_row_len3():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
-            Obstruction(Perm((0, 1)), [(2, 0), (3, 0)]),
-            Obstruction(Perm((0, 1)), [(3, 0), (4, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(2, 0), (3, 0)]),
+            GriddedPerm(Perm((0, 1)), [(3, 0), (4, 0)]),
         ],
         requirements=[
-            [Requirement(Perm((0,)), [(1, 0)])],
-            [Requirement(Perm((0,)), [(2, 0)])],
-            [Requirement(Perm((0,)), [(3, 0)])],
+            [GriddedPerm(Perm((0,)), [(1, 0)])],
+            [GriddedPerm(Perm((0,)), [(2, 0)])],
+            [GriddedPerm(Perm((0,)), [(3, 0)])],
         ],
     )
 
@@ -63,8 +63,8 @@ def tiling_simple_trans_row_len3():
 def tiling_no_trans_row():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-            Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
         ]
     )
 
@@ -73,8 +73,8 @@ def tiling_no_trans_row():
 def tiling_no_trans_col():
     return Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), [(0, 0), (0, 1)]),
-            Obstruction(Perm((0, 1)), [(0, 1), (0, 2)]),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (0, 1)]),
+            GriddedPerm(Perm((0, 1)), [(0, 1), (0, 2)]),
         ]
     )
 
@@ -83,30 +83,30 @@ def tiling_no_trans_col():
 def tiling_with_empty_inf_cell():
     t = Tiling(
         obstructions=[
-            Obstruction(Perm((0, 1)), ((1, 0), (3, 0))),
-            Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-            Obstruction(Perm((0, 1)), ((2, 0), (3, 0))),
-            Obstruction(Perm((0, 1)), ((3, 0), (3, 0))),
-            Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
-            Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
-            Obstruction(Perm((1, 0)), ((1, 0), (3, 0))),
-            Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
-            Obstruction(Perm((1, 0)), ((2, 0), (3, 0))),
-            Obstruction(Perm((1, 0)), ((3, 0), (3, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (3, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
-            Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
-            Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
-            Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (2, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (1, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (2, 0))),
-            Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1)), ((3, 0), (3, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 0), (3, 0))),
+            GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((2, 0), (3, 0))),
+            GriddedPerm(Perm((1, 0)), ((3, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1, 2)), ((1, 0), (1, 0), (2, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (1, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (3, 0))),
         ],
-        requirements=[[Requirement(Perm((0, 1)), ((1, 0), (2, 0)))]],
+        requirements=[[GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0)))]],
     )
     return t
 
@@ -174,19 +174,19 @@ class TestObstructionTransitivity:
         assert simple_trans_row_len3.ineq_col(3) == set()
 
     def test_ineq_ob(self, simple_trans_col):
-        assert simple_trans_col.ineq_ob(((0, 0), (0, 0))) == Obstruction(
+        assert simple_trans_col.ineq_ob(((0, 0), (0, 0))) == GriddedPerm(
             Perm((0,)), [(0, 0)]
         )
-        assert simple_trans_col.ineq_ob(((0, 0), (1, 0))) == Obstruction(
+        assert simple_trans_col.ineq_ob(((0, 0), (1, 0))) == GriddedPerm(
             Perm((1, 0)), [(0, 0), (1, 0)]
         )
-        assert simple_trans_col.ineq_ob(((1, 0), (0, 0))) == Obstruction(
+        assert simple_trans_col.ineq_ob(((1, 0), (0, 0))) == GriddedPerm(
             Perm((0, 1)), [(0, 0), (1, 0)]
         )
-        assert simple_trans_col.ineq_ob(((0, 0), (0, 1))) == Obstruction(
+        assert simple_trans_col.ineq_ob(((0, 0), (0, 1))) == GriddedPerm(
             Perm((1, 0)), [(0, 1), (0, 0)]
         )
-        assert simple_trans_col.ineq_ob(((0, 1), (0, 0))) == Obstruction(
+        assert simple_trans_col.ineq_ob(((0, 1), (0, 0))) == GriddedPerm(
             Perm((0, 1)), [(0, 0), (0, 1)]
         )
         with pytest.raises(ValueError):
@@ -228,54 +228,54 @@ class TestObstructionTransitivity:
     ):
         assert simple_trans_row.obstruction_transitivity() == Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-                Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
-                Obstruction(Perm((0, 1)), [(0, 0), (2, 0)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+                GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (2, 0)]),
             ],
-            requirements=[[Requirement(Perm((0,)), [(1, 0)])]],
+            requirements=[[GriddedPerm(Perm((0,)), [(1, 0)])]],
         )
 
         assert simple_trans_col.obstruction_transitivity() == Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), [(0, 0), (0, 1)]),
-                Obstruction(Perm((0, 1)), [(0, 1), (0, 2)]),
-                Obstruction(Perm((0, 1)), [(0, 0), (0, 2)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (0, 1)]),
+                GriddedPerm(Perm((0, 1)), [(0, 1), (0, 2)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (0, 2)]),
             ],
-            requirements=[[Requirement(Perm((0,)), [(0, 1)])]],
+            requirements=[[GriddedPerm(Perm((0,)), [(0, 1)])]],
         )
 
         assert simple_trans_row_len2.obstruction_transitivity() == Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-                Obstruction(Perm((0, 1)), [(0, 0), (2, 0)]),
-                Obstruction(Perm((0, 1)), [(0, 0), (3, 0)]),
-                Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
-                Obstruction(Perm((0, 1)), [(1, 0), (3, 0)]),
-                Obstruction(Perm((0, 1)), [(2, 0), (3, 0)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (2, 0)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (3, 0)]),
+                GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
+                GriddedPerm(Perm((0, 1)), [(1, 0), (3, 0)]),
+                GriddedPerm(Perm((0, 1)), [(2, 0), (3, 0)]),
             ],
             requirements=[
-                [Requirement(Perm((0,)), [(1, 0)])],
-                [Requirement(Perm((0,)), [(2, 0)])],
+                [GriddedPerm(Perm((0,)), [(1, 0)])],
+                [GriddedPerm(Perm((0,)), [(2, 0)])],
             ],
         )
 
         assert simple_trans_row_len3.obstruction_transitivity() == Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), [(0, 0), (1, 0)]),
-                Obstruction(Perm((0, 1)), [(0, 0), (2, 0)]),
-                Obstruction(Perm((0, 1)), [(0, 0), (3, 0)]),
-                Obstruction(Perm((0, 1)), [(0, 0), (4, 0)]),
-                Obstruction(Perm((0, 1)), [(1, 0), (2, 0)]),
-                Obstruction(Perm((0, 1)), [(1, 0), (3, 0)]),
-                Obstruction(Perm((0, 1)), [(1, 0), (4, 0)]),
-                Obstruction(Perm((0, 1)), [(2, 0), (3, 0)]),
-                Obstruction(Perm((0, 1)), [(2, 0), (4, 0)]),
-                Obstruction(Perm((0, 1)), [(3, 0), (4, 0)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (1, 0)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (2, 0)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (3, 0)]),
+                GriddedPerm(Perm((0, 1)), [(0, 0), (4, 0)]),
+                GriddedPerm(Perm((0, 1)), [(1, 0), (2, 0)]),
+                GriddedPerm(Perm((0, 1)), [(1, 0), (3, 0)]),
+                GriddedPerm(Perm((0, 1)), [(1, 0), (4, 0)]),
+                GriddedPerm(Perm((0, 1)), [(2, 0), (3, 0)]),
+                GriddedPerm(Perm((0, 1)), [(2, 0), (4, 0)]),
+                GriddedPerm(Perm((0, 1)), [(3, 0), (4, 0)]),
             ],
             requirements=[
-                [Requirement(Perm((0,)), [(1, 0)])],
-                [Requirement(Perm((0,)), [(2, 0)])],
-                [Requirement(Perm((0,)), [(3, 0)])],
+                [GriddedPerm(Perm((0,)), [(1, 0)])],
+                [GriddedPerm(Perm((0,)), [(2, 0)])],
+                [GriddedPerm(Perm((0,)), [(3, 0)])],
             ],
         )
 
@@ -283,32 +283,21 @@ class TestObstructionTransitivity:
         assert no_trans_col.obstruction_transitivity() == tiling_no_trans_col
         t = Tiling(
             obstructions=[
-                Obstruction(Perm((0, 1)), ((2, 0), (2, 0))),
-                Obstruction(Perm((1, 0)), ((1, 0), (1, 0))),
-                Obstruction(Perm((1, 0)), ((1, 0), (2, 0))),
-                Obstruction(Perm((1, 0)), ((2, 0), (2, 0))),
-                Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
-                Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
-                Obstruction(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
-                Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
-                Obstruction(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
-                Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
-                Obstruction(Perm((0, 1, 2)), ((1, 0), (1, 0), (2, 0))),
-                Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
-                Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (1, 0))),
-                Obstruction(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+                GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((1, 0)), ((1, 0), (2, 0))),
+                GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (1, 0))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 0))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
+                GriddedPerm(Perm((0, 1, 2)), ((1, 0), (1, 0), (2, 0))),
+                GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0), (0, 0), (0, 0), (2, 0))),
             ],
-            requirements=[[Requirement(Perm((0, 1)), ((1, 0), (2, 0)))]],
+            requirements=[[GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0)))]],
         )
         assert with_empty_inf_cell.obstruction_transitivity() == t
-
-    def test_rule(self, simple_trans_col, no_trans_col):
-        assert no_trans_col.rule() is None
-        rule = simple_trans_col.rule()
-        assert rule.formal_step == "Computing transitivity of inequalities."
-        assert rule.comb_classes == [simple_trans_col.obstruction_transitivity()]
-        assert rule.inferable == [True]
-        assert rule.possibly_empty == [False]
-        assert rule.workable == [True]
-        assert rule.ignore_parent is True
-        assert rule.constructor == "equiv"

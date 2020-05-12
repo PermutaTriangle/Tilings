@@ -12,11 +12,10 @@ from typing import (
 
 from permuta import Perm
 from tilings.griddedperm import GriddedPerm
-from tilings.obstruction import Obstruction
-from tilings.requirement import Requirement
 
 if TYPE_CHECKING:
     from tilings import Tiling
+
 Cell = Tuple[int, int]
 
 
@@ -46,7 +45,7 @@ class GriddedPermsOnTiling:
         All the patterns that must be contained in the given cell of the
         tiling.
         """
-        res = set()  # type: Set[Perm]
+        res: Set[Perm] = set()
         for req_list in self._requirements:
             subgp = req_list[0].get_gridded_perm_in_cells([cell])
             patts = set(subgp.all_subperms(proper=False))
@@ -61,7 +60,7 @@ class GriddedPermsOnTiling:
         The minimum number of points that must be in each cell of the tiling
         according to the requirements.
         """
-        res = dict()  # type: Dict[Cell, int]
+        res: Dict[Cell, int] = dict()
         for cell in self._active_cells:
             patts_in_cell = self.patts_contained_in_cell(cell)
             points_in_cell = max((len(p) for p in patts_in_cell), default=0)
@@ -95,7 +94,7 @@ class GriddedPermsOnTiling:
                 yield next_gp
 
     def can_satisfy_all(
-        self, gp: GriddedPerm, col: int, reqs: Iterable[Iterable[Requirement]]
+        self, gp: GriddedPerm, col: int, reqs: Iterable[Iterable[GriddedPerm]]
     ) -> bool:
         """
         Indicate if all the requirement lists can be satisfied by the gridded
@@ -106,11 +105,11 @@ class GriddedPermsOnTiling:
         )
 
     @staticmethod
-    def can_satisfy(gp: GriddedPerm, col: int, req: Requirement) -> bool:
+    def can_satisfy(gp: GriddedPerm, col: int, req: GriddedPerm) -> bool:
         return req.get_subperm_left_col(col) in gp
 
     @staticmethod
-    def satisfies(gp: GriddedPerm, reqlist: Iterable[Requirement]) -> bool:
+    def satisfies(gp: GriddedPerm, reqlist: Iterable[GriddedPerm]) -> bool:
         return any(req in gp for req in reqlist)
 
     def forbidden(self, gp: GriddedPerm) -> bool:
@@ -124,7 +123,7 @@ class GriddedPermsOnTiling:
         self,
         curgp: GriddedPerm,
         curcol: int,
-        reqs: Sequence[Sequence[Requirement]],
+        reqs: Sequence[Sequence[GriddedPerm]],
         yielded: Optional[bool] = False,
     ) -> Iterator[GriddedPerm]:
         """
@@ -165,7 +164,7 @@ class GriddedPermsOnTiling:
                 yield from self.backtracking(nextgp, curcol, unsatisfied_reqs)
 
     def __iter__(self) -> Iterator[GriddedPerm]:
-        if not Obstruction(Perm(tuple()), tuple()) in self._obstructions:
+        if not GriddedPerm(Perm(tuple()), tuple()) in self._obstructions:
             yield from self.backtracking(
                 GriddedPerm.empty_perm(), 0, self._requirements
             )

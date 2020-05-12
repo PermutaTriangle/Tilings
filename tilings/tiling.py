@@ -8,12 +8,21 @@ from collections import Counter, defaultdict
 from functools import partial
 from itertools import chain, product
 from operator import xor
-from typing import Iterable, List, Optional, Tuple
+from typing import (
+    Callable,
+    Dict,
+    FrozenSet,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+)
 
 import sympy
 
 from comb_spec_searcher import CombinatorialClass
-from comb_spec_searcher.utils import check_equation, check_poly
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_WEST
 
@@ -33,19 +42,19 @@ from .algorithms import (
     SubobstructionInferral,
 )
 from .algorithms.enumeration import (
-    BasicEnumeration,
     DatabaseEnumeration,
-    LocallyFactorableEnumeration,
+    LocalEnumeration,
     MonotoneTreeEnumeration,
 )
-from .db_conf import check_database
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
-from .obstruction import Obstruction
-from .requirement import Requirement
 
-__all__ = "Tiling"
+__all__ = ["Tiling"]
+
+
+Cell = Tuple[int, int]
+ReqList = Tuple[GriddedPerm, ...]
 
 
 class Tiling(CombinatorialClass):
@@ -60,13 +69,13 @@ class Tiling(CombinatorialClass):
 
     def __init__(
         self,
-        obstructions: Iterable[Obstruction] = tuple(),
-        requirements: Iterable[Iterable[Requirement]] = tuple(),
+        obstructions: Iterable[GriddedPerm] = tuple(),
+        requirements: Iterable[Iterable[GriddedPerm]] = tuple(),
         remove_empty: bool = True,
         derive_empty: bool = True,
         minimize: bool = True,
         sorted_input: bool = False,
-    ):
+    ) -> None:
         super().__init__()
         if sorted_input:
             # Set of obstructions
@@ -92,32 +101,37 @@ class Tiling(CombinatorialClass):
             # Remove empty rows and empty columns
             if remove_empty:
                 self._minimize_tiling()
-        self._cell_basis = None
+        self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
 
     @classmethod
-    def from_perms(cls, obstructions=tuple(), requirements=tuple()):
+    def from_perms(
+        cls,
+        obstructions: Iterable[Perm] = tuple(),
+        requirements: Iterable[Iterable[Perm]] = tuple(),
+    ) -> "Tiling":
         """
         Return a 1x1 tiling from that avoids permutation in `obstructions`
         and contains one permutation form each iterable of `requirements`.
         """
         t = Tiling(
-            obstructions=(Obstruction(p, ((0, 0),) * len(p)) for p in obstructions)
+            obstructions=(GriddedPerm(p, ((0, 0),) * len(p)) for p in obstructions)
         )
         for req_list in requirements:
-            req_list = [Requirement(p, ((0, 0),) * len(p)) for p in req_list]
+            req_list = [GriddedPerm(p, ((0, 0),) * len(p)) for p in req_list]
             t = t.add_list_requirement(req_list)
         return t
 
-    def _fill_empty(self):
+    def _fill_empty(self) -> None:
+        """Add size one obstructions to cells that are empty."""
         add = []
         (i, j) = self.dimensions
         for x in range(i):
             for y in range(j):
                 if (x, y) not in self.active_cells and (x, y) not in self.empty_cells:
-                    add.append(Obstruction.single_cell(Perm((0,)), (x, y)))
+                    add.append(GriddedPerm.single_cell(Perm((0,)), (x, y)))
         self._obstructions = tuple(sorted(tuple(add) + self._obstructions))
 
-    def _minimize_griddedperms(self):
+    def _minimize_griddedperms(self) -> None:
         """Minimizes the set of obstructions and the set of requirement lists.
         The set of obstructions are first reduced to a minimal set. The
         requirements that contain any obstructions are removed from their
@@ -137,11 +151,12 @@ class Tiling(CombinatorialClass):
             self._obstructions = minimized_obs
             self._requirements = minimized_reqs
 
-    def _minimize_tiling(self):
+    def _minimize_tiling(self) -> None:
+        """Remove empty rows and columns."""
         # Produce the mapping between the two tilings
         if not self.active_cells:
-            self.forward_map = {}
-            self._obstructions = (Obstruction.single_cell(Perm((0,)), (0, 0)),)
+            self._forward_map: Dict[Cell, Cell] = {}
+            self._obstructions = (GriddedPerm.single_cell(Perm((0,)), (0, 0)),)
             self._requirements = tuple()
             self._dimensions = (1, 1)
             return
@@ -149,19 +164,21 @@ class Tiling(CombinatorialClass):
         cell_map = partial(map_cell, col_mapping, row_mapping)
 
         # For tracking regions.
-        self.forward_map = {
+        self._forward_map = {
             (k_x, k_y): (v_x, v_y)
             for k_x, v_x in col_mapping.items()
             for k_y, v_y in row_mapping.items()
         }
         new_obs = []
         for ob in self._obstructions:
-            cell = ob.is_point_obstr()
-            if cell is None or (cell[0] in col_mapping and cell[1] in row_mapping):
-                new_obs.append(ob.minimize(cell_map))
+            cell = ob.pos[0]
+            if not ob.is_point_perm() or (
+                cell[0] in col_mapping and cell[1] in row_mapping
+            ):
+                new_obs.append(ob.apply_map(cell_map))
         self._obstructions = tuple(new_obs)
         self._requirements = tuple(
-            tuple(req.minimize(cell_map) for req in reqlist)
+            tuple(req.apply_map(cell_map) for req in reqlist)
             for reqlist in self._requirements
         )
         self._dimensions = (
@@ -169,20 +186,19 @@ class Tiling(CombinatorialClass):
             max(row_mapping.values()) + 1,
         )
 
-    def _minimize_mapping(self):
+    def _minimize_mapping(self) -> Tuple[Dict[int, int], Dict[int, int]]:
         """Returns a pair of dictionaries, that map rows/columns to an
         equivalent set of rows/columns where empty ones have been removed. """
         active_cells = self.active_cells
         assert active_cells
-
-        col_set, row_set = map(set, zip(*active_cells))
-
+        col_set = set(c[0] for c in active_cells)
+        row_set = set(c[1] for c in active_cells)
         col_list, row_list = sorted(col_set), sorted(row_set)
         col_mapping = {x: actual for actual, x in enumerate(col_list)}
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
         return (col_mapping, row_mapping)
 
-    def _clean_isolated(self, obstruction):
+    def _clean_isolated(self, obstruction: GriddedPerm) -> GriddedPerm:
         """Remove the isolated factors that are implied by requirements
         from all obstructions."""
         for req_list in self._requirements:
@@ -191,12 +207,12 @@ class Tiling(CombinatorialClass):
                     obstruction = obstruction.remove_cells(factor.pos)
         return obstruction
 
-    def _minimal_obs(self):
+    def _minimal_obs(self) -> Tuple[GriddedPerm, ...]:
         """Returns a new list of minimal obstructions from the obstruction set
         of self. Every obstruction in the new list will have any isolated
         points in positive cells removed."""
         clean_ones = sorted(self._clean_isolated(co) for co in self._obstructions)
-        cleanobs = list()
+        cleanobs: List[GriddedPerm] = list()
         for cleanob in clean_ones:
             add = True
             for co in cleanobs:
@@ -207,10 +223,15 @@ class Tiling(CombinatorialClass):
                 cleanobs.append(cleanob)
         return tuple(cleanobs)
 
-    def _minimal_reqs(self, obstructions):
-        """Returns a new set of minimal lists of requirements from the
-        requirement set of self, and a list of further reduced obstructions."""
-        factored_reqs = list()
+    def _minimal_reqs(
+        self, obstructions: Iterable[GriddedPerm]
+    ) -> Tuple[Tuple[GriddedPerm, ...], Tuple[ReqList, ...]]:
+        """
+        Returns a new set of minimal lists of requirements from the
+        requirement set of self, and a list of further reduced obstructions.
+        # TODO: obstruction don't change in the function, so stop returning.
+        """
+        factored_reqs: List[Tuple[GriddedPerm, ...]] = list()
         for reqs in self._requirements:
             # If any gridded permutation in list is empty then you vacuously
             # contain this requirement
@@ -219,7 +240,7 @@ class Tiling(CombinatorialClass):
             if not reqs:
                 # If req is empty, then can not contain this requirement so
                 # the tiling is empty
-                return (Obstruction.empty_perm(),), tuple()
+                return (GriddedPerm.empty_perm(),), tuple()
             factors = set(reqs[0].factors())
             for req in reqs[1:]:
                 if not factors:
@@ -242,13 +263,13 @@ class Tiling(CombinatorialClass):
             )
             factored_reqs.append(rem_req)
 
-        cleaned_reqs = []
+        cleaned_reqs: List[List[GriddedPerm]] = []
         for reqs in factored_reqs:
             if not all(reqs):
                 continue
             cleaned_req = []
             for req in reqs:
-                cells = []
+                cells: List[Cell] = []
                 for f in req.factors():
                     # if factor implied by some requirement list then we
                     # remove it from the gridded perm
@@ -261,56 +282,56 @@ class Tiling(CombinatorialClass):
                 cleaned_req.append(req.get_gridded_perm_in_cells(cells))
             cleaned_reqs.append(cleaned_req)
 
-        cleanreqs = list()
-        for reqs in cleaned_reqs:
+        cleanreqs: List[List[GriddedPerm]] = list()
+        for req_list in cleaned_reqs:
             # If any gridded permutation in list is empty then you vacuously
             # contain this requirement
-            if not all(reqs):
+            if not all(req_list):
                 continue
-            redundant = set()
-            for i, req_i in enumerate(reqs):
-                for j in range(i + 1, len(reqs)):
+            redundant: Set[int] = set()
+            for i, req_i in enumerate(req_list):
+                for j in range(i + 1, len(req_list)):
                     if j not in redundant:
-                        if req_i in reqs[j]:
+                        if req_i in req_list[j]:
                             redundant.add(j)
                 if i not in redundant:
                     if any(ob in req_i for ob in obstructions):
                         redundant.add(i)
-            cleanreq = [req for i, req in enumerate(reqs) if i not in redundant]
+            cleanreq = [req for i, req in enumerate(req_list) if i not in redundant]
             # If cleanreq is empty, then can not contain this requirement so
             # the tiling is empty.
             if not cleanreq:
-                return (Obstruction.empty_perm(),), tuple()
+                return (GriddedPerm.empty_perm(),), tuple()
             cleanreqs.append(cleanreq)
 
-        ind_to_remove = set()
-        for i, reqs in enumerate(cleanreqs):
+        ind_to_remove: Set[int] = set()
+        for i, req_list in enumerate(cleanreqs):
             if i not in ind_to_remove:
-                for j, reqs2 in enumerate(cleanreqs):
+                for j, req_list2 in enumerate(cleanreqs):
                     if i != j and j not in ind_to_remove:
-                        if all(any(r2 in r1 for r2 in reqs2) for r1 in reqs):
+                        if all(any(r2 in r1 for r2 in req_list2) for r1 in req_list):
                             ind_to_remove.add(j)
 
-        for i, reqs in enumerate(cleanreqs):
+        for i, req_list in enumerate(cleanreqs):
             if i in ind_to_remove:
                 continue
-            factored = [r.factors() for r in reqs]
+            factored = [r.factors() for r in req_list]
             # if every factor of every requirement in a list is implied by
             # another requirement then we can remove this requirement list
-            for factors in factored:
+            for req_factor in factored:
                 if all(
                     any(
                         all(factor in req for req in other_req)
                         for j, other_req in enumerate(cleanreqs)
                         if i != j and j not in ind_to_remove
                     )
-                    for factor in factors
+                    for factor in req_factor
                 ):
                     ind_to_remove.add(i)
                     break
 
         return (
-            obstructions,
+            tuple(obstructions),
             Tiling.sort_requirements(
                 reqs for i, reqs in enumerate(cleanreqs) if i not in ind_to_remove
             ),
@@ -320,7 +341,7 @@ class Tiling(CombinatorialClass):
     # Compression
     # -------------------------------------------------------------
 
-    def compress(self) -> bytes:
+    def to_bytes(self) -> bytes:
         """Compresses the tiling by flattening the sets of cells into lists of
         integers which are concatenated together, every list preceeded by its
         size. The obstructions are compressed and concatenated to the list, as
@@ -346,14 +367,14 @@ class Tiling(CombinatorialClass):
         return res.tobytes()
 
     @classmethod
-    def decompress(
+    def from_bytes(
         cls,
-        arrbytes,
+        arrbytes: bytes,
         remove_empty=False,
         derive_empty=False,
         minimize=False,
         sorted_input=True,
-    ):
+    ) -> "Tiling":
         """Given a compressed tiling in the form of an 1-byte array, decompress
         it and return a tiling."""
 
@@ -371,7 +392,7 @@ class Tiling(CombinatorialClass):
             pattlen = arr[offset]
             offset += 1
             obstructions.append(
-                Obstruction.decompress(arr[offset : offset + 3 * pattlen])
+                GriddedPerm.decompress(arr[offset : offset + 3 * pattlen])
             )
             offset += 3 * pattlen
 
@@ -386,7 +407,7 @@ class Tiling(CombinatorialClass):
                 pattlen = arr[offset]
                 offset += 1
                 reqlist.append(
-                    Requirement.decompress(arr[offset : offset + 3 * pattlen])
+                    GriddedPerm.decompress(arr[offset : offset + 3 * pattlen])
                 )
                 offset += 3 * pattlen
             requirements.append(reqlist)
@@ -401,10 +422,10 @@ class Tiling(CombinatorialClass):
         )
 
     @classmethod
-    def from_string(cls, string):
+    def from_string(cls, string: str) -> "Tiling":
         """Return a 1x1 tiling from string of form 'p1_p2'"""
         basis = [
-            Obstruction.single_cell(Perm.to_standard(p), (0, 0))
+            GriddedPerm.single_cell(Perm.to_standard(p), (0, 0))
             for p in string.split("_")
         ]
         return cls(obstructions=basis)
@@ -413,29 +434,29 @@ class Tiling(CombinatorialClass):
     # JSON methods
     # -------------------------------------------------------------
 
-    def to_jsonable(self):
+    def to_jsonable(self) -> dict:
         """Returns a dictionary object which is JSON serializable which
         represents a Tiling."""
-        output = dict()
-        output["obstructions"] = list(map(lambda x: x.to_jsonable(), self.obstructions))
-        output["requirements"] = list(
-            map(lambda x: list(map(lambda y: y.to_jsonable(), x)), self.requirements)
-        )
+        output: dict = super().to_jsonable()
+        output["obstructions"] = [gp.to_jsonable() for gp in self.obstructions]
+        output["requirements"] = [
+            [gp.to_jsonable() for gp in req] for req in self.requirements
+        ]
         return output
 
     @classmethod
-    def from_json(cls, jsonstr):
+    def from_json(cls, jsonstr: str) -> "Tiling":
         """Returns a Tiling object from JSON string."""
         jsondict = json.loads(jsonstr)
         return cls.from_dict(jsondict)
 
     @classmethod
-    def from_dict(cls, jsondict):
+    def from_dict(cls, jsondict: dict) -> "Tiling":
         """Returns a Tiling object from a dictionary loaded from a JSON
         serialized Tiling object."""
-        obstructions = map(Obstruction.from_dict, jsondict["obstructions"])
+        obstructions = map(GriddedPerm.from_dict, jsondict["obstructions"])
         requirements = map(
-            lambda x: map(Requirement.from_dict, x), jsondict["requirements"]
+            lambda x: map(GriddedPerm.from_dict, x), jsondict["requirements"]
         )
         return cls(obstructions=obstructions, requirements=requirements)
 
@@ -443,12 +464,12 @@ class Tiling(CombinatorialClass):
     # Cell methods
     # -------------------------------------------------------------
 
-    def cell_within_bounds(self, cell):
+    def cell_within_bounds(self, cell: Cell) -> bool:
         """Checks if a cell is within the bounds of the tiling."""
         (i, j) = self.dimensions
         return cell[0] >= 0 and cell[0] < i and cell[1] >= 0 and cell[1] < j
 
-    def empty_cell(self, cell):
+    def empty_cell(self, cell: Cell) -> "Tiling":
         """Empties a cell in the tiling by adding a point obstruction into the
         cell.
         """
@@ -458,7 +479,7 @@ class Tiling(CombinatorialClass):
             )
         return self.add_single_cell_obstruction(Perm((0,)), cell)
 
-    def insert_cell(self, cell):
+    def insert_cell(self, cell: Cell) -> "Tiling":
         """Performs 'cell insertion', adds a point requirement into the given
         cell. Cell should be active.
         """
@@ -468,44 +489,49 @@ class Tiling(CombinatorialClass):
             )
         return self.add_single_cell_requirement(Perm((0,)), cell)
 
-    def add_obstruction(self, patt, pos):
+    def add_obstruction(self, patt: Perm, pos: Iterable[Cell]) -> "Tiling":
         """Returns a new tiling with the obstruction of the pattern
         patt with positions pos."""
         return Tiling(
-            self._obstructions + (Obstruction(patt, pos),), self._requirements
+            self._obstructions + (GriddedPerm(patt, pos),), self._requirements
         )
 
-    def add_list_requirement(self, req_list):
+    def add_obstructions(self, gps: Iterable[GriddedPerm]) -> "Tiling":
+        """Returns a new tiling with the obstructions added."""
+        new_obs = tuple(gps)
+        return Tiling(self._obstructions + new_obs, self._requirements)
+
+    def add_list_requirement(self, req_list: Iterable[GriddedPerm]) -> "Tiling":
         """
         Return a new tiling with the requirement list added.
         """
-        requirements = self._requirements + (tuple(req_list),)
-        return Tiling(obstructions=self._obstructions, requirements=requirements)
+        new_req = tuple(req_list)
+        return Tiling(self._obstructions, self._requirements + (new_req,),)
 
-    def add_requirement(self, patt, pos):
+    def add_requirement(self, patt: Perm, pos: Iterable[Cell]) -> "Tiling":
         """Returns a new tiling with the requirement of the pattern
         patt with position pos."""
-        new_req_list = (Requirement(patt, pos),)
+        new_req_list = (GriddedPerm(patt, pos),)
         return self.add_list_requirement(new_req_list)
 
-    def add_single_cell_obstruction(self, patt, cell):
+    def add_single_cell_obstruction(self, patt: Perm, cell: Cell) -> "Tiling":
         """Returns a new tiling with the single cell obstruction of the pattern
         patt in the given cell."""
         return Tiling(
-            self._obstructions + (Obstruction.single_cell(patt, cell),),
+            self._obstructions + (GriddedPerm.single_cell(patt, cell),),
             self._requirements,
         )
 
-    def add_single_cell_requirement(self, patt, cell):
+    def add_single_cell_requirement(self, patt: Perm, cell: Cell) -> "Tiling":
         """Returns a new tiling with the single cell requirement of the pattern
         patt in the given cell."""
-        new_req_list = (Requirement.single_cell(patt, cell),)
+        new_req_list = (GriddedPerm.single_cell(patt, cell),)
         return self.add_list_requirement(new_req_list)
 
-    def fully_isolated(self):
+    def fully_isolated(self) -> bool:
         """Check if all cells are isolated on their rows and columns."""
-        seen_row = []
-        seen_col = []
+        seen_row: List[int] = []
+        seen_col: List[int] = []
         for i, j in self.active_cells:
             if i in seen_col or j in seen_row:
                 return False
@@ -513,7 +539,7 @@ class Tiling(CombinatorialClass):
             seen_row.append(j)
         return True
 
-    def only_positive_in_row_and_col(self, cell):
+    def only_positive_in_row_and_col(self, cell: Cell) -> bool:
         """Check if the cell is the only positive cell in row and column."""
         if cell not in self.positive_cells:
             return False
@@ -522,43 +548,43 @@ class Tiling(CombinatorialClass):
             == 1
         )
 
-    def only_positive_in_row(self, cell):
+    def only_positive_in_row(self, cell: Cell) -> bool:
         """Check if the cell is the only positive cell in row."""
         if cell not in self.positive_cells:
             return False
         inrow = sum(1 for (x, y) in self.positive_cells if y == cell[1])
         return inrow == 1
 
-    def only_positive_in_col(self, cell):
+    def only_positive_in_col(self, cell: Cell) -> bool:
         """Check if the cell is the only positive cell in column."""
         if cell not in self.positive_cells:
             return False
         incol = sum(1 for (x, y) in self.positive_cells if x == cell[0])
         return incol == 1
 
-    def only_cell_in_col(self, cell):
+    def only_cell_in_col(self, cell: Cell) -> bool:
         """Checks if the cell is the only active cell in the column."""
         return sum(1 for (x, y) in self.active_cells if x == cell[0]) == 1
 
-    def only_cell_in_row(self, cell):
+    def only_cell_in_row(self, cell: Cell) -> bool:
         """Checks if the cell is the only active cell in the row."""
         return sum(1 for (x, y) in self.active_cells if y == cell[1]) == 1
 
-    def only_cell_in_row_and_col(self, cell):
+    def only_cell_in_row_and_col(self, cell: Cell) -> bool:
         """Checks if the cell is the only active cell in the row."""
         return (
             sum(1 for (x, y) in self.active_cells if y == cell[1] or x == cell[0]) == 1
         )
 
-    def cells_in_row(self, row):
+    def cells_in_row(self, row: int) -> FrozenSet[Cell]:
         """Return all active cells in row."""
         return frozenset((x, y) for (x, y) in self.active_cells if y == row)
 
-    def cells_in_col(self, col):
+    def cells_in_col(self, col: int) -> FrozenSet[Cell]:
         """Return all active cells in column."""
         return frozenset((x, y) for (x, y) in self.active_cells if x == col)
 
-    def cell_basis(self):
+    def cell_basis(self) -> Dict[Cell, Tuple[List[Perm], List[Perm]]]:
         """Returns a dictionary from cells to basis.
 
         The basis for each cell is a tuple of two lists of permutations.  The
@@ -568,11 +594,12 @@ class Tiling(CombinatorialClass):
         """
         if self._cell_basis is not None:
             return self._cell_basis
-        obdict = defaultdict(list)
-        reqdict = defaultdict(list)
+        obdict: Dict[Cell, List[Perm]] = defaultdict(list)
+        reqdict: Dict[Cell, List[Perm]] = defaultdict(list)
         for ob in self.obstructions:
             if ob.is_localized():
-                obdict[ob.is_localized()].append(ob.patt)
+                cell = ob.pos[0]
+                obdict[cell].append(ob.patt)
 
         for req_list in self.requirements:
             for req in req_list:
@@ -594,7 +621,7 @@ class Tiling(CombinatorialClass):
         self._cell_basis = resdict
         return self._cell_basis
 
-    def cell_graph(self):
+    def cell_graph(self) -> Set[Tuple[Cell, Cell]]:
         """
         Return the set of edges in the cell graph of the tiling.
         """
@@ -609,13 +636,13 @@ class Tiling(CombinatorialClass):
                 edges.add((c1, c2))
         return edges
 
-    def sum_decomposition(self, skew=False):
+    def sum_decomposition(self, skew: bool = False) -> List[List[Cell]]:
         """
         Returns the sum decomposition of the tiling with respect to the cells.
         If skew is True then returns the skew decomposition instead.
         """
         cells = sorted(self.active_cells)
-        decomposition = []
+        decomposition: List[List[Cell]] = []
         while len(cells) > 0:
             x = cells[0][0]  # x boundary, maximum in both cases
             y = cells[0][1]  # y boundary, maximum in sum, minimum in skew
@@ -641,24 +668,49 @@ class Tiling(CombinatorialClass):
             cells = new_cells
         return decomposition
 
-    def skew_decomposition(self):
+    def skew_decomposition(self) -> List[List[Cell]]:
         """
         Returns the skew decomposition of the tiling with respect to the cells
         """
         return self.sum_decomposition(skew=True)
 
     @staticmethod
-    def sort_requirements(requirements):
+    def sort_requirements(
+        requirements: Iterable[Iterable[GriddedPerm]],
+    ) -> Tuple[Tuple[GriddedPerm, ...], ...]:
         return tuple(sorted(tuple(sorted(set(reqlist))) for reqlist in requirements))
+
+    def backward_map(self, gp: GriddedPerm) -> GriddedPerm:
+        return GriddedPerm(gp.patt, [self.backward_cell_map[cell] for cell in gp.pos])
+
+    def forward_map(self, gp: GriddedPerm) -> GriddedPerm:
+        return GriddedPerm(gp.patt, [self.forward_cell_map[cell] for cell in gp.pos])
+
+    @property
+    def forward_cell_map(self) -> Dict[Cell, Cell]:
+        if not hasattr(self, "_forward_map"):
+            self._minimize_tiling()
+        return self._forward_map
+
+    @property
+    def backward_cell_map(self) -> Dict[Cell, Cell]:
+        if not hasattr(self, "_backward_map"):
+            if not hasattr(self, "_forward_map"):
+                self._minimize_tiling()
+            self._backward_map = {b: a for a, b in self._forward_map.items()}
+        return self._backward_map
 
     # -------------------------------------------------------------
     # Symmetries
     # -------------------------------------------------------------
 
-    def _transform(self, transf, gptransf):
+    def _transform(
+        self, transf, gptransf: Callable[[GriddedPerm], GriddedPerm]
+    ) -> "Tiling":
         """ Transforms the tiling according to the two transformation functions
         given. The first transf is mapping of cells while gptransf is a
         transformation of GriddedPerm that calls some internal method.
+        # TODO: transf is not used...
         """
         return Tiling(
             obstructions=(gptransf(ob) for ob in self.obstructions),
@@ -670,9 +722,10 @@ class Tiling(CombinatorialClass):
     def reverse(self, regions=False):
         """ |
         Reverses the tiling within its boundary. Every cell and obstruction
-        gets flipped over the vertical middle axis."""
+        gets flipped over the vertical middle axis.
+        # TODO: remove weird regions flag? """
 
-        def reverse_cell(cell):
+        def reverse_cell(cell: Cell) -> Cell:
             return (self.dimensions[0] - cell[0] - 1, cell[1])
 
         reversed_tiling = self._transform(
@@ -685,62 +738,62 @@ class Tiling(CombinatorialClass):
             [{c: frozenset([reverse_cell(c)]) for c in self.active_cells}],
         )
 
-    def complement(self):
+    def complement(self) -> "Tiling":
         """ -
         Flip over the horizontal axis.  """
 
-        def complement_cell(cell):
+        def complement_cell(cell: Cell) -> Cell:
             return (cell[0], self.dimensions[1] - cell[1] - 1)
 
         return self._transform(
             complement_cell, lambda gp: gp.complement(complement_cell)
         )
 
-    def inverse(self):
+    def inverse(self) -> "Tiling":
         """ /
         Flip over the diagonal"""
 
-        def inverse_cell(cell):
+        def inverse_cell(cell: Cell) -> Cell:
             return (cell[1], cell[0])
 
         return self._transform(inverse_cell, lambda gp: gp.inverse(inverse_cell))
 
-    def antidiagonal(self):
+    def antidiagonal(self) -> "Tiling":
         """ \\
         Flip over the anti-diagonal"""
 
-        def antidiagonal_cell(cell):
+        def antidiagonal_cell(cell: Cell) -> Cell:
             return (self.dimensions[1] - cell[1] - 1, self.dimensions[0] - cell[0] - 1)
 
         return self._transform(
             antidiagonal_cell, lambda gp: gp.antidiagonal(antidiagonal_cell)
         )
 
-    def rotate270(self):
+    def rotate270(self) -> "Tiling":
         """Rotate 270 degrees"""
 
-        def rotate270_cell(cell):
+        def rotate270_cell(cell: Cell) -> Cell:
             return (self.dimensions[1] - cell[1] - 1, cell[0])
 
         return self._transform(rotate270_cell, lambda gp: gp.rotate270(rotate270_cell))
 
-    def rotate180(self):
+    def rotate180(self) -> "Tiling":
         """Rotate 180 degrees"""
 
-        def rotate180_cell(cell):
+        def rotate180_cell(cell: Cell) -> Cell:
             return (self.dimensions[0] - cell[0] - 1, self.dimensions[1] - cell[1] - 1)
 
         return self._transform(rotate180_cell, lambda gp: gp.rotate180(rotate180_cell))
 
-    def rotate90(self):
+    def rotate90(self) -> "Tiling":
         """Rotate 90 degrees"""
 
-        def rotate90_cell(cell):
+        def rotate90_cell(cell: Cell) -> Cell:
             return (cell[1], self.dimensions[0] - cell[0] - 1)
 
         return self._transform(rotate90_cell, lambda gp: gp.rotate90(rotate90_cell))
 
-    def all_symmetries(self):
+    def all_symmetries(self) -> Set["Tiling"]:
         """
         Return all the symmetries of a tiling in a set.
         """
@@ -797,7 +850,25 @@ class Tiling(CombinatorialClass):
         """
         return self._fusion(row, col, ComponentFusion)
 
-    def find_factors(self, interleaving="none"):
+    def sub_tiling(self, cells: Iterable[Cell], factors: bool = False) -> "Tiling":
+        """Return the tiling using only the obstructions and requirements
+        completely contained in the given cells. If factors is set to True,
+        then it assumes that the first cells confirms if a gridded perm uses only
+        the cells."""
+        obstructions = tuple(
+            ob
+            for ob in self.obstructions
+            if (factors and ob.pos[0] in cells) or all(c in cells for c in ob.pos)
+        )
+        requirements = tuple(
+            req
+            for req in self.requirements
+            if (factors and req[0].pos[0] in cells)
+            or all(c in cells for c in chain.from_iterable(r.pos for r in req))
+        )
+        return self.__class__(obstructions, requirements)
+
+    def find_factors(self, interleaving: str = "none") -> Tuple["Tiling", ...]:
         """
         Return list with the factors of the tiling.
 
@@ -821,7 +892,7 @@ class Tiling(CombinatorialClass):
             )
         return factor.factors()
 
-    def row_and_column_separation(self):
+    def row_and_column_separation(self) -> "Tiling":
         """
         Splits the row and columns of a tilings using the inequalities implied
         by the length two obstructions.
@@ -829,7 +900,7 @@ class Tiling(CombinatorialClass):
         rcs = RowColSeparation(self)
         return rcs.separated_tiling()
 
-    def obstruction_transitivity(self):
+    def obstruction_transitivity(self) -> "Tiling":
         """
         Add length 2 obstructions to the tiling using transitivity over
         positive cells.
@@ -840,7 +911,7 @@ class Tiling(CombinatorialClass):
         obs_trans = ObstructionTransitivity(self)
         return obs_trans.obstruction_transitivity()
 
-    def all_obstruction_inferral(self, obstruction_length):
+    def all_obstruction_inferral(self, obstruction_length: int) -> "Tiling":
         """
         Adds all the obstruction of length up to `obstruction_length` that
         does not change the set of gridded permutations of the tiling.
@@ -848,7 +919,7 @@ class Tiling(CombinatorialClass):
         obs_inf = AllObstructionInferral(self, obstruction_length)
         return obs_inf.obstruction_inferral()
 
-    def empty_cell_inferral(self):
+    def empty_cell_inferral(self) -> "Tiling":
         """
         Adds point obstruction in the cell of the tilings that should be empty.
 
@@ -857,7 +928,7 @@ class Tiling(CombinatorialClass):
         obs_inf = EmptyCellInferral(self)
         return obs_inf.obstruction_inferral()
 
-    def subobstruction_inferral(self):
+    def subobstruction_inferral(self) -> "Tiling":
         """
         Adds all the subobstruction of the tiling's obstruction that doesn't
         change the set of gridded permutations of the tiling.
@@ -865,7 +936,7 @@ class Tiling(CombinatorialClass):
         obs_inf = SubobstructionInferral(self)
         return obs_inf.obstruction_inferral()
 
-    def place_point_in_cell(self, cell, direction):
+    def place_point_in_cell(self, cell: Cell, direction: int) -> "Tiling":
         """
         Return the tiling where a point is placed in the given cell and
         direction.
@@ -873,15 +944,17 @@ class Tiling(CombinatorialClass):
         req_placement = RequirementPlacement(self)
         return req_placement.place_point_in_cell(cell, direction)
 
-    def place_point_of_gridded_permutation(self, gp, idx, direction):
+    def place_point_of_gridded_permutation(
+        self, gp: GriddedPerm, idx: int, direction: int
+    ) -> "Tiling":
         """
         Return the tiling where the directionmost occurrence of the idx point
         in the gridded permutaion gp is placed.
         """
         req_placement = RequirementPlacement(self)
-        return req_placement.place_point_of_req(gp, idx, direction)
+        return req_placement.place_point_of_gridded_permutation(gp, idx, direction)
 
-    def place_row(self, idx, direction):
+    def place_row(self, idx: int, direction: int) -> Tuple["Tiling", ...]:
         """
         Return the list of tilings in which the directionmost point in the row
         is placed.
@@ -889,7 +962,7 @@ class Tiling(CombinatorialClass):
         req_placement = RequirementPlacement(self)
         return req_placement.row_placement(idx, direction)
 
-    def place_col(self, idx, direction):
+    def place_col(self, idx: int, direction: int) -> Tuple["Tiling", ...]:
         """
         Return the list of tilings in which the directionmost point in the
         column is placed.
@@ -897,7 +970,7 @@ class Tiling(CombinatorialClass):
         req_placement = RequirementPlacement(self)
         return req_placement.col_placement(idx, direction)
 
-    def partial_place_point_in_cell(self, cell, direction):
+    def partial_place_point_in_cell(self, cell: Cell, direction: int) -> "Tiling":
         """
         Return the tiling where a point is placed in the given cell and
         direction. The point is placed onto its own row or own column
@@ -909,7 +982,9 @@ class Tiling(CombinatorialClass):
             req_placement = RequirementPlacement(self, own_col=False)
         return req_placement.place_point_in_cell(cell, direction)
 
-    def partial_place_point_of_gridded_permutation(self, gp, idx, direction):
+    def partial_place_point_of_gridded_permutation(
+        self, gp: GriddedPerm, idx: int, direction: int
+    ) -> "Tiling":
         """
         Return the tiling where the directionmost occurrence of the idx point
         in the gridded permutaion gp is placed. The point is placed onto its
@@ -919,9 +994,9 @@ class Tiling(CombinatorialClass):
             req_placement = RequirementPlacement(self, own_row=False)
         else:
             req_placement = RequirementPlacement(self, own_col=False)
-        return req_placement.place_point_of_req(gp, idx, direction)
+        return req_placement.place_point_of_gridded_permutation(gp, idx, direction)
 
-    def partial_place_row(self, idx, direction):
+    def partial_place_row(self, idx: int, direction: int) -> Tuple["Tiling", ...]:
         """
         Return the list of tilings in which the directionmost point in the row
         is placed. The points are placed onto thier own row.
@@ -929,7 +1004,7 @@ class Tiling(CombinatorialClass):
         req_placement = RequirementPlacement(self, own_row=True, own_col=False)
         return req_placement.row_placement(idx, direction)
 
-    def partial_place_col(self, idx, direction):
+    def partial_place_col(self, idx: int, direction: int) -> Tuple["Tiling", ...]:
         """
         Return the list of tilings in which the directionmost point in the
         column is placed. The points are placed onto their own column.
@@ -961,7 +1036,7 @@ class Tiling(CombinatorialClass):
         MGP = MinimalGriddedPerms(self)
         return all(False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True))
 
-    def is_finite(self):
+    def is_finite(self) -> bool:
         """Returns True if all active cells have finite basis."""
         increasing = set()
         decreasing = set()
@@ -975,17 +1050,17 @@ class Tiling(CombinatorialClass):
             cell in increasing and cell in decreasing for cell in self.active_cells
         )
 
-    def objects_of_length(self, length):
-        yield from self.gridded_perms_of_length(length)
+    def objects_of_size(self, size: int) -> Iterator[GriddedPerm]:
+        yield from self.gridded_perms_of_length(size)
 
-    def gridded_perms_of_length(self, length):
+    def gridded_perms_of_length(self, length: int) -> Iterator[GriddedPerm]:
         for gp in self.gridded_perms(maxlen=length):
             if len(gp) == length:
                 yield gp
 
-    def gridded_perms(self, maxlen: Optional[int] = None) -> Iterable[GriddedPerm]:
+    def gridded_perms(self, maxlen: Optional[int] = None) -> Iterator[GriddedPerm]:
         """
-        Iterable of all gridded permutations griddable on the tiling.
+        Iterator of all gridded permutations griddable on the tiling.
 
         The gridded permutations are up to length of the longest minimum
         gridded permutations that is griddable on the tiling.
@@ -993,23 +1068,24 @@ class Tiling(CombinatorialClass):
         yield from GriddedPermsOnTiling(self, maxlen=maxlen)
 
     def merge(self) -> "Tiling":
-        """Return an equivalent tiling with a single requirement list."""
+        """Return an equivalent tiling with a single requirement list.
+        # TODO: this doesn't work due to minimization on initialising"""
         if len(self.requirements) <= 1:
             return self
         mgps = MinimalGriddedPerms(self)
         requirements = tuple(
-            Requirement(gp.patt, gp.pos) for gp in mgps.minimal_gridded_perms()
+            GriddedPerm(gp.patt, gp.pos) for gp in mgps.minimal_gridded_perms()
         )
         return self.__class__(self.obstructions, (requirements,))
 
-    def minimal_gridded_perms(self):
+    def minimal_gridded_perms(self) -> Iterator[GriddedPerm]:
         """
         An iterator over all minimal gridded permutations.
         """
         MGP = MinimalGriddedPerms(self)
         yield from MGP.minimal_gridded_perms()
 
-    def is_epsilon(self):
+    def is_epsilon(self) -> bool:
         """Returns True if the generating function for the tiling is 1."""
         return (
             self.dimensions == (1, 1)
@@ -1017,33 +1093,43 @@ class Tiling(CombinatorialClass):
             and len(self.obstructions[0]) == 1
         )
 
-    def is_positive(self):
+    def is_positive(self) -> bool:
         """Returns True if tiling does not contain the empty permutation."""
-        return self.requirements
+        return bool(self.requirements)
 
-    def is_point_tiling(self):
+    def is_point_tiling(self) -> bool:
         """
         Returns True if the only gridded permutations of the tiling is
         1: (0, 0)
         """
         return self.dimensions == (1, 1) and (0, 0) in self.point_cells
 
-    is_atom = is_point_tiling
+    def is_atom(self) -> bool:
+        """Return True if tiling is a single gridded permutation."""
+        return (self.active_cells == self.point_cells) and self.fully_isolated()
 
-    def is_point_or_empty(self):
+    def minimum_size_of_object(self) -> int:
+        """Return the size of the smallest gridded perm contained on the tiling."""
+        if not self.requirements:
+            return 0
+        if len(self.requirements) == 1:
+            return min(len(gp) for gp in self.requirements[0])
+        return len(next(self.minimal_gridded_perms()))
+
+    def is_point_or_empty(self) -> bool:
         point_or_empty_tiling = Tiling(
             obstructions=(
-                Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-                Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
             )
         )
         return self == point_or_empty_tiling
 
-    def is_empty_cell(self, cell):
+    def is_empty_cell(self, cell: Cell) -> bool:
         """Check if the cell of the tiling is empty."""
         return cell in self.empty_cells
 
-    def is_monotone_cell(self, cell):
+    def is_monotone_cell(self, cell: Cell) -> bool:
         """
         Check if the cell is decreasing or increasing.
 
@@ -1053,7 +1139,7 @@ class Tiling(CombinatorialClass):
         return any(ob in [Perm((0,)), Perm((0, 1)), Perm((1, 0))] for ob in local_obs)
 
     @property
-    def point_cells(self):
+    def point_cells(self) -> FrozenSet[Cell]:
         if not hasattr(self, "_point_cells"):
             local_length2_obcells = Counter(
                 ob.pos[0]
@@ -1066,11 +1152,11 @@ class Tiling(CombinatorialClass):
         return self._point_cells
 
     @property
-    def total_points(self):
+    def total_points(self) -> int:
         return len(self.point_cells)
 
     @property
-    def positive_cells(self):
+    def positive_cells(self) -> FrozenSet[Cell]:
         if not hasattr(self, "_positive_cells"):
             self._positive_cells = frozenset(
                 union_reduce(
@@ -1080,50 +1166,51 @@ class Tiling(CombinatorialClass):
             )
         return self._positive_cells
 
-    def total_positive(self):
+    def total_positive(self) -> int:
         return len(self.positive_cells)
 
     @property
-    def possibly_empty(self):
+    def possibly_empty(self) -> FrozenSet[Cell]:
         """Computes the set of possibly empty cells on the tiling."""
         return self.active_cells - self.positive_cells
 
     @property
-    def obstructions(self):
+    def obstructions(self) -> Tuple[GriddedPerm, ...]:
         return self._obstructions
 
-    def total_obstructions(self):
+    def total_obstructions(self) -> int:
         return len(self._obstructions)
 
     @property
-    def requirements(self):
+    def requirements(self) -> Tuple[Tuple[GriddedPerm, ...], ...]:
         return self._requirements
 
-    def total_requirements(self):
+    def total_requirements(self) -> int:
         return len(self._requirements)
 
     @property
-    def empty_cells(self):
+    def empty_cells(self) -> FrozenSet[Cell]:
         """Returns a set of all cells that contain a point obstruction, i.e.,
         are empty.
         """
-        return frozenset(
-            filter(None, map(lambda x: x.is_point_obstr(), self._obstructions))
-        )
+        return frozenset(gp.pos[0] for gp in self.obstructions if gp.is_point_perm())
 
     @property
-    def active_cells(self):
-        """Returns a set of all cells that do not contain a point obstruction,
+    def active_cells(self) -> FrozenSet[Cell]:
+        """
+        Returns a set of all cells that do not contain a point obstruction,
         i.e., not empty.
         """
-        return union_reduce(
-            ob.pos for ob in self._obstructions if not ob.is_point_obstr()
-        ) | union_reduce(
+        no_point_obs = union_reduce(
+            ob.pos for ob in self._obstructions if not ob.is_point_perm()
+        )
+        with_req = union_reduce(
             union_reduce(req.pos for req in reqs) for reqs in self._requirements
         )
+        return frozenset(no_point_obs | with_req)
 
     @property
-    def dimensions(self):
+    def dimensions(self) -> Tuple[int, int]:
         if not hasattr(self, "_dimensions"):
             obcells = union_reduce(ob.pos for ob in self._obstructions)
             reqcells = union_reduce(
@@ -1139,140 +1226,21 @@ class Tiling(CombinatorialClass):
                 self._dimensions = (max(rows) + 1, max(cols) + 1)
         return self._dimensions
 
-    def get_min_poly(self, **kwargs):
-        """Return the minimum polynomial of the generating function implied by
-        the tiling."""
-        root_func = kwargs.get("root_func")
-        F = sympy.Symbol("F")
-        root_func = sympy.Symbol(str(root_func).replace("(x)", ""))
-        kwargs["root_func"] = root_func
-        root_class = kwargs.get("root_class")
-        if self == Tiling(obstructions=(Obstruction(Perm((0,)), ((0, 0),)),)):
-            return sympy.sympify("{} - 1".format(F))
-        if self == Tiling(
-            obstructions=(
-                Obstruction(Perm((0, 1)), ((0, 0), (0, 0))),
-                Obstruction(Perm((1, 0)), ((0, 0), (0, 0))),
-            )
-        ):
-            return sympy.sympify("{} - x - 1".format(F))
-        if self == root_class:
-            return sympy.sympify("{} - {}".format(F, root_func))
-        if self.requirements:
-            req = self.requirements[0]
-            newreqs = self.requirements[1:]
-            newobs = self.obstructions + tuple(Obstruction(r.patt, r.pos) for r in req)
-            avoids = Tiling(newobs, newreqs)
-            without = Tiling(self.obstructions, newreqs)
-            A, B = sympy.Symbol("A"), sympy.Symbol("B")
-            if avoids == root_class:
-                avoids_min_poly = A - root_func
-            else:
-                avoids_min_poly = avoids.get_min_poly(**kwargs)
-                avoids_min_poly = avoids_min_poly.subs({F: A})
-            if without == root_class:
-                without_min_poly = B - root_func
-            else:
-                without_min_poly = without.get_min_poly(**kwargs)
-                without_min_poly = without_min_poly.subs({F: B})
-            eq = F - B + A
-            basis = sympy.groebner(
-                [avoids_min_poly, without_min_poly, eq],
-                A,
-                B,
-                F,
-                wrt=([sympy.abc.x, F] + ([root_func] if root_func is not None else [])),
-                order="lex",
-            )
-            # Compute some initial conditions to length verify.
-            verify = 5
-            if basis.polys:
-                initial = [
-                    len(list(self.objects_of_length(i))) for i in range(verify + 1)
-                ]
-            if root_func is not None:
-                root_initial = [
-                    len(list(root_class.objects_of_length(i)))
-                    for i in range(verify + 1)
-                ]
-
-            # # Check that a polynomial is actually a min poly for the class by
-            # # plugging in initial conditions.
-            for poly in basis.polys:
-                if root_initial:
-                    root_kwargs = {"root_func": root_func, "root_initial": root_initial}
-                if poly.atoms(sympy.Symbol) == {F, sympy.abc.x}:
-                    eq = poly.as_expr()
-                    if check_poly(eq, initial, **root_kwargs):
-                        return eq
-                    if check_equation(eq, initial, **root_kwargs):
-                        return eq
-                if poly.atoms(sympy.Symbol) == {F, sympy.abc.x, root_func}:
-                    eq = poly.as_expr()
-                    if check_poly(eq, initial, **root_kwargs):
-                        return eq
-                    if check_equation(eq, initial, **root_kwargs):
-                        return eq
-            raise ValueError("Something went wrong.")
-        if (
-            self.dimensions == (1, 1)
-            or any(ob.is_interleaving() for ob in self.obstructions)
-            or any(r.is_interleaving() for req in self.requirements for r in req)
-            or (
-                len(self.find_factors()) == 1
-                and all(ob.is_single_cell() for ob in self.obstructions)
-            )
-        ):
-            try:
-                info = check_database(self)
-                min_poly = info.get("min_poly")
-                if min_poly is None:
-                    min_poly = F - sympy.sympify(info["genf"])
-                else:
-                    min_poly = sympy.sympify(min_poly)
-                return min_poly
-            except Exception:
-                raise NotImplementedError(
-                    ("Can't find the min poly for:\n" + str(self))
-                )
-        else:
-            try:
-                import tilescopethree as t
-                from tilescopethree.strategies import (
-                    all_factor_insertions,
-                    factor,
-                    requirement_corroboration,
-                    subset_verified,
-                )
-                from comb_spec_searcher import StrategyPack
-            except ImportError:
-                raise ValueError(
-                    (
-                        "The enumeration of tilings relies on "
-                        "tilescope. This has not yet be released. "
-                        "If you need this functionality, then "
-                        "contact permutatriangle@gmail.com"
-                    )
-                )
-            pack = StrategyPack(
-                initial_strats=[factor, requirement_corroboration],
-                inferral_strats=[],
-                expansion_strats=[[partial(all_factor_insertions, ignore_parent=True)]],
-                ver_strats=[partial(subset_verified, no_factors=True)],
-                name="globally_verified",
-            )
-            searcher = t.TileScopeTHREE(self, pack)
-            tree = searcher.auto_search()
-            min_poly = tree.get_min_poly(**kwargs)
-            return min_poly
-
-    def add_obstruction_in_all_ways(self, patt):
+    def add_obstruction_in_all_ways(self, patt: Perm) -> "Tiling":
         """
         Adds an obstruction of the pattern patt in all possible ways to
         a fully separated (no interleaving rows or columns) tiling t.
         """
 
-        def rec(cols, p, pos, used, i, j, res):
+        def rec(
+            cols: List[List[Cell]],
+            p: Perm,
+            pos: List[Cell],
+            used: Dict[int, Cell],
+            i: int,
+            j: int,
+            res: List[GriddedPerm],
+        ) -> None:
             """
             Recursive helper function
             cols: List of columns in increasing order, each column is a list of
@@ -1285,7 +1253,7 @@ class Tiling(CombinatorialClass):
             res: Resulting list of obstructions
             """
             if j == len(p):
-                res.append(Obstruction(p, tuple(x for x in pos)))
+                res.append(GriddedPerm(p, tuple(x for x in pos)))
             elif i == len(cols):
                 return
             else:
@@ -1300,96 +1268,71 @@ class Tiling(CombinatorialClass):
                         del used[p[j]]
                 rec(cols, p, pos, used, i + 1, j, res)
 
-        cols = [[] for i in range(self.dimensions[0])]
+        cols: List[List[Cell]] = [[] for i in range(self.dimensions[0])]
         for x in self.active_cells:
             cols[x[0]].append(x)
         used = {-1: (-1, -1), len(patt): self.dimensions}
-        pos = []
-        res = []
+        pos: List[Cell] = []
+        res: List[GriddedPerm] = []
         rec(cols, patt, pos, used, 0, 0, res)
         return Tiling(
             obstructions=list(self.obstructions) + res, requirements=self.requirements
         )
 
     @classmethod
-    def tiling_from_perm(cls, p):
+    def tiling_from_perm(cls, p: Perm) -> "Tiling":
         """
         Returns a tiling with point requirements corresponding to the
         permutation 'p'
         """
         return cls(
             requirements=[
-                [Requirement(Perm((0,)), ((i, p[i]),))] for i in range(len(p))
+                [GriddedPerm(Perm((0,)), ((i, p[i]),))] for i in range(len(p))
             ]
         )
 
-    def get_genf(self, *args, **kwargs):
-        """
-        Return generating function of a tiling.
-        """
-        # If root has been given a function, return it if you see the root or a
-        # symmetries.
-        if (
-            kwargs.get("root_func") is not None
-            and kwargs.get("root_class") in self.all_symmetries()
-        ):
-            return kwargs["root_func"]
+    def get_genf(self, *args, **kwargs) -> sympy.Expr:
         if self.is_empty():
             return sympy.sympify(0)
-        # Can count by counting the tiling with a requirement removed and
-        # subtracting the tiling with it added as an obstruction.
-        if self.requirements:
-            ignore = Tiling(
-                obstructions=self.obstructions, requirements=self.requirements[1:]
-            )
-            req = self.requirements[0]
-            t_avoid_req = Tiling(
-                obstructions=(
-                    chain(self.obstructions, (Obstruction(r.patt, r.pos) for r in req))
-                ),
-                requirements=self.requirements[1:],
-            )
-            return ignore.get_genf(*args, **kwargs) - t_avoid_req.get_genf(
-                *args, **kwargs
-            )
-        # Try using some of the enumeration strategy
         enum_stragies = [
-            BasicEnumeration,
-            LocallyFactorableEnumeration,
             MonotoneTreeEnumeration,
             DatabaseEnumeration,
+            LocalEnumeration,
         ]
         for enum_strat in enum_stragies:
             if enum_strat(self).verified():
                 return enum_strat(self).get_genf()
-        raise ValueError("We were unable to enumerate this tiling:\n" + str(self))
+        # TODO: try verification strategies
+        raise NotImplementedError(
+            "We were unable to enumerate this tiling:\n" + str(self)
+        )
 
     # -------------------------------------------------------------
     # Dunder methods
     # -------------------------------------------------------------
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self._requirements) ^ hash(self._obstructions)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Tiling):
             return False
         return (self.obstructions == other.obstructions) and (
             self.requirements == other.requirements
         )
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
         if not isinstance(other, Tiling):
             return True
         return (self.obstructions != other.obstructions) or (
             self.requirements != other.requirements
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         format_string = "Tiling(obstructions={}, requirements={})"
         return format_string.format(self.obstructions, self.requirements)
 
-    def __str__(self):
+    def __str__(self) -> str:
         dim_i, dim_j = self.dimensions
         result = []
         # Create tiling lines
@@ -1410,7 +1353,7 @@ class Tiling(CombinatorialClass):
                     result.append(" ")
             result.append("\n")
 
-        labels = dict()
+        labels: Dict[Tuple[Tuple[Perm, ...], bool], str] = dict()
 
         # Put the sets in the tiles
 
@@ -1445,15 +1388,15 @@ class Tiling(CombinatorialClass):
 
         # Legend at bottom
         for block, label in sorted(labels.items(), key=lambda x: x[1]):
-            basis, positive = block
+            basis_el, positive = block
             result.append(label)
             result.append(": ")
-            if basis == (Perm((0, 1)), Perm((1, 0))) and positive:
+            if basis_el == (Perm((0, 1)), Perm((1, 0))) and positive:
                 result.append("point")
             else:
                 result.append(
                     "Av{}({})".format(
-                        "+" if positive else "", ", ".join(str(p) for p in basis)
+                        "+" if positive else "", ", ".join(str(p) for p in basis_el)
                     )
                 )
             result.append("\n")

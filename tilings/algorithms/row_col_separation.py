@@ -9,8 +9,12 @@ separation is idempotent by applying the core algorithm until it stabilises.
 """
 import heapq
 from itertools import combinations, product
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
-from comb_spec_searcher import InferralRule
+if TYPE_CHECKING:
+    from tilings import Tiling
+
+Cell = Tuple[int, int]
 
 
 class Graph:
@@ -383,13 +387,13 @@ class _RowColSeparationSingleApplication:
         return next(_RowColSeparationSingleApplication._all_order(graph))
 
     def _separates_tiling(self, row_order, col_order):
-        cell_map = self._get_cell_map(row_order, col_order)
-        obs = self._map_obstructions(cell_map)
-        reqs = self._map_requirements(cell_map)
+        cell_map = self.get_cell_map(row_order, col_order)
+        obs = self.map_obstructions(cell_map)
+        reqs = self.map_requirements(cell_map)
         return self._tiling.__class__(obstructions=obs, requirements=reqs)
 
     @staticmethod
-    def _get_cell_map(row_order, col_order):
+    def get_cell_map(row_order, col_order):
         """
         Return the position of the according to the given row_order and
         col_order.
@@ -403,7 +407,7 @@ class _RowColSeparationSingleApplication:
                 cell_map[cell] = (i, cell_map[cell][1])
         return cell_map
 
-    def _map_obstructions(self, cell_map):
+    def map_obstructions(self, cell_map):
         """Map the obstruction of a tiling according to the cell map."""
         non_point_obs = (ob for ob in self._tiling.obstructions if len(ob) > 1)
         for ob in non_point_obs:
@@ -411,7 +415,7 @@ class _RowColSeparationSingleApplication:
             if not ob.contradictory():
                 yield ob
 
-    def _map_requirements(self, cell_map):
+    def map_requirements(self, cell_map):
         """Map the requirements of a tiling according to the cell map."""
         for req_list in self._tiling.requirements:
             yield [self._map_gridded_perm(cell_map, req) for req in req_list]
@@ -483,16 +487,16 @@ class RowColSeparation:
     It applies the row columns separation until it does not change the tiling.
     """
 
-    def __init__(self, tiling):
+    def __init__(self, tiling: "Tiling") -> None:
         self._tiling = tiling
-        self._separated_tilings = []
+        self._separated_tilings: List["Tiling"] = []
         separation_algo = _RowColSeparationSingleApplication(self._tiling)
         while separation_algo.separable():
             new_sep = separation_algo.separated_tiling()
             self._separated_tilings.append(new_sep)
             separation_algo = _RowColSeparationSingleApplication(new_sep)
 
-    def separable(self):
+    def separable(self) -> bool:
         """
         Test if the tiling is separable.
 
@@ -501,7 +505,7 @@ class RowColSeparation:
         """
         return bool(self._separated_tilings)
 
-    def separated_tiling(self):
+    def separated_tiling(self) -> "Tiling":
         """
         Return the one the possible maximal separation of the tiling.
         """
@@ -509,20 +513,27 @@ class RowColSeparation:
             return self._tiling
         return self._separated_tilings[-1]
 
-    def formal_step(self):
+    def get_cell_map(self) -> Dict[Cell, Cell]:
         """
-        Returns a string describing the operation that was performed.
+        Return the cell map obtained by applying the algorithm until no change.
         """
-        s = "Row and column separation"
-        if len(self._separated_tilings) > 1:
-            s += " ({} times)".format(len(self._separated_tilings))
-        return s
-
-    def rule(self):
-        """
-        Return a comb_spec_searcher rule for the separation.
-
-        If the tiling is not separable, returns None.
-        """
-        if self.separable():
-            return InferralRule(self.formal_step(), self.separated_tiling())
+        separation_algo = _RowColSeparationSingleApplication(self._tiling)
+        cell_maps = []
+        while separation_algo.separable():
+            row_order, col_order = (
+                separation_algo.max_row_order,
+                separation_algo.max_col_order,
+            )
+            cell_map = separation_algo.get_cell_map(row_order, col_order)
+            cell_maps.append(cell_map)
+            obs = separation_algo.map_obstructions(cell_map)
+            reqs = separation_algo.map_requirements(cell_map)
+            new_sep = self._tiling.__class__(
+                obstructions=obs, requirements=reqs, minimize=False
+            )
+            separation_algo = _RowColSeparationSingleApplication(new_sep)
+        res = {cell: cell for cell in self._tiling.active_cells}
+        for cell_map in cell_maps:
+            for cell, mapped_cell in res.items():
+                res[cell] = cell_map[mapped_cell]
+        return res
