@@ -592,7 +592,6 @@ class TestElementaryVerificationStrategy(CommonTest):
             spec = strategy.get_specification(tiling)
             assert isinstance(spec, CombinatorialSpecification)
 
-
     @pytest.mark.xfail(reason="Av(123) not in combopal database")
     def test_get_genf(self, strategy, enum_verified):
         for tiling in enum_verified:
