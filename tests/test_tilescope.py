@@ -3,7 +3,9 @@ import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
 from comb_spec_searcher.utils import taylor_expand
+from permuta import Perm
 from tilings import Tiling
+from tilings import strategies as strat
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
@@ -105,6 +107,52 @@ def test_1342_1423():
     spec = searcher.auto_search(smallest=True)
     assert spec.number_of_rules() == 9
     assert isinstance(spec, CombinatorialSpecification)
+
+
+@pytest.mark.timeout(60)
+def test_reverse_equiv():
+    """A specification that should use reverse equivalence."""
+    pack = TileScopePack(
+        initial_strats=[
+            strat.FactorFactory(),
+            strat.RequirementCorroborationFactory(),
+            strat.RequirementPlacementFactory(partial=False),
+        ],
+        inferral_strats=[strat.RowColumnSeparationStrategy()],
+        expansion_strats=[[strat.CellInsertionFactory()]],
+        ver_strats=[strat.BasicVerificationStrategy()],
+        iterative=False,
+        name="test pack",
+    )
+    basis = (Perm((0, 1, 3, 2)), Perm((0, 2, 3, 1)), Perm((1, 0, 3, 2)))
+    # From https://oeis.org/A033321
+    expected_enum = [1, 1, 2, 6, 21, 79, 311, 1265, 5275, 22431, 96900, 424068, 1876143]
+    x, f = sympy.symbols("x f")
+    expected_min_poly = sympy.sympify("-4*f^2*x^2 + 8*f^2*x - 4*f*x - 4*f + 4")
+    searcher = TileScope(basis, pack)
+    spec = searcher.auto_search(smallest=True)
+    assert [spec.count_objects_of_size(i) for i in range(13)] == expected_enum
+    genf = spec.get_genf()
+    assert sympy.simplify(expected_min_poly.subs(f, genf)) == 0
+    assert taylor_expand(genf, 12) == expected_enum
+    # In order to avoid ReccursionError we go incrementally
+    for i in range(0, 100):
+        spec.count_objects_of_size(i)
+    assert spec.count_objects_of_size(50) == 86055297645519796258217673160170
+    assert (
+        spec.count_objects_of_size(100)
+        == 2733073112795720153237297124938915907723365837935699807314396095313
+    )
+    len4_perms = tuple(spec.generate_objects_of_size(4))
+    assert len(len4_perms) == 21
+    assert all(p not in len4_perms for p in basis)
+    len8_perms = tuple(spec.generate_objects_of_size(8))
+    assert len(len8_perms) == 5275
+    assert len(set(len8_perms)) == 5275
+    for _ in range(10):
+        gp = spec.random_sample_object_of_size(50)
+        print(gp)
+        assert gp.patt.avoids(*basis)
 
 
 @pytest.mark.timeout(20)
