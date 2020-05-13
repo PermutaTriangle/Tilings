@@ -1,7 +1,7 @@
 import abc
 from collections import defaultdict
 from itertools import chain, product
-from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.strategies import Rule
@@ -120,13 +120,13 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def backward_map(
         self,
         tiling: Tiling,
-        gps: Tuple[GriddedPerm, ...],
+        gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         if children is None:
             children = self.decomposition_function(tiling)
         idx = DisjointUnionStrategy.backward_map_index(gps)
-        gp: GriddedPerm = children[idx].backward_map(gps[idx])
+        gp: GriddedPerm = children[idx].backward_map(cast(GriddedPerm, gps[idx]))
         if self.include_empty:
             if idx == 0:
                 return gp
@@ -141,7 +141,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         tiling: Tiling,
         gp: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Tuple[GriddedPerm, ...]:
+    ) -> Tuple[Optional[GriddedPerm], ...]:
         indices = gp.forced_point_of_requirement(self.gps, self.indices, self.direction)
         if children is None:
             children = self.decomposition_function(tiling)

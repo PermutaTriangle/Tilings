@@ -2,7 +2,7 @@
 The row and column separation strategy. The details of the algorithm can be
 found in the algorithms folder.
 """
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy
 from tilings import GriddedPerm, Tiling
@@ -62,13 +62,13 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def backward_map(
         self,
         tiling: Tiling,
-        gps: Tuple[GriddedPerm, ...],
+        gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         """This method will enable us to generate objects, and sample. """
         if children is None:
             children = self.decomposition_function(tiling)
-        gp = children[0].backward_map(gps[0])
+        gp = children[0].backward_map(cast(GriddedPerm, gps[0]))
         backmap = self.backward_cell_map(tiling)
 
         def mapping(c: Cell) -> Cell:
@@ -81,7 +81,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         tiling: Tiling,
         gp: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Tuple[GriddedPerm, ...]:
+    ) -> Tuple[GriddedPerm]:
         """This function will enable us to have a quick membership test."""
         if children is None:
             children = self.decomposition_function(tiling)

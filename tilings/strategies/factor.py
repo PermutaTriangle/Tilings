@@ -61,13 +61,14 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
     def backward_map(
         self,
         tiling: Tiling,
-        gps: Tuple[GriddedPerm, ...],
+        gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         if children is None:
             children = self.decomposition_function(tiling)
         gps_to_combine = tuple(
-            tiling.backward_map(gp) for gp, tiling in zip(gps, children)
+            tiling.backward_map(cast(GriddedPerm, gp))
+            for gp, tiling in zip(gps, children)
         )
         temp = [
             ((cell[0], idx), (cell[1], val))
@@ -169,7 +170,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
     def backward_map(
         self,
         tiling: Tiling,
-        gps: Tuple[GriddedPerm, ...],
+        gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         raise NotImplementedError
