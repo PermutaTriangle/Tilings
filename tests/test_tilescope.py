@@ -3,7 +3,7 @@ import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
 from comb_spec_searcher.utils import taylor_expand
-from permuta import Perm
+from tilings import Tiling
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
@@ -28,8 +28,9 @@ def test_132():
 
 @pytest.mark.timeout(20)
 def test_132_genf():
-    searcher = TileScope("132", point_placements)
+    searcher = TileScope([Perm((0, 2, 1))], point_placements)
     spec = searcher.auto_search(smallest=True)
+    gf = spec.get_genf()
     gf = sympy.series(spec.get_genf(), n=15)
     x = sympy.Symbol("x")
     assert [gf.coeff(x, n) for n in range(13)] == [
@@ -51,7 +52,7 @@ def test_132_genf():
 
 @pytest.mark.timeout(20)
 def test_132_elementary():
-    searcher = TileScope("132", point_placements.make_elementary())
+    searcher = TileScope(Tiling.from_string("132"), point_placements.make_elementary())
     spec = searcher.auto_search()
     assert spec.number_of_rules() == 5
     assert isinstance(spec, CombinatorialSpecification)
@@ -86,7 +87,7 @@ def test_132_321_genf():
 
 @pytest.mark.timeout(20)
 def test_123():
-    searcher = TileScope("123", point_placements_fusion)
+    searcher = TileScope((Perm((0, 1, 2)),), point_placements_fusion)
     spec = searcher.auto_search(smallest=True)
     assert isinstance(spec, CombinatorialSpecification)
 
