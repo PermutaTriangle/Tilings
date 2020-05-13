@@ -2304,7 +2304,6 @@ class TestGetGenf:
         )
         assert sympy.simplify(t.get_genf() - sympy.sympify("1/(1-2*x)")) == 0
 
-    @pytest.mark.xfail(reason="not implemented factoring")
     def test_with_list_req(self):
         t = Tiling(
             [
@@ -2317,6 +2316,17 @@ class TestGetGenf:
             ],
         )
         assert sympy.simplify(t.get_genf() - sympy.sympify("(x/(1-x))**2")) == 0
+
+    def test_locally_factorable(self):
+        t = Tiling(
+            obstructions=[
+                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
+                GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
+            ]
+        )
+        assert t.get_genf() == sympy.sympify("1 / (2 * x ** 2 - 3 * x + 1)")
 
     def test_not_enumerable(self):
         t = Tiling.from_string("1324")
