@@ -84,10 +84,8 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
     def formal_step() -> str:
         return "tiling is a subclass of the original tiling"
 
-    def get_genf(
-        self, comb_class: Tiling, funcs: Optional[Dict[Tiling, Function]] = None,
-    ):
-        if not self.verified(comb_class):
+    def get_genf(self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None):
+        if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling not one by one verified")
         return LocalEnumeration(comb_class).get_genf(funcs=funcs)
 
@@ -161,9 +159,7 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
     def formal_step() -> str:
         return "tiling is in the database"
 
-    def get_genf(
-        self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None,
-    ):
+    def get_genf(self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None):
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling is not in the database")
         return DatabaseEnumeration(tiling).get_genf()
@@ -332,9 +328,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
     def from_dict(cls, d: dict) -> "LocalVerificationStrategy":
         return cls(**d)
 
-    def get_genf(
-        self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None,
-    ):
+    def get_genf(self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None):
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling not locally verified")
         return LocalEnumeration(tiling).get_genf()

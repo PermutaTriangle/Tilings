@@ -336,7 +336,7 @@ class RequirementPlacement:
         """
         cells = frozenset(gp.pos[idx] for idx, gp in zip(indices, gps))
         res = []
-        for cell in cells:
+        for cell in sorted(cells):
             obs, reqs = self._stretched_obstructions_and_requirements(cell)
             forced_obs = self._forced_obstructions_from_requirement(
                 gps, indices, cell, direction

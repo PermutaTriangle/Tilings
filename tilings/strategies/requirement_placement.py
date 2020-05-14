@@ -1,7 +1,7 @@
 import abc
 from collections import defaultdict
 from itertools import chain, product
-from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.strategies import Rule
@@ -36,8 +36,14 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self.direction = direction
         self.own_row, self.own_col = own_row, own_col
         self.include_empty = include_empty
+        self._placed_cells = tuple(
+            sorted(set(gp.pos[idx] for idx, gp in zip(self.indices, self.gps)))
+        )
         possibly_empty = self.include_empty or len(self.gps) > 1
         super().__init__(ignore_parent=ignore_parent, possibly_empty=possibly_empty)
+
+    def _placed_cell(self, idx: int) -> Cell:
+        return self._placed_cells[idx]
 
     def placement_class(self, tiling: Tiling) -> RequirementPlacement:
         return RequirementPlacement(tiling, own_col=self.own_col, own_row=self.own_row)
@@ -120,18 +126,18 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def backward_map(
         self,
         tiling: Tiling,
-        gps: Tuple[GriddedPerm, ...],
+        gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         if children is None:
             children = self.decomposition_function(tiling)
         idx = DisjointUnionStrategy.backward_map_index(gps)
-        gp: GriddedPerm = children[idx].backward_map(gps[idx])
+        gp: GriddedPerm = children[idx].backward_map(cast(GriddedPerm, gps[idx]))
         if self.include_empty:
             if idx == 0:
                 return gp
             idx -= 1
-        placed_cell = self.gps[idx].pos[self.indices[idx]]
+        placed_cell = self._placed_cell(idx)
         return GriddedPerm(
             gp.patt, [self.backward_cell_map(placed_cell, cell) for cell in gp.pos]
         )
@@ -141,7 +147,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         tiling: Tiling,
         gp: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Tuple[GriddedPerm, ...]:
+    ) -> Tuple[Optional[GriddedPerm], ...]:
         indices = gp.forced_point_of_requirement(self.gps, self.indices, self.direction)
         if children is None:
             children = self.decomposition_function(tiling)

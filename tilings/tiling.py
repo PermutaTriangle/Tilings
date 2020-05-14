@@ -1046,8 +1046,9 @@ class Tiling(CombinatorialClass):
             cell in increasing and cell in decreasing for cell in self.active_cells
         )
 
-    def objects_of_size(self, size: int) -> Iterator[GriddedPerm]:
-        yield from self.gridded_perms_of_length(size)
+    def objects_of_size(self, n: int, **parameters: int) -> Iterator[GriddedPerm]:
+        assert not parameters, "only implemented in one variable"
+        yield from self.gridded_perms_of_length(n)
 
     def gridded_perms_of_length(self, length: int) -> Iterator[GriddedPerm]:
         for gp in self.gridded_perms(maxlen=length):

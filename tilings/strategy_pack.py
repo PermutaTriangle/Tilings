@@ -210,7 +210,7 @@ class TileScopePack(StrategyPack):
             expansion_strats=[
                 [
                     strat.RowAndColumnPlacementFactory(
-                        place_col=place_col, place_row=place_row
+                        place_col=place_col, place_row=place_row, dirs=[direction]
                     )
                 ]
             ],
