@@ -36,8 +36,14 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self.direction = direction
         self.own_row, self.own_col = own_row, own_col
         self.include_empty = include_empty
+        self._placed_cells = tuple(
+            sorted(set(gp.pos[idx] for idx, gp in zip(self.indices, self.gps)))
+        )
         possibly_empty = self.include_empty or len(self.gps) > 1
         super().__init__(ignore_parent=ignore_parent, possibly_empty=possibly_empty)
+
+    def _placed_cell(self, idx: int) -> Cell:
+        return self._placed_cells[idx]
 
     def placement_class(self, tiling: Tiling) -> RequirementPlacement:
         return RequirementPlacement(tiling, own_col=self.own_col, own_row=self.own_row)
@@ -131,7 +137,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             if idx == 0:
                 return gp
             idx -= 1
-        placed_cell = self.gps[idx].pos[self.indices[idx]]
+        placed_cell = self._placed_cell(idx)
         return GriddedPerm(
             gp.patt, [self.backward_cell_map(placed_cell, cell) for cell in gp.pos]
         )
