@@ -80,8 +80,8 @@ or an interactive Python session, just like any other Python library:
 
        >>> from tilings import *
 
-Importing ``*`` from it supplies you with the ‘GriddedPerm’,
-‘Obstruction’, ‘Requirement’, and ‘Tiling’ classes.
+Importing ``*`` from it supplies you with the ‘GriddedPerm’ and ‘Tiling’
+classes.
 
 As above, a gridded permutation is a pair ``(π, P)`` where ``π`` is a
 permutation and ``P`` is a tuple of cells. The permutation is assumed to
@@ -99,8 +99,8 @@ using the ``contradictory`` method.
        >>> gp.contradictory()
        True
 
-A ``Tiling`` is created with an iterable of ``Obstruction`` and an
-iterable of ``Requirement`` lists. It is assumed that all cells not
+A ``Tiling`` is created with an iterable of obstruction and an
+iterable of requirement lists. It is assumed that all cells not
 mentioned in some obstruction or requirement is empty. You can print the
 tiling to get an overview of the tiling created. In this example, we
 have a tiling that corresponds to non-empty permutation avoiding
@@ -108,12 +108,12 @@ have a tiling that corresponds to non-empty permutation avoiding
 
 .. code:: python
 
-       >>> obstructions = [Obstruction.single_cell(Perm((0, 1)), (1, 1)),
-       ...                 Obstruction.single_cell(Perm((1, 0)), (1, 1)),
-       ...                 Obstruction.single_cell(Perm((0, 1)), (0, 0)),
-       ...                 Obstruction.single_cell(Perm((0, 1, 2)), (2, 0)),
-       ...                 Obstruction(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0)))]
-       >>> requirements = [[Requirement.single_cell(Perm((0,)), (1, 1))]]
+       >>> obstructions = [GriddedPerm.single_cell(Perm((0, 1)), (1, 1)),
+       ...                 GriddedPerm.single_cell(Perm((1, 0)), (1, 1)),
+       ...                 GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),
+       ...                 GriddedPerm.single_cell(Perm((0, 1, 2)), (2, 0)),
+       ...                 GriddedPerm(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0)))]
+       >>> requirements = [[GriddedPerm.single_cell(Perm((0,)), (1, 1))]]
        >>> til = Tiling(obstructions, requirements)
        >>> print(til)
        +-+-+-+
@@ -140,7 +140,7 @@ have a tiling that corresponds to non-empty permutation avoiding
        frozenset({(1, 1)})
 
 There are a number of methods available on the tiling. You can generate
-the gridded permutations satisfying the obtructions and requirements
+the gridded permutations satisfying the obstructions and requirements
 using the ``gridded_perms_of_length`` method.
 
 .. code:: python
