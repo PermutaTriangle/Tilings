@@ -165,9 +165,9 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
             assert isinstance(spec, CombinatorialSpecification)
 
     def test_get_genf(self, strategy, enum_verified):
-        for tiling in enum_verified:
-            with pytest.raises(NotImplementedError):
-                strategy.get_genf(tiling)
+        assert strategy.get_genf(enum_verified[0]) == sympy.sympify(
+            "1/(2*x**2 - 3*x + 1)"
+        )
 
     def test_locally_factorable_requirements(
         self, strategy, enum_verified, enum_not_verified
@@ -593,6 +593,7 @@ class TestElementaryVerificationStrategy(CommonTest):
             spec = strategy.get_specification(tiling)
             assert isinstance(spec, CombinatorialSpecification)
 
+    @pytest.mark.xfail(reason="Not implemented database")
     def test_get_genf(self, strategy, enum_verified):
         for tiling in enum_verified:
             with pytest.raises(NotImplementedError):
