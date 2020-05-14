@@ -87,7 +87,7 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
     def get_genf(self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None):
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling not one by one verified")
-        return LocalEnumeration(comb_class).get_genf(funcs=funcs)
+        return LocalEnumeration(tiling).get_genf(funcs=funcs)
 
     def count_objects_of_size(
         self, comb_class: Tiling, n: int, **parameters: int
