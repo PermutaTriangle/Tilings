@@ -1,7 +1,7 @@
 from itertools import chain
-from typing import Iterable, Iterator, List, Optional, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
-from sympy import Expr, var
+from sympy import Expr, Function, var
 
 from comb_spec_searcher import AtomStrategy, StrategyPack, VerificationStrategy
 from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
@@ -84,7 +84,7 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
     def formal_step() -> str:
         return "tiling is a subclass of the original tiling"
 
-    def get_genf(self, tiling: Tiling):
+    def get_genf(self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None):
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling not one by one verified")
         return LocalEnumeration(tiling).get_genf()
@@ -160,7 +160,7 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
     def formal_step() -> str:
         return "tiling is in the database"
 
-    def get_genf(self, tiling: Tiling):
+    def get_genf(self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None):
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling is not in the database")
         return DatabaseEnumeration(tiling).get_genf()
@@ -315,7 +315,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
     def from_dict(cls, d: dict) -> "LocalVerificationStrategy":
         return cls(**d)
 
-    def get_genf(self, tiling: Tiling):
+    def get_genf(self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None):
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling not locally verified")
         return LocalEnumeration(tiling).get_genf()
@@ -371,7 +371,9 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
     def from_dict(cls, d: dict) -> "MonotoneTreeVerificationStrategy":
         return cls(**d)
 
-    def get_genf(self, tiling: Tiling) -> Expr:
+    def get_genf(
+        self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
+    ) -> Expr:
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling is not monotone tree verified")
         return MonotoneTreeEnumeration(tiling).get_genf()
