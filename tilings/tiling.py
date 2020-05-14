@@ -1294,8 +1294,8 @@ class Tiling(CombinatorialClass):
             BasicVerificationStrategy,
             DatabaseVerificationStrategy,
             LocallyFactorableVerificationStrategy,
-            LocalVerificationStrategy,
             MonotoneTreeVerificationStrategy,
+            LocalVerificationStrategy,
             OneByOneVerificationStrategy,
         )
 
