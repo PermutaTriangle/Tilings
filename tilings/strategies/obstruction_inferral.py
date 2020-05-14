@@ -1,4 +1,4 @@
-from typing import Iterable, Iterator, List, Optional, Sequence, Tuple
+from typing import Iterable, Iterator, List, Optional, Sequence, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from tilings import GriddedPerm, Tiling
@@ -37,12 +37,12 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def backward_map(
         self,
         tiling: Tiling,
-        gps: Tuple[GriddedPerm, ...],
+        gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         if children is None:
             children = self.decomposition_function(tiling)
-        return children[0].backward_map(gps[0])
+        return children[0].backward_map(cast(GriddedPerm, gps[0]))
 
     def forward_map(
         self,

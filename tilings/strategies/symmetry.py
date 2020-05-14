@@ -1,6 +1,6 @@
 import abc
 from functools import partial
-from typing import Iterator, Optional, Tuple
+from typing import Iterator, Optional, Tuple, cast
 
 from comb_spec_searcher import StrategyFactory, SymmetryStrategy
 from tilings import GriddedPerm, Tiling
@@ -34,18 +34,18 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
     def backward_map(
         self,
         tiling: Tiling,
-        gps: Tuple[GriddedPerm, ...],
+        gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         """This method will enable us to generate objects, and sample. """
-        return self.inverse_gp_transform(tiling, gps[0])
+        return self.inverse_gp_transform(tiling, cast(GriddedPerm, gps[0]))
 
     def forward_map(
         self,
         tiling: Tiling,
         gp: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Tuple[GriddedPerm, ...]:
+    ) -> Tuple[GriddedPerm]:
         """This function will enable us to have a quick membership test."""
         return (self.gp_transform(tiling, gp),)
 

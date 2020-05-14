@@ -90,7 +90,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def backward_map(
         self,
         comb_class: Tiling,
-        objs: Tuple[GriddedPerm, ...],
+        objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         """
@@ -106,7 +106,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Tuple[GriddedPerm, ...]:
+    ) -> Tuple[Optional[GriddedPerm], ...]:
         """
         The backward direction of the underlying bijection used for object
         generation and sampling.

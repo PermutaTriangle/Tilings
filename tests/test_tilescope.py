@@ -2,6 +2,7 @@ import pytest
 import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
+from permuta import Perm
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
@@ -14,6 +15,7 @@ point_placements_component_fusion = point_placements.make_fusion(component=True)
 row_and_col_placements_component_fusion_fusion = (
     TileScopePack.row_and_col_placements().make_fusion(component=True).make_fusion()
 )
+reginsenc = TileScopePack.regular_insertion_encoding(3)
 
 
 @pytest.mark.timeout(20)
@@ -93,3 +95,66 @@ def test_1324():
     assert num_fusion == 1
     assert num_comp_fusion == 1
     assert isinstance(spec, CombinatorialSpecification)
+
+
+@pytest.mark.timeout(20)
+def test_321_1324():
+    searcher = TileScope("321_1324", reginsenc)
+    spec = searcher.auto_search()
+    assert isinstance(spec, CombinatorialSpecification)
+    for i in range(20):
+        gp = spec.random_sample_object_of_size(i)
+        assert all(cell == (0, 0) for cell in gp.pos)
+        assert gp.patt.avoids(Perm((2, 1, 0)), Perm((0, 2, 1, 3)))
+    assert [spec.count_objects_of_size(i) for i in range(50)] == [
+        1,
+        1,
+        2,
+        5,
+        13,
+        32,
+        72,
+        148,
+        281,
+        499,
+        838,
+        1343,
+        2069,
+        3082,
+        4460,
+        6294,
+        8689,
+        11765,
+        15658,
+        20521,
+        26525,
+        33860,
+        42736,
+        53384,
+        66057,
+        81031,
+        98606,
+        119107,
+        142885,
+        170318,
+        201812,
+        237802,
+        278753,
+        325161,
+        377554,
+        436493,
+        502573,
+        576424,
+        658712,
+        750140,
+        851449,
+        963419,
+        1086870,
+        1222663,
+        1371701,
+        1534930,
+        1713340,
+        1907966,
+        2119889,
+        2350237,
+    ]

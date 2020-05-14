@@ -1,6 +1,6 @@
 import abc
 from itertools import chain, product
-from typing import Iterable, Iterator, List, Optional, Tuple
+from typing import Iterable, Iterator, List, Optional, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from permuta import Av, Perm
@@ -50,26 +50,25 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def backward_map(
         self,
         tiling: Tiling,
-        gps: Tuple[GriddedPerm, ...],
+        gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> GriddedPerm:
         if children is None:
             children = self.decomposition_function(tiling)
         idx = DisjointUnionStrategy.backward_map_index(gps)
-        return children[idx].backward_map(gps[idx])
+        return children[idx].backward_map(cast(GriddedPerm, gps[idx]))
 
     def forward_map(
         self,
         tiling: Tiling,
         gp: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Tuple[GriddedPerm, ...]:
-        raise NotImplementedError
-        # t_av, t_co = self.decomposition_function(tiling)
-        # if gp.avoids(*self.gps):
-        #     return t_av.forward_map(gp)
-        # else:
-        #     return t_co.forward_map(gp)
+    ) -> Tuple[Optional[GriddedPerm], Optional[GriddedPerm]]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+        if gp.avoids(*self.gps):
+            return (children[0].forward_map(gp), None)
+        return (None, children[1].forward_map(gp))
 
     def __repr__(self) -> str:
         return "RequirementInsertionStrategy(gps={}, ignore_parent={})".format(
