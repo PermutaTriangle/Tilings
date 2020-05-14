@@ -82,6 +82,7 @@ class TileScopePack(StrategyPack):
                 strat.RequirementCorroborationFactory(),
             ],
             ver_strats=[
+                strat.BasicVerificationStrategy(),
                 strat.OneByOneVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
             ],
@@ -111,6 +112,7 @@ class TileScopePack(StrategyPack):
         return TileScopePack(
             initial_strats=[strat.PatternPlacementFactory(partial=partial)],
             ver_strats=[
+                strat.BasicVerificationStrategy(),
                 strat.OneByOneVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
             ],
@@ -142,6 +144,7 @@ class TileScopePack(StrategyPack):
                 strat.RequirementCorroborationFactory(),
             ],
             ver_strats=[
+                strat.BasicVerificationStrategy(),
                 strat.OneByOneVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
             ],
@@ -169,6 +172,7 @@ class TileScopePack(StrategyPack):
                 strat.CellInsertionFactory(maxreqlen=length, ignore_parent=True),
             ],
             ver_strats=[
+                strat.BasicVerificationStrategy(),
                 strat.OneByOneVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
             ],
@@ -237,6 +241,7 @@ class TileScopePack(StrategyPack):
                 strat.RequirementCorroborationFactory(),
             ],
             ver_strats=[
+                strat.BasicVerificationStrategy(),
                 strat.OneByOneVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
             ],
@@ -270,6 +275,7 @@ class TileScopePack(StrategyPack):
                 strat.FactorFactory(unions=True, ignore_parent=False, workable=False),
             ],
             ver_strats=[
+                strat.BasicVerificationStrategy(),
                 strat.OneByOneVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
             ],
@@ -298,6 +304,7 @@ class TileScopePack(StrategyPack):
                 strat.RequirementCorroborationFactory(),
             ],
             ver_strats=[
+                strat.BasicVerificationStrategy(),
                 strat.OneByOneVerificationStrategy(),
                 strat.LocallyFactorableVerificationStrategy(),
             ],

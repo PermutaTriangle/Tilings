@@ -87,21 +87,20 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
     def get_genf(self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None):
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling not one by one verified")
-        return LocalEnumeration(tiling).get_genf()
+        return LocalEnumeration(tiling).get_genf(funcs=funcs)
 
     def count_objects_of_size(
         self, comb_class: Tiling, n: int, **parameters: int
     ) -> int:
         raise NotImplementedError(
-            "Not implemented method to count objects for monotone tree "
-            "verified tilings"
+            "Not implemented method to count objects for one by one verified tilings"
         )
 
     def generate_objects_of_size(
         self, comb_class: Tiling, n: int, **parameters: int
     ) -> Iterator[GriddedPerm]:
         raise NotImplementedError(
-            "Not implemented method to generate objects for monotone tree "
+            "Not implemented method to generate objects for one by one "
             "verified tilings"
         )
 
@@ -109,7 +108,7 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         self, comb_class: Tiling, n: int, **parameters: int
     ) -> GriddedPerm:
         raise NotImplementedError(
-            "Not implemented random sample for monotone tree verified tilings"
+            "Not implemented random sample for one by one verified tilings"
         )
 
     def __repr__(self) -> str:
@@ -169,23 +168,21 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
         self, comb_class: Tiling, n: int, **parameters: int
     ) -> int:
         raise NotImplementedError(
-            "Not implemented method to count objects for monotone tree "
-            "verified tilings"
+            "Not implemented method to count objects for database verified tilings"
         )
 
     def generate_objects_of_size(
         self, comb_class: Tiling, n: int, **parameters: int
     ) -> Iterator[GriddedPerm]:
         raise NotImplementedError(
-            "Not implemented method to generate objects for monotone tree "
-            "verified tilings"
+            "Not implemented method to generate objects for database verified tilings"
         )
 
     def random_sample_object_of_size(
         self, comb_class: Tiling, n: int, **parameters: int
     ) -> GriddedPerm:
         raise NotImplementedError(
-            "Not implemented random sample for monotone tree verified tilings"
+            "Not implemented random sample for database verified tilings"
         )
 
     def __str__(self) -> str:
@@ -296,16 +293,32 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
     localized, i.e. in a single cell and the tiling is not 1x1.
     """
 
-    @staticmethod
-    def pack() -> StrategyPack:
-        # TODO: check database for tiling
-        raise InvalidOperationError(
-            "Cannot get a specification for a tiling in the database"
+    def __init__(self, ignore_parent: bool = True, no_factors: bool = True):
+        self.no_factors = no_factors
+        super().__init__(ignore_parent=ignore_parent)
+
+    def pack(self) -> StrategyPack:
+        if self.no_factors:
+            raise InvalidOperationError(
+                "Cannot get a specification for a tiling in the database"
+            )
+        return StrategyPack(
+            initial_strats=[FactorFactory()],
+            inferral_strats=[],
+            expansion_strats=[],
+            ver_strats=[
+                BasicVerificationStrategy(),
+                LocalVerificationStrategy(no_factors=True),
+            ],
+            name="factor pack",
         )
 
-    @staticmethod
-    def verified(tiling: Tiling):
-        return tiling.dimensions != (1, 1) and LocalEnumeration(tiling).verified()
+    def verified(self, tiling: Tiling) -> bool:
+        return (
+            tiling.dimensions != (1, 1)
+            and (not self.no_factors or len(tiling.find_factors()) == 1)
+            and LocalEnumeration(tiling).verified()
+        )
 
     @staticmethod
     def formal_step() -> str:
@@ -324,23 +337,21 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         self, comb_class: Tiling, n: int, **parameters: int
     ) -> int:
         raise NotImplementedError(
-            "Not implemented method to count objects for monotone tree "
-            "verified tilings"
+            "Not implemented method to count objects for locally verified tilings"
         )
 
     def generate_objects_of_size(
         self, comb_class: Tiling, n: int, **parameters: int
     ) -> Iterator[GriddedPerm]:
         raise NotImplementedError(
-            "Not implemented method to generate objects for monotone tree "
-            "verified tilings"
+            "Not implemented method to generate objects for locally verified tilings"
         )
 
     def random_sample_object_of_size(
         self, comb_class: Tiling, n: int, **parameters: int
     ) -> GriddedPerm:
         raise NotImplementedError(
-            "Not implemented random sample for monotone tree verified tilings"
+            "Not implemented random sample for locally verified tilings"
         )
 
     def __str__(self) -> str:
@@ -352,16 +363,31 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
     Verify all tiling that is a monotone tree.
     """
 
-    @staticmethod
-    def pack() -> StrategyPack:
-        # TODO: check database for tiling
-        raise InvalidOperationError(
-            "Cannot get a specification for a tiling in the database"
+    def __init__(self, ignore_parent: bool = True, no_factors: bool = True):
+        self.no_factors = no_factors
+        super().__init__(ignore_parent=ignore_parent)
+
+    def pack(self) -> StrategyPack:
+        if self.no_factors:
+            raise InvalidOperationError(
+                "Cannot get a specification for a tiling in the database"
+            )
+        return StrategyPack(
+            initial_strats=[FactorFactory()],
+            inferral_strats=[],
+            expansion_strats=[],
+            ver_strats=[
+                BasicVerificationStrategy(),
+                OneByOneVerificationStrategy(),
+                MonotoneTreeVerificationStrategy(no_factors=True),
+            ],
+            name="factor pack",
         )
 
-    @staticmethod
-    def verified(tiling: Tiling):
-        return MonotoneTreeEnumeration(tiling).verified()
+    def verified(self, tiling: Tiling) -> bool:
+        return (
+            not self.no_factors or len(tiling.find_factors()) == 1
+        ) and MonotoneTreeEnumeration(tiling).verified()
 
     @staticmethod
     def formal_step() -> str:

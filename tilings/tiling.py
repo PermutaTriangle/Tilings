@@ -22,7 +22,8 @@ from typing import (
 
 import sympy
 
-from comb_spec_searcher import CombinatorialClass
+from comb_spec_searcher import CombinatorialClass, VerificationStrategy
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_WEST
 
@@ -40,11 +41,6 @@ from .algorithms import (
     RequirementPlacement,
     RowColSeparation,
     SubobstructionInferral,
-)
-from .algorithms.enumeration import (
-    DatabaseEnumeration,
-    LocalEnumeration,
-    MonotoneTreeEnumeration,
 )
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
@@ -1295,15 +1291,28 @@ class Tiling(CombinatorialClass):
     def get_genf(self, *args, **kwargs) -> sympy.Expr:
         if self.is_empty():
             return sympy.sympify(0)
-        enum_stragies = [
-            MonotoneTreeEnumeration,
-            DatabaseEnumeration,
-            LocalEnumeration,
+        from .strategies import (
+            BasicVerificationStrategy,
+            DatabaseVerificationStrategy,
+            LocallyFactorableVerificationStrategy,
+            MonotoneTreeVerificationStrategy,
+            LocalVerificationStrategy,
+            OneByOneVerificationStrategy,
+        )
+
+        enum_stragies: List[VerificationStrategy] = [
+            BasicVerificationStrategy(),
+            OneByOneVerificationStrategy(),
+            LocallyFactorableVerificationStrategy(),
+            MonotoneTreeVerificationStrategy(),
+            DatabaseVerificationStrategy(),
+            LocalVerificationStrategy(),
         ]
         for enum_strat in enum_stragies:
-            if enum_strat(self).verified():
-                return enum_strat(self).get_genf()
-        # TODO: try verification strategies
+            try:
+                return enum_strat.get_genf(self)
+            except StrategyDoesNotApply:
+                continue
         raise NotImplementedError(
             "We were unable to enumerate this tiling:\n" + str(self)
         )
