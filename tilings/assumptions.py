@@ -1,6 +1,5 @@
 import abc
 from importlib import import_module
-
 from typing import TYPE_CHECKING, Iterable, Type
 
 from .griddedperm import GriddedPerm
@@ -26,7 +25,7 @@ class AbstractAssumption(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def from_dict(self, d: dict) -> "AbstractAssumption":
+    def from_dict(cls, d: dict) -> "AbstractAssumption":
         module = import_module(d.pop("class_module"))
         AssumptionClass: Type["AbstractAssumption"] = getattr(
             module, d.pop("assumption_class")
