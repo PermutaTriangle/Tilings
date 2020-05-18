@@ -35,6 +35,7 @@ from .algorithms import (
     FactorWithInterleaving,
     FactorWithMonotoneInterleaving,
     Fusion,
+    GriddedPermReduction,
     GriddedPermsOnTiling,
     MinimalGriddedPerms,
     ObstructionTransitivity,
@@ -134,18 +135,26 @@ class Tiling(CombinatorialClass):
         respective lists. If any requirement list is empty, then the tiling is
         empty.
         """
-        while True:
-            # Minimize the set of obstructions
-            minimized_obs = self._minimal_obs()
-            # Minimize the set of requiriments
-            minimized_obs, minimized_reqs = self._minimal_reqs(minimized_obs)
-            if (
-                self._obstructions == minimized_obs
-                and self._requirements == minimized_reqs
-            ):
-                break
-            self._obstructions = minimized_obs
-            self._requirements = minimized_reqs
+        GPR = GriddedPermReduction(self.obstructions, self.requirements)
+
+        # TODO: delete old code before merging, but good to keep just now for testing!
+        # while True:
+        #     # Minimize the set of obstructions
+        #     minimized_obs = self._minimal_obs()
+        #     # Minimize the set of requiriments
+        #     minimized_obs, minimized_reqs = self._minimal_reqs(minimized_obs)
+        #     if (
+        #         self._obstructions == minimized_obs
+        #         and self._requirements == minimized_reqs
+        #     ):
+        #         break
+        #     self._obstructions = minimized_obs
+        #     self._requirements = minimized_reqs
+        # assert self._obstructions == GPR.obstructions
+        # assert self._requirements == GPR.requirements
+
+        self._obstructions = GPR.obstructions
+        self._requirements = GPR.requirements
 
     def _minimize_tiling(self) -> None:
         """Remove empty rows and columns."""
