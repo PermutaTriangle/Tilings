@@ -1,5 +1,6 @@
+import collections
 from collections import defaultdict
-from typing import List, Optional, Union
+from typing import Iterable, Optional, Union
 
 from logzero import logger
 
@@ -19,7 +20,7 @@ class TileScope(CombinatorialSpecificationSearcher):
 
     def __init__(
         self,
-        start_class: Union[str, List[Perm], Tiling],
+        start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
         logger_kwargs: Optional[dict] = None,
         **kwargs
@@ -29,12 +30,17 @@ class TileScope(CombinatorialSpecificationSearcher):
             basis = Basis(
                 [Perm.to_standard([int(c) for c in p]) for p in start_class.split("_")]
             )
-        elif isinstance(start_class, list):
-            basis = Basis(start_class)
         elif isinstance(start_class, Tiling):
             start_tiling = start_class
             if start_class.dimensions == (1, 1):
                 basis = Basis([o.patt for o in start_class.obstructions])
+        elif isinstance(start_class, collections.Iterable):
+            basis = Basis(start_class)
+        else:
+            raise ValueError(
+                "start class must be a string, an iterable of Perm or a tiling"
+            )
+        assert all(isinstance(p, Perm) for p in basis), "Basis must contains Perm only"
 
         if not isinstance(start_class, Tiling):
             start_tiling = Tiling(
