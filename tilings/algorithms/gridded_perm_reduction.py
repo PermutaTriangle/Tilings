@@ -196,19 +196,18 @@ class GriddedPermReduction:
         for requirement in requirements:
             # If any gridded permutation in list is empty then you vacuously
             # contain this requirement
-            if all(requirement):
-                redundant: Set[int] = set()
-                for i, gpi in enumerate(requirement):
-                    for j in range(i + 1, len(requirement)):
-                        if j not in redundant:
-                            if gpi in requirement[j]:
-                                redundant.add(j)
-                    if i not in redundant:
-                        if any(ob in gpi for ob in self._obstructions):
-                            redundant.add(i)
-                cleanreq = [
-                    gp for i, gp in enumerate(requirement) if i not in redundant
-                ]
+            if not all(requirement):
+                continue
+            redundant: Set[int] = set()
+            for i, gpi in enumerate(requirement):
+                for j in range(i + 1, len(requirement)):
+                    if j not in redundant:
+                        if gpi in requirement[j]:
+                            redundant.add(j)
+                if i not in redundant:
+                    if any(ob in gpi for ob in self._obstructions):
+                        redundant.add(i)
+            cleanreq = [gp for i, gp in enumerate(requirement) if i not in redundant]
             # If cleanreq is empty, then can not contain this requirement so
             # the tiling is empty.
             if not cleanreq:

@@ -28,6 +28,7 @@ __all__ = [
     "SubobstructionInferral",
     "ObstructionTransitivity",
     "GriddedPermsOnTiling",
-    "GriddedPermReduction" "RequirementPlacement",
+    "GriddedPermReduction",
+    "RequirementPlacement",
     "RowColSeparation",
 ]
