@@ -28,8 +28,7 @@ setup(
     long_description=read("README.rst"),
     install_requires=[
         "comb-spec-searcher==0.5.0",
-        "permuta==1.3.0",
-        "pymongo==3.10.1",
+        "permuta==1.4.0",
         "requests==2.20.0",
         "sympy==1.5.1",
     ],
