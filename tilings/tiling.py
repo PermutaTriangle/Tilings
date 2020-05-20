@@ -136,7 +136,6 @@ class Tiling(CombinatorialClass):
                     add.append(GriddedPerm.single_cell(Perm((0,)), (x, y)))
         self._obstructions = tuple(sorted(tuple(add) + self._obstructions))
 
-    @cssmethodtimer("Tiling._minimize_griddedperms")
     def _minimize_griddedperms(self) -> None:
         """Minimizes the set of obstructions and the set of requirement lists.
         The set of obstructions are first reduced to a minimal set. The
@@ -145,7 +144,15 @@ class Tiling(CombinatorialClass):
         empty.
         """
         GPR = GriddedPermReduction(self.obstructions, self.requirements)
+        self._old_minimize_griddedperms()
+        assert self._obstructions == GPR.obstructions
+        assert self._requirements == GPR.requirements
 
+        self._obstructions = GPR.obstructions
+        self._requirements = GPR.requirements
+
+    @cssmethodtimer("Tiling._old_minimize_griddedperms")
+    def _old_minimize_griddedperms(self) -> None:
         # TODO: delete old code before merging, but good to keep just now for testing!
         while True:
             # Minimize the set of obstructions
@@ -159,11 +166,6 @@ class Tiling(CombinatorialClass):
                 break
             self._obstructions = minimized_obs
             self._requirements = minimized_reqs
-        assert self._obstructions == GPR.obstructions
-        assert self._requirements == GPR.requirements
-
-        self._obstructions = GPR.obstructions
-        self._requirements = GPR.requirements
 
     @cssmethodtimer("Tiling._minimize_tiling")
     def _minimize_tiling(self) -> None:
