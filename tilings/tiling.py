@@ -53,6 +53,9 @@ __all__ = ["Tiling"]
 Cell = Tuple[int, int]
 ReqList = Tuple[GriddedPerm, ...]
 
+from .algorithms.gridded_perm_reduction import func_calls, func_times
+from comb_spec_searcher.utils import cssmethodtimer
+
 
 class Tiling(CombinatorialClass):
     """Tiling class.
@@ -64,6 +67,10 @@ class Tiling(CombinatorialClass):
     cells and the active cells.
     """
 
+    func_calls = func_calls
+    func_times = func_times
+
+    @cssmethodtimer("Tiling.__init__")
     def __init__(
         self,
         obstructions: Iterable[GriddedPerm] = tuple(),
@@ -118,6 +125,7 @@ class Tiling(CombinatorialClass):
             t = t.add_list_requirement(req_list)
         return t
 
+    @cssmethodtimer("Tiling._fill_empty")
     def _fill_empty(self) -> None:
         """Add size one obstructions to cells that are empty."""
         add = []
@@ -128,6 +136,7 @@ class Tiling(CombinatorialClass):
                     add.append(GriddedPerm.single_cell(Perm((0,)), (x, y)))
         self._obstructions = tuple(sorted(tuple(add) + self._obstructions))
 
+    @cssmethodtimer("Tiling._minimize_griddedperms")
     def _minimize_griddedperms(self) -> None:
         """Minimizes the set of obstructions and the set of requirement lists.
         The set of obstructions are first reduced to a minimal set. The
@@ -138,24 +147,25 @@ class Tiling(CombinatorialClass):
         GPR = GriddedPermReduction(self.obstructions, self.requirements)
 
         # TODO: delete old code before merging, but good to keep just now for testing!
-        # while True:
-        #     # Minimize the set of obstructions
-        #     minimized_obs = self._minimal_obs()
-        #     # Minimize the set of requiriments
-        #     minimized_obs, minimized_reqs = self._minimal_reqs(minimized_obs)
-        #     if (
-        #         self._obstructions == minimized_obs
-        #         and self._requirements == minimized_reqs
-        #     ):
-        #         break
-        #     self._obstructions = minimized_obs
-        #     self._requirements = minimized_reqs
-        # assert self._obstructions == GPR.obstructions
-        # assert self._requirements == GPR.requirements
+        while True:
+            # Minimize the set of obstructions
+            minimized_obs = self._minimal_obs()
+            # Minimize the set of requiriments
+            minimized_obs, minimized_reqs = self._minimal_reqs(minimized_obs)
+            if (
+                self._obstructions == minimized_obs
+                and self._requirements == minimized_reqs
+            ):
+                break
+            self._obstructions = minimized_obs
+            self._requirements = minimized_reqs
+        assert self._obstructions == GPR.obstructions
+        assert self._requirements == GPR.requirements
 
         self._obstructions = GPR.obstructions
         self._requirements = GPR.requirements
 
+    @cssmethodtimer("Tiling._minimize_tiling")
     def _minimize_tiling(self) -> None:
         """Remove empty rows and columns."""
         # Produce the mapping between the two tilings
@@ -191,6 +201,7 @@ class Tiling(CombinatorialClass):
             max(row_mapping.values()) + 1,
         )
 
+    @cssmethodtimer("Tiling._minimize_mapping")
     def _minimize_mapping(self) -> Tuple[Dict[int, int], Dict[int, int]]:
         """Returns a pair of dictionaries, that map rows/columns to an
         equivalent set of rows/columns where empty ones have been removed. """
@@ -203,6 +214,7 @@ class Tiling(CombinatorialClass):
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
         return (col_mapping, row_mapping)
 
+    @cssmethodtimer("Tiling._clean_isolated")
     def _clean_isolated(self, obstruction: GriddedPerm) -> GriddedPerm:
         """Remove the isolated factors that are implied by requirements
         from all obstructions."""
@@ -212,6 +224,7 @@ class Tiling(CombinatorialClass):
                     obstruction = obstruction.remove_cells(factor.pos)
         return obstruction
 
+    @cssmethodtimer("Tiling._minimal_obs")
     def _minimal_obs(self) -> Tuple[GriddedPerm, ...]:
         """Returns a new list of minimal obstructions from the obstruction set
         of self. Every obstruction in the new list will have any isolated
@@ -228,6 +241,7 @@ class Tiling(CombinatorialClass):
                 cleanobs.append(cleanob)
         return tuple(cleanobs)
 
+    @cssmethodtimer("Tiling._minimal_reqs")
     def _minimal_reqs(
         self, obstructions: Iterable[GriddedPerm]
     ) -> Tuple[Tuple[GriddedPerm, ...], Tuple[ReqList, ...]]:

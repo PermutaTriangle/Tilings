@@ -1,16 +1,26 @@
+from collections import defaultdict
 from typing import Iterable, Iterator, List, Set, Tuple
 
+from comb_spec_searcher.utils import cssmethodtimer
 from ..griddedperm import GriddedPerm
 
 Cell = Tuple[int, int]
 Requirement = Tuple[GriddedPerm, ...]
 
+func_calls = defaultdict(int)
+func_times = defaultdict(float)
+
 
 class MinimalGriddedPermSet:
+
+    func_calls = func_calls
+    func_times = func_times
+
     def __init__(self, griddedperms: Iterable[GriddedPerm]):
         self.griddedperms: Tuple[GriddedPerm, ...] = tuple(sorted(griddedperms))
         self._minimize()
 
+    @cssmethodtimer("MinimalGriddedPermSet._minimize")
     def _minimize(self) -> None:
         """
         Removes non minimal gridded permutations from the set.
@@ -21,6 +31,7 @@ class MinimalGriddedPermSet:
                 res.append(gp_to_add)
         self.griddedperms = tuple(sorted(res))
 
+    @cssmethodtimer("MinimalGriddedPermSet.factors")
     def factors(self) -> Set[GriddedPerm]:
         if self.griddedperms:
             res: Set[GriddedPerm] = set(self.griddedperms[0].factors())
@@ -54,6 +65,9 @@ class MinimalGriddedPermSet:
 
 
 class GriddedPermReduction:
+    func_calls = func_calls
+    func_times = func_times
+
     def __init__(
         self,
         obstructions: Iterable[GriddedPerm],
@@ -62,9 +76,7 @@ class GriddedPermReduction:
         self._requirements = tuple(
             sorted(MinimalGriddedPermSet(r) for r in requirements)
         )
-        self._obstructions = MinimalGriddedPermSet(
-            [self._clean_isolated(ob) for ob in obstructions]
-        )
+        self._obstructions = MinimalGriddedPermSet(obstructions)
         self._minimize_griddedperms()
 
     @property
@@ -77,6 +89,7 @@ class GriddedPermReduction:
             sorted(tuple(sorted(requirement)) for requirement in self._requirements)
         )
 
+    @cssmethodtimer("GriddedPermReduction._clean_isolated")
     def _clean_isolated(self, obstruction: GriddedPerm) -> GriddedPerm:
         """Remove the isolated factors that are implied by requirements
         from all obstructions."""
@@ -88,6 +101,7 @@ class GriddedPermReduction:
                 obstruction = obstruction.remove_cells(factor.pos)
         return obstruction
 
+    @cssmethodtimer("GriddedPermReduction._minimize_griddedperms")
     def _minimize_griddedperms(self) -> None:
         """Minimizes the set of obstructions and the set of requirement lists.
         The set of obstructions are first reduced to a minimal set. The
@@ -122,9 +136,9 @@ class GriddedPermReduction:
             self._obstructions = minimized_obs
             self._requirements = minimized_requirements
 
-    @staticmethod
+    @cssmethodtimer("GriddedPermReduction.factored_reqs")
     def factored_reqs(
-        requirements: Iterable[MinimalGriddedPermSet],
+        self, requirements: Iterable[MinimalGriddedPermSet],
     ) -> List[Tuple[GriddedPerm, ...]]:
         """
         Add factors of requirements as size one requirements, removing them
@@ -159,9 +173,9 @@ class GriddedPermReduction:
                 res.append(rem_requirement)
         return res
 
-    @staticmethod
+    @cssmethodtimer("GriddedPermReduction.cleaned_requirements")
     def cleaned_requirements(
-        requirements: List[Tuple[GriddedPerm, ...]]
+        self, requirements: List[Tuple[GriddedPerm, ...]]
     ) -> List[List[GriddedPerm]]:
         """
         Remove the factors of a gridded permutation in a requirement if it is
@@ -189,6 +203,7 @@ class GriddedPermReduction:
             cleaned_reqs.append(cleaned_req)
         return cleaned_reqs
 
+    @cssmethodtimer("GriddedPermReduction.remove_avoided")
     def remove_avoided(
         self, requirements: List[List[GriddedPerm]]
     ) -> List[List[GriddedPerm]]:
@@ -215,9 +230,9 @@ class GriddedPermReduction:
             res.append(cleanreq)
         return res
 
-    @staticmethod
+    @cssmethodtimer("GriddedPermReduction.remove_redundant_requirements")
     def remove_redundant_requirements(
-        requirements: List[List[GriddedPerm]],
+        self, requirements: List[List[GriddedPerm]],
     ) -> Tuple[MinimalGriddedPermSet, ...]:
         """
         Remove all redundant requirement lists.
