@@ -1,4 +1,5 @@
 from collections import defaultdict
+from functools import partial
 from typing import Iterable, Iterator, List, Optional, Set, Tuple
 
 from comb_spec_searcher.utils import cssmethodtimer
@@ -46,6 +47,9 @@ class MinimalGriddedPermSet:
                     break
                 res = res.intersection(gp.factors())
         return res
+
+    def __bool__(self):
+        return bool(self.griddedperms)
 
     def __eq__(self, other):
         return self.griddedperms == other.griddedperms
@@ -149,8 +153,6 @@ class GriddedPermReduction:
             self._obstructions = minimized_obs
             self._requirements = minimized_requirements
 
-
-
     @cssmethodtimer("GriddedPermReduction.minimal_obs")
     def minimal_obs(self) -> MinimalGriddedPermSet:
         changed = False
@@ -168,12 +170,17 @@ class GriddedPermReduction:
 
     @cssmethodtimer("GriddedPermReduction.minimal_reqs")
     def minimal_reqs(self, obstructions: MinimalGriddedPermSet):
-        factored_reqs = self.factored_reqs(self._requirements)
-        cleaned_requirements = self.cleaned_requirements(factored_reqs)
-        relevant_requirements = self.remove_avoided(cleaned_requirements, obstructions)
-        minimized_requirements = self.remove_redundant_requirements(
-            relevant_requirements
+        algos = (
+            self.factored_reqs,
+            self.cleaned_requirements,
+            partial(self.remove_avoided, obstructions=obstructions),
+            self.remove_redundant_requirements,
         )
+        minimized_requirements = self._requirements
+        for algo in algos:
+            minimized_requirements = algo(minimized_requirements)
+            if any(not r for r in minimized_requirements):
+                return [MinimalGriddedPermSet([])]
         return minimized_requirements
 
     @cssmethodtimer("GriddedPermReduction.factored_reqs")
