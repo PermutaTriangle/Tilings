@@ -109,10 +109,7 @@ class GriddedPermReduction:
         """Remove the isolated factors that are implied by requirements
         from all obstructions."""
         for factor in obstruction.factors():
-            if any(
-                all(factor in gp for gp in requirement)
-                for requirement in self._requirements
-            ):
+            if self._griddedperm_implied_by_some_requirement(factor):
                 obstruction = obstruction.remove_cells(factor.pos)
         return obstruction
 
@@ -133,6 +130,7 @@ class GriddedPermReduction:
             # Minimize the set of obstructions
             minimized_obs = self.minimal_obs()
 
+            # TODO: this is sorted, only check the first one?
             if any(len(gp) == 0 for gp in minimized_obs):
                 set_empty()
                 break
@@ -140,6 +138,7 @@ class GriddedPermReduction:
             # Minimize the set of requiriments
             minimized_requirements = self.minimal_reqs(minimized_obs)
 
+            # TODO: this is sorted, only check the first one?
             if any(not r for r in minimized_requirements):
                 set_empty()
                 break
@@ -231,32 +230,35 @@ class GriddedPermReduction:
         """
         cleaned_reqs: List[MinimalGriddedPermSet] = []
         for requirement in requirements:
-            if all(requirement):
-                changed = False
-                newgps: List[GriddedPerm] = []
-                for gp in requirement:
-                    cells: List[Cell] = []
-                    for f in gp.factors():
-                        # if factor implied by some requirement list then we
-                        # remove it from the gridded perm
-                        if not any(
-                            all(f in g for g in other_requirement)
+            if not all(requirement):
+                continue
+            changed = False
+            newgps: List[GriddedPerm] = []
+            for gp in requirement:
+                cells: List[Cell] = []
+                for f in gp.factors():
+                    # if factor implied by some requirement list then we
+                    # remove it from the gridded perm
+                    if not self._griddedperm_implied_by_some_requirement(
+                        f,
+                        (
+                            other_requirement
                             for other_requirement in requirements
-                            if not all(
-                                any(g2 in g1 for g2 in requirement)
-                                for g1 in other_requirement
+                            if not self._requirement_implied_by_requirement(
+                                other_requirement, requirement
                             )
-                        ):
-                            cells.extend(f.pos)
-                    newgp = gp.get_gridded_perm_in_cells(cells)
-                    newgps.append(newgp)
-                    if len(gp) != len(newgp):
-                        changed = True
-                if changed:
-                    # TODO: smarter to update requirement?
-                    cleaned_reqs.append(MinimalGriddedPermSet(newgps))
-                else:
-                    cleaned_reqs.append(requirement)
+                        ),
+                    ):
+                        cells.extend(f.pos)
+                newgp = gp.get_gridded_perm_in_cells(cells)
+                newgps.append(newgp)
+                if len(gp) != len(newgp):
+                    changed = True
+            if changed:
+                # TODO: smarter to update requirement?
+                cleaned_reqs.append(MinimalGriddedPermSet(newgps))
+            else:
+                cleaned_reqs.append(requirement)
 
         return cleaned_reqs
 
@@ -316,27 +318,33 @@ class GriddedPermReduction:
                 for j, other_requirement in enumerate(requirements):
                     if i != j and j not in idx_to_remove:
                         if all(
-                            any(g2 in g1 for g2 in other_requirement)
-                            for g1 in requirement
+                            self._griddedperm_implied_by_requirement(
+                                gp, other_requirement
+                            )
+                            for gp in requirement
                         ):
-                            idx_to_remove.add(j)
+                            idx_to_remove.add(i)
 
         for i, requirement in enumerate(requirements):
-            if i not in idx_to_remove:
-                factored_requirement = [r.factors() for r in requirement]
-                # if every factor of every requirement in a list is implied by
-                # another requirement then we can remove this requirement list
-                for factors in factored_requirement:
-                    if all(
-                        any(
-                            all(factor in gp for gp in other_requirement)
+            if i in idx_to_remove:
+                continue
+            factored_requirement = [r.factors() for r in requirement]
+            # if every factor of every requirement in a list is implied by
+            # another requirement then we can remove this requirement list
+            for factors in factored_requirement:
+                if all(
+                    self._griddedperm_implied_by_some_requirement(
+                        factor,
+                        (
+                            other_requirement
                             for j, other_requirement in enumerate(requirements)
                             if i != j and j not in idx_to_remove
-                        )
-                        for factor in factors
-                    ):
-                        idx_to_remove.add(i)
-                        break
+                        ),
+                    )
+                    for factor in factors
+                ):
+                    idx_to_remove.add(i)
+                    break
         return tuple(
             sorted(
                 requirement
@@ -344,3 +352,42 @@ class GriddedPermReduction:
                 if idx not in idx_to_remove
             )
         )
+
+    @cssmethodtimer("GriddedPermReduction._griddedperm_implied_by_requirement")
+    def _griddedperm_implied_by_requirement(
+        self, griddedperm: GriddedPerm, requirement: Iterable[GriddedPerm]
+    ):
+        """
+        Return True, if the containment of the gridded perm is implied by
+        the containment of the requirement.
+        """
+        return all(griddedperm in gp for gp in requirement)
+
+    @cssmethodtimer("GriddedPermReduction._griddedperm_implied_by_some_requirement")
+    def _griddedperm_implied_by_some_requirement(
+        self,
+        griddedperm: GriddedPerm,
+        requirements: Optional[Iterable[MinimalGriddedPermSet]] = None,
+    ):
+        """
+        Return True if the containiment some requirement implies the
+        containment griddedperm.
+        """
+        if requirements is None:
+            requirements = self._requirements
+        return any(
+            self._griddedperm_implied_by_requirement(griddedperm, requirement)
+            for requirement in requirements
+        )
+
+    @cssmethodtimer("_requirement_implied_by_requirement")
+    def _requirement_implied_by_requirement(
+        self,
+        requirement: Iterable[GriddedPerm],
+        other_requirement: Iterable[GriddedPerm],
+    ):
+        """
+        Return True if the containment of requirement is implied by the
+        containment of other_requirement.
+        """
+        return all(any(g2 in g1 for g2 in other_requirement) for g1 in requirement)
