@@ -136,9 +136,11 @@ class Tiling(CombinatorialClass):
         """Add size one obstructions to cells that are empty."""
         add = []
         (i, j) = self.dimensions
+        active_cells = self.active_cells
+        empty_cells = self.empty_cells
         for x in range(i):
             for y in range(j):
-                if (x, y) not in self.active_cells and (x, y) not in self.empty_cells:
+                if (x, y) not in active_cells and (x, y) not in empty_cells:
                     add.append(GriddedPerm.single_cell(Perm((0,)), (x, y)))
         self._obstructions = tuple(sorted(tuple(add) + self._obstructions))
 
