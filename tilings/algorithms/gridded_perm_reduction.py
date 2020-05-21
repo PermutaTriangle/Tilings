@@ -104,14 +104,13 @@ class GriddedPermReduction:
             self.factored_reqs,
             self.cleaned_requirements,
             partial(self.remove_avoided, obstructions=obstructions),
-            self.remove_redundant_requirements,
         )
         minimized_requirements = self._requirements
         for algo in algos:
             minimized_requirements = algo(minimized_requirements)
             if any(not r for r in minimized_requirements):
                 return (tuple(),)
-        return tuple(minimized_requirements)
+        return tuple(sorted(minimized_requirements))
 
     @cssmethodtimer("GriddedPermReduction.factored_reqs")
     def factored_reqs(
@@ -160,31 +159,26 @@ class GriddedPermReduction:
         Remove the factors of a gridded permutation in a requirement if it is
         implied by another requirement.
         """
-        cleaned_reqs: List[Tuple[GriddedPerm, ...]] = []
-        for requirement in requirements:
+        for idx, requirement in enumerate(requirements):
             if not all(requirement):
                 continue
             newgps: List[GriddedPerm] = []
             for gp in requirement:
                 cells: List[Cell] = []
                 for f in gp.factors():
-                    # if factor implied by some requirement list then we
-                    # remove it from the gridded perm
                     if not self._griddedperm_implied_by_some_requirement(
                         f,
                         (
                             other_requirement
-                            for other_requirement in requirements
-                            if not self._requirement_implied_by_requirement(
-                                other_requirement, requirement
-                            )
+                            for other_idx, other_requirement in enumerate(requirements)
+                            if idx != other_idx
                         ),
                     ):
                         cells.extend(f.pos)
                 newgp = gp.get_gridded_perm_in_cells(cells)
                 newgps.append(newgp)
-            cleaned_reqs.append(tuple(newgps))
-        return cleaned_reqs
+            requirements[idx] = tuple(newgps)
+        return requirements
 
     @cssmethodtimer("GriddedPermReduction.remove_avoided")
     def remove_avoided(
@@ -209,55 +203,6 @@ class GriddedPermReduction:
                 return [tuple()]
             res.append(cleanreq)
         return res
-
-    @cssmethodtimer("GriddedPermReduction.remove_redundant_requirements")
-    def remove_redundant_requirements(
-        self, requirements: List[Tuple[GriddedPerm, ...]],
-    ) -> List[Tuple[GriddedPerm, ...]]:
-        """
-        Remove all redundant requirement lists.
-        It is redundant if either:
-            - all of gridded perms contain some gridded permutation in the
-            same other requirement.
-            - all of the factors of the gridded permutations in the requirement
-            are contained in some other gridded permutation from the same other
-            requirement. (Is checking just this enough?)
-        """
-        idx_to_remove: Set[int] = set()
-        for i, requirement in enumerate(requirements):
-            for j, other_requirement in enumerate(requirements):
-                if i != j and j not in idx_to_remove:
-                    if all(
-                        self._griddedperm_implied_by_requirement(gp, other_requirement)
-                        for gp in requirement
-                    ):
-                        idx_to_remove.add(i)
-
-        for i, requirement in enumerate(requirements):
-            if i in idx_to_remove:
-                continue
-            factored_requirement = [r.factors() for r in requirement]
-            # if every factor of every requirement in a list is implied by
-            # another requirement then we can remove this requirement list
-            for factors in factored_requirement:
-                if all(
-                    self._griddedperm_implied_by_some_requirement(
-                        factor,
-                        (
-                            other_requirement
-                            for j, other_requirement in enumerate(requirements)
-                            if i != j and j not in idx_to_remove
-                        ),
-                    )
-                    for factor in factors
-                ):
-                    idx_to_remove.add(i)
-                    break
-        return sorted(
-            requirement
-            for idx, requirement in enumerate(requirements)
-            if idx not in idx_to_remove
-        )
 
     @cssmethodtimer("GriddedPermReduction._griddedperm_implied_by_requirement")
     def _griddedperm_implied_by_requirement(
