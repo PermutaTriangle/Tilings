@@ -103,14 +103,14 @@ class Tiling(CombinatorialClass):
             self._minimize_griddedperms()
 
         if not any(ob.is_empty() for ob in self.obstructions):
+            # Remove empty rows and empty columns
+            if remove_empty:
+                self._minimize_tiling()
+
             # If assuming the non-active cells are empty, then add the
             # obstructions
             if derive_empty:
                 self._fill_empty()
-
-            # Remove empty rows and empty columns
-            if remove_empty:
-                self._minimize_tiling()
         self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
 
     @classmethod
