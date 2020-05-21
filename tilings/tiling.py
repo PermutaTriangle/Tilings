@@ -530,26 +530,32 @@ class Tiling(CombinatorialClass):
         """Returns a new tiling with the obstruction of the pattern
         patt with positions pos."""
         return Tiling(
-            self._obstructions + (GriddedPerm(patt, pos),), self._requirements
+            self._obstructions + (GriddedPerm(patt, pos),),
+            self._requirements,
+            derive_empty=False,
         )
 
     def add_obstructions(self, gps: Iterable[GriddedPerm]) -> "Tiling":
         """Returns a new tiling with the obstructions added."""
         new_obs = tuple(gps)
-        return Tiling(self._obstructions + new_obs, self._requirements)
+        return Tiling(
+            self._obstructions + new_obs, self._requirements, derive_empty=False
+        )
 
     def add_list_requirement(self, req_list: Iterable[GriddedPerm]) -> "Tiling":
         """
         Return a new tiling with the requirement list added.
         """
         new_req = tuple(req_list)
-        return Tiling(self._obstructions, self._requirements + (new_req,),)
+        return Tiling(
+            self._obstructions, self._requirements + (new_req,), derive_empty=False
+        )
 
     def add_requirement(self, patt: Perm, pos: Iterable[Cell]) -> "Tiling":
         """Returns a new tiling with the requirement of the pattern
         patt with position pos."""
         new_req_list = (GriddedPerm(patt, pos),)
-        return self.add_list_requirement(new_req_list)
+        return self.add_list_requirement(new_req_list, derive_empty=False)
 
     def add_single_cell_obstruction(self, patt: Perm, cell: Cell) -> "Tiling":
         """Returns a new tiling with the single cell obstruction of the pattern
@@ -557,13 +563,14 @@ class Tiling(CombinatorialClass):
         return Tiling(
             self._obstructions + (GriddedPerm.single_cell(patt, cell),),
             self._requirements,
+            derive_empty=False,
         )
 
     def add_single_cell_requirement(self, patt: Perm, cell: Cell) -> "Tiling":
         """Returns a new tiling with the single cell requirement of the pattern
         patt in the given cell."""
         new_req_list = (GriddedPerm.single_cell(patt, cell),)
-        return self.add_list_requirement(new_req_list)
+        return self.add_list_requirement(new_req_list, derive_empty=False)
 
     def fully_isolated(self) -> bool:
         """Check if all cells are isolated on their rows and columns."""
