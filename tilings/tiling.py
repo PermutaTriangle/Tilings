@@ -149,10 +149,14 @@ class Tiling(CombinatorialClass):
         respective lists. If any requirement list is empty, then the tiling is
         empty.
         """
-        GPR = GriddedPermReduction(self.obstructions, self.requirements)
+        GPR = GriddedPermReduction(
+            self.obstructions, self.requirements, sorted_input=True
+        )
         self._old_minimize_griddedperms()
-        assert self._obstructions == GPR.obstructions, "{}\n{}".format(
-            self._obstructions, GPR.obstructions
+
+        assert self._obstructions == GPR.obstructions, "\n{}\n======\n{}".format(
+            "\n".join(str(ob) for ob in self._obstructions),
+            "\n".join(str(ob) for ob in GPR.obstructions),
         )
         assert self._requirements == GPR.requirements, "{}\n{}".format(
             self._requirements, GPR.requirements
