@@ -83,6 +83,9 @@ class GriddedPermReduction:
             self._requirements = minimized_requirements
         GriddedPermReduction.passes[i] += 1
 
+    # if there is a requirement for which every component contains the same factor of
+    # obstruction, then that factor can be removed from obstruction
+    # [subobstruction inferral]
     @cssmethodtimer("GriddedPermReduction._clean_isolated")
     def _clean_isolated(self, obstruction: GriddedPerm) -> GriddedPerm:
         """Remove the isolated factors that are implied by requirements
@@ -94,6 +97,7 @@ class GriddedPermReduction:
 
     @cssmethodtimer("GriddedPermReduction.minimal_obs")
     def minimal_obs(self) -> Tuple[GriddedPerm, ...]:
+        # TODO: smarter minimization
         return self._minimize(self._clean_isolated(ob) for ob in self._obstructions)
 
     @cssmethodtimer("GriddedPermReduction.minimal_reqs")
@@ -112,6 +116,9 @@ class GriddedPermReduction:
                 return (tuple(),)
         return tuple(sorted(minimized_requirements))
 
+    # If all of the gp's in a requirment list contain the same factor, you can remove
+    # that factor from all of them and add it as it's own size one requirement list
+    # [size one requirement list inferral]
     @cssmethodtimer("GriddedPermReduction.factored_reqs")
     def factored_reqs(
         self, requirements: Iterable[Tuple[GriddedPerm, ...]],
@@ -151,6 +158,12 @@ class GriddedPermReduction:
                 )
         return res
 
+    # if a gridded perm G in a requirment has a factor that appears in EVERY gridded
+    # perm of some other requirement, then that factor can be removed from G
+    # [subrequirement inferral]
+    # NOTE: This handles the following case:
+    #   requirement R2 makes requirement R1 redundant if:
+    #   For all G in R2, there exists H in R1 such that H <= G
     @cssmethodtimer("GriddedPermReduction.cleaned_requirements")
     def cleaned_requirements(
         self, requirements: List[Tuple[GriddedPerm, ...]]
@@ -180,6 +193,9 @@ class GriddedPermReduction:
             requirements[idx] = tuple(newgps)
         return requirements
 
+    # We can remove any gridded perm in any requirement if the gridded perm contains
+    # an obstruction
+    # [requirement component deletion]
     @cssmethodtimer("GriddedPermReduction.remove_avoided")
     def remove_avoided(
         self,
@@ -214,6 +230,8 @@ class GriddedPermReduction:
         """
         return all(griddedperm in gp for gp in requirement)
 
+    # detect if there exists a requirement such that every component in that requirement
+    # contains griddedperm
     @cssmethodtimer("GriddedPermReduction._griddedperm_implied_by_some_requirement")
     def _griddedperm_implied_by_some_requirement(
         self,
