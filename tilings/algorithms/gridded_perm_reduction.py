@@ -249,18 +249,6 @@ class GriddedPermReduction:
             for requirement in requirements
         )
 
-    @cssmethodtimer("_requirement_implied_by_requirement")
-    def _requirement_implied_by_requirement(
-        self,
-        requirement: Iterable[GriddedPerm],
-        other_requirement: Iterable[GriddedPerm],
-    ):
-        """
-        Return True if the containment of requirement is implied by the
-        containment of other_requirement.
-        """
-        return all(any(g2 in g1 for g2 in other_requirement) for g1 in requirement)
-
     @cssmethodtimer("GriddPermReduction._minimize")
     def _minimize(self, griddedperms: Iterable[GriddedPerm]) -> Tuple[GriddedPerm, ...]:
         """
