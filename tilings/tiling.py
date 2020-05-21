@@ -80,6 +80,12 @@ class Tiling(CombinatorialClass):
         minimize: bool = True,
         sorted_input: bool = False,
     ) -> None:
+        """
+        - if not sorted_input, input will be sorted
+        - if minimize, will be minimized
+        - if derive empty, then assume non-active cells are empty
+        - if remove_empty, then remove empty rows and columns.
+        """
         super().__init__()
         if sorted_input:
             # Set of obstructions
@@ -145,8 +151,12 @@ class Tiling(CombinatorialClass):
         """
         GPR = GriddedPermReduction(self.obstructions, self.requirements)
         self._old_minimize_griddedperms()
-        assert self._obstructions == GPR.obstructions
-        assert self._requirements == GPR.requirements
+        assert self._obstructions == GPR.obstructions, "{}\n{}".format(
+            self._obstructions, GPR.obstructions
+        )
+        assert self._requirements == GPR.requirements, "{}\n{}".format(
+            self._requirements, GPR.requirements
+        )
 
         self._obstructions = GPR.obstructions
         self._requirements = GPR.requirements
@@ -881,13 +891,20 @@ class Tiling(CombinatorialClass):
             for ob in self.obstructions
             if (factors and ob.pos[0] in cells) or all(c in cells for c in ob.pos)
         )
-        requirements = tuple(
+        requirements = Tiling.sort_requirements(
             req
             for req in self.requirements
             if (factors and req[0].pos[0] in cells)
             or all(c in cells for c in chain.from_iterable(r.pos for r in req))
         )
-        return self.__class__(obstructions, requirements)
+        return self.__class__(
+            obstructions=obstructions,
+            requirements=requirements,
+            remove_empty=True,
+            derive_empty=True,
+            minimize=False,
+            sorted_input=True,
+        )
 
     def find_factors(self, interleaving: str = "none") -> Tuple["Tiling", ...]:
         """
