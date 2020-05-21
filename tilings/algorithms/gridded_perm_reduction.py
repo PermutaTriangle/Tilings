@@ -56,8 +56,6 @@ class GriddedPermReduction:
             self._obstructions = (GriddedPerm.empty_perm(),)
             self._requirements = tuple()
 
-        self._obstructions = self._minimize(self._obstructions)
-
         i = 0
         while True:
             i += 1
