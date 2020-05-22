@@ -93,32 +93,33 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             self.indices, ", ".join(str(gp) for gp in self.gps),
         )
 
-    # TODO: consider partial/own_row/own_col
-    @staticmethod
-    def backward_cell_map(placed_cell: Cell, cell: Cell) -> Cell:
+    def backward_cell_map(self, placed_cell: Cell, cell: Cell) -> Cell:
         x, y = cell
-        if x > placed_cell[0] + 1:
+        if self.own_col and x > placed_cell[0] + 1:
             x -= 2
-        elif x == placed_cell[0] + 1:
+        elif self.own_col and x == placed_cell[0] + 1:
             x -= 1
-        if y > placed_cell[1] + 1:
+        if self.own_row and y > placed_cell[1] + 1:
             y -= 2
-        elif y == placed_cell[1] + 1:
+        elif self.own_row and y == placed_cell[1] + 1:
             y -= 1
         return x, y
 
-    @staticmethod
-    def forward_gp_map(gp: GriddedPerm, forced_index: int) -> GriddedPerm:
+    def forward_gp_map(self, gp: GriddedPerm, forced_index: int) -> GriddedPerm:
         new_pos: List[Cell] = []
         forced_val = gp.patt[forced_index]
         for idx, (x, y) in enumerate(gp.pos):
             if idx == forced_index:
-                new_pos.append((x + 1, y + 1))
+                if self.own_col:
+                    x += 1
+                if self.own_row:
+                    y += 1
+                new_pos.append((x, y))
             else:
                 val = gp.patt[idx]
-                if idx >= forced_index:
+                if self.own_col and idx >= forced_index:
                     x += 2
-                if val >= forced_val:
+                if self.own_row and val >= forced_val:
                     y += 2
                 new_pos.append((x, y))
         return GriddedPerm(gp.patt, new_pos)
@@ -585,7 +586,6 @@ class AllPlacementsFactory(AbstractRequirementPlacementFactory):
 
     PLACEMENT_STRATS: Tuple[AbstractRequirementPlacementFactory, ...] = (
         PatternPlacementFactory(point_only=False),
-        PatternPlacementFactory(point_only=True),
         # subreqs=True covers everything but it blows up massively!
         RequirementPlacementFactory(subreqs=False),
         RowAndColumnPlacementFactory(place_col=True, place_row=True),
@@ -594,7 +594,7 @@ class AllPlacementsFactory(AbstractRequirementPlacementFactory):
     def __init__(
         self, ignore_parent: bool = False,
     ):
-        super().__init__(ignore_parent=ignore_parent)
+        super().__init__(ignore_parent=ignore_parent, include_empty=True)
 
     def req_placements(self, tiling: Tiling):
         """
