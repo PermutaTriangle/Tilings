@@ -249,7 +249,7 @@ class GriddedPermReduction:
             for requirement in requirements
         )
 
-    @cssmethodtimer("GriddPermReduction._minimize")
+    @cssmethodtimer("GriddedPermReduction._minimize")
     def _minimize(self, griddedperms: Iterable[GriddedPerm]) -> Tuple[GriddedPerm, ...]:
         """
         Removes non minimal gridded permutations from the set.

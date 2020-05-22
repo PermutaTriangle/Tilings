@@ -154,15 +154,15 @@ class Tiling(CombinatorialClass):
         GPR = GriddedPermReduction(
             self.obstructions, self.requirements, sorted_input=True
         )
-        self._old_minimize_griddedperms()
-
-        assert self._obstructions == GPR.obstructions, "\n{}\n======\n{}".format(
-            "\n".join(str(ob) for ob in self._obstructions),
-            "\n".join(str(ob) for ob in GPR.obstructions),
-        )
-        assert self._requirements == GPR.requirements, "{}\n{}".format(
-            self._requirements, GPR.requirements
-        )
+        # self._old_minimize_griddedperms()
+        #
+        # assert self._obstructions == GPR.obstructions, "\n{}\n======\n{}".format(
+        #     "\n".join(str(ob) for ob in self._obstructions),
+        #     "\n".join(str(ob) for ob in GPR.obstructions),
+        # )
+        # assert self._requirements == GPR.requirements, "{}\n{}".format(
+        #     self._requirements, GPR.requirements
+        # )
 
         self._obstructions = GPR.obstructions
         self._requirements = GPR.requirements
