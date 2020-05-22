@@ -44,9 +44,14 @@ class TileScopePack(StrategyPack):
         assert not (
             component and tracked
         ), "not implemented tracking for component fusion"
+        pack = self
+        if strat.SplittingStrategy() not in self:
+            pack = pack.add_initial(strat.SplittingStrategy())
         if component:
-            return self.add_initial(strat.ComponentFusionFactory(), "component_fusion")
-        return self.add_initial(strat.FusionFactory(tracked=tracked), "fusion")
+            pack = pack.add_initial(strat.ComponentFusionFactory(), "component_fusion")
+        else:
+            pack = pack.add_initial(strat.FusionFactory(tracked=tracked), "fusion")
+        return pack
 
     def make_elementary(self) -> "TileScopePack":
         """

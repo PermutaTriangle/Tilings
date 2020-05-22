@@ -111,8 +111,7 @@ def test_factors(
 
 @pytest.mark.timeout(60)
 def test_123_fusion():
-    point_placements = TileScopePack.point_placements().make_fusion(tracked=True)
-    css = TileScope("123", point_placements)
-    with pytest.raises(ExceededMaxtimeError):
-        spec = css.auto_search(max_time=30)
-        assert isinstance(spec, CombinatorialSpecification)
+    pack = TileScopePack.row_and_col_placements(row_only=True).make_fusion(tracked=True)
+    css = TileScope("123", pack)
+    spec = css.auto_search(status_update=30)
+    assert isinstance(spec, CombinatorialSpecification)

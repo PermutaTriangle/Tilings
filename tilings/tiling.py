@@ -1321,6 +1321,19 @@ class Tiling(CombinatorialClass):
                 self._dimensions = (max(rows) + 1, max(cols) + 1)
         return self._dimensions
 
+    def underlying_tiling(self):
+        """
+        Return the tiling with all assumptions removed.
+        """
+        return self.__class__(
+            self._obstructions,
+            self._requirements,
+            remove_empty=False,
+            derive_empty=False,
+            minimize=False,
+            sorted_input=True,
+        )
+
     def add_obstruction_in_all_ways(self, patt: Perm) -> "Tiling":
         """
         Adds an obstruction of the pattern patt in all possible ways to
