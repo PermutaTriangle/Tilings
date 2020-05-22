@@ -371,7 +371,6 @@ class Tiling(CombinatorialClass):
         integers which are concatenated together, every list preceeded by its
         size. The obstructions are compressed and concatenated to the list, as
         are the requirement lists."""
-        print(self)
 
         def split_16bit(n) -> Tuple[int, int]:
             """Takes a 16 bit integer and splits it into
@@ -403,7 +402,6 @@ class Tiling(CombinatorialClass):
                 else:
                     result.append(1)
         res = array("B", result)
-        print(res)
         return res.tobytes()
 
     @classmethod
@@ -442,7 +440,6 @@ class Tiling(CombinatorialClass):
             return res, offset
 
         arr = array("B", arrbytes)
-        print(arr)
         obstructions, offset = recreate_gp_list(0)
 
         nreqs = merge_8bit(arr[offset], arr[offset + 1])
@@ -554,20 +551,26 @@ class Tiling(CombinatorialClass):
         """Returns a new tiling with the obstruction of the pattern
         patt with positions pos."""
         return Tiling(
-            self._obstructions + (GriddedPerm(patt, pos),), self._requirements
+            self._obstructions + (GriddedPerm(patt, pos),),
+            self._requirements,
+            self._assumptions,
         )
 
     def add_obstructions(self, gps: Iterable[GriddedPerm]) -> "Tiling":
         """Returns a new tiling with the obstructions added."""
         new_obs = tuple(gps)
-        return Tiling(self._obstructions + new_obs, self._requirements)
+        return Tiling(
+            self._obstructions + new_obs, self._requirements, self._assumptions
+        )
 
     def add_list_requirement(self, req_list: Iterable[GriddedPerm]) -> "Tiling":
         """
         Return a new tiling with the requirement list added.
         """
         new_req = tuple(req_list)
-        return Tiling(self._obstructions, self._requirements + (new_req,),)
+        return Tiling(
+            self._obstructions, self._requirements + (new_req,), self._assumptions
+        )
 
     def add_requirement(self, patt: Perm, pos: Iterable[Cell]) -> "Tiling":
         """Returns a new tiling with the requirement of the pattern
@@ -578,10 +581,7 @@ class Tiling(CombinatorialClass):
     def add_single_cell_obstruction(self, patt: Perm, cell: Cell) -> "Tiling":
         """Returns a new tiling with the single cell obstruction of the pattern
         patt in the given cell."""
-        return Tiling(
-            self._obstructions + (GriddedPerm.single_cell(patt, cell),),
-            self._requirements,
-        )
+        return self.add_obstructions((GriddedPerm.single_cell(patt, cell),))
 
     def add_single_cell_requirement(self, patt: Perm, cell: Cell) -> "Tiling":
         """Returns a new tiling with the single cell requirement of the pattern
