@@ -387,17 +387,18 @@ class Tiling(CombinatorialClass):
                 chain.from_iterable([len(req)] + req.compress() for req in reqlist)
             )
         result.extend(split_16bit(len(self.assumptions)))
-        for assumption in self.assumptions:
-            if isinstance(assumption, TrackingAssumption):
-                result.append(0)
-                result.extend(split_16bit(len(assumption.gps)))
-                result.extend(
-                    chain.from_iterable(
-                        [len(gp)] + gp.compress() for gp in assumption.gps
+        if self.assumptions:
+            for assumption in self.assumptions:
+                if isinstance(assumption, TrackingAssumption):
+                    result.append(0)
+                    result.extend(split_16bit(len(assumption.gps)))
+                    result.extend(
+                        chain.from_iterable(
+                            [len(gp)] + gp.compress() for gp in assumption.gps
+                        )
                     )
-                )
-            else:
-                result.append(1)
+                else:
+                    result.append(1)
         res = array("B", result)
         return res.tobytes()
 
@@ -446,19 +447,20 @@ class Tiling(CombinatorialClass):
             reqlist, offset = recreate_gp_list(offset)
             requirements.append(reqlist)
 
-        nassumptions = merge_8bit(arr[offset], arr[offset + 1])
-        offset += 2
-        assumptions = []
-        for _ in range(nassumptions):
-            asstype = arr[offset]
-            offset += 1
-            if asstype == 0:
-                # tracking
-                gps, offset = recreate_gp_list(offset)
-                assumptions.append(TrackingAssumption(gps))
-            else:
-                # other
-                raise NotImplementedError
+        if offset < len(arr):
+            nassumptions = merge_8bit(arr[offset], arr[offset + 1])
+            offset += 2
+            assumptions = []
+            for _ in range(nassumptions):
+                asstype = arr[offset]
+                offset += 1
+                if asstype == 0:
+                    # tracking
+                    gps, offset = recreate_gp_list(offset)
+                    assumptions.append(TrackingAssumption(gps))
+                else:
+                    # other
+                    raise NotImplementedError
         return cls(
             obstructions=obstructions,
             requirements=requirements,
