@@ -447,10 +447,10 @@ class Tiling(CombinatorialClass):
             reqlist, offset = recreate_gp_list(offset)
             requirements.append(reqlist)
 
+        assumptions = []
         if offset < len(arr):
             nassumptions = merge_8bit(arr[offset], arr[offset + 1])
             offset += 2
-            assumptions = []
             for _ in range(nassumptions):
                 asstype = arr[offset]
                 offset += 1
