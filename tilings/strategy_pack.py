@@ -37,11 +37,16 @@ class TileScopePack(StrategyPack):
             iterative=self.iterative,
         )
 
-    def make_fusion(self, component: bool = False) -> "TileScopePack":
+    def make_fusion(
+        self, component: bool = False, tracked: bool = False
+    ) -> "TileScopePack":
         """Create a new pack by adding fusion to the current pack."""
+        assert not (
+            component and tracked
+        ), "not implemented tracking for component fusion"
         if component:
             return self.add_initial(strat.ComponentFusionFactory(), "component_fusion")
-        return self.add_initial(strat.FusionFactory(), "fusion")
+        return self.add_initial(strat.FusionFactory(tracked=tracked), "fusion")
 
     def make_elementary(self) -> "TileScopePack":
         """

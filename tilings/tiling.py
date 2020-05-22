@@ -89,11 +89,11 @@ class Tiling(CombinatorialClass):
             self._requirements = Tiling.sort_requirements(requirements)
             # Set of assumptions
             self._assumptions = tuple(assumptions)
-            self._clean_assumptions()
 
         # Minimize the set of obstructions and the set of requirement lists
         if minimize:
             self._minimize_griddedperms()
+            self._clean_assumptions()
 
         if not any(ob.is_empty() for ob in self.obstructions):
             # If assuming the non-active cells are empty, then add the
@@ -371,6 +371,7 @@ class Tiling(CombinatorialClass):
         integers which are concatenated together, every list preceeded by its
         size. The obstructions are compressed and concatenated to the list, as
         are the requirement lists."""
+        print(self)
 
         def split_16bit(n) -> Tuple[int, int]:
             """Takes a 16 bit integer and splits it into
@@ -402,6 +403,7 @@ class Tiling(CombinatorialClass):
                 else:
                     result.append(1)
         res = array("B", result)
+        print(res)
         return res.tobytes()
 
     @classmethod
@@ -440,6 +442,7 @@ class Tiling(CombinatorialClass):
             return res, offset
 
         arr = array("B", arrbytes)
+        print(arr)
         obstructions, offset = recreate_gp_list(0)
 
         nreqs = merge_8bit(arr[offset], arr[offset + 1])
@@ -928,13 +931,18 @@ class Tiling(CombinatorialClass):
             isinstance(ass, TrackingAssumption) for ass in self.assumptions
         ), "Only implemented factors for tracking assumptions"
         assumptions = tuple(
-            TrackingAssumption(
-                gp
-                for gp in ass.gps
-                if (factors and gp.pos[0] in cells) or all(c in cells for c in gp.pos)
-            )
+            ass
             for ass in self.assumptions
-            if isinstance(ass, TrackingAssumption)
+            if (
+                isinstance(ass, TrackingAssumption)
+                and (
+                    (factors and ass.gps[0].pos[0] in cells)
+                    or all(
+                        c in cells
+                        for c in chain.from_iterable(gp.pos for gp in ass.gps)
+                    )
+                )
+            )
         )
         return self.__class__(obstructions, requirements, assumptions)
 

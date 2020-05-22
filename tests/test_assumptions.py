@@ -2,10 +2,13 @@ import json
 
 import pytest
 
+from comb_spec_searcher import CombinatorialSpecification
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor
 from tilings.assumptions import TrackingAssumption
+from tilings.strategy_pack import TileScopePack
+from tilings.tilescope import TileScope
 
 
 @pytest.fixture
@@ -103,3 +106,11 @@ def test_factors(
     assert set(Factor(tplaced_tracked).factors()) == set(
         [tplaced_tracked_factored1, tplaced_tracked_factored2]
     )
+
+
+@pytest.mark.timeout(60)
+def test_123_fusion():
+    point_placements = TileScopePack.point_placements().make_fusion(tracked=True)
+    css = TileScope("123", point_placements)
+    spec = css.auto_search()
+    assert isinstance(spec, CombinatorialSpecification)

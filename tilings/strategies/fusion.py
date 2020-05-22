@@ -51,17 +51,14 @@ class FusionConstructor(Constructor):
 
     @staticmethod
     def get_eq_symbol() -> str:
-        # return "\u2192"
-        # return "╬"
-        # return "\u27fc"
-        # return "⤅"
         return "↣"
 
 
 class FusionStrategy(Strategy[Tiling, GriddedPerm]):
-    def __init__(self, row_idx=None, col_idx=None):
+    def __init__(self, row_idx=None, col_idx=None, tracked: bool = False):
         self.col_idx = col_idx
         self.row_idx = row_idx
+        self.tracked = tracked
         if not sum(1 for x in (self.col_idx, self.row_idx) if x is not None) == 1:
             raise RuntimeError("Cannot specify a row and a columns")
         super().__init__(
@@ -69,7 +66,9 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         )
 
     def fusion_algorithm(self, tiling: Tiling) -> Fusion:
-        return Fusion(tiling, row_idx=self.row_idx, col_idx=self.col_idx)
+        return Fusion(
+            tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked
+        )
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
         algo = self.fusion_algorithm(comb_class)
@@ -123,6 +122,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         d.pop("workable")
         d["row_idx"] = self.row_idx
         d["col_idx"] = self.col_idx
+        d["tracked"] = self.tracked
         return d
 
     @classmethod
@@ -135,6 +135,10 @@ class ComponentFusionConstructor(FusionConstructor):
 
 
 class ComponentFusionStrategy(FusionStrategy):
+    def __init__(self, row_idx=None, col_idx=None, tracked: bool = False):
+        assert not tracked, "tracking not implemented for component fusion"
+        super().__init__(row_idx=row_idx, col_idx=col_idx, tracked=False)
+
     def fusion_algorithm(self, tiling: Tiling) -> Fusion:
         return ComponentFusion(tiling, row_idx=self.row_idx, col_idx=self.col_idx)
 
@@ -151,32 +155,52 @@ class ComponentFusionStrategy(FusionStrategy):
 
 
 class FusionFactory(StrategyFactory[Tiling]):
+    def __init__(self, tracked: bool = False):
+        self.tracked = tracked
+
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
-            algo = Fusion(comb_class, row_idx=row_idx)
+            algo = Fusion(comb_class, row_idx=row_idx, tracked=self.tracked)
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield FusionStrategy(row_idx=row_idx)(comb_class, (fused_tiling,))
+                yield FusionStrategy(row_idx=row_idx, tracked=self.tracked)(
+                    comb_class, (fused_tiling,)
+                )
         for col_idx in range(cols - 1):
-            algo = Fusion(comb_class, col_idx=col_idx)
+            algo = Fusion(comb_class, col_idx=col_idx, tracked=self.tracked)
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield FusionStrategy(col_idx=col_idx)(comb_class, (fused_tiling,))
+                yield FusionStrategy(col_idx=col_idx, tracked=self.tracked)(
+                    comb_class, (fused_tiling,)
+                )
 
     def __str__(self) -> str:
+        if self.tracked:
+            return "tracked fusion"
         return "fusion"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "()"
+        return self.__class__.__name__ + "(tracked={})".format(self.tracked)
+
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["tracked"] = self.tracked
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "FusionFactory":
-        assert not d, "FusionFactory takes not arguments"
-        return cls()
+        assert (
+            len(d) == 1 and "tracked" in d
+        ), "FusionFactory takes only tracked argument"
+        return cls(**d)
 
 
 class ComponentFusionFactory(StrategyFactory[Tiling]):
+    def __init__(self, tracked: bool = False):
+        assert not tracked, "tracking not implemented for component fusion"
+        self.tracked = tracked
+
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         if comb_class.requirements:
             return
@@ -197,12 +221,19 @@ class ComponentFusionFactory(StrategyFactory[Tiling]):
                 )
 
     def __str__(self) -> str:
-        return "fusion"
+        return "component fusion"
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + "()"
 
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["tracked"] = self.tracked
+        return d
+
     @classmethod
     def from_dict(cls, d: dict) -> "ComponentFusionFactory":
-        assert not d, "ComponentFusionFactory takes not arguments"
-        return cls()
+        assert (
+            len(d) == 1 and "tracked" in d
+        ), "ComponentFusionFactory takes only tracked argument"
+        return cls(**d)
