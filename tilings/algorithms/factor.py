@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set,
 
 from permuta.misc import UnionFind
 from tilings import GriddedPerm
+from tilings.assumptions import TrackingAssumption
 from tilings.misc import partitions_iterator
 
 if TYPE_CHECKING:
@@ -30,7 +31,13 @@ class Factor:
         self._cell_unionfind = UnionFind(nrow * ncol)
         self._components: Optional[Tuple[Set[Cell], ...]] = None
         self._factors_obs_and_reqs: Optional[
-            List[Tuple[Tuple[GriddedPerm, ...], Tuple[ReqList, ...]]]
+            List[
+                Tuple[
+                    Tuple[GriddedPerm, ...],
+                    Tuple[ReqList, ...],
+                    Tuple[TrackingAssumption, ...],
+                ]
+            ]
         ] = None
 
     def _cell_to_int(self, cell: Cell) -> int:
@@ -58,6 +65,19 @@ class Factor:
         for c2 in cell_iterator:
             c2_int = self._cell_to_int(c2)
             self._cell_unionfind.unite(c1_int, c2_int)
+
+    def _unite_assumptions(self) -> None:
+        """
+        For each TrackingAssumption unite all the positions of the gridded perms.
+        """
+        for ass in self._tiling.assumptions:
+            if isinstance(ass, TrackingAssumption):
+                for gp in ass.gps:
+                    self._unite_cells(gp.pos)
+            else:
+                raise NotImplementedError(
+                    "Not implemented factors for assumption {}".format(ass)
+                )
 
     def _unite_obstructions(self) -> None:
         """
@@ -120,7 +140,11 @@ class Factor:
 
     def _get_factors_obs_and_reqs(
         self,
-    ) -> List[Tuple[Tuple[GriddedPerm, ...], Tuple[ReqList, ...]]]:
+    ) -> List[
+        Tuple[
+            Tuple[GriddedPerm, ...], Tuple[ReqList, ...], Tuple[TrackingAssumption, ...]
+        ],
+    ]:
         """
         Returns a list of all the irreducible factors of the tiling.
         Each factor is a tuple (obstructions, requirements)
@@ -135,7 +159,16 @@ class Factor:
             requirements = tuple(
                 req for req in self._tiling.requirements if req[0].pos[0] in component
             )
-            factors.append((obstructions, requirements))
+            assert all(
+                isinstance(ass, TrackingAssumption) for ass in self._tiling.assumptions
+            ), "factors only implemented for TrackingAssumption"
+            assumptions = tuple(
+                ass
+                for ass in self._tiling.assumptions
+                if isinstance(ass, TrackingAssumption)
+                and ass.gps[0].pos[0] in component
+            )
+            factors.append((obstructions, requirements, assumptions))
         self._factors_obs_and_reqs = factors
         return self._factors_obs_and_reqs
 
@@ -150,7 +183,9 @@ class Factor:
         Returns all the irreducible factors of the tiling.
         """
         return tuple(
-            self._tiling.__class__(obstructions=f[0], requirements=f[1], minimize=False)
+            self._tiling.__class__(
+                obstructions=f[0], requirements=f[1], assumptions=f[2], minimize=False
+            )
             for f in self._get_factors_obs_and_reqs()
         )
 
@@ -168,42 +203,16 @@ class Factor:
         for partition in partitions_iterator(min_comp):
             factors = []
             for part in partition:
-                obstructions, requirements = zip(*part)
+                obstructions, requirements, assumptions = zip(*part)
                 factors.append(
                     self._tiling.__class__(
                         obstructions=chain(*obstructions),
                         requirements=chain(*requirements),
+                        assumptions=chain(*assumptions),
                         minimize=False,
                     )
                 )
             yield tuple(factors)
-
-    # # TODO: the rule methods should be on strategy
-    # def rule(self, workable=True):
-    #     """
-    #     Return the comb_spec_searcher rule for the irreducible factorisation.
-
-    #     If workable=True,  then we expand the  children, and want to  ignore
-    #     the parent. If workable=False, then we do  not expand the children,
-    #     and want to keep working on the parent (perhaps placing points into
-    #     cells or something).
-    #     """
-    #     return self.FactorStrategy(self.get_components(), workable)
-
-    # def all_union_rules(self, workable=False):
-    #     """
-    #     Iterator over the rule for all possible union of factors.
-
-    #     A rule is yielded for each reducible factorisations
-
-    #     If workable=True,  then we expand the  children, and want to  ignore
-    #     the parent. If workable=False, then we do  not expand the children,
-    #     and want to keep working on the parent (perhaps placing points into
-    #     cells or something).
-    #     """
-    #     min_comp = self._get_factors_obs_and_reqs()
-    #     for partition in partitions_iterator(min_comp):
-    #         return self.FactorStrategy(partition, workable)
 
 
 class FactorWithMonotoneInterleaving(Factor):

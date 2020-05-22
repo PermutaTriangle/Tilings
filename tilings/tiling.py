@@ -88,12 +88,12 @@ class Tiling(CombinatorialClass):
             # Set of requirement lists
             self._requirements = Tiling.sort_requirements(requirements)
             # Set of assumptions
-            self._assumptions = tuple(sorted(assumptions))
+            self._assumptions = tuple(assumptions)
+            self._clean_assumptions()
 
         # Minimize the set of obstructions and the set of requirement lists
         if minimize:
             self._minimize_griddedperms()
-            self._clean_assumptions()
 
         if not any(ob.is_empty() for ob in self.obstructions):
             # If assuming the non-active cells are empty, then add the
@@ -355,7 +355,9 @@ class Tiling(CombinatorialClass):
         res: List[AbstractAssumption] = []
         for assumption in self.assumptions:
             if isinstance(assumption, TrackingAssumption):
-                res.append(assumption.avoiding(self._obstructions))
+                ass = assumption.avoiding(self._obstructions)
+                if ass.gps:
+                    res.append(ass)
             else:
                 res.append(assumption)
         self._assumptions = tuple(sorted(set(res)))
@@ -922,7 +924,19 @@ class Tiling(CombinatorialClass):
             if (factors and req[0].pos[0] in cells)
             or all(c in cells for c in chain.from_iterable(r.pos for r in req))
         )
-        return self.__class__(obstructions, requirements)
+        assert all(
+            isinstance(ass, TrackingAssumption) for ass in self.assumptions
+        ), "Only implemented factors for tracking assumptions"
+        assumptions = tuple(
+            TrackingAssumption(
+                gp
+                for gp in ass.gps
+                if (factors and gp.pos[0] in cells) or all(c in cells for c in gp.pos)
+            )
+            for ass in self.assumptions
+            if isinstance(ass, TrackingAssumption)
+        )
+        return self.__class__(obstructions, requirements, assumptions)
 
     def find_factors(self, interleaving: str = "none") -> Tuple["Tiling", ...]:
         """

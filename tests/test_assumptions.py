@@ -4,13 +4,24 @@ import pytest
 
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
+from tilings.algorithms import Factor
 from tilings.assumptions import TrackingAssumption
 
 
 @pytest.fixture
 def tplaced():
-    t = Tiling.from_string("123")
+    t = Tiling.from_string("132")
     return t.place_point_in_cell((0, 0), 1)
+
+
+@pytest.fixture
+def tplaced_factored1(tplaced):
+    return tplaced.sub_tiling([(0, 0), (2, 0)])
+
+
+@pytest.fixture
+def tplaced_factored2(tplaced):
+    return tplaced.sub_tiling([(1, 1)])
 
 
 @pytest.fixture
@@ -26,17 +37,69 @@ def tplaced_tracked(tplaced):
     )
 
 
-def test_bytes(tplaced, tplaced_tracked):
+@pytest.fixture
+def tplaced_tracked_factored1(tplaced_tracked):
+    return tplaced_tracked.sub_tiling([(0, 0), (2, 0)])
+
+
+@pytest.fixture
+def tplaced_tracked_factored2(tplaced_tracked):
+    return tplaced_tracked.sub_tiling([(1, 1)])
+
+
+@pytest.fixture
+def all_tilings(
+    tplaced,
+    tplaced_factored1,
+    tplaced_factored2,
+    tplaced_tracked,
+    tplaced_tracked_factored1,
+    tplaced_tracked_factored2,
+):
+    return [
+        tplaced,
+        tplaced_factored1,
+        tplaced_factored2,
+        tplaced_tracked,
+        tplaced_tracked_factored1,
+        tplaced_tracked_factored2,
+    ]
+
+
+def test_bytes(tplaced, tplaced_tracked, all_tilings):
 
     assert len(tplaced.assumptions) == 0
     remade = Tiling.from_bytes(tplaced.to_bytes())
-    assert remade == tplaced
+    assert tplaced != tplaced_tracked
 
     assert len(tplaced_tracked.assumptions) == 2
-    remade = Tiling.from_bytes(tplaced_tracked.to_bytes())
-    assert remade == tplaced_tracked
 
-    assert tplaced != tplaced_tracked
-    assert (
-        Tiling.from_json(json.dumps(tplaced_tracked.to_jsonable())) == tplaced_tracked
+    for tiling in all_tilings:
+        remade = Tiling.from_bytes(tiling.to_bytes())
+        assert remade == tiling
+
+
+def test_json(all_tilings):
+    for tiling in all_tilings:
+        assert Tiling.from_json(json.dumps(tiling.to_jsonable())) == tiling
+
+
+def test_factors(
+    tplaced_tracked, tplaced_tracked_factored1, tplaced_tracked_factored2,
+):
+    assert len(tplaced_tracked_factored1.assumptions) == 2
+
+    assert all(
+        isinstance(ass, TrackingAssumption)
+        for ass in tplaced_tracked_factored1.assumptions
+    )
+    assert tplaced_tracked_factored1.assumptions[0].gps == (
+        GriddedPerm.single_cell(Perm((0,)), (0, 0)),
+    )
+    assert tplaced_tracked_factored1.assumptions[1].gps == (
+        GriddedPerm.single_cell(Perm((0,)), (1, 0)),
+    )
+
+    assert set(Factor(tplaced_tracked).factors()) == set(
+        [tplaced_tracked_factored1, tplaced_tracked_factored2]
     )
