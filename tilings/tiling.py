@@ -774,10 +774,18 @@ class Tiling(CombinatorialClass):
         transformation of GriddedPerm that calls some internal method.
         # TODO: transf is not used...
         """
+        assert all(
+            isinstance(ass, TrackingAssumption) for ass in self._assumptions
+        ), "not implemented symmetries for given assumption"
         return Tiling(
             obstructions=(gptransf(ob) for ob in self.obstructions),
             requirements=(
                 [gptransf(req) for req in reqlist] for reqlist in self.requirements
+            ),
+            assumptions=(
+                TrackingAssumption(gptransf(gp) for gp in ass.gps)
+                for ass in self._assumptions
+                if isinstance(ass, TrackingAssumption)
             ),
         )
 
