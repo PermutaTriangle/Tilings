@@ -81,7 +81,7 @@ class Tiling(CombinatorialClass):
             # Set of requirement lists
             self._requirements = tuple(tuple(r) for r in requirements)
             # Set of assumptions
-            self._assumptions = tuple(sorted(assumptions))
+            self._assumptions = tuple(assumptions)
         else:
             # Set of obstructions
             self._obstructions = tuple(sorted(obstructions))
@@ -386,8 +386,8 @@ class Tiling(CombinatorialClass):
             result.extend(
                 chain.from_iterable([len(req)] + req.compress() for req in reqlist)
             )
-        result.extend(split_16bit(len(self.assumptions)))
         if self.assumptions:
+            result.extend(split_16bit(len(self.assumptions)))
             for assumption in self.assumptions:
                 if isinstance(assumption, TrackingAssumption):
                     result.append(0)
