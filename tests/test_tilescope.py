@@ -4,7 +4,7 @@ import sympy
 from comb_spec_searcher import CombinatorialSpecification
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
-from tilings import Tiling
+from tilings import GriddedPerm, Tiling
 from tilings import strategies as strat
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategy_pack import TileScopePack
@@ -235,3 +235,18 @@ def test_321_1324():
         2119889,
         2350237,
     ]
+
+
+@pytest.mark.timeout(5)
+def test_from_tiling():
+    t = Tiling(
+        obstructions=[
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
+            GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
+        ]
+    )
+    searcher = TileScope(t, TileScopePack.point_placements())
+    spec = searcher.auto_search()
+    print(spec)
+    assert sympy.simplify(spec.get_genf() - sympy.sympify("(1+x)/(1-x)")) == 0
