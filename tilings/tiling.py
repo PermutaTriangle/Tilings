@@ -93,17 +93,18 @@ class Tiling(CombinatorialClass):
         # Minimize the set of obstructions and the set of requirement lists
         if minimize:
             self._minimize_griddedperms()
-            self._clean_assumptions()
 
         if not any(ob.is_empty() for ob in self.obstructions):
             # If assuming the non-active cells are empty, then add the
             # obstructions
             if derive_empty:
                 self._fill_empty()
-
+            if minimize:
+                self._clean_assumptions()
             # Remove empty rows and empty columns
             if remove_empty:
                 self._minimize_tiling()
+
         self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
 
     @classmethod
@@ -932,7 +933,7 @@ class Tiling(CombinatorialClass):
         ), "Only implemented factors for tracking assumptions"
         assumptions = tuple(
             ass
-            for ass in self.assumptions
+            for ass in self._assumptions
             if (
                 isinstance(ass, TrackingAssumption)
                 and (

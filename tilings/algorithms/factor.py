@@ -71,13 +71,11 @@ class Factor:
         For each TrackingAssumption unite all the positions of the gridded perms.
         """
         for ass in self._tiling.assumptions:
-            if isinstance(ass, TrackingAssumption):
-                for gp in ass.gps:
-                    self._unite_cells(gp.pos)
-            else:
-                raise NotImplementedError(
-                    "Not implemented factors for assumption {}".format(ass)
-                )
+            assert isinstance(
+                ass, TrackingAssumption
+            ), "not implemented factor for assumption given"
+            ass_cells = chain.from_iterable(gp.pos for gp in ass.gps)
+            self._unite_cells(ass_cells)
 
     def _unite_obstructions(self) -> None:
         """
@@ -121,6 +119,7 @@ class Factor:
         """
         self._unite_obstructions()
         self._unite_requirements()
+        self._unite_assumptions()
         self._unite_rows_and_cols()
 
     def get_components(self) -> Tuple[Set[Cell], ...]:
@@ -263,5 +262,6 @@ class FactorWithInterleaving(Factor):
         """
         Unite all the cells that share an obstruction or a requirement list.
         """
+        self._unite_assumptions()
         self._unite_obstructions()
         self._unite_requirements()

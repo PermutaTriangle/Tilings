@@ -3,6 +3,7 @@ import json
 import pytest
 
 from comb_spec_searcher import CombinatorialSpecification
+from comb_spec_searcher.exception import ExceededMaxtimeError
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor
@@ -112,5 +113,6 @@ def test_factors(
 def test_123_fusion():
     point_placements = TileScopePack.point_placements().make_fusion(tracked=True)
     css = TileScope("123", point_placements)
-    spec = css.auto_search()
-    assert isinstance(spec, CombinatorialSpecification)
+    with pytest.raises(ExceededMaxtimeError):
+        spec = css.auto_search(max_time=30)
+        assert isinstance(spec, CombinatorialSpecification)

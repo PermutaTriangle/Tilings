@@ -436,7 +436,7 @@ class _RowColSeparationSingleApplication:
             for gp in ass.gps:
                 mapped_gp = self._map_gridded_perm(cell_map, gp)
                 if not mapped_gp.contradictory():
-                    gps.append(gp)
+                    gps.append(mapped_gp)
             yield TrackingAssumption(gps)
 
     @property
