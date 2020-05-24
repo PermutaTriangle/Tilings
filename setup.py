@@ -27,7 +27,7 @@ setup(
     install_requires=['comb-spec-searcher==0.5.0',
                       'permuta==1.4.0',
                       'pymongo==3.10.1',
-                      'sympy==1.5.1'],
+                      'sympy==1.6'],
     setup_requires=['pytest-runner==5.2'],
     tests_require=['pytest==5.4.2',
                    'pytest-cov==2.9.0',
