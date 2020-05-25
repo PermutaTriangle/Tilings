@@ -3,7 +3,6 @@ import json
 import pytest
 
 from comb_spec_searcher import CombinatorialSpecification
-from comb_spec_searcher.exception import ExceededMaxtimeError
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor
