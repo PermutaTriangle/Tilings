@@ -37,7 +37,9 @@ class AbstractAssumption(abc.ABC):
         pass
 
     def __eq__(self, other) -> bool:
-        return isinstance(self, other.__class__) and self.__dict__ == other.__dict__
+        return bool(
+            self.__class__ == other.__class__ and self.__dict__ == other.__dict__
+        )
 
     @abc.abstractmethod
     def __lt__(self, other) -> bool:
@@ -55,6 +57,10 @@ class TrackingAssumption(AbstractAssumption):
         self.gps = tuple(sorted(set(gps)))
 
     def avoiding(self, obstructions: Iterable[GriddedPerm]) -> "TrackingAssumption":
+        """
+        Return the tracking absumption where all of the gridded perms avoiding
+        the obstructions are removed.
+        """
         obstructions = tuple(obstructions)
         return self.__class__(tuple(gp for gp in self.gps if gp.avoids(*obstructions)))
 

@@ -352,7 +352,12 @@ class Tiling(CombinatorialClass):
         )
 
     def _clean_assumptions(self) -> None:
-        """Clean assumptions with respect to the known obstructions."""
+        """
+        Clean assumptions with respect to the known obstructions.
+
+        TODO: this should remove points that are placed, and other requirements
+        that are contained in every gridded perm.
+        """
         res: List[AbstractAssumption] = []
         for assumption in self.assumptions:
             if isinstance(assumption, TrackingAssumption):
@@ -1321,7 +1326,7 @@ class Tiling(CombinatorialClass):
                 self._dimensions = (max(rows) + 1, max(cols) + 1)
         return self._dimensions
 
-    def underlying_tiling(self):
+    def remove_assumptions(self):
         """
         Return the tiling with all assumptions removed.
         """

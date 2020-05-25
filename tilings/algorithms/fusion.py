@@ -122,7 +122,7 @@ class Fusion:
         List of fuse counters for each of the TrackedAssumptions of the tiling.
         """
         if self._assumptions_fuse_counters is not None:
-            return self._requirements_fuse_counters
+            return self._assumptions_fuse_counters
         assert all(
             isinstance(ass, TrackingAssumption) for ass in self._tiling.assumptions
         ), "not implemented fusion for the assumption type given"

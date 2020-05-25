@@ -15,6 +15,11 @@ from tilings.assumptions import TrackingAssumption
 
 
 class Split(Constructor):
+    """
+    The constructor used to cound when a variable is counted by some multiple
+    disjoint subvariables.
+    """
+
     def is_equivalence(self) -> bool:
         return False
 
@@ -48,11 +53,18 @@ class Split(Constructor):
 
 
 class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
+    """
+    A strategy which splits each TrackingAssumption into sub TrackAssumptions,
+    according to the factors of the underlying tiling.
+
+    TODO: iterate over all possible union of factors
+    """
+
     @staticmethod
     def decomposition_function(tiling: Tiling) -> Optional[Tuple[Tiling]]:
         if not tiling.assumptions:
             return None
-        components = Factor(tiling.underlying_tiling()).get_components()
+        components = Factor(tiling.remove_assumptions()).get_components()
         if len(components) == 1:
             return None
         new_assumptions: List[TrackingAssumption] = []
@@ -118,19 +130,3 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     @classmethod
     def from_dict(cls, d: dict) -> "SplittingStrategy":
         return cls(**d)
-
-
-# TODO: iterate over all possible union of factors
-
-# class SplittingFactory(StrategyFactory[Tiling]):
-
-#     def __repr__(self):
-#         return self.__class__.__name__ + "()"
-
-#     def __str__(self):
-#         return "splitting tracked variables"
-
-#     @classmethod
-#     def from_dict(cls, d: dict) -> "SplittingFactory":
-#         assert not d, "no arguments needed for SplittingFactory"
-#         return cls()
