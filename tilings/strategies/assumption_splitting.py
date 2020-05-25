@@ -49,35 +49,33 @@ class Split(Constructor):
 
 class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     @staticmethod
-    def decomposition_function(tiling: Tiling) -> Tuple[Tiling]:
-        if tiling.assumptions:
-            components = Factor(tiling.underlying_tiling()).get_components()
-            if len(components) > 1:
-                new_assumptions: List[TrackingAssumption] = []
-                for ass in tiling.assumptions:
-                    assert isinstance(
-                        ass, TrackingAssumption
-                    ), "not implemented splitting assumption for given type"
-                    split_gps: List[List[GriddedPerm]] = [
-                        [] for _ in range(len(components))
-                    ]
-                    for gp in ass.gps:
-                        for idx, component in enumerate(components):
-                            if all(cell in component for cell in gp.pos):
-                                split_gps[idx].append(gp)
-                                # only add to one list
-                                break
-                        else:
-                            # gridded perms can't be partitioned
-                            new_assumptions.extend([ass])
-                            break
-                    else:
-                        new_assumptions.extend(
-                            [TrackingAssumption(gps) for gps in split_gps if gps]
-                        )
-                return (
-                    Tiling(tiling.obstructions, tiling.requirements, new_assumptions),
+    def decomposition_function(tiling: Tiling) -> Optional[Tuple[Tiling]]:
+        if not tiling.assumptions:
+            return None
+        components = Factor(tiling.underlying_tiling()).get_components()
+        if len(components) == 1:
+            return None
+        new_assumptions: List[TrackingAssumption] = []
+        for ass in tiling.assumptions:
+            assert isinstance(
+                ass, TrackingAssumption
+            ), "not implemented splitting assumption for given type"
+            split_gps: List[List[GriddedPerm]] = [[] for _ in range(len(components))]
+            for gp in ass.gps:
+                for idx, component in enumerate(components):
+                    if all(cell in component for cell in gp.pos):
+                        split_gps[idx].append(gp)
+                        # only add to one list
+                        break
+                else:
+                    # gridded perms can't be partitioned
+                    new_assumptions.extend([ass])
+                    break
+            else:
+                new_assumptions.extend(
+                    [TrackingAssumption(gps) for gps in split_gps if gps]
                 )
+        return (Tiling(tiling.obstructions, tiling.requirements, new_assumptions),)
 
     @staticmethod
     def constructor(
@@ -85,7 +83,8 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> Split:
         return Split()
 
-    def formal_step(self) -> str:
+    @staticmethod
+    def formal_step() -> str:
         return "splitting the assumptions"
 
     def backward_map(
