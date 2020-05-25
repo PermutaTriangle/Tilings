@@ -1164,7 +1164,7 @@ class Tiling(CombinatorialClass):
         requirements = tuple(
             GriddedPerm(gp.patt, gp.pos) for gp in mgps.minimal_gridded_perms()
         )
-        return self.__class__(self.obstructions, (requirements,))
+        return self.__class__(self.obstructions, (requirements,), self.assumptions)
 
     def minimal_gridded_perms(self) -> Iterator[GriddedPerm]:
         """
@@ -1384,7 +1384,9 @@ class Tiling(CombinatorialClass):
         res: List[GriddedPerm] = []
         rec(cols, patt, pos, used, 0, 0, res)
         return Tiling(
-            obstructions=list(self.obstructions) + res, requirements=self.requirements
+            obstructions=list(self.obstructions) + res,
+            requirements=self.requirements,
+            assumptions=self.assumptions,
         )
 
     @classmethod

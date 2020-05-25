@@ -157,6 +157,30 @@ class Fusion:
             return sum(1 for cell in fused_gp.pos if cell[1] == self._row_idx)
         return sum(1 for cell in fused_gp.pos if cell[0] == self._col_idx)
 
+    def _can_fuse_assumption(self, assumption, fuse_counter):
+        """
+        Return True if an assumption can be fused. That is, prefusion, the gps
+        are all contained entirely on the left of the fusion region, entirely
+        on the right, or split in every possible way.
+        """
+        return self._can_fuse_set_of_gridded_perms(fuse_counter) or (
+            all(count == 1 for gp, count in fuse_counter.items())
+            and self._is_one_sided_assumption(assumption)
+        )
+
+    def _is_one_sided_assumption(self, assumption):
+        """
+        Return True if all of the assumption is contained either entirely on
+        the left, or entirely on the right.
+        """
+        if self._fuse_row:
+            return all(
+                y != self._row_idx for gp in assumption.gps for _, y in gp.pos
+            ) or all(y != self._row_idx + 1 for gp in assumption.gps for _, y in gp.pos)
+        return all(
+            x != self._col_idx for gp in assumption.gps for x, _ in gp.pos
+        ) or all(x != self._col_idx + 1 for gp in assumption.gps for x, _ in gp.pos)
+
     def _new_assumption(self):
         """
         Return the assumption that needs to counted in order to enumerate.
@@ -178,8 +202,10 @@ class Fusion:
             for counter in self.requirements_fuse_counters
         )
         ass_fusable = all(
-            self._can_fuse_set_of_gridded_perms(counter)
-            for counter in self.assumptions_fuse_counters
+            self._can_fuse_assumption(assumption, counter)
+            for assumption, counter in zip(
+                self._tiling.assumptions, self.assumptions_fuse_counters
+            )
         )
         return obs_fusable and req_fusable and ass_fusable
 
