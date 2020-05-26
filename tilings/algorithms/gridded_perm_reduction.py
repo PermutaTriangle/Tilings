@@ -69,7 +69,7 @@ class GriddedPermReduction:
             # Minimize the set of requiriments
             minimized_requirements = self.minimal_reqs(minimized_obs)
             minimized_requirements = tuple(
-                [tuple(sorted(req)) for req in minimized_requirements]
+                sorted(tuple(sorted(set(req))) for req in minimized_requirements)
             )
 
             if minimized_requirements and not minimized_requirements[0]:
