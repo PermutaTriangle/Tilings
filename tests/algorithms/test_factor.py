@@ -353,8 +353,8 @@ def test_get_factor_obs_and_reqs(factor1, factor2):
     )
     f1_obs_and_reqs = factor1._get_factors_obs_and_reqs()
     assert len(f1_obs_and_reqs) == 2
-    assert (obs1, tuple()) in f1_obs_and_reqs
-    assert (obs2, tuple()) in f1_obs_and_reqs
+    assert (obs1, tuple(), tuple()) in f1_obs_and_reqs
+    assert (obs2, tuple(), tuple()) in f1_obs_and_reqs
 
     obs1 = tuple(
         sorted(
@@ -390,8 +390,8 @@ def test_get_factor_obs_and_reqs(factor1, factor2):
     )
     f2_obs_and_reqs = factor2._get_factors_obs_and_reqs()
     assert len(f2_obs_and_reqs) == 2
-    assert (obs1, reqs1) in f2_obs_and_reqs
-    assert (obs2, reqs2) in f2_obs_and_reqs
+    assert (obs1, reqs1, tuple()) in f2_obs_and_reqs
+    assert (obs2, reqs2, tuple()) in f2_obs_and_reqs
 
 
 def test_factorable(factor1, factor2, not_fact_tiling):

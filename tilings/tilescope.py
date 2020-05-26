@@ -39,11 +39,13 @@ class TileScope(CombinatorialSpecificationSearcher):
                 basis = Basis([o.patt for o in start_class.obstructions])
         elif isinstance(start_class, collections.Iterable):
             basis = Basis(start_class)
+            assert all(
+                isinstance(p, Perm) for p in basis
+            ), "Basis must contains Perm only"
         else:
             raise ValueError(
                 "start class must be a string, an iterable of Perm or a tiling"
             )
-        assert all(isinstance(p, Perm) for p in basis), "Basis must contains Perm only"
 
         if not isinstance(start_class, Tiling):
             start_tiling = Tiling(
@@ -54,13 +56,8 @@ class TileScope(CombinatorialSpecificationSearcher):
             logger.info("Fixing basis in OneByOneVerificationStrategy")
             strategy_pack = strategy_pack.fix_one_by_one(basis)
 
-        function_kwargs = {"basis": basis}
         super().__init__(
-            start_tiling,
-            strategy_pack,
-            function_kwargs=function_kwargs,
-            logger_kwargs=logger_kwargs,
-            **kwargs,
+            start_tiling, strategy_pack, logger_kwargs=logger_kwargs, **kwargs,
         )
 
     @cssmethodtimer("tilescope status")

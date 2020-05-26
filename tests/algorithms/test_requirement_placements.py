@@ -427,10 +427,12 @@ def test_stretched_requirements(placement1, placement1owncol, placement1ownrow):
     )
 
 
-def test_stretched_obstructions_and_requirements(
+def test_stretched_obstructions_and_assumptions(
     placement1, placement1owncol, placement1ownrow
 ):
-    obs, reqs = placement1._stretched_obstructions_and_requirements((1, 1))
+    obs, reqs, _ = placement1._stretched_obstructions_requirements_and_assumptions(
+        (1, 1)
+    )
     assert set(obs) == set(
         placement1._stretched_obstructions((1, 1))
         + [
@@ -442,7 +444,11 @@ def test_stretched_obstructions_and_requirements(
         placement1._stretched_requirements((1, 1))
         + [[GriddedPerm(Perm((0,)), ((2, 2),))]]
     )
-    obs, reqs = placement1ownrow._stretched_obstructions_and_requirements((1, 1))
+    (
+        obs,
+        reqs,
+        _,
+    ) = placement1ownrow._stretched_obstructions_requirements_and_assumptions((1, 1))
     assert set(obs) == set(
         placement1ownrow._stretched_obstructions((1, 1))
         + [
@@ -454,7 +460,11 @@ def test_stretched_obstructions_and_requirements(
         placement1ownrow._stretched_requirements((1, 1))
         + [[GriddedPerm(Perm((0,)), ((1, 2),))]]
     )
-    obs, reqs = placement1owncol._stretched_obstructions_and_requirements((1, 1))
+    (
+        obs,
+        reqs,
+        _,
+    ) = placement1owncol._stretched_obstructions_requirements_and_assumptions((1, 1))
     assert set(obs) == set(
         placement1owncol._stretched_obstructions((1, 1))
         + [
