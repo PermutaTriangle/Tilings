@@ -64,7 +64,8 @@ class LocalEnumeration(Enumeration):
             return False
         obs = self.tiling.obstructions
         reqs = chain.from_iterable(self.tiling.requirements)
-        all_gp = chain(obs, reqs)
+        assgps = chain.from_iterable(ass.gps for ass in self.tiling.assumptions)
+        all_gp = chain(obs, reqs, assgps)
         return all(gp.is_single_cell() for gp in all_gp)
 
     def get_genf(self, **kwargs) -> Expr:

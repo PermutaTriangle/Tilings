@@ -4,6 +4,7 @@ from typing import Iterator, Optional, Tuple, cast
 
 from comb_spec_searcher import StrategyFactory, SymmetryStrategy
 from tilings import GriddedPerm, Tiling
+from tilings.assumptions import TrackingAssumption
 
 __all__ = ("SymmetriesFactory",)
 
@@ -24,6 +25,10 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
                 tuple(
                     tuple(map(partial(self.gp_transform, tiling), req))
                     for req in tiling.requirements
+                ),
+                tuple(
+                    TrackingAssumption(map(partial(self.gp_transform, tiling), ass.gps))
+                    for ass in tiling.assumptions
                 ),
                 remove_empty=False,
                 derive_empty=False,

@@ -1,3 +1,4 @@
+from .assumption_splitting import SplittingStrategy
 from .factor import FactorFactory
 from .fusion import ComponentFusionFactory, FusionFactory
 from .obstruction_inferral import (
@@ -33,6 +34,8 @@ from .verification import (
 )
 
 __all__ = [
+    # Assumptions
+    "SplittingStrategy",
     # Batch
     "CellInsertionFactory",
     "FactorInsertionFactory",

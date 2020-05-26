@@ -42,6 +42,7 @@ from .algorithms import (
     RowColSeparation,
     SubobstructionInferral,
 )
+from .assumptions import TrackingAssumption
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
@@ -67,6 +68,7 @@ class Tiling(CombinatorialClass):
         self,
         obstructions: Iterable[GriddedPerm] = tuple(),
         requirements: Iterable[Iterable[GriddedPerm]] = tuple(),
+        assumptions: Iterable[TrackingAssumption] = tuple(),
         remove_empty: bool = True,
         derive_empty: bool = True,
         minimize: bool = True,
@@ -78,11 +80,15 @@ class Tiling(CombinatorialClass):
             self._obstructions = tuple(obstructions)
             # Set of requirement lists
             self._requirements = tuple(tuple(r) for r in requirements)
+            # Set of assumptions
+            self._assumptions = tuple(assumptions)
         else:
             # Set of obstructions
             self._obstructions = tuple(sorted(obstructions))
             # Set of requirement lists
             self._requirements = Tiling.sort_requirements(requirements)
+            # Set of assumptions
+            self._assumptions = tuple(assumptions)
 
         # Minimize the set of obstructions and the set of requirement lists
         if minimize:
@@ -93,10 +99,12 @@ class Tiling(CombinatorialClass):
             # obstructions
             if derive_empty:
                 self._fill_empty()
-
+            if minimize:
+                self._clean_assumptions()
             # Remove empty rows and empty columns
             if remove_empty:
                 self._minimize_tiling()
+
         self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
 
     @classmethod
@@ -176,6 +184,14 @@ class Tiling(CombinatorialClass):
         self._requirements = tuple(
             tuple(req.apply_map(cell_map) for req in reqlist)
             for reqlist in self._requirements
+        )
+        self._assumptions = tuple(
+            sorted(
+                assumption.__class__(
+                    tuple(gp.apply_map(cell_map) for gp in assumption.gps)
+                )
+                for assumption in self._assumptions
+            )
         )
         self._dimensions = (
             max(col_mapping.values()) + 1,
@@ -333,6 +349,20 @@ class Tiling(CombinatorialClass):
             ),
         )
 
+    def _clean_assumptions(self) -> None:
+        """
+        Clean assumptions with respect to the known obstructions.
+
+        TODO: this should remove points that are placed, and other requirements
+        that are contained in every gridded perm.
+        """
+        res: List[TrackingAssumption] = []
+        for assumption in self.assumptions:
+            ass = assumption.avoiding(self._obstructions)
+            if ass.gps:
+                res.append(ass)
+        self._assumptions = tuple(sorted(set(res)))
+
     # -------------------------------------------------------------
     # Compression
     # -------------------------------------------------------------
@@ -359,6 +389,15 @@ class Tiling(CombinatorialClass):
             result.extend(
                 chain.from_iterable([len(req)] + req.compress() for req in reqlist)
             )
+        if self.assumptions:
+            result.extend(split_16bit(len(self.assumptions)))
+            for assumption in self.assumptions:
+                result.extend(split_16bit(len(assumption.gps)))
+                result.extend(
+                    chain.from_iterable(
+                        [len(gp)] + gp.compress() for gp in assumption.gps
+                    )
+                )
         res = array("B", result)
         return res.tobytes()
 
@@ -375,42 +414,50 @@ class Tiling(CombinatorialClass):
         it and return a tiling."""
 
         def merge_8bit(lh, uh):
-            """Takes two 16 bit integers and merges them into
-               one 16 bit integer assuming lh is lower half and
-               uh is the upper half."""
+            """
+            Takes two 16 bit integers and merges them into
+            one 16 bit integer assuming lh is lower half and
+            uh is the upper half.
+            """
             return lh | (uh << 8)
 
+        def recreate_gp_list(offset):
+            """
+            Return the gplist implied started at the offset, together
+            with the offset after reading it.
+            """
+            ngps = merge_8bit(arr[offset], arr[offset + 1])
+            offset += 2
+            res = []
+            for _ in range(ngps):
+                pattlen = arr[offset]
+                offset += 1
+                res.append(GriddedPerm.decompress(arr[offset : offset + 3 * pattlen]))
+                offset += 3 * pattlen
+            return res, offset
+
         arr = array("B", arrbytes)
-        offset = 2
-        nobs = merge_8bit(arr[offset - 2], arr[offset - 1])
-        obstructions = []
-        for _ in range(nobs):
-            pattlen = arr[offset]
-            offset += 1
-            obstructions.append(
-                GriddedPerm.decompress(arr[offset : offset + 3 * pattlen])
-            )
-            offset += 3 * pattlen
+        obstructions, offset = recreate_gp_list(0)
 
         nreqs = merge_8bit(arr[offset], arr[offset + 1])
         offset += 2
         requirements = []
         for _ in range(nreqs):
-            reqlistlen = merge_8bit(arr[offset], arr[offset + 1])
-            offset += 2
-            reqlist = []
-            for _ in range(reqlistlen):
-                pattlen = arr[offset]
-                offset += 1
-                reqlist.append(
-                    GriddedPerm.decompress(arr[offset : offset + 3 * pattlen])
-                )
-                offset += 3 * pattlen
+            reqlist, offset = recreate_gp_list(offset)
             requirements.append(reqlist)
 
+        assumptions = []
+        if offset < len(arr):
+            nassumptions = merge_8bit(arr[offset], arr[offset + 1])
+            offset += 2
+            for _ in range(nassumptions):
+                # tracking
+                gps, offset = recreate_gp_list(offset)
+                assumptions.append(TrackingAssumption(gps))
         return cls(
             obstructions=obstructions,
             requirements=requirements,
+            assumptions=assumptions,
             remove_empty=remove_empty,
             derive_empty=derive_empty,
             minimize=minimize,
@@ -438,6 +485,7 @@ class Tiling(CombinatorialClass):
         output["requirements"] = [
             [gp.to_jsonable() for gp in req] for req in self.requirements
         ]
+        output["assumptions"] = [ass.to_jsonable() for ass in self.assumptions]
         return output
 
     @classmethod
@@ -454,7 +502,12 @@ class Tiling(CombinatorialClass):
         requirements = map(
             lambda x: map(GriddedPerm.from_dict, x), jsondict["requirements"]
         )
-        return cls(obstructions=obstructions, requirements=requirements)
+        assumptions = map(TrackingAssumption.from_dict, jsondict["assumptions"])
+        return cls(
+            obstructions=obstructions,
+            requirements=requirements,
+            assumptions=assumptions,
+        )
 
     # -------------------------------------------------------------
     # Cell methods
@@ -489,20 +542,26 @@ class Tiling(CombinatorialClass):
         """Returns a new tiling with the obstruction of the pattern
         patt with positions pos."""
         return Tiling(
-            self._obstructions + (GriddedPerm(patt, pos),), self._requirements
+            self._obstructions + (GriddedPerm(patt, pos),),
+            self._requirements,
+            self._assumptions,
         )
 
     def add_obstructions(self, gps: Iterable[GriddedPerm]) -> "Tiling":
         """Returns a new tiling with the obstructions added."""
         new_obs = tuple(gps)
-        return Tiling(self._obstructions + new_obs, self._requirements)
+        return Tiling(
+            self._obstructions + new_obs, self._requirements, self._assumptions
+        )
 
     def add_list_requirement(self, req_list: Iterable[GriddedPerm]) -> "Tiling":
         """
         Return a new tiling with the requirement list added.
         """
         new_req = tuple(req_list)
-        return Tiling(self._obstructions, self._requirements + (new_req,),)
+        return Tiling(
+            self._obstructions, self._requirements + (new_req,), self._assumptions
+        )
 
     def add_requirement(self, patt: Perm, pos: Iterable[Cell]) -> "Tiling":
         """Returns a new tiling with the requirement of the pattern
@@ -513,10 +572,7 @@ class Tiling(CombinatorialClass):
     def add_single_cell_obstruction(self, patt: Perm, cell: Cell) -> "Tiling":
         """Returns a new tiling with the single cell obstruction of the pattern
         patt in the given cell."""
-        return Tiling(
-            self._obstructions + (GriddedPerm.single_cell(patt, cell),),
-            self._requirements,
-        )
+        return self.add_obstructions((GriddedPerm.single_cell(patt, cell),))
 
     def add_single_cell_requirement(self, patt: Perm, cell: Cell) -> "Tiling":
         """Returns a new tiling with the single cell requirement of the pattern
@@ -713,6 +769,10 @@ class Tiling(CombinatorialClass):
             requirements=(
                 [gptransf(req) for req in reqlist] for reqlist in self.requirements
             ),
+            assumptions=(
+                TrackingAssumption(gptransf(gp) for gp in ass.gps)
+                for ass in self._assumptions
+            ),
         )
 
     def reverse(self, regions=False):
@@ -862,7 +922,13 @@ class Tiling(CombinatorialClass):
             if (factors and req[0].pos[0] in cells)
             or all(c in cells for c in chain.from_iterable(r.pos for r in req))
         )
-        return self.__class__(obstructions, requirements)
+        assumptions = tuple(
+            ass
+            for ass in self._assumptions
+            if (factors and ass.gps[0].pos[0] in cells)
+            or all(c in cells for c in chain.from_iterable(gp.pos for gp in ass.gps))
+        )
+        return self.__class__(obstructions, requirements, assumptions)
 
     def find_factors(self, interleaving: str = "none") -> Tuple["Tiling", ...]:
         """
@@ -1073,7 +1139,7 @@ class Tiling(CombinatorialClass):
         requirements = tuple(
             GriddedPerm(gp.patt, gp.pos) for gp in mgps.minimal_gridded_perms()
         )
-        return self.__class__(self.obstructions, (requirements,))
+        return self.__class__(self.obstructions, (requirements,), self.assumptions)
 
     def minimal_gridded_perms(self) -> Iterator[GriddedPerm]:
         """
@@ -1186,6 +1252,13 @@ class Tiling(CombinatorialClass):
         return len(self._requirements)
 
     @property
+    def assumptions(self) -> Tuple[TrackingAssumption, ...]:
+        return self._assumptions
+
+    def total_assumptions(self) -> int:
+        return len(self._assumptions)
+
+    @property
     def empty_cells(self) -> FrozenSet[Cell]:
         """Returns a set of all cells that contain a point obstruction, i.e.,
         are empty.
@@ -1222,6 +1295,19 @@ class Tiling(CombinatorialClass):
             else:
                 self._dimensions = (max(rows) + 1, max(cols) + 1)
         return self._dimensions
+
+    def remove_assumptions(self):
+        """
+        Return the tiling with all assumptions removed.
+        """
+        return self.__class__(
+            self._obstructions,
+            self._requirements,
+            remove_empty=False,
+            derive_empty=False,
+            minimize=False,
+            sorted_input=True,
+        )
 
     def add_obstruction_in_all_ways(self, patt: Perm) -> "Tiling":
         """
@@ -1273,7 +1359,9 @@ class Tiling(CombinatorialClass):
         res: List[GriddedPerm] = []
         rec(cols, patt, pos, used, 0, 0, res)
         return Tiling(
-            obstructions=list(self.obstructions) + res, requirements=self.requirements
+            obstructions=list(self.obstructions) + res,
+            requirements=self.requirements,
+            assumptions=self.assumptions,
         )
 
     @classmethod
@@ -1322,25 +1410,35 @@ class Tiling(CombinatorialClass):
     # -------------------------------------------------------------
 
     def __hash__(self) -> int:
-        return hash(self._requirements) ^ hash(self._obstructions)
+        return (
+            hash(self._requirements)
+            ^ hash(self._obstructions)
+            ^ hash(self._assumptions)
+        )
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Tiling):
             return False
-        return (self.obstructions == other.obstructions) and (
-            self.requirements == other.requirements
+        return (
+            self.obstructions == other.obstructions
+            and self.requirements == other.requirements
+            and self.assumptions == other.assumptions
         )
 
     def __ne__(self, other: object) -> bool:
         if not isinstance(other, Tiling):
             return True
-        return (self.obstructions != other.obstructions) or (
-            self.requirements != other.requirements
+        return (
+            self.obstructions != other.obstructions
+            or self.requirements != other.requirements
+            or self.assumptions != other.assumptions
         )
 
     def __repr__(self) -> str:
-        format_string = "Tiling(obstructions={}, requirements={})"
-        return format_string.format(self.obstructions, self.requirements)
+        format_string = "Tiling(obstructions={}, requirements={}, assumptions={})"
+        return format_string.format(
+            self.obstructions, self.requirements, self.assumptions
+        )
 
     def __str__(self) -> str:
         dim_i, dim_j = self.dimensions
@@ -1422,7 +1520,11 @@ class Tiling(CombinatorialClass):
             for r in req:
                 result.append(str(r))
                 result.append("\n")
-        if self.requirements:
+        for i, ass in enumerate(self.assumptions):
+            result.append("Assumption {}:\n".format(str(i)))
+            result.append(str(ass))
+            result.append("\n")
+        if self.assumptions or self.requirements:
             result = result[:-1]
 
         return "".join(result)

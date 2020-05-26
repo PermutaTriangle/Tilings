@@ -3,6 +3,7 @@ from collections import Counter
 from itertools import chain
 
 from permuta import Perm
+from tilings.assumptions import TrackingAssumption
 from tilings.griddedperm import GriddedPerm
 
 
@@ -19,10 +20,12 @@ class Fusion:
     column `col_idx+1`.
     """
 
-    def __init__(self, tiling, row_idx=None, col_idx=None):
+    def __init__(self, tiling, row_idx=None, col_idx=None, tracked: bool = False):
         self._tiling = tiling
+        self._assumptions_fuse_counters = None
         self._obstruction_fuse_counter = None
         self._requirements_fuse_counters = None
+        self._tracked = tracked  # add a TrackingAssumption to the region being tracked.
         if row_idx is None and col_idx is not None:
             self._col_idx = col_idx
             self._fuse_row = False
@@ -113,6 +116,20 @@ class Fusion:
         self._requirements_fuse_counters = counters
         return self._requirements_fuse_counters
 
+    @property
+    def assumptions_fuse_counters(self):
+        """
+        List of fuse counters for each of the TrackedAssumptions of the tiling.
+        """
+        if self._assumptions_fuse_counters is not None:
+            return self._assumptions_fuse_counters
+        counters = [
+            self._fuse_counter(assumption.gps)
+            for assumption in self._tiling.assumptions
+        ]
+        self._assumptions_fuse_counters = counters
+        return self._assumptions_fuse_counters
+
     def _can_fuse_set_of_gridded_perms(self, fuse_counter):
         """
         Check if a set of gridded permutations can be fused.
@@ -137,6 +154,41 @@ class Fusion:
             return sum(1 for cell in fused_gp.pos if cell[1] == self._row_idx)
         return sum(1 for cell in fused_gp.pos if cell[0] == self._col_idx)
 
+    def _can_fuse_assumption(self, assumption, fuse_counter):
+        """
+        Return True if an assumption can be fused. That is, prefusion, the gps
+        are all contained entirely on the left of the fusion region, entirely
+        on the right, or split in every possible way.
+        """
+        return self._can_fuse_set_of_gridded_perms(fuse_counter) or (
+            all(count == 1 for gp, count in fuse_counter.items())
+            and self._is_one_sided_assumption(assumption)
+        )
+
+    def _is_one_sided_assumption(self, assumption):
+        """
+        Return True if all of the assumption is contained either entirely on
+        the left, or entirely on the right.
+        """
+        if self._fuse_row:
+            return all(
+                y != self._row_idx for gp in assumption.gps for _, y in gp.pos
+            ) or all(y != self._row_idx + 1 for gp in assumption.gps for _, y in gp.pos)
+        return all(
+            x != self._col_idx for gp in assumption.gps for x, _ in gp.pos
+        ) or all(x != self._col_idx + 1 for gp in assumption.gps for x, _ in gp.pos)
+
+    def _new_assumption(self):
+        """
+        Return the assumption that needs to counted in order to enumerate.
+        """
+        return TrackingAssumption(
+            GriddedPerm.single_cell(Perm((0,)), cell)
+            for cell in self._tiling.active_cells
+            if (self._fuse_row and cell[1] == self._row_idx)
+            or (not self._fuse_row and cell[0] == self._col_idx)
+        )
+
     def fusable(self):
         """
         Check if the fusion is possible.
@@ -146,15 +198,27 @@ class Fusion:
             self._can_fuse_set_of_gridded_perms(counter)
             for counter in self.requirements_fuse_counters
         )
-        return obs_fusable and req_fusable
+        ass_fusable = all(
+            self._can_fuse_assumption(assumption, counter)
+            for assumption, counter in zip(
+                self._tiling.assumptions, self.assumptions_fuse_counters
+            )
+        )
+        return obs_fusable and req_fusable and ass_fusable
 
     def fused_tiling(self):
         """
         Return the fused tiling.
         """
+        assumptions = [
+            TrackingAssumption(gps) for gps in self.assumptions_fuse_counters
+        ]
+        if self._tracked:
+            assumptions.append(self._new_assumption())
         return self._tiling.__class__(
             obstructions=self.obstruction_fuse_counter.keys(),
             requirements=self.requirements_fuse_counters,
+            assumptions=assumptions,
         )
 
 
@@ -173,12 +237,13 @@ class ComponentFusion(Fusion):
     column `col_idx+1`.
     """
 
-    def __init__(self, tiling, *, row_idx=None, col_idx=None):
+    def __init__(self, tiling, *, row_idx=None, col_idx=None, tracked: bool = False):
         if tiling.requirements:
             raise NotImplementedError(
                 "Component fusion does not handle " "requirements at the moment"
             )
-        super().__init__(tiling, row_idx=row_idx, col_idx=col_idx)
+        assert not tracked, "tracking not implemented for component fusion"
+        super().__init__(tiling, row_idx=row_idx, col_idx=col_idx, tracked=tracked)
         self._first_cell = None
         self._second_cell = None
 
