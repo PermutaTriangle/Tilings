@@ -489,8 +489,9 @@ class MinimalGriddedPerms:
             if curr_len != len(qpacket.gp):
                 curr_len = len(qpacket.gp)
                 for gp in initial_gps_to_auto_yield[curr_len]:
-                    yielded.add(gp)
-                    yield gp
+                    if not yielded_subgridded_perm(qpacket.gp):
+                        yielded.add(gp)
+                        yield gp
             if qpacket.gp in initial_gps_to_auto_yield[curr_len]:
                 # removing this speed up a later check by a tiny bit
                 initial_gps_to_auto_yield[curr_len].remove(qpacket.gp)
