@@ -14,6 +14,7 @@ from tilings.algorithms.enumeration import (
     MonotoneTreeEnumeration,
 )
 from tilings.strategies import (
+    SplittingStrategy,
     FactorFactory,
     FactorInsertionFactory,
     RequirementCorroborationFactory,
@@ -210,7 +211,11 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
     def pack() -> StrategyPack:
         return StrategyPack(
             name="LocallyFactorable",
-            initial_strats=[FactorFactory(), RequirementCorroborationFactory()],
+            initial_strats=[
+                FactorFactory(),
+                RequirementCorroborationFactory(),
+                SplittingStrategy(),
+            ],
             inferral_strats=[],
             expansion_strats=[[FactorInsertionFactory()]],
             ver_strats=[
@@ -303,7 +308,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
                 "Cannot get a specification for a tiling in the database"
             )
         return StrategyPack(
-            initial_strats=[FactorFactory()],
+            initial_strats=[FactorFactory(), SplittingStrategy()],
             inferral_strats=[],
             expansion_strats=[],
             ver_strats=[
@@ -373,7 +378,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
                 "Cannot get a specification for a tiling in the database"
             )
         return StrategyPack(
-            initial_strats=[FactorFactory()],
+            initial_strats=[FactorFactory(), SplittingStrategy()],
             inferral_strats=[],
             expansion_strats=[],
             ver_strats=[
