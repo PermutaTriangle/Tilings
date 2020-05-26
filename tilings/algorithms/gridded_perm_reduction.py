@@ -242,7 +242,6 @@ class GriddedPermReduction:
                 res.append(cleanreq)
         return res
 
-    # @cssmethodtimer("GriddedPermReduction._griddedperm_implied_by_requirement")
     @staticmethod
     def _griddedperm_implied_by_requirement(
         griddedperm: GriddedPerm, requirement: Iterable[GriddedPerm]
@@ -274,9 +273,7 @@ class GriddedPermReduction:
             for requirement in requirements
         )
 
-    # Is this not a staticmethod because then it messes with cssmethodtimer?
     @staticmethod
-    # @cssmethodtimer("GriddedPermReduction._minimize")
     def _minimize(griddedperms: Iterable[GriddedPerm]) -> Tuple[GriddedPerm, ...]:
         """
         Removes non-minimal gridded permutations from the set.
@@ -296,25 +293,6 @@ class GriddedPermReduction:
             minimal_perms |= next_layer
         return tuple(minimal_perms)
 
-    @cssmethodtimer("GriddedPermReduction._OLD_minimize")
-    def _OLD_minimize(
-        self, griddedperms: Iterable[GriddedPerm]
-    ) -> Tuple[GriddedPerm, ...]:
-        """
-        Removes non minimal gridded permutations from the set.
-        """
-        # assert False, "Use the new one!"
-        res: Set[GriddedPerm] = set()
-        for gp_to_add in tuple(sorted(griddedperms)):
-            if all(
-                gp_already_added not in gp_to_add
-                for gp_already_added in res
-                if len(gp_already_added) < len(gp_to_add)
-            ):
-                res.add(gp_to_add)
-        return tuple(res)
-
-    # @cssmethodtimer("GriddedPermReduction.factors")
     @staticmethod
     def factors(griddedperms: Tuple[GriddedPerm, ...]) -> Set[GriddedPerm]:
         res: Set[GriddedPerm] = set(griddedperms[0].factors())
@@ -323,12 +301,3 @@ class GriddedPermReduction:
                 break
             res = res.intersection(gp.factors())
         return res
-
-    @cssmethodtimer("GriddedPermReduction.union_subgps")
-    def union_subgps(
-        self, griddedperms: Iterable[GriddedPerm], other: Iterable[GriddedPerm]
-    ) -> Tuple[GriddedPerm, ...]:
-        other = GriddedPermReduction._minimize(other)
-        return tuple(
-            sorted(tuple(gp for gp in griddedperms if gp.avoids(*other)) + other)
-        )

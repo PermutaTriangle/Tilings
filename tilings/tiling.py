@@ -55,24 +55,6 @@ __all__ = ["Tiling"]
 Cell = Tuple[int, int]
 ReqList = Tuple[GriddedPerm, ...]
 
-# This will disappear before being merged, but it's helpful for testing (together
-# with the following function).
-def do_minimize(griddedperms: Iterable[GriddedPerm]) -> Tuple[GriddedPerm, ...]:
-    res: Set[GriddedPerm] = set()
-    for gp_to_add in tuple(sorted(griddedperms)):
-        if gp_to_add not in res and all(
-            gp_already_added not in gp_to_add
-            for gp_already_added in res
-            if len(gp_already_added) < len(gp_to_add)
-        ):
-            res.add(gp_to_add)
-
-    return tuple(sorted(res))
-
-
-def is_minimal(griddedperms: Iterable[GriddedPerm]) -> bool:
-    return griddedperms == do_minimize(griddedperms)
-
 
 class Tiling(CombinatorialClass):
     """Tiling class.
@@ -119,15 +101,6 @@ class Tiling(CombinatorialClass):
         # Minimize the set of obstructions and the set of requirement lists
         if minimize:
             self._minimize_griddedperms(already_min=already_min)
-        # else:
-        #     assert is_minimal(self._obstructions)
-        #     assert all(is_minimal(req) for req in self._requirements)
-        #     old_obs = self._obstructions
-        #     old_req = self._requirements
-        #     self._minimize_griddedperms()
-        #     assert old_obs == self._obstructions
-        #     assert old_req == self._requirements
-        #     pass
 
         if not any(ob.is_empty() for ob in self.obstructions):
             # Remove empty rows and empty columns
@@ -138,9 +111,6 @@ class Tiling(CombinatorialClass):
             # obstructions
             if derive_empty:
                 self._fill_empty()
-
-        # assert is_minimal(self._obstructions)
-        # assert all(is_minimal(req) for req in self._requirements)
 
         self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
 
@@ -188,34 +158,9 @@ class Tiling(CombinatorialClass):
             sorted_input=True,
             already_min=already_min,
         )
-        # self._old_minimize_griddedperms()
-        #
-        # assert self._obstructions == GPR.obstructions, "\n{}\n======\n{}".format(
-        #     "\n".join(str(ob) for ob in self._obstructions),
-        #     "\n".join(str(ob) for ob in GPR.obstructions),
-        # )
-        # assert self._requirements == GPR.requirements, "{}\n{}".format(
-        #     self._requirements, GPR.requirements
-        # )
 
         self._obstructions = GPR.obstructions
         self._requirements = GPR.requirements
-
-    @cssmethodtimer("Tiling._old_minimize_griddedperms")
-    def _old_minimize_griddedperms(self) -> None:
-        # TODO: delete old code before merging, but good to keep just now for testing!
-        while True:
-            # Minimize the set of obstructions
-            minimized_obs = self._minimal_obs()
-            # Minimize the set of requiriments
-            minimized_obs, minimized_reqs = self._minimal_reqs(minimized_obs)
-            if (
-                self._obstructions == minimized_obs
-                and self._requirements == minimized_reqs
-            ):
-                break
-            self._obstructions = minimized_obs
-            self._requirements = minimized_reqs
 
     @cssmethodtimer("Tiling._minimize_tiling")
     def _minimize_tiling(self) -> None:
