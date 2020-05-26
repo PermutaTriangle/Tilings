@@ -150,7 +150,7 @@ class Factor:
         Returns all the irreducible factors of the tiling.
         """
         return tuple(
-            self._tiling.__class__(obstructions=f[0], requirements=f[1], minimize=False)
+            self._tiling.__class__(obstructions=f[0], requirements=f[1], simplify=False)
             for f in self._get_factors_obs_and_reqs()
         )
 
@@ -173,7 +173,7 @@ class Factor:
                     self._tiling.__class__(
                         obstructions=chain(*obstructions),
                         requirements=chain(*requirements),
-                        minimize=False,
+                        simplify=False,
                     )
                 )
             yield tuple(factors)

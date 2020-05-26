@@ -74,17 +74,19 @@ class Tiling(CombinatorialClass):
         self,
         obstructions: Iterable[GriddedPerm] = tuple(),
         requirements: Iterable[Iterable[GriddedPerm]] = tuple(),
-        remove_empty: bool = True,
+        remove_empty_rows_and_cols: bool = True,
         derive_empty: bool = True,
-        minimize: bool = True,
+        simplify: bool = True,
         sorted_input: bool = False,
-        already_min: bool = False,
+        already_minimized_obs: bool = False,
     ) -> None:
         """
         - if not sorted_input, input will be sorted
         - if minimize, will be minimized
         - if derive empty, then assume non-active cells are empty
-        - if remove_empty, then remove empty rows and columns.
+        - if remove_empty_rows_and_cols, then remove empty rows and columns.
+        - already_minimized_obs indicates if the obsrtructions are already minimized
+            we pass this through to GriddedPermReduction
         """
         super().__init__()
         if sorted_input:
@@ -98,14 +100,14 @@ class Tiling(CombinatorialClass):
             # Set of requirement lists
             self._requirements = Tiling.sort_requirements(requirements)
 
-        # Minimize the set of obstructions and the set of requirement lists
-        if minimize:
-            self._minimize_griddedperms(already_min=already_min)
+        # Simplify the set of obstructions and the set of requirement lists
+        if simplify:
+            self._simplify_griddedperms(already_minimized_obs=already_minimized_obs)
 
         if not any(ob.is_empty() for ob in self.obstructions):
             # Remove empty rows and empty columns
-            if remove_empty:
-                self._minimize_tiling()
+            if remove_empty_rows_and_cols:
+                self._remove_empty_rows_and_cols()
 
             # If assuming the non-active cells are empty, then add the
             # obstructions
@@ -145,8 +147,8 @@ class Tiling(CombinatorialClass):
                     add.append(GriddedPerm.single_cell(Perm((0,)), (x, y)))
         self._obstructions = tuple(sorted(tuple(add) + self._obstructions))
 
-    def _minimize_griddedperms(self, already_min=False) -> None:
-        """Minimizes the set of obstructions and the set of requirement lists.
+    def _simplify_griddedperms(self, already_minimized_obs=False) -> None:
+        """Simplifies the set of obstructions and the set of requirement lists.
         The set of obstructions are first reduced to a minimal set. The
         requirements that contain any obstructions are removed from their
         respective lists. If any requirement list is empty, then the tiling is
@@ -156,14 +158,14 @@ class Tiling(CombinatorialClass):
             self.obstructions,
             self.requirements,
             sorted_input=True,
-            already_min=already_min,
+            already_minimized_obs=already_minimized_obs,
         )
 
         self._obstructions = GPR.obstructions
         self._requirements = GPR.requirements
 
-    @cssmethodtimer("Tiling._minimize_tiling")
-    def _minimize_tiling(self) -> None:
+    @cssmethodtimer("Tiling._remove_empty_rows_and_cols")
+    def _remove_empty_rows_and_cols(self) -> None:
         """Remove empty rows and columns."""
         # Produce the mapping between the two tilings
         if not self.active_cells:
@@ -244,9 +246,9 @@ class Tiling(CombinatorialClass):
     def from_bytes(
         cls,
         arrbytes: bytes,
-        remove_empty=False,
+        remove_empty_rows_and_cols=False,
         derive_empty=False,
-        minimize=False,
+        simplify=False,
         sorted_input=True,
     ) -> "Tiling":
         """Given a compressed tiling in the form of an 1-byte array, decompress
@@ -289,9 +291,9 @@ class Tiling(CombinatorialClass):
         return cls(
             obstructions=obstructions,
             requirements=requirements,
-            remove_empty=remove_empty,
+            remove_empty_rows_and_cols=remove_empty_rows_and_cols,
             derive_empty=derive_empty,
-            minimize=minimize,
+            simplify=simplify,
             sorted_input=sorted_input,
         )
 
@@ -563,14 +565,14 @@ class Tiling(CombinatorialClass):
     @property
     def forward_cell_map(self) -> Dict[Cell, Cell]:
         if not hasattr(self, "_forward_map"):
-            self._minimize_tiling()
+            self._remove_empty_rows_and_cols()
         return self._forward_map
 
     @property
     def backward_cell_map(self) -> Dict[Cell, Cell]:
         if not hasattr(self, "_backward_map"):
             if not hasattr(self, "_forward_map"):
-                self._minimize_tiling()
+                self._remove_empty_rows_and_cols()
             self._backward_map = {b: a for a, b in self._forward_map.items()}
         return self._backward_map
 
@@ -743,9 +745,9 @@ class Tiling(CombinatorialClass):
         return self.__class__(
             obstructions=obstructions,
             requirements=requirements,
-            remove_empty=True,
+            remove_empty_rows_and_cols=True,
             derive_empty=True,
-            minimize=False,
+            simplify=False,
             sorted_input=True,
         )
 

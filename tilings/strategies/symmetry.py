@@ -25,9 +25,9 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
                     tuple(map(partial(self.gp_transform, tiling), req))
                     for req in tiling.requirements
                 ),
-                remove_empty=False,
+                remove_empty_rows_and_cols=False,
                 derive_empty=False,
-                minimize=False,
+                simplify=False,
             ),
         )
 

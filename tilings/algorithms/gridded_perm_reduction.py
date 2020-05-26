@@ -23,7 +23,7 @@ class GriddedPermReduction:
         obstructions: Tuple[GriddedPerm, ...],
         requirements: Tuple[Tuple[GriddedPerm, ...], ...],
         sorted_input: bool = False,
-        already_min: bool = False,
+        already_minimized_obs: bool = False,
     ):
         # Only using MGP for typing purposes.
         if sorted_input:
@@ -33,7 +33,7 @@ class GriddedPermReduction:
             self._obstructions = tuple(sorted(obstructions))
             self._requirements = tuple(sorted(tuple(sorted(r)) for r in requirements))
 
-        self._minimize_griddedperms(already_min=already_min)
+        self._minimize_griddedperms(already_minimized_obs=already_minimized_obs)
 
     @property
     def obstructions(self):
@@ -44,7 +44,7 @@ class GriddedPermReduction:
         return tuple(tuple(requirement) for requirement in self._requirements)
 
     @cssmethodtimer("GriddedPermReduction._minimize_griddedperms")
-    def _minimize_griddedperms(self, already_min=False) -> None:
+    def _minimize_griddedperms(self, already_minimized_obs=False) -> None:
         """Minimizes the set of obstructions and the set of requirement lists.
         The set of obstructions are first reduced to a minimal set. The
         requirements that contain any obstructions are removed from their
@@ -58,7 +58,9 @@ class GriddedPermReduction:
 
         while True:
             # Minimize the set of obstructions
-            minimized_obs = self.minimal_obs(already_min=already_min)
+            minimized_obs = self.minimal_obs(
+                already_minimized_obs=already_minimized_obs
+            )
 
             if minimized_obs and not minimized_obs[0]:
                 set_empty()
@@ -97,10 +99,10 @@ class GriddedPermReduction:
         return obstruction
 
     @cssmethodtimer("GriddedPermReduction.minimal_obs")
-    def minimal_obs(self, already_min=False) -> Tuple[GriddedPerm, ...]:
+    def minimal_obs(self, already_minimized_obs=False) -> Tuple[GriddedPerm, ...]:
         min_perms = (
             self._obstructions
-            if already_min
+            if already_minimized_obs
             else GriddedPermReduction._minimize(self._obstructions)
         )
         changed = []
