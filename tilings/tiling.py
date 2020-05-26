@@ -22,12 +22,13 @@ from typing import (
 
 import sympy
 
-from comb_spec_searcher import CombinatorialClass, VerificationStrategy
-from comb_spec_searcher.exception import StrategyDoesNotApply
-from .algorithms.gridded_perm_reduction import func_calls, func_times
-from comb_spec_searcher.utils import cssmethodtimer
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_WEST
+from comb_spec_searcher import CombinatorialClass, VerificationStrategy
+from comb_spec_searcher.exception import StrategyDoesNotApply
+from comb_spec_searcher.utils import cssmethodtimer
+from .algorithms.gridded_perm_reduction import func_calls, func_times
+
 
 from .algorithms import (
     AllObstructionInferral,
@@ -509,26 +510,20 @@ class Tiling(CombinatorialClass):
         """Returns a new tiling with the obstruction of the pattern
         patt with positions pos."""
         return Tiling(
-            self._obstructions + (GriddedPerm(patt, pos),),
-            self._requirements,
-            derive_empty=False,
+            self._obstructions + (GriddedPerm(patt, pos),), self._requirements,
         )
 
     def add_obstructions(self, gps: Iterable[GriddedPerm]) -> "Tiling":
         """Returns a new tiling with the obstructions added."""
         new_obs = tuple(gps)
-        return Tiling(
-            self._obstructions + new_obs, self._requirements, derive_empty=False
-        )
+        return Tiling(self._obstructions + new_obs, self._requirements)
 
     def add_list_requirement(self, req_list: Iterable[GriddedPerm]) -> "Tiling":
         """
         Return a new tiling with the requirement list added.
         """
         new_req = tuple(req_list)
-        return Tiling(
-            self._obstructions, self._requirements + (new_req,), derive_empty=False
-        )
+        return Tiling(self._obstructions, self._requirements + (new_req,))
 
     def add_requirement(self, patt: Perm, pos: Iterable[Cell]) -> "Tiling":
         """Returns a new tiling with the requirement of the pattern
@@ -542,7 +537,6 @@ class Tiling(CombinatorialClass):
         return Tiling(
             self._obstructions + (GriddedPerm.single_cell(patt, cell),),
             self._requirements,
-            derive_empty=False,
         )
 
     def add_single_cell_requirement(self, patt: Perm, cell: Cell) -> "Tiling":

@@ -348,10 +348,7 @@ class RequirementPlacement:
             rem_req = self._remaining_requirement_from_requirement(gps, indices, cell)
             new_reqs = reqs + [rem_req]
 
-            res.append(
-                # self._tiling.__class__(reduced_obs + forced_obs, reqs + [rem_req])
-                self._tiling.__class__(new_obs, new_reqs, already_min=True)
-            )
+            res.append(self._tiling.__class__(new_obs, new_reqs, already_min=True))
         return tuple(res)
 
     def place_point_in_cell(self, cell: Cell, direction: Dir) -> "Tiling":
