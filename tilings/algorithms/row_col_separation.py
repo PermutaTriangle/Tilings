@@ -429,9 +429,6 @@ class _RowColSeparationSingleApplication:
     def map_assumptions(self, cell_map):
         """Map the assumptions of a tiling according to the cell map."""
         for ass in self._tiling.assumptions:
-            assert isinstance(
-                ass, TrackingAssumption
-            ), "row col separation not implemented for this assumption type"
             gps: List[GriddedPerm] = []
             for gp in ass.gps:
                 mapped_gp = self._map_gridded_perm(cell_map, gp)

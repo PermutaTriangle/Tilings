@@ -7,7 +7,6 @@ import requests
 from sympy import Expr, Function, Symbol, diff, simplify, sympify, var
 
 from comb_spec_searcher.utils import taylor_expand
-from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
 from tilings.misc import is_tree
 
@@ -65,11 +64,7 @@ class LocalEnumeration(Enumeration):
             return False
         obs = self.tiling.obstructions
         reqs = chain.from_iterable(self.tiling.requirements)
-        assgps = chain.from_iterable(
-            ass.gps
-            for ass in self.tiling.assumptions
-            if isinstance(ass, TrackingAssumption)
-        )
+        assgps = chain.from_iterable(ass.gps for ass in self.tiling.assumptions)
         all_gp = chain(obs, reqs, assgps)
         return all(gp.is_single_cell() for gp in all_gp)
 

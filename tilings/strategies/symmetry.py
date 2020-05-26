@@ -19,9 +19,6 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
         pass
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
-        assert all(
-            isinstance(ass, TrackingAssumption) for ass in tiling.assumptions
-        ), "not implemented symmetries for assumption given"
         return (
             Tiling(
                 tuple(map(partial(self.gp_transform, tiling), tiling.obstructions)),
@@ -32,7 +29,6 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
                 tuple(
                     TrackingAssumption(map(partial(self.gp_transform, tiling), ass.gps))
                     for ass in tiling.assumptions
-                    if isinstance(ass, TrackingAssumption)
                 ),
                 remove_empty=False,
                 derive_empty=False,

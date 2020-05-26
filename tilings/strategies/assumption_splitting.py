@@ -54,7 +54,7 @@ class Split(Constructor):
 
 class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     """
-    A strategy which splits each TrackingAssumption into sub TrackAssumptions,
+    A strategy which splits each TrackingAssumption into sub TrackingAssumptions,
     according to the factors of the underlying tiling.
 
     TODO: iterate over all possible union of factors
@@ -69,9 +69,6 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             return None
         new_assumptions: List[TrackingAssumption] = []
         for ass in tiling.assumptions:
-            assert isinstance(
-                ass, TrackingAssumption
-            ), "not implemented splitting assumption for given type"
             split_gps: List[List[GriddedPerm]] = [[] for _ in range(len(components))]
             for gp in ass.gps:
                 for idx, component in enumerate(components):

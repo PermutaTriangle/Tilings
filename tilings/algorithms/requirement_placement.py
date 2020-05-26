@@ -251,13 +251,9 @@ class RequirementPlacement:
         point in the given cell.
         """
         if cell not in self._stretched_assumptions_cache:
-            assert all(
-                isinstance(ass, TrackingAssumption) for ass in self._tiling.assumptions
-            ), "not implemented point placement for assumption type"
             self._stretched_assumptions_cache[cell] = [
                 TrackingAssumption(self._stretch_gridded_perms(ass.gps, cell))
                 for ass in self._tiling.assumptions
-                if isinstance(ass, TrackingAssumption)
             ]
         return self._stretched_assumptions_cache[cell]
 

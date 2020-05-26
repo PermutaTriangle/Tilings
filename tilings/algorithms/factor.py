@@ -74,9 +74,6 @@ class Factor:
         For each TrackingAssumption unite all the positions of the gridded perms.
         """
         for ass in self._tiling.assumptions:
-            assert isinstance(
-                ass, TrackingAssumption
-            ), "not implemented factor for assumption given"
             ass_cells = chain.from_iterable(gp.pos for gp in ass.gps)
             self._unite_cells(ass_cells)
 
@@ -161,14 +158,10 @@ class Factor:
             requirements = tuple(
                 req for req in self._tiling.requirements if req[0].pos[0] in component
             )
-            assert all(
-                isinstance(ass, TrackingAssumption) for ass in self._tiling.assumptions
-            ), "factors only implemented for TrackingAssumption"
             assumptions = tuple(
                 ass
                 for ass in self._tiling.assumptions
-                if isinstance(ass, TrackingAssumption)
-                and ass.gps[0].pos[0] in component
+                if ass.gps[0].pos[0] in component
             )
             factors.append((obstructions, requirements, assumptions))
         self._factors_obs_and_reqs = factors

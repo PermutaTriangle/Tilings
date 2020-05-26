@@ -42,7 +42,7 @@ from .algorithms import (
     RowColSeparation,
     SubobstructionInferral,
 )
-from .assumptions import AbstractAssumption, TrackingAssumption
+from .assumptions import TrackingAssumption
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
@@ -68,7 +68,7 @@ class Tiling(CombinatorialClass):
         self,
         obstructions: Iterable[GriddedPerm] = tuple(),
         requirements: Iterable[Iterable[GriddedPerm]] = tuple(),
-        assumptions: Iterable[AbstractAssumption] = tuple(),
+        assumptions: Iterable[TrackingAssumption] = tuple(),
         remove_empty: bool = True,
         derive_empty: bool = True,
         minimize: bool = True,
@@ -190,8 +190,6 @@ class Tiling(CombinatorialClass):
                 assumption.__class__(
                     tuple(gp.apply_map(cell_map) for gp in assumption.gps)
                 )
-                if isinstance(assumption, TrackingAssumption)
-                else assumption
                 for assumption in self._assumptions
             )
         )
@@ -358,14 +356,11 @@ class Tiling(CombinatorialClass):
         TODO: this should remove points that are placed, and other requirements
         that are contained in every gridded perm.
         """
-        res: List[AbstractAssumption] = []
+        res: List[TrackingAssumption] = []
         for assumption in self.assumptions:
-            if isinstance(assumption, TrackingAssumption):
-                ass = assumption.avoiding(self._obstructions)
-                if ass.gps:
-                    res.append(ass)
-            else:
-                res.append(assumption)
+            ass = assumption.avoiding(self._obstructions)
+            if ass.gps:
+                res.append(ass)
         self._assumptions = tuple(sorted(set(res)))
 
     # -------------------------------------------------------------
@@ -397,16 +392,12 @@ class Tiling(CombinatorialClass):
         if self.assumptions:
             result.extend(split_16bit(len(self.assumptions)))
             for assumption in self.assumptions:
-                if isinstance(assumption, TrackingAssumption):
-                    result.append(0)
-                    result.extend(split_16bit(len(assumption.gps)))
-                    result.extend(
-                        chain.from_iterable(
-                            [len(gp)] + gp.compress() for gp in assumption.gps
-                        )
+                result.extend(split_16bit(len(assumption.gps)))
+                result.extend(
+                    chain.from_iterable(
+                        [len(gp)] + gp.compress() for gp in assumption.gps
                     )
-                else:
-                    result.append(1)
+                )
         res = array("B", result)
         return res.tobytes()
 
@@ -460,15 +451,9 @@ class Tiling(CombinatorialClass):
             nassumptions = merge_8bit(arr[offset], arr[offset + 1])
             offset += 2
             for _ in range(nassumptions):
-                asstype = arr[offset]
-                offset += 1
-                if asstype == 0:
-                    # tracking
-                    gps, offset = recreate_gp_list(offset)
-                    assumptions.append(TrackingAssumption(gps))
-                else:
-                    # other
-                    raise NotImplementedError
+                # tracking
+                gps, offset = recreate_gp_list(offset)
+                assumptions.append(TrackingAssumption(gps))
         return cls(
             obstructions=obstructions,
             requirements=requirements,
@@ -517,7 +502,7 @@ class Tiling(CombinatorialClass):
         requirements = map(
             lambda x: map(GriddedPerm.from_dict, x), jsondict["requirements"]
         )
-        assumptions = map(AbstractAssumption.from_dict, jsondict["assumptions"])
+        assumptions = map(TrackingAssumption.from_dict, jsondict["assumptions"])
         return cls(
             obstructions=obstructions,
             requirements=requirements,
@@ -779,9 +764,6 @@ class Tiling(CombinatorialClass):
         transformation of GriddedPerm that calls some internal method.
         # TODO: transf is not used...
         """
-        assert all(
-            isinstance(ass, TrackingAssumption) for ass in self._assumptions
-        ), "not implemented symmetries for given assumption"
         return Tiling(
             obstructions=(gptransf(ob) for ob in self.obstructions),
             requirements=(
@@ -790,7 +772,6 @@ class Tiling(CombinatorialClass):
             assumptions=(
                 TrackingAssumption(gptransf(gp) for gp in ass.gps)
                 for ass in self._assumptions
-                if isinstance(ass, TrackingAssumption)
             ),
         )
 
@@ -941,22 +922,11 @@ class Tiling(CombinatorialClass):
             if (factors and req[0].pos[0] in cells)
             or all(c in cells for c in chain.from_iterable(r.pos for r in req))
         )
-        assert all(
-            isinstance(ass, TrackingAssumption) for ass in self.assumptions
-        ), "Only implemented factors for tracking assumptions"
         assumptions = tuple(
             ass
             for ass in self._assumptions
-            if (
-                isinstance(ass, TrackingAssumption)
-                and (
-                    (factors and ass.gps[0].pos[0] in cells)
-                    or all(
-                        c in cells
-                        for c in chain.from_iterable(gp.pos for gp in ass.gps)
-                    )
-                )
-            )
+            if (factors and ass.gps[0].pos[0] in cells)
+            or all(c in cells for c in chain.from_iterable(gp.pos for gp in ass.gps))
         )
         return self.__class__(obstructions, requirements, assumptions)
 
@@ -1282,7 +1252,7 @@ class Tiling(CombinatorialClass):
         return len(self._requirements)
 
     @property
-    def assumptions(self) -> Tuple[AbstractAssumption, ...]:
+    def assumptions(self) -> Tuple[TrackingAssumption, ...]:
         return self._assumptions
 
     def total_assumptions(self) -> int:

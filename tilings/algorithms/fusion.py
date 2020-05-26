@@ -123,9 +123,6 @@ class Fusion:
         """
         if self._assumptions_fuse_counters is not None:
             return self._assumptions_fuse_counters
-        assert all(
-            isinstance(ass, TrackingAssumption) for ass in self._tiling.assumptions
-        ), "not implemented fusion for the assumption type given"
         counters = [
             self._fuse_counter(assumption.gps)
             for assumption in self._tiling.assumptions
