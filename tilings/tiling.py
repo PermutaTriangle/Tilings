@@ -24,6 +24,8 @@ import sympy
 
 from comb_spec_searcher import CombinatorialClass, VerificationStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
+from .algorithms.gridded_perm_reduction import func_calls, func_times
+from comb_spec_searcher.utils import cssmethodtimer
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_WEST
 
@@ -53,8 +55,23 @@ __all__ = ["Tiling"]
 Cell = Tuple[int, int]
 ReqList = Tuple[GriddedPerm, ...]
 
-from .algorithms.gridded_perm_reduction import func_calls, func_times
-from comb_spec_searcher.utils import cssmethodtimer
+# This will disappear before being merged, but it's helpful for testing (together
+# with the following function).
+def do_minimize(griddedperms: Iterable[GriddedPerm]) -> Tuple[GriddedPerm, ...]:
+    res: Set[GriddedPerm] = set()
+    for gp_to_add in tuple(sorted(griddedperms)):
+        if gp_to_add not in res and all(
+            gp_already_added not in gp_to_add
+            for gp_already_added in res
+            if len(gp_already_added) < len(gp_to_add)
+        ):
+            res.add(gp_to_add)
+
+    return tuple(sorted(res))
+
+
+def is_minimal(griddedperms: Iterable[GriddedPerm]) -> bool:
+    return griddedperms == do_minimize(griddedperms)
 
 
 class Tiling(CombinatorialClass):
@@ -79,6 +96,7 @@ class Tiling(CombinatorialClass):
         derive_empty: bool = True,
         minimize: bool = True,
         sorted_input: bool = False,
+        already_min: bool = False,
     ) -> None:
         """
         - if not sorted_input, input will be sorted
@@ -100,7 +118,16 @@ class Tiling(CombinatorialClass):
 
         # Minimize the set of obstructions and the set of requirement lists
         if minimize:
-            self._minimize_griddedperms()
+            self._minimize_griddedperms(already_min=already_min)
+        # else:
+        #     assert is_minimal(self._obstructions)
+        #     assert all(is_minimal(req) for req in self._requirements)
+        #     old_obs = self._obstructions
+        #     old_req = self._requirements
+        #     self._minimize_griddedperms()
+        #     assert old_obs == self._obstructions
+        #     assert old_req == self._requirements
+        #     pass
 
         if not any(ob.is_empty() for ob in self.obstructions):
             # Remove empty rows and empty columns
@@ -111,6 +138,10 @@ class Tiling(CombinatorialClass):
             # obstructions
             if derive_empty:
                 self._fill_empty()
+
+        # assert is_minimal(self._obstructions)
+        # assert all(is_minimal(req) for req in self._requirements)
+
         self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
 
     @classmethod
@@ -144,7 +175,7 @@ class Tiling(CombinatorialClass):
                     add.append(GriddedPerm.single_cell(Perm((0,)), (x, y)))
         self._obstructions = tuple(sorted(tuple(add) + self._obstructions))
 
-    def _minimize_griddedperms(self) -> None:
+    def _minimize_griddedperms(self, already_min=False) -> None:
         """Minimizes the set of obstructions and the set of requirement lists.
         The set of obstructions are first reduced to a minimal set. The
         requirements that contain any obstructions are removed from their
@@ -152,7 +183,10 @@ class Tiling(CombinatorialClass):
         empty.
         """
         GPR = GriddedPermReduction(
-            self.obstructions, self.requirements, sorted_input=True
+            self.obstructions,
+            self.requirements,
+            sorted_input=True,
+            already_min=already_min,
         )
         # self._old_minimize_griddedperms()
         #
@@ -555,7 +589,7 @@ class Tiling(CombinatorialClass):
         """Returns a new tiling with the requirement of the pattern
         patt with position pos."""
         new_req_list = (GriddedPerm(patt, pos),)
-        return self.add_list_requirement(new_req_list, derive_empty=False)
+        return self.add_list_requirement(new_req_list)
 
     def add_single_cell_obstruction(self, patt: Perm, cell: Cell) -> "Tiling":
         """Returns a new tiling with the single cell obstruction of the pattern
@@ -570,7 +604,7 @@ class Tiling(CombinatorialClass):
         """Returns a new tiling with the single cell requirement of the pattern
         patt in the given cell."""
         new_req_list = (GriddedPerm.single_cell(patt, cell),)
-        return self.add_list_requirement(new_req_list, derive_empty=False)
+        return self.add_list_requirement(new_req_list)
 
     def fully_isolated(self) -> bool:
         """Check if all cells are isolated on their rows and columns."""
@@ -919,6 +953,7 @@ class Tiling(CombinatorialClass):
             sorted_input=True,
         )
 
+    @cssmethodtimer("Tiling.find_factors")
     def find_factors(self, interleaving: str = "none") -> Tuple["Tiling", ...]:
         """
         Return list with the factors of the tiling.

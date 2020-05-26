@@ -16,7 +16,6 @@ func_times: Dict[str, float] = defaultdict(float)
 class GriddedPermReduction:
     func_calls = func_calls
     func_times = func_times
-    passes: Dict[int, int] = defaultdict(int)
 
     @cssmethodtimer("GriddedPermReduction.__init__")
     def __init__(
@@ -24,6 +23,7 @@ class GriddedPermReduction:
         obstructions: Tuple[GriddedPerm, ...],
         requirements: Tuple[Tuple[GriddedPerm, ...], ...],
         sorted_input: bool = False,
+        already_min: bool = False,
     ):
         # Only using MGP for typing purposes.
         if sorted_input:
@@ -33,7 +33,7 @@ class GriddedPermReduction:
             self._obstructions = tuple(sorted(obstructions))
             self._requirements = tuple(sorted(tuple(sorted(r)) for r in requirements))
 
-        self._minimize_griddedperms()
+        self._minimize_griddedperms(already_min=already_min)
 
     @property
     def obstructions(self):
@@ -44,7 +44,7 @@ class GriddedPermReduction:
         return tuple(tuple(requirement) for requirement in self._requirements)
 
     @cssmethodtimer("GriddedPermReduction._minimize_griddedperms")
-    def _minimize_griddedperms(self) -> None:
+    def _minimize_griddedperms(self, already_min=False) -> None:
         """Minimizes the set of obstructions and the set of requirement lists.
         The set of obstructions are first reduced to a minimal set. The
         requirements that contain any obstructions are removed from their
@@ -56,32 +56,30 @@ class GriddedPermReduction:
             self._obstructions = (GriddedPerm.empty_perm(),)
             self._requirements = tuple()
 
-        i = 0
         while True:
-            i += 1
             # Minimize the set of obstructions
-            minimized_obs = self.minimal_obs()
+            minimized_obs = self.minimal_obs(already_min=already_min)
 
             if minimized_obs and not minimized_obs[0]:
                 set_empty()
                 break
 
+            self._obstructions = tuple(sorted(minimized_obs))
+
             # Minimize the set of requiriments
             minimized_requirements = self.minimal_reqs(minimized_obs)
+            minimized_requirements = tuple(
+                [tuple(sorted(req)) for req in minimized_requirements]
+            )
 
             if minimized_requirements and not minimized_requirements[0]:
                 set_empty()
                 break
 
-            if (
-                self._obstructions == minimized_obs
-                and self._requirements == minimized_requirements
-            ):
+            if self._requirements == minimized_requirements:
                 break
 
-            self._obstructions = minimized_obs
             self._requirements = minimized_requirements
-        GriddedPermReduction.passes[i] += 1
 
     # if there is a requirement for which every component contains the same factor of
     # obstruction, then that factor can be removed from obstruction
@@ -90,22 +88,42 @@ class GriddedPermReduction:
     def _clean_isolated(self, obstruction: GriddedPerm) -> GriddedPerm:
         """Remove the isolated factors that are implied by requirements
         from all obstructions."""
+        cells_to_remove: Set[Cell] = set()
         for factor in obstruction.factors():
             if self._griddedperm_implied_by_some_requirement(factor):
-                obstruction = obstruction.remove_cells(factor.pos)
+                cells_to_remove.update(factor.pos)
+        if len(cells_to_remove) > 0:
+            obstruction = obstruction.remove_cells(cells_to_remove)
         return obstruction
 
     @cssmethodtimer("GriddedPermReduction.minimal_obs")
-    def minimal_obs(self) -> Tuple[GriddedPerm, ...]:
-        # TODO: smarter minimization
-        return self._minimize(self._clean_isolated(ob) for ob in self._obstructions)
+    def minimal_obs(self, already_min=False) -> Tuple[GriddedPerm, ...]:
+        min_perms = (
+            self._obstructions
+            if already_min
+            else GriddedPermReduction._minimize(self._obstructions)
+        )
+        changed = []
+        unchanged = []
+        for ob in min_perms:
+            cleaned_perm = self._clean_isolated(ob)
+            if cleaned_perm == ob:
+                unchanged.append(cleaned_perm)
+            else:
+                changed.append(cleaned_perm)
+        if len(changed) == 0:
+            return tuple(unchanged)
+
+        return GriddedPermReduction._minimize(changed) + tuple(
+            [gp for gp in unchanged if gp.avoids(*changed)]
+        )
 
     @cssmethodtimer("GriddedPermReduction.minimal_reqs")
     def minimal_reqs(
         self, obstructions: Tuple[GriddedPerm, ...]
     ) -> Tuple[Tuple[GriddedPerm, ...], ...]:
         algos: Tuple[Callable, ...] = (
-            self.factored_reqs,
+            GriddedPermReduction.factored_reqs,
             self.cleaned_requirements,
             partial(self.remove_avoided, obstructions=obstructions),
         )
@@ -119,9 +137,10 @@ class GriddedPermReduction:
     # If all of the gp's in a requirment list contain the same factor, you can remove
     # that factor from all of them and add it as it's own size one requirement list
     # [size one requirement list inferral]
-    @cssmethodtimer("GriddedPermReduction.factored_reqs")
+    # @cssmethodtimer("GriddedPermReduction.factored_reqs")
+    @staticmethod
     def factored_reqs(
-        self, requirements: Iterable[Tuple[GriddedPerm, ...]],
+        requirements: Iterable[Tuple[GriddedPerm, ...]],
     ) -> List[Tuple[GriddedPerm, ...]]:
         """
         Add factors of requirements as size one requirements, removing them
@@ -137,7 +156,7 @@ class GriddedPermReduction:
             # If any gridded permutation in list is empty then you vacuously
             # contain this requirement
             if all(requirement):
-                factors = self.factors(requirement)
+                factors = GriddedPermReduction.factors(requirement)
                 if len(factors) == 0 or (len(factors) == 1 and len(requirement) == 1):
                     # if there are no factors in the intersection, or it is just
                     # the same req as the first, we do nothing and add the original
@@ -211,18 +230,22 @@ class GriddedPermReduction:
             if not all(requirement):
                 continue
             cleanreq = tuple(
-                gp for gp in self._minimize(requirement) if gp.avoids(*obstructions)
+                gp
+                for gp in GriddedPermReduction._minimize(requirement)
+                if gp.avoids(*obstructions)
             )
             # If cleanreq is empty, then can not contain this requirement so
             # the tiling is empty.
             if not cleanreq:
                 return [tuple()]
-            res.append(cleanreq)
+            if not (len(cleanreq) == 1 and len(cleanreq[0]) == 0):
+                res.append(cleanreq)
         return res
 
-    @cssmethodtimer("GriddedPermReduction._griddedperm_implied_by_requirement")
+    # @cssmethodtimer("GriddedPermReduction._griddedperm_implied_by_requirement")
+    @staticmethod
     def _griddedperm_implied_by_requirement(
-        self, griddedperm: GriddedPerm, requirement: Iterable[GriddedPerm]
+        griddedperm: GriddedPerm, requirement: Iterable[GriddedPerm]
     ):
         """
         Return True, if the containment of the gridded perm is implied by
@@ -245,18 +268,45 @@ class GriddedPermReduction:
         if requirements is None:
             requirements = self._requirements
         return any(
-            self._griddedperm_implied_by_requirement(griddedperm, requirement)
+            GriddedPermReduction._griddedperm_implied_by_requirement(
+                griddedperm, requirement
+            )
             for requirement in requirements
         )
 
-    @cssmethodtimer("GriddedPermReduction._minimize")
-    def _minimize(self, griddedperms: Iterable[GriddedPerm]) -> Tuple[GriddedPerm, ...]:
+    # Is this not a staticmethod because then it messes with cssmethodtimer?
+    @staticmethod
+    # @cssmethodtimer("GriddedPermReduction._minimize")
+    def _minimize(griddedperms: Iterable[GriddedPerm]) -> Tuple[GriddedPerm, ...]:
+        """
+        Removes non-minimal gridded permutations from the set.
+        """
+        perms_by_size: Dict[int, List[GriddedPerm]] = defaultdict(list)
+        for gp in griddedperms:
+            perms_by_size[len(gp)].append(gp)
+        sizes = sorted(perms_by_size.keys())
+        if len(sizes) == 0:
+            return tuple()
+        minimal_perms = set(perms_by_size[sizes[0]])
+        for size in sizes[1:]:
+            next_layer = set()
+            for gp in perms_by_size[size]:
+                if gp.avoids(*minimal_perms):
+                    next_layer.add(gp)
+            minimal_perms |= next_layer
+        return tuple(minimal_perms)
+
+    @cssmethodtimer("GriddedPermReduction._OLD_minimize")
+    def _OLD_minimize(
+        self, griddedperms: Iterable[GriddedPerm]
+    ) -> Tuple[GriddedPerm, ...]:
         """
         Removes non minimal gridded permutations from the set.
         """
+        # assert False, "Use the new one!"
         res: Set[GriddedPerm] = set()
         for gp_to_add in tuple(sorted(griddedperms)):
-            if gp_to_add not in res and all(
+            if all(
                 gp_already_added not in gp_to_add
                 for gp_already_added in res
                 if len(gp_already_added) < len(gp_to_add)
@@ -264,8 +314,9 @@ class GriddedPermReduction:
                 res.add(gp_to_add)
         return tuple(res)
 
-    @cssmethodtimer("GriddedPermReduction.factors")
-    def factors(self, griddedperms: Tuple[GriddedPerm, ...]) -> Set[GriddedPerm]:
+    # @cssmethodtimer("GriddedPermReduction.factors")
+    @staticmethod
+    def factors(griddedperms: Tuple[GriddedPerm, ...]) -> Set[GriddedPerm]:
         res: Set[GriddedPerm] = set(griddedperms[0].factors())
         for gp in griddedperms[1:]:
             if not res:
@@ -277,7 +328,7 @@ class GriddedPermReduction:
     def union_subgps(
         self, griddedperms: Iterable[GriddedPerm], other: Iterable[GriddedPerm]
     ) -> Tuple[GriddedPerm, ...]:
-        other = self._minimize(other)
+        other = GriddedPermReduction._minimize(other)
         return tuple(
             sorted(tuple(gp for gp in griddedperms if gp.avoids(*other)) + other)
         )

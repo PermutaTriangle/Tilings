@@ -84,10 +84,6 @@ class TileScope(CombinatorialSpecificationSearcher):
                 f"\tApplied {explanation} {count} times."
                 f" Time spent is {round(time_spent, 2)} seconds (~{percentage}%).\n"
             )
-        status += "\tReduction Pass Count:\n"
-        for key, val in sorted(GriddedPermReduction.passes.items()):
-            status += "\t\tTook {} passes {} times.\n".format(key, val)
-
         return status
 
     @staticmethod
