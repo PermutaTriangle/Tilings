@@ -110,7 +110,10 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
     ) -> FusionConstructor:
-        return FusionConstructor(self._fuse_parameter(comb_class), {"n": "n"})
+        if self.tracked:
+            return FusionConstructor(self._fuse_parameter(comb_class), {"n": "n"})
+        # TODO: constructor only enumerates when tracked.
+        return FusionConstructor("n", {})
 
     def _fuse_parameter(self, comb_class: Tiling) -> str:
         algo = self.fusion_algorithm(comb_class)
