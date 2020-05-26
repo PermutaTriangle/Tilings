@@ -343,3 +343,53 @@ def test_minimal_gridded_perms(t1, t2, t3, t4, t5, t6, mg1, mg2, mg3, mg4, mg5, 
             mgps.append(gp)
         assert frozenset(mgps) == mg
         assert len(mgps) == len(mg)
+        curr_len = len(mgps[0])
+        # We check that they are in increasing length order
+        for gp in mgps:
+            assert len(gp) >= curr_len, mgps
+            curr_len = len(gp)
+
+
+def test_order():
+    """
+    We expect the gps to be always from the shortest to the longest one.
+    """
+    t = Tiling(
+        obstructions=(
+            GriddedPerm(Perm((0,)), ((0, 1),)),
+            GriddedPerm(Perm((0,)), ((0, 2),)),
+            GriddedPerm(Perm((0,)), ((0, 3),)),
+            GriddedPerm(Perm((0,)), ((1, 0),)),
+            GriddedPerm(Perm((0,)), ((1, 1),)),
+            GriddedPerm(Perm((0,)), ((1, 3),)),
+            GriddedPerm(Perm((0,)), ((2, 0),)),
+            GriddedPerm(Perm((0,)), ((2, 2),)),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 2), (1, 2))),
+            GriddedPerm(Perm((0, 1)), ((2, 1), (2, 3))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 2), (1, 2))),
+            GriddedPerm(Perm((0, 1, 2)), ((2, 1), (2, 1), (2, 1))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 3), (2, 1))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (2, 3), (2, 3))),
+            GriddedPerm(Perm((0, 2, 1)), ((2, 3), (2, 3), (2, 3))),
+            GriddedPerm(Perm((1, 2, 0)), ((2, 3), (2, 3), (2, 3))),
+            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 0), (2, 1), (2, 1), (2, 1))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (2, 1), (2, 1), (2, 1))),
+            GriddedPerm(Perm((1, 0, 2, 3)), ((2, 3), (2, 3), (2, 3), (2, 3))),
+            GriddedPerm(Perm((3, 0, 1, 2)), ((2, 3), (2, 3), (2, 3), (2, 3))),
+        ),
+        requirements=(
+            (GriddedPerm(Perm((0,)), ((1, 2),)),),
+            (GriddedPerm(Perm((0,)), ((2, 1),)),),
+            (
+                GriddedPerm(Perm((1, 0, 2)), ((2, 1), (2, 1), (2, 1))),
+                GriddedPerm(Perm((1, 0, 2)), ((2, 3), (2, 3), (2, 3))),
+            ),
+        ),
+    )
+    mgps = list(MinimalGriddedPerms(t).minimal_gridded_perms())
+    assert mgps == [
+        GriddedPerm(Perm([3, 1, 0, 2]), [(1, 2), (2, 1), (2, 1), (2, 1)]),
+        GriddedPerm(Perm([1, 3, 2, 4, 0]), [(1, 2), (2, 3), (2, 3), (2, 3), (2, 1)]),
+    ]

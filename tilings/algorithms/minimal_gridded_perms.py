@@ -404,18 +404,18 @@ class MinimalGriddedPerms:
         queue: List[QueuePacket] = []
         heapify(queue)
 
-        initial_gps_to_auto_yield: Set[GriddedPerm] = set()
+        initial_gps_to_auto_yield: Dict[int, Set[GriddedPerm]] = defaultdict(set)
         yielded: Set[GriddedPerm] = set()
         for gp in self._prepare_queue(queue):
             if yield_non_minimal:
                 yielded.add(gp)
                 yield gp
             else:
-                initial_gps_to_auto_yield.add(gp)
+                initial_gps_to_auto_yield[len(gp)].add(gp)
 
         def yielded_subgridded_perm(gp: GriddedPerm) -> bool:
             """Return True if a subgridded perm was yielded."""
-            return gp.contains(*yielded, *initial_gps_to_auto_yield)
+            return gp.contains(*yielded, *initial_gps_to_auto_yield[len(gp)])
 
         def _process_work_packet(
             qpacket: QueuePacket, queue: List[QueuePacket],
@@ -477,6 +477,7 @@ class MinimalGriddedPerms:
                         )
 
         work_packets_done: Set[WorkPackets] = set()
+        curr_len = 0
         while queue:
             # take the next gridded permutation of the queue, together with the
             # theoretical counts to create a gridded permutation containing
@@ -485,9 +486,14 @@ class MinimalGriddedPerms:
             # if gp was one of the initial_gps that satisfied obs/reqs, but
             # we weren't sure at the time if it was minimal, then now is the
             # time to check and yield
-            if qpacket.gp in initial_gps_to_auto_yield:
+            if curr_len != len(qpacket.gp):
+                curr_len = len(qpacket.gp)
+                for gp in initial_gps_to_auto_yield[curr_len]:
+                    yielded.add(gp)
+                    yield gp
+            if qpacket.gp in initial_gps_to_auto_yield[curr_len]:
                 # removing this speed up a later check by a tiny bit
-                initial_gps_to_auto_yield.remove(qpacket.gp)
+                initial_gps_to_auto_yield[curr_len].remove(qpacket.gp)
                 if not yielded_subgridded_perm(qpacket.gp):
                     yielded.add(qpacket.gp)
                     yield qpacket.gp
