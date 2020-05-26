@@ -29,24 +29,14 @@ class TrackingAssumption:
         return cls(gps)
 
     def __eq__(self, other) -> bool:
-        try:
+        if isinstance(other, TrackingAssumption):
             return bool(self.gps == other.gps)
-        except AttributeError:
-            raise NotImplementedError(
-                "Can't compare type {} to {}".format(
-                    self.__class__.__name__, other.__class__.__name__
-                )
-            )
+        return NotImplemented
 
     def __lt__(self, other) -> bool:
-        try:
+        if isinstance(other, TrackingAssumption):
             return bool(self.gps < other.gps)
-        except AttributeError:
-            raise NotImplementedError(
-                "Can't compare type {} to {}".format(
-                    self.__class__.__name__, other.__class__.__name__
-                )
-            )
+        return NotImplemented
 
     def __hash__(self) -> int:
         return hash(self.gps)
