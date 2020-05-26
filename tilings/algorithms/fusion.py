@@ -178,7 +178,7 @@ class Fusion:
             x != self._col_idx for gp in assumption.gps for x, _ in gp.pos
         ) or all(x != self._col_idx + 1 for gp in assumption.gps for x, _ in gp.pos)
 
-    def _new_assumption(self):
+    def new_assumption(self):
         """
         Return the assumption that needs to counted in order to enumerate.
         """
@@ -214,7 +214,7 @@ class Fusion:
             TrackingAssumption(gps) for gps in self.assumptions_fuse_counters
         ]
         if self._tracked:
-            assumptions.append(self._new_assumption())
+            assumptions.append(self.new_assumption())
         return self._tiling.__class__(
             obstructions=self.obstruction_fuse_counter.keys(),
             requirements=self.requirements_fuse_counters,

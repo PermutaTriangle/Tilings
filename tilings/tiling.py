@@ -1078,6 +1078,9 @@ class Tiling(CombinatorialClass):
     # Properties and getters
     # -------------------------------------------------------------
 
+    def extra_parameters(self) -> Tuple[str, ...]:
+        return tuple("k_{}".format(i) for i in range(len(self._assumptions)))
+
     def maximum_length_of_minimum_gridded_perm(self) -> int:
         """Returns the maximum length of the minimum gridded permutation that
         can be gridded on the tiling.

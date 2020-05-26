@@ -1,4 +1,4 @@
-from typing import Iterator, Optional, Tuple
+from typing import Dict, Iterator, Optional, Tuple
 
 from sympy import Eq, Function
 
@@ -22,6 +22,10 @@ __all__ = ["FusionStrategy", "ComponentFusionStrategy"]
 
 
 class FusionConstructor(Constructor):
+    def __init__(self, fuse_parameter: str, parameters: Dict[str, str]):
+        self.parameters = parameters
+        self.fuse_parameter = fuse_parameter
+
     def is_equivalence(self) -> bool:
         return False
 
@@ -32,7 +36,35 @@ class FusionConstructor(Constructor):
         raise NotImplementedError
 
     def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-        raise NotImplementedError
+        """
+        Let k be the fuse_parameter, then we should get
+            (k + 1) * subrec(n, **parameters)
+        where parameters are updated according to parameters.
+        """
+        assert sorted(["n"] + list(parameters)) == sorted(self.parameters.keys())
+        subrec = subrecs[0]
+        k = self.fuse_parameter
+        if k in self.parameters:
+            # pass on parameters and multiply by k + 1
+            new_params = {
+                self.parameters[key]: value for key, value in parameters.items()
+            }
+            return (parameters[k] + 1) * subrec(n, **new_params)
+        else:
+            # sum over all possible k
+            new_params = {
+                self.parameters[key]: value for key, value in parameters.items()
+            }
+            # TODO: valid k_val should be computed in reliance profile before
+            # asking subrec
+            new_params = {
+                self.parameters[key]: value for key, value in parameters.items()
+            }
+            res = 0
+            for k_val in range(n + 1):
+                new_params[k] = k_val
+                res += (k_val + 1) * subrec(n, **new_params)
+            return res
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int
@@ -75,11 +107,17 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         if algo.fusable():
             return (algo.fused_tiling(),)
 
-    @staticmethod
     def constructor(
-        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
     ) -> FusionConstructor:
-        return FusionConstructor()
+        return FusionConstructor(self._fuse_parameter(comb_class), {"n": "n"})
+
+    def _fuse_parameter(self, comb_class: Tiling) -> str:
+        algo = self.fusion_algorithm(comb_class)
+        child = algo.fused_tiling()
+        fuse_assumption = algo.new_assumption()
+        idx = child.assumptions.index(fuse_assumption)
+        return "k_{}".format(idx)
 
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"
@@ -142,11 +180,10 @@ class ComponentFusionStrategy(FusionStrategy):
     def fusion_algorithm(self, tiling: Tiling) -> Fusion:
         return ComponentFusion(tiling, row_idx=self.row_idx, col_idx=self.col_idx)
 
-    @staticmethod
     def constructor(
-        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
     ) -> ComponentFusionConstructor:
-        return ComponentFusionConstructor()
+        return ComponentFusionConstructor(self._fuse_parameter(comb_class), {"n": "n"})
 
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"
