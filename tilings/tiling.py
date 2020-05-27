@@ -158,6 +158,7 @@ class Tiling(CombinatorialClass):
                     add.append(GriddedPerm.single_cell(Perm((0,)), (x, y)))
         self._obstructions = tuple(sorted(tuple(add) + self._obstructions))
 
+    @cssmethodtimer("Tiling._simplify_griddedperms")
     def _simplify_griddedperms(self, already_minimized_obs=False) -> None:
         """Simplifies the set of obstructions and the set of requirement lists.
         The set of obstructions are first reduced to a minimal set. The
@@ -815,7 +816,6 @@ class Tiling(CombinatorialClass):
             obstructions, requirements, assumptions, simplify=False, sorted_input=True
         )
 
-    @cssmethodtimer("Tiling.find_factors")
     def find_factors(self, interleaving: str = "none") -> Tuple["Tiling", ...]:
         """
         Return list with the factors of the tiling.
