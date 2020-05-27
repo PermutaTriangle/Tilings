@@ -90,6 +90,8 @@ class Tiling(CombinatorialClass):
         - already_minimized_obs indicates if the obsrtructions are already minimized
             we pass this through to GriddedPermReduction
         """
+        self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
+
         super().__init__()
         if sorted_input:
             # Set of obstructions
@@ -111,6 +113,11 @@ class Tiling(CombinatorialClass):
             self._simplify_griddedperms(already_minimized_obs=already_minimized_obs)
 
         if not any(ob.is_empty() for ob in self.obstructions):
+
+            # Remove gridded perms that avoid obstructions from assumptions
+            if simplify:
+                self._clean_assumptions()
+
             # Remove empty rows and empty columns
             if remove_empty_rows_and_cols:
                 self._remove_empty_rows_and_cols()
@@ -119,11 +126,6 @@ class Tiling(CombinatorialClass):
             # obstructions
             if derive_empty:
                 self._fill_empty()
-
-            if simplify:
-                self._clean_assumptions()
-
-        self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
 
     @classmethod
     def from_perms(
