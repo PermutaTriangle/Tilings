@@ -10,6 +10,8 @@ if TYPE_CHECKING:
     from tilings import Tiling
 
 
+__all__ = ["MinimalGriddedPerms"]
+
 Cell = Tuple[int, int]
 GPTuple = Tuple[GriddedPerm, ...]
 Reqs = Tuple[GPTuple, ...]
@@ -144,6 +146,7 @@ class MinimalGriddedPerms:
                 # We will now prepare to add it to the queue.
                 if self.satisfies_requirements(initial_gp):
                     yield initial_gp
+                    continue
                 # we pass on this information, together with the target gps
                 # will be used to guide us in choosing smartly which cells to
                 # insert into - see the 'get_cells_to_try' method.
@@ -395,8 +398,7 @@ class MinimalGriddedPerms:
                 yield GriddedPerm.empty_perm()
             return
         if len(self.requirements) == 1:
-            for req in self.requirements[0]:
-                yield req
+            yield from self.requirements[0]
             return
 
         # a priority queue sorted by length of the gridded perm. This is
@@ -404,18 +406,18 @@ class MinimalGriddedPerms:
         queue: List[QueuePacket] = []
         heapify(queue)
 
-        initial_gps_to_auto_yield: Set[GriddedPerm] = set()
+        initial_gps_to_auto_yield: Dict[int, Set[GriddedPerm]] = defaultdict(set)
         yielded: Set[GriddedPerm] = set()
         for gp in self._prepare_queue(queue):
             if yield_non_minimal:
                 yielded.add(gp)
                 yield gp
             else:
-                initial_gps_to_auto_yield.add(gp)
+                initial_gps_to_auto_yield[len(gp)].add(gp)
 
         def yielded_subgridded_perm(gp: GriddedPerm) -> bool:
             """Return True if a subgridded perm was yielded."""
-            return gp.contains(*yielded, *initial_gps_to_auto_yield)
+            return gp.contains(*yielded)
 
         def _process_work_packet(
             qpacket: QueuePacket, queue: List[QueuePacket],
@@ -477,6 +479,7 @@ class MinimalGriddedPerms:
                         )
 
         work_packets_done: Set[WorkPackets] = set()
+        curr_len = -1
         while queue:
             # take the next gridded permutation of the queue, together with the
             # theoretical counts to create a gridded permutation containing
@@ -485,12 +488,25 @@ class MinimalGriddedPerms:
             # if gp was one of the initial_gps that satisfied obs/reqs, but
             # we weren't sure at the time if it was minimal, then now is the
             # time to check and yield
-            if qpacket.gp in initial_gps_to_auto_yield:
-                # removing this speed up a later check by a tiny bit
-                initial_gps_to_auto_yield.remove(qpacket.gp)
-                if not yielded_subgridded_perm(qpacket.gp):
-                    yielded.add(qpacket.gp)
-                    yield qpacket.gp
-                # We move onto the next gridded permutation
-                continue
+            if curr_len != len(qpacket.gp):
+                new_len = len(qpacket.gp)
+                initial_to_yield = chain.from_iterable(
+                    initial_gps_to_auto_yield.pop(i, tuple())
+                    for i in range(curr_len + 1, new_len + 2)
+                )
+                for gp in initial_to_yield:
+                    if not yielded_subgridded_perm(gp):
+                        yielded.add(gp)
+                        yield gp
+                curr_len = len(qpacket.gp)
             yield from _process_work_packet(qpacket, queue)
+        # We yield any initial left after working on the work packet.
+        # This happens in particular if you don't have any WP.
+        initial_to_yield = chain.from_iterable(
+            initial_gps_to_auto_yield.pop(i, tuple())
+            for i in sorted(initial_gps_to_auto_yield)
+        )
+        for gp in initial_to_yield:
+            if not yielded_subgridded_perm(gp):
+                yielded.add(gp)
+                yield gp
