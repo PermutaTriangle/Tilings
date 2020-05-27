@@ -37,11 +37,11 @@ class FusionConstructor(Constructor):
     def __init__(
         self,
         fuse_parameter: str,
-        parameters: Dict[str, str],
+        extra_parameters: Dict[str, str],
         left_sided_parameters=Iterable[str],
         right_sided_parameters=Iterable[str],
     ):
-        self.parameters = parameters
+        self.extra_parameters = extra_parameters
         self.fuse_parameter = fuse_parameter
         self.left_sided_parameters = frozenset(left_sided_parameters)
         self.right_sided_parameters = frozenset(right_sided_parameters)
@@ -59,27 +59,32 @@ class FusionConstructor(Constructor):
         """
         Let k be the fuse_parameter, then we should get
             (k + 1) * subrec(n, **parameters)
-        where parameters are updated according to parameters.
+        where extra_parameters are updated according to extra_parameters.
         """
-        assert sorted(list(parameters)) == sorted(self.parameters.keys())
+        print(sorted(list(parameters)))
+        print(self.extra_parameters)
+        print(sorted(self.extra_parameters.values()))
+        assert sorted(list(parameters)) == sorted(self.extra_parameters.values())
         subrec = subrecs[0]
         new_params = {
             child_var: parameters[parent_var]
-            for child_var, parent_var in self.parameters.items()
+            for child_var, parent_var in self.extra_parameters.items()
         }
-        k = self.fuse_parameter
-        if k in self.parameters:
+        fuse_parameter = self.fuse_parameter
+        if fuse_parameter in self.extra_parameters:
             # this is the number of points in the prefused region that is tracked
             # by  the fuse variable.
-            number_points_in_fuse_region = parameters[self.parameters[k]]
+            number_points_in_fuse_region = parameters[
+                self.extra_parameters[fuse_parameter]
+            ]
             # pass on parameters and multiply by k + 1
             if not self.left_sided_parameters and not self.right_sided_parameters:
                 return (number_points_in_fuse_region + 1) * subrec(n, **new_params)
             min_left_points = 0
             max_left_points = n
-            if k in self.left_sided_parameters:
+            if fuse_parameter in self.left_sided_parameters:
                 min_left_points += number_points_in_fuse_region
-            if k in self.right_sided_parameters:
+            if fuse_parameter in self.right_sided_parameters:
                 max_left_points -= number_points_in_fuse_region
             res = 0
             for number_of_left_points in range(min_left_points, max_left_points + 1):
@@ -94,7 +99,7 @@ class FusionConstructor(Constructor):
                             if k in self.right_sided_parameters
                             else val + number_of_right_points
                             if k in self.left_sided_parameters
-                            else k
+                            else val
                         )
                         for k, val in new_params.items()
                     },
@@ -106,20 +111,22 @@ class FusionConstructor(Constructor):
             # asking subrec
             res = 0
             for k_val in range(n + 1):
-                new_params[k] = k_val
+                new_params[fuse_parameter] = k_val
                 if not self.left_sided_parameters and not self.right_sided_parameters:
                     res += (k_val + 1) * subrec(n, **new_params)
                 else:
                     for number_of_left_points in range(0, k_val + 1):
+                        number_of_right_points = k_val - number_of_left_points
                         res += subrec(
                             n,
+                            fuse_parameter=k_val,
                             **{
                                 k: (
                                     val + number_of_left_points
                                     if k in self.right_sided_parameters
                                     else val + number_of_right_points
                                     if k in self.left_sided_parameters
-                                    else k
+                                    else val
                                 )
                                 for k, val in new_params.items()
                             },
