@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, Iterator, List, Optional, Tuple
+from typing import Dict, Iterable, Iterator, Optional, Set, Tuple
 
 from sympy import Eq, Function
 
@@ -32,8 +32,6 @@ class FusionConstructor(Constructor):
     point to some parent variable with the exception of the fuse variable which
     will not point if it was just added. If [ A | A ] fuses to [ A ] then we
     assume any one sided variable maps to the [ A ].
-
-    # TODO: keep track of one-sided variables.
     """
 
     def __init__(
@@ -63,7 +61,6 @@ class FusionConstructor(Constructor):
             (k + 1) * subrec(n, **parameters)
         where parameters are updated according to parameters.
         """
-        # print("n =", n, parameters)
         assert sorted(list(parameters)) == sorted(self.parameters.keys())
         subrec = subrecs[0]
         new_params = {
@@ -180,6 +177,24 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             children = self.decomposition_function(comb_class)
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
+
+        extra_parameters, left_sided_params, right_sided_params = self.extra_parameters(
+            comb_class, children
+        )
+        return FusionConstructor(
+            self._fuse_parameter(comb_class),
+            extra_parameters,
+            left_sided_params,
+            right_sided_params,
+        )
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Dict[str, str], Set[str], Set[str]]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
         algo = self.fusion_algorithm(comb_class)
         child = children[0]
         mapped_assumptions = [
@@ -189,23 +204,18 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             child.get_parameter(ass): k
             for k, ass in zip(comb_class.extra_parameters(), mapped_assumptions)
         }
-        left_sided_params: List[str] = []
-        right_sided_params: List[str] = []
+        left_sided_params: Set[str] = set()
+        right_sided_params: Set[str] = set()
         for assumption, mapped_assumption in zip(
             comb_class.assumptions, mapped_assumptions
         ):
             left_sided = algo.is_left_sided_assumption(assumption)
             right_sided = algo.is_right_sided_assumption(assumption)
             if left_sided and not right_sided:
-                left_sided_params.append(child.get_parameter(mapped_assumption))
+                left_sided_params.add(child.get_parameter(mapped_assumption))
             elif right_sided and not left_sided:
-                right_sided_params.append(child.get_parameter(mapped_assumption))
-        return FusionConstructor(
-            self._fuse_parameter(comb_class),
-            extra_parameters,
-            left_sided_params,
-            right_sided_params,
-        )
+                right_sided_params.add(child.get_parameter(mapped_assumption))
+        return extra_parameters, left_sided_params, right_sided_params
 
     def _fuse_parameter(self, comb_class: Tiling) -> str:
         algo = self.fusion_algorithm(comb_class)

@@ -19,10 +19,10 @@ from tilings.algorithms.enumeration import (
     MonotoneTreeEnumeration,
 )
 from tilings.strategies import (
-    SplittingStrategy,
     FactorFactory,
     FactorInsertionFactory,
     RequirementCorroborationFactory,
+    SplittingStrategy,
 )
 
 x = var("x")
@@ -51,7 +51,7 @@ class BasicVerificationStrategy(AtomStrategy):
         """
         if not isinstance(comb_class, Tiling):
             raise NotImplementedError
-        cast(comb_class, Tiling)
+        cast(Tiling, comb_class)
         gp = next(comb_class.minimal_gridded_perms())
         expected = {"n": len(gp)}
         for assumption in comb_class.assumptions:

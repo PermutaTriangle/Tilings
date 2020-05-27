@@ -7,7 +7,6 @@ from comb_spec_searcher import (
     CartesianProduct,
     CartesianProductStrategy,
     CombinatorialObject,
-    Constructor,
     Strategy,
     StrategyFactory,
 )
@@ -47,11 +46,9 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
         return tuple(tiling.sub_tiling(cells) for cells in self.partition)
 
-    def constructor(
+    def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Constructor:
-        if not comb_class.extra_parameters():
-            return super().constructor(comb_class, children)
+    ) -> Tuple[Dict[str, str], ...]:
         if children is None:
             children = self.decomposition_function(comb_class)
             if children is None:
@@ -70,7 +67,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
                     break
             else:
                 raise ValueError("Assumption was not mapped to any child")
-        return CartesianProduct(children, parameters=extra_parameters)
+        return extra_parameters
 
     def formal_step(self) -> str:
         """
