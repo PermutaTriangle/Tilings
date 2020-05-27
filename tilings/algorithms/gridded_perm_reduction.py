@@ -1,6 +1,6 @@
-import itertools
 from collections import defaultdict
 from functools import partial
+from itertools import chain, islice
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 from comb_spec_searcher.utils import cssmethodtimer
@@ -135,7 +135,7 @@ class GriddedPermReduction:
             minimized_requirements = algo(minimized_requirements)
             if any(not r for r in minimized_requirements):
                 return (tuple(),)
-        return tuple(sorted(minimized_requirements))
+        return tuple(minimized_requirements)
 
     # If all of the gp's in a requirment list contain the same factor, you can remove
     # that factor from all of them and add it as it's own size one requirement list
@@ -201,9 +201,9 @@ class GriddedPermReduction:
                 for f in gp.factors():
                     if not self._griddedperm_implied_by_some_requirement(
                         f,
-                        itertools.chain(
-                            itertools.islice(requirements, idx),
-                            itertools.islice(requirements, idx + 1, None),
+                        chain(
+                            islice(requirements, idx),
+                            islice(requirements, idx + 1, None),
                         ),
                     ):
                         cells.extend(f.pos)
