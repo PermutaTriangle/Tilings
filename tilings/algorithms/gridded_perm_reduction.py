@@ -1,3 +1,4 @@
+import itertools
 from collections import defaultdict
 from functools import partial
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
@@ -200,10 +201,9 @@ class GriddedPermReduction:
                 for f in gp.factors():
                     if not self._griddedperm_implied_by_some_requirement(
                         f,
-                        (
-                            other_requirement
-                            for other_idx, other_requirement in enumerate(requirements)
-                            if idx != other_idx
+                        itertools.chain(
+                            itertools.islice(requirements, idx),
+                            itertools.islice(requirements, idx + 1, None),
                         ),
                     ):
                         cells.extend(f.pos)
