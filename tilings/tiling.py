@@ -1122,8 +1122,19 @@ class Tiling(CombinatorialClass):
         )
 
     def objects_of_size(self, n: int, **parameters: int) -> Iterator[GriddedPerm]:
-        assert not parameters, "only implemented in one variable"
-        yield from self.gridded_perms_of_length(n)
+        def assumption_count(gp, assumption):
+            return sum(len(list(p.occurrences_in(gp))) for p in assumption.gps)
+
+        if not parameters:
+            yield from self.gridded_perms_of_length(n)
+        else:
+            assert set(self.extra_parameters()) == set(parameters)
+            for gp in self.gridded_perms_of_length(n):
+                if all(
+                    assumption_count(gp, ass) == parameters[k]
+                    for k, ass in zip(self.extra_parameters(), self._assumptions)
+                ):
+                    yield gp
 
     def gridded_perms_of_length(self, length: int) -> Iterator[GriddedPerm]:
         for gp in self.gridded_perms(maxlen=length):
