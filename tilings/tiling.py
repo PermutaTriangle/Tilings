@@ -83,11 +83,11 @@ class Tiling(CombinatorialClass):
         already_minimized_obs: bool = False,
     ) -> None:
         """
-        - if not sorted_input, input will be sorted
-        - if minimize, will be minimized
-        - if derive empty, then assume non-active cells are empty
         - if remove_empty_rows_and_cols, then remove empty rows and columns.
-        - already_minimized_obs indicates if the obsrtructions are already minimized
+        - if derive empty, then assume non-active cells are empty
+        - if simplify, then obstructions and requirements will be simplifed
+        - if not sorted_input, input will be sorted
+        - already_minimized_obs indicates if the obstructions are already minimized
             we pass this through to GriddedPermReduction
         """
         self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
