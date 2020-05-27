@@ -37,7 +37,7 @@ class TileScope(CombinatorialSpecificationSearcher):
             start_tiling = start_class
             if start_class.dimensions == (1, 1):
                 basis = Basis([o.patt for o in start_class.obstructions])
-        elif isinstance(start_class, collections.Iterable):
+        elif isinstance(start_class, collections.abc.Iterable):
             basis = Basis(start_class)
             assert all(
                 isinstance(p, Perm) for p in basis
