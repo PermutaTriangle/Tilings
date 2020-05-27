@@ -179,7 +179,7 @@ class Factor:
         """
         return tuple(
             self._tiling.__class__(
-                obstructions=f[0], requirements=f[1], assumptions=f[2], minimize=False
+                obstructions=f[0], requirements=f[1], assumptions=f[2], simplify=False
             )
             for f in self._get_factors_obs_and_reqs()
         )
@@ -204,7 +204,7 @@ class Factor:
                         obstructions=chain(*obstructions),
                         requirements=chain(*requirements),
                         assumptions=chain(*assumptions),
-                        minimize=False,
+                        simplify=False,
                     )
                 )
             yield tuple(factors)

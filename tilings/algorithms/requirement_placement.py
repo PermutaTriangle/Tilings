@@ -358,8 +358,20 @@ class RequirementPlacement:
             forced_obs = self._forced_obstructions_from_requirement(
                 gps, indices, cell, direction
             )
+
+            reduced_obs = [o1 for o1 in obs if not any(o2 in o1 for o2 in forced_obs)]
+            new_obs = reduced_obs + forced_obs
+
             rem_req = self._remaining_requirement_from_requirement(gps, indices, cell)
-            res.append(self._tiling.__class__(obs + forced_obs, reqs + [rem_req], ass))
+
+            res.append(
+                self._tiling.__class__(
+                    new_obs,
+                    reqs + [rem_req],
+                    assumptions=ass,
+                    already_minimized_obs=True,
+                )
+            )
         return tuple(res)
 
     def place_point_in_cell(self, cell: Cell, direction: Dir) -> "Tiling":

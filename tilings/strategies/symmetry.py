@@ -30,9 +30,9 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
                     TrackingAssumption(map(partial(self.gp_transform, tiling), ass.gps))
                     for ass in tiling.assumptions
                 ),
-                remove_empty=False,
+                remove_empty_rows_and_cols=False,
                 derive_empty=False,
-                minimize=False,
+                simplify=False,
             ),
         )
 

@@ -183,7 +183,7 @@ def typical_redundant_requirements():
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_constructor_no_requirements(typical_redundant_obstructions):
     """Tests the constructor of Tiling, thereby the minimization methods used
-    in the constructor with different options for remove_empty and
+    in the constructor with different options for remove_empty_rows_and_cols and
     derive_empty. Proper update of the dimensions of the tiling and proper
     computation of empty and active cells.
 
@@ -191,9 +191,9 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
     """
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=False,
+        remove_empty_rows_and_cols=False,
         derive_empty=False,
-        minimize=False,
+        simplify=False,
     )
     assert len(tiling._obstructions) == 20
     assert len(tiling._requirements) == 0
@@ -203,9 +203,9 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=False,
+        remove_empty_rows_and_cols=False,
         derive_empty=False,
-        minimize=True,
+        simplify=True,
     )
     assert len(tiling._obstructions) == 18
     assert len(tiling._requirements) == 0
@@ -215,9 +215,9 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=False,
+        remove_empty_rows_and_cols=False,
         derive_empty=True,
-        minimize=False,
+        simplify=False,
     )
 
     assert len(tiling._obstructions) == 22
@@ -230,9 +230,9 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=False,
+        remove_empty_rows_and_cols=False,
         derive_empty=True,
-        minimize=True,
+        simplify=True,
     )
 
     assert len(tiling._obstructions) == 22
@@ -245,9 +245,9 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=True,
+        remove_empty_rows_and_cols=True,
         derive_empty=True,
-        minimize=False,
+        simplify=False,
     )
 
     (i, j) = tiling.dimensions
@@ -260,9 +260,9 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=True,
+        remove_empty_rows_and_cols=True,
         derive_empty=True,
-        minimize=True,
+        simplify=True,
     )
 
     (i, j) = tiling.dimensions
@@ -294,9 +294,9 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
             GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
             GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
         ],
-        remove_empty=True,
+        remove_empty_rows_and_cols=True,
         derive_empty=True,
-        minimize=True,
+        simplify=True,
     )
 
     assert tiling == tiling2
@@ -308,7 +308,7 @@ def test_constructor_with_requirements(
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
         requirements=typical_redundant_requirements,
-        remove_empty=False,
+        remove_empty_rows_and_cols=False,
         derive_empty=False,
     )
     assert len(tiling._obstructions) == 18
@@ -320,7 +320,7 @@ def test_constructor_with_requirements(
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
         requirements=typical_redundant_requirements,
-        remove_empty=False,
+        remove_empty_rows_and_cols=False,
         derive_empty=True,
     )
 
@@ -357,7 +357,7 @@ def test_constructor_with_requirements(
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
         requirements=typical_redundant_requirements,
-        remove_empty=True,
+        remove_empty_rows_and_cols=True,
         derive_empty=True,
     )
 
@@ -403,7 +403,7 @@ def test_constructor_with_requirements(
                 GriddedPerm(Perm((1, 0, 2)), [(0, 0), (0, 0), (0, 0)]),
             ],
         ],
-        remove_empty=True,
+        remove_empty_rows_and_cols=True,
         derive_empty=True,
     )
     assert tiling == tiling2
@@ -413,31 +413,31 @@ def test_constructor_with_requirements(
 def test_bytes_noreq(typical_redundant_obstructions):
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=False,
+        remove_empty_rows_and_cols=False,
         derive_empty=False,
     )
 
     assert tiling == Tiling.from_bytes(
-        tiling.to_bytes(), remove_empty=False, derive_empty=False
+        tiling.to_bytes(), remove_empty_rows_and_cols=False, derive_empty=False
     )
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=False,
+        remove_empty_rows_and_cols=False,
         derive_empty=True,
     )
 
     assert tiling == Tiling.from_bytes(
-        tiling.to_bytes(), remove_empty=False, derive_empty=True
+        tiling.to_bytes(), remove_empty_rows_and_cols=False, derive_empty=True
     )
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
-        remove_empty=True,
+        remove_empty_rows_and_cols=True,
         derive_empty=True,
     )
     assert tiling == Tiling.from_bytes(
-        tiling.to_bytes(), remove_empty=True, derive_empty=True
+        tiling.to_bytes(), remove_empty_rows_and_cols=True, derive_empty=True
     )
 
 
@@ -502,7 +502,7 @@ def test_cell_within_bounds(
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
         requirements=typical_redundant_requirements,
-        remove_empty=False,
+        remove_empty_rows_and_cols=False,
         derive_empty=False,
     )
     for i in range(4):
@@ -515,7 +515,7 @@ def test_cell_within_bounds(
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
         requirements=typical_redundant_requirements,
-        remove_empty=True,
+        remove_empty_rows_and_cols=True,
         derive_empty=True,
     )
 
