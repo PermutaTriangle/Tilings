@@ -1,4 +1,4 @@
-from typing import Dict, Iterator, Optional, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
 from sympy import Eq, Function
 
@@ -8,6 +8,7 @@ from comb_spec_searcher import (
     Strategy,
     StrategyFactory,
 )
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.strategies.constructor import (
     RelianceProfile,
@@ -17,14 +18,35 @@ from comb_spec_searcher.strategies.constructor import (
 )
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import ComponentFusion, Fusion
+from tilings.assumptions import TrackingAssumption
 
 __all__ = ["FusionStrategy", "ComponentFusionStrategy"]
 
 
 class FusionConstructor(Constructor):
-    def __init__(self, fuse_parameter: str, parameters: Dict[str, str]):
+    """
+    The fusion constructor. It will multiply by (fuse_paramater + 1), and
+    otherwise pass on the variables.
+
+    The parameters given should be a dictionary. Each child variable should
+    point to some parent variable with the exception of the fuse variable which
+    will not point if it was just added. If [ A | A ] fuses to [ A ] then we
+    assume any one sided variable maps to the [ A ].
+
+    # TODO: keep track of one-sided variables.
+    """
+
+    def __init__(
+        self,
+        fuse_parameter: str,
+        parameters: Dict[str, str],
+        left_sided_parameters=Iterable[str],
+        right_sided_parameters=Iterable[str],
+    ):
         self.parameters = parameters
         self.fuse_parameter = fuse_parameter
+        self.left_sided_parameters = frozenset(left_sided_parameters)
+        self.right_sided_parameters = frozenset(right_sided_parameters)
 
     def is_equivalence(self) -> bool:
         return False
@@ -41,29 +63,70 @@ class FusionConstructor(Constructor):
             (k + 1) * subrec(n, **parameters)
         where parameters are updated according to parameters.
         """
-        assert sorted(["n"] + list(parameters)) == sorted(self.parameters.keys())
+        # print("n =", n, parameters)
+        assert sorted(list(parameters)) == sorted(self.parameters.keys())
         subrec = subrecs[0]
+        new_params = {
+            child_var: parameters[parent_var]
+            for child_var, parent_var in self.parameters.items()
+        }
         k = self.fuse_parameter
         if k in self.parameters:
+            # this is the number of points in the prefused region that is tracked
+            # by  the fuse variable.
+            number_points_in_fuse_region = parameters[self.parameters[k]]
             # pass on parameters and multiply by k + 1
-            new_params = {
-                self.parameters[key]: value for key, value in parameters.items()
-            }
-            return (parameters[k] + 1) * subrec(n, **new_params)
+            if not self.left_sided_parameters and not self.right_sided_parameters:
+                return (number_points_in_fuse_region + 1) * subrec(n, **new_params)
+            min_left_points = 0
+            max_left_points = n
+            if k in self.left_sided_parameters:
+                min_left_points += number_points_in_fuse_region
+            if k in self.right_sided_parameters:
+                max_left_points -= number_points_in_fuse_region
+            res = 0
+            for number_of_left_points in range(min_left_points, max_left_points + 1):
+                number_of_right_points = (
+                    number_of_left_points - number_points_in_fuse_region
+                )
+                res += subrec(
+                    n,
+                    **{
+                        k: (
+                            val + number_of_left_points
+                            if k in self.right_sided_parameters
+                            else val + number_of_right_points
+                            if k in self.left_sided_parameters
+                            else k
+                        )
+                        for k, val in new_params.items()
+                    },
+                )
+            return res
         else:
             # sum over all possible k
-            new_params = {
-                self.parameters[key]: value for key, value in parameters.items()
-            }
             # TODO: valid k_val should be computed in reliance profile before
             # asking subrec
-            new_params = {
-                self.parameters[key]: value for key, value in parameters.items()
-            }
             res = 0
             for k_val in range(n + 1):
                 new_params[k] = k_val
-                res += (k_val + 1) * subrec(n, **new_params)
+                if not self.left_sided_parameters and not self.right_sided_parameters:
+                    res += (k_val + 1) * subrec(n, **new_params)
+                else:
+                    for number_of_left_points in range(0, k_val + 1):
+                        res += subrec(
+                            n,
+                            **{
+                                k: (
+                                    val + number_of_left_points
+                                    if k in self.right_sided_parameters
+                                    else val + number_of_right_points
+                                    if k in self.left_sided_parameters
+                                    else k
+                                )
+                                for k, val in new_params.items()
+                            },
+                        )
             return res
 
     def get_sub_objects(
@@ -110,10 +173,39 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
     ) -> FusionConstructor:
-        if self.tracked:
-            return FusionConstructor(self._fuse_parameter(comb_class), {"n": "n"})
-        # TODO: constructor only enumerates when tracked.
-        return FusionConstructor("n", {})
+        if not self.tracked:
+            # constructor only enumerates when tracked.
+            return FusionConstructor("n", {})
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        algo = self.fusion_algorithm(comb_class)
+        child = children[0]
+        mapped_assumptions = [
+            TrackingAssumption(gps) for gps in algo.assumptions_fuse_counters
+        ]
+        extra_parameters = {
+            child.get_parameter(ass): k
+            for k, ass in zip(comb_class.extra_parameters(), mapped_assumptions)
+        }
+        left_sided_params: List[str] = []
+        right_sided_params: List[str] = []
+        for assumption, mapped_assumption in zip(
+            comb_class.assumptions, mapped_assumptions
+        ):
+            left_sided = algo.is_left_sided_assumption(assumption)
+            right_sided = algo.is_right_sided_assumption(assumption)
+            if left_sided and not right_sided:
+                left_sided_params.append(child.get_parameter(mapped_assumption))
+            elif right_sided and not left_sided:
+                right_sided_params.append(child.get_parameter(mapped_assumption))
+        return FusionConstructor(
+            self._fuse_parameter(comb_class),
+            extra_parameters,
+            left_sided_params,
+            right_sided_params,
+        )
 
     def _fuse_parameter(self, comb_class: Tiling) -> str:
         algo = self.fusion_algorithm(comb_class)

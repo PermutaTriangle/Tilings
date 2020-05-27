@@ -52,12 +52,9 @@ class Split(Constructor):
 
         # TODO: this should take into consideration the reliance profile.
         """
-        print("Splitting according to ", self.parameters)
-        print("n =", n, parameters)
         rec = subrecs[0]
         res = 0
         for sub_params in self._valid_compositions(**parameters):
-            print(sub_params)
             res += rec(n, **sub_params)
         return res
 

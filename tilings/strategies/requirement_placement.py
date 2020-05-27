@@ -3,12 +3,14 @@ from collections import defaultdict
 from itertools import chain, product
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
-from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
+from comb_spec_searcher import DisjointUnion, DisjointUnionStrategy, StrategyFactory
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
+from tilings.assumptions import TrackingAssumption
 
 __all__ = [
     "PatternPlacementFactory",
@@ -56,6 +58,61 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         if self.include_empty:
             return (tiling.add_obstructions(self.gps),) + placed_tilings
         return placed_tilings
+
+    def constructor(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> DisjointUnion:
+        if not tiling.assumptions:
+            return super().constructor(tiling, children)
+        if children is None:
+            children = self.decomposition_function(tiling)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        algo = self.placement_class(tiling)
+        extra_parameters: Tuple[Dict[str, str], ...] = tuple({} for _ in children)
+        if self.include_empty:
+            child = children[0]
+            mapped_assumptions = [
+                TrackingAssumption(
+                    child.forward_map(gp) for gp in ass.gps if gp.avoids(*self.gps)
+                )
+                for ass in tiling.assumptions
+            ]
+            for assumption, mapped_assumption in zip(
+                tiling.assumptions, mapped_assumptions
+            ):
+                if mapped_assumption.gps:
+                    parent_var = tiling.get_parameter(assumption)
+                    child_var = child.get_parameter(mapped_assumption)
+                    extra_parameters[0][child_var] = parent_var
+        for idx, (cell, child) in enumerate(
+            zip(self._placed_cells, children[1:] if self.include_empty else children)
+        ):
+            mapped_assumptions = [
+                TrackingAssumption(
+                    child.forward_map(gp)
+                    for gp in ass.gps
+                    if gp.avoids(
+                        *algo._stretched_obstructions(cell),
+                        *algo._forced_obstructions_from_requirement(
+                            self.gps, self.indices, cell, self.direction
+                        ),
+                    )
+                    and all(cell in child.forward_cell_map for cell in gp.pos)
+                )
+                for ass in algo._stretched_assumptions(cell)
+            ]
+            for assumption, mapped_assumption in zip(
+                tiling.assumptions, mapped_assumptions
+            ):
+                if mapped_assumption.gps:
+                    parent_var = tiling.get_parameter(assumption)
+                    child_var = child.get_parameter(mapped_assumption)
+                    extra_parameters[idx + 1 if self.include_empty else idx][
+                        child_var
+                    ] = parent_var
+
+        return DisjointUnion(tiling, children, extra_parameters)
 
     def direction_string(self):
         if self.direction == DIR_EAST:

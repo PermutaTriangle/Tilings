@@ -178,6 +178,18 @@ class Fusion:
             x != self._col_idx for gp in assumption.gps for x, _ in gp.pos
         ) or all(x != self._col_idx + 1 for gp in assumption.gps for x, _ in gp.pos)
 
+    def is_left_sided_assumption(self, assumption):
+        if self._fuse_row:
+            return all(
+                y != self._row_idx + 1 for gp in assumption.gps for _, y in gp.pos
+            )
+        return all(x != self._col_idx + 1 for gp in assumption.gps for x, _ in gp.pos)
+
+    def is_right_sided_assumption(self, assumption):
+        if self._fuse_row:
+            return all(y != self._row_idx for gp in assumption.gps for _, y in gp.pos)
+        return all(x != self._col_idx for gp in assumption.gps for x, _ in gp.pos)
+
     def new_assumption(self):
         """
         Return the assumption that needs to counted in order to enumerate.

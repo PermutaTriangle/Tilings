@@ -159,7 +159,9 @@ class Tiling(CombinatorialClass):
         """Remove empty rows and columns."""
         # Produce the mapping between the two tilings
         if not self.active_cells:
-            self._forward_map: Dict[Cell, Cell] = {}
+            self._forward_map: Dict[Cell, Cell] = {
+                cell: (0, 0) for cell in self.empty_cells
+            }
             self._obstructions = (GriddedPerm.single_cell(Perm((0,)), (0, 0)),)
             self._requirements = tuple()
             self._dimensions = (1, 1)
@@ -1080,6 +1082,10 @@ class Tiling(CombinatorialClass):
 
     def extra_parameters(self) -> Tuple[str, ...]:
         return tuple("k_{}".format(i) for i in range(len(self._assumptions)))
+
+    def get_parameter(self, assumption: TrackingAssumption) -> str:
+        idx = self._assumptions.index(assumption)
+        return "k_{}".format(idx)
 
     def maximum_length_of_minimum_gridded_perm(self) -> int:
         """Returns the maximum length of the minimum gridded permutation that
