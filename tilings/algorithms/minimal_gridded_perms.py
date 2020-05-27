@@ -414,7 +414,7 @@ class MinimalGriddedPerms:
 
         def yielded_subgridded_perm(gp: GriddedPerm) -> bool:
             """Return True if a subgridded perm was yielded."""
-            return gp.contains(*yielded, *initial_gps_to_auto_yield[len(gp)])
+            return gp.contains(*yielded)
 
         def _process_work_packet(
             qpacket: QueuePacket, queue: List[QueuePacket],
