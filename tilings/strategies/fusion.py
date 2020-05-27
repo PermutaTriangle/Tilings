@@ -61,10 +61,6 @@ class FusionConstructor(Constructor):
             (k + 1) * subrec(n, **parameters)
         where extra_parameters are updated according to extra_parameters.
         """
-        print(sorted(list(parameters)))
-        print(self.extra_parameters)
-        print(sorted(self.extra_parameters.values()))
-        assert sorted(list(parameters)) == sorted(self.extra_parameters.values())
         subrec = subrecs[0]
         new_params = {
             child_var: parameters[parent_var]
@@ -111,6 +107,7 @@ class FusionConstructor(Constructor):
             # asking subrec
             res = 0
             for k_val in range(n + 1):
+                # add the fuse parameter to the new paramaters
                 new_params[fuse_parameter] = k_val
                 if not self.left_sided_parameters and not self.right_sided_parameters:
                     res += (k_val + 1) * subrec(n, **new_params)
@@ -119,7 +116,6 @@ class FusionConstructor(Constructor):
                         number_of_right_points = k_val - number_of_left_points
                         res += subrec(
                             n,
-                            fuse_parameter=k_val,
                             **{
                                 k: (
                                     val + number_of_left_points
