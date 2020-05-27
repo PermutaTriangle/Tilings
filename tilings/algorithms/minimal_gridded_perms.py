@@ -10,6 +10,8 @@ if TYPE_CHECKING:
     from tilings import Tiling
 
 
+__all__ = ["MinimalGriddedPerms"]
+
 Cell = Tuple[int, int]
 GPTuple = Tuple[GriddedPerm, ...]
 Reqs = Tuple[GPTuple, ...]
@@ -144,6 +146,7 @@ class MinimalGriddedPerms:
                 # We will now prepare to add it to the queue.
                 if self.satisfies_requirements(initial_gp):
                     yield initial_gp
+                    continue
                 # we pass on this information, together with the target gps
                 # will be used to guide us in choosing smartly which cells to
                 # insert into - see the 'get_cells_to_try' method.
@@ -476,7 +479,7 @@ class MinimalGriddedPerms:
                         )
 
         work_packets_done: Set[WorkPackets] = set()
-        curr_len = 0
+        curr_len = -1
         while queue:
             # take the next gridded permutation of the queue, together with the
             # theoretical counts to create a gridded permutation containing
@@ -488,7 +491,7 @@ class MinimalGriddedPerms:
             if curr_len != len(qpacket.gp):
                 new_len = len(qpacket.gp)
                 initial_to_yield = chain.from_iterable(
-                    initial_gps_to_auto_yield[i]
+                    initial_gps_to_auto_yield.pop(i, tuple())
                     for i in range(curr_len + 1, new_len + 1)
                 )
                 for gp in initial_to_yield:
@@ -496,12 +499,14 @@ class MinimalGriddedPerms:
                         yielded.add(gp)
                         yield gp
                 curr_len = len(qpacket.gp)
-            if qpacket.gp in initial_gps_to_auto_yield[curr_len]:
-                # removing this speed up a later check by a tiny bit
-                initial_gps_to_auto_yield[curr_len].remove(qpacket.gp)
-                if not yielded_subgridded_perm(qpacket.gp):
-                    yielded.add(qpacket.gp)
-                    yield qpacket.gp
-                # We move onto the next gridded permutation
-                continue
             yield from _process_work_packet(qpacket, queue)
+        # We yield any initial left after working on the work packet.
+        # This happens in particular if you don't have any WP.
+        initial_to_yield = chain.from_iterable(
+            initial_gps_to_auto_yield.pop(i, tuple())
+            for i in sorted(initial_gps_to_auto_yield)
+        )
+        for gp in initial_to_yield:
+            if not yielded_subgridded_perm(gp):
+                yielded.add(gp)
+                yield gp
