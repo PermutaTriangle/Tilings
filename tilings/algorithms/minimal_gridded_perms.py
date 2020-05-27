@@ -492,7 +492,7 @@ class MinimalGriddedPerms:
                 new_len = len(qpacket.gp)
                 initial_to_yield = chain.from_iterable(
                     initial_gps_to_auto_yield.pop(i, tuple())
-                    for i in range(curr_len + 1, new_len + 1)
+                    for i in range(curr_len + 1, new_len + 2)
                 )
                 for gp in initial_to_yield:
                     if not yielded_subgridded_perm(gp):
