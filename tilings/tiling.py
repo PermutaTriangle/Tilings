@@ -19,6 +19,7 @@ from typing import (
     Set,
     Tuple,
 )
+import traceback
 
 import sympy
 
@@ -55,6 +56,19 @@ __all__ = ["Tiling"]
 
 Cell = Tuple[int, int]
 ReqList = Tuple[GriddedPerm, ...]
+
+
+def report(tiling, func_name, extra=""):
+    # return
+    print(
+        hash(tiling),
+        func_name,
+        extra,
+        str(traceback.extract_stack()[-3]).replace(
+            "<FrameSummary file /Users/jay/Dropbox/Research/Active/2017-44-ATRAP/repos/Tilings",
+            "< ...",
+        ),
+    )
 
 
 class Tiling(CombinatorialClass):
@@ -121,6 +135,8 @@ class Tiling(CombinatorialClass):
             # Remove empty rows and empty columns
             if remove_empty_rows_and_cols:
                 self._remove_empty_rows_and_cols()
+                del self._active_cells
+                # del self._empty_cells
 
             # If assuming the non-active cells are empty, then add the
             # obstructions
@@ -625,12 +641,14 @@ class Tiling(CombinatorialClass):
     @property
     def forward_cell_map(self) -> Dict[Cell, Cell]:
         if not hasattr(self, "_forward_map"):
+            # report(self, "_forward_cell_map")
             self._remove_empty_rows_and_cols()
         return self._forward_map
 
     @property
     def backward_cell_map(self) -> Dict[Cell, Cell]:
         if not hasattr(self, "_backward_map"):
+            # report(self, "_backward_cell_map")
             if not hasattr(self, "_forward_map"):
                 self._remove_empty_rows_and_cols()
             self._backward_map = {b: a for a, b in self._forward_map.items()}
@@ -1090,6 +1108,7 @@ class Tiling(CombinatorialClass):
     @property
     def point_cells(self) -> FrozenSet[Cell]:
         if not hasattr(self, "_point_cells"):
+            # report(self, "_point_cells")
             local_length2_obcells = Counter(
                 ob.pos[0]
                 for ob in self._obstructions
@@ -1102,11 +1121,13 @@ class Tiling(CombinatorialClass):
 
     @property
     def total_points(self) -> int:
+        # report(self, "total_points")
         return len(self.point_cells)
 
     @property
     def positive_cells(self) -> FrozenSet[Cell]:
         if not hasattr(self, "_positive_cells"):
+            # report(self, "_positive_cells")
             self._positive_cells = frozenset(
                 union_reduce(
                     intersection_reduce(req.pos for req in reqs)
@@ -1120,6 +1141,7 @@ class Tiling(CombinatorialClass):
 
     @property
     def possibly_empty(self) -> FrozenSet[Cell]:
+        # report(self, "possibly_empty")
         """Computes the set of possibly empty cells on the tiling."""
         return self.active_cells - self.positive_cells
 
@@ -1149,7 +1171,12 @@ class Tiling(CombinatorialClass):
         """Returns a set of all cells that contain a point obstruction, i.e.,
         are empty.
         """
-        return frozenset(gp.pos[0] for gp in self.obstructions if gp.is_point_perm())
+        if not hasattr(self, "_empty_cells"):
+            # report(self, "empty_cells", "MISS")
+            self._empty_cells = frozenset(
+                gp.pos[0] for gp in self.obstructions if gp.is_point_perm()
+            )
+        return self._empty_cells
 
     @property
     def active_cells(self) -> FrozenSet[Cell]:
@@ -1157,23 +1184,28 @@ class Tiling(CombinatorialClass):
         Returns a set of all cells that do not contain a point obstruction,
         i.e., not empty.
         """
-        no_point_obs = union_reduce(
-            ob.pos for ob in self._obstructions if not ob.is_point_perm()
-        )
-        with_req = union_reduce(
-            union_reduce(req.pos for req in reqs) for reqs in self._requirements
-        )
-        return frozenset(no_point_obs | with_req)
+        if not hasattr(self, "_active_cells"):
+            # report(self, "active_cells", "MISS")
+            no_point_obs = union_reduce(
+                ob.pos for ob in self._obstructions if not ob.is_point_perm()
+            )
+            with_req = union_reduce(
+                union_reduce(req.pos for req in reqs) for reqs in self._requirements
+            )
+            self._active_cells = frozenset(no_point_obs | with_req)
+        return self._active_cells
 
     @property
     def dimensions(self) -> Tuple[int, int]:
         if not hasattr(self, "_dimensions"):
-            obcells = union_reduce(ob.pos for ob in self._obstructions)
-            reqcells = union_reduce(
-                union_reduce(req.pos for req in reqlist)
-                for reqlist in self._requirements
-            )
-            all_cells = obcells | reqcells
+            # report(self, "dimensions", "MISS")
+            # obcells = union_reduce(ob.pos for ob in self._obstructions)
+            # reqcells = union_reduce(
+            #     union_reduce(req.pos for req in reqlist)
+            #     for reqlist in self._requirements
+            # )
+            # all_cells = obcells | reqcells
+            all_cells = self.active_cells
             rows = set(x for (x, y) in all_cells)
             cols = set(y for (x, y) in all_cells)
             if not rows and not cols:
