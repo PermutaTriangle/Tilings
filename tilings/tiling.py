@@ -142,6 +142,7 @@ class Tiling(CombinatorialClass):
             # obstructions
             if derive_empty:
                 self._fill_empty()
+                del self._empty_cells
 
     @classmethod
     def from_perms(
