@@ -30,7 +30,7 @@ setup(
         "comb-spec-searcher==0.5.0",
         "permuta==1.4.0",
         "requests==2.20.0",
-        "sympy==1.5.1",
+        "sympy==1.6",
     ],
     python_requires=">=3.6",
     classifiers=[
