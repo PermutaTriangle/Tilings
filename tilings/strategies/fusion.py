@@ -177,25 +177,75 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         )
         # TODO: determine n using reliance profile
         max_left_points = (
-            n - number_points_parent_fuse_parameter
+            number_points_parent_fuse_parameter
+            if self.fusion_type in ("left", "both")
+            else n
+        )
+        min_right_points = (
+            number_points_parent_fuse_parameter
+            if self.fusion_type in ("right", "both")
+            else 0
+        )
+        max_right_points = (
+            number_points_parent_fuse_parameter
             if self.fusion_type in ("right", "both")
             else n
         )
+
+        # collect = []
         res = 0
-        for number_of_left_points in range(min_left_points, max_left_points + 1):
+        for number_of_left_points, number_of_right_points in product(
+            range(min_left_points, max_left_points + 1),
+            range(min_right_points, max_right_points + 1),
+        ):
             new_params = self._update_subparams_unique_parent(
-                number_of_left_points, number_points_parent_fuse_parameter, **parameters
+                number_of_left_points, number_of_right_points, **parameters
             )
+            if any(v < 0 for v in new_params.values()):
+                continue
             res += subrec(n, **new_params)
+            # collect.append(
+            #     (
+            #         number_of_left_points,
+            #         number_of_right_points,
+            #         new_params,
+            #         subrec(n, **new_params),
+            #     )
+            # )
+        # print(collect)
         return res
 
     def _predetermined_fusing_parent_parameter_get_recurrence(
         self, subrec: SubRec, n: int, **parameters: int
     ) -> int:
         """
-        Not implemented yet...
+        In this case, a region of the parent was mapped to the fused region.
+        However, there are two parent assumptions that map to
+        the same assumption overlapping the fused region. These determine the
+        unique value that can be assigned to the fusion region.
+
+        In this case, the fusion_type is set as follows:
+            - left: the parent region was only the left of the unfused region
+            - right: the parent region was only the right of the unfused region
+            - both: the parent region was all of the unfused region.
         """
-        return 0
+        res = 0
+        left_right_points = self._determine_number_of_points_in_fuse_region(
+            n, **parameters
+        )
+        collect = []
+        for left_points, right_points in left_right_points:
+            new_params = self._update_subparams_non_unique_parent(
+                left_points, right_points, **parameters
+            )
+            if new_params is None:
+                continue
+            res += subrec(n, **new_params)
+            collect.append(
+                (left_points, right_points, new_params, subrec(n, **new_params))
+            )
+        print(collect)
+        return res
 
     def _new_fusion_parameter_get_recurrence(
         self, subrec: SubRec, n: int, **parameters: int
@@ -213,15 +263,14 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         res = 0
         for k_val in range(n + 1):
             for number_of_left_points in range(k_val + 1):
-                # TODO: move this to a subfunction
                 new_params = self._update_subparams_unique_parent(
-                    number_of_left_points, k_val, **parameters
+                    number_of_left_points, k_val - number_of_left_points, **parameters
                 )
                 res += subrec(n, **new_params, **{self.fuse_parameter: k_val})
         return res
 
     def _update_subparams_unique_parent(
-        self, number_of_left_points: int, total_points_in_region: int, **parameters: int
+        self, number_of_left_points: int, number_of_right_points: int, **parameters: int
     ) -> Dict[str, int]:
         """
         Return the updates dictionary of parameters, such that each parameter points
@@ -236,9 +285,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             self.extra_parameters[parameter]: (
                 value + number_of_left_points
                 if parameter in self.right_sided_parameters
-                else value
-                # + number of right points
-                + (total_points_in_region - number_of_left_points)
+                else value + number_of_right_points
                 if parameter in self.left_sided_parameters
                 else value
             )
@@ -270,6 +317,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 if parameter in self.left_sided_parameters
                 else value
             )
+            if updated_value < 0:
+                return None
             child_parameter = self.extra_parameters[parameter]
             if child_parameter in res:
                 if updated_value != res[child_parameter]:
@@ -287,48 +336,28 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         the same assumption overlapping the fused region. These determine the
         unique value that can be assigned to the fusion region.
         """
-        values = self._determine_number_of_points_in_fuse_region(**parameters)
-        if any(k < 0 for k in values if k is not None):
-            return 0
-
-        # TODO: moven next 20 lines of logic to the
-        # _determine_number_of_points_in_fuse_region function
-        number_of_left_points, number_of_right_points = values
-        # TODO: get the values from reliance profile function, e.g. n
-        if number_of_left_points is None:
-            assert number_of_right_points is not None
-            number_of_left_points_range = range(n - number_of_right_points + 1)
-        else:
-            number_of_left_points_range = range(
-                number_of_left_points, number_of_left_points + 1
-            )
-
-        if number_of_right_points is None:
-            assert number_of_right_points is not None
-            number_of_right_points_range = range(n - number_of_left_points + 1)
-        else:
-            number_of_right_points_range = range(
-                number_of_right_points, number_of_right_points + 1
-            )
         res = 0
-        for number_of_left_points, number_of_right_points in product(
-            number_of_left_points_range, number_of_right_points_range
-        ):
+        left_right_points = self._determine_number_of_points_in_fuse_region(
+            n, **parameters
+        )
+        collect = []
+        for left_points, right_points in left_right_points:
             new_params = self._update_subparams_non_unique_parent(
-                number_of_left_points, number_of_right_points, **parameters
+                left_points, right_points, **parameters
             )
             if new_params is None:
                 continue
             assert self.fuse_parameter not in new_params
-            new_params[self.fuse_parameter] = (
-                number_of_left_points + number_of_right_points
-            )
+            new_params[self.fuse_parameter] = left_points + right_points
+
+            collect.append((new_params, subrec(n, **new_params)))
             res += subrec(n, **new_params)
+        print(collect)
         return res
 
     def _determine_number_of_points_in_fuse_region(
-        self, **parameters: int
-    ) -> Tuple[Optional[int], Optional[int]]:
+        self, n: int, **parameters: int
+    ) -> Iterator[Tuple[int, int]]:
         """
         Return the number of points that are in the fused region as determined
         by the overlapping parameters.
@@ -391,12 +420,30 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             if left is None:
                 left = new_left
             elif left != new_left:
-                return -1, -1
-            if right is None:
+                return
+            if right is None or right < 0:
                 right = new_right
             elif right != new_right:
-                return -1, -1
-        return left, right
+                return
+
+        # TODO: get the values from reliance profile function, e.g. n
+        if left is None:
+            assert right is not None
+            number_of_left_points_range = range(n - right + 1)
+        elif left < 0:
+            return
+        else:
+            number_of_left_points_range = range(left, left + 1)
+
+        if right is None:
+            assert left is not None
+            number_of_right_points_range = range(n - left + 1)
+        elif right < 0:
+            return
+        else:
+            number_of_right_points_range = range(right, right + 1)
+
+        yield from product(number_of_left_points_range, number_of_right_points_range)
 
     def _new_fusion_no_interaction_get_recurrence(
         self, subrec: SubRec, n: int, **parameters: int
