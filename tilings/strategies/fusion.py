@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import product
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from sympy import Eq, Function
@@ -288,16 +289,37 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         if any(k < 0 for k in values if k is not None):
             return 0
         number_of_left_points, number_of_right_points = values
-        if number_of_left_points is not None and number_of_right_points is not None:
+        # TODO: get the values from reliance profile function, e.g. n
+        if number_of_left_points is None:
+            assert number_of_right_points is not None
+            number_of_left_points_range = range(n - number_of_right_points + 1)
+        else:
+            number_of_left_points_range = range(
+                number_of_left_points, number_of_left_points + 1
+            )
+
+        if number_of_right_points is None:
+            assert number_of_right_points is not None
+            number_of_right_points_range = range(n - number_of_left_points + 1)
+        else:
+            number_of_right_points_range = range(
+                number_of_right_points, number_of_right_points + 1
+            )
+        res = 0
+        for number_of_left_points, number_of_right_points in product(
+            number_of_left_points_range, number_of_right_points_range
+        ):
             new_params = self._update_subparams_non_unique_parent(
                 number_of_left_points, number_of_right_points, **parameters
             )
             if new_params is None:
-                return 0
-            return subrec(n, **new_params)
-        
-        assert False
-        return 0
+                continue
+            assert self.fuse_parameter not in new_params
+            new_params[self.fuse_parameter] = (
+                number_of_left_points + number_of_right_points
+            )
+            res += subrec(n, **new_params)
+        return res
 
     def _determine_number_of_points_in_fuse_region(
         self, **parameters: int
