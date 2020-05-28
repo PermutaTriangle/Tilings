@@ -341,9 +341,9 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
     def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
         obs_tiling = Tiling(
             tiling.obstructions,
-            remove_empty=False,
+            remove_empty_rows_and_cols=False,
             derive_empty=False,
-            minimize=False,
+            simplify=False,
             sorted_input=True,
         )
         for length in range(1, self.maxreqlen + 1):

@@ -24,6 +24,7 @@ import sympy
 
 from comb_spec_searcher import CombinatorialClass, VerificationStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
+from comb_spec_searcher.utils import cssmethodtimer
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_WEST
 
@@ -35,6 +36,7 @@ from .algorithms import (
     FactorWithInterleaving,
     FactorWithMonotoneInterleaving,
     Fusion,
+    GriddedPermReduction,
     GriddedPermsOnTiling,
     MinimalGriddedPerms,
     ObstructionTransitivity,
@@ -42,6 +44,7 @@ from .algorithms import (
     RowColSeparation,
     SubobstructionInferral,
 )
+from .algorithms.gridded_perm_reduction import func_calls, func_times
 from .assumptions import TrackingAssumption
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
@@ -64,16 +67,31 @@ class Tiling(CombinatorialClass):
     cells and the active cells.
     """
 
+    func_calls = func_calls
+    func_times = func_times
+
+    # @cssmethodtimer("Tiling.__init__")
     def __init__(
         self,
         obstructions: Iterable[GriddedPerm] = tuple(),
         requirements: Iterable[Iterable[GriddedPerm]] = tuple(),
         assumptions: Iterable[TrackingAssumption] = tuple(),
-        remove_empty: bool = True,
+        remove_empty_rows_and_cols: bool = True,
         derive_empty: bool = True,
-        minimize: bool = True,
+        simplify: bool = True,
         sorted_input: bool = False,
+        already_minimized_obs: bool = False,
     ) -> None:
+        """
+        - if remove_empty_rows_and_cols, then remove empty rows and columns.
+        - if derive empty, then assume non-active cells are empty
+        - if simplify, then obstructions and requirements will be simplifed
+        - if not sorted_input, input will be sorted
+        - already_minimized_obs indicates if the obstructions are already minimized
+            we pass this through to GriddedPermReduction
+        """
+        self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
+
         super().__init__()
         if sorted_input:
             # Set of obstructions
@@ -90,22 +108,24 @@ class Tiling(CombinatorialClass):
             # Set of assumptions
             self._assumptions = tuple(assumptions)
 
-        # Minimize the set of obstructions and the set of requirement lists
-        if minimize:
-            self._minimize_griddedperms()
+        # Simplify the set of obstructions and the set of requirement lists
+        if simplify:
+            self._simplify_griddedperms(already_minimized_obs=already_minimized_obs)
 
         if not any(ob.is_empty() for ob in self.obstructions):
+
+            # Remove gridded perms that avoid obstructions from assumptions
+            if simplify:
+                self._clean_assumptions()
+
+            # Remove empty rows and empty columns
+            if remove_empty_rows_and_cols:
+                self._remove_empty_rows_and_cols()
+
             # If assuming the non-active cells are empty, then add the
             # obstructions
             if derive_empty:
                 self._fill_empty()
-            if minimize:
-                self._clean_assumptions()
-            # Remove empty rows and empty columns
-            if remove_empty:
-                self._minimize_tiling()
-
-        self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
 
     @classmethod
     def from_perms(
@@ -125,37 +145,39 @@ class Tiling(CombinatorialClass):
             t = t.add_list_requirement(req_list)
         return t
 
+    @cssmethodtimer("Tiling._fill_empty")
     def _fill_empty(self) -> None:
         """Add size one obstructions to cells that are empty."""
         add = []
         (i, j) = self.dimensions
+        active_cells = self.active_cells
+        empty_cells = self.empty_cells
         for x in range(i):
             for y in range(j):
-                if (x, y) not in self.active_cells and (x, y) not in self.empty_cells:
+                if (x, y) not in active_cells and (x, y) not in empty_cells:
                     add.append(GriddedPerm.single_cell(Perm((0,)), (x, y)))
         self._obstructions = tuple(sorted(tuple(add) + self._obstructions))
 
-    def _minimize_griddedperms(self) -> None:
-        """Minimizes the set of obstructions and the set of requirement lists.
+    @cssmethodtimer("Tiling._simplify_griddedperms")
+    def _simplify_griddedperms(self, already_minimized_obs=False) -> None:
+        """Simplifies the set of obstructions and the set of requirement lists.
         The set of obstructions are first reduced to a minimal set. The
         requirements that contain any obstructions are removed from their
         respective lists. If any requirement list is empty, then the tiling is
         empty.
         """
-        while True:
-            # Minimize the set of obstructions
-            minimized_obs = self._minimal_obs()
-            # Minimize the set of requiriments
-            minimized_obs, minimized_reqs = self._minimal_reqs(minimized_obs)
-            if (
-                self._obstructions == minimized_obs
-                and self._requirements == minimized_reqs
-            ):
-                break
-            self._obstructions = minimized_obs
-            self._requirements = minimized_reqs
+        GPR = GriddedPermReduction(
+            self.obstructions,
+            self.requirements,
+            sorted_input=True,
+            already_minimized_obs=already_minimized_obs,
+        )
 
-    def _minimize_tiling(self) -> None:
+        self._obstructions = GPR.obstructions
+        self._requirements = GPR.requirements
+
+    @cssmethodtimer("Tiling._remove_empty_rows_and_cols")
+    def _remove_empty_rows_and_cols(self) -> None:
         """Remove empty rows and columns."""
         # Produce the mapping between the two tilings
         if not self.active_cells:
@@ -200,6 +222,7 @@ class Tiling(CombinatorialClass):
             max(row_mapping.values()) + 1,
         )
 
+    @cssmethodtimer("Tiling._minimize_mapping")
     def _minimize_mapping(self) -> Tuple[Dict[int, int], Dict[int, int]]:
         """Returns a pair of dictionaries, that map rows/columns to an
         equivalent set of rows/columns where empty ones have been removed. """
@@ -211,145 +234,6 @@ class Tiling(CombinatorialClass):
         col_mapping = {x: actual for actual, x in enumerate(col_list)}
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
         return (col_mapping, row_mapping)
-
-    def _clean_isolated(self, obstruction: GriddedPerm) -> GriddedPerm:
-        """Remove the isolated factors that are implied by requirements
-        from all obstructions."""
-        for req_list in self._requirements:
-            for factor in obstruction.factors():
-                if all(factor in req for req in req_list):
-                    obstruction = obstruction.remove_cells(factor.pos)
-        return obstruction
-
-    def _minimal_obs(self) -> Tuple[GriddedPerm, ...]:
-        """Returns a new list of minimal obstructions from the obstruction set
-        of self. Every obstruction in the new list will have any isolated
-        points in positive cells removed."""
-        clean_ones = sorted(self._clean_isolated(co) for co in self._obstructions)
-        cleanobs: List[GriddedPerm] = list()
-        for cleanob in clean_ones:
-            add = True
-            for co in cleanobs:
-                if co in cleanob:
-                    add = False
-                    break
-            if add:
-                cleanobs.append(cleanob)
-        return tuple(cleanobs)
-
-    def _minimal_reqs(
-        self, obstructions: Iterable[GriddedPerm]
-    ) -> Tuple[Tuple[GriddedPerm, ...], Tuple[ReqList, ...]]:
-        """
-        Returns a new set of minimal lists of requirements from the
-        requirement set of self, and a list of further reduced obstructions.
-        # TODO: obstruction don't change in the function, so stop returning.
-        """
-        factored_reqs: List[Tuple[GriddedPerm, ...]] = list()
-        for reqs in self._requirements:
-            # If any gridded permutation in list is empty then you vacuously
-            # contain this requirement
-            if not all(reqs):
-                continue
-            if not reqs:
-                # If req is empty, then can not contain this requirement so
-                # the tiling is empty
-                return (GriddedPerm.empty_perm(),), tuple()
-            factors = set(reqs[0].factors())
-            for req in reqs[1:]:
-                if not factors:
-                    break
-                factors = factors.intersection(req.factors())
-            if len(factors) == 0 or (len(factors) == 1 and len(reqs) == 1):
-                # if there are no factors in the intersection, or it is just
-                # the same req as the first, we do nothing and add the original
-                factored_reqs.append(reqs)
-                continue
-            # add each of the factors as a single requirement, and then remove
-            # these from each of the other requirements in the list
-            remaining_cells = set(c for req in reqs for c in req.pos) - set(
-                c for req in factors for c in req.pos
-            )
-            for factor in factors:
-                factored_reqs.append((factor,))
-            rem_req = tuple(
-                req.get_gridded_perm_in_cells(remaining_cells) for req in reqs
-            )
-            factored_reqs.append(rem_req)
-
-        cleaned_reqs: List[List[GriddedPerm]] = []
-        for reqs in factored_reqs:
-            if not all(reqs):
-                continue
-            cleaned_req = []
-            for req in reqs:
-                cells: List[Cell] = []
-                for f in req.factors():
-                    # if factor implied by some requirement list then we
-                    # remove it from the gridded perm
-                    if not any(
-                        all(f in r for r in req_list)
-                        for req_list in factored_reqs
-                        if not all(any(r2 in r1 for r2 in reqs) for r1 in req_list)
-                    ):
-                        cells.extend(f.pos)
-                cleaned_req.append(req.get_gridded_perm_in_cells(cells))
-            cleaned_reqs.append(cleaned_req)
-
-        cleanreqs: List[List[GriddedPerm]] = list()
-        for req_list in cleaned_reqs:
-            # If any gridded permutation in list is empty then you vacuously
-            # contain this requirement
-            if not all(req_list):
-                continue
-            redundant: Set[int] = set()
-            for i, req_i in enumerate(req_list):
-                for j in range(i + 1, len(req_list)):
-                    if j not in redundant:
-                        if req_i in req_list[j]:
-                            redundant.add(j)
-                if i not in redundant:
-                    if any(ob in req_i for ob in obstructions):
-                        redundant.add(i)
-            cleanreq = [req for i, req in enumerate(req_list) if i not in redundant]
-            # If cleanreq is empty, then can not contain this requirement so
-            # the tiling is empty.
-            if not cleanreq:
-                return (GriddedPerm.empty_perm(),), tuple()
-            cleanreqs.append(cleanreq)
-
-        ind_to_remove: Set[int] = set()
-        for i, req_list in enumerate(cleanreqs):
-            if i not in ind_to_remove:
-                for j, req_list2 in enumerate(cleanreqs):
-                    if i != j and j not in ind_to_remove:
-                        if all(any(r2 in r1 for r2 in req_list2) for r1 in req_list):
-                            ind_to_remove.add(j)
-
-        for i, req_list in enumerate(cleanreqs):
-            if i in ind_to_remove:
-                continue
-            factored = [r.factors() for r in req_list]
-            # if every factor of every requirement in a list is implied by
-            # another requirement then we can remove this requirement list
-            for req_factor in factored:
-                if all(
-                    any(
-                        all(factor in req for req in other_req)
-                        for j, other_req in enumerate(cleanreqs)
-                        if i != j and j not in ind_to_remove
-                    )
-                    for factor in req_factor
-                ):
-                    ind_to_remove.add(i)
-                    break
-
-        return (
-            tuple(obstructions),
-            Tiling.sort_requirements(
-                reqs for i, reqs in enumerate(cleanreqs) if i not in ind_to_remove
-            ),
-        )
 
     def _clean_assumptions(self) -> None:
         """
@@ -407,9 +291,9 @@ class Tiling(CombinatorialClass):
     def from_bytes(
         cls,
         arrbytes: bytes,
-        remove_empty=False,
+        remove_empty_rows_and_cols=False,
         derive_empty=False,
-        minimize=False,
+        simplify=False,
         sorted_input=True,
     ) -> "Tiling":
         """Given a compressed tiling in the form of an 1-byte array, decompress
@@ -460,9 +344,9 @@ class Tiling(CombinatorialClass):
             obstructions=obstructions,
             requirements=requirements,
             assumptions=assumptions,
-            remove_empty=remove_empty,
+            remove_empty_rows_and_cols=remove_empty_rows_and_cols,
             derive_empty=derive_empty,
-            minimize=minimize,
+            simplify=simplify,
             sorted_input=sorted_input,
         )
 
@@ -743,14 +627,14 @@ class Tiling(CombinatorialClass):
     @property
     def forward_cell_map(self) -> Dict[Cell, Cell]:
         if not hasattr(self, "_forward_map"):
-            self._minimize_tiling()
+            self._remove_empty_rows_and_cols()
         return self._forward_map
 
     @property
     def backward_cell_map(self) -> Dict[Cell, Cell]:
         if not hasattr(self, "_backward_map"):
             if not hasattr(self, "_forward_map"):
-                self._minimize_tiling()
+                self._remove_empty_rows_and_cols()
             self._backward_map = {b: a for a, b in self._forward_map.items()}
         return self._backward_map
 
@@ -918,7 +802,7 @@ class Tiling(CombinatorialClass):
             for ob in self.obstructions
             if (factors and ob.pos[0] in cells) or all(c in cells for c in ob.pos)
         )
-        requirements = tuple(
+        requirements = Tiling.sort_requirements(
             req
             for req in self.requirements
             if (factors and req[0].pos[0] in cells)
@@ -930,7 +814,9 @@ class Tiling(CombinatorialClass):
             if (factors and ass.gps[0].pos[0] in cells)
             or all(c in cells for c in chain.from_iterable(gp.pos for gp in ass.gps))
         )
-        return self.__class__(obstructions, requirements, assumptions)
+        return self.__class__(
+            obstructions, requirements, assumptions, simplify=False, sorted_input=True
+        )
 
     def find_factors(self, interleaving: str = "none") -> Tuple["Tiling", ...]:
         """
@@ -1323,9 +1209,9 @@ class Tiling(CombinatorialClass):
         return self.__class__(
             self._obstructions,
             self._requirements,
-            remove_empty=False,
+            remove_empty_rows_and_cols=False,
             derive_empty=False,
-            minimize=False,
+            simplify=False,
             sorted_input=True,
         )
 

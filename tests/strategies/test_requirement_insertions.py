@@ -97,7 +97,6 @@ def test_all_cell_insertions_points(simple_tiling):
             ),
         )
     )
-    print(simple_tiling)
     assert rules == actual
 
 
