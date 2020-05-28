@@ -545,7 +545,7 @@ class RowColSeparation:
             obs = separation_algo.map_obstructions(cell_map)
             reqs = separation_algo.map_requirements(cell_map)
             new_sep = self._tiling.__class__(
-                obstructions=obs, requirements=reqs, simplify=False
+                obstructions=obs, requirements=reqs, simplify=True
             )
             separation_algo = _RowColSeparationSingleApplication(new_sep)
         res = {cell: cell for cell in self._tiling.active_cells}
