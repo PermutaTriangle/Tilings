@@ -216,8 +216,8 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
-                MonotoneTreeVerificationStrategy(),  # no factors
-                LocalVerificationStrategy(),  # no factors
+                MonotoneTreeVerificationStrategy(no_factors=True),
+                LocalVerificationStrategy(no_factors=True),
             ],
         )
 
