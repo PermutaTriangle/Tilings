@@ -2,6 +2,7 @@ import pytest
 import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
+from comb_spec_searcher.strategies.rule import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
@@ -250,3 +251,19 @@ def test_from_tiling():
     spec = searcher.auto_search()
     print(spec)
     assert sympy.simplify(spec.get_genf() - sympy.sympify("(1+x)/(1-x)")) == 0
+
+
+@pytest.mark.timeout(5)
+def test_expansion():
+    """
+    For this pack only one by one tilings should be verified with this class.
+
+    This test also make sure that the root can't get verified.
+    """
+    pack = TileScopePack.only_root_placements(3, 1)
+    css = TileScope("132", pack)
+    spec = css.auto_search(smallest=True)
+    for comb_class, rule in spec.rules_dict.items():
+        if isinstance(rule, VerificationRule):
+            print(rule)
+            assert comb_class.dimensions == (1, 1)
