@@ -102,9 +102,12 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             for parent_vars in self.reversed_extra_parameters.values()
             if len(parent_vars) == 2
         ]
-        # we now determine which fusion recurrence we want to use, if the
-        # fusion parameter was there before it appears as a value in extra_parameters
-        if self.fuse_parameter in extra_parameters.values():
+        # we now determine which fusion recurrence we want to use
+        if not self.left_sided_parameters and not self.right_sided_parameters:
+            # no parent variable maps to the fusion region
+            self.rec_function = self._new_fusion_no_interaction_get_recurrence
+        elif self.fuse_parameter in extra_parameters.values():
+            # some parent variable(s) map to the fusion region
             if self.predeterminable_left_right_points:
                 self.rec_function = (
                     self._predetermined_fusing_parent_parameter_get_recurrence
@@ -121,9 +124,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                     if self.parent_fusion_parameter in self.right_sided_parameters
                     else "both"
                 )
-        elif not self.left_sided_parameters and not self.right_sided_parameters:
-            self.rec_function = self._new_fusion_no_interaction_get_recurrence
         else:
+            # no parent variable maps to the fusion region, so need to add new
+            # parameter to each call.
             if self.predeterminable_left_right_points:
                 self.rec_function = (
                     self._predetermined_new_fusion_parameter_get_recurrence
@@ -131,7 +134,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             else:
                 self.rec_function = self._new_fusion_parameter_get_recurrence
 
-    def is_equivalence(self) -> bool:
+    @staticmethod
+    def is_equivalence() -> bool:
         return False
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
@@ -189,9 +193,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         self, subrec: SubRec, n: int, **parameters: int
     ) -> int:
         """
-        Let k be the fuse_parameter, then we should get
-            (k + 1) * subrec(n, **parameters)
-        where extra_parameters are updated according to extra_parameters.
+        Not implemented yet...
         """
         return 0
 
@@ -288,6 +290,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         values = self._determine_number_of_points_in_fuse_region(**parameters)
         if any(k < 0 for k in values if k is not None):
             return 0
+
+        # TODO: moven next 20 lines of logic to the
+        # _determine_number_of_points_in_fuse_region function
         number_of_left_points, number_of_right_points = values
         # TODO: get the values from reliance profile function, e.g. n
         if number_of_left_points is None:

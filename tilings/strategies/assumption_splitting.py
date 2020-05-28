@@ -79,16 +79,28 @@ class Split(Constructor):
             for comp in _compositions(value, len(parameters)):
                 yield {k: val for k, val in zip(parameters, comp)}
 
+        def union_params(
+            sub_params: Tuple[Dict[str, int], ...]
+        ) -> Optional[Dict[str, int]]:
+            new_params: Dict[str, int] = dict()
+            for params in sub_params:
+                for k, val in params.items():
+                    if k in new_params:
+                        if val != new_params[k]:
+                            return None
+                    else:
+                        new_params[k] = val
+            return new_params
+
         for sub_params in product(
             *[
                 compositions(val, self.extra_parameters[key])
                 for key, val in parameters.items()
             ]
         ):
-            new_params: Dict[str, int] = dict()
-            for p in sub_params:
-                new_params.update(p.items())
-            yield new_params
+            new_params = union_params(sub_params)
+            if new_params is not None:
+                yield new_params
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int
