@@ -175,16 +175,17 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             if self.fusion_type in ("left", "both")
             else 0
         )
+        min_right_points = (
+            number_points_parent_fuse_parameter
+            if self.fusion_type in ("right", "both")
+            else 0
+        )
+
         # TODO: determine n using reliance profile
         max_left_points = (
             number_points_parent_fuse_parameter
             if self.fusion_type in ("left", "both")
             else n
-        )
-        min_right_points = (
-            number_points_parent_fuse_parameter
-            if self.fusion_type in ("right", "both")
-            else 0
         )
         max_right_points = (
             number_points_parent_fuse_parameter
@@ -192,27 +193,35 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             else n
         )
 
-        # collect = []
+        collect = []
         res = 0
         for number_of_left_points, number_of_right_points in product(
             range(min_left_points, max_left_points + 1),
             range(min_right_points, max_right_points + 1),
         ):
-            new_params = self._update_subparams_unique_parent(
+            new_params = self._update_subparams_non_unique_parent(
                 number_of_left_points, number_of_right_points, **parameters
             )
-            if any(v < 0 for v in new_params.values()):
+            if new_params is None or any(v < 0 or v > n for v in new_params.values()):
+                collect.append(
+                    (
+                        number_of_left_points,
+                        number_of_right_points,
+                        new_params,
+                        "skipped",
+                    )
+                )
                 continue
             res += subrec(n, **new_params)
-            # collect.append(
-            #     (
-            #         number_of_left_points,
-            #         number_of_right_points,
-            #         new_params,
-            #         subrec(n, **new_params),
-            #     )
-            # )
-        # print(collect)
+            collect.append(
+                (
+                    number_of_left_points,
+                    number_of_right_points,
+                    new_params,
+                    subrec(n, **new_params),
+                )
+            )
+        print(collect)
         return res
 
     def _predetermined_fusing_parent_parameter_get_recurrence(
@@ -238,7 +247,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             new_params = self._update_subparams_non_unique_parent(
                 left_points, right_points, **parameters
             )
-            if new_params is None:
+            if new_params is None or any(v < 0 or v > n for v in new_params.values()):
+                collect.append((left_points, right_points, new_params, "skipped"))
                 continue
             res += subrec(n, **new_params)
             collect.append(
@@ -310,6 +320,21 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         """
         res: Dict[str, int] = dict()
         for parameter, value in parameters.items():
+            if (
+                (
+                    parameter in self.left_sided_parameters
+                    and number_of_left_points > value
+                )
+                or (
+                    parameter in self.right_sided_parameters
+                    and number_of_right_points > value
+                )
+                # or (
+                #     parameter in self.both_sided_parameters
+                #     and number_of_left_points + number_of_right_points > value
+                # )
+            ):
+                return None
             updated_value = (
                 value + number_of_left_points
                 if parameter in self.right_sided_parameters
@@ -443,7 +468,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         else:
             number_of_right_points_range = range(right, right + 1)
 
-        yield from product(number_of_left_points_range, number_of_right_points_range)
+        for number_of_left, number_of_right in product(
+            number_of_left_points_range, number_of_right_points_range
+        ):
+            if number_of_left + number_of_right <= n:
+                yield number_of_left, number_of_right
 
     def _new_fusion_no_interaction_get_recurrence(
         self, subrec: SubRec, n: int, **parameters: int
