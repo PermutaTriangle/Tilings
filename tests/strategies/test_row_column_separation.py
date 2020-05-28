@@ -219,3 +219,38 @@ def test_formal_step(seperable_tiling1):
         RowColumnSeparationStrategy()(seperable_tiling1).formal_step
         == "row and column separation"
     )
+
+
+def test_back_map():
+    tiling = Tiling(
+        obstructions=(
+            GriddedPerm(Perm((0,)), ((1, 1),)),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (1, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((1, 2, 0)), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((2, 0, 1)), ((0, 1), (0, 0), (0, 0))),
+            GriddedPerm(Perm((2, 0, 1)), ((0, 1), (0, 0), (1, 0))),
+            GriddedPerm(Perm((2, 0, 1)), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((1, 2, 3, 0)), ((0, 1), (0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((2, 3, 0, 1)), ((0, 1), (0, 1), (0, 0), (0, 1))),
+            GriddedPerm(Perm((2, 3, 1, 0)), ((0, 1), (0, 1), (0, 0), (0, 0))),
+            GriddedPerm(Perm((2, 3, 1, 0)), ((0, 1), (0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((3, 0, 1, 2)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((3, 1, 2, 0)), ((0, 1), (0, 0), (0, 1), (0, 0))),
+            GriddedPerm(Perm((3, 2, 0, 1)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((3, 2, 1, 0)), ((0, 1), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(
+                Perm((4, 3, 2, 0, 1)), ((0, 1), (0, 1), (0, 1), (0, 0), (0, 1))
+            ),
+        ),
+        requirements=((GriddedPerm(Perm((0,)), ((1, 0),)),),),
+    )
+
+    strategy = RowColumnSeparationStrategy()
+
+    rule = strategy(tiling)
+
+    gps = (GriddedPerm(Perm((0,)), ((1, 2),)),)
+
+    assert rule.backward_map(gps) == GriddedPerm(Perm((0,)), ((0, 1),))
