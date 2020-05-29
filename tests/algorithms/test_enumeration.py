@@ -51,8 +51,9 @@ class TestLocalEnumeration(CommonTest):
             requirements=[
                 [
                     GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                    GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-                ]
+                    GriddedPerm(Perm((1, 0)), ((0, 0),) * 2),
+                ],
+                [GriddedPerm(Perm((0,)), ((1, 0),))],
             ],
         )
         return LocalEnumeration(t)
@@ -98,9 +99,55 @@ class TestLocalEnumeration(CommonTest):
         )
         return LocalEnumeration(t, no_req=True)
 
+    def test_req_is_single_cell(self):
+        assert LocalEnumeration._req_is_single_cell(
+            [GriddedPerm(Perm((0,)), ((0, 1),))]
+        )
+        assert LocalEnumeration._req_is_single_cell(
+            [GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1)))]
+        )
+        assert not LocalEnumeration._req_is_single_cell(
+            [GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1)))]
+        )
+        assert not LocalEnumeration._req_is_single_cell(
+            [GriddedPerm(Perm((0,)), ((0, 1),)), GriddedPerm(Perm((0,)), ((1, 0),))]
+        )
+        assert LocalEnumeration._req_is_single_cell(
+            [
+                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                GriddedPerm(Perm((1, 0)), ((0, 0),) * 2),
+            ]
+        )
+        assert not LocalEnumeration._req_is_single_cell(
+            [
+                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
+                GriddedPerm(Perm((1, 0)), ((0, 0),) * 2),
+            ]
+        )
+
     def test_verified(self, enum_verified, enum_not_verified):
         assert enum_verified.verified()
         assert not enum_not_verified.verified()
+
+    def test_crossing_req_list(self):
+        """
+        This tiling is not local verified because of the requirement list in multiple
+        cells.
+        """
+        t = Tiling(
+            obstructions=[
+                GriddedPerm(Perm((0, 2, 1)), ((0, 1),) * 3),
+                GriddedPerm(Perm((0, 2, 1)), ((1, 0),) * 3),
+            ],
+            requirements=[
+                [
+                    GriddedPerm(Perm((0,)), ((0, 1),)),
+                    GriddedPerm(Perm((2, 0, 1)), ((1, 0),) * 3),
+                ],
+                [GriddedPerm(Perm((0,)), ((1, 0),))],
+            ],
+        )
+        assert not LocalEnumeration(t).verified()
 
     def test_get_genf(self, enum_verified):
         with pytest.raises(NotImplementedError):

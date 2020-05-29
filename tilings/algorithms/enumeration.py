@@ -1,13 +1,14 @@
 import abc
 from collections import deque
 from itertools import chain
-from typing import TYPE_CHECKING, Dict, FrozenSet, Optional
+from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, Optional
 
 import requests
 from sympy import Expr, Function, Symbol, diff, simplify, sympify, var
 
 from comb_spec_searcher.utils import taylor_expand
 from tilings.exception import InvalidOperationError
+from tilings.griddedperm import GriddedPerm
 from tilings.misc import is_tree
 
 if TYPE_CHECKING:
@@ -62,11 +63,27 @@ class LocalEnumeration(Enumeration):
     def verified(self) -> bool:
         if self.no_req and self.tiling.requirements:
             return False
-        obs = self.tiling.obstructions
-        reqs = chain.from_iterable(self.tiling.requirements)
-        assgps = chain.from_iterable(ass.gps for ass in self.tiling.assumptions)
-        all_gp = chain(obs, reqs, assgps)
-        return all(gp.is_single_cell() for gp in all_gp)
+        return (
+            all(gp.is_single_cell() for gp in self.tiling.obstructions)
+            and all(self._req_is_single_cell(req) for req in self.tiling.requirements)
+            and all(
+                self._req_is_single_cell(ass.gps) for ass in self.tiling.assumptions
+            )
+        )
+
+    @staticmethod
+    def _req_is_single_cell(req: Iterable[GriddedPerm]) -> bool:
+        """
+        Returns True if all the gridded perm in the iterable are single cell and in
+        the same cell.
+        """
+        req_iter = iter(req)
+        gp0 = next(req_iter)
+        if not gp0.is_single_cell():
+            return False
+        cell = gp0.pos[0]
+        all_cells = chain.from_iterable(gp.pos for gp in req_iter)
+        return all(c == cell for c in all_cells)
 
     def get_genf(self, **kwargs) -> Expr:
         # pylint: disable=too-many-return-statements
