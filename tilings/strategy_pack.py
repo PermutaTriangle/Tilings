@@ -293,10 +293,7 @@ class TileScopePack(StrategyPack):
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityFactory(),
             ],
-            expansion_strats=[
-                [strat.PatternPlacementFactory()],
-                [strat.RequirementCorroborationFactory()],
-            ],
+            expansion_strats=[[strat.RequirementPlacementFactory()]],
             name=name,
         )
 

@@ -256,14 +256,18 @@ def test_from_tiling():
 @pytest.mark.timeout(5)
 def test_expansion():
     """
-    For this pack only one by one tilings should be verified with this class.
-
-    This test also make sure that the root can't get verified.
+    For this pack only some basic verification are needed.
     """
     pack = TileScopePack.only_root_placements(3, 1)
     css = TileScope("132", pack)
     spec = css.auto_search(smallest=True)
     for comb_class, rule in spec.rules_dict.items():
         if isinstance(rule, VerificationRule):
-            print(rule)
-            assert comb_class.dimensions == (1, 1)
+            assert isinstance(
+                rule.strategy,
+                (
+                    strat.OneByOneVerificationStrategy,
+                    strat.MonotoneTreeVerificationStrategy,
+                    strat.BasicVerificationStrategy,
+                ),
+            )
