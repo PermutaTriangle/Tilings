@@ -299,9 +299,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
 
     def pack(self) -> StrategyPack:
         if self.no_factors:
-            raise InvalidOperationError(
-                "Cannot get a specification for a tiling in the database"
-            )
+            raise InvalidOperationError("Cannot get a simpler specification")
         return StrategyPack(
             initial_strats=[FactorFactory()],
             inferral_strats=[],
