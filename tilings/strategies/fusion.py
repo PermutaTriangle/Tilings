@@ -100,33 +100,29 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         self.predeterminable_left_right_points = [
             parent_vars
             for parent_vars in self.reversed_extra_parameters.values()
-            if len(parent_vars) == 2
+            if len(parent_vars) >= 2
         ]
         # we now determine which fusion recurrence we want to use
-        if not self.left_sided_parameters and not self.right_sided_parameters:
-            # no parent variable maps to the fusion region
-            self.rec_function = self._new_fusion_no_interaction_get_recurrence
-        elif self.fuse_parameter in extra_parameters.values():
-            # some parent variable(s) map to the fusion region
-            if self.predeterminable_left_right_points:
-                self.rec_function = (
-                    self._predetermined_fusing_parent_parameter_get_recurrence
-                )
-            else:
-                self.rec_function = self._fusing_parent_parameter_get_recurrence
-                self.parent_fusion_parameter = self.reversed_extra_parameters[
-                    self.fuse_parameter
-                ][0]
-                self.fusion_type = (
+        if self.fuse_parameter in extra_parameters.values():
+            self.parent_fusion_parameters = self.reversed_extra_parameters[
+                self.fuse_parameter
+            ]
+            self.fusion_types = [
+                (
                     "left"
-                    if self.parent_fusion_parameter in self.left_sided_parameters
+                    if parent_fusion_parameter in self.left_sided_parameters
                     else "right"
-                    if self.parent_fusion_parameter in self.right_sided_parameters
+                    if parent_fusion_parameter in self.right_sided_parameters
                     else "both"
                 )
+                for parent_fusion_parameter in self.parent_fusion_parameters
+            ]
+            # some parent variable(s) map to the fusion region
+            self.rec_function = self._fusing_parent_parameter_get_recurrence
         else:
             # no parent variable maps to the fusion region, so need to add new
             # parameter to each call.
+            # TODO: consider merging the two functions following to just one?
             if self.predeterminable_left_right_points:
                 self.rec_function = (
                     self._predetermined_new_fusion_parameter_get_recurrence
@@ -157,10 +153,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         self, subrec: SubRec, n: int, **parameters: int
     ) -> int:
         """
-        In this case, a region of the parent was mapped to the fused region, and
-        there are no two regions mapped to the same region from parent to child.
+        In this case, a region of the parent was mapped to the fused region.
 
-        In this case, the fusion_type is set as follows:
+        In this case, the fusion_type for each fusion parameter is set as follows:
             - left: the parent region was only the left of the unfused region
             - right: the parent region was only the right of the unfused region
             - both: the parent region was all of the unfused region.
@@ -168,94 +163,62 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         With this we need to consider the number of left points there can be,
         and update other parameters if they only use one half of the unfused region.
         """
-        number_points_parent_fuse_parameter = parameters[self.parent_fusion_parameter]
-        # TODO: compute number_of_left_points using reliance profile
-        min_left_points = (
-            number_points_parent_fuse_parameter
-            if self.fusion_type in ("left", "both")
-            else 0
+        left_right_points = self._left_right_points_by_parent_fusion_parameters(
+            n, **parameters
         )
-        min_right_points = (
-            number_points_parent_fuse_parameter
-            if self.fusion_type in ("right", "both")
-            else 0
-        )
-
-        # TODO: determine n using reliance profile
-        max_left_points = (
-            number_points_parent_fuse_parameter
-            if self.fusion_type in ("left", "both")
-            else n
-        )
-        max_right_points = (
-            number_points_parent_fuse_parameter
-            if self.fusion_type in ("right", "both")
-            else n
-        )
-
-        collect = []
         res = 0
-        for number_of_left_points, number_of_right_points in product(
-            range(min_left_points, max_left_points + 1),
-            range(min_right_points, max_right_points + 1),
-        ):
+        for number_of_left_points, number_of_right_points in left_right_points:
             new_params = self._update_subparams_non_unique_parent(
                 number_of_left_points, number_of_right_points, **parameters
             )
-            if new_params is None or any(v < 0 or v > n for v in new_params.values()):
-                collect.append(
-                    (
-                        number_of_left_points,
-                        number_of_right_points,
-                        new_params,
-                        "skipped",
-                    )
-                )
-                continue
-            res += subrec(n, **new_params)
-            collect.append(
-                (
-                    number_of_left_points,
-                    number_of_right_points,
-                    new_params,
-                    subrec(n, **new_params),
-                )
-            )
-        print(collect)
+            if new_params is not None and all(0 <= v <= n for v in new_params.values()):
+                res += subrec(n, **new_params)
         return res
 
-    def _predetermined_fusing_parent_parameter_get_recurrence(
-        self, subrec: SubRec, n: int, **parameters: int
-    ) -> int:
+    def _left_right_points_by_parent_fusion_parameters(
+        self, n: int, **parameters: int
+    ) -> Iterator[Tuple[int, int]]:
         """
-        In this case, a region of the parent was mapped to the fused region.
-        However, there are two parent assumptions that map to
-        the same assumption overlapping the fused region. These determine the
-        unique value that can be assigned to the fusion region.
-
-        In this case, the fusion_type is set as follows:
+        In this case, the fusion_type for each fusion parameter is set as follows:
             - left: the parent region was only the left of the unfused region
             - right: the parent region was only the right of the unfused region
             - both: the parent region was all of the unfused region.
         """
-        res = 0
-        left_right_points = self._determine_number_of_points_in_fuse_region(
-            n, **parameters
+        min_left_points, max_left_points = 0, n
+        min_right_points, max_right_points = 0, n
+        for parent_fusion_parameter, fusion_type in zip(
+            self.parent_fusion_parameters, self.fusion_types,
+        ):
+            number_points_parent_fuse_parameter = parameters[parent_fusion_parameter]
+            if fusion_type == "left":
+                min_left_points = max(
+                    min_left_points, number_points_parent_fuse_parameter
+                )
+                max_left_points = min(
+                    max_left_points, number_points_parent_fuse_parameter
+                )
+            elif fusion_type == "right":
+                min_right_points = max(
+                    min_right_points, number_points_parent_fuse_parameter
+                )
+                max_right_points = min(
+                    max_right_points, number_points_parent_fuse_parameter
+                )
+            else:
+                assert fusion_type == "both"
+                max_left_points = min(
+                    max_right_points, number_points_parent_fuse_parameter
+                )
+                max_right_points = min(
+                    max_left_points, number_points_parent_fuse_parameter
+                )
+            if min_left_points > max_left_points or min_right_points > max_right_points:
+                return
+
+        yield from product(
+            range(min_left_points, max_left_points + 1),
+            range(min_right_points, max_right_points + 1),
         )
-        collect = []
-        for left_points, right_points in left_right_points:
-            new_params = self._update_subparams_non_unique_parent(
-                left_points, right_points, **parameters
-            )
-            if new_params is None or any(v < 0 or v > n for v in new_params.values()):
-                collect.append((left_points, right_points, new_params, "skipped"))
-                continue
-            res += subrec(n, **new_params)
-            collect.append(
-                (left_points, right_points, new_params, subrec(n, **new_params))
-            )
-        print(collect)
-        return res
 
     def _new_fusion_parameter_get_recurrence(
         self, subrec: SubRec, n: int, **parameters: int
@@ -321,18 +284,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         res: Dict[str, int] = dict()
         for parameter, value in parameters.items():
             if (
-                (
-                    parameter in self.left_sided_parameters
-                    and number_of_left_points > value
-                )
-                or (
-                    parameter in self.right_sided_parameters
-                    and number_of_right_points > value
-                )
-                # or (
-                #     parameter in self.both_sided_parameters
-                #     and number_of_left_points + number_of_right_points > value
-                # )
+                parameter in self.left_sided_parameters
+                and number_of_left_points > value
+            ) or (
+                parameter in self.right_sided_parameters
+                and number_of_right_points > value
             ):
                 return None
             updated_value = (
@@ -360,24 +316,20 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         the fused region. However, there are two parent assumptions that map to
         the same assumption overlapping the fused region. These determine the
         unique value that can be assigned to the fusion region.
+
+        # TODO: are you sure about the determine number function?
         """
         res = 0
         left_right_points = self._determine_number_of_points_in_fuse_region(
             n, **parameters
         )
-        collect = []
         for left_points, right_points in left_right_points:
             new_params = self._update_subparams_non_unique_parent(
                 left_points, right_points, **parameters
             )
-            if new_params is None:
-                continue
-            assert self.fuse_parameter not in new_params
-            new_params[self.fuse_parameter] = left_points + right_points
-
-            collect.append((new_params, subrec(n, **new_params)))
-            res += subrec(n, **new_params)
-        print(collect)
+            if new_params is not None:
+                new_params[self.fuse_parameter] = left_points + right_points
+                res += subrec(n, **new_params)
         return res
 
     def _determine_number_of_points_in_fuse_region(
@@ -473,100 +425,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         ):
             if number_of_left + number_of_right <= n:
                 yield number_of_left, number_of_right
-
-    def _new_fusion_no_interaction_get_recurrence(
-        self, subrec: SubRec, n: int, **parameters: int
-    ) -> int:
-        """
-        In this case, a new fused region was added and no other parameter uses
-        the fused region. Therefore, we just need to consider all of the possible
-        values for the fused region, say k_val and multiply by k_val + 1. The
-        other parameters are passed on directly.
-        """
-        # TODO: get k_val from reliance profile
-        # TODO: get {self.fuse_parameter: k_val} from a parameters dictionary function
-        new_params = {
-            self.extra_parameters[parameter]: value
-            for parameter, value in parameters.items()
-        }
-        return sum(
-            (k_val + 1) * subrec(n, **new_params, **{self.fuse_parameter: k_val})
-            for k_val in range(n + 1)
-        )
-
-        # subrec = subrecs[0]
-        # new_params = {
-        #     child_var: parameters[parent_var]
-        #     for parent_var, child_var in self.extra_parameters.items()
-        # }
-        # fuse_parameter = self.fuse_parameter
-        # if fuse_parameter in self.extra_parameters.values():
-        #     # this is the number of points in the prefused region that is tracked
-        #     # by  the fuse variable.
-        #     parent_fuse_parameter: Optional[str] = None
-        #     for parent_var, child_var in self.extra_parameters.items():
-        #         if child_var == fuse_parameter:
-        #             assert (
-        #                 parent_fuse_parameter is None
-        #             ), "multiple parent fuse parameters"
-        #             parent_fuse_parameter = parent_var
-        #     assert parent_fuse_parameter is not None
-        #     number_points_in_fuse_region = new_params[parent_fuse_parameter]
-        #     # pass on parameters and multiply by k + 1
-        #     if not self.left_sided_parameters and not self.right_sided_parameters:
-        #         return (number_points_in_fuse_region + 1) * subrec(n, **new_params)
-        #     min_left_points = 0
-        #     max_left_points = n
-        #     if parent_fuse_parameter in self.left_sided_parameters:
-        #         min_left_points += number_points_in_fuse_region
-        #     if parent_fuse_parameter in self.right_sided_parameters:
-        #         max_left_points -= number_points_in_fuse_region
-        #     res = 0
-        #     for number_of_left_points in range(min_left_points, max_left_points + 1):
-        #         number_of_right_points = (
-        #             number_of_left_points - number_points_in_fuse_region
-        #         )
-        #         res += subrec(
-        #             n,
-        #             **{
-        #                 k: (
-        #                     val + number_of_left_points
-        #                     if k in self.right_sided_parameters
-        #                     else val + number_of_right_points
-        #                     if k in self.left_sided_parameters
-        #                     else val
-        #                 )
-        #                 for k, val in new_params.items()
-        #             },
-        #         )
-        #     return res
-        # else:
-        #     # sum over all possible k
-        #     # TODO: valid k_val should be computed in reliance profile before
-        #     # asking subrec
-        #     res = 0
-        #     for k_val in range(n + 1):
-        #         # add the fuse parameter to the new paramaters
-        #         new_params[fuse_parameter] = k_val
-        #         if not self.left_sided_parameters and not self.right_sided_parameters:
-        #             res += (k_val + 1) * subrec(n, **new_params)
-        #         else:
-        #             for number_of_left_points in range(0, k_val + 1):
-        #                 number_of_right_points = k_val - number_of_left_points
-        #                 res += subrec(
-        #                     n,
-        #                     **{
-        #                         k: (
-        #                             val + number_of_left_points
-        #                             if k in self.right_sided_parameters
-        #                             else val + number_of_right_points
-        #                             if k in self.left_sided_parameters
-        #                             else val
-        #                         )
-        #                         for k, val in new_params.items()
-        #                     },
-        #                 )
-        #     return res
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int
