@@ -3,6 +3,7 @@
 # pylint: disable=too-many-return-statements,too-many-statements
 # pylint: disable=import-outside-toplevel
 import json
+import traceback
 from array import array
 from collections import Counter, defaultdict
 from functools import partial
@@ -19,7 +20,6 @@ from typing import (
     Set,
     Tuple,
 )
-import traceback
 
 import sympy
 
