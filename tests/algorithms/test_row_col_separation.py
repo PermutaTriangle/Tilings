@@ -867,3 +867,68 @@ def test_multiple_separation():
         ),
     )
     assert seprated_tiling == expected_tiling
+
+
+def test_backmap():
+    t = Tiling(
+        obstructions=(
+            GriddedPerm(Perm((0,)), ((0, 0),)),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 1)), ((0, 2), (1, 2))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 2))),
+            GriddedPerm(Perm((0, 1)), ((1, 1), (1, 2))),
+            GriddedPerm(Perm((0, 1)), ((1, 2), (1, 2))),
+            GriddedPerm(Perm((1, 0)), ((0, 2), (1, 2))),
+            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+            GriddedPerm(Perm((1, 0)), ((1, 2), (1, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 1), (0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 2, 1)), ((1, 0), (1, 1), (1, 0))),
+            GriddedPerm(Perm((1, 2, 0)), ((0, 1), (0, 2), (1, 1))),
+            GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (1, 1))),
+            GriddedPerm(Perm((1, 2, 0)), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((2, 0, 1)), ((0, 2), (0, 1), (0, 2))),
+            GriddedPerm(Perm((2, 0, 1)), ((1, 1), (1, 0), (1, 0))),
+            GriddedPerm(Perm((2, 0, 1)), ((1, 2), (1, 0), (1, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 1), (1, 1), (1, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 2), (1, 1), (1, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((1, 2), (1, 1), (1, 0))),
+            GriddedPerm(Perm((2, 3, 0, 1)), ((0, 1), (0, 2), (1, 0), (1, 0))),
+        ),
+        requirements=((GriddedPerm(Perm((0,)), ((1, 2),)),),),
+        assumptions=(),
+    )
+
+    cellmap1 = {
+        (0, 1): (0, 1),
+        (0, 2): (0, 3),
+        (1, 0): (2, 0),
+        (1, 1): (2, 1),
+        (1, 2): (1, 2),
+    }
+    cellmap2 = {
+        (0, 1): (0, 1),
+        (1, 2): (1, 3),
+        (2, 0): (2, 0),
+        (2, 1): (3, 2),
+    }
+    final_cell_map = {
+        (0, 1): (0, 1),
+        (1, 0): (2, 0),
+        (1, 1): (3, 2),
+        (1, 2): (1, 3),
+    }
+    rcs1 = _RowColSeparationSingleApplication(t)
+    t1 = rcs1.separated_tiling()
+    roworder1 = rcs1.max_row_order
+    colorder1 = rcs1.max_col_order
+    assert rcs1.get_cell_map(roworder1, colorder1) == cellmap1
+    rcs2 = _RowColSeparationSingleApplication(t1)
+    t2 = rcs2.separated_tiling()
+    roworder2 = rcs2.max_row_order
+    colorder2 = rcs2.max_col_order
+    assert rcs2.get_cell_map(roworder2, colorder2) == cellmap2
+    rcs = RowColSeparation(t)
+    assert rcs.separated_tiling() == t2
+    assert RowColSeparation(t).get_cell_map() == final_cell_map

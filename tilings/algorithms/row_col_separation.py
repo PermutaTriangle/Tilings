@@ -535,21 +535,20 @@ class RowColSeparation:
         """
         separation_algo = _RowColSeparationSingleApplication(self._tiling)
         cell_maps = []
+        step_tilings = [self._tiling]
         while separation_algo.separable():
-            row_order, col_order = (
-                separation_algo.max_row_order,
-                separation_algo.max_col_order,
-            )
+            row_order = separation_algo.max_row_order
+            col_order = separation_algo.max_col_order
             cell_map = separation_algo.get_cell_map(row_order, col_order)
             cell_maps.append(cell_map)
-            obs = separation_algo.map_obstructions(cell_map)
-            reqs = separation_algo.map_requirements(cell_map)
-            new_sep = self._tiling.__class__(
-                obstructions=obs, requirements=reqs, simplify=True
-            )
+            new_sep = separation_algo.separated_tiling()
+            step_tilings.append(new_sep)
             separation_algo = _RowColSeparationSingleApplication(new_sep)
         res = {cell: cell for cell in self._tiling.active_cells}
-        for cell_map in cell_maps:
-            for cell, mapped_cell in res.items():
-                res[cell] = cell_map[mapped_cell]
+        for cell_map, start_tiling in zip(cell_maps, step_tilings):
+            for cell, mapped_cell in tuple(res.items()):
+                if mapped_cell in start_tiling.active_cells:
+                    res[cell] = cell_map[mapped_cell]
+                else:
+                    res.pop(cell)
         return res
