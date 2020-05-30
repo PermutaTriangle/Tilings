@@ -65,7 +65,8 @@ def report(tiling, func_name, extra=""):
         func_name,
         extra,
         str(traceback.extract_stack()[-3]).replace(
-            "<FrameSummary file /Users/jay/Dropbox/Research/Active/2017-44-ATRAP/repos/Tilings",
+            "<FrameSummary file "
+            "/Users/jay/Dropbox/Research/Active/2017-44-ATRAP/repos/Tilings",
             "< ...",
         ),
     )
@@ -131,7 +132,7 @@ class Tiling(CombinatorialClass):
             # Set self._active_cells, self._empty_cells, and self._dimensions
             # Should eliminate the need for _fill_empty
             # The function _remove_empty_rows_and_cols is responsible for adjusting
-            self._prepare_properties()
+            # self._prepare_properties()
 
             # Remove gridded perms that avoid obstructions from assumptions
             if simplify:
@@ -1230,7 +1231,7 @@ class Tiling(CombinatorialClass):
         are empty.
         """
         if not hasattr(self, "_empty_cells"):
-            assert False, "this shouldn't happen!"
+            self._prepare_properties()
         return self._empty_cells
 
     @property
@@ -1240,13 +1241,13 @@ class Tiling(CombinatorialClass):
         i.e., not empty.
         """
         if not hasattr(self, "_active_cells"):
-            assert False, "this shouldn't happen!"
+            self._prepare_properties()
         return self._active_cells
 
     @property
     def dimensions(self) -> Tuple[int, int]:
         if not hasattr(self, "_dimensions"):
-            assert False, "this shouldn't happen!"
+            self._prepare_properties()
         return self._dimensions
 
     def remove_assumptions(self):
