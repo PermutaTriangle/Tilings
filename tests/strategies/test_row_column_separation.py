@@ -221,7 +221,7 @@ def test_formal_step(seperable_tiling1):
     )
 
 
-def test_back_map():
+def test_backmap():
     tiling = Tiling(
         obstructions=(
             GriddedPerm(Perm((0,)), ((1, 1),)),
@@ -246,11 +246,68 @@ def test_back_map():
         ),
         requirements=((GriddedPerm(Perm((0,)), ((1, 0),)),),),
     )
-
     strategy = RowColumnSeparationStrategy()
-
     rule = strategy(tiling)
-
     gps = (GriddedPerm(Perm((0,)), ((1, 2),)),)
-
     assert rule.backward_map(gps) == GriddedPerm(Perm((0,)), ((0, 1),))
+
+
+def test_maps():
+    t = Tiling(
+        obstructions=(
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 2))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 2))),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
+            GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
+            GriddedPerm(Perm((0, 1)), ((1, 1), (2, 1))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 1), (2, 1))),
+            GriddedPerm(Perm((1, 0)), ((0, 2), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 2), (0, 1))),
+            GriddedPerm(Perm((1, 0)), ((1, 1), (2, 1))),
+            GriddedPerm(Perm((1, 0)), ((2, 1), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((2, 1), (2, 1))),
+            GriddedPerm(Perm((1, 0)), ((2, 2), (2, 1))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 1), (2, 1))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1), (2, 1), (2, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 1), (2, 2), (2, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((2, 1), (2, 2), (2, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((1, 0, 2)), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((1, 2, 0)), ((0, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((1, 2, 0)), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((2, 0, 1)), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((2, 0, 1)), ((2, 2), (2, 0), (2, 2))),
+            GriddedPerm(Perm((2, 0, 1)), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 2), (2, 2), (2, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((2, 1, 0)), ((2, 2), (2, 2), (2, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((2, 2), (2, 2), (2, 2))),
+        ),
+        requirements=((GriddedPerm(Perm((0,)), ((2, 1),)),),),
+    )
+    print(t)
+    print(t.row_and_column_separation())
+    strategy = RowColumnSeparationStrategy()
+    rule = strategy(t)
+    cell_pre_sep = [(0, 0), (0, 1), (0, 2), (2, 0), (2, 1), (2, 2)]
+    cell_post_sep = [(2, 0), (0, 2), (1, 4), (3, 1), (3, 3), (3, 4)]
+    # Testing forward map
+    for cell, image in zip(cell_pre_sep, cell_post_sep):
+        gp = GriddedPerm(Perm((0,)), (cell,))
+        print(f"{cell} -> {image}")
+        assert rule.forward_map(gp) == (GriddedPerm(Perm((0,)), (image,)),)
+    # Testing backmap
+    for cell, image in zip(cell_post_sep, cell_pre_sep):
+        gps = [GriddedPerm(Perm((0,)), (cell,))]
+        print(f"{cell} -> {image}")
+        assert rule.backward_map(gps) == GriddedPerm(Perm((0,)), (image,))
