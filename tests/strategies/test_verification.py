@@ -238,10 +238,8 @@ class TestLocalVerificationStrategy(CommonTest):
                 GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
             ],
             requirements=[
-                [
-                    GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                    GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-                ]
+                [GriddedPerm(Perm((0, 1)), ((0, 0),) * 2)],
+                [GriddedPerm(Perm((0, 1)), ((1, 0),) * 2)],
             ],
         )
         return [t]

@@ -249,8 +249,8 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
-                MonotoneTreeVerificationStrategy(),  # no factors
-                LocalVerificationStrategy(),  # no factors
+                MonotoneTreeVerificationStrategy(no_factors=True),
+                LocalVerificationStrategy(no_factors=True),
             ],
         )
 
@@ -332,9 +332,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
 
     def pack(self) -> StrategyPack:
         if self.no_factors:
-            raise InvalidOperationError(
-                "Cannot get a specification for a tiling in the database"
-            )
+            raise InvalidOperationError("Cannot get a simpler specification")
         return StrategyPack(
             initial_strats=[FactorFactory(), SplittingStrategy()],
             inferral_strats=[],

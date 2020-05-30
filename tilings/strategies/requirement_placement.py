@@ -608,7 +608,7 @@ class RowAndColumnPlacementFactory(AbstractRequirementPlacementFactory):
 
     def __str__(self) -> str:
         s = "{} placement"
-        if self.place_col and self.place_col:
+        if self.place_col and self.place_row:
             s = s.format("row and column")
         elif self.place_row:
             s = s.format("row")
