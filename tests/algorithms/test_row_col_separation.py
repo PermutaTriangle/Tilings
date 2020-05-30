@@ -997,3 +997,64 @@ def test_backmap2():
     rcs = RowColSeparation(t)
     assert rcs.separated_tiling() == t2
     assert RowColSeparation(t).get_cell_map() == final_cell_map
+
+
+def test_backmap3():
+    t = Tiling(
+        obstructions=(
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 2))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((0, 0), (2, 2))),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 2))),
+            GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
+            GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2))),
+            GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
+            GriddedPerm(Perm((0, 1)), ((1, 1), (2, 1))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 0), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 1), (2, 1))),
+            GriddedPerm(Perm((1, 0)), ((0, 2), (0, 0))),
+            GriddedPerm(Perm((1, 0)), ((0, 2), (0, 1))),
+            GriddedPerm(Perm((1, 0)), ((1, 1), (2, 1))),
+            GriddedPerm(Perm((1, 0)), ((2, 1), (2, 0))),
+            GriddedPerm(Perm((1, 0)), ((2, 1), (2, 1))),
+            GriddedPerm(Perm((1, 0)), ((2, 2), (2, 1))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 1), (2, 1))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1), (2, 1), (2, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 1), (2, 2), (2, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((2, 1), (2, 2), (2, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((1, 0, 2)), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((1, 2, 0)), ((0, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((1, 2, 0)), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((2, 0, 1)), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((2, 0, 1)), ((2, 2), (2, 0), (2, 2))),
+            GriddedPerm(Perm((2, 0, 1)), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 2), (2, 2), (2, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((0, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((2, 1, 0)), ((2, 2), (2, 2), (2, 0))),
+            GriddedPerm(Perm((2, 1, 0)), ((2, 2), (2, 2), (2, 2))),
+        ),
+        requirements=((GriddedPerm(Perm((0,)), ((2, 1),)),),),
+    )
+    cellmap1 = {
+        (0, 0): (2, 0),
+        (0, 1): (0, 2),
+        (0, 2): (1, 4),
+        (2, 0): (3, 1),
+        (2, 1): (3, 3),
+        (2, 2): (3, 4),
+    }
+    print(t)
+    rcs1 = _RowColSeparationSingleApplication(t)
+    t1 = rcs1.separated_tiling()
+    print(t1)
+    assert rcs1.get_cell_map() == cellmap1
+    rcs = RowColSeparation(t)
+    assert rcs.separated_tiling() == t1
+    assert rcs.get_cell_map() == cellmap1
