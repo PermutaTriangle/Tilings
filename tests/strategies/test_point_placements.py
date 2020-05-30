@@ -1075,3 +1075,30 @@ def test_all_requirement_placement_rules_partial(tiling2):
         assert rule.workable
         assert isinstance(rule.constructor, DisjointUnion)
         assert not rule.possibly_empty
+
+
+def test_reverse_rule():
+    tiling = Tiling(
+        obstructions=(
+            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((1, 2, 3, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((2, 0, 1, 3)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+        ),
+        requirements=((GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),),),
+    )
+    strategy = RequirementPlacementStrategy(
+        gps=(GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),),
+        indices=(1,),
+        direction=0,
+        own_col=True,
+        own_row=True,
+        ignore_parent=False,
+        include_empty=False,
+    )
+    rule = strategy(tiling)
+    for i in range(6):
+        rule.sanity_check(i)
+    reverse_rule = rule.to_reverse_rule()
+    for i in range(6):
+        reverse_rule.sanity_check(i)
