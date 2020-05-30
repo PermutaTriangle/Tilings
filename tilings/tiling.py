@@ -147,6 +147,32 @@ class Tiling(CombinatorialClass):
             # if derive_empty:
             # self._fill_empty()
 
+        for ob in self.obstructions:
+            for cell in ob.pos:
+                assert (
+                    cell[0] < self.dimensions[0] and cell[1] < self.dimensions[1]
+                ), "\n{}\n{}\n{}\n{}\n{}\n{}\n".format(
+                    "=" * 50,
+                    self,
+                    self.obstructions,
+                    self.active_cells,
+                    self.empty_cells,
+                    self.dimensions,
+                )
+
+        # print(
+        #     "\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n".format(
+        #         "=" * 50,
+        #         self,
+        #         self.obstructions,
+        #         self.active_cells,
+        #         self.empty_cells,
+        #         self.dimensions,
+        #         self.forward_cell_map,
+        #     )
+        # )
+        #
+
     @classmethod
     def from_perms(
         cls,
@@ -247,6 +273,14 @@ class Tiling(CombinatorialClass):
 
         if identity:
             self._forward_map = {cell: cell for cell in self.active_cells}
+            # We still may need to remove point obstructions if the empty row or col
+            # was on the end!
+            (width, height) = self.dimensions
+            self._obstructions = tuple(
+                ob
+                for ob in self.obstructions
+                if len(ob) > 1 or (ob.pos[0][0] < width and ob.pos[0][1] < height)
+            )
             return
 
         # For tracking regions.
@@ -300,12 +334,12 @@ class Tiling(CombinatorialClass):
         col_set = set(c[0] for c in active_cells)
         row_set = set(c[1] for c in active_cells)
         col_list, row_list = sorted(col_set), sorted(row_set)
-        identity = (
-            len(col_list) - 1 == col_list[-1] and len(row_list) - 1 == row_list[-1]
+        identity = (self.dimensions[0] == len(col_list)) and (
+            self.dimensions[1] == len(row_list)
         )
-        # TODO: FIX IDENTITY
-        # if identity:
-        # return ({}, {}, True)
+        if identity:
+            return ({}, {}, True)
+            # pass
         col_mapping = {x: actual for actual, x in enumerate(col_list)}
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
         return (col_mapping, row_mapping, False)
