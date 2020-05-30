@@ -390,7 +390,7 @@ class _RowColSeparationSingleApplication:
         return next(_RowColSeparationSingleApplication._all_order(graph))
 
     def _separates_tiling(self, row_order, col_order):
-        cell_map = self.get_cell_map(row_order, col_order)
+        cell_map = self._get_cell_map(row_order, col_order)
         obs = self.map_obstructions(cell_map)
         reqs = self.map_requirements(cell_map)
         ass = self.map_assumptions(cell_map)
@@ -399,10 +399,13 @@ class _RowColSeparationSingleApplication:
         )
 
     @staticmethod
-    def get_cell_map(row_order, col_order):
+    def _get_cell_map(row_order, col_order):
         """
         Return the position of the according to the given row_order and
         col_order.
+
+        This method does not account for any cleaning occuring in the initializer. For
+        the complete cell map use `get_cell_map`.
         """
         cell_map = dict()
         for i, row in enumerate(row_order):
@@ -478,6 +481,27 @@ class _RowColSeparationSingleApplication:
         """
         return self._separates_tiling(self.max_row_order, self.max_col_order)
 
+    def get_cell_map(self) -> Dict[Cell, Cell]:
+        """
+        Return the position of the according to the given row_order and
+        col_order. This accounts for any cleaning happening inside tiling initializer.
+
+        This is the cell map for the separated tiling returned by `separated_tiling`.
+        """
+        sep_tiling = self.separated_tiling()
+        row_order = self.max_row_order
+        col_order = self.max_col_order
+        sep_cell_map = self._get_cell_map(row_order, col_order)
+        init_cell_map = sep_tiling.forward_cell_map
+        res: Dict[Cell, Cell] = dict()
+        for cell in self._tiling.active_cells:
+            mid_cell = sep_cell_map[cell]
+            # If the cell is not in the init map it is an empty cell
+            if mid_cell in init_cell_map:
+                final_cell = init_cell_map[mid_cell]
+                res[cell] = final_cell
+        return res
+
     def all_separated_tiling(self, only_max=False):
         """
         Generator over all the possibles separation of the tiling.
@@ -537,9 +561,7 @@ class RowColSeparation:
         cell_maps = []
         step_tilings = [self._tiling]
         while separation_algo.separable():
-            row_order = separation_algo.max_row_order
-            col_order = separation_algo.max_col_order
-            cell_map = separation_algo.get_cell_map(row_order, col_order)
+            cell_map = separation_algo.get_cell_map()
             cell_maps.append(cell_map)
             new_sep = separation_algo.separated_tiling()
             step_tilings.append(new_sep)
@@ -547,7 +569,7 @@ class RowColSeparation:
         res = {cell: cell for cell in self._tiling.active_cells}
         for cell_map, start_tiling in zip(cell_maps, step_tilings):
             for cell, mapped_cell in tuple(res.items()):
-                if mapped_cell in start_tiling.active_cells:
+                if mapped_cell in cell_map:
                     res[cell] = cell_map[mapped_cell]
                 else:
                     res.pop(cell)
