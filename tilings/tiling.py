@@ -238,7 +238,7 @@ class Tiling(CombinatorialClass):
         )
 
     @cssmethodtimer("Tiling._minimize_mapping")
-    def _minimize_mapping(self) -> Tuple[Dict[int, int], Dict[int, int]]:
+    def _minimize_mapping(self) -> Tuple[Dict[int, int], Dict[int, int], bool]:
         """Returns a pair of dictionaries, that map rows/columns to an
         equivalent set of rows/columns where empty ones have been removed. """
         active_cells = self.active_cells
@@ -246,9 +246,14 @@ class Tiling(CombinatorialClass):
         col_set = set(c[0] for c in active_cells)
         row_set = set(c[1] for c in active_cells)
         col_list, row_list = sorted(col_set), sorted(row_set)
+        identity = (
+            len(col_list) - 1 == col_list[-1] and len(row_list) - 1 == row_list[-1]
+        )
+        if identity:
+            return ({}, {}, True)
         col_mapping = {x: actual for actual, x in enumerate(col_list)}
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
-        return (col_mapping, row_mapping)
+        return (col_mapping, row_mapping, False)
 
     def _clean_assumptions(self) -> None:
         """
