@@ -88,8 +88,8 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         for idx, (cell, child) in enumerate(
             zip(self._placed_cells, children[1:] if self.include_empty else children)
         ):
-            mapped_assumptions = [
-                TrackingAssumption(
+            mapped_gps = [
+                tuple(
                     child.forward_map(gp)
                     for gp in ass.gps
                     if gp.avoids(
@@ -101,6 +101,10 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                     and all(cell in child.forward_cell_map for cell in gp.pos)
                 )
                 for ass in algo.stretched_assumptions(cell)
+            ]
+            mapped_assumptions = [
+                TrackingAssumption(gp for gp in gps if gp.avoids(*child.obstructions))
+                for gps in mapped_gps
             ]
             for assumption, mapped_assumption in zip(
                 comb_class.assumptions, mapped_assumptions
