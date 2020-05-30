@@ -559,15 +559,13 @@ class RowColSeparation:
         """
         separation_algo = _RowColSeparationSingleApplication(self._tiling)
         cell_maps = []
-        step_tilings = [self._tiling]
         while separation_algo.separable():
             cell_map = separation_algo.get_cell_map()
             cell_maps.append(cell_map)
             new_sep = separation_algo.separated_tiling()
-            step_tilings.append(new_sep)
             separation_algo = _RowColSeparationSingleApplication(new_sep)
         res = {cell: cell for cell in self._tiling.active_cells}
-        for cell_map, start_tiling in zip(cell_maps, step_tilings):
+        for cell_map in cell_maps:
             for cell, mapped_cell in tuple(res.items()):
                 if mapped_cell in cell_map:
                     res[cell] = cell_map[mapped_cell]
