@@ -128,6 +128,11 @@ class Tiling(CombinatorialClass):
 
         if not any(ob.is_empty() for ob in self.obstructions):
 
+            # Set self._active_cells, self._empty_cells, and self._dimensions
+            # Should eliminate the need for _fill_empty
+            # The function _remove_empty_rows_and_cols is responsible for adjusting
+            self._prepare_properties()
+
             # Remove gridded perms that avoid obstructions from assumptions
             if simplify:
                 self._clean_assumptions()
@@ -135,14 +140,11 @@ class Tiling(CombinatorialClass):
             # Remove empty rows and empty columns
             if remove_empty_rows_and_cols:
                 self._remove_empty_rows_and_cols()
-                del self._active_cells
-                # del self._empty_cells
 
             # If assuming the non-active cells are empty, then add the
             # obstructions
-            if derive_empty:
-                self._fill_empty()
-                del self._empty_cells
+            # if derive_empty:
+            # self._fill_empty()
 
     @classmethod
     def from_perms(
@@ -161,6 +163,42 @@ class Tiling(CombinatorialClass):
             req_list = [GriddedPerm(p, ((0, 0),) * len(p)) for p in req_list]
             t = t.add_list_requirement(req_list)
         return t
+
+    @cssmethodtimer("Tiling._prepare_properties")
+    def _prepare_properties(self) -> None:
+        """
+        Compute _active_cells, _empty_cells, _dimensions, and store them
+        """
+        active_cells = union_reduce(
+            set(ob.pos) for ob in self.obstructions if len(ob) > 1
+        )
+        active_cells.update(
+            *(union_reduce(set(comp.pos) for comp in req) for req in self.requirements)
+        )
+
+        max_row = 0
+        max_col = 0
+        # TODO: Is there a more clever way to do this but still with only one loop
+        # over the active_cells?
+        for cell in active_cells:
+            max_col = max(max_col, cell[0])
+            max_row = max(max_row, cell[1])
+        dimensions = (max_col + 1, max_row + 1)
+
+        empty_cells = set(
+            cell
+            for cell in product(range(dimensions[0]), range(dimensions[1]))
+            if cell not in active_cells
+        )
+        new_obstructions = tuple(
+            GriddedPerm(Perm((0,)), (cell,)) for cell in empty_cells
+        )
+        # TODO: Is this sorting really necessary?
+        self._obstructions = tuple(sorted(set(new_obstructions + self._obstructions)))
+
+        self._active_cells = frozenset(active_cells)
+        self._empty_cells = frozenset(empty_cells)
+        self._dimensions = dimensions
 
     @cssmethodtimer("Tiling._fill_empty")
     def _fill_empty(self) -> None:
@@ -203,8 +241,12 @@ class Tiling(CombinatorialClass):
             self._requirements = tuple()
             self._dimensions = (1, 1)
             return
-        col_mapping, row_mapping = self._minimize_mapping()
+        col_mapping, row_mapping, identity = self._minimize_mapping()
         cell_map = partial(map_cell, col_mapping, row_mapping)
+
+        if identity:
+            self._forward_map = {cell: cell for cell in self.active_cells}
+            return
 
         # For tracking regions.
         self._forward_map = {
@@ -232,6 +274,17 @@ class Tiling(CombinatorialClass):
                 for assumption in self._assumptions
             )
         )
+        # TODO: Maybe it's faster to pull the keys of self._forward_map first?
+        self._active_cells = frozenset(
+            self._forward_map[cell]
+            for cell in self._active_cells
+            if cell in self._forward_map
+        )
+        self._empty_cells = frozenset(
+            self._forward_map[cell]
+            for cell in self._empty_cells
+            if cell in self._forward_map
+        )
         self._dimensions = (
             max(col_mapping.values()) + 1,
             max(row_mapping.values()) + 1,
@@ -249,8 +302,9 @@ class Tiling(CombinatorialClass):
         identity = (
             len(col_list) - 1 == col_list[-1] and len(row_list) - 1 == row_list[-1]
         )
-        if identity:
-            return ({}, {}, True)
+        # TODO: FIX IDENTITY
+        # if identity:
+        # return ({}, {}, True)
         col_mapping = {x: actual for actual, x in enumerate(col_list)}
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
         return (col_mapping, row_mapping, False)
@@ -647,17 +701,13 @@ class Tiling(CombinatorialClass):
     @property
     def forward_cell_map(self) -> Dict[Cell, Cell]:
         if not hasattr(self, "_forward_map"):
-            # report(self, "_forward_cell_map")
             self._remove_empty_rows_and_cols()
         return self._forward_map
 
     @property
     def backward_cell_map(self) -> Dict[Cell, Cell]:
         if not hasattr(self, "_backward_map"):
-            # report(self, "_backward_cell_map")
-            if not hasattr(self, "_forward_map"):
-                self._remove_empty_rows_and_cols()
-            self._backward_map = {b: a for a, b in self._forward_map.items()}
+            self._backward_map = {b: a for a, b in self.forward_cell_map.items()}
         return self._backward_map
 
     # -------------------------------------------------------------
@@ -1149,7 +1199,9 @@ class Tiling(CombinatorialClass):
     def possibly_empty(self) -> FrozenSet[Cell]:
         # report(self, "possibly_empty")
         """Computes the set of possibly empty cells on the tiling."""
-        return self.active_cells - self.positive_cells
+        if not hasattr(self, "_possibly_empty"):
+            self._possibly_empty = self.active_cells - self.positive_cells
+        return self._possibly_empty
 
     @property
     def obstructions(self) -> Tuple[GriddedPerm, ...]:
@@ -1178,10 +1230,7 @@ class Tiling(CombinatorialClass):
         are empty.
         """
         if not hasattr(self, "_empty_cells"):
-            # report(self, "empty_cells", "MISS")
-            self._empty_cells = frozenset(
-                gp.pos[0] for gp in self.obstructions if gp.is_point_perm()
-            )
+            assert False, "this shouldn't happen!"
         return self._empty_cells
 
     @property
@@ -1191,33 +1240,13 @@ class Tiling(CombinatorialClass):
         i.e., not empty.
         """
         if not hasattr(self, "_active_cells"):
-            # report(self, "active_cells", "MISS")
-            no_point_obs = union_reduce(
-                ob.pos for ob in self._obstructions if not ob.is_point_perm()
-            )
-            with_req = union_reduce(
-                union_reduce(req.pos for req in reqs) for reqs in self._requirements
-            )
-            self._active_cells = frozenset(no_point_obs | with_req)
+            assert False, "this shouldn't happen!"
         return self._active_cells
 
     @property
     def dimensions(self) -> Tuple[int, int]:
         if not hasattr(self, "_dimensions"):
-            # report(self, "dimensions", "MISS")
-            # obcells = union_reduce(ob.pos for ob in self._obstructions)
-            # reqcells = union_reduce(
-            #     union_reduce(req.pos for req in reqlist)
-            #     for reqlist in self._requirements
-            # )
-            # all_cells = obcells | reqcells
-            all_cells = self.active_cells
-            rows = set(x for (x, y) in all_cells)
-            cols = set(y for (x, y) in all_cells)
-            if not rows and not cols:
-                self._dimensions = (1, 1)
-            else:
-                self._dimensions = (max(rows) + 1, max(cols) + 1)
+            assert False, "this shouldn't happen!"
         return self._dimensions
 
     def remove_assumptions(self):
