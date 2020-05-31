@@ -83,11 +83,20 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         av, co = children
         av_mapped_gps = [
-            tuple(av.forward_map(gp) for gp in ass.gps if gp.avoids(*self.gps))
+            tuple(
+                av.forward_map(gp)
+                for gp in ass.gps
+                if gp.avoids(*self.gps)
+                and all(cell in av.forward_cell_map for cell in gp.pos)
+            )
             for ass in comb_class.assumptions
         ]
         co_mapped_gps = [
-            tuple(co.forward_map(gp) for gp in ass.gps)
+            tuple(
+                co.forward_map(gp)
+                for gp in ass.gps
+                if all(cell in co.forward_cell_map for cell in gp.pos)
+            )
             for ass in comb_class.assumptions
         ]
         av_mapped_ass = [

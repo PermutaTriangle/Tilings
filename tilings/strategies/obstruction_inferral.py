@@ -1,6 +1,7 @@
 from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
     AllObstructionInferral,
@@ -46,7 +47,12 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         av = children[0]
         av_mapped_gps = [
-            tuple(av.forward_map(gp) for gp in ass.gps if gp.avoids(*self.gps))
+            tuple(
+                av.forward_map(gp)
+                for gp in ass.gps
+                if gp.avoids(*self.gps)
+                and all(cell in av.forward_cell_map for cell in gp.pos)
+            )
             for ass in comb_class.assumptions
         ]
         av_mapped_ass = [
