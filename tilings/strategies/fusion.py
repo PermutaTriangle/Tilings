@@ -472,7 +472,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> FusionConstructor:
         if not self.tracked:
             # constructor only enumerates when tracked.
-            return FusionConstructor("n", {})
+            return FusionConstructor("n", {}, tuple(), tuple(), tuple())
         if children is None:
             children = self.decomposition_function(comb_class)
             if children is None:
@@ -589,7 +589,18 @@ class ComponentFusionStrategy(FusionStrategy):
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
     ) -> ComponentFusionConstructor:
-        return ComponentFusionConstructor(self._fuse_parameter(comb_class), {"n": "n"})
+        if not self.tracked:
+            # constructor only enumerates when tracked.
+            return FusionConstructor("n", {}, tuple(), tuple(), tuple())
+        # TODO: extra parameters?
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        return ComponentFusionConstructor(
+            self._fuse_parameter(comb_class),
+            *self.extra_parameters(comb_class, children),
+        )
 
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"
