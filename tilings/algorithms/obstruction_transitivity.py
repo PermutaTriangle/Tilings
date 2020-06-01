@@ -203,10 +203,7 @@ class ObstructionTransitivity:
         """
         Return the tiling with the new obstructions.
         """
-        obs = chain(self._tiling.obstructions, self.new_obs())
-        return self._tiling.__class__(
-            obstructions=obs, requirements=self._tiling.requirements
-        )
+        return self._tiling.add_obstructions(self.new_obs())
 
     def __str__(self) -> str:
         s = "ObstructionTransitivity object for the tiling:\n"

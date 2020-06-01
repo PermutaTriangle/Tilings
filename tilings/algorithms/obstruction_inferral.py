@@ -50,9 +50,7 @@ class ObstructionInferral(abc.ABC):
         """
         Return the tiling with the new obstructions.
         """
-        obs = chain(self._tiling.obstructions, self.new_obs())
-        reqs = self._tiling.requirements
-        return self._tiling.__class__(obs, reqs)
+        return self._tiling.add_obstructions(self.new_obs())
 
     # TODO: move to strategy class
 
