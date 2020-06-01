@@ -482,12 +482,13 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         return FusionConstructor(
             self._fuse_parameter(comb_class),
-            *self.extra_parameters(comb_class, children),
+            self.extra_parameters(comb_class, children)[0],
+            *self.left_right_both_sided_parameters(comb_class),
         )
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Tuple[Dict[str, str], Set[str], Set[str], Set[str]]:
+    ) -> Tuple[Dict[str, str]]:
         if children is None:
             children = self.decomposition_function(comb_class)
             if children is None:
@@ -497,13 +498,20 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         mapped_assumptions = [
             TrackingAssumption(gps) for gps in algo.assumptions_fuse_counters
         ]
-        extra_parameters = {
-            k: child.get_parameter(ass)
-            for k, ass in zip(comb_class.extra_parameters(), mapped_assumptions)
-        }
+        return (
+            {
+                k: child.get_parameter(ass)
+                for k, ass in zip(comb_class.extra_parameters, mapped_assumptions)
+            },
+        )
+
+    def left_right_both_sided_parameters(
+        self, comb_class: Tiling,
+    ) -> Tuple[Set[str], Set[str], Set[str]]:
         left_sided_params: Set[str] = set()
         right_sided_params: Set[str] = set()
         both_sided_params: Set[str] = set()
+        algo = self.fusion_algorithm(comb_class)
         for assumption in comb_class.assumptions:
             parent_var = comb_class.get_parameter(assumption)
             left_sided = algo.is_left_sided_assumption(assumption)
@@ -515,7 +523,6 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             else:
                 both_sided_params.add(parent_var)
         return (
-            extra_parameters,
             left_sided_params,
             right_sided_params,
             both_sided_params,

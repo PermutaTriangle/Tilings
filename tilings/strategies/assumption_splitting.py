@@ -22,8 +22,8 @@ class Split(Constructor):
     disjoint subvariables.
     """
 
-    def __init__(self, extra_parameters: Dict[str, Tuple[str, ...]]):
-        self.extra_parameters = extra_parameters
+    def __init__(self, split_parameters: Dict[str, Tuple[str, ...]]):
+        self.split_parameters = split_parameters
 
     def is_equivalence(self) -> bool:
         return False
@@ -36,7 +36,7 @@ class Split(Constructor):
 
     def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
         """
-        The extra_parameters tells you what each variable is split into,
+        The split_parameters tells you what each variable is split into,
 
         If there is k: (k_0, k_1) then we need to sum over all ways that
         k = k_0 + k_1.
@@ -94,7 +94,7 @@ class Split(Constructor):
 
         for sub_params in product(
             *[
-                compositions(val, self.extra_parameters[key])
+                compositions(val, self.split_parameters[key])
                 for key, val in parameters.items()
             ]
         ):
@@ -164,7 +164,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             if children is None:
                 raise StrategyDoesNotApply("Can't split the tracking assumption")
         child = children[0]
-        extra_parameters: Dict[str, Tuple[str, ...]] = {"n": ("n",)}
+        split_parameters: Dict[str, Tuple[str, ...]] = {"n": ("n",)}
         components = Factor(comb_class.remove_assumptions()).get_components()
         for idx, assumption in enumerate(comb_class.assumptions):
             split_assumptions = self._split_assumption(assumption, components)
@@ -174,8 +174,8 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
                     for ass in split_assumptions
                 )
             )
-            extra_parameters["k_{}".format(idx)] = child_vars
-        return Split(extra_parameters)
+            split_parameters["k_{}".format(idx)] = child_vars
+        return Split(split_parameters)
 
     @staticmethod
     def formal_step() -> str:

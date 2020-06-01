@@ -966,6 +966,7 @@ class Tiling(CombinatorialClass):
     # Properties and getters
     # -------------------------------------------------------------
 
+    @property
     def extra_parameters(self) -> Tuple[str, ...]:
         return tuple("k_{}".format(i) for i in range(len(self._assumptions)))
 
@@ -1014,11 +1015,11 @@ class Tiling(CombinatorialClass):
         if not parameters:
             yield from self.gridded_perms_of_length(n)
         else:
-            assert set(self.extra_parameters()) == set(parameters)
+            assert set(self.extra_parameters) == set(parameters)
             for gp in self.gridded_perms_of_length(n):
                 if all(
                     assumption_count(gp, ass) == parameters[k]
-                    for k, ass in zip(self.extra_parameters(), self._assumptions)
+                    for k, ass in zip(self.extra_parameters, self._assumptions)
                 ):
                     yield gp
 
