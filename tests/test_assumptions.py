@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 
@@ -114,3 +115,58 @@ def test_123_fusion():
     css = TileScope("123", pack)
     spec = css.auto_search(status_update=30)
     assert isinstance(spec, CombinatorialSpecification)
+    assert [spec.count_objects_of_size(i) for i in range(20)] == [
+        1,
+        1,
+        2,
+        5,
+        14,
+        42,
+        132,
+        429,
+        1430,
+        4862,
+        16796,
+        58786,
+        208012,
+        742900,
+        2674440,
+        9694845,
+        35357670,
+        129644790,
+        477638700,
+        1767263190,
+    ]
+
+
+@pytest.mark.timeout(120)
+def test_1234_fusion():
+    __location__ = os.path.realpath(
+        os.path.join(os.getcwd(), os.path.dirname(__file__))
+    )
+    with open(os.path.join(__location__, "spec-1234.json")) as f:
+        d = json.loads(f.read())
+    spec = CombinatorialSpecification.from_dict(d)
+    assert isinstance(spec, CombinatorialSpecification)
+    assert [spec.count_objects_of_size(i) for i in range(20)] == [
+        1,
+        1,
+        2,
+        6,
+        23,
+        103,
+        513,
+        2761,
+        15767,
+        94359,
+        586590,
+        3763290,
+        24792705,
+        167078577,
+        1148208090,
+        8026793118,
+        56963722223,
+        409687815151,
+        2981863943718,
+        21937062144834,
+    ]

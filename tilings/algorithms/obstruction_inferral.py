@@ -1,5 +1,4 @@
 import abc
-from itertools import chain
 from typing import TYPE_CHECKING, Iterable, List, Optional, Set, Tuple
 
 from tilings import GriddedPerm

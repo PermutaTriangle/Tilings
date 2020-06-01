@@ -77,7 +77,7 @@ class Split(Constructor):
                         yield (i,) + comp
 
             for comp in _compositions(value, len(parameters)):
-                yield {k: val for k, val in zip(parameters, comp)}
+                yield dict(zip(parameters, comp))
 
         def union_params(
             sub_params: Tuple[Dict[str, int], ...]

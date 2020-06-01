@@ -1,5 +1,5 @@
 from collections import defaultdict
-from itertools import chain, product
+from itertools import product
 from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Set, Tuple
 
 from permuta import Perm

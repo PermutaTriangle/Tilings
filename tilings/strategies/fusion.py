@@ -351,49 +351,15 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             for overlapping_parameters in self.predeterminable_left_right_points
         ), "not a valid amount of overlapping factors."
 
-        def helper(
-            overlapping_parameters: List[str],
-        ) -> Tuple[Optional[int], Optional[int]]:
-            """
-            Any two overlappping parameters determine the number of points in the
-            region. If there are three, then we can assess if it is a valid value.
-            """
-            p1 = overlapping_parameters[0]
-            p2 = overlapping_parameters[1]
-            p1_left = p1 in self.left_sided_parameters
-            p1_right = p1 in self.right_sided_parameters
-            p2_left = p2 in self.left_sided_parameters
-            p2_right = p2 in self.right_sided_parameters
-            if p1_left and p2_right:
-                assert (
-                    self.extra_parameters[p1] == self.fuse_parameter
-                    and self.extra_parameters[p2] == self.fuse_parameter
-                )
-                return parameters[p1], parameters[p2]
-            if p1_right and p2_left:
-                assert (
-                    self.extra_parameters[p1] == self.fuse_parameter
-                    and self.extra_parameters[p2] == self.fuse_parameter
-                )
-                return parameters[p1], parameters[p2]
-            if p1_left:
-                assert p2 in self.both_sided_parameters
-                return None, parameters[p2] - parameters[p1]
-            if p1_right:
-                assert p2 in self.both_sided_parameters
-                return parameters[p2] - parameters[p1], None
-            if p2_left:
-                assert p1 in self.both_sided_parameters
-                return None, parameters[p1] - parameters[p2]
-            if p2_right:
-                assert p1 in self.both_sided_parameters
-                return parameters[p1] - parameters[p2], None
-            raise ValueError("Overlapping parameters overlap same region")
-
         left: Optional[int] = None
         right: Optional[int] = None
         for overlapping_parameters in self.predeterminable_left_right_points:
-            new_left, new_right = helper(overlapping_parameters)
+            (
+                new_left,
+                new_right,
+            ) = self._determine_number_of_points_in_fuse_region_helper(
+                overlapping_parameters, **parameters
+            )
             if left is None:
                 left = new_left
             elif left != new_left:
@@ -404,19 +370,17 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 return
 
         # TODO: get the values from reliance profile function, e.g. n
+        if (left is not None and left < 0) or (right is not None and right < 0):
+            return
         if left is None:
             assert right is not None
             number_of_left_points_range = range(n - right + 1)
-        elif left < 0:
-            return
         else:
             number_of_left_points_range = range(left, left + 1)
 
         if right is None:
             assert left is not None
             number_of_right_points_range = range(n - left + 1)
-        elif right < 0:
-            return
         else:
             number_of_right_points_range = range(right, right + 1)
 
@@ -425,6 +389,45 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         ):
             if number_of_left + number_of_right <= n:
                 yield number_of_left, number_of_right
+
+    def _determine_number_of_points_in_fuse_region_helper(
+        self, overlapping_parameters: List[str], **parameters: int
+    ) -> Tuple[Optional[int], Optional[int]]:
+        """
+        Any two overlappping parameters determine the number of points in the
+        region. If there are three, then we can assess if it is a valid value.
+        """
+        p1 = overlapping_parameters[0]
+        p2 = overlapping_parameters[1]
+        p1_left = p1 in self.left_sided_parameters
+        p1_right = p1 in self.right_sided_parameters
+        p2_left = p2 in self.left_sided_parameters
+        p2_right = p2 in self.right_sided_parameters
+        if p1_left and p2_right:
+            assert (
+                self.extra_parameters[p1] == self.fuse_parameter
+                and self.extra_parameters[p2] == self.fuse_parameter
+            )
+            return parameters[p1], parameters[p2]
+        if p1_right and p2_left:
+            assert (
+                self.extra_parameters[p1] == self.fuse_parameter
+                and self.extra_parameters[p2] == self.fuse_parameter
+            )
+            return parameters[p1], parameters[p2]
+        if p1_left:
+            assert p2 in self.both_sided_parameters
+            return None, parameters[p2] - parameters[p1]
+        if p1_right:
+            assert p2 in self.both_sided_parameters
+            return parameters[p2] - parameters[p1], None
+        if p2_left:
+            assert p1 in self.both_sided_parameters
+            return None, parameters[p1] - parameters[p2]
+        if p2_right:
+            assert p1 in self.both_sided_parameters
+            return parameters[p1] - parameters[p2], None
+        raise ValueError("Overlapping parameters overlap same region")
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int
@@ -591,7 +594,7 @@ class ComponentFusionStrategy(FusionStrategy):
     ) -> ComponentFusionConstructor:
         if not self.tracked:
             # constructor only enumerates when tracked.
-            return FusionConstructor("n", {}, tuple(), tuple(), tuple())
+            return ComponentFusionConstructor("n", {}, tuple(), tuple(), tuple())
         # TODO: extra parameters?
         if children is None:
             children = self.decomposition_function(comb_class)
