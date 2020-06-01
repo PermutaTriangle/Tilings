@@ -394,8 +394,7 @@ class ComponentFusion(Fusion):
         """
         if not self._pre_check() or not self.has_crossing_len2_ob():
             return False
-        new_obs = chain(self._tiling.obstructions, self.obstructions_to_add())
-        new_tiling = self._tiling.__class__(new_obs, self._tiling.requirements)
+        new_tiling = self._tiling.add_obstructions(self.obstructions_to_add())
         return self._tiling == new_tiling
 
     def __str__(self):
