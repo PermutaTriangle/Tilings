@@ -168,12 +168,13 @@ class GriddedPerm(CombinatorialObject):
             raise ValueError("You're lost, no valid direction")
 
         res: Optional[Tuple[int, int]] = None
-        for idx, gp in zip(indices, gps):
+        for idx, gp in enumerate(gps):
+            forced_index_in_patt = indices[idx]
             for occurrence in gp.occurrences_in(self):
                 if res is None:
-                    res = idx, occurrence[idx]
+                    res = idx, occurrence[forced_index_in_patt]
                 else:
-                    new_res = directionmost(res[1], occurrence[idx])
+                    new_res = directionmost(res[1], occurrence[forced_index_in_patt])
                     if res[1] != new_res:
                         res = idx, new_res
         return res

@@ -218,7 +218,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             )
         child_index, forced_index = indices
         if self.include_empty:
-            forced_index += 1
+            child_index += 1
         gp = self.forward_gp_map(gp, forced_index)
         return (
             tuple(None for _ in range(child_index))
