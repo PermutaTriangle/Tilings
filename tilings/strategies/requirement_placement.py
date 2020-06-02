@@ -1,5 +1,6 @@
 import abc
 from collections import defaultdict
+from functools import reduce
 from itertools import chain, product
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
@@ -405,6 +406,10 @@ class RequirementPlacementFactory(AbstractRequirementPlacementFactory):
             - `permuta.misc.DIR_SOUTH`
             - `permuta.misc.DIR_EAST`
             - `permuta.misc.DIR_WEST`
+        - `max_rules_per_req`: The limit on the size of the requirements that can
+        be placed. If the product of the length of the gridded perms
+        in the requirement and the number of direction is greater than the max,
+        then no placements is performed for that req.
     """
 
     def __init__(
@@ -413,9 +418,11 @@ class RequirementPlacementFactory(AbstractRequirementPlacementFactory):
         partial: bool = False,
         ignore_parent: bool = False,
         dirs: Iterable[int] = tuple(DIRS),
+        max_rules_per_req: Optional[int] = None,
     ):
         assert all(d in DIRS for d in dirs), "Got an invalid direction"
         self.subreqs = subreqs
+        self.max_rules_per_req = max_rules_per_req
         super().__init__(partial=partial, ignore_parent=ignore_parent, dirs=dirs)
 
     @staticmethod
@@ -453,6 +460,12 @@ class RequirementPlacementFactory(AbstractRequirementPlacementFactory):
         else:
             all_reqs = tiling.requirements
         for req in all_reqs:
+            if self.max_rules_per_req is not None:
+                num_rule = len(self.dirs) * reduce(
+                    lambda prod, req: prod * len(req), req, 1
+                )
+                if num_rule > self.max_rules_per_req:
+                    continue
             for indices, direction in product(
                 product(*[range(len(gp)) for gp in req]), self.dirs
             ):
@@ -476,6 +489,8 @@ class RequirementPlacementFactory(AbstractRequirementPlacementFactory):
                 s += " and {}".format(dir_str[self.dirs[-1]])
         if self.ignore_parent:
             s += " (ignore parent)"
+        if self.max_rules_per_req:
+            s += " (at most {self.max_rules_per_req} rule per req)"
         return s
 
     def __repr__(self) -> str:
@@ -491,8 +506,12 @@ class RequirementPlacementFactory(AbstractRequirementPlacementFactory):
             dir_arg = ""
         return (
             "AllRequirementPlacementStrategy(subreqs={},partial={},"
-            " ignore_parent={}{})".format(
-                self.subreqs, self.partial, self.ignore_parent, dir_arg
+            " ignore_parent={}{}, max_rules_per_req={})".format(
+                self.subreqs,
+                self.partial,
+                self.ignore_parent,
+                dir_arg,
+                self.max_rules_per_req,
             )
         )
 
@@ -500,11 +519,13 @@ class RequirementPlacementFactory(AbstractRequirementPlacementFactory):
         d = super().to_jsonable()
         d.pop("include_empty")
         d["subreqs"] = self.subreqs
+        d["max_rules_per_req"] = self.max_rules_per_req
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "RequirementPlacementFactory":
-        return cls(**d)
+        max_rules_per_req = d.pop("max_rules_per_req", None)
+        return cls(max_rules_per_req=max_rules_per_req, **d)
 
 
 class RowAndColumnPlacementFactory(AbstractRequirementPlacementFactory):
