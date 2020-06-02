@@ -85,7 +85,7 @@ class Tiling(CombinatorialClass):
     func_calls = func_calls
     func_times = func_times
 
-    # @cssmethodtimer("Tiling.__init__")
+    @cssmethodtimer("Tiling.__init__")
     def __init__(
         self,
         obstructions: Iterable[GriddedPerm] = tuple(),
@@ -132,7 +132,8 @@ class Tiling(CombinatorialClass):
             # Set self._active_cells, self._empty_cells, and self._dimensions
             # Should eliminate the need for _fill_empty
             # The function _remove_empty_rows_and_cols is responsible for adjusting
-            # self._prepare_properties()
+            if derive_empty:
+                self._prepare_properties()
 
             # Remove gridded perms that avoid obstructions from assumptions
             if simplify:
