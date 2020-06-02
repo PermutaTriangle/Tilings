@@ -74,6 +74,11 @@ packs = (
     + length(TileScopePack.insertion_point_placements)
     + row_col(TileScopePack.insertion_row_and_col_placements)
     + length_maxnumreq(TileScopePack.only_root_placements)
+    + [
+        TileScopePack.only_root_placements(
+            length=3, max_num_req=2, max_placement_rules_per_req=100
+        )
+    ]
     + length_partial(TileScopePack.pattern_placements)
     + length_partial(TileScopePack.point_placements)
     + directions(TileScopePack.regular_insertion_encoding)
