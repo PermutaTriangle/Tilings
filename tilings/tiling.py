@@ -181,7 +181,7 @@ class Tiling(CombinatorialClass):
             max_row = max(max_row, cell[1])
         dimensions = (max_col + 1, max_row + 1)
 
-        empty_cells = set(
+        empty_cells = tuple(
             cell
             for cell in product(range(dimensions[0]), range(dimensions[1]))
             if cell not in active_cells
