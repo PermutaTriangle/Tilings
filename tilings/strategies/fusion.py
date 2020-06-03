@@ -38,7 +38,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                                 fully the right side of the region that is
                                 being fused.
     - both_sided_parameters:    all of the parent parameters which overlap
-                                fully the entire region that is being fused.
+                                fully the entire region that is being fused or
+                                not at all. # TODO: better name?
     """
 
     def __init__(
@@ -95,6 +96,10 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 for parent_vars in self.reversed_extra_parameters.values()
                 if len(parent_vars) >= 2
             ]
+            assert all(
+                len(parent_vars) <= 2
+                for parent_vars in self.reversed_extra_parameters.values()
+            )
 
             if predeterminable_left_right_points:
                 self.rec_function = (
@@ -227,11 +232,12 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 )
             else:
                 assert fusion_type == "both"
+                # TODO: is this the right way?
                 max_left_points = min(
-                    max_right_points, number_points_parent_fuse_parameter
+                    max_left_points, number_points_parent_fuse_parameter
                 )
                 max_right_points = min(
-                    max_left_points, number_points_parent_fuse_parameter
+                    max_right_points, number_points_parent_fuse_parameter
                 )
             if min_left_points > max_left_points or min_right_points > max_right_points:
                 return
@@ -320,6 +326,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 else value
             )
             if updated_value < 0:
+                # TODO: is this reached?
                 return None
             child_parameter = self.extra_parameters[parameter]
             if child_parameter in res:
@@ -363,8 +370,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         Precisely, it returns the number of points on the left, and the number
         of points on the right. If it can't determine one, then None is returned
         for that value.
-
-        If there is a contradiction, (-1, -1) is returned.
         """
         assert self.predeterminable_left_right_points
         assert all(
@@ -385,11 +390,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 left = new_left
             elif left != new_left:
                 return
-            if right is None or right < 0:
+            if right is None:
                 right = new_right
             elif right != new_right:
                 return
-
+            
         # TODO: get the values from reliance profile function, e.g. n
         if (left is not None and left < 0) or (right is not None and right < 0):
             return
@@ -424,18 +429,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         p1_right = p1 in self.right_sided_parameters
         p2_left = p2 in self.left_sided_parameters
         p2_right = p2 in self.right_sided_parameters
-        if p1_left and p2_right:
-            assert (
-                self.extra_parameters[p1] == self.fuse_parameter
-                and self.extra_parameters[p2] == self.fuse_parameter
-            )
-            return parameters[p1], parameters[p2]
-        if p1_right and p2_left:
-            assert (
-                self.extra_parameters[p1] == self.fuse_parameter
-                and self.extra_parameters[p2] == self.fuse_parameter
-            )
-            return parameters[p1], parameters[p2]
+        # TODO: tidy up this function, and update doc string
+        assert not (p1_left and p2_right) and not (p1_right and p2_left)
         if p1_left:
             assert p2 in self.both_sided_parameters
             return None, parameters[p2] - parameters[p1]
