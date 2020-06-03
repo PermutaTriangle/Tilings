@@ -19,8 +19,18 @@ Tilings
      :alt: Requirements Status
 
 
-``tilings`` is a Python library for working with gridded permutation and
-tilings.
+The ``tilings`` Python library contains code for working with gridded
+permutations and tilings, and in particular the ``tilescope`` algorithm which
+can be used to enumerate permutation classes.
+
+If you are primarily interested in enumerating permutation classes, then you
+may wish to skip ahead to the ``tilescope`` section, but note the installation
+will be the same as for ``tilings``.
+
+If you need support, have a suggestion, or just want to be up to date with the
+latest developments please join us on our
+`Discord server <https://discord.gg/ySJD6SV>`__ where we'd be happy to hear
+from you!
 
 Installing
 ----------
@@ -44,6 +54,8 @@ To run the unit tests:
 .. code:: bash
 
        ./setup.py test
+
+You should be all set up to use ``tilings`` and the ``tilescope`` algorithm!
 
 What are gridded permutations and tilings?
 ------------------------------------------
@@ -139,6 +151,12 @@ have a tiling that corresponds to non-empty permutation avoiding
        >>> til.positive_cells
        frozenset({(1, 1)})
 
+A keen reader may have observed that a tiling can also take a third argument
+called assumptions. These can be used to keep track of occurrences gridded
+permutations on tilings. These are still in development mode but are essential
+for certain parts of the tilescope algorithm. For simplicity we will not
+discuss these again until the `Fusion` section.
+
 There are a number of methods available on the tiling. You can generate
 the gridded permutations satisfying the obstructions and requirements
 using the ``gridded_perms_of_length`` method.
@@ -160,3 +178,33 @@ using the ``gridded_perms_of_length`` method.
 There are numerous other methods and properties. Many of these specific
 to the ``tilescope`` algorithm, discussed in `Christian Bean’s PhD
 thesis <https://skemman.is/handle/1946/31663>`__.
+
+The TileScope algorithm
+=======================
+
+
+
+Using the tilescope
+-------------------
+
+If you've not installed ``tilings`` yet then go ahead and do this first.
+Then the tilescope can be imported by a Python nteractive Python session
+from ``tilings.tilescope``.
+
+.. code:: python
+
+       >>> from tilings.tilescope import *
+
+Importing ``*`` from it supplies you with the "TileScope" and ‘TileScopePack’
+classes.
+
+Using the fusion strategy
+-------------------------
+
+
+
+
+Finally, I'd like reiterate, if you need support, have a suggestion, or just
+want to be up to date with the latest developments please join us on our
+`Discord server <https://discord.gg/ySJD6SV>`__ where we'd be happy to hear
+from you!

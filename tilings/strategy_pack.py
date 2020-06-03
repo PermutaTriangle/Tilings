@@ -38,7 +38,7 @@ class TileScopePack(StrategyPack):
         )
 
     def make_fusion(
-        self, component: bool = False, tracked: bool = False
+        self, component: bool = False, tracked: bool = True
     ) -> "TileScopePack":
         """Create a new pack by adding fusion to the current pack."""
         assert not (
@@ -48,7 +48,9 @@ class TileScopePack(StrategyPack):
         if strat.SplittingStrategy() not in self:
             pack = pack.add_initial(strat.SplittingStrategy())
         if component:
-            pack = pack.add_initial(strat.ComponentFusionFactory(), "component_fusion")
+            pack = pack.add_initial(
+                strat.ComponentFusionFactory(tracked=tracked), "component_fusion"
+            )
         else:
             pack = pack.add_initial(strat.FusionFactory(tracked=tracked), "fusion")
         return pack
