@@ -85,7 +85,7 @@ class Tiling(CombinatorialClass):
     func_calls = func_calls
     func_times = func_times
 
-    @cssmethodtimer("Tiling.__init__")
+    # @cssmethodtimer("Tiling.__init__")
     def __init__(
         self,
         obstructions: Iterable[GriddedPerm] = tuple(),
