@@ -121,7 +121,7 @@ class Tiling(CombinatorialClass):
             # Set of requirement lists
             self._requirements = Tiling.sort_requirements(requirements)
             # Set of assumptions
-            self._assumptions = tuple(assumptions)
+            self._assumptions = tuple(sorted(assumptions))
 
         # Simplify the set of obstructions and the set of requirement lists
         if simplify:
@@ -130,10 +130,9 @@ class Tiling(CombinatorialClass):
         if not any(ob.is_empty() for ob in self.obstructions):
 
             # Set self._active_cells, self._empty_cells, and self._dimensions
-            # Should eliminate the need for _fill_empty
             # The function _remove_empty_rows_and_cols is responsible for adjusting
-            if derive_empty:
-                self._prepare_properties()
+            #   these properties if they change
+            # self._prepare_properties()
 
             # Remove gridded perms that avoid obstructions from assumptions
             if simplify:
@@ -142,37 +141,6 @@ class Tiling(CombinatorialClass):
             # Remove empty rows and empty columns
             if remove_empty_rows_and_cols:
                 self._remove_empty_rows_and_cols()
-
-            # If assuming the non-active cells are empty, then add the
-            # obstructions
-            # if derive_empty:
-            # self._fill_empty()
-
-        for ob in self.obstructions:
-            for cell in ob.pos:
-                assert (
-                    cell[0] < self.dimensions[0] and cell[1] < self.dimensions[1]
-                ), "\n{}\n{}\n{}\n{}\n{}\n{}\n".format(
-                    "=" * 50,
-                    self,
-                    self.obstructions,
-                    self.active_cells,
-                    self.empty_cells,
-                    self.dimensions,
-                )
-
-        # print(
-        #     "\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n".format(
-        #         "=" * 50,
-        #         self,
-        #         self.obstructions,
-        #         self.active_cells,
-        #         self.empty_cells,
-        #         self.dimensions,
-        #         self.forward_cell_map,
-        #     )
-        # )
-        #
 
     @classmethod
     def from_perms(
@@ -218,28 +186,30 @@ class Tiling(CombinatorialClass):
             for cell in product(range(dimensions[0]), range(dimensions[1]))
             if cell not in active_cells
         )
-        new_obstructions = tuple(
-            GriddedPerm(Perm((0,)), (cell,)) for cell in empty_cells
-        )
-        # TODO: Is this sorting really necessary?
-        self._obstructions = tuple(sorted(set(new_obstructions + self._obstructions)))
+
+        # If the first obstruction is the empty perm, we shouldn't do any of this.
+        if len(self._obstructions) > 0 and len(self._obstructions[0]) > 0:
+            # We can assume that self._obstructions is sorted at this point, so to
+            #   extract the point obstructions, we just pass though them until we've
+            #   found the last one, then we slice the list there.
+            index = 0
+            for ob in self._obstructions:
+                if len(ob) > 1:
+                    break
+                index += 1
+            # Now the last point obstruction is at index [index-1]
+            # point_obstructions = self._obstructions[:index]
+            non_point_obstructions = self._obstructions[index:]
+
+            new_point_obstructions = tuple(
+                GriddedPerm(Perm((0,)), (cell,)) for cell in empty_cells
+            )
+            # TODO: Is this sorting really necessary?
+            self._obstructions = new_point_obstructions + non_point_obstructions
 
         self._active_cells = frozenset(active_cells)
         self._empty_cells = frozenset(empty_cells)
         self._dimensions = dimensions
-
-    @cssmethodtimer("Tiling._fill_empty")
-    def _fill_empty(self) -> None:
-        """Add size one obstructions to cells that are empty."""
-        add = []
-        (i, j) = self.dimensions
-        active_cells = self.active_cells
-        empty_cells = self.empty_cells
-        for x in range(i):
-            for y in range(j):
-                if (x, y) not in active_cells and (x, y) not in empty_cells:
-                    add.append(GriddedPerm.single_cell(Perm((0,)), (x, y)))
-        self._obstructions = tuple(sorted(tuple(add) + self._obstructions))
 
     @cssmethodtimer("Tiling._simplify_griddedperms")
     def _simplify_griddedperms(self, already_minimized_obs=False) -> None:
@@ -354,7 +324,7 @@ class Tiling(CombinatorialClass):
         """
         res: List[TrackingAssumption] = []
         for assumption in self.assumptions:
-            ass = assumption.avoiding(self._obstructions)
+            ass = assumption.avoiding(self._obstructions, self.active_cells)
             if ass.gps:
                 res.append(ass)
         self._assumptions = tuple(sorted(set(res)))

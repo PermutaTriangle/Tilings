@@ -1,6 +1,8 @@
-from typing import Iterable
+from typing import Iterable, Optional, Tuple
 
 from .griddedperm import GriddedPerm
+
+Cell = Tuple[int, int]
 
 
 class TrackingAssumption:
@@ -12,12 +14,25 @@ class TrackingAssumption:
     def __init__(self, gps: Iterable[GriddedPerm]):
         self.gps = tuple(sorted(set(gps)))
 
-    def avoiding(self, obstructions: Iterable[GriddedPerm]) -> "TrackingAssumption":
+    def avoiding(
+        self,
+        obstructions: Iterable[GriddedPerm],
+        active_cells: Optional[Iterable[Cell]] = None,
+    ) -> "TrackingAssumption":
         """
         Return the tracking absumption where all of the gridded perms avoiding
         the obstructions are removed.
         """
         obstructions = tuple(obstructions)
+        if active_cells is not None:
+            return self.__class__(
+                tuple(
+                    gp
+                    for gp in self.gps
+                    if all(cell in active_cells for cell in gp.pos)
+                    and gp.avoids(*obstructions)
+                )
+            )
         return self.__class__(tuple(gp for gp in self.gps if gp.avoids(*obstructions)))
 
     def to_jsonable(self) -> dict:
