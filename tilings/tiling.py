@@ -121,7 +121,12 @@ class Tiling(CombinatorialClass):
             # Set of requirement lists
             self._requirements = Tiling.sort_requirements(requirements)
             # Set of assumptions
-            self._assumptions = tuple(sorted(assumptions))
+            # self._assumptions = tuple(sorted(assumptions))
+            self._assumptions = tuple(assumptions)
+
+            # print("=" * 50)
+            # print(tuple(assumptions))
+            # print(tuple(sorted(assumptions)))
 
         # Simplify the set of obstructions and the set of requirement lists
         if simplify:
@@ -129,14 +134,14 @@ class Tiling(CombinatorialClass):
 
         if not any(ob.is_empty() for ob in self.obstructions):
 
-            # Set self._active_cells, self._empty_cells, and self._dimensions
-            # The function _remove_empty_rows_and_cols is responsible for adjusting
-            #   these properties if they change
-            # self._prepare_properties()
-
             # Remove gridded perms that avoid obstructions from assumptions
             if simplify:
                 self._clean_assumptions()
+
+            # Fill empty
+            if derive_empty:
+                if not hasattr(self, "_empty_cells"):
+                    self._prepare_properties()
 
             # Remove empty rows and empty columns
             if remove_empty_rows_and_cols:

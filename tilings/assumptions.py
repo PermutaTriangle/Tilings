@@ -24,7 +24,7 @@ class TrackingAssumption:
         the obstructions are removed.
         """
         obstructions = tuple(obstructions)
-        if active_cells is not None:
+        if active_cells is not None and False:
             return self.__class__(
                 tuple(
                     gp
