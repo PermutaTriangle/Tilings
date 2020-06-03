@@ -44,7 +44,12 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         super().__init__(ignore_parent=ignore_parent, possibly_empty=possibly_empty)
 
     def _placed_cell(self, idx: int) -> Cell:
+        """Return the cell placed given the index of the child."""
         return self._placed_cells[idx]
+
+    def _child_idx(self, idx: int):
+        """Return the index of the child given the index of gps placed into."""
+        return self._placed_cells.index(self.gps[idx].pos[self.indices[idx]])
 
     def placement_class(self, tiling: Tiling) -> RequirementPlacement:
         return RequirementPlacement(tiling, own_col=self.own_col, own_row=self.own_row)
@@ -157,7 +162,8 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             return (children[0].forward_map(gp),) + tuple(
                 None for _ in range(len(children) - 1)
             )
-        child_index, forced_index = indices
+        gps_index, forced_index = indices
+        child_index = self._child_idx(gps_index)
         if self.include_empty:
             child_index += 1
         gp = self.forward_gp_map(gp, forced_index)
