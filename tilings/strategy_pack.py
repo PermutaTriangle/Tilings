@@ -276,9 +276,18 @@ class TileScopePack(StrategyPack):
 
     @classmethod
     def only_root_placements(
-        cls, length: int = 3, max_num_req: Optional[int] = 1,
+        cls,
+        length: int = 3,
+        max_num_req: Optional[int] = 1,
+        max_placement_rules_per_req: Optional[int] = None,
     ) -> "TileScopePack":
-        name = "only_length_{}_root_placements".format(length)
+        if max_num_req is not None:
+            name = f"only_length_{length}_{max_num_req}_reqs_root_placements"
+        else:
+            name = f"only_length_{length}_root_placements"
+        placement_factory = strat.RequirementPlacementFactory(
+            max_rules_per_req=max_placement_rules_per_req
+        )
         return TileScopePack(
             initial_strats=[
                 strat.RootInsertionFactory(maxreqlen=length, max_num_req=max_num_req),
@@ -293,10 +302,7 @@ class TileScopePack(StrategyPack):
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityFactory(),
             ],
-            expansion_strats=[
-                [strat.PatternPlacementFactory()],
-                [strat.RequirementCorroborationFactory()],
-            ],
+            expansion_strats=[[placement_factory]],
             name=name,
         )
 
