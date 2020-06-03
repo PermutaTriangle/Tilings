@@ -72,6 +72,7 @@ def report(tiling, func_name, extra=""):
     )
 
 
+# pylint: disable=too-many-instance-attributes
 class Tiling(CombinatorialClass):
     """Tiling class.
 
