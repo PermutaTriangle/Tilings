@@ -1,5 +1,5 @@
 from itertools import product
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Set, Tuple
 
 from sympy import Eq, Function
 
@@ -11,9 +11,12 @@ from comb_spec_searcher.strategies.constructor import (
     SubRecs,
     SubSamplers,
 )
+from comb_spec_searcher.utils import compositions
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor
 from tilings.assumptions import TrackingAssumption
+
+Cell = Tuple[int, int]
 
 
 class Split(Constructor):
@@ -60,23 +63,16 @@ class Split(Constructor):
 
     def _valid_compositions(self, **parameters: int) -> Iterator[Dict[str, int]]:
         """
+        For each parameter which splits according to split_parameters, it will
+        take a composition of the value for parameter and assign it to the
+        subparameters it is split into.
+
         TODO: this should consider reliance profiles, and when variables are
         sub variable of other variables.
         """
 
-        def compositions(value: int, parameters: Tuple[str, ...]):
-            def _compositions(value: int, length: int) -> Iterator[Tuple[int, ...]]:
-                if value < 0:
-                    return
-                if length == 0:
-                    if value == 0:
-                        yield tuple()
-                    return
-                for i in range(value + 1):
-                    for comp in _compositions(value - i, length - 1):
-                        yield (i,) + comp
-
-            for comp in _compositions(value, len(parameters)):
+        def compositions_dict(value: int, parameters: Tuple[str, ...]):
+            for comp in compositions(value, len(parameters)):
                 yield dict(zip(parameters, comp))
 
         def union_params(
@@ -94,7 +90,7 @@ class Split(Constructor):
 
         for sub_params in product(
             *[
-                compositions(val, self.split_parameters[key])
+                compositions_dict(val, self.split_parameters[key])
                 for key, val in parameters.items()
             ]
         ):
@@ -142,7 +138,9 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         return (Tiling(tiling.obstructions, tiling.requirements, new_assumptions),)
 
     @staticmethod
-    def _split_assumption(assumption, components):
+    def _split_assumption(
+        assumption: TrackingAssumption, components: Tuple[Set[Cell], ...]
+    ) -> List[TrackingAssumption]:
         split_gps: List[List[GriddedPerm]] = [[] for _ in range(len(components))]
         for gp in assumption.gps:
             for idx, component in enumerate(components):

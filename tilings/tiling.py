@@ -181,9 +181,7 @@ class Tiling(CombinatorialClass):
         """Remove empty rows and columns."""
         # Produce the mapping between the two tilings
         if not self.active_cells:
-            self._forward_map: Dict[Cell, Cell] = {
-                cell: (0, 0) for cell in self.empty_cells
-            }
+            self._forward_map: Dict[Cell, Cell] = {}
             self._obstructions = (GriddedPerm.single_cell(Perm((0,)), (0, 0)),)
             self._requirements = tuple()
             self._dimensions = (1, 1)
@@ -1009,16 +1007,13 @@ class Tiling(CombinatorialClass):
         )
 
     def objects_of_size(self, n: int, **parameters: int) -> Iterator[GriddedPerm]:
-        def assumption_count(gp, assumption):
-            return sum(len(list(p.occurrences_in(gp))) for p in assumption.gps)
-
         if not parameters:
             yield from self.gridded_perms_of_length(n)
         else:
             assert set(self.extra_parameters) == set(parameters)
             for gp in self.gridded_perms_of_length(n):
                 if all(
-                    assumption_count(gp, ass) == parameters[k]
+                    ass.get_value(gp) == parameters[k]
                     for k, ass in zip(self.extra_parameters, self._assumptions)
                 ):
                     yield gp

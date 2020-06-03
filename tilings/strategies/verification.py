@@ -55,10 +55,7 @@ class BasicVerificationStrategy(AtomStrategy):
         gp = next(comb_class.minimal_gridded_perms())
         expected = {"n": len(gp)}
         for assumption in comb_class.assumptions:
-            count = len(
-                list(chain.from_iterable(p.occurrences_in(gp) for p in assumption.gps))
-            )
-            expected[comb_class.get_parameter(assumption)] = count
+            expected[comb_class.get_parameter(assumption)] = assumption.get_value(gp)
         actual = {"n": n, **parameters}
         if expected == actual:
             return 1

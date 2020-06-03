@@ -44,15 +44,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         # point to the same child parameter as when an assumption in the fused region
         # is fused, we map it to the row or column if it uses at least one row
         # or column in the fusion region.
-        #
-        # FALSE: In particular, these lists can have size
-        #           at most two, and one of the two variables
-        #           is a subset of the other
-        #
-        # In particular, the lists can have size at most two (in which one of
-        # the two variables is a subset of the other), unless, they are contained
-        # entirely within the fused region, in which case it can have up
-        # to 3: left, right and both.
         self.reversed_extra_parameters: Dict[str, List[str]] = defaultdict(list)
         # the child parameter that determine 'where the line is drawn'.
         self.fuse_parameter = fuse_parameter
@@ -60,41 +51,14 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         self.left_sided_parameters = frozenset(left_sided_parameters)
         self.right_sided_parameters = frozenset(right_sided_parameters)
         self.both_sided_parameters = frozenset(both_sided_parameters)
-        # The following assertions check that if two parent assumptions map to the
-        # sameassumption, then one of them is one sided, and the other covers both
-        # sides, OR that they are all contained fully in fuse region.
-        assert all(
-            len(val) <= 2
-            or (
-                len(val) == 3
-                and all(
-                    self.extra_parameters[parent_var] == self.fuse_parameter
-                    for parent_var in val
-                )
-            )
-            for val in self.reversed_extra_parameters.values()
-        )
-        for parent_var, child_var in self.extra_parameters.items():
-            self.reversed_extra_parameters[child_var].append(parent_var)
-        assert all(
-            (
-                any(
-                    parent_var in self.left_sided_parameters
-                    or parent_var in self.right_sided_parameters
-                    for parent_var in parent_vars
-                )
-                and any(
-                    parent_var in self.both_sided_parameters
-                    for parent_var in parent_vars
-                )
-            )
-            or all(
-                self.extra_parameters[parent_var] == self.fuse_parameter
-                for parent_var in parent_vars
-            )
-            for parent_vars in self.reversed_extra_parameters.values()
-            if len(parent_vars) == 2
-        )
+
+        # In particular, the lists in reversed_extra_parameters can have size at
+        # most two (in which case  of the two variables is a subset of the other),
+        # unless, they are contained entirely within the fused region, in which
+        # case it can have up to 3, namely left, right and both. This is checked
+        # in the following function.
+        self._init_checked()
+
         # if any two parents map to the same child, then these determine the
         # number of left and right points
         self.predeterminable_left_right_points = [
@@ -129,6 +93,52 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 )
             else:
                 self.rec_function = self._new_fusion_parameter_get_recurrence
+
+    def _init_checked(self):
+        """
+        The lists in reversed_extra_parameters can have size at most two (in
+        which case one of the two variables is a subset of the other), unless,
+        they are contained entirely within the fused region, in which case it
+        can have up to 3, namely left, right and both. This is checked in the
+        first assertion.
+
+        Moreover, if two parent assumptions map to the same assumption, then one
+        of them is one sided, and the other covers both sides, OR they are all
+        contained fully in fuse region. This is checked in the second assertion.
+        """
+        assert all(
+            len(val) <= 2
+            or (
+                len(val) == 3
+                and all(
+                    self.extra_parameters[parent_var] == self.fuse_parameter
+                    for parent_var in val
+                )
+            )
+            for val in self.reversed_extra_parameters.values()
+        )
+        for parent_var, child_var in self.extra_parameters.items():
+            self.reversed_extra_parameters[child_var].append(parent_var)
+        # The following assertions check that
+        assert all(
+            (
+                any(
+                    parent_var in self.left_sided_parameters
+                    or parent_var in self.right_sided_parameters
+                    for parent_var in parent_vars
+                )
+                and any(
+                    parent_var in self.both_sided_parameters
+                    for parent_var in parent_vars
+                )
+            )
+            or all(
+                self.extra_parameters[parent_var] == self.fuse_parameter
+                for parent_var in parent_vars
+            )
+            for parent_vars in self.reversed_extra_parameters.values()
+            if len(parent_vars) == 2
+        )
 
     @staticmethod
     def is_equivalence() -> bool:
