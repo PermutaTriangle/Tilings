@@ -121,12 +121,7 @@ class Tiling(CombinatorialClass):
             # Set of requirement lists
             self._requirements = Tiling.sort_requirements(requirements)
             # Set of assumptions
-            # self._assumptions = tuple(sorted(assumptions))
-            self._assumptions = tuple(assumptions)
-
-            # print("=" * 50)
-            # print(tuple(assumptions))
-            # print(tuple(sorted(assumptions)))
+            self._assumptions = tuple(sorted(assumptions))
 
         # Simplify the set of obstructions and the set of requirement lists
         if simplify:
@@ -315,7 +310,6 @@ class Tiling(CombinatorialClass):
         )
         if identity:
             return ({}, {}, True)
-            # pass
         col_mapping = {x: actual for actual, x in enumerate(col_list)}
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
         return (col_mapping, row_mapping, False)

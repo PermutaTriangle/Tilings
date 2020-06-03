@@ -356,13 +356,6 @@ class RequirementPlacement:
             stretched = self._stretched_obstructions_requirements_and_assumptions(cell)
             (obs, reqs, ass) = stretched
 
-            print("stretching")
-            print(self._tiling)
-            print(f"in cell {cell}")
-            print("new obs:", obs)
-            print("new req:", reqs)
-            print("new ass:", ass)
-
             forced_obs = self._forced_obstructions_from_requirement(
                 gps, indices, cell, direction
             )
