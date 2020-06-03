@@ -490,7 +490,7 @@ class RequirementPlacementFactory(AbstractRequirementPlacementFactory):
         if self.ignore_parent:
             s += " (ignore parent)"
         if self.max_rules_per_req:
-            s += " (at most {self.max_rules_per_req} rule per req)"
+            s += f" (at most {self.max_rules_per_req} rule per req)"
         return s
 
     def __repr__(self) -> str:
