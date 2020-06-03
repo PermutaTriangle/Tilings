@@ -24,10 +24,21 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     The fusion constructor. It will multiply by (fuse_paramater + 1), and
     otherwise pass on the variables.
 
-    The parameters given should be a dictionary. Each child variable should
-    point to some parent variable with the exception of the fuse variable which
-    will not point if it was just added. If [ A | A ] fuses to [ A ] then we
-    assume any one sided variable maps to the [ A ].
+    - fuse_parameter:           parameter corresponding to the region of the
+                                tiling of the child where a line must be drawn.
+    - extra_parameters:         a dictionary where the keys are each of the
+                                parent parameters pointing to the child
+                                parameter it was mapped to. Note, if [ A | A ]
+                                fuses to [ A ] then we assume any one sided
+                                variable maps to the [ A ] on the child.
+    - left_sided_parameters:    all of the parent parameters which overlap
+                                fully the left side of the region that is
+                                being fused.
+    - right_sided_parameters:   all of the parent parameters which overlap
+                                fully the right side of the region that is
+                                being fused.
+    - both_sided_parameters:    all of the parent parameters which overlap
+                                fully the entire region that is being fused.
     """
 
     def __init__(
@@ -45,6 +56,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         # is fused, we map it to the row or column if it uses at least one row
         # or column in the fusion region.
         self.reversed_extra_parameters: Dict[str, List[str]] = defaultdict(list)
+        for parent_var, child_var in self.extra_parameters.items():
+            self.reversed_extra_parameters[child_var].append(parent_var)
         # the child parameter that determine 'where the line is drawn'.
         self.fuse_parameter = fuse_parameter
         # sets to tell if parent assumption is one sided, or both
@@ -52,20 +65,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         self.right_sided_parameters = frozenset(right_sided_parameters)
         self.both_sided_parameters = frozenset(both_sided_parameters)
 
-        # In particular, the lists in reversed_extra_parameters can have size at
-        # most two (in which case  of the two variables is a subset of the other),
-        # unless, they are contained entirely within the fused region, in which
-        # case it can have up to 3, namely left, right and both. This is checked
-        # in the following function.
         self._init_checked()
 
-        # if any two parents map to the same child, then these determine the
-        # number of left and right points
-        self.predeterminable_left_right_points = [
-            parent_vars
-            for parent_vars in self.reversed_extra_parameters.values()
-            if len(parent_vars) >= 2
-        ]
         # we now determine which fusion recurrence we want to use
         if self.fuse_parameter in extra_parameters.values():
             self.parent_fusion_parameters = self.reversed_extra_parameters[
@@ -86,13 +87,26 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         else:
             # no parent variable maps to the fusion region, so need to add new
             # parameter to each call.
-            # TODO: consider merging the two functions following to just one?
-            if self.predeterminable_left_right_points:
+
+            # if any two parent parameters map to the same child parameter, then
+            # these determine the number of left and right points
+            predeterminable_left_right_points = [
+                parent_vars
+                for parent_vars in self.reversed_extra_parameters.values()
+                if len(parent_vars) >= 2
+            ]
+
+            if predeterminable_left_right_points:
                 self.rec_function = (
                     self._predetermined_new_fusion_parameter_get_recurrence
                 )
+                self.predeterminable_left_right_points = (
+                    predeterminable_left_right_points
+                )
             else:
                 self.rec_function = self._new_fusion_parameter_get_recurrence
+
+            # TODO: consider merging the two functions in this case to just one
 
     def _init_checked(self):
         """
@@ -117,9 +131,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             )
             for val in self.reversed_extra_parameters.values()
         )
-        for parent_var, child_var in self.extra_parameters.items():
-            self.reversed_extra_parameters[child_var].append(parent_var)
-        # The following assertions check that
         assert all(
             (
                 any(
