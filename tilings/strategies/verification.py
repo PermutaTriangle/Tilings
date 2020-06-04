@@ -378,7 +378,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
                 "Cannot get a specification for a tiling in the database"
             )
         return StrategyPack(
-            initial_strats=[FactorFactory()],
+            initial_strats=[SplittingStrategy(), FactorFactory()],
             inferral_strats=[],
             expansion_strats=[],
             ver_strats=[
