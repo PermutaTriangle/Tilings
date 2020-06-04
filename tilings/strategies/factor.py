@@ -97,7 +97,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         return "factor"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "(paritition={}, workable={})".format(
+        return self.__class__.__name__ + "(partition={}, workable={})".format(
             self.partition, self.workable
         )
 
