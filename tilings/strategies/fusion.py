@@ -10,8 +10,9 @@ entire fused region. With this in mind, we assume that a tiling cannot fuse if
 it has an assumption that intersects only partially with one of the adjacent
 rows or columns.
 
-There are three cases handled. We will assume we are always fusing two adjacent
-columns, and discuss the left and right hand sides accordingly.
+We will assume we are always fusing two adjacent columns, and discuss the left
+and right hand sides accordingly.
+There are two cases we use to determine the number of left and right points.
 
 # Case 1:
 There was an assumption A on the parent which maps precisely to the fused
@@ -42,13 +43,6 @@ In this case we can determine:
   number of points in B substract the number of points in A
 - the number of points in the entire region is upper bounded by the number of
   points in B.
-
-# Case 3:
-We are not in case 1, or case 2. That is, there is no parent assumptions which
-map to the fused region, and moreover there are no two parent assumptions
-which map to the same region.
-In this case we must try all possible values for the number of left and right
-points.
 """
 from collections import defaultdict
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
@@ -119,7 +113,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
 
         self._init_checked()
 
-        self.rec_function = self._predetermined_new_fusion_parameter_get_recurrence
         self.parent_fusion_parameters = self.reversed_extra_parameters[
             self.fuse_parameter
         ]
@@ -199,19 +192,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         where extra_parameters are updated according to extra_parameters.
         """
         subrec = subrecs[0]
-        return self.rec_function(subrec, n, **parameters)
-
-    def _predetermined_new_fusion_parameter_get_recurrence(
-        self, subrec: SubRec, n: int, **parameters: int
-    ) -> int:
-        """
-        In this case, a new fused region was added and no other parameter uses
-        the fused region. However, there are two parent assumptions that map to
-        the same assumption overlapping the fused region. These determine the
-        unique value that can be assigned to the fusion region.
-
-        # TODO: are you sure about the determine number function?
-        """
         res = 0
         left_right_points = self._determine_number_of_points_in_fuse_region(
             n, **parameters
@@ -227,10 +207,101 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         self, n: int, **parameters: int
     ) -> Iterator[Tuple[int, int]]:
         """
+        There are two cases we use to determine the number of left and right points.
+
+        # Case 1:
+        There was an assumption A on the parent which maps precisely to the fused
+        region. It must be either on the left, right, or covering both columns,
+        crucially fully contained within the region to be fused.
+
+        In this case we can determine:
+        - if A is left sided, then we know the number of points on the left must be the
+        number of points in A
+        - if A is right sided, then we know the number of points on the right must be
+        be the number of points in A.
+        - if A is both sided, then this tells as the sum of the number of left points
+        and right points must be equal to the number of points in A. In particular,
+        the number of points in A gives us an upper bound for the number of points
+        on the left or the right.
+
+        # Case 2:
+        We're not in case 1, however there are two assumptions A and B which are mapped
+        to the same region on the fused tiling. This means that one of A or B must use
+        just the left or right column. Due to the nature of these regions always
+        remaining rectangles, this tells us that the other must use both columns.
+        W.l.o.g, we will assume the B is the assumption covering both columns
+
+        In this case we can determine:
+        - if A uses the left column, then number of points on the right is the number
+        of points in B substract the number of points in A
+        - if A uses the right column, then the number of points on the left is the
+        number of points in B substract the number of points in A
+        - the number of points in the entire region is upper bounded by the number of
+        points in B.
+
+
         In this case, the fusion_type for each fusion parameter is set as follows:
             - left: the parent region was only the left of the unfused region
             - right: the parent region was only the right of the unfused region
             - both: the parent region was all of the unfused region.
+        """
+        (
+            min_left_points,
+            max_left_points,
+            min_right_points,
+            max_right_points,
+            min_both_points,
+            max_both_points,
+        ) = self._min_max_points_by_fuse_parameters(n, **parameters)
+
+        if min_left_points > max_left_points or min_right_points > max_right_points:
+            return
+
+        for overlapping_parameters in self.predeterminable_left_right_points:
+            (
+                new_left,
+                new_right,
+            ) = self._determine_number_of_points_by_overlapping_parameter(
+                overlapping_parameters, **parameters
+            )
+            if new_left is not None:
+                min_left_points = max(min_left_points, new_left)
+                max_left_points = min(min_left_points, new_left)
+            if new_right is not None:
+                min_right_points = max(min_right_points, new_right)
+                max_right_points = min(max_right_points, new_right)
+            if min_left_points > max_left_points or min_right_points > max_right_points:
+                return
+
+        min_both_points = max(min_both_points, min_left_points + min_right_points)
+        max_both_points = min(max_both_points, max_right_points + max_left_points)
+        for number_left_points in range(min_left_points, max_left_points + 1):
+            for number_right_points in range(min_right_points, max_right_points + 1):
+                both = number_left_points + number_right_points
+                if both < min_both_points:
+                    continue
+                if both > max_both_points:
+                    break
+                yield number_left_points, number_right_points
+
+    def _min_max_points_by_fuse_parameters(
+        self, n: int, **parameters: int
+    ) -> Tuple[int, int, int, int, int, int]:
+        """
+        # Case 1:
+        There was an assumption A on the parent which maps precisely to the fused
+        region. It must be either on the left, right, or covering both columns,
+        crucially fully contained within the region to be fused.
+
+        In this case we can determine:
+        - if A is left sided, then we know the number of points on the left must be the
+        number of points in A
+        - if A is right sided, then we know the number of points on the right must be
+        be the number of points in A.
+        - if A is both sided, then this tells as the sum of the number of left points
+        and right points must be equal to the number of points in A. In particular,
+        the number of points in A gives us an upper bound for the number of points
+        on the left or the right.
         """
         min_left_points, max_left_points = 0, n
         min_right_points, max_right_points = 0, n
@@ -269,41 +340,36 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                     max_both_points, number_points_parent_fuse_parameter
                 )
             if min_left_points > max_left_points or min_right_points > max_right_points:
-                return
+                break
 
-        for overlapping_parameters in self.predeterminable_left_right_points:
-            (
-                new_left,
-                new_right,
-            ) = self._determine_number_of_points_in_fuse_region_helper(
-                overlapping_parameters, **parameters
-            )
-            if new_left is not None:
-                min_left_points = max(min_left_points, new_left)
-                max_left_points = min(min_left_points, new_left)
-            if new_right is not None:
-                min_right_points = max(min_right_points, new_right)
-                max_right_points = min(max_right_points, new_right)
-            if min_left_points > max_left_points or min_right_points > max_right_points:
-                return
+        return (
+            min_left_points,
+            max_left_points,
+            min_right_points,
+            max_right_points,
+            min_both_points,
+            max_both_points,
+        )
 
-        min_both_points = max(min_both_points, min_left_points + min_right_points)
-        max_both_points = min(max_both_points, max_right_points + max_left_points)
-        for number_left_points in range(min_left_points, max_left_points + 1):
-            for number_right_points in range(min_right_points, max_right_points + 1):
-                both = number_left_points + number_right_points
-                if both < min_both_points:
-                    continue
-                if both > max_both_points:
-                    break
-                yield number_left_points, number_right_points
-
-    def _determine_number_of_points_in_fuse_region_helper(
+    def _determine_number_of_points_by_overlapping_parameter(
         self, overlapping_parameters: List[str], **parameters: int
     ) -> Tuple[Optional[int], Optional[int]]:
         """
-        Any two overlappping parameters determine the number of points in the
-        region. If there are three, then we can assess if it is a valid value.
+        # Case 2:
+        There are two assumptions A and B which are mapped to the same region
+        on the fused tiling (which is not the fused region, else we'd be in case
+        1). This means that one of A or B must use just the left or right column.
+        Due to the nature of these regions always remaining rectangles, this tells
+        us that the other must use both columns.
+        W.l.o.g, we will assume the B is the assumption covering both columns
+
+        In this case we can determine:
+        - if A uses the left column, then number of points on the right is the number
+        of points in B substract the number of points in A
+        - if A uses the right column, then the number of points on the left is the
+        number of points in B substract the number of points in A
+        - the number of points in the entire region is upper bounded by the number of
+        points in B.
         """
         p1 = overlapping_parameters[0]
         p2 = overlapping_parameters[1]
