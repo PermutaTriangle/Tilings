@@ -282,9 +282,9 @@ class TileScopePack(StrategyPack):
         max_placement_rules_per_req: Optional[int] = None,
     ) -> "TileScopePack":
         if max_num_req is not None:
-            name = "only_length_{length}_{max_num_req}_reqs_root_placements"
+            name = f"only_length_{length}_{max_num_req}_reqs_root_placements"
         else:
-            name = "only_length_{length}_root_placements"
+            name = f"only_length_{length}_root_placements"
         placement_factory = strat.RequirementPlacementFactory(
             max_rules_per_req=max_placement_rules_per_req
         )
