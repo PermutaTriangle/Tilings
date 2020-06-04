@@ -17,6 +17,7 @@ from tilings.strategies import (
     FactorFactory,
     FactorInsertionFactory,
     RequirementCorroborationFactory,
+    SplittingStrategy,
 )
 
 x = var("x")
@@ -210,7 +211,11 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
     def pack() -> StrategyPack:
         return StrategyPack(
             name="LocallyFactorable",
-            initial_strats=[FactorFactory(), RequirementCorroborationFactory()],
+            initial_strats=[
+                SplittingStrategy(),
+                FactorFactory(),
+                RequirementCorroborationFactory(),
+            ],
             inferral_strats=[],
             expansion_strats=[[FactorInsertionFactory()]],
             ver_strats=[
@@ -301,11 +306,13 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         if self.no_factors:
             raise InvalidOperationError("Cannot get a simpler specification")
         return StrategyPack(
-            initial_strats=[FactorFactory()],
+            initial_strats=[SplittingStrategy(), FactorFactory()],
             inferral_strats=[],
             expansion_strats=[],
             ver_strats=[
                 BasicVerificationStrategy(),
+                OneByOneVerificationStrategy(),
+                MonotoneTreeVerificationStrategy(no_factors=True),
                 LocalVerificationStrategy(no_factors=True),
             ],
             name="factor pack",
