@@ -1,3 +1,55 @@
+"""
+The fusion strategy. The goal of the fusion is to find a pair of adjacent rows,
+or adjacent columns such that they can be viewed as a single column, with a
+imaginary line drawn between them. When this fusion happens, an assumption that
+we can count the number of points in the fused row or column is added.
+
+
+We assume that a tiling cannont fuse if it has an assumption that intersects
+only partially with one of the adjacent rows or columns. When we map an
+assumption from the parent tiling to the fused tiling, if it uses either of the
+rows or columns being fused, then it is mapped to cover the entire fused
+region.
+
+There are three cases handled. We will assume we are always fusing two adjacent
+columns, and discuss the left and right hand sides accordingly.
+
+# Case 1:
+There was an assumption A on the parent which maps precisely to the fused
+region. It must be either on the left, right, or covering both columns,
+crucially fully contained within the region to be fused.
+
+In this the case the assumptions A on the parent mapping to the fused region
+can be used to determine
+In this case we can determine:
+- if A is left sided, then we know the number of points on the left must be the
+  number of points in A
+- if A is right sided, then we know the number of points on the right must be
+  be the number of points in A.
+- if A is both sided, then this tells as the sum of the number of left points
+  and right points must be equal to the number of points in A. In particular,
+  the number of points in A gives us an upper bound for the number of points
+  on the left or the right.
+
+# Case 2:
+We're not in case 1, however there are two assumptions A and B which are mapped
+to the same region on the fused tiling. This means that one of A or B must use
+just the left or right column. Due to the nature of these regions always
+remaining rectangles, this tells us that the other must use both columns.
+W.l.o.g, we will assume the B is the assumption covering both columns
+
+In this case we can determine:
+- if A uses the left column, then number of points on the right is the number
+  of points in B substract the number of points in A
+- if A uses the right column, then the number of points on the left is the
+  number of points in B substract the number of points in A
+- the number of points in the entire region is upper bounded by the number of
+  points in B.
+
+# Case 3:
+There are no assumptions which map assumption which intersects this fused
+region. This is the easy case as we can unfuse in any way we want.
+"""
 from collections import defaultdict
 from itertools import product
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
@@ -394,7 +446,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 right = new_right
             elif right != new_right:
                 return
-            
+
         # TODO: get the values from reliance profile function, e.g. n
         if (left is not None and left < 0) or (right is not None and right < 0):
             return
