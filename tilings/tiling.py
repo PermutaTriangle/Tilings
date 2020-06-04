@@ -1,9 +1,10 @@
-# pylint: disable=too-many-locals,too-many-lines,too-many-branches
-# pylint: disable=arguments-differ,attribute-defined-outside-init,
-# pylint: disable=too-many-return-statements,too-many-statements
+# pylint: disable=too-many-locals
+# pylint: disable=too-many-lines
+# pylint: disable=too-many-branches
+# pylint: disable=arguments-differ
+# pylint: disable=too-many-statements
 # pylint: disable=import-outside-toplevel
 import json
-import traceback
 from array import array
 from collections import Counter, defaultdict
 from functools import partial
@@ -58,21 +59,6 @@ Cell = Tuple[int, int]
 ReqList = Tuple[GriddedPerm, ...]
 
 
-def report(tiling, func_name, extra=""):
-    # return
-    print(
-        hash(tiling),
-        func_name,
-        extra,
-        str(traceback.extract_stack()[-3]).replace(
-            "<FrameSummary file "
-            "/Users/jay/Dropbox/Research/Active/2017-44-ATRAP/repos/Tilings",
-            "< ...",
-        ),
-    )
-
-
-# pylint: disable=too-many-instance-attributes
 class Tiling(CombinatorialClass):
     """Tiling class.
 
@@ -106,7 +92,8 @@ class Tiling(CombinatorialClass):
         - already_minimized_obs indicates if the obstructions are already minimized
             we pass this through to GriddedPermReduction
         """
-        self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
+        # self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
+        self._cached_properties = {}
 
         super().__init__()
         if sorted_input:
@@ -136,7 +123,7 @@ class Tiling(CombinatorialClass):
 
             # Fill empty
             if derive_empty:
-                if not hasattr(self, "_empty_cells"):
+                if "empty_cells" not in self._cached_properties:
                     self._prepare_properties()
 
             # Remove empty rows and empty columns
@@ -208,9 +195,9 @@ class Tiling(CombinatorialClass):
             # TODO: Is this sorting really necessary?
             self._obstructions = new_point_obstructions + non_point_obstructions
 
-        self._active_cells = frozenset(active_cells)
-        self._empty_cells = frozenset(empty_cells)
-        self._dimensions = dimensions
+        self._cached_properties["active_cells"] = frozenset(active_cells)
+        self._cached_properties["empty_cells"] = frozenset(empty_cells)
+        self._cached_properties["dimensions"] = dimensions
 
     @cssmethodtimer("Tiling._simplify_griddedperms")
     def _simplify_griddedperms(self, already_minimized_obs=False) -> None:
@@ -235,16 +222,18 @@ class Tiling(CombinatorialClass):
         """Remove empty rows and columns."""
         # Produce the mapping between the two tilings
         if not self.active_cells:
-            self._forward_map: Dict[Cell, Cell] = {}
+            self._cached_properties["forward_map"]: Dict[Cell, Cell] = {}
             self._obstructions = (GriddedPerm.single_cell(Perm((0,)), (0, 0)),)
             self._requirements = tuple()
-            self._dimensions = (1, 1)
+            self._cached_properties["dimensions"] = (1, 1)
             return
         col_mapping, row_mapping, identity = self._minimize_mapping()
         cell_map = partial(map_cell, col_mapping, row_mapping)
 
         if identity:
-            self._forward_map = {cell: cell for cell in self.active_cells}
+            self._cached_properties["forward_map"] = {
+                cell: cell for cell in self.active_cells
+            }
             # We still may need to remove point obstructions if the empty row or col
             # was on the end!
             (width, height) = self.dimensions
@@ -256,7 +245,7 @@ class Tiling(CombinatorialClass):
             return
 
         # For tracking regions.
-        self._forward_map = {
+        self._cached_properties["forward_map"] = {
             (k_x, k_y): (v_x, v_y)
             for k_x, v_x in col_mapping.items()
             for k_y, v_y in row_mapping.items()
@@ -282,17 +271,17 @@ class Tiling(CombinatorialClass):
             )
         )
         # TODO: Maybe it's faster to pull the keys of self._forward_map first?
-        self._active_cells = frozenset(
-            self._forward_map[cell]
-            for cell in self._active_cells
-            if cell in self._forward_map
+        self._cached_properties["active_cells"] = frozenset(
+            self._cached_properties["forward_map"][cell]
+            for cell in self._cached_properties["active_cells"]
+            if cell in self._cached_properties["forward_map"]
         )
-        self._empty_cells = frozenset(
-            self._forward_map[cell]
-            for cell in self._empty_cells
-            if cell in self._forward_map
+        self._cached_properties["empty_cells"] = frozenset(
+            self._cached_properties["forward_map"][cell]
+            for cell in self._cached_properties["empty_cells"]
+            if cell in self._cached_properties["forward_map"]
         )
-        self._dimensions = (
+        self._cached_properties["dimensions"] = (
             max(col_mapping.values()) + 1,
             max(row_mapping.values()) + 1,
         )
@@ -300,7 +289,9 @@ class Tiling(CombinatorialClass):
     @cssmethodtimer("Tiling._minimize_mapping")
     def _minimize_mapping(self) -> Tuple[Dict[int, int], Dict[int, int], bool]:
         """Returns a pair of dictionaries, that map rows/columns to an
-        equivalent set of rows/columns where empty ones have been removed. """
+        equivalent set of rows/columns where empty ones have been removed.
+        Also returns a boolean describing whether this mapping is the identity mapping
+        which saves some later computation."""
         active_cells = self.active_cells
         assert active_cells
         col_set = set(c[0] for c in active_cells)
@@ -610,34 +601,35 @@ class Tiling(CombinatorialClass):
         cell and the second contains the intersections of requirement lists
         that are localized in the cell.
         """
-        if self._cell_basis is not None:
-            return self._cell_basis
-        obdict: Dict[Cell, List[Perm]] = defaultdict(list)
-        reqdict: Dict[Cell, List[Perm]] = defaultdict(list)
-        for ob in self.obstructions:
-            if ob.is_localized():
-                cell = ob.pos[0]
-                obdict[cell].append(ob.patt)
+        try:
+            return self._cached_properties["cell_basis"]
+        except KeyError:
+            obdict: Dict[Cell, List[Perm]] = defaultdict(list)
+            reqdict: Dict[Cell, List[Perm]] = defaultdict(list)
+            for ob in self.obstructions:
+                if ob.is_localized():
+                    cell = ob.pos[0]
+                    obdict[cell].append(ob.patt)
 
-        for req_list in self.requirements:
-            for req in req_list:
-                for cell in set(req.pos):
-                    gp = req.get_gridded_perm_in_cells([cell])
-                    if gp not in reqdict[cell] and all(gp in r for r in req_list):
-                        reqdict[cell].append(gp.patt)
-        for cell, contain in reqdict.items():
-            ind_to_remove = set()
-            for i, req in enumerate(contain):
-                if any(req in other for j, other in enumerate(contain) if i != j):
-                    ind_to_remove.add(i)
-            reqdict[cell] = [
-                req for i, req in enumerate(contain) if i not in ind_to_remove
-            ]
+            for req_list in self.requirements:
+                for req in req_list:
+                    for cell in set(req.pos):
+                        gp = req.get_gridded_perm_in_cells([cell])
+                        if gp not in reqdict[cell] and all(gp in r for r in req_list):
+                            reqdict[cell].append(gp.patt)
+            for cell, contain in reqdict.items():
+                ind_to_remove = set()
+                for i, req in enumerate(contain):
+                    if any(req in other for j, other in enumerate(contain) if i != j):
+                        ind_to_remove.add(i)
+                reqdict[cell] = [
+                    req for i, req in enumerate(contain) if i not in ind_to_remove
+                ]
 
-        all_cells = product(range(self.dimensions[0]), range(self.dimensions[1]))
-        resdict = {cell: (obdict[cell], reqdict[cell]) for cell in all_cells}
-        self._cell_basis = resdict
-        return self._cell_basis
+            all_cells = product(range(self.dimensions[0]), range(self.dimensions[1]))
+            resdict = {cell: (obdict[cell], reqdict[cell]) for cell in all_cells}
+            self._cached_properties["cell_basis"] = resdict
+            return resdict
 
     def cell_graph(self) -> Set[Tuple[Cell, Cell]]:
         """
@@ -706,15 +698,20 @@ class Tiling(CombinatorialClass):
 
     @property
     def forward_cell_map(self) -> Dict[Cell, Cell]:
-        if not hasattr(self, "_forward_map"):
+        try:
+            return self._cached_properties["forward_map"]
+        except KeyError:
             self._remove_empty_rows_and_cols()
-        return self._forward_map
+            return self._cached_properties["forward_map"]
 
     @property
     def backward_cell_map(self) -> Dict[Cell, Cell]:
-        if not hasattr(self, "_backward_map"):
-            self._backward_map = {b: a for a, b in self.forward_cell_map.items()}
-        return self._backward_map
+        try:
+            return self._cached_properties["backward_map"]
+        except KeyError:
+            backward_map = {b: a for a, b in self.forward_cell_map.items()}
+            self._cached_properties["backward_map"] = backward_map
+            return backward_map
 
     # -------------------------------------------------------------
     # Symmetries
@@ -1169,27 +1166,27 @@ class Tiling(CombinatorialClass):
 
     @property
     def point_cells(self) -> FrozenSet[Cell]:
-        if not hasattr(self, "_point_cells"):
-            # report(self, "_point_cells")
+        try:
+            return self._cached_properties["point_cells"]
+        except KeyError:
             local_length2_obcells = Counter(
                 ob.pos[0]
                 for ob in self._obstructions
                 if ob.is_localized() and len(ob) == 2
             )
-            self._point_cells = frozenset(
+            point_cells = frozenset(
                 cell for cell in self.positive_cells if local_length2_obcells[cell] == 2
             )
-        return self._point_cells
+            self._cached_properties["point_cells"] = point_cells
+            return point_cells
 
     @property
     def total_points(self) -> int:
-        # report(self, "total_points")
         return len(self.point_cells)
 
     @property
     def positive_cells(self) -> FrozenSet[Cell]:
         if not hasattr(self, "_positive_cells"):
-            # report(self, "_positive_cells")
             self._positive_cells = frozenset(
                 union_reduce(
                     intersection_reduce(req.pos for req in reqs)
@@ -1203,11 +1200,13 @@ class Tiling(CombinatorialClass):
 
     @property
     def possibly_empty(self) -> FrozenSet[Cell]:
-        # report(self, "possibly_empty")
         """Computes the set of possibly empty cells on the tiling."""
-        if not hasattr(self, "_possibly_empty"):
-            self._possibly_empty = self.active_cells - self.positive_cells
-        return self._possibly_empty
+        try:
+            return self._cached_properties["possibly_empty"]
+        except KeyError:
+            possibly_empty = self.active_cells - self.positive_cells
+            self._cached_properties["possibly_empty"] = possibly_empty
+            return possibly_empty
 
     @property
     def obstructions(self) -> Tuple[GriddedPerm, ...]:
@@ -1235,9 +1234,11 @@ class Tiling(CombinatorialClass):
         """Returns a set of all cells that contain a point obstruction, i.e.,
         are empty.
         """
-        if not hasattr(self, "_empty_cells"):
+        try:
+            return self._cached_properties["empty_cells"]
+        except KeyError:
             self._prepare_properties()
-        return self._empty_cells
+            return self._cached_properties["empty_cells"]
 
     @property
     def active_cells(self) -> FrozenSet[Cell]:
@@ -1245,15 +1246,19 @@ class Tiling(CombinatorialClass):
         Returns a set of all cells that do not contain a point obstruction,
         i.e., not empty.
         """
-        if not hasattr(self, "_active_cells"):
+        try:
+            return self._cached_properties["active_cells"]
+        except KeyError:
             self._prepare_properties()
-        return self._active_cells
+            return self._cached_properties["active_cells"]
 
     @property
     def dimensions(self) -> Tuple[int, int]:
-        if not hasattr(self, "_dimensions"):
+        try:
+            return self._cached_properties["dimensions"]
+        except KeyError:
             self._prepare_properties()
-        return self._dimensions
+            return self._cached_properties["dimensions"]
 
     def remove_assumptions(self):
         """
