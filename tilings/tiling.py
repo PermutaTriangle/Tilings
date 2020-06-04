@@ -60,7 +60,7 @@ Cell = Tuple[int, int]
 ReqList = Tuple[GriddedPerm, ...]
 
 CellBasis = Dict[Cell, Tuple[List[Perm], List[Perm]]]
-Map = Dict[Cell, Cell]
+CellMap = Dict[Cell, Cell]
 CellFrozenSet = FrozenSet[Cell]
 Dimension = Tuple[int, int]
 
@@ -68,11 +68,11 @@ CachedProperties = TypedDict(
     "CachedProperties",
     {
         "active_cells": CellFrozenSet,
-        "backward_map": Map,
+        "backward_map": CellMap,
         "cell_basis": CellBasis,
         "dimensions": Dimension,
         "empty_cells": CellFrozenSet,
-        "forward_map": Map,
+        "forward_map": CellMap,
         "point_cells": CellFrozenSet,
         "positive_cells": CellFrozenSet,
         "possibly_empty": CellFrozenSet,
@@ -714,7 +714,7 @@ class Tiling(CombinatorialClass):
         return GriddedPerm(gp.patt, [self.forward_cell_map[cell] for cell in gp.pos])
 
     @property
-    def forward_cell_map(self) -> Map:
+    def forward_cell_map(self) -> CellMap:
         try:
             return self._cached_properties["forward_map"]
         except KeyError:
@@ -722,7 +722,7 @@ class Tiling(CombinatorialClass):
             return self._cached_properties["forward_map"]
 
     @property
-    def backward_cell_map(self) -> Map:
+    def backward_cell_map(self) -> CellMap:
         try:
             return self._cached_properties["backward_map"]
         except KeyError:
