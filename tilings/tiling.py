@@ -21,9 +21,9 @@ from typing import (
     Set,
     Tuple,
 )
-from typing_extensions import TypedDict
 
 import sympy
+from typing_extensions import TypedDict
 
 from comb_spec_searcher import CombinatorialClass, VerificationStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
