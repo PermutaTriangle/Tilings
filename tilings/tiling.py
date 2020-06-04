@@ -21,6 +21,7 @@ from typing import (
     Set,
     Tuple,
 )
+from typing_extensions import TypedDict
 
 import sympy
 
@@ -58,6 +59,27 @@ __all__ = ["Tiling"]
 Cell = Tuple[int, int]
 ReqList = Tuple[GriddedPerm, ...]
 
+CellBasis = Dict[Cell, Tuple[List[Perm], List[Perm]]]
+Map = Dict[Cell, Cell]
+CellFrozenSet = FrozenSet[Cell]
+Dimension = Tuple[int, int]
+
+CachedProperties = TypedDict(
+    "CachedProperties",
+    {
+        "active_cells": CellFrozenSet,
+        "backward_map": Map,
+        "cell_basis": CellBasis,
+        "dimensions": Dimension,
+        "empty_cells": CellFrozenSet,
+        "forward_map": Map,
+        "point_cells": CellFrozenSet,
+        "positive_cells": CellFrozenSet,
+        "possibly_empty": CellFrozenSet,
+    },
+    total=False,
+)
+
 
 class Tiling(CombinatorialClass):
     """Tiling class.
@@ -92,8 +114,7 @@ class Tiling(CombinatorialClass):
         - already_minimized_obs indicates if the obstructions are already minimized
             we pass this through to GriddedPermReduction
         """
-        # self._cell_basis: Optional[Dict[Cell, Tuple[List[Perm], List[Perm]]]] = None
-        self._cached_properties = {}
+        self._cached_properties: CachedProperties = {}
 
         super().__init__()
         if sorted_input:
@@ -222,7 +243,7 @@ class Tiling(CombinatorialClass):
         """Remove empty rows and columns."""
         # Produce the mapping between the two tilings
         if not self.active_cells:
-            self._cached_properties["forward_map"]: Dict[Cell, Cell] = {}
+            self._cached_properties["forward_map"] = {}
             self._obstructions = (GriddedPerm.single_cell(Perm((0,)), (0, 0)),)
             self._requirements = tuple()
             self._cached_properties["dimensions"] = (1, 1)
@@ -585,11 +606,11 @@ class Tiling(CombinatorialClass):
             sum(1 for (x, y) in self.active_cells if y == cell[1] or x == cell[0]) == 1
         )
 
-    def cells_in_row(self, row: int) -> FrozenSet[Cell]:
+    def cells_in_row(self, row: int) -> CellFrozenSet:
         """Return all active cells in row."""
         return frozenset((x, y) for (x, y) in self.active_cells if y == row)
 
-    def cells_in_col(self, col: int) -> FrozenSet[Cell]:
+    def cells_in_col(self, col: int) -> CellFrozenSet:
         """Return all active cells in column."""
         return frozenset((x, y) for (x, y) in self.active_cells if x == col)
 
@@ -697,7 +718,7 @@ class Tiling(CombinatorialClass):
         return GriddedPerm(gp.patt, [self.forward_cell_map[cell] for cell in gp.pos])
 
     @property
-    def forward_cell_map(self) -> Dict[Cell, Cell]:
+    def forward_cell_map(self) -> Map:
         try:
             return self._cached_properties["forward_map"]
         except KeyError:
@@ -705,7 +726,7 @@ class Tiling(CombinatorialClass):
             return self._cached_properties["forward_map"]
 
     @property
-    def backward_cell_map(self) -> Dict[Cell, Cell]:
+    def backward_cell_map(self) -> Map:
         try:
             return self._cached_properties["backward_map"]
         except KeyError:
@@ -1165,7 +1186,7 @@ class Tiling(CombinatorialClass):
         return any(ob in [Perm((0,)), Perm((0, 1)), Perm((1, 0))] for ob in local_obs)
 
     @property
-    def point_cells(self) -> FrozenSet[Cell]:
+    def point_cells(self) -> CellFrozenSet:
         try:
             return self._cached_properties["point_cells"]
         except KeyError:
@@ -1185,21 +1206,24 @@ class Tiling(CombinatorialClass):
         return len(self.point_cells)
 
     @property
-    def positive_cells(self) -> FrozenSet[Cell]:
-        if not hasattr(self, "_positive_cells"):
-            self._positive_cells = frozenset(
+    def positive_cells(self) -> CellFrozenSet:
+        try:
+            return self._cached_properties["positive_cells"]
+        except KeyError:
+            positive_cells = frozenset(
                 union_reduce(
                     intersection_reduce(req.pos for req in reqs)
                     for reqs in self._requirements
                 )
             )
-        return self._positive_cells
+            self._cached_properties["positive_cells"] = positive_cells
+            return positive_cells
 
     def total_positive(self) -> int:
         return len(self.positive_cells)
 
     @property
-    def possibly_empty(self) -> FrozenSet[Cell]:
+    def possibly_empty(self) -> CellFrozenSet:
         """Computes the set of possibly empty cells on the tiling."""
         try:
             return self._cached_properties["possibly_empty"]
@@ -1230,7 +1254,7 @@ class Tiling(CombinatorialClass):
         return len(self._assumptions)
 
     @property
-    def empty_cells(self) -> FrozenSet[Cell]:
+    def empty_cells(self) -> CellFrozenSet:
         """Returns a set of all cells that contain a point obstruction, i.e.,
         are empty.
         """
@@ -1241,7 +1265,7 @@ class Tiling(CombinatorialClass):
             return self._cached_properties["empty_cells"]
 
     @property
-    def active_cells(self) -> FrozenSet[Cell]:
+    def active_cells(self) -> CellFrozenSet:
         """
         Returns a set of all cells that do not contain a point obstruction,
         i.e., not empty.
@@ -1253,7 +1277,7 @@ class Tiling(CombinatorialClass):
             return self._cached_properties["active_cells"]
 
     @property
-    def dimensions(self) -> Tuple[int, int]:
+    def dimensions(self) -> Dimension:
         try:
             return self._cached_properties["dimensions"]
         except KeyError:
