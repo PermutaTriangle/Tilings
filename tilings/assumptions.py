@@ -21,7 +21,8 @@ class TrackingAssumption:
     ) -> "TrackingAssumption":
         """
         Return the tracking absumption where all of the gridded perms avoiding
-        the obstructions are removed.
+        the obstructions are removed. If active_cells is not None, then any
+        assumptions involving a cell not in active_cells will be removed.
         """
         obstructions = tuple(obstructions)
         if active_cells is not None:

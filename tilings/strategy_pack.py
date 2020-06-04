@@ -307,32 +307,6 @@ class TileScopePack(StrategyPack):
         )
 
     @classmethod
-    def old_only_root_placements(
-        cls, length: int = 3, max_num_req: Optional[int] = 1,
-    ) -> "TileScopePack":
-        name = "old_only_length_{}_root_placements".format(length)
-        return TileScopePack(
-            initial_strats=[
-                strat.RootInsertionFactory(maxreqlen=length, max_num_req=max_num_req),
-                strat.FactorFactory(unions=True, ignore_parent=False, workable=False),
-            ],
-            ver_strats=[
-                strat.BasicVerificationStrategy(),
-                strat.OneByOneVerificationStrategy(),
-                strat.LocallyFactorableVerificationStrategy(),
-            ],
-            inferral_strats=[
-                strat.RowColumnSeparationStrategy(),
-                strat.ObstructionTransitivityFactory(),
-            ],
-            expansion_strats=[
-                [strat.PatternPlacementFactory()],
-                [strat.RequirementCorroborationFactory()],
-            ],
-            name=name,
-        )
-
-    @classmethod
     def requirement_placements(
         cls, length: int = 2, partial: bool = False
     ) -> "TileScopePack":
