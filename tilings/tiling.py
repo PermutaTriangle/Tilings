@@ -183,8 +183,6 @@ class Tiling(CombinatorialClass):
 
         max_row = 0
         max_col = 0
-        # TODO: Is there a more clever way to do this but still with only one loop
-        # over the active_cells?
         for cell in active_cells:
             max_col = max(max_col, cell[0])
             max_row = max(max_row, cell[1])
@@ -213,7 +211,6 @@ class Tiling(CombinatorialClass):
             new_point_obstructions = tuple(
                 GriddedPerm(Perm((0,)), (cell,)) for cell in empty_cells
             )
-            # TODO: Is this sorting really necessary?
             self._obstructions = new_point_obstructions + non_point_obstructions
 
         self._cached_properties["active_cells"] = frozenset(active_cells)
@@ -291,7 +288,6 @@ class Tiling(CombinatorialClass):
                 for assumption in self._assumptions
             )
         )
-        # TODO: Maybe it's faster to pull the keys of self._forward_map first?
         self._cached_properties["active_cells"] = frozenset(
             self._cached_properties["forward_map"][cell]
             for cell in self._cached_properties["active_cells"]
