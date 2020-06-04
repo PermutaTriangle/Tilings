@@ -24,10 +24,22 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     The fusion constructor. It will multiply by (fuse_paramater + 1), and
     otherwise pass on the variables.
 
-    The parameters given should be a dictionary. Each child variable should
-    point to some parent variable with the exception of the fuse variable which
-    will not point if it was just added. If [ A | A ] fuses to [ A ] then we
-    assume any one sided variable maps to the [ A ].
+    - fuse_parameter:           parameter corresponding to the region of the
+                                tiling of the child where a line must be drawn.
+    - extra_parameters:         a dictionary where the keys are each of the
+                                parent parameters pointing to the child
+                                parameter it was mapped to. Note, if [ A | A ]
+                                fuses to [ A ] then we assume any one sided
+                                variable maps to the [ A ] on the child.
+    - left_sided_parameters:    all of the parent parameters which overlap
+                                fully the left side of the region that is
+                                being fused.
+    - right_sided_parameters:   all of the parent parameters which overlap
+                                fully the right side of the region that is
+                                being fused.
+    - both_sided_parameters:    all of the parent parameters which overlap
+                                fully the entire region that is being fused or
+                                not at all. # TODO: better name?
     """
 
     def __init__(
@@ -45,6 +57,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         # is fused, we map it to the row or column if it uses at least one row
         # or column in the fusion region.
         self.reversed_extra_parameters: Dict[str, List[str]] = defaultdict(list)
+        for parent_var, child_var in self.extra_parameters.items():
+            self.reversed_extra_parameters[child_var].append(parent_var)
         # the child parameter that determine 'where the line is drawn'.
         self.fuse_parameter = fuse_parameter
         # sets to tell if parent assumption is one sided, or both
@@ -52,20 +66,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         self.right_sided_parameters = frozenset(right_sided_parameters)
         self.both_sided_parameters = frozenset(both_sided_parameters)
 
-        # In particular, the lists in reversed_extra_parameters can have size at
-        # most two (in which case  of the two variables is a subset of the other),
-        # unless, they are contained entirely within the fused region, in which
-        # case it can have up to 3, namely left, right and both. This is checked
-        # in the following function.
         self._init_checked()
 
-        # if any two parents map to the same child, then these determine the
-        # number of left and right points
-        self.predeterminable_left_right_points = [
-            parent_vars
-            for parent_vars in self.reversed_extra_parameters.values()
-            if len(parent_vars) >= 2
-        ]
         # we now determine which fusion recurrence we want to use
         if self.fuse_parameter in extra_parameters.values():
             self.parent_fusion_parameters = self.reversed_extra_parameters[
@@ -86,13 +88,30 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         else:
             # no parent variable maps to the fusion region, so need to add new
             # parameter to each call.
-            # TODO: consider merging the two functions following to just one?
-            if self.predeterminable_left_right_points:
+
+            # if any two parent parameters map to the same child parameter, then
+            # these determine the number of left and right points
+            predeterminable_left_right_points = [
+                parent_vars
+                for parent_vars in self.reversed_extra_parameters.values()
+                if len(parent_vars) >= 2
+            ]
+            assert all(
+                len(parent_vars) <= 2
+                for parent_vars in self.reversed_extra_parameters.values()
+            )
+
+            if predeterminable_left_right_points:
                 self.rec_function = (
                     self._predetermined_new_fusion_parameter_get_recurrence
                 )
+                self.predeterminable_left_right_points = (
+                    predeterminable_left_right_points
+                )
             else:
                 self.rec_function = self._new_fusion_parameter_get_recurrence
+
+            # TODO: consider merging the two functions in this case to just one
 
     def _init_checked(self):
         """
@@ -117,9 +136,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             )
             for val in self.reversed_extra_parameters.values()
         )
-        for parent_var, child_var in self.extra_parameters.items():
-            self.reversed_extra_parameters[child_var].append(parent_var)
-        # The following assertions check that
         assert all(
             (
                 any(
@@ -216,11 +232,12 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 )
             else:
                 assert fusion_type == "both"
+                # TODO: is this the right way?
                 max_left_points = min(
-                    max_right_points, number_points_parent_fuse_parameter
+                    max_left_points, number_points_parent_fuse_parameter
                 )
                 max_right_points = min(
-                    max_left_points, number_points_parent_fuse_parameter
+                    max_right_points, number_points_parent_fuse_parameter
                 )
             if min_left_points > max_left_points or min_right_points > max_right_points:
                 return
@@ -309,6 +326,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 else value
             )
             if updated_value < 0:
+                # TODO: is this reached?
                 return None
             child_parameter = self.extra_parameters[parameter]
             if child_parameter in res:
@@ -352,8 +370,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         Precisely, it returns the number of points on the left, and the number
         of points on the right. If it can't determine one, then None is returned
         for that value.
-
-        If there is a contradiction, (-1, -1) is returned.
         """
         assert self.predeterminable_left_right_points
         assert all(
@@ -374,11 +390,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 left = new_left
             elif left != new_left:
                 return
-            if right is None or right < 0:
+            if right is None:
                 right = new_right
             elif right != new_right:
                 return
-
+            
         # TODO: get the values from reliance profile function, e.g. n
         if (left is not None and left < 0) or (right is not None and right < 0):
             return
@@ -413,18 +429,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         p1_right = p1 in self.right_sided_parameters
         p2_left = p2 in self.left_sided_parameters
         p2_right = p2 in self.right_sided_parameters
-        if p1_left and p2_right:
-            assert (
-                self.extra_parameters[p1] == self.fuse_parameter
-                and self.extra_parameters[p2] == self.fuse_parameter
-            )
-            return parameters[p1], parameters[p2]
-        if p1_right and p2_left:
-            assert (
-                self.extra_parameters[p1] == self.fuse_parameter
-                and self.extra_parameters[p2] == self.fuse_parameter
-            )
-            return parameters[p1], parameters[p2]
+        # TODO: tidy up this function, and update doc string
+        assert not (p1_left and p2_right) and not (p1_right and p2_left)
         if p1_left:
             assert p2 in self.both_sided_parameters
             return None, parameters[p2] - parameters[p1]
