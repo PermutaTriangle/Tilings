@@ -9,6 +9,7 @@ from comb_spec_searcher.strategies import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
+from tilings.assumptions import TrackingAssumption
 from tilings.strategies import (
     BasicVerificationStrategy,
     DatabaseVerificationStrategy,
@@ -144,7 +145,7 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
 
     @pytest.fixture
     def enum_verified(self):
-        t = Tiling(
+        t1 = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
                 GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
@@ -152,13 +153,32 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
                 GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
             ]
         )
-        return [t]
+        t2 = Tiling(
+            obstructions=[
+                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
+                GriddedPerm(Perm((1, 0)), ((0, 1),) * 2),
+                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
+                GriddedPerm(Perm((0, 1)), ((2, 0),) * 2),
+            ],
+            requirements=[[GriddedPerm(Perm((0,)), ((0, 1),))]],
+            assumptions=[
+                TrackingAssumption(
+                    [
+                        GriddedPerm(Perm((0,)), ((0, 1),)),
+                        GriddedPerm(Perm((0,)), ((1, 0),)),
+                    ]
+                ),
+                TrackingAssumption([GriddedPerm(Perm((0,)), ((1, 0),))]),
+            ],
+        )
+        return [t1, t2]
 
     def test_pack(self, strategy):
         pack = strategy.pack()
         assert isinstance(pack, StrategyPack)
         assert pack.name == "LocallyFactorable"
 
+    @pytest.mark.timeout(5)
     def test_get_specification(self, strategy, enum_verified):
         for tiling in enum_verified:
             spec = strategy.get_specification(tiling)
