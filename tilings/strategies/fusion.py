@@ -1,15 +1,14 @@
 """
-The fusion strategy. The goal of the fusion is to find a pair of adjacent rows,
-or adjacent columns such that they can be viewed as a single column, with a
-imaginary line drawn between them. When this fusion happens, an assumption that
-we can count the number of points in the fused row or column is added.
+The fusion strategy. The goal of the fusion strategy is to find a pair of
+adjacent rows, or adjacent columns such that they can be viewed as a single
+column, with a line drawn between them. When this fusion happens, an assumption
+that we can count the number of points in the fused row or column is added.
 
-
-We assume that a tiling cannont fuse if it has an assumption that intersects
-only partially with one of the adjacent rows or columns. When we map an
-assumption from the parent tiling to the fused tiling, if it uses either of the
-rows or columns being fused, then it is mapped to cover the entire fused
-region.
+When we map an assumption from the parent tiling to the fused tiling, if it
+uses either of the rows or columns being fused, then it is mapped to cover the
+entire fused region. With this in mind, we assume that a tiling cannot fuse if
+it has an assumption that intersects only partially with one of the adjacent
+rows or columns.
 
 There are three cases handled. We will assume we are always fusing two adjacent
 columns, and discuss the left and right hand sides accordingly.
@@ -19,8 +18,6 @@ There was an assumption A on the parent which maps precisely to the fused
 region. It must be either on the left, right, or covering both columns,
 crucially fully contained within the region to be fused.
 
-In this the case the assumptions A on the parent mapping to the fused region
-can be used to determine
 In this case we can determine:
 - if A is left sided, then we know the number of points on the left must be the
   number of points in A
@@ -47,8 +44,11 @@ In this case we can determine:
   points in B.
 
 # Case 3:
-There are no assumptions which map assumption which intersects this fused
-region. This is the easy case as we can unfuse in any way we want.
+We are not in case 1, or case 2. That is, there is no parent assumptions which
+map to the fused region, and moreover there are not two parent assumptions
+which map to the same region.
+In this case we must try all possible values for the number of left and right
+points.
 """
 from collections import defaultdict
 from itertools import product
