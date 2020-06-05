@@ -223,7 +223,6 @@ class Tiling(CombinatorialClass):
             new_point_obstructions = tuple(
                 GriddedPerm(Perm((0,)), (cell,)) for cell in empty_cells
             )
-
             self._obstructions = new_point_obstructions + non_point_obstructions
 
         self._cached_properties["active_cells"] = frozenset(active_cells)
