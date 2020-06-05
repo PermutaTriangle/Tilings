@@ -109,7 +109,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 for ass in algo.stretched_assumptions(cell)
             ]
             mapped_assumptions = [
-                TrackingAssumption(gp for gp in gps if gp.avoids(*child.obstructions))
+                TrackingAssumption(gps).avoiding(child.obstructions)
                 for gps in mapped_gps
             ]
             for assumption, mapped_assumption in zip(

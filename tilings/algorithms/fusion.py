@@ -1,10 +1,18 @@
-"""The implementation of the fusion algorithm"""
+"""
+The implementation of the fusion algorithm
+
+# TODO: this file needs to be type checked!
+"""
 from collections import Counter
 from itertools import chain
+from typing import TYPE_CHECKING
 
 from permuta import Perm
 from tilings.assumptions import TrackingAssumption
 from tilings.griddedperm import GriddedPerm
+
+if TYPE_CHECKING:
+    from tilings import Tiling
 
 
 class Fusion:
@@ -21,7 +29,7 @@ class Fusion:
     """
 
     def __init__(self, tiling, row_idx=None, col_idx=None, tracked: bool = False):
-        self._tiling = tiling
+        self._tiling: "Tiling" = tiling
         self._assumptions_fuse_counters = None
         self._obstruction_fuse_counter = None
         self._requirements_fuse_counters = None
@@ -218,7 +226,7 @@ class Fusion:
         )
         return obs_fusable and req_fusable and ass_fusable
 
-    def fused_tiling(self):
+    def fused_tiling(self) -> "Tiling":
         """
         Return the fused tiling.
         """

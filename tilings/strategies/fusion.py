@@ -12,37 +12,6 @@ rows or columns.
 
 We will assume we are always fusing two adjacent columns, and discuss the left
 and right hand sides accordingly.
-There are two cases we use to determine the number of left and right points.
-
-# Case 1:
-There was an assumption A on the parent which maps precisely to the fused
-region. It must be either on the left, right, or covering both columns,
-crucially fully contained within the region to be fused.
-
-In this case we can determine:
-- if A is left sided, then we know the number of points on the left must be the
-  number of points in A
-- if A is right sided, then we know the number of points on the right must be
-  be the number of points in A.
-- if A is both sided, then this tells as the sum of the number of left points
-  and right points must be equal to the number of points in A. In particular,
-  the number of points in A gives us an upper bound for the number of points
-  on the left or the right.
-
-# Case 2:
-We're not in case 1, however there are two assumptions A and B which are mapped
-to the same region on the fused tiling. This means that one of A or B must use
-just the left or right column. Due to the nature of these regions always
-remaining rectangles, this tells us that the other must use both columns.
-W.l.o.g, we will assume the B is the assumption covering both columns
-
-In this case we can determine:
-- if A uses the left column, then number of points on the right is the number
-  of points in B substract the number of points in A
-- if A uses the right column, then the number of points on the left is the
-  number of points in B substract the number of points in A
-- the number of points in the entire region is upper bounded by the number of
-  points in B.
 """
 from collections import defaultdict
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
@@ -254,7 +223,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             max_both_points,
         ) = self._min_max_points_by_fuse_parameters(n, **parameters)
 
-        if min_left_points > max_left_points or min_right_points > max_right_points:
+        if (
+            min_left_points > max_left_points
+            or min_right_points > max_right_points
+            or min_both_points > max_both_points
+        ):
             return
 
         for overlapping_parameters in self.predeterminable_left_right_points:
@@ -339,7 +312,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 max_both_points = min(
                     max_both_points, number_points_parent_fuse_parameter
                 )
-            if min_left_points > max_left_points or min_right_points > max_right_points:
+            if (
+                min_left_points > max_left_points
+                or min_right_points > max_right_points
+                or min_both_points > max_both_points
+            ):
                 break
 
         return (
@@ -426,15 +403,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 if parameter in self.left_sided_parameters
                 else value
             )
-            if updated_value < 0:
-                # TODO: is this reached?
-                return None
             child_parameter = self.extra_parameters[parameter]
-            if child_parameter in res:
-                if updated_value != res[child_parameter]:
-                    return None
-            else:
+            if child_parameter not in res:
                 res[child_parameter] = updated_value
+            elif updated_value != res[child_parameter]:
+                return None
         return res
 
     def get_sub_objects(
@@ -528,7 +501,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
                 left_sided_params.add(parent_var)
             elif right_sided and not left_sided:
                 right_sided_params.add(parent_var)
-            else:
+            elif not left_sided and not right_sided:
                 both_sided_params.add(parent_var)
         return (
             left_sided_params,
@@ -540,8 +513,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         child = algo.fused_tiling()
         fuse_assumption = algo.new_assumption()
-        idx = child.assumptions.index(fuse_assumption)
-        return "k_{}".format(idx)
+        return child.get_parameter(fuse_assumption)
 
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"
