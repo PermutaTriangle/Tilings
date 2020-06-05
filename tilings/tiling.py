@@ -199,11 +199,11 @@ class Tiling(CombinatorialClass):
             # We can assume that self._obstructions is sorted at this point, so to
             #   extract the point obstructions, we just pass though them until we've
             #   found the last one, then we slice the list there.
-            index = next(
-                (i for i, ob in enumerate(self._obstructions) if len(ob) > 1),
-                len(self._obstructions),  # default value
-            )
-            # Now the last point obstruction is at index [index-1]
+            index = 0
+            for ob in self._obstructions:
+                if len(ob) > 1:
+                    break
+                index += 1  # Now the last point obstruction is at index [index-1]
             non_point_obstructions = self._obstructions[index:]
 
             new_point_obstructions = tuple(
