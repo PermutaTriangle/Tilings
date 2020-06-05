@@ -2272,6 +2272,18 @@ def test_partial_place_col(obs_inf_til):
     )
 
 
+def test_empty_obstruction():
+    t = Tiling((GriddedPerm.empty_perm(),))
+    assert t.forward_cell_map == {}
+    assert t.obstructions == (GriddedPerm.empty_perm(),)
+
+
+def test_point_obstruction():
+    t = Tiling((GriddedPerm(Perm((0,)), ((0, 0),)),))
+    assert t.forward_cell_map == {}
+    assert t.obstructions == (GriddedPerm(Perm((0,)), ((0, 0),)),)
+
+
 class TestGetGenf:
     """
     Group all the test regarding getting the generating function for a tiling.
