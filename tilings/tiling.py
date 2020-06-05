@@ -151,6 +151,20 @@ class Tiling(CombinatorialClass):
             if remove_empty_rows_and_cols:
                 self._remove_empty_rows_and_cols()
 
+        else:
+            self._obstructions = (GriddedPerm.empty_perm(),)
+            self._requirements = tuple()
+            self._assumptions = tuple()
+            self._cached_properties["active_cells"] = frozenset()
+            self._cached_properties["backward_map"] = {}
+            self._cached_properties["cell_basis"] = {(0, 0): ([Perm()], [])}
+            self._cached_properties["dimensions"] = (1, 1)
+            self._cached_properties["empty_cells"] = frozenset([(0, 0)])
+            self._cached_properties["forward_map"] = {}
+            self._cached_properties["point_cells"] = frozenset()
+            self._cached_properties["positive_cells"] = frozenset()
+            self._cached_properties["possibly_empty"] = frozenset()
+
     @classmethod
     def from_perms(
         cls,
@@ -239,9 +253,11 @@ class Tiling(CombinatorialClass):
         """Remove empty rows and columns."""
         # Produce the mapping between the two tilings
         if not self.active_cells:
+            assert GriddedPerm.empty_perm() not in self.obstructions
             self._cached_properties["forward_map"] = {}
             self._obstructions = (GriddedPerm.single_cell(Perm((0,)), (0, 0)),)
             self._requirements = tuple()
+            self._assumptions = tuple()
             self._cached_properties["dimensions"] = (1, 1)
             return
         col_mapping, row_mapping, identity = self._minimize_mapping()
