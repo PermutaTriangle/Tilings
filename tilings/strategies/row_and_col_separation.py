@@ -5,8 +5,10 @@ found in the algorithms folder.
 from typing import Dict, Optional, Tuple
 
 from comb_spec_searcher import DisjointUnionStrategy
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RowColSeparation
+from tilings.assumptions import TrackingAssumption
 
 __all__ = ["RowColumnSeparationStrategy"]
 
@@ -48,6 +50,35 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         rcs = self.row_col_sep_algorithm(tiling)
         if rcs.separable():
             return (rcs.separated_tiling(),)
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Dict[str, str], ...]:
+        if not comb_class.extra_parameters:
+            return super().extra_parameters(comb_class, children)
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        child = children[0]
+        mapped_gps = tuple(
+            tuple(self.forward_map(comb_class, gp, children)[0] for gp in ass.gps)
+            for ass in comb_class.assumptions
+        )
+        mapped_assumptions = tuple(
+            TrackingAssumption(gps).avoiding(child.obstructions) for gps in mapped_gps
+        )
+        return (
+            {
+                child.get_parameter(mapped_assumption): comb_class.get_parameter(
+                    assumption
+                )
+                for assumption, mapped_assumption in zip(
+                    comb_class.assumptions, mapped_assumptions
+                )
+                if mapped_assumption.gps
+            },
+        )
 
     @staticmethod
     def row_col_sep_algorithm(tiling: Tiling) -> RowColSeparation:

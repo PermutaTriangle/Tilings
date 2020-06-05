@@ -1059,6 +1059,14 @@ class Tiling(CombinatorialClass):
     # Properties and getters
     # -------------------------------------------------------------
 
+    @property
+    def extra_parameters(self) -> Tuple[str, ...]:
+        return tuple("k_{}".format(i) for i in range(len(self._assumptions)))
+
+    def get_parameter(self, assumption: TrackingAssumption) -> str:
+        idx = self._assumptions.index(assumption)
+        return "k_{}".format(idx)
+
     def maximum_length_of_minimum_gridded_perm(self) -> int:
         """Returns the maximum length of the minimum gridded permutation that
         can be gridded on the tiling.
@@ -1094,8 +1102,16 @@ class Tiling(CombinatorialClass):
         )
 
     def objects_of_size(self, n: int, **parameters: int) -> Iterator[GriddedPerm]:
-        assert not parameters, "only implemented in one variable"
-        yield from self.gridded_perms_of_length(n)
+        if not parameters:
+            yield from self.gridded_perms_of_length(n)
+        else:
+            assert set(self.extra_parameters) == set(parameters)
+            for gp in self.gridded_perms_of_length(n):
+                if all(
+                    ass.get_value(gp) == parameters[k]
+                    for k, ass in zip(self.extra_parameters, self._assumptions)
+                ):
+                    yield gp
 
     def gridded_perms_of_length(self, length: int) -> Iterator[GriddedPerm]:
         for gp in self.gridded_perms(maxlen=length):

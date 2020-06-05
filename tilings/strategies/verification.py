@@ -1,9 +1,14 @@
 from itertools import chain
-from typing import Dict, Iterable, Iterator, List, Optional, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
 from sympy import Expr, Function, var
 
-from comb_spec_searcher import AtomStrategy, StrategyPack, VerificationStrategy
+from comb_spec_searcher import (
+    AtomStrategy,
+    CombinatorialClass,
+    StrategyPack,
+    VerificationStrategy,
+)
 from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
 from permuta import Perm
 from permuta.permutils.symmetry import all_symmetry_sets
@@ -33,8 +38,28 @@ __all__ = [
 ]
 
 
-BasicVerificationStrategy = AtomStrategy
 TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
+
+
+class BasicVerificationStrategy(AtomStrategy):
+    @staticmethod
+    def count_objects_of_size(
+        comb_class: CombinatorialClass, n: int, **parameters: int
+    ) -> int:
+        """
+        Verification strategies must contain a method to count the objects.
+        """
+        if not isinstance(comb_class, Tiling):
+            raise NotImplementedError
+        cast(Tiling, comb_class)
+        gp = next(comb_class.minimal_gridded_perms())
+        expected = {"n": len(gp)}
+        for assumption in comb_class.assumptions:
+            expected[comb_class.get_parameter(assumption)] = assumption.get_value(gp)
+        actual = {"n": n, **parameters}
+        if expected == actual:
+            return 1
+        return 0
 
 
 class OneByOneVerificationStrategy(TileScopeVerificationStrategy):

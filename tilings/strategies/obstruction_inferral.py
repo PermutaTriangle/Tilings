@@ -1,12 +1,14 @@
-from typing import Iterable, Iterator, List, Optional, Sequence, Tuple, cast
+from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
     AllObstructionInferral,
     ObstructionTransitivity,
     SubobstructionInferral,
 )
+from tilings.assumptions import TrackingAssumption
 
 __all__ = [
     "EmptyCellInferralFactory",
@@ -33,6 +35,36 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return "added the obstructions {{{}}}".format(
             ", ".join(str(p) for p in self.gps),
         )
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Dict[str, str], ...]:
+        if not comb_class.extra_parameters:
+            return super().extra_parameters(comb_class, children)
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        av = children[0]
+        av_mapped_gps = [
+            tuple(
+                av.forward_map(gp)
+                for gp in ass.gps
+                if gp.avoids(*self.gps)
+                and all(cell in av.forward_cell_map for cell in gp.pos)
+            )
+            for ass in comb_class.assumptions
+        ]
+        av_mapped_ass = [
+            TrackingAssumption(gps).avoiding(av.obstructions) for gps in av_mapped_gps
+        ]
+        av_params: Dict[str, str] = {}
+        for assumption, mapped_assumption in zip(comb_class.assumptions, av_mapped_ass):
+            if mapped_assumption.gps:
+                parent_var = comb_class.get_parameter(assumption)
+                child_var = av.get_parameter(mapped_assumption)
+                av_params[child_var] = parent_var
+        return (av_params,)
 
     def backward_map(
         self,

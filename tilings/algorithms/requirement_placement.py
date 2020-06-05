@@ -222,7 +222,7 @@ class RequirementPlacement:
             chain.from_iterable(self._stretch_gridded_perm(gp, cell) for gp in gps)
         )
 
-    def _stretched_obstructions(self, cell: Cell) -> List[GriddedPerm]:
+    def stretched_obstructions(self, cell: Cell) -> List[GriddedPerm]:
         """
         Return all of the stretched obstructions that are created if placing a
         point in the given cell.
@@ -233,7 +233,7 @@ class RequirementPlacement:
             )
         return self._stretched_obstructions_cache[cell]
 
-    def _stretched_requirements(self, cell: Cell) -> List[ListRequirement]:
+    def stretched_requirements(self, cell: Cell) -> List[ListRequirement]:
         """
         Return all of the stretched requirements that are created if placing a
         point in the given cell.
@@ -245,7 +245,7 @@ class RequirementPlacement:
             ]
         return self._stretched_requirements_cache[cell]
 
-    def _stretched_assumptions(self, cell: Cell) -> List[TrackingAssumption]:
+    def stretched_assumptions(self, cell: Cell) -> List[TrackingAssumption]:
         """
         Return all of the stretched assumptions that are created if placing a
         point in the given cell.
@@ -264,9 +264,9 @@ class RequirementPlacement:
         Return all of the stretched obstruction and requirements assuming that
         a point is placed in cell.
         """
-        stretched_obs = self._stretched_obstructions(cell)
-        stretched_reqs = self._stretched_requirements(cell)
-        stretched_ass = self._stretched_assumptions(cell)
+        stretched_obs = self.stretched_obstructions(cell)
+        stretched_reqs = self.stretched_requirements(cell)
+        stretched_ass = self.stretched_assumptions(cell)
         point_obs = self._point_obstructions(cell)
         point_req = self._point_requirements(cell)
         return stretched_obs + point_obs, stretched_reqs + point_req, stretched_ass
@@ -284,7 +284,7 @@ class RequirementPlacement:
             return c1[1] < c2[1]
         raise Exception("Invalid direction")
 
-    def _forced_obstructions_from_requirement(
+    def forced_obstructions_from_requirement(
         self,
         gps: Iterable[GriddedPerm],
         indices: Iterable[int],
@@ -355,7 +355,7 @@ class RequirementPlacement:
         for cell in sorted(cells):
             stretched = self._stretched_obstructions_requirements_and_assumptions(cell)
             (obs, reqs, ass) = stretched
-            forced_obs = self._forced_obstructions_from_requirement(
+            forced_obs = self.forced_obstructions_from_requirement(
                 gps, indices, cell, direction
             )
 

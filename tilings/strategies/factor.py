@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Iterable, Iterator, Optional, Tuple, cast
+from typing import Dict, Iterable, Iterator, Optional, Tuple, cast
 
 from sympy import Eq, Function
 
@@ -10,6 +10,7 @@ from comb_spec_searcher import (
     Strategy,
     StrategyFactory,
 )
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies.constructor import SubGens, SubRecs, SubSamplers
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
@@ -18,6 +19,7 @@ from tilings.algorithms import (
     FactorWithInterleaving,
     FactorWithMonotoneInterleaving,
 )
+from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
 from tilings.misc import partitions_iterator
 
@@ -42,10 +44,30 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         super().__init__(ignore_parent=ignore_parent, workable=workable)
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
-        """
-        # TODO: Taken from reducible factorisations function in Factor. Pick where.
-        """
         return tuple(tiling.sub_tiling(cells) for cells in self.partition)
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Dict[str, str], ...]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        extra_parameters: Tuple[Dict[str, str], ...] = tuple({} for _ in children)
+        for parent_var, assumption in zip(
+            comb_class.extra_parameters, comb_class.assumptions
+        ):
+            for i, cells in enumerate(self.partition):
+                if assumption.gps[0].pos[0] in cells:
+                    new_assumption = TrackingAssumption(
+                        children[i].forward_map(gp) for gp in assumption.gps
+                    )
+                    child_var = children[i].get_parameter(new_assumption)
+                    extra_parameters[i][child_var] = parent_var
+                    break
+            else:
+                raise ValueError("Assumption was not mapped to any child")
+        return extra_parameters
 
     def formal_step(self) -> str:
         """

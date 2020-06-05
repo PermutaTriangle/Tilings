@@ -1,10 +1,18 @@
-"""The implementation of the fusion algorithm"""
+"""
+The implementation of the fusion algorithm
+
+# TODO: this file needs to be type checked!
+"""
 from collections import Counter
 from itertools import chain
+from typing import TYPE_CHECKING
 
 from permuta import Perm
 from tilings.assumptions import TrackingAssumption
 from tilings.griddedperm import GriddedPerm
+
+if TYPE_CHECKING:
+    from tilings import Tiling
 
 
 class Fusion:
@@ -21,7 +29,7 @@ class Fusion:
     """
 
     def __init__(self, tiling, row_idx=None, col_idx=None, tracked: bool = False):
-        self._tiling = tiling
+        self._tiling: "Tiling" = tiling
         self._assumptions_fuse_counters = None
         self._obstruction_fuse_counter = None
         self._requirements_fuse_counters = None
@@ -178,7 +186,19 @@ class Fusion:
             x != self._col_idx for gp in assumption.gps for x, _ in gp.pos
         ) or all(x != self._col_idx + 1 for gp in assumption.gps for x, _ in gp.pos)
 
-    def _new_assumption(self):
+    def is_left_sided_assumption(self, assumption):
+        if self._fuse_row:
+            return all(
+                y != self._row_idx + 1 for gp in assumption.gps for _, y in gp.pos
+            )
+        return all(x != self._col_idx + 1 for gp in assumption.gps for x, _ in gp.pos)
+
+    def is_right_sided_assumption(self, assumption):
+        if self._fuse_row:
+            return all(y != self._row_idx for gp in assumption.gps for _, y in gp.pos)
+        return all(x != self._col_idx for gp in assumption.gps for x, _ in gp.pos)
+
+    def new_assumption(self):
         """
         Return the assumption that needs to counted in order to enumerate.
         """
@@ -206,7 +226,7 @@ class Fusion:
         )
         return obs_fusable and req_fusable and ass_fusable
 
-    def fused_tiling(self):
+    def fused_tiling(self) -> "Tiling":
         """
         Return the fused tiling.
         """
@@ -214,7 +234,7 @@ class Fusion:
             TrackingAssumption(gps) for gps in self.assumptions_fuse_counters
         ]
         if self._tracked:
-            assumptions.append(self._new_assumption())
+            assumptions.append(self.new_assumption())
         return self._tiling.__class__(
             obstructions=self.obstruction_fuse_counter.keys(),
             requirements=self.requirements_fuse_counters,
@@ -382,8 +402,7 @@ class ComponentFusion(Fusion):
         """
         if not self._pre_check() or not self.has_crossing_len2_ob():
             return False
-        new_obs = chain(self._tiling.obstructions, self.obstructions_to_add())
-        new_tiling = self._tiling.__class__(new_obs, self._tiling.requirements)
+        new_tiling = self._tiling.add_obstructions(self.obstructions_to_add())
         return self._tiling == new_tiling
 
     def __str__(self):

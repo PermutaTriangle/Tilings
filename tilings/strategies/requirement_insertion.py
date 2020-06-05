@@ -1,10 +1,12 @@
 import abc
 from itertools import chain, product
-from typing import Iterable, Iterator, List, Optional, Tuple, cast
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
+from tilings.assumptions import TrackingAssumption
 
 ListRequirement = Tuple[GriddedPerm, ...]
 
@@ -69,6 +71,54 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         if gp.avoids(*self.gps):
             return (children[0].forward_map(gp), None)
         return (None, children[1].forward_map(gp))
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Dict[str, str], ...]:
+        if not comb_class.extra_parameters:
+            return super().extra_parameters(comb_class, children)
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        av, co = children
+        av_mapped_gps = [
+            tuple(
+                av.forward_map(gp)
+                for gp in ass.gps
+                if gp.avoids(*self.gps)
+                and all(cell in av.forward_cell_map for cell in gp.pos)
+            )
+            for ass in comb_class.assumptions
+        ]
+        co_mapped_gps = [
+            tuple(
+                co.forward_map(gp)
+                for gp in ass.gps
+                if all(cell in co.forward_cell_map for cell in gp.pos)
+            )
+            for ass in comb_class.assumptions
+        ]
+        av_mapped_ass = [
+            TrackingAssumption(gps).avoiding(av.obstructions) for gps in av_mapped_gps
+        ]
+        co_mapped_ass = [
+            TrackingAssumption(gps).avoiding(co.obstructions) for gps in co_mapped_gps
+        ]
+        av_params: Dict[str, str] = {}
+        for assumption, mapped_assumption in zip(comb_class.assumptions, av_mapped_ass):
+            if mapped_assumption.gps:
+                parent_var = comb_class.get_parameter(assumption)
+                child_var = av.get_parameter(mapped_assumption)
+                av_params[child_var] = parent_var
+
+        co_params: Dict[str, str] = {}
+        for assumption, mapped_assumption in zip(comb_class.assumptions, co_mapped_ass):
+            if mapped_assumption.gps:
+                parent_var = comb_class.get_parameter(assumption)
+                child_var = co.get_parameter(mapped_assumption)
+                co_params[child_var] = parent_var
+        return av_params, co_params
 
     def __repr__(self) -> str:
         return "RequirementInsertionStrategy(gps={}, ignore_parent={})".format(

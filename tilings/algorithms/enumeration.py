@@ -95,10 +95,14 @@ class LocalEnumeration(Enumeration):
         if self.tiling.requirements:
             reqs = self.tiling.requirements[0]
             avoided = self.tiling.__class__(
-                self.tiling.obstructions + reqs, self.tiling.requirements[1:]
+                self.tiling.obstructions + reqs,
+                self.tiling.requirements[1:],
+                self.tiling.assumptions,
             )
             without = self.tiling.__class__(
-                self.tiling.obstructions, self.tiling.requirements[1:]
+                self.tiling.obstructions,
+                self.tiling.requirements[1:],
+                self.tiling.assumptions,
             )
             avgf = LocalEnumeration(avoided).get_genf(funcs=funcs)
             wogf = LocalEnumeration(without).get_genf(funcs=funcs)

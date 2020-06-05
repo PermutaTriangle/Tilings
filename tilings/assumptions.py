@@ -1,3 +1,4 @@
+from itertools import chain
 from typing import Iterable, Optional, Tuple
 
 from .griddedperm import GriddedPerm
@@ -35,6 +36,13 @@ class TrackingAssumption:
                 )
             )
         return self.__class__(tuple(gp for gp in self.gps if gp.avoids(*obstructions)))
+
+    def get_value(self, gp: GriddedPerm) -> int:
+        """
+        Return the number of occurrences of each of the gridded perms being track in
+        the gridded perm gp.
+        """
+        return len(list(chain.from_iterable(p.occurrences_in(gp) for p in self.gps)))
 
     def to_jsonable(self) -> dict:
         return {"gps": [gp.to_jsonable() for gp in self.gps]}
