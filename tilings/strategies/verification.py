@@ -99,10 +99,48 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         return self._basis
 
     @staticmethod
-    def pack() -> StrategyPack:
-        raise InvalidOperationError(
-            "Cannot get a specification for one by one verification"
-        )
+    def pack(tiling: Tiling) -> StrategyPack:
+        # pylint: disable=import-outside-toplevel
+        from tilings.tilescope import TileScopePack
+
+        pack: Optional[TileScopePack] = None
+        assert tiling.dimensions == (1, 1)
+        basis, _ = tiling.cell_basis()[(0, 0)]
+        if any(
+            any(p.contains(patt) for patt in basis)
+            for p in [
+                Perm((0, 2, 1)),
+                Perm((1, 2, 0)),
+                Perm((1, 0, 2)),
+                Perm((2, 0, 1)),
+            ]
+        ):
+            # subclass of Av(231) or a symmetry, use point placements!
+            return (
+                TileScopePack.point_placements()
+                .add_initial(SplittingStrategy())
+                .add_verification(BasicVerificationStrategy(), replace=True)
+            )
+        if is_insertion_encodable_maximum(basis):
+            return TileScopePack.regular_insertion_encoding(3).add_initial(
+                SplittingStrategy(), apply_first=True
+            )
+        if is_insertion_encodable_rightmost(basis):
+            return TileScopePack.regular_insertion_encoding(2).add_initial(
+                SplittingStrategy(), apply_first=True
+            )
+        if not tiling.requirements and (
+            basis == [Perm((0, 1, 2))] or basis == [Perm((2, 1, 0))]
+        ):
+            # Av(123) or Av(321) - use fusion!
+            return TileScopePack.row_and_col_placements(row_only=True).make_fusion()
+        if pack is None:
+            raise InvalidOperationError(
+                "Cannot get a specification for one by one verification for "
+                f"subclass Av({basis})"
+            )
+        pack.add_initial(SplittingStrategy(), apply_first=True)
+        return pack
 
     def verified(self, tiling: Tiling) -> bool:
         return (
