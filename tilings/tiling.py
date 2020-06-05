@@ -199,13 +199,11 @@ class Tiling(CombinatorialClass):
             # We can assume that self._obstructions is sorted at this point, so to
             #   extract the point obstructions, we just pass though them until we've
             #   found the last one, then we slice the list there.
-            index = 0
-            for ob in self._obstructions:
-                if len(ob) > 1:
-                    break
-                index += 1
+            index = next(
+                (i for i, ob in enumerate(self._obstructions) if len(ob) > 1),
+                len(self._obstructions),  # default value
+            )
             # Now the last point obstruction is at index [index-1]
-            # point_obstructions = self._obstructions[:index]
             non_point_obstructions = self._obstructions[index:]
 
             new_point_obstructions = tuple(
@@ -219,7 +217,8 @@ class Tiling(CombinatorialClass):
 
     @cssmethodtimer("Tiling._simplify_griddedperms")
     def _simplify_griddedperms(self, already_minimized_obs=False) -> None:
-        """Simplifies the set of obstructions and the set of requirement lists.
+        """
+        Simplifies the set of obstructions and the set of requirement lists.
         The set of obstructions are first reduced to a minimal set. The
         requirements that contain any obstructions are removed from their
         respective lists. If any requirement list is empty, then the tiling is
@@ -305,10 +304,12 @@ class Tiling(CombinatorialClass):
 
     @cssmethodtimer("Tiling._minimize_mapping")
     def _minimize_mapping(self) -> Tuple[Dict[int, int], Dict[int, int], bool]:
-        """Returns a pair of dictionaries, that map rows/columns to an
+        """
+        Returns a pair of dictionaries, that map rows/columns to an
         equivalent set of rows/columns where empty ones have been removed.
-        Also returns a boolean describing whether this mapping is the identity mapping
-        which saves some later computation."""
+        Also returns a boolean describing whether this mapping is the identity
+        mapping which saves some later computation.
+        """
         active_cells = self.active_cells
         assert active_cells
         col_set = set(c[0] for c in active_cells)
