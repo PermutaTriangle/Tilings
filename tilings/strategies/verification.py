@@ -11,6 +11,10 @@ from comb_spec_searcher import (
 )
 from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
 from permuta import Perm
+from permuta.permutils import (
+    is_insertion_encodable_maximum,
+    is_insertion_encodable_rightmost,
+)
 from permuta.permutils.symmetry import all_symmetry_sets
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms.enumeration import (
@@ -171,7 +175,7 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
     """
 
     @staticmethod
-    def pack() -> StrategyPack:
+    def pack(tiling: Tiling) -> StrategyPack:
         # TODO: check database for tiling
         raise InvalidOperationError(
             "Cannot get a specification for a tiling in the database"
@@ -233,7 +237,7 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
     """
 
     @staticmethod
-    def pack() -> StrategyPack:
+    def pack(tiling: Tiling) -> StrategyPack:
         return StrategyPack(
             name="LocallyFactorable",
             initial_strats=[
@@ -327,7 +331,31 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         self.no_factors = no_factors
         super().__init__(ignore_parent=ignore_parent)
 
-    def pack(self) -> StrategyPack:
+    def pack(self, tiling: Tiling) -> StrategyPack:
+
+        # pylint: disable=import-outside-toplevel
+        from tilings.strategy_pack import TileScopePack
+
+        if tiling.dimensions[0] == 1:
+            if all(
+                is_insertion_encodable_rightmost(basis)
+                for basis, _ in tiling.cell_basis().values()
+            ):
+                return TileScopePack.regular_insertion_encoding(2).add_initial(
+                    SplittingStrategy(), apply_first=True
+                )
+            # TODO: check if one cell has topmost regular insenc and rest are
+            # finite, then have topmost insertion encoding
+        if tiling.dimensions[1] == 1:
+            if all(
+                is_insertion_encodable_maximum(basis)
+                for basis, _ in tiling.cell_basis().values()
+            ):
+                return TileScopePack.regular_insertion_encoding(3).add_initial(
+                    SplittingStrategy(), apply_first=True
+                )
+            # TODO: check if one cell has rightmost regular insenc and rest are
+            # finite, then have rightmost insertion encoding
         if self.no_factors:
             raise InvalidOperationError("Cannot get a simpler specification")
         return StrategyPack(
@@ -397,7 +425,31 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
         self.no_factors = no_factors
         super().__init__(ignore_parent=ignore_parent)
 
-    def pack(self) -> StrategyPack:
+    def pack(self, tiling: Tiling) -> StrategyPack:
+        # pylint: disable=import-outside-toplevel
+        from tilings.strategy_pack import TileScopePack
+
+        if tiling.dimensions[0] == 1:
+            if all(
+                is_insertion_encodable_rightmost(basis)
+                for basis, _ in tiling.cell_basis().values()
+            ):
+                return TileScopePack.regular_insertion_encoding(2).add_initial(
+                    SplittingStrategy(), apply_first=True
+                )
+            # TODO: check if one cell has topmost regular insenc and rest are
+            # finite, then have topmost insertion encoding
+        if tiling.dimensions[1] == 1:
+            if all(
+                is_insertion_encodable_maximum(basis)
+                for basis, _ in tiling.cell_basis().values()
+            ):
+                return TileScopePack.regular_insertion_encoding(3).add_initial(
+                    SplittingStrategy(), apply_first=True
+                )
+            # TODO: check if one cell has rightmost regular insenc and rest are
+            # finite, then have rightmost insertion encoding
+
         if self.no_factors:
             raise InvalidOperationError(
                 "Cannot get a specification for a tiling in the database"
