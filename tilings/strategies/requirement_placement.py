@@ -109,7 +109,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 for ass in algo.stretched_assumptions(cell)
             ]
             mapped_assumptions = [
-                TrackingAssumption(gp for gp in gps if gp.avoids(*child.obstructions))
+                TrackingAssumption(gps).avoiding(child.obstructions)
                 for gps in mapped_gps
             ]
             for assumption, mapped_assumption in zip(
@@ -238,16 +238,11 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     def __repr__(self) -> str:
         return (
-            "RequirementPlacementStrategy(gps={}, indices={}, direction={},"
-            " own_col={}, own_row={}, ignore_parent={}, include_empty={})".format(
-                self.gps,
-                self.indices,
-                self.direction,
-                self.own_row,
-                self.own_col,
-                self.ignore_parent,
-                self.include_empty,
-            )
+            f"RequirementPlacementStrategy(gps={self.gps}, "
+            f"indices={self.indices}, direction={self.direction}, "
+            f"own_col={self.own_col}, own_row={self.own_row}, "
+            f"ignore_parent={self.ignore_parent}, "
+            f"include_empty={self.include_empty})"
         )
 
     def to_jsonable(self) -> dict:

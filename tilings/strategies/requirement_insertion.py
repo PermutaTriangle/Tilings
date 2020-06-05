@@ -100,12 +100,10 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             for ass in comb_class.assumptions
         ]
         av_mapped_ass = [
-            TrackingAssumption(gp for gp in gps if gp.avoids(*av.obstructions))
-            for gps in av_mapped_gps
+            TrackingAssumption(gps).avoiding(av.obstructions) for gps in av_mapped_gps
         ]
         co_mapped_ass = [
-            TrackingAssumption(gp for gp in gps if gp.avoids(*co.obstructions))
-            for gps in co_mapped_gps
+            TrackingAssumption(gps).avoiding(co.obstructions) for gps in co_mapped_gps
         ]
         av_params: Dict[str, str] = {}
         for assumption, mapped_assumption in zip(comb_class.assumptions, av_mapped_ass):

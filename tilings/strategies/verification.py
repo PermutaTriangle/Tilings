@@ -237,9 +237,9 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
         return StrategyPack(
             name="LocallyFactorable",
             initial_strats=[
+                SplittingStrategy(),
                 FactorFactory(),
                 RequirementCorroborationFactory(),
-                SplittingStrategy(),
             ],
             inferral_strats=[],
             expansion_strats=[[FactorInsertionFactory()]],
@@ -331,11 +331,13 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         if self.no_factors:
             raise InvalidOperationError("Cannot get a simpler specification")
         return StrategyPack(
-            initial_strats=[FactorFactory(), SplittingStrategy()],
+            initial_strats=[SplittingStrategy(), FactorFactory()],
             inferral_strats=[],
             expansion_strats=[],
             ver_strats=[
                 BasicVerificationStrategy(),
+                OneByOneVerificationStrategy(),
+                MonotoneTreeVerificationStrategy(no_factors=True),
                 LocalVerificationStrategy(no_factors=True),
             ],
             name="factor pack",
@@ -401,7 +403,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
                 "Cannot get a specification for a tiling in the database"
             )
         return StrategyPack(
-            initial_strats=[FactorFactory(), SplittingStrategy()],
+            initial_strats=[SplittingStrategy(), FactorFactory()],
             inferral_strats=[],
             expansion_strats=[],
             ver_strats=[

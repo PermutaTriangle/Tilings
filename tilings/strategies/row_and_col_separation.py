@@ -66,8 +66,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             for ass in comb_class.assumptions
         )
         mapped_assumptions = tuple(
-            TrackingAssumption(gp for gp in gps if gp.avoids(*child.obstructions))
-            for gps in mapped_gps
+            TrackingAssumption(gps).avoiding(child.obstructions) for gps in mapped_gps
         )
         return (
             {

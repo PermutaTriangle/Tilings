@@ -1,5 +1,19 @@
+"""
+The fusion strategy. The goal of the fusion strategy is to find a pair of
+adjacent rows, or adjacent columns such that they can be viewed as a single
+column, with a line drawn between them. When this fusion happens, an assumption
+that we can count the number of points in the fused row or column is added.
+
+When we map an assumption from the parent tiling to the fused tiling, if it
+uses either of the rows or columns being fused, then it is mapped to cover the
+entire fused region. With this in mind, we assume that a tiling cannot fuse if
+it has an assumption that intersects only partially with one of the adjacent
+rows or columns.
+
+We will assume we are always fusing two adjacent columns, and discuss the left
+and right hand sides accordingly.
+"""
 from collections import defaultdict
-from itertools import product
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from sympy import Eq, Function
@@ -68,50 +82,24 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
 
         self._init_checked()
 
-        # we now determine which fusion recurrence we want to use
-        if self.fuse_parameter in extra_parameters.values():
-            self.parent_fusion_parameters = self.reversed_extra_parameters[
-                self.fuse_parameter
-            ]
-            self.fusion_types = [
-                (
-                    "left"
-                    if parent_fusion_parameter in self.left_sided_parameters
-                    else "right"
-                    if parent_fusion_parameter in self.right_sided_parameters
-                    else "both"
-                )
-                for parent_fusion_parameter in self.parent_fusion_parameters
-            ]
-            # some parent variable(s) map to the fusion region
-            self.rec_function = self._fusing_parent_parameter_get_recurrence
-        else:
-            # no parent variable maps to the fusion region, so need to add new
-            # parameter to each call.
-
-            # if any two parent parameters map to the same child parameter, then
-            # these determine the number of left and right points
-            predeterminable_left_right_points = [
-                parent_vars
-                for parent_vars in self.reversed_extra_parameters.values()
-                if len(parent_vars) >= 2
-            ]
-            assert all(
-                len(parent_vars) <= 2
-                for parent_vars in self.reversed_extra_parameters.values()
+        self.parent_fusion_parameters = self.reversed_extra_parameters[
+            self.fuse_parameter
+        ]
+        self.fusion_types = [
+            (
+                "left"
+                if parent_fusion_parameter in self.left_sided_parameters
+                else "right"
+                if parent_fusion_parameter in self.right_sided_parameters
+                else "both"
             )
-
-            if predeterminable_left_right_points:
-                self.rec_function = (
-                    self._predetermined_new_fusion_parameter_get_recurrence
-                )
-                self.predeterminable_left_right_points = (
-                    predeterminable_left_right_points
-                )
-            else:
-                self.rec_function = self._new_fusion_parameter_get_recurrence
-
-            # TODO: consider merging the two functions in this case to just one
+            for parent_fusion_parameter in self.parent_fusion_parameters
+        ]
+        self.predeterminable_left_right_points = [
+            parent_vars
+            for child_var, parent_vars in self.reversed_extra_parameters.items()
+            if child_var != self.fuse_parameter and len(parent_vars) >= 2
+        ]
 
     def _init_checked(self):
         """
@@ -173,45 +161,124 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         where extra_parameters are updated according to extra_parameters.
         """
         subrec = subrecs[0]
-        return self.rec_function(subrec, n, **parameters)
-
-    def _fusing_parent_parameter_get_recurrence(
-        self, subrec: SubRec, n: int, **parameters: int
-    ) -> int:
-        """
-        In this case, a region of the parent was mapped to the fused region.
-
-        In this case, the fusion_type for each fusion parameter is set as follows:
-            - left: the parent region was only the left of the unfused region
-            - right: the parent region was only the right of the unfused region
-            - both: the parent region was all of the unfused region.
-
-        With this we need to consider the number of left points there can be,
-        and update other parameters if they only use one half of the unfused region.
-        """
-        left_right_points = self._left_right_points_by_parent_fusion_parameters(
+        res = 0
+        left_right_points = self._determine_number_of_points_in_fuse_region(
             n, **parameters
         )
-        res = 0
-        for number_of_left_points, number_of_right_points in left_right_points:
-            new_params = self._update_subparams_non_unique_parent(
-                number_of_left_points, number_of_right_points, **parameters
-            )
-            if new_params is not None and all(0 <= v <= n for v in new_params.values()):
+        for left_points, right_points in left_right_points:
+            new_params = self._update_subparams(left_points, right_points, **parameters)
+            if new_params is not None:
+                assert new_params[self.fuse_parameter] == left_points + right_points
                 res += subrec(n, **new_params)
         return res
 
-    def _left_right_points_by_parent_fusion_parameters(
+    def _determine_number_of_points_in_fuse_region(
         self, n: int, **parameters: int
     ) -> Iterator[Tuple[int, int]]:
         """
+        There are two cases we use to determine the number of left and right points.
+
+        # Case 1:
+        There was an assumption A on the parent which maps precisely to the fused
+        region. It must be either on the left, right, or covering both columns,
+        crucially fully contained within the region to be fused.
+
+        In this case we can determine:
+        - if A is left sided, then we know the number of points on the left must be the
+        number of points in A
+        - if A is right sided, then we know the number of points on the right must be
+        be the number of points in A.
+        - if A is both sided, then this tells as the sum of the number of left points
+        and right points must be equal to the number of points in A. In particular,
+        the number of points in A gives us an upper bound for the number of points
+        on the left or the right.
+
+        # Case 2:
+        We're not in case 1, however there are two assumptions A and B which are mapped
+        to the same region on the fused tiling. This means that one of A or B must use
+        just the left or right column. Due to the nature of these regions always
+        remaining rectangles, this tells us that the other must use both columns.
+        W.l.o.g, we will assume the B is the assumption covering both columns
+
+        In this case we can determine:
+        - if A uses the left column, then number of points on the right is the number
+        of points in B substract the number of points in A
+        - if A uses the right column, then the number of points on the left is the
+        number of points in B substract the number of points in A
+        - the number of points in the entire region is upper bounded by the number of
+        points in B.
+
+
         In this case, the fusion_type for each fusion parameter is set as follows:
             - left: the parent region was only the left of the unfused region
             - right: the parent region was only the right of the unfused region
             - both: the parent region was all of the unfused region.
         """
+        (
+            min_left_points,
+            max_left_points,
+            min_right_points,
+            max_right_points,
+            min_both_points,
+            max_both_points,
+        ) = self._min_max_points_by_fuse_parameters(n, **parameters)
+
+        if (
+            min_left_points > max_left_points
+            or min_right_points > max_right_points
+            or min_both_points > max_both_points
+        ):
+            return
+
+        for overlapping_parameters in self.predeterminable_left_right_points:
+            (
+                new_left,
+                new_right,
+            ) = self._determine_number_of_points_by_overlapping_parameter(
+                overlapping_parameters, **parameters
+            )
+            if new_left is not None:
+                min_left_points = max(min_left_points, new_left)
+                max_left_points = min(min_left_points, new_left)
+            if new_right is not None:
+                min_right_points = max(min_right_points, new_right)
+                max_right_points = min(max_right_points, new_right)
+            if min_left_points > max_left_points or min_right_points > max_right_points:
+                return
+
+        min_both_points = max(min_both_points, min_left_points + min_right_points)
+        max_both_points = min(max_both_points, max_right_points + max_left_points)
+        for number_left_points in range(min_left_points, max_left_points + 1):
+            for number_right_points in range(min_right_points, max_right_points + 1):
+                both = number_left_points + number_right_points
+                if both < min_both_points:
+                    continue
+                if both > max_both_points:
+                    break
+                yield number_left_points, number_right_points
+
+    def _min_max_points_by_fuse_parameters(
+        self, n: int, **parameters: int
+    ) -> Tuple[int, int, int, int, int, int]:
+        """
+        # Case 1:
+        There was an assumption A on the parent which maps precisely to the fused
+        region. It must be either on the left, right, or covering both columns,
+        crucially fully contained within the region to be fused.
+
+        In this case we can determine:
+        - if A is left sided, then we know the number of points on the left must be the
+        number of points in A
+        - if A is right sided, then we know the number of points on the right must be
+        be the number of points in A.
+        - if A is both sided, then this tells as the sum of the number of left points
+        and right points must be equal to the number of points in A. In particular,
+        the number of points in A gives us an upper bound for the number of points
+        on the left or the right.
+        """
         min_left_points, max_left_points = 0, n
         min_right_points, max_right_points = 0, n
+        min_both_points, max_both_points = 0, n
         for parent_fusion_parameter, fusion_type in zip(
             self.parent_fusion_parameters, self.fusion_types,
         ):
@@ -239,189 +306,47 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 max_right_points = min(
                     max_right_points, number_points_parent_fuse_parameter
                 )
-            if min_left_points > max_left_points or min_right_points > max_right_points:
-                return
-
-        yield from product(
-            range(min_left_points, max_left_points + 1),
-            range(min_right_points, max_right_points + 1),
-        )
-
-    def _new_fusion_parameter_get_recurrence(
-        self, subrec: SubRec, n: int, **parameters: int
-    ) -> int:
-        """
-        In this case, a new fusion parameter was added but at least one other parent
-        regions was mapped to overlap the fusion region. However, there are no two
-        regions mapped to the same region from parent to child.
-
-        We therefore need to consider every possible value for the number of points
-        in the fused region, and for each consider how many left and right points
-        there are in order to update the regions which overlap the fused region.
-        """
-        # TODO: get k_val from the reliance profile
-        res = 0
-        for k_val in range(n + 1):
-            for number_of_left_points in range(k_val + 1):
-                new_params = self._update_subparams_unique_parent(
-                    number_of_left_points, k_val - number_of_left_points, **parameters
+                min_both_points = max(
+                    min_both_points, number_points_parent_fuse_parameter
                 )
-                res += subrec(n, **new_params, **{self.fuse_parameter: k_val})
-        return res
-
-    def _update_subparams_unique_parent(
-        self, number_of_left_points: int, number_of_right_points: int, **parameters: int
-    ) -> Dict[str, int]:
-        """
-        Return the updates dictionary of parameters, such that each parameter points
-        to the child parameter. This mapping should be unique.
-
-        Also, number_of_left_points is added to the parameter if it is unnfused
-        to include only the right side of the fused region, and number of right
-        points is added to the region is it is unfused to include only the left
-        side.
-        """
-        return {
-            self.extra_parameters[parameter]: (
-                value + number_of_left_points
-                if parameter in self.right_sided_parameters
-                else value + number_of_right_points
-                if parameter in self.left_sided_parameters
-                else value
-            )
-            for parameter, value in parameters.items()
-        }
-
-    def _update_subparams_non_unique_parent(
-        self, number_of_left_points: int, number_of_right_points: int, **parameters: int
-    ) -> Optional[Dict[str, int]]:
-        """
-        Return the updates dictionary of parameters, such that each parameter points
-        to the child parameter.
-
-        The extra parameters mapping may not be unique, so if
-        two updated parameters have a different value, then the function returns None
-        to tell the calling function that the value of the subrec call should be 0.
-
-        Also, number_of_left_points is added to the parameter if it is unnfused
-        to include only the right side of the fused region, and number of right
-        points is added to the region is it is unfused to include only the left
-        side.
-        """
-        res: Dict[str, int] = dict()
-        for parameter, value in parameters.items():
+                max_both_points = min(
+                    max_both_points, number_points_parent_fuse_parameter
+                )
             if (
-                parameter in self.left_sided_parameters
-                and number_of_left_points > value
-            ) or (
-                parameter in self.right_sided_parameters
-                and number_of_right_points > value
+                min_left_points > max_left_points
+                or min_right_points > max_right_points
+                or min_both_points > max_both_points
             ):
-                return None
-            updated_value = (
-                value + number_of_left_points
-                if parameter in self.right_sided_parameters
-                else value + number_of_right_points
-                if parameter in self.left_sided_parameters
-                else value
-            )
-            if updated_value < 0:
-                # TODO: is this reached?
-                return None
-            child_parameter = self.extra_parameters[parameter]
-            if child_parameter in res:
-                if updated_value != res[child_parameter]:
-                    return None
-            else:
-                res[child_parameter] = updated_value
-        return res
+                break
 
-    def _predetermined_new_fusion_parameter_get_recurrence(
-        self, subrec: SubRec, n: int, **parameters: int
-    ) -> int:
-        """
-        In this case, a new fused region was added and no other parameter uses
-        the fused region. However, there are two parent assumptions that map to
-        the same assumption overlapping the fused region. These determine the
-        unique value that can be assigned to the fusion region.
-
-        # TODO: are you sure about the determine number function?
-        """
-        res = 0
-        left_right_points = self._determine_number_of_points_in_fuse_region(
-            n, **parameters
+        return (
+            min_left_points,
+            max_left_points,
+            min_right_points,
+            max_right_points,
+            min_both_points,
+            max_both_points,
         )
-        for left_points, right_points in left_right_points:
-            new_params = self._update_subparams_non_unique_parent(
-                left_points, right_points, **parameters
-            )
-            if new_params is not None:
-                new_params[self.fuse_parameter] = left_points + right_points
-                res += subrec(n, **new_params)
-        return res
 
-    def _determine_number_of_points_in_fuse_region(
-        self, n: int, **parameters: int
-    ) -> Iterator[Tuple[int, int]]:
-        """
-        Return the number of points that are in the fused region as determined
-        by the overlapping parameters.
-
-        Precisely, it returns the number of points on the left, and the number
-        of points on the right. If it can't determine one, then None is returned
-        for that value.
-        """
-        assert self.predeterminable_left_right_points
-        assert all(
-            len(overlapping_parameters) >= 2
-            for overlapping_parameters in self.predeterminable_left_right_points
-        ), "not a valid amount of overlapping factors."
-
-        left: Optional[int] = None
-        right: Optional[int] = None
-        for overlapping_parameters in self.predeterminable_left_right_points:
-            (
-                new_left,
-                new_right,
-            ) = self._determine_number_of_points_in_fuse_region_helper(
-                overlapping_parameters, **parameters
-            )
-            if left is None:
-                left = new_left
-            elif left != new_left:
-                return
-            if right is None:
-                right = new_right
-            elif right != new_right:
-                return
-            
-        # TODO: get the values from reliance profile function, e.g. n
-        if (left is not None and left < 0) or (right is not None and right < 0):
-            return
-        if left is None:
-            assert right is not None
-            number_of_left_points_range = range(n - right + 1)
-        else:
-            number_of_left_points_range = range(left, left + 1)
-
-        if right is None:
-            assert left is not None
-            number_of_right_points_range = range(n - left + 1)
-        else:
-            number_of_right_points_range = range(right, right + 1)
-
-        for number_of_left, number_of_right in product(
-            number_of_left_points_range, number_of_right_points_range
-        ):
-            if number_of_left + number_of_right <= n:
-                yield number_of_left, number_of_right
-
-    def _determine_number_of_points_in_fuse_region_helper(
+    def _determine_number_of_points_by_overlapping_parameter(
         self, overlapping_parameters: List[str], **parameters: int
     ) -> Tuple[Optional[int], Optional[int]]:
         """
-        Any two overlappping parameters determine the number of points in the
-        region. If there are three, then we can assess if it is a valid value.
+        # Case 2:
+        There are two assumptions A and B which are mapped to the same region
+        on the fused tiling (which is not the fused region, else we'd be in case
+        1). This means that one of A or B must use just the left or right column.
+        Due to the nature of these regions always remaining rectangles, this tells
+        us that the other must use both columns.
+        W.l.o.g, we will assume the B is the assumption covering both columns
+
+        In this case we can determine:
+        - if A uses the left column, then number of points on the right is the number
+        of points in B substract the number of points in A
+        - if A uses the right column, then the number of points on the left is the
+        number of points in B substract the number of points in A
+        - the number of points in the entire region is upper bounded by the number of
+        points in B.
         """
         p1 = overlapping_parameters[0]
         p2 = overlapping_parameters[1]
@@ -444,6 +369,46 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             assert p1 in self.both_sided_parameters
             return parameters[p1] - parameters[p2], None
         raise ValueError("Overlapping parameters overlap same region")
+
+    def _update_subparams(
+        self, number_of_left_points: int, number_of_right_points: int, **parameters: int
+    ) -> Optional[Dict[str, int]]:
+        """
+        Return the updates dictionary of parameters, such that each parameter points
+        to the child parameter.
+
+        The extra parameters mapping may not be unique, so if
+        two updated parameters have a different value, then the function returns None
+        to tell the calling function that the value of the subrec call should be 0.
+
+        Also, number_of_left_points is added to the parameter if it is unnfused
+        to include only the right side of the fused region, and number of right
+        points is added to the region is it is unfused to include only the left
+        side.
+        """
+        res = {self.fuse_parameter: number_of_left_points + number_of_right_points}
+        for parameter, value in parameters.items():
+            if (
+                parameter in self.left_sided_parameters
+                and number_of_left_points > value
+            ) or (
+                parameter in self.right_sided_parameters
+                and number_of_right_points > value
+            ):
+                return None
+            updated_value = (
+                value + number_of_left_points
+                if parameter in self.right_sided_parameters
+                else value + number_of_right_points
+                if parameter in self.left_sided_parameters
+                else value
+            )
+            child_parameter = self.extra_parameters[parameter]
+            if child_parameter not in res:
+                res[child_parameter] = updated_value
+            elif updated_value != res[child_parameter]:
+                return None
+        return res
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int
@@ -536,7 +501,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
                 left_sided_params.add(parent_var)
             elif right_sided and not left_sided:
                 right_sided_params.add(parent_var)
-            else:
+            elif not left_sided and not right_sided:
                 both_sided_params.add(parent_var)
         return (
             left_sided_params,
@@ -548,8 +513,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         child = algo.fused_tiling()
         fuse_assumption = algo.new_assumption()
-        idx = child.assumptions.index(fuse_assumption)
-        return "k_{}".format(idx)
+        return child.get_parameter(fuse_assumption)
 
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"
