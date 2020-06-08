@@ -64,9 +64,10 @@ class CommonTest(abc.ABC):
             assert isinstance(rule, VerificationRule)
             assert rule.formal_step == strategy.formal_step()
 
-    def test_pack(self, strategy):
-        with pytest.raises(InvalidOperationError):
-            strategy.pack()
+    def test_pack(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            with pytest.raises(InvalidOperationError):
+                strategy.pack(tiling)
 
     def test_get_specification(self, strategy, enum_verified):
         for tiling in enum_verified:
@@ -173,10 +174,11 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
         )
         return [t1, t2]
 
-    def test_pack(self, strategy):
-        pack = strategy.pack()
-        assert isinstance(pack, StrategyPack)
-        assert pack.name == "LocallyFactorable"
+    def test_pack(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            pack = strategy.pack(tiling)
+            assert isinstance(pack, StrategyPack)
+            assert pack.name == "LocallyFactorable"
 
     @pytest.mark.timeout(5)
     def test_get_specification(self, strategy, enum_verified):
