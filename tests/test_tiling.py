@@ -4,10 +4,10 @@ from itertools import chain, product
 import pytest
 import sympy
 
+import comb_spec_searcher
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.exception import InvalidOperationError
-import comb_spec_searcher
 
 
 @pytest.fixture

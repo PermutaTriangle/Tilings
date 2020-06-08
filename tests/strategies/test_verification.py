@@ -848,6 +848,10 @@ class TestOneByOneVerificationStrategy(CommonTest):
             )
             == 0
         )
-        # uses fusion, gives error because not implemented, so can't test enum_verified[5]
+
+        # uses fusion, gives error because not implemented,
+        #  so can't test enum_verified[5]
+
+        # no method for Av(1324) yet
         with pytest.raises(InvalidOperationError):
             strategy.pack(enum_verified[6])
