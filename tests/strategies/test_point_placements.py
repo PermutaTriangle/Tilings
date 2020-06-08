@@ -5,6 +5,7 @@ from comb_spec_searcher.strategies import Rule
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
+from tilings.assumptions import TrackingAssumption
 from tilings.strategies import (
     AllPlacementsFactory,
     PatternPlacementFactory,
@@ -1215,3 +1216,58 @@ def test_reverse_rule_non_empty_children():
     reverse_rule = eqv_rule.to_reverse_rule()
     for i in range(6):
         reverse_rule.sanity_check(i)
+
+
+@pytest.mark.xfail(reason="needs updated sanity checker on multivariables")
+def test_multiple_parent_parameters_to_same_child_parameter():
+    tiling = Tiling(
+        obstructions=(
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1)), ((2, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1)), ((3, 0), (3, 0))),
+            GriddedPerm(Perm((1, 2, 0)), ((1, 0), (2, 0), (2, 0))),
+            GriddedPerm(Perm((1, 2, 0)), ((1, 0), (2, 0), (3, 0))),
+            GriddedPerm(Perm((1, 2, 0)), ((1, 0), (3, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1, 2, 3)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 1, 2, 3)), ((0, 0), (0, 0), (0, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1, 2, 3)), ((0, 0), (0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1, 2, 3)), ((0, 0), (0, 0), (0, 0), (3, 0))),
+            GriddedPerm(Perm((0, 1, 2, 3)), ((0, 0), (0, 0), (1, 0), (2, 0))),
+            GriddedPerm(Perm((0, 1, 2, 3)), ((0, 0), (0, 0), (1, 0), (3, 0))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (0, 0), (1, 0))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (0, 0), (3, 0))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (1, 0), (2, 0))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (1, 0), (3, 0))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (2, 0), (3, 0))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (3, 0), (3, 0))),
+        ),
+        requirements=(),
+        assumptions=(
+            TrackingAssumption((GriddedPerm(Perm((0,)), ((2, 0),)),)),
+            TrackingAssumption(
+                (GriddedPerm(Perm((0,)), ((2, 0),)), GriddedPerm(Perm((0,)), ((3, 0),)))
+            ),
+        ),
+    )
+    strategy = RequirementPlacementStrategy(
+        gps=(
+            GriddedPerm(Perm((0,)), ((1, 0),)),
+            GriddedPerm(Perm((0,)), ((2, 0),)),
+            GriddedPerm(Perm((0,)), ((3, 0),)),
+            GriddedPerm(Perm((0,)), ((0, 0),)),
+        ),
+        indices=(0, 0, 0, 0),
+        direction=3,
+        own_col=True,
+        own_row=True,
+        ignore_parent=False,
+        include_empty=True,
+    )
+    rule = strategy(tiling)
+    for i in range(6):
+        rule.sanity_check(i)

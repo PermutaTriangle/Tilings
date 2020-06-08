@@ -63,7 +63,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
                         children[i].forward_map(gp) for gp in assumption.gps
                     )
                     child_var = children[i].get_parameter(new_assumption)
-                    extra_parameters[i][child_var] = parent_var
+                    extra_parameters[i][parent_var] = child_var
                     break
             else:
                 raise ValueError("Assumption was not mapped to any child")

@@ -93,7 +93,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 if mapped_assumption.gps:
                     parent_var = comb_class.get_parameter(assumption)
                     child_var = child.get_parameter(mapped_assumption)
-                    extra_parameters[0][child_var] = parent_var
+                    extra_parameters[0][parent_var] = child_var
         for idx, (cell, child) in enumerate(
             zip(self._placed_cells, children[1:] if self.include_empty else children)
         ):
@@ -122,8 +122,8 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                     parent_var = comb_class.get_parameter(assumption)
                     child_var = child.get_parameter(mapped_assumption)
                     extra_parameters[idx + 1 if self.include_empty else idx][
-                        child_var
-                    ] = parent_var
+                        parent_var
+                    ] = child_var
         return extra_parameters
 
     def direction_string(self):
