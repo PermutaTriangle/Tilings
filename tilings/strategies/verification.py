@@ -11,6 +11,10 @@ from comb_spec_searcher import (
 )
 from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
 from permuta import Perm
+from permuta.permutils import (
+    is_insertion_encodable_maximum,
+    is_insertion_encodable_rightmost,
+)
 from permuta.permutils.symmetry import all_symmetry_sets
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms.enumeration import (
@@ -95,10 +99,71 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         return self._basis
 
     @staticmethod
-    def pack() -> StrategyPack:
-        raise InvalidOperationError(
-            "Cannot get a specification for one by one verification"
-        )
+    def pack(tiling: Tiling) -> StrategyPack:
+        # pylint: disable=import-outside-toplevel
+        from tilings.tilescope import TileScopePack
+
+        pack: Optional[TileScopePack] = None
+        assert tiling.dimensions == (1, 1)
+        basis, _ = tiling.cell_basis()[(0, 0)]
+        if any(
+            any(p.contains(patt) for patt in basis)
+            for p in [
+                Perm((0, 2, 1)),
+                Perm((1, 2, 0)),
+                Perm((1, 0, 2)),
+                Perm((2, 0, 1)),
+            ]
+        ):
+            # subclass of Av(231) or a symmetry, use point placements!
+            return (
+                TileScopePack.point_placements()
+                .add_initial(SplittingStrategy(ignore_parent=True), apply_first=True)
+                .add_verification(BasicVerificationStrategy(), replace=True)
+            )
+        if is_insertion_encodable_maximum(basis):
+            return TileScopePack.regular_insertion_encoding(3).add_initial(
+                SplittingStrategy(ignore_parent=True), apply_first=True
+            )
+        if is_insertion_encodable_rightmost(basis):
+            return TileScopePack.regular_insertion_encoding(2).add_initial(
+                SplittingStrategy(ignore_parent=True), apply_first=True
+            )
+        # if it is the class or positive class
+        if not tiling.requirements or (
+            len(tiling.requirements) == 1
+            and len(tiling.requirements[0]) == 1
+            and len(tiling.requirements[0][0]) == 1
+        ):
+            if not tiling.requirements and basis in (
+                [Perm((0, 1, 2))],
+                [Perm((2, 1, 0))],
+            ):
+                # Av(123) or Av(321) - use fusion!
+                return (
+                    TileScopePack.row_and_col_placements(row_only=True)
+                    .make_fusion(tracked=True)
+                    .fix_one_by_one(basis)
+                )
+            if (Perm((0, 1, 2)) in basis or Perm((2, 1, 0)) in basis) and all(
+                len(p) <= 4 for p in basis
+            ):
+                # is a subclass of Av(123) avoiding patterns of length <= 4
+                # experimentally showed that such clsses always terminates
+                return (
+                    TileScopePack.row_and_col_placements()
+                    .add_initial(
+                        SplittingStrategy(ignore_parent=True), apply_first=True
+                    )
+                    .fix_one_by_one(basis)
+                )
+        if pack is None:
+            raise InvalidOperationError(
+                "Cannot get a specification for one by one verification for "
+                f"subclass Av({basis})"
+            )
+        pack.add_initial(SplittingStrategy(ignore_parent=True), apply_first=True)
+        return pack
 
     def verified(self, tiling: Tiling) -> bool:
         return (
@@ -109,11 +174,6 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
     @staticmethod
     def formal_step() -> str:
         return "tiling is a subclass of the original tiling"
-
-    def get_genf(self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None):
-        if not self.verified(tiling):
-            raise StrategyDoesNotApply("tiling not one by one verified")
-        return LocalEnumeration(tiling).get_genf(funcs=funcs)
 
     def count_objects_of_size(
         self, comb_class: Tiling, n: int, **parameters: int
@@ -171,7 +231,7 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
     """
 
     @staticmethod
-    def pack() -> StrategyPack:
+    def pack(tiling: Tiling) -> StrategyPack:
         # TODO: check database for tiling
         raise InvalidOperationError(
             "Cannot get a specification for a tiling in the database"
@@ -233,11 +293,11 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
     """
 
     @staticmethod
-    def pack() -> StrategyPack:
+    def pack(tiling: Tiling) -> StrategyPack:
         return StrategyPack(
             name="LocallyFactorable",
             initial_strats=[
-                SplittingStrategy(),
+                SplittingStrategy(ignore_parent=True),
                 FactorFactory(),
                 RequirementCorroborationFactory(),
             ],
@@ -327,11 +387,35 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         self.no_factors = no_factors
         super().__init__(ignore_parent=ignore_parent)
 
-    def pack(self) -> StrategyPack:
+    def pack(self, tiling: Tiling) -> StrategyPack:
+
+        # pylint: disable=import-outside-toplevel
+        from tilings.strategy_pack import TileScopePack
+
+        if tiling.dimensions[0] == 1:
+            if all(
+                is_insertion_encodable_rightmost(basis)
+                for basis, _ in tiling.cell_basis().values()
+            ):
+                return TileScopePack.regular_insertion_encoding(2).add_initial(
+                    SplittingStrategy(ignore_parent=True), apply_first=True
+                )
+            # TODO: check if one cell has topmost regular insenc and rest are
+            # finite, then have topmost insertion encoding
+        if tiling.dimensions[1] == 1:
+            if all(
+                is_insertion_encodable_maximum(basis)
+                for basis, _ in tiling.cell_basis().values()
+            ):
+                return TileScopePack.regular_insertion_encoding(3).add_initial(
+                    SplittingStrategy(ignore_parent=True), apply_first=True
+                )
+            # TODO: check if one cell has rightmost regular insenc and rest are
+            # finite, then have rightmost insertion encoding
         if self.no_factors:
             raise InvalidOperationError("Cannot get a simpler specification")
         return StrategyPack(
-            initial_strats=[SplittingStrategy(), FactorFactory()],
+            initial_strats=[SplittingStrategy(ignore_parent=True), FactorFactory()],
             inferral_strats=[],
             expansion_strats=[],
             ver_strats=[
@@ -361,7 +445,10 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
     def get_genf(self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None):
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling not locally verified")
-        return LocalEnumeration(tiling).get_genf()
+        try:
+            return super().get_genf(tiling, funcs)
+        except InvalidOperationError:
+            return LocalEnumeration(tiling).get_genf(funcs=funcs)
 
     def count_objects_of_size(
         self, comb_class: Tiling, n: int, **parameters: int
@@ -397,13 +484,37 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
         self.no_factors = no_factors
         super().__init__(ignore_parent=ignore_parent)
 
-    def pack(self) -> StrategyPack:
+    def pack(self, tiling: Tiling) -> StrategyPack:
+        # pylint: disable=import-outside-toplevel
+        from tilings.strategy_pack import TileScopePack
+
+        if tiling.dimensions[0] == 1:
+            if all(
+                is_insertion_encodable_rightmost(basis)
+                for basis, _ in tiling.cell_basis().values()
+            ):
+                return TileScopePack.regular_insertion_encoding(2).add_initial(
+                    SplittingStrategy(ignore_parent=True), apply_first=True
+                )
+            # TODO: check if one cell has topmost regular insenc and rest are
+            # finite, then have topmost insertion encoding
+        if tiling.dimensions[1] == 1:
+            if all(
+                is_insertion_encodable_maximum(basis)
+                for basis, _ in tiling.cell_basis().values()
+            ):
+                return TileScopePack.regular_insertion_encoding(3).add_initial(
+                    SplittingStrategy(ignore_parent=True), apply_first=True
+                )
+            # TODO: check if one cell has rightmost regular insenc and rest are
+            # finite, then have rightmost insertion encoding
+
         if self.no_factors:
             raise InvalidOperationError(
                 "Cannot get a specification for a tiling in the database"
             )
         return StrategyPack(
-            initial_strats=[SplittingStrategy(), FactorFactory()],
+            initial_strats=[SplittingStrategy(ignore_parent=True), FactorFactory()],
             inferral_strats=[],
             expansion_strats=[],
             ver_strats=[

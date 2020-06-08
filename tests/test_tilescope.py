@@ -2,6 +2,7 @@ import pytest
 import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
+from comb_spec_searcher.strategies import EmptyStrategy
 from comb_spec_searcher.strategies.rule import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
@@ -66,7 +67,6 @@ def test_132_321_genf():
     searcher = TileScope("132_321", point_placements)
     spec = searcher.auto_search(smallest=True)
     assert isinstance(spec, CombinatorialSpecification)
-    assert spec.number_of_rules() == 9
     gf = spec.get_genf()
     assert taylor_expand(gf, 15) == [
         1,
@@ -269,5 +269,6 @@ def test_expansion():
                     strat.OneByOneVerificationStrategy,
                     strat.MonotoneTreeVerificationStrategy,
                     strat.BasicVerificationStrategy,
+                    EmptyStrategy,
                 ),
             )

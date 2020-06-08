@@ -4,7 +4,11 @@ import pytest
 import sympy
 
 from comb_spec_searcher import CombinatorialSpecification, StrategyPack
-from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
+from comb_spec_searcher.exception import (
+    IncorrectGeneratingFunctionError,
+    InvalidOperationError,
+    StrategyDoesNotApply,
+)
 from comb_spec_searcher.strategies import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Perm
@@ -18,7 +22,9 @@ from tilings.strategies import (
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
     OneByOneVerificationStrategy,
+    SplittingStrategy,
 )
+from tilings.tilescope import TileScopePack
 
 
 class CommonTest(abc.ABC):
@@ -64,9 +70,10 @@ class CommonTest(abc.ABC):
             assert isinstance(rule, VerificationRule)
             assert rule.formal_step == strategy.formal_step()
 
-    def test_pack(self, strategy):
-        with pytest.raises(InvalidOperationError):
-            strategy.pack()
+    def test_pack(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            with pytest.raises(InvalidOperationError):
+                strategy.pack(tiling)
 
     def test_get_specification(self, strategy, enum_verified):
         for tiling in enum_verified:
@@ -115,6 +122,7 @@ class TestBasicVerificationStrategy(CommonTest):
         return [Tiling.from_string("123")]
 
     def test_get_genf(self, strategy, enum_verified):
+        # atoms
         assert strategy.get_genf(enum_verified[0]) == sympy.sympify("1")
         assert strategy.get_genf(enum_verified[1]) == sympy.sympify("x")
 
@@ -173,10 +181,11 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
         )
         return [t1, t2]
 
-    def test_pack(self, strategy):
-        pack = strategy.pack()
-        assert isinstance(pack, StrategyPack)
-        assert pack.name == "LocallyFactorable"
+    def test_pack(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            pack = strategy.pack(tiling)
+            assert isinstance(pack, StrategyPack)
+            assert pack.name == "LocallyFactorable"
 
     @pytest.mark.timeout(5)
     def test_get_specification(self, strategy, enum_verified):
@@ -186,7 +195,12 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
 
     def test_get_genf(self, strategy, enum_verified):
         x = sympy.var("x")
-        assert strategy.get_genf(enum_verified[0]) == 1 / (2 * x ** 2 - 3 * x + 1)
+        assert (
+            sympy.simplify(
+                strategy.get_genf(enum_verified[0]) - 1 / (2 * x ** 2 - 3 * x + 1)
+            )
+            == 0
+        )
 
     def test_locally_factorable_requirements(
         self, strategy, enum_verified, enum_not_verified
@@ -253,13 +267,16 @@ class TestLocalVerificationStrategy(CommonTest):
         t = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+                GriddedPerm(Perm((1, 0, 2)), ((0, 0),) * 3),
+                GriddedPerm(Perm((2, 0, 1)), ((0, 0),) * 3),
                 GriddedPerm(Perm((0, 2, 1)), ((1, 0),) * 3),
                 GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
-                GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
+                GriddedPerm(Perm((1, 0, 2)), ((1, 0),) * 3),
+                GriddedPerm(Perm((2, 0, 1)), ((1, 0),) * 3),
             ],
             requirements=[
-                [GriddedPerm(Perm((0, 1)), ((0, 0),) * 2)],
-                [GriddedPerm(Perm((0, 1)), ((1, 0),) * 2)],
+                [GriddedPerm(Perm((0,)), ((0, 0),))],
+                [GriddedPerm(Perm((0,)), ((1, 0),))],
             ],
         )
         return [t]
@@ -287,13 +304,31 @@ class TestLocalVerificationStrategy(CommonTest):
         )
         return [t, onebyone_enum]
 
-    def test_get_genf(self, strategy, enum_verified):
+    def test_pack(self, strategy, enum_verified):
+        assert strategy.pack(
+            enum_verified[0]
+        ) == TileScopePack.regular_insertion_encoding(3).add_initial(
+            SplittingStrategy(ignore_parent=True), apply_first=True
+        )
+
+    @pytest.mark.timeout(10)
+    def test_get_specification(self, strategy, enum_verified):
         for tiling in enum_verified:
-            with pytest.raises(NotImplementedError):
-                strategy.get_genf(tiling)
+            spec = strategy.get_specification(tiling)
+            assert isinstance(spec, CombinatorialSpecification)
+
+    @pytest.mark.timeout(60)
+    def test_get_genf(self, strategy, enum_verified):
+        assert (
+            sympy.simplify(
+                strategy.get_genf(enum_verified[0])
+                - sympy.simplify("2*x**2*(x**2 + x - 1)/((x - 1)**3*(2*x - 1)**2)")
+            )
+            == 0
+        )
 
     @pytest.fixture
-    def enum_no_req(self):
+    def enum_crossing_req(self):
         t = Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
@@ -310,9 +345,10 @@ class TestLocalVerificationStrategy(CommonTest):
         )
         return t
 
-    @pytest.mark.xfail(reason="the no req flag was removed")
-    def test_no_req_option(self, enum_no_req):
-        assert LocalVerificationStrategy().verified(enum_no_req)
+    def test_no_crossing_req_option(self, enum_crossing_req):
+        assert not LocalVerificationStrategy(no_factors=True).verified(
+            enum_crossing_req
+        )
 
 
 class TestMonotoneTreeVerificationStrategy(CommonTest):
@@ -402,7 +438,25 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
         )
         return [t, enum_with_crossing, enum_with_list_req, onebyone_enum, forest_tiling]
 
-    @pytest.mark.xfail(reason="combopal database not setup")
+    def test_pack(self, strategy, enum_verified):
+        with pytest.raises(InvalidOperationError):
+            strategy.pack(enum_verified[0])
+        assert strategy.pack(
+            enum_verified[1]
+        ) == TileScopePack.regular_insertion_encoding(3).add_initial(
+            SplittingStrategy(ignore_parent=True), apply_first=True
+        )
+
+    @pytest.mark.timeout(30)
+    def test_get_specification(self, strategy, enum_verified):
+        with pytest.raises(InvalidOperationError):
+            isinstance(
+                strategy.get_specification(enum_verified[0]), CombinatorialSpecification
+            )
+        assert isinstance(
+            strategy.get_specification(enum_verified[1]), CombinatorialSpecification
+        )
+
     def test_get_genf(self, strategy, enum_verified):
         x = sympy.Symbol("x")
         expected_gf = -(
@@ -411,7 +465,10 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
             )
             - 1
         ) / (2 * x * (x ** 2 - 3 * x + 1))
-        assert sympy.simplify(strategy.get_genf(enum_verified[0]) - expected_gf) == 0
+        with pytest.raises(IncorrectGeneratingFunctionError):
+            assert (
+                sympy.simplify(strategy.get_genf(enum_verified[0]) - expected_gf) == 0
+            )
 
         expected_gf = -1 / ((x - 1) * (x / (x - 1) + 1))
         assert sympy.simplify(strategy.get_genf(enum_verified[1]) - expected_gf) == 0
@@ -473,7 +530,6 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
         terms = [0, 0, 0, 3, 10, 25, 56, 119, 246, 501, 1012]
         assert taylor_expand(genf) == terms
 
-    @pytest.mark.xfail(reason="combopal database not setup")
     def test_genf_with_big_finite_cell(self, strategy):
         t = Tiling(
             obstructions=[
@@ -551,9 +607,9 @@ class TestElementaryVerificationStrategy(CommonTest):
     def enum_with_req(self):
         return Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((2, 0),) * 3),
+                GriddedPerm(Perm((0, 2, 1)), ((0, 1),) * 3),
+                GriddedPerm(Perm((0, 2, 1)), ((1, 2),) * 3),
+                GriddedPerm(Perm((0, 2, 1)), ((2, 0),) * 3),
                 GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
             ],
             requirements=[
@@ -566,9 +622,9 @@ class TestElementaryVerificationStrategy(CommonTest):
     def enum_verified(self, enum_with_req):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((2, 0),) * 3),
+                GriddedPerm(Perm((0, 2, 1)), ((0, 1),) * 3),
+                GriddedPerm(Perm((0, 2, 1)), ((1, 2),) * 3),
+                GriddedPerm(Perm((0, 2, 1)), ((2, 0),) * 3),
                 GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
             ]
         )
@@ -600,21 +656,36 @@ class TestElementaryVerificationStrategy(CommonTest):
         )
         return [t, enum_onebyone, enum_with_interleaving]
 
-    def test_pack(self, strategy):
-        pack = strategy.pack()
-        assert isinstance(pack, StrategyPack)
-        assert pack.name == "LocallyFactorable"
+    def test_pack(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            pack = strategy.pack(tiling)
+            assert isinstance(pack, StrategyPack)
+            assert pack.name == "LocallyFactorable"
 
     def test_get_specification(self, strategy, enum_verified):
         for tiling in enum_verified:
             spec = strategy.get_specification(tiling)
             assert isinstance(spec, CombinatorialSpecification)
 
-    @pytest.mark.xfail(reason="Av(123) not in combopal database")
     def test_get_genf(self, strategy, enum_verified):
-        for tiling in enum_verified:
-            with pytest.raises(NotImplementedError):
-                strategy.get_genf(tiling)
+        assert (
+            sympy.simplify(
+                strategy.get_genf(enum_verified[0])
+                - sympy.sympify(
+                    "(2*x**2 + 3*x*sqrt(1 - 4*x) - 9*x - 3*sqrt(1 - 4*x) + 3)/(2*x**2)"
+                )
+            )
+            == 0
+        )
+        assert (
+            sympy.simplify(
+                strategy.get_genf(enum_verified[1])
+                - sympy.sympify(
+                    "sqrt(1 - 4*x)*(2*x - 1)/(2*x**2) + (2*x**2 - 4*x + 1)/(2*x**2)"
+                )
+            )
+            == 0
+        )
 
 
 class TestDatabaseVerificationStrategy(CommonTest):
@@ -651,7 +722,25 @@ class TestOneByOneVerificationStrategy(CommonTest):
 
     @pytest.fixture
     def enum_verified(self):
-        return [Tiling.from_string("1324_321")]
+        return [
+            # any 231 subclass
+            Tiling.from_string("132_4321"),
+            # any with regular insertion encoding, regardless of reqs
+            Tiling.from_string("012_1032"),
+            Tiling.from_string("012_1302").add_list_requirement(
+                [
+                    GriddedPerm.single_cell(Perm((1, 0)), (0, 0)),
+                    GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),
+                ]
+            ),
+            Tiling.from_string("0231_2103"),
+            # subclass of Av(123) avoiding patterns of length <= 4, positive or not
+            Tiling.from_string("012_2301").add_requirement(Perm((0,)), [(0, 0)]),
+            # uses fusion
+            Tiling.from_string("123"),
+            # no pack yet
+            Tiling.from_string("1324"),
+        ]
 
     @pytest.fixture
     def enum_not_verified(self):
@@ -662,7 +751,107 @@ class TestOneByOneVerificationStrategy(CommonTest):
         assert strategy.basis == (Perm((2, 1, 0)),)
         assert new_s.basis == (Perm((0, 1, 2)),)
 
+    def test_pack(self, strategy, enum_verified):
+        assert strategy.pack(
+            enum_verified[0]
+        ) == TileScopePack.point_placements().add_initial(
+            SplittingStrategy(ignore_parent=True), apply_first=True
+        ).add_verification(
+            BasicVerificationStrategy(), replace=True
+        )
+        assert strategy.pack(enum_verified[1]) in (
+            TileScopePack.regular_insertion_encoding(2).add_initial(
+                SplittingStrategy(ignore_parent=True), apply_first=True
+            ),
+            TileScopePack.regular_insertion_encoding(3).add_initial(
+                SplittingStrategy(ignore_parent=True), apply_first=True
+            ),
+        )
+
+        assert strategy.pack(
+            enum_verified[2]
+        ) == TileScopePack.regular_insertion_encoding(3).add_initial(
+            SplittingStrategy(ignore_parent=True), apply_first=True
+        )
+
+        assert strategy.pack(
+            enum_verified[3]
+        ) == TileScopePack.regular_insertion_encoding(2).add_initial(
+            SplittingStrategy(ignore_parent=True), apply_first=True
+        )
+        assert strategy.pack(
+            enum_verified[4]
+        ) == TileScopePack.row_and_col_placements().add_initial(
+            SplittingStrategy(ignore_parent=True), apply_first=True
+        ).fix_one_by_one(
+            [Perm((0, 1, 2)), Perm((2, 3, 0, 1))]
+        )
+
+        assert strategy.pack(enum_verified[5]) == TileScopePack.row_and_col_placements(
+            row_only=True
+        ).make_fusion(tracked=True).fix_one_by_one([Perm((0, 1, 2))])
+        with pytest.raises(InvalidOperationError):
+            strategy.pack(enum_verified[6])
+
+    @pytest.mark.timeout(120)
+    def test_get_specification(self, strategy, enum_verified):
+        for tiling in enum_verified[:-1]:
+            spec = strategy.get_specification(tiling)
+            assert isinstance(spec, CombinatorialSpecification)
+        with pytest.raises(InvalidOperationError):
+            spec = strategy.get_specification(enum_verified[-1])
+            assert isinstance(spec, CombinatorialSpecification)
+
+    @pytest.mark.timeout(300)
     def test_get_genf(self, strategy, enum_verified):
-        for tiling in enum_verified:
-            with pytest.raises(NotImplementedError):
-                strategy.get_genf(tiling)
+        # any 231 subclass
+        assert (
+            sympy.simplify(
+                strategy.get_genf(enum_verified[0])
+                - sympy.sympify("-(3*x**4 - 5*x**3 + 7*x**2 - 4*x + 1)/(x - 1)**5")
+            )
+            == 0
+        )
+        # any with regular insertion encoding
+        assert (
+            sympy.simplify(
+                strategy.get_genf(enum_verified[1])
+                - sympy.sympify("-(2*x - 1)/(x**2 - 3*x + 1)")
+            )
+            == 0
+        )
+        assert (
+            sympy.simplify(
+                strategy.get_genf(enum_verified[2])
+                - sympy.sympify("-x**2*(x - 2)/(x**2 - 3*x + 1)")
+            )
+            == 0
+        )
+        # This test takes too long!
+        # assert (
+        #     sympy.simplify(
+        #         strategy.get_genf(enum_verified[3])
+        #         - sympy.sympify(
+        #             "-(x - 1)*(3*x - 1)*(x**2 - 3*x + 1)/(2*x**5 -"
+        #             " 10*x**4 + 25*x**3 - 22*x**2 + 8*x - 1)"
+        #         )
+        #     )
+        #     == 0
+        # )
+        # subclass of Av(123) avoiding patterns of length <= 4
+        assert (
+            sympy.simplify(
+                strategy.get_genf(enum_verified[4])
+                - sympy.sympify(
+                    "-x*(2*x**4 - 5*x**3 + 7*x**2 - 4*x + 1)/((x - 1)**4*(2*x - 1))"
+                )
+            )
+            == 0
+        )
+
+        # uses fusion, gives error because not implemented,
+        #  so can't test enum_verified[5]
+
+        # no method for Av(1324) yet
+        with pytest.raises(InvalidOperationError):
+            strategy.pack(enum_verified[6])
