@@ -67,7 +67,6 @@ def test_132_321_genf():
     searcher = TileScope("132_321", point_placements)
     spec = searcher.auto_search(smallest=True)
     assert isinstance(spec, CombinatorialSpecification)
-    assert spec.number_of_rules() == 10
     gf = spec.get_genf()
     assert taylor_expand(gf, 15) == [
         1,

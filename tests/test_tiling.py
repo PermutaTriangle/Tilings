@@ -7,6 +7,7 @@ import sympy
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.exception import InvalidOperationError
+import comb_spec_searcher
 
 
 @pytest.fixture
@@ -2338,9 +2339,11 @@ class TestGetGenf:
                 GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
             ]
         )
-        assert t.get_genf() == sympy.sympify("1 / (2 * x ** 2 - 3 * x + 1)")
+        assert (
+            sympy.simplify(t.get_genf() - sympy.sympify("1 / (2*x**2 - 3*x + 1)")) == 0
+        )
 
     def test_not_enumerable(self):
         t = Tiling.from_string("1324")
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(comb_spec_searcher.exception.InvalidOperationError):
             t.get_genf()
