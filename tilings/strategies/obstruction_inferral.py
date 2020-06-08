@@ -63,7 +63,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             if mapped_assumption.gps:
                 parent_var = comb_class.get_parameter(assumption)
                 child_var = av.get_parameter(mapped_assumption)
-                av_params[child_var] = parent_var
+                av_params[parent_var] = child_var
         return (av_params,)
 
     def backward_map(
