@@ -167,6 +167,16 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
             and frozenset(ob.patt for ob in tiling.obstructions) not in self.symmetries
         )
 
+    def get_genf(
+        self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
+    ) -> Expr:
+        if not self.verified(tiling):
+            raise StrategyDoesNotApply("tiling not locally verified")
+        try:
+            return super().get_genf(tiling, funcs)
+        except InvalidOperationError:
+            return LocalEnumeration(tiling).get_genf(funcs=funcs)
+
     @staticmethod
     def formal_step() -> str:
         return "tiling is a subclass of the original tiling"
@@ -241,7 +251,9 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
     def formal_step() -> str:
         return "tiling is in the database"
 
-    def get_genf(self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None):
+    def get_genf(
+        self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
+    ) -> Expr:
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling is not in the database")
         return DatabaseEnumeration(tiling).get_genf()
@@ -438,7 +450,9 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
     def from_dict(cls, d: dict) -> "LocalVerificationStrategy":
         return cls(**d)
 
-    def get_genf(self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None):
+    def get_genf(
+        self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
+    ) -> Expr:
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling not locally verified")
         try:
@@ -538,8 +552,11 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
         self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
     ) -> Expr:
         if not self.verified(tiling):
-            raise StrategyDoesNotApply("tiling is not monotone tree verified")
-        return MonotoneTreeEnumeration(tiling).get_genf()
+            raise StrategyDoesNotApply("tiling not locally verified")
+        try:
+            return super().get_genf(tiling, funcs)
+        except InvalidOperationError:
+            return MonotoneTreeEnumeration(tiling).get_genf(funcs=funcs)
 
     def count_objects_of_size(
         self, comb_class: Tiling, n: int, **parameters: int
