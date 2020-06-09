@@ -385,7 +385,6 @@ class TestMonotoneTreeEnumeration(CommonTest):
         terms = [0, 0, 0, 3, 10, 25, 56, 119, 246, 501, 1012]
         assert taylor_expand(genf) == terms
 
-    @pytest.mark.xfail(reason="No database setup")
     def test_genf_with_big_finite_cell(self):
         t = Tiling(
             obstructions=[
