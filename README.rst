@@ -188,15 +188,157 @@ Using the tilescope
 -------------------
 
 If you've not installed ``tilings`` yet then go ahead and do this first.
-Then the tilescope can be imported by a Python nteractive Python session
+Then TileScope can be imported in a interactive Python session
 from ``tilings.tilescope``.
 
 .. code:: python
 
        >>> from tilings.tilescope import *
 
-Importing ``*`` from it supplies you with the "TileScope" and ‘TileScopePack’
-classes.
+Importing ``*`` from ``tilings.tilescope`` supplies you with the "TileScope" and
+‘TileScopePack’ classes. Running the TileScope is as simple as choosing a class
+and a strategy pack. We'll go into more detail about the different strategies
+available shortly, but first lets enumerate our first permutation class. The
+example one always learns first in permutation patterns is enumerating Av(231).
+There are many different packs that will succeed for this class, but to get the
+most commonly described decomposition we can use ``point_placements``. The
+basis can be given to TileScope in several formats: an iterable of permuta.Perm,
+a string where the permutations are separated by ``'_'`` (e.g. ``'231_4321'``, or
+as a ``Tiling``.
+
+.. code:: python
+
+       >>> pack = TileScopePack.point_placements()
+       >>> tilescope = TileScope('231', pack)
+
+Once we have created our ``TileScope`` we can then use the ``auto_search`` method
+which will search for a specification using the strategies given. If successful
+it will return a CombinatorialSpecification.
+``TileScope`` uses ``logzero.logger`` to report information. If you wish to
+surpress these prints, you can set ``logzero.loglevel``, which I have done here
+for sake of brevity in this readme!
+
+.. code:: python
+
+       >>> import logzero; import logging; logzero.loglevel(logging.CRITICAL)
+       >>> spec = tilescope.auto_search()
+       >>> print(spec)
+       A combinatorial specification with 5 rules.
+
+       0 -> (1, 2)
+       Explanation: insert 0 in cell (0, 0)
+       +-+            +-+     +-+
+       |1|         =  | |  +  |1|
+       +-+            +-+     +-+
+       1: Av(120)             1: Av+(120)
+                            Requirement 0:
+                            0: (0, 0)
+
+       1 -> ()
+       Explanation: is atom
+       +-+
+       | |
+       +-+
+
+
+       2 = 3
+       Explanation: placing the topmost point in cell (0, 0), then row and column separation
+       +-+                +-+-+-+                    +-+-+-+
+       |1|             =  | |●| |                 =  | |●| |
+       +-+                +-+-+-+                    +-+-+-+
+       1: Av+(120)        |1| |1|                    | | |1|
+       Requirement 0:     +-+-+-+                    +-+-+-+
+       0: (0, 0)          1: Av(120)                 |1| | |
+                            ●: point                   +-+-+-+
+                            Crossing obstructions:     1: Av(120)
+                            10: (0, 0), (2, 0)         ●: point
+                            Requirement 0:             Requirement 0:
+                            0: (1, 1)                  0: (1, 2)
+
+       3 -> (0, 4, 0)
+       Explanation: factor with partition {(0, 0)} / {(1, 2)} / {(2, 1)}
+       +-+-+-+            +-+            +-+                +-+
+       | |●| |         =  |1|         x  |●|             x  |1|
+       +-+-+-+            +-+            +-+                +-+
+       | | |1|            1: Av(120)     ●: point           1: Av(120)
+       +-+-+-+                           Requirement 0:
+       |1| | |                           0: (0, 0)
+       +-+-+-+
+       1: Av(120)
+       ●: point
+       Requirement 0:
+       0: (1, 2)
+
+       4 -> ()
+       Explanation: is atom
+       +-+
+       |●|
+       +-+
+       ●: point
+       Requirement 0:
+       0: (0, 0)
+
+Now that we have a specification we can do a number of things. For example,
+counting how many permutations there are in the class. This can be done using
+the ``count_objects_of_size`` method on the CombinatorialSpecification.
+
+.. code:: python
+
+       >>> [spec.count_objects_of_size(i) for i in range(10)]
+       [1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862]
+
+Of course we see the Catalan numbers! We can also sample uniformly using the
+``random_sample_object_of_size`` method. This will return a gridded perm. If you
+just want the underlying perm, this can be accessed with ``patt`` attribute.
+I have done this here, and then used the ``permuta.Perm.ascii_plot`` method for
+us to visualise it.
+
+.. code:: python
+
+       >>> gp = spec.random_sample_object_of_size(10)
+       >>> perm = gp.patt
+       >>> print(perm)
+       5042136987
+       >>> print(perm.ascii_plot())
+       | | | | | | | | | |
+       -+-+-+-+-+-+-+-●-+-+-
+       | | | | | | | | | |
+       -+-+-+-+-+-+-+-+-●-+-
+       | | | | | | | | | |
+       -+-+-+-+-+-+-+-+-+-●-
+       | | | | | | | | | |
+       -+-+-+-+-+-+-●-+-+-+-
+       | | | | | | | | | |
+       -●-+-+-+-+-+-+-+-+-+-
+       | | | | | | | | | |
+       -+-+-●-+-+-+-+-+-+-+-
+       | | | | | | | | | |
+       -+-+-+-+-+-●-+-+-+-+-
+       | | | | | | | | | |
+       -+-+-+-●-+-+-+-+-+-+-
+       | | | | | | | | | |
+       -+-+-+-+-●-+-+-+-+-+-
+       | | | | | | | | | |
+       -+-●-+-+-+-+-+-+-+-+-
+       | | | | | | | | | |
+
+
+You might be interested in righting the system of equations. You can use the
+``get_equations`` which returns an iterator of the equations.
+
+.. code:: python
+
+       >>> list(spec.get_equations())
+       [Eq(F_0(x), F_1(x) + F_2(x)), Eq(F_1(x), 1), Eq(F_2(x), F_3(x)), Eq(F_3(x), F_0(x)**2*F_4(x)), Eq(F_4(x), x)]
+
+You can also pass these directly to the ``solve`` method in ``sympy`` by using the
+``get_genf`` method.
+
+.. code:: python
+
+       >>> spec.get_genf()
+       -sqrt(1 - 4*x)/(2*x) + 1/(2*x)
+
 
 Using the fusion strategy
 -------------------------
