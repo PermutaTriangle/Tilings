@@ -89,6 +89,7 @@ class LocalEnumeration(Enumeration):
         # pylint: disable=too-many-return-statements
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
+
         funcs: Optional[Dict["Tiling", Function]] = kwargs.get("funcs")
         if funcs is None:
             funcs = dict()
@@ -120,6 +121,7 @@ class LocalEnumeration(Enumeration):
                 self.tiling.__class__.from_string("10"),
             ):
                 return 1 / (1 - x)
+            # TODO: should this create a spec as in the strategy?
             raise NotImplementedError("Look up the combopal database")
         gf = None
         if MonotoneTreeEnumeration(self.tiling).verified():
@@ -129,6 +131,7 @@ class LocalEnumeration(Enumeration):
         if gf is not None:
             funcs[self.tiling] = gf
             return gf
+        # TODO: should this create a spec as in the strategy?
         raise NotImplementedError(
             "Not sure how to enumerate the tiling:\n{}".format(self.tiling)
         )

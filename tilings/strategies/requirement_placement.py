@@ -80,7 +80,10 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             child = children[0]
             mapped_assumptions = [
                 TrackingAssumption(
-                    child.forward_map(gp) for gp in ass.gps if gp.avoids(*self.gps)
+                    child.forward_map(gp)
+                    for gp in ass.gps
+                    if all(cell in child.forward_cell_map for cell in gp.pos)
+                    and gp.avoids(*self.gps)
                 )
                 for ass in comb_class.assumptions
             ]
