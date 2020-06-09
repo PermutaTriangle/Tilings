@@ -20,11 +20,11 @@ Tilings
 
 
 The ``tilings`` Python library contains code for working with gridded
-permutations and tilings, and in particular the ``tilescope`` algorithm which
+permutations and tilings, and in particular the ``TileScope`` algorithm which
 can be used to enumerate permutation classes.
 
 If you are primarily interested in enumerating permutation classes, then you
-may wish to skip ahead to the ``tilescope`` section, but note the installation
+may wish to skip ahead to the ``TileScope`` section, but note the installation
 will be the same as for ``tilings``.
 
 If you need support, have a suggestion, or just want to be up to date with the
@@ -61,7 +61,7 @@ What are gridded permutations and tilings?
 ------------------------------------------
 
 We will be brief in our definitions here, for more details see
-`Christian Bean’s PhD thesis <https://skemman.is/handle/1946/31663>`__.
+`Christian Bean’s PhD thesis <https://opinvisindi.is/handle/20.500.11815/1184>`__.
 
 A ``gridded permutation`` is a pair ``(π, P)`` where ``π`` is a
 permutation and ``P`` is a tuple of cells, called the positions, that
@@ -154,7 +154,7 @@ have a tiling that corresponds to non-empty permutation avoiding
 A keen reader may have observed that a tiling can also take a third argument
 called assumptions. These can be used to keep track of occurrences gridded
 permutations on tilings. These are still in development mode but are essential
-for certain parts of the tilescope algorithm. For simplicity we will not
+for certain parts of the ``TileScope`` algorithm. For simplicity we will not
 discuss these again until the `Fusion` section.
 
 There are a number of methods available on the tiling. You can generate
@@ -176,8 +176,9 @@ using the ``gridded_perms_of_length`` method.
        102: (0, 0), (0, 0), (1, 1)
 
 There are numerous other methods and properties. Many of these specific
-to the ``tilescope`` algorithm, discussed in `Christian Bean’s PhD
-thesis <https://skemman.is/handle/1946/31663>`__.
+to the ``TileScope`` algorithm, discussed in `Christian Bean’s PhD
+thesis <https://opinvisindi.is/handle/20.500.11815/1184>`__. For the remainder of this
+readme we will focus on the ``TileScope`` algorithm.
 
 The TileScope algorithm
 =======================
@@ -221,7 +222,7 @@ happy to talk about it!
 
 For more information on the packs, skip ahead to the strategies section.
 
-The ``tilings.tilescope`` module
+The tilescope module
 --------------------------------
 
 TileScope can be imported in a interactive Python session from ``tilings.tilescope``.
