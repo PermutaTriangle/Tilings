@@ -96,7 +96,8 @@ def search_spec(args):
     pack = build_pack(args)
     start_class = Tiling.from_string(args.basis)
     css = TileScope(start_class, pack)
-    css.auto_search(status_update=30)
+    spec = css.auto_search(status_update=30)
+    spec.get_genf()
     return 0
 
 

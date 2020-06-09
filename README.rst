@@ -183,13 +183,48 @@ The TileScope algorithm
 =======================
 
 
+Using TileScope
+---------------
 
-Using the tilescope
--------------------
+If you've not installed ``tilings`` yet then go ahead and do this first by
+pip installing ``tilings``:
 
-If you've not installed ``tilings`` yet then go ahead and do this first.
-Then TileScope can be imported in a interactive Python session
-from ``tilings.tilescope``.
+.. code:: bash
+
+       pip install tilings
+
+Once done you can use the ``TileScope`` algorithm in two ways, either directly
+by importing from the ``tilings.tilescope`` module which we will discuss in
+greater detail shortly, or by using the ``tilescope`` command line tool.
+
+The command line tool
+---------------------
+
+First, check the help commands for more information about its usage.
+
+.. code:: bash
+
+       tilescope -h
+       tilescope spec -h
+
+To search for a combinatorial specification use the subcommand
+``tilescope spec``, e.g.
+
+.. code:: bash
+
+       tilescope spec 231 point_placements
+
+It will always try to solve for the generating functions, although in some cases
+you will come across some unimplemented features, for more information please
+join us on our `Discord server <https://discord.gg/ySJD6SV>`__, where we'd be
+happy to talk about it!
+
+For more information on the packs, skip ahead to the strategies section.
+
+The ``tilings.tilescope`` module
+--------------------------------
+
+TileScope can be imported in a interactive Python session from ``tilings.tilescope``.
 
 .. code:: python
 
@@ -288,8 +323,8 @@ the ``count_objects_of_size`` method on the CombinatorialSpecification.
        [1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862]
 
 Of course we see the Catalan numbers! We can also sample uniformly using the
-``random_sample_object_of_size`` method. This will return a gridded perm. If you
-just want the underlying perm, this can be accessed with ``patt`` attribute.
+``random_sample_object_of_size`` method. This will return a ``GriddedPerm``. If
+you want the underlying ``Perm``, this can be accessed with ``patt`` attribute.
 I have done this here, and then used the ``permuta.Perm.ascii_plot`` method for
 us to visualise it.
 
@@ -323,8 +358,8 @@ us to visualise it.
        | | | | | | | | | |
 
 
-You might be interested in righting the system of equations. You can use the
-``get_equations`` which returns an iterator of the equations.
+You can use the ``get_equations`` method which returns an iterator for the
+system of equations implied by the specification.
 
 .. code:: python
 
@@ -332,12 +367,16 @@ You might be interested in righting the system of equations. You can use the
        [Eq(F_0(x), F_1(x) + F_2(x)), Eq(F_1(x), 1), Eq(F_2(x), F_3(x)), Eq(F_3(x), F_0(x)**2*F_4(x)), Eq(F_4(x), x)]
 
 You can also pass these directly to the ``solve`` method in ``sympy`` by using the
-``get_genf`` method.
+``get_genf`` method. It will then return the solution which matches the initial
+conditions.
 
 .. code:: python
 
        >>> spec.get_genf()
        -sqrt(1 - 4*x)/(2*x) + 1/(2*x)
+
+The strategies
+==============
 
 
 Using the fusion strategy
