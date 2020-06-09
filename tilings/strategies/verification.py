@@ -103,7 +103,6 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         # pylint: disable=import-outside-toplevel
         from tilings.tilescope import TileScopePack
 
-        pack: Optional[TileScopePack] = None
         assert tiling.dimensions == (1, 1)
         basis, _ = tiling.cell_basis()[(0, 0)]
         if any(
@@ -157,13 +156,10 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
                     )
                     .fix_one_by_one(basis)
                 )
-        if pack is None:
-            raise InvalidOperationError(
-                "Cannot get a specification for one by one verification for "
-                f"subclass Av({basis})"
-            )
-        pack.add_initial(SplittingStrategy(ignore_parent=True), apply_first=True)
-        return pack
+        raise InvalidOperationError(
+            "Cannot get a specification for one by one verification for "
+            f"subclass Av({basis})"
+        )
 
     def verified(self, tiling: Tiling) -> bool:
         return (
