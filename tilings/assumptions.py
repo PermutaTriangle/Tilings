@@ -69,6 +69,6 @@ class TrackingAssumption:
         return self.__class__.__name__ + "({})".format(self.gps)
 
     def __str__(self):
-        return "can count occurences of\n{}".format(
+        return "can count occurrences of\n{}".format(
             "\n".join(str(gp) for gp in self.gps)
         )

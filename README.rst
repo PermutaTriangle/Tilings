@@ -20,7 +20,7 @@ Tilings
 
 
 The ``tilings`` Python library contains code for working with gridded
-permutations and tilings, and in particular the ``TileScope`` algorithm which
+permutations and tilings, and in particular the ``TileScope`` algorithm, which
 can be used to enumerate permutation classes.
 
 If you are primarily interested in enumerating permutation classes, then you
@@ -41,21 +41,20 @@ To install ``tilings`` on your system, run:
 
        pip install tilings
 
-It is also possible to install ``tilings`` in development mode to work
-on the source code, in which case you run the following after cloning
-the repository:
+If you would like tot edit the source code, you should install ``tilings`` in
+development mode by cloning the repository, running
 
 .. code:: bash
 
        ./setup.py develop
 
-To run the unit tests:
+and then verifying your installation by running the unit tests with the command
 
 .. code:: bash
 
        ./setup.py test
 
-You should be all set up to use ``tilings`` and the ``TileScope`` algorithm!
+You should then be all set up to use ``tilings`` and the ``TileScope`` algorithm!
 
 What are gridded permutations and tilings?
 ------------------------------------------
@@ -70,6 +69,8 @@ denote the cells in which the points of ``π`` are drawn on a grid. Let
 permutations is defined the same as containment of permutations, except
 including the preservation of the cells.
 
+# TODO: add an example
+
 A ``tiling`` is a triple ``T = ((n, m), O, R)``, where ``n`` and ``m``
 are positive integers, ``O`` is a set of gridded permutations called
 ``obstructions``, and ``R`` is a set of sets of gridded permutations
@@ -77,10 +78,10 @@ called ``requirements``.
 
 We say a gridded permutations avoids a set of gridded permutations if it
 avoids all of the permutations in the set, otherwise it contains the
-set. To contain a set, therefore, means contains at least one in the
+set. To contain a set, therefore, means to contain at least one in the
 set. The set of gridded permutations on a tiling ``Grid(T)`` is the set
-of all gridded permutations in the ``n x m`` grid that avoids ``O`` and
-contains each set ``r`` in ``R``.
+of all gridded permutations in the ``n x m`` grid that avoid ``O`` and
+contain each set ``r`` in ``R``.
 
 Using tilings
 -------------
@@ -112,11 +113,11 @@ using the ``contradictory`` method.
        True
 
 A ``Tiling`` is created with an iterable of obstructions and an
-iterable of requirements (which are iterables of gridded permutation).
+iterable of requirements (and each requirement is an iterable of gridded permutations).
 It is assumed that all cells not mentioned in some obstruction or
-requirement is empty. You can print the tiling to get an overview of the
+requirement are empty. You can print the tiling to get an overview of the
 tiling created. In this example, we have a tiling that corresponds to
-non-empty permutation avoiding
+non-empty permutations avoiding
 ``123``.
 
 .. code:: python
@@ -153,9 +154,9 @@ non-empty permutation avoiding
        frozenset({(1, 1)})
 
 Those who have read ahead, or already started using tilings may have noticed
-the a ``Tiling`` can also take a third argument called assumptions.
+that a ``Tiling`` can also be defined with a third argument called ``assumptions``.
 These can be used to keep track of occurrences gridded permutations on
-tilings. These are still in development mode but are essential for certain
+tilings. These are still in development but are essential for certain
 parts of the ``TileScope`` algorithm. For simplicity we will not discuss
 these again until the `Fusion` section.
 
@@ -218,7 +219,7 @@ To search for a combinatorial specification use the subcommand
        tilescope spec 231 point_placements
 
 It will always try to solve for the generating function, although in some
-cases you will come across some unimplemented features, for more information
+cases you will come across some not-yet-implemented features; for more information
 please join us on our `Discord server <https://discord.gg/ySJD6SV>`__,
 where we'd be happy to talk about it!
 
@@ -238,13 +239,13 @@ Importing ``*`` from ``tilings.tilescope`` supplies you with the ``TileScope``
 and ``TileScopePack`` classes. Running the ``TileScope`` is as simple as
 choosing a class and a strategy pack. We'll go into more detail about the
 different strategies
-available shortly, but first lets enumerate our first permutation class. The
+available shortly, but first let's enumerate our first permutation class. The
 example one always learns first in permutation patterns is enumerating
 Av(231). There are many different packs that will succeed for this class,
 but to get the most commonly described decomposition we can use
 ``point_placements``. The basis can be given to TileScope in several
 formats: an iterable of permuta.Perm, a string where the permutations
-are separated by ``'_'`` (e.g. ``'231_4321'``, or as a ``Tiling``.
+are separated by ``'_'`` (e.g. ``'231_4321'``), or as a ``Tiling``.
 
 .. code:: python
 
@@ -255,7 +256,7 @@ Once we have created our ``TileScope`` we can then use the ``auto_search``
 method which will search for a specification using the strategies given.
 If successful it will return a CombinatorialSpecification.
 ``TileScope`` uses ``logzero.logger`` to report information. If you wish to
-surpress these prints, you can set ``logzero.loglevel``, which we have
+suppress these prints, you can set ``logzero.loglevel``, which we have
 done here for sake of brevity in this readme!
 
 .. code:: python
@@ -395,7 +396,7 @@ as class methods on ``TileScopePack``. They are
   for finding the specification corresponding to a regular insertion encoding
 - ``insertion_row_and_col_placements``: this pack places rows and columns as
   above, but first ensures every active cell contains a point (this is in the
-  same vein as "slots" in the regular insertion encoding paper)
+  same vein as the "slots" of the regular insertion encoding)
 - ``insertion_point_placements``: places extreme points in cells, but first
   ensures every active cell contains a point
 - ``pattern_placements``: inserts size one requirements into a tiling, and then
@@ -406,17 +407,16 @@ as class methods on ``TileScopePack``. They are
   that is either an occurrence of 1 in 12 or an occurrence of 2 in 21.
 - ``only_root_placements``: this is the same as ``pattern_placements`` except
   we only allow inserting into 1x1 tilings, therefore making it a finite pack
-- ``all_the_strategies``: a pack containing most of the strategies
-  (we say all as the pack sounds good then)
+- ``all_the_strategies``: a pack containing (almost) all of the strategies
 
-Each of these packs have different paramaters that can be set. You can view
+Each of these packs have different parameters that can be set. You can view
 this by using the help command e.g.,
 ``help(TileScopePack.pattern_placements)``.
 If you need help picking the right pack to enumerate your class join us on our
 `Discord server <https://discord.gg/ySJD6SV>`__ where we'd be happy to help.
 
 You can make any pack use the fusion strategy by using the method
-``make_fusion``, for example, here is how to create the pack
+``make_fusion``; for example, here is how to create the pack
 ``row_placements_fusion``.
 
 .. code:: python
@@ -543,7 +543,7 @@ This particular pack can be used to enumerate ``Av(123)``.
        Crossing obstructions:          Crossing obstructions:
        01: (0, 0), (1, 0)              012: (0, 0), (1, 0), (1, 0)
        012: (0, 0), (2, 0), (2, 0)     Assumption 0:
-       012: (1, 0), (2, 0), (2, 0)     can count occurences of
+       012: (1, 0), (2, 0), (2, 0)     can count occurrences of
                                        0: (0, 0)
        ---------------
        8 -> (1, 9, 10)
@@ -556,14 +556,14 @@ This particular pack can be used to enumerate ``Av(123)``.
        Crossing obstructions:                  1: Av(012)                      1: Av(012)
        012: (0, 0), (1, 0), (1, 0)             \: Av(01)                       \: Av(01)
        Assumption 0:                           ●: point                        ●: point
-       can count occurences of                 Crossing obstructions:          Crossing obstructions:
+       can count occurrences of                 Crossing obstructions:          Crossing obstructions:
        0: (0, 0)                               012: (1, 0), (2, 0), (2, 0)     01: (0, 0), (1, 0)
                                                Requirement 0:                  012: (0, 0), (3, 0), (3, 0)
                                                0: (0, 1)                       012: (1, 0), (3, 0), (3, 0)
                                                Assumption 0:                   Requirement 0:
-                                               can count occurences of         0: (2, 1)
+                                               can count occurrences of         0: (2, 1)
                                                0: (0, 1)                       Assumption 0:
-                                               0: (1, 0)                       can count occurences of
+                                               0: (1, 0)                       can count occurrences of
                                                                                0: (0, 0)
        ----------
        9 -> (11,)
@@ -581,10 +581,10 @@ This particular pack can be used to enumerate ``Av(123)``.
        Requirement 0:                  Requirement 0:
        0: (0, 1)                       0: (0, 1)
        Assumption 0:                   Assumption 0:
-       can count occurences of         can count occurences of
+       can count occurrences of         can count occurrences of
        0: (0, 1)                       0: (0, 1)
        0: (1, 0)                       Assumption 1:
-                                       can count occurences of
+                                       can count occurrences of
                                        0: (1, 0)
        -------------
        11 -> (12, 8)
@@ -596,16 +596,16 @@ This particular pack can be used to enumerate ``Av(123)``.
        +-+-+-+                         Requirement 0:              \: Av(01)
        1: Av(012)                      0: (0, 0)                   Crossing obstructions:
        \: Av(01)                       Assumption 0:               012: (0, 0), (1, 0), (1, 0)
-       ●: point                        can count occurences of     Assumption 0:
-       Crossing obstructions:          0: (0, 0)                   can count occurences of
+       ●: point                        can count occurrences of     Assumption 0:
+       Crossing obstructions:          0: (0, 0)                   can count occurrences of
        012: (1, 0), (2, 0), (2, 0)                                 0: (0, 0)
        Requirement 0:
        0: (0, 1)
        Assumption 0:
-       can count occurences of
+       can count occurrences of
        0: (0, 1)
        Assumption 1:
-       can count occurences of
+       can count occurrences of
        0: (1, 0)
        --------
        12 -> ()
@@ -617,7 +617,7 @@ This particular pack can be used to enumerate ``Av(123)``.
        Requirement 0:
        0: (0, 0)
        Assumption 0:
-       can count occurences of
+       can count occurrences of
        0: (0, 0)
        -------------
        10 -> (13, 4)
@@ -632,12 +632,12 @@ This particular pack can be used to enumerate ``Av(123)``.
        ●: point                        012: (0, 0), (2, 0), (2, 0)
        Crossing obstructions:          012: (1, 0), (2, 0), (2, 0)
        01: (0, 0), (1, 0)              Assumption 0:
-       012: (0, 0), (3, 0), (3, 0)     can count occurences of
+       012: (0, 0), (3, 0), (3, 0)     can count occurrences of
        012: (1, 0), (3, 0), (3, 0)     0: (0, 0)
        Requirement 0:
        0: (2, 1)
        Assumption 0:
-       can count occurences of
+       can count occurrences of
        0: (0, 0)
        ----------
        13 -> (8,)
@@ -650,9 +650,9 @@ This particular pack can be used to enumerate ``Av(123)``.
        Crossing obstructions:          Crossing obstructions:
        01: (0, 0), (1, 0)              012: (0, 0), (1, 0), (1, 0)
        012: (0, 0), (2, 0), (2, 0)     Assumption 0:
-       012: (1, 0), (2, 0), (2, 0)     can count occurences of
+       012: (1, 0), (2, 0), (2, 0)     can count occurrences of
        Assumption 0:                   0: (0, 0)
-       can count occurences of
+       can count occurrences of
        0: (0, 0)
        >>> [spec.count_objects_of_size(i) for i in range(10)]
        [1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862]
@@ -667,7 +667,7 @@ The ``TileScope`` algorithm has in essence six different strategies that are
 applied in many different ways, resulting in very different universes in which
 to search for a combinatorial specification in. They are:
 
-- ``requirement insertions``: a disjoint union as to whether or not a tiling
+- ``requirement insertions``: a disjoint union considering whether or not a tiling
   contains a requirement
 - ``point placements``: places a uniquely defined point onto its own row and/or
   column
@@ -676,7 +676,7 @@ to search for a combinatorial specification in. They are:
 - ``row and column separation``: if all of the points in a cell in a row must
   appear below all of the other points in the row, then separate this onto its own
   row.
-- ``obstruction inferral``: add obstuctions which the requirements and
+- ``obstruction inferral``: add obstructions that the requirements and
   obstruction of a tiling imply must be avoided
 - ``fusion``: merge two adjacent rows or columns of a tiling, if it can be
   viewed as a single row or column with a line drawn between
@@ -954,8 +954,8 @@ Obstruction inferral
 --------------------
 
 The presence of requirements alongside the obstructions on a tiling can
-sometimes be use to imply that all gridded permutations on the tiling avoid
-some other obstruction. The goal of ``ObstructionInferral`` is to add these to
+sometimes be use to imply that all of the gridded permutations on a tiling also avoid
+some additional obstruction. The goal of ``ObstructionInferral`` is to add these to
 a tiling.
 
 .. code:: python
@@ -982,6 +982,8 @@ a tiling.
        3012: (0, 1), (0, 0), (0, 0), (0, 0)
        Requirement 0:
        0: (0, 1)
+
+  # TODO: explain the simplification
 
 Fusion
 ------
@@ -1030,7 +1032,7 @@ capture this idea by fusing the two columns into a single column.
        +-+-+                      +-+
        \: Av(01)                  \: Av(01)
        Crossing obstructions:     Assumption 0:
-       01: (0, 0), (1, 0)         can count occurences of
+       01: (0, 0), (1, 0)         can count occurrences of
                                   0: (0, 0)
 
 Notice, the right hand side tiling here also now requires that we can count the
@@ -1065,7 +1067,7 @@ example, the following rule was used within specification to enumerate
        Crossing obstructions:          Crossing obstructions:
        01: (0, 0), (1, 0)              012: (0, 0), (1, 0), (1, 0)
        012: (0, 0), (2, 0), (2, 0)     Assumption 0:
-       012: (1, 0), (2, 0), (2, 0)     can count occurences of
+       012: (1, 0), (2, 0), (2, 0)     can count occurrences of
                                        0: (0, 0)
 
 =========

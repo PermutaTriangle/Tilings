@@ -53,9 +53,9 @@ def valid_kwarg_or_error(func, kwarg_name, pack_name):
 def build_pack(args: argparse.Namespace) -> TileScopePack:
     if args.strategy_pack not in BASE_PACK:
         parser.error(
-            "Invalid strategy pack. Use 'tilescope list' to see available pack."
-            " Perhaps you got the order wrong? A valid command should be of "
-            "the form 'tilescope spec {basis} {pack}'"
+            "Invalid strategy pack. Use 'tilescope list' to see available packs. "
+            "Perhaps you got the order wrong? A valid command should be of "
+            "the form 'tilescope spec {basis} {pack}'."
         )
 
     pack_builder: PackBuilder = BASE_PACK[args.strategy_pack]
@@ -120,8 +120,8 @@ parser_tree = subparsers.add_parser("spec", help=helpstr, description=helpstr)
 parser_tree.add_argument(
     "basis",
     type=str,
-    help="The basis of the permutation class. This can be 1 or 0-based and are"
-    " separated by an underscore, e.g. 012_021.",
+    help="The basis of the permutation class. This can be 1- or 0-based and patterns"
+    " should be separated by an underscore, e.g. 012_021.",
 )
 parser_tree.add_argument(
     "strategy_pack",
