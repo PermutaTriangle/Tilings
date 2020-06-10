@@ -251,7 +251,7 @@ Once we have created our ``TileScope`` we can then use the ``auto_search`` metho
 which will search for a specification using the strategies given. If successful
 it will return a CombinatorialSpecification.
 ``TileScope`` uses ``logzero.logger`` to report information. If you wish to
-surpress these prints, you can set ``logzero.loglevel``, which I have done here
+surpress these prints, you can set ``logzero.loglevel``, which we have done here
 for sake of brevity in this readme!
 
 .. code:: python
@@ -326,7 +326,7 @@ the ``count_objects_of_size`` method on the CombinatorialSpecification.
 Of course we see the Catalan numbers! We can also sample uniformly using the
 ``random_sample_object_of_size`` method. This will return a ``GriddedPerm``. If
 you want the underlying ``Perm``, this can be accessed with ``patt`` attribute.
-I have done this here, and then used the ``permuta.Perm.ascii_plot`` method for
+We have done this here, and then used the ``permuta.Perm.ascii_plot`` method for
 us to visualise it.
 
 .. code:: python
@@ -375,6 +375,269 @@ conditions.
 
        >>> spec.get_genf()
        -sqrt(1 - 4*x)/(2*x) + 1/(2*x)
+
+
+StrategyPacks
+=============
+
+Each strategy pack is essentially a different algorithm. These can be accessed
+as class methods on ``TileScopePack``. They are
+
+- ``point_placements``: checks if cells are empty or not and places extreme points in cells
+- ``row_and_col_placements``: places the left or rightmost points in columns, or the bottom or topmost points in rows
+- ``regular_insertion_encoding``: this pack include the strategies required for finding the specification corresponding to a regular insertion encoding
+- ``insertion_row_and_col_placements``: this pack places rows and columns as above, but first ensures every active cell contains a point (this is in the same vein as "slots" in the regular insertion encoding paper)
+- ``insertion_point_placements``: places extreme points in cells, but first ensures every active cell contains a point
+- ``pattern_placements``: inserts size one requirements into a tiling, and then places points with respect to a pattern, e.g. if your permutation contains 123, then place the leftmost point that acts as the 2 in the occurrence of 123
+- ``requirement_placements``: places points with respect to any requirement, e.g. if your permutation contains {12, 21}, then place the rightmost point that is either an occurrence of 1 in 12 or an occurrence of 2 in 21.
+- ``only_root_placements``: this is the same as ``pattern_placements`` except we only allow inserting into 1x1 tilings, therefore making a finite pack
+- ``all_the_strategies``:
+
+Each of these packs have different paramaters that can be set. You can view this by using ``help(TileScopePack.pattern_placements)``.
+
+You can make any pack use fusion by using the method ``make_fusion``, for example, here is how to create the pack ``row_placements_fusion``.
+
+.. code:: python
+
+       >>> pack = TileScopePack.row_and_col_placements(row_only=True).make_fusion()
+       >>> print(pack)
+       Looking for recursive combinatorial specification with the strategies:
+       Inferral: row and column separation, obstruction transitivity
+       Initial: splitting the assumptions, factor, requirement corroboration, tracked fusion
+       Verification: verify atoms, one by one verification, locally factorable verification
+       Set 1: row placement
+
+This particular pack can be used to enumerate ``Av(123)``.
+
+.. code:: python
+
+       >>> tilescope = TileScope('123', pack)
+       >>> spec = tilescope.auto_search()
+       >>> print(spec)
+       A combinatorial specification with 14 rules.
+
+       0 -> (1, 2)
+       Explanation: placing the topmost point in cell (0, 0)
+       +-+            +-+     +-+-+-+
+       |1|         =  | |  +  | |●| |
+       +-+            +-+     +-+-+-+
+       1: Av(012)             |\| |1|
+                              +-+-+-+
+                              1: Av(012)
+                              \: Av(01)
+                              ●: point
+                              Crossing obstructions:
+                              012: (0, 0), (2, 0), (2, 0)
+                              Requirement 0:
+                              0: (1, 1)
+
+       1 -> ()
+       Explanation: is atom
+       +-+
+       | |
+       +-+
+
+
+       2 -> (3, 4)
+       Explanation: factor with partition {(0, 0), (2, 0)} / {(1, 1)}
+       +-+-+-+                         +-+-+                           +-+
+       | |●| |                      =  |\|1|                        x  |●|
+       +-+-+-+                         +-+-+                           +-+
+       |\| |1|                         1: Av(012)                      ●: point
+       +-+-+-+                         \: Av(01)                       Requirement 0:
+       1: Av(012)                      Crossing obstructions:          0: (0, 0)
+       \: Av(01)                       012: (0, 0), (1, 0), (1, 0)
+       ●: point
+       Crossing obstructions:
+       012: (0, 0), (2, 0), (2, 0)
+       Requirement 0:
+       0: (1, 1)
+
+       3 -> (1, 5, 6)
+       Explanation: placing the topmost point in row 0
+       +-+-+                           +-+     +-+-+-+                         +-+-+-+-+
+       |\|1|                        =  | |  +  |●| | |                      +  | | |●| |
+       +-+-+                           +-+     +-+-+-+                         +-+-+-+-+
+       1: Av(012)                              | |\|1|                         |\|\| |1|
+       \: Av(01)                               +-+-+-+                         +-+-+-+-+
+       Crossing obstructions:                  1: Av(012)                      1: Av(012)
+       012: (0, 0), (1, 0), (1, 0)             \: Av(01)                       \: Av(01)
+                                               ●: point                        ●: point
+                                               Crossing obstructions:          Crossing obstructions:
+                                               012: (1, 0), (2, 0), (2, 0)     01: (0, 0), (1, 0)
+                                               Requirement 0:                  012: (0, 0), (3, 0), (3, 0)
+                                               0: (0, 1)                       012: (1, 0), (3, 0), (3, 0)
+                                                                               Requirement 0:
+                                                                               0: (2, 1)
+
+       5 -> (4, 3)
+       Explanation: factor with partition {(0, 1)} / {(1, 0), (2, 0)}
+       +-+-+-+                         +-+                +-+-+
+       |●| | |                      =  |●|             x  |\|1|
+       +-+-+-+                         +-+                +-+-+
+       | |\|1|                         ●: point           1: Av(012)
+       +-+-+-+                         Requirement 0:     \: Av(01)
+       1: Av(012)                      0: (0, 0)          Crossing obstructions:
+       \: Av(01)                                          012: (0, 0), (1, 0), (1, 0)
+       ●: point
+       Crossing obstructions:
+       012: (1, 0), (2, 0), (2, 0)
+       Requirement 0:
+       0: (0, 1)
+
+       4 -> ()
+       Explanation: is atom
+       +-+
+       |●|
+       +-+
+       ●: point
+       Requirement 0:
+       0: (0, 0)
+
+       6 -> (7, 4)
+       Explanation: factor with partition {(0, 0), (1, 0), (3, 0)} / {(2, 1)}
+       +-+-+-+-+                       +-+-+-+                         +-+
+       | | |●| |                    =  |\|\|1|                      x  |●|
+       +-+-+-+-+                       +-+-+-+                         +-+
+       |\|\| |1|                       1: Av(012)                      ●: point
+       +-+-+-+-+                       \: Av(01)                       Requirement 0:
+       1: Av(012)                      Crossing obstructions:          0: (0, 0)
+       \: Av(01)                       01: (0, 0), (1, 0)
+       ●: point                        012: (0, 0), (2, 0), (2, 0)
+       Crossing obstructions:          012: (1, 0), (2, 0), (2, 0)
+       01: (0, 0), (1, 0)
+       012: (0, 0), (3, 0), (3, 0)
+       012: (1, 0), (3, 0), (3, 0)
+       Requirement 0:
+       0: (2, 1)
+
+       7 -> (8,)
+       Explanation: fuse columns 0 and 1
+       +-+-+-+                         +-+-+
+       |\|\|1|                      ↣  |\|1|
+       +-+-+-+                         +-+-+
+       1: Av(012)                      1: Av(012)
+       \: Av(01)                       \: Av(01)
+       Crossing obstructions:          Crossing obstructions:
+       01: (0, 0), (1, 0)              012: (0, 0), (1, 0), (1, 0)
+       012: (0, 0), (2, 0), (2, 0)     Assumption 0:
+       012: (1, 0), (2, 0), (2, 0)     can count occurences of
+                                       0: (0, 0)
+
+       8 -> (1, 9, 10)
+       Explanation: placing the topmost point in row 0
+       +-+-+                           +-+     +-+-+-+                         +-+-+-+-+
+       |\|1|                        =  | |  +  |●| | |                      +  | | |●| |
+       +-+-+                           +-+     +-+-+-+                         +-+-+-+-+
+       1: Av(012)                              | |\|1|                         |\|\| |1|
+       \: Av(01)                               +-+-+-+                         +-+-+-+-+
+       Crossing obstructions:                  1: Av(012)                      1: Av(012)
+       012: (0, 0), (1, 0), (1, 0)             \: Av(01)                       \: Av(01)
+       Assumption 0:                           ●: point                        ●: point
+       can count occurences of                 Crossing obstructions:          Crossing obstructions:
+       0: (0, 0)                               012: (1, 0), (2, 0), (2, 0)     01: (0, 0), (1, 0)
+                                               Requirement 0:                  012: (0, 0), (3, 0), (3, 0)
+                                               0: (0, 1)                       012: (1, 0), (3, 0), (3, 0)
+                                               Assumption 0:                   Requirement 0:
+                                               can count occurences of         0: (2, 1)
+                                               0: (0, 1)                       Assumption 0:
+                                               0: (1, 0)                       can count occurences of
+                                                                               0: (0, 0)
+
+       9 -> (11,)
+       Explanation: splitting the assumptions
+       +-+-+-+                         +-+-+-+
+       |●| | |                      ↣  |●| | |
+       +-+-+-+                         +-+-+-+
+       | |\|1|                         | |\|1|
+       +-+-+-+                         +-+-+-+
+       1: Av(012)                      1: Av(012)
+       \: Av(01)                       \: Av(01)
+       ●: point                        ●: point
+       Crossing obstructions:          Crossing obstructions:
+       012: (1, 0), (2, 0), (2, 0)     012: (1, 0), (2, 0), (2, 0)
+       Requirement 0:                  Requirement 0:
+       0: (0, 1)                       0: (0, 1)
+       Assumption 0:                   Assumption 0:
+       can count occurences of         can count occurences of
+       0: (0, 1)                       0: (0, 1)
+       0: (1, 0)                       Assumption 1:
+                                       can count occurences of
+                                       0: (1, 0)
+
+       11 -> (12, 8)
+       Explanation: factor with partition {(0, 1)} / {(1, 0), (2, 0)}
+       +-+-+-+                         +-+                         +-+-+
+       |●| | |                      =  |●|                      x  |\|1|
+       +-+-+-+                         +-+                         +-+-+
+       | |\|1|                         ●: point                    1: Av(012)
+       +-+-+-+                         Requirement 0:              \: Av(01)
+       1: Av(012)                      0: (0, 0)                   Crossing obstructions:
+       \: Av(01)                       Assumption 0:               012: (0, 0), (1, 0), (1, 0)
+       ●: point                        can count occurences of     Assumption 0:
+       Crossing obstructions:          0: (0, 0)                   can count occurences of
+       012: (1, 0), (2, 0), (2, 0)                                 0: (0, 0)
+       Requirement 0:
+       0: (0, 1)
+       Assumption 0:
+       can count occurences of
+       0: (0, 1)
+       Assumption 1:
+       can count occurences of
+       0: (1, 0)
+
+       12 -> ()
+       Explanation: is atom
+       +-+
+       |●|
+       +-+
+       ●: point
+       Requirement 0:
+       0: (0, 0)
+       Assumption 0:
+       can count occurences of
+       0: (0, 0)
+
+       10 -> (13, 4)
+       Explanation: factor with partition {(0, 0), (1, 0), (3, 0)} / {(2, 1)}
+       +-+-+-+-+                       +-+-+-+                         +-+
+       | | |●| |                    =  |\|\|1|                      x  |●|
+       +-+-+-+-+                       +-+-+-+                         +-+
+       |\|\| |1|                       1: Av(012)                      ●: point
+       +-+-+-+-+                       \: Av(01)                       Requirement 0:
+       1: Av(012)                      Crossing obstructions:          0: (0, 0)
+       \: Av(01)                       01: (0, 0), (1, 0)
+       ●: point                        012: (0, 0), (2, 0), (2, 0)
+       Crossing obstructions:          012: (1, 0), (2, 0), (2, 0)
+       01: (0, 0), (1, 0)              Assumption 0:
+       012: (0, 0), (3, 0), (3, 0)     can count occurences of
+       012: (1, 0), (3, 0), (3, 0)     0: (0, 0)
+       Requirement 0:
+       0: (2, 1)
+       Assumption 0:
+       can count occurences of
+       0: (0, 0)
+
+       13 -> (8,)
+       Explanation: fuse columns 0 and 1
+       +-+-+-+                         +-+-+
+       |\|\|1|                      ↣  |\|1|
+       +-+-+-+                         +-+-+
+       1: Av(012)                      1: Av(012)
+       \: Av(01)                       \: Av(01)
+       Crossing obstructions:          Crossing obstructions:
+       01: (0, 0), (1, 0)              012: (0, 0), (1, 0), (1, 0)
+       012: (0, 0), (2, 0), (2, 0)     Assumption 0:
+       012: (1, 0), (2, 0), (2, 0)     can count occurences of
+       Assumption 0:                   0: (0, 0)
+       can count occurences of
+       0: (0, 0)
+
+       >>> [spec.count_objects_of_size(i) for i in range(10)]
+       [1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862]
+
+It is possible to make you own pack as well, but for that you should first
+learn more about what the individual strategies do.
 
 The strategies
 ==============
@@ -662,8 +925,9 @@ Obstruction inferral
 --------------------
 
 The presence of requirements alongside the obstructions on a tiling can
-sometimes be use to imply that all gridded perms on the tiling avoid some other
-obstruction. The goal of ``ObstructionInferral`` is to add these to a tiling.
+sometimes be use to imply that all gridded permutations on the tiling avoid
+some other obstruction. The goal of ``ObstructionInferral`` is to add these to
+a tiling.
 
 .. code:: python
 
@@ -693,12 +957,87 @@ obstruction. The goal of ``ObstructionInferral`` is to add these to a tiling.
 Fusion
 ------
 
-fusion
+Consider the gridded permutations on the following tiling.
 
-StrategyPacks
-=============
+.. code:: python
 
-somethign
+       >>> tiling = Tiling([GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))), GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))), GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0)))])
+       >>> print(tiling)
+       +-+-+
+       |\|\|
+       +-+-+
+       \: Av(01)
+       Crossing obstructions:
+       01: (0, 0), (1, 0)
+       >>> for i in range(4):
+       ...     for gp in tiling.gridded_perms_of_length(i):
+       ...         print(gp)
+       ε:
+       0: (1, 0)
+       0: (0, 0)
+       10: (1, 0), (1, 0)
+       10: (0, 0), (1, 0)
+       10: (0, 0), (0, 0)
+       210: (1, 0), (1, 0), (1, 0)
+       210: (0, 0), (1, 0), (1, 0)
+       210: (0, 0), (0, 0), (1, 0)
+       210: (0, 0), (0, 0), (0, 0)
+
+Due to the crossing ``01`` obstruction it is clear that all of the underlying
+permutations will be decreasing. Moreover, the transition between the left cell
+and the right cell can be between any of the points. In particular, this says
+there are ``n + 1`` gridded permutations of size ``n`` on this tiling. We
+capture this idea by fusing the two columns into a single column.
+
+.. code:: python
+
+       >>> from tilings.strategies import FusionFactory
+       >>> strategy_generator = FusionFactory()
+       >>> for rule in strategy_generator(tiling):
+       ...     print(rule)
+       Explanation: fuse columns 0 and 1
+       +-+-+                      +-+
+       |\|\|                   ↣  |\|
+       +-+-+                      +-+
+       \: Av(01)                  \: Av(01)
+       Crossing obstructions:     Assumption 0:
+       01: (0, 0), (1, 0)         can count occurences of
+                                  0: (0, 0)
+
+Notice, the right hand side tiling here also now requires that we can count the
+occurrences of ``0: (0, 0)``. If there are ``k`` occurrences of ``0: (0, 0)``
+in a gridded permutation then there will be ``k + 1`` gridded permutations that
+fuse to this gridded permutation. Of course, here occurrences of ``0: (0, 0)``
+is going to be equal to the size of the gridded permutation, but in general,
+the points that need to be counted might not cover the whole tiling. For example,
+the following rule can be used within specification to enumerate ``Av(123)``
+
+.. code:: python
+
+       >>> tiling = Tiling(
+       ...     [
+       ...         GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+       ...         GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+       ...         GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+       ...         GriddedPerm(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0))),
+       ...         GriddedPerm(Perm((0, 1, 2)), ((1, 0), (2, 0), (2, 0))),
+       ...         GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
+       ...     ]
+       ... )
+       >>> for rule in strategy_generator(tiling):
+       ...     print(rule)
+       Explanation: fuse columns 0 and 1
+       +-+-+-+                         +-+-+
+       |\|\|1|                      ↣  |\|1|
+       +-+-+-+                         +-+-+
+       1: Av(012)                      1: Av(012)
+       \: Av(01)                       \: Av(01)
+       Crossing obstructions:          Crossing obstructions:
+       01: (0, 0), (1, 0)              012: (0, 0), (1, 0), (1, 0)
+       012: (0, 0), (2, 0), (2, 0)     Assumption 0:
+       012: (1, 0), (2, 0), (2, 0)     can count occurences of
+                                       0: (0, 0)
+
 
 =========
 

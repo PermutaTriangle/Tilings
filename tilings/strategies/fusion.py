@@ -599,7 +599,7 @@ class ComponentFusionStrategy(FusionStrategy):
 
 
 class FusionFactory(StrategyFactory[Tiling]):
-    def __init__(self, tracked: bool = False):
+    def __init__(self, tracked: bool = True):
         self.tracked = tracked
 
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
