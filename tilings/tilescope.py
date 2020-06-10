@@ -13,7 +13,6 @@ from tilings import GriddedPerm, Tiling
 from tilings.algorithms import GriddedPermReduction
 from tilings.strategy_pack import TileScopePack
 
-
 __all__ = ("TileScope", "TileScopePack")
 
 

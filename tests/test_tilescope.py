@@ -14,11 +14,17 @@ from tilings.tilescope import TileScope
 
 point_placements = TileScopePack.point_placements()
 all_the_strategies_verify_database = TileScopePack.all_the_strategies().make_database()
-all_the_strategies_fusion = TileScopePack.all_the_strategies().make_fusion()
-point_placements_fusion = point_placements.make_fusion()
-point_placements_component_fusion = point_placements.make_fusion(component=True)
+all_the_strategies_fusion = TileScopePack.all_the_strategies().make_fusion(
+    tracked=False
+)
+point_placements_fusion = point_placements.make_fusion(tracked=False)
+point_placements_component_fusion = point_placements.make_fusion(
+    component=True, tracked=False
+)
 row_and_col_placements_component_fusion_fusion = (
-    TileScopePack.row_and_col_placements().make_fusion(component=True).make_fusion()
+    TileScopePack.row_and_col_placements()
+    .make_fusion(component=True, tracked=False)
+    .make_fusion()
 )
 reginsenc = TileScopePack.regular_insertion_encoding(3)
 

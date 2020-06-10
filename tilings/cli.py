@@ -4,7 +4,7 @@ from functools import partial
 from typing import Callable, Dict
 
 from permuta import Perm
-from permuta.misc import DIR_WEST, DIR_SOUTH
+from permuta.misc import DIR_SOUTH, DIR_WEST
 from permuta.permutils import (
     is_insertion_encodable_maximum,
     is_insertion_encodable_rightmost,
