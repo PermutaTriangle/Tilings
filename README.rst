@@ -126,8 +126,8 @@ have a tiling that corresponds to non-empty permutation avoiding
        ...                 GriddedPerm.single_cell(Perm((0, 1, 2)), (2, 0)),
        ...                 GriddedPerm(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0)))]
        >>> requirements = [[GriddedPerm.single_cell(Perm((0,)), (1, 1))]]
-       >>> til = Tiling(obstructions, requirements)
-       >>> print(til)
+       >>> tiling = Tiling(obstructions, requirements)
+       >>> print(tiling)
        +-+-+-+
        | |●| |
        +-+-+-+
@@ -140,15 +140,15 @@ have a tiling that corresponds to non-empty permutation avoiding
        012: (0, 0), (2, 0), (2, 0)
        Requirement 0:
        0: (1, 1)
-       >>> til.dimensions
+       >>> tiling.dimensions
        (3, 2)
-       >>> sorted(til.active_cells)
+       >>> sorted(tiling.active_cells)
        [(0, 0), (1, 1), (2, 0)]
-       >>> til.point_cells
+       >>> tiling.point_cells
        frozenset({(1, 1)})
-       >>> sorted(til.possibly_empty)
+       >>> sorted(tiling.possibly_empty)
        [(0, 0), (2, 0)]
-       >>> til.positive_cells
+       >>> tiling.positive_cells
        frozenset({(1, 1)})
 
 A keen reader may have observed that a tiling can also take a third argument
@@ -164,7 +164,7 @@ using the ``gridded_perms_of_length`` method.
 .. code:: python
 
        >>> for i in range(4):
-       ...     for gp in til.gridded_perms_of_length(i):
+       ...     for gp in tiling.gridded_perms_of_length(i):
        ...         print(gp)
        0: (1, 1)
        10: (1, 1), (2, 0)
@@ -231,8 +231,8 @@ TileScope can be imported in a interactive Python session from ``tilings.tilesco
 
        >>> from tilings.tilescope import *
 
-Importing ``*`` from ``tilings.tilescope`` supplies you with the "TileScope" and
-‘TileScopePack’ classes. Running the TileScope is as simple as choosing a class
+Importing ``*`` from ``tilings.tilescope`` supplies you with the ``TileScope`` and
+``TileScopePack`` classes. Running the ``TileScope`` is as simple as choosing a class
 and a strategy pack. We'll go into more detail about the different strategies
 available shortly, but first lets enumerate our first permutation class. The
 example one always learns first in permutation patterns is enumerating Av(231).
@@ -336,27 +336,27 @@ us to visualise it.
        >>> print(perm)
        5042136987
        >>> print(perm.ascii_plot())
-       | | | | | | | | | |
+        | | | | | | | | | |
        -+-+-+-+-+-+-+-●-+-+-
-       | | | | | | | | | |
+        | | | | | | | | | |
        -+-+-+-+-+-+-+-+-●-+-
-       | | | | | | | | | |
+        | | | | | | | | | |
        -+-+-+-+-+-+-+-+-+-●-
-       | | | | | | | | | |
+        | | | | | | | | | |
        -+-+-+-+-+-+-●-+-+-+-
-       | | | | | | | | | |
+        | | | | | | | | | |
        -●-+-+-+-+-+-+-+-+-+-
-       | | | | | | | | | |
+        | | | | | | | | | |
        -+-+-●-+-+-+-+-+-+-+-
-       | | | | | | | | | |
+        | | | | | | | | | |
        -+-+-+-+-+-●-+-+-+-+-
-       | | | | | | | | | |
+        | | | | | | | | | |
        -+-+-+-●-+-+-+-+-+-+-
-       | | | | | | | | | |
+        | | | | | | | | | |
        -+-+-+-+-●-+-+-+-+-+-
-       | | | | | | | | | |
+        | | | | | | | | | |
        -+-●-+-+-+-+-+-+-+-+-
-       | | | | | | | | | |
+        | | | | | | | | | |
 
 
 You can use the ``get_equations`` method which returns an iterator for the
@@ -378,6 +378,141 @@ conditions.
 
 The strategies
 ==============
+
+The ``TileScope`` has in essence six different strategies that are applied in
+many different ways, resulting in very different universes to search for a
+combinatorial specification in. They are:
+
+- `point placements`: places a uniquely defined point onto its own row and column
+- `requirement insertions`: a disjoint union as to whether or not a tiling contains a requirement
+- `obstruction inferral`: add an obstruction, which the requirements and obstruction of a tiling imply must be avoided
+- `factor`: when the obstructions and requirements become local to a set of cells, we factor out the local subtiling
+- `row and column separation`: if all of the points in a cell in a row must appear below all of the other points in a row, then separate this onto its own row.
+- `fusion`: merge two adjacent rows or columns of a tiling, if it can be viewed as a single row or column with a line drawn between
+
+Point placements
+----------------
+
+The core idea of this strategy is to place a uniquely defined onto its own row
+and/or column. For example, here is a code snippet showing how to place the
+extreme points (rightmost, topmost, leftmost, bottommost) points in Av(231).
+
+.. code:: python
+
+       >>> from tilings.strategies import PatternPlacementFactory
+       >>> strategy = PatternPlacementFactory()
+       >>> tiling = Tiling.from_string('231').insert_cell((0,0))
+       >>> for rule in strategy(tiling):
+       >>>     print(rule)
+       Explanation: placing the rightmost point in cell (0, 0)
+       +-+                +-+-+
+       |1|             =  |\| |
+       +-+                +-+-+
+       1: Av+(120)        | |●|
+       Requirement 0:     +-+-+
+       0: (0, 0)          |1| |
+                          +-+-+
+                          1: Av(120)
+                          \: Av(01)
+                          ●: point
+                          Crossing obstructions:
+                          120: (0, 0), (0, 2), (0, 0)
+                          Requirement 0:
+                          0: (1, 1)
+       Explanation: placing the topmost point in cell (0, 0)
+       +-+                +-+-+-+
+       |1|             =  | |●| |
+       +-+                +-+-+-+
+       1: Av+(120)        |1| |1|
+       Requirement 0:     +-+-+-+
+       0: (0, 0)          1: Av(120)
+                          ●: point
+                          Crossing obstructions:
+                          10: (0, 0), (2, 0)
+                          Requirement 0:
+                          0: (1, 1)
+       Explanation: placing the leftmost point in cell (0, 0)
+       +-+                +-+-+
+       |1|             =  | |1|
+       +-+                +-+-+
+       1: Av+(120)        |●| |
+       Requirement 0:     +-+-+
+       0: (0, 0)          | |1|
+                          +-+-+
+                          1: Av(120)
+                          ●: point
+                          Crossing obstructions:
+                          10: (1, 2), (1, 0)
+                          Requirement 0:
+                          0: (0, 1)
+       Explanation: placing the bottommost point in cell (0, 0)
+       +-+                +-+-+-+
+       |1|             =  |\| |1|
+       +-+                +-+-+-+
+       1: Av+(120)        | |●| |
+       Requirement 0:     +-+-+-+
+       0: (0, 0)          1: Av(120)
+                          \: Av(01)
+                          ●: point
+                          Crossing obstructions:
+                          120: (0, 1), (2, 1), (2, 1)
+                          Requirement 0:
+                          0: (1, 0)
+
+
+Other algorithms used for automatically enumerating permutation classes have
+used variations of point placements. For example, enumeration schemes and the
+insertion encoding essentially consider placing the bottommost point into the
+row of a tiling.
+
+.. code:: python
+
+       >>> from permuta.misc import DIR_SOUTH
+       >>> from tilings.strategies import RowAndColumnPlacementFactory
+       >>> strategy = RowAndColumnPlacementFactory(place_row=True, place_col=False)
+       >>> placed_tiling = tiling.place_point_in_cell((0, 0), DIR_SOUTH)
+       >>> for rule in strategy(placed_tiling):
+       >>>     print(rule)
+       Explanation: placing the topmost point in row 1
+       +-+-+-+                         +-+                +-+-+-+-+                       +-+-+-+-+-+
+       |\| |1|                      =  |●|             +  |●| | | |                    +  | | | |●| |
+       +-+-+-+                         +-+                +-+-+-+-+                       +-+-+-+-+-+
+       | |●| |                         ●: point           | |\| |1|                       |\| |1| |1|
+       +-+-+-+                         Requirement 0:     +-+-+-+-+                       +-+-+-+-+-+
+       1: Av(120)                      0: (0, 0)          | | |●| |                       | |●| | | |
+       \: Av(01)                                          +-+-+-+-+                       +-+-+-+-+-+
+       ●: point                                           1: Av(120)                      1: Av(120)
+       Crossing obstructions:                             \: Av(01)                       \: Av(01)
+       120: (0, 1), (2, 1), (2, 1)                        ●: point                        ●: point
+       Requirement 0:                                     Crossing obstructions:          Crossing obstructions:
+       0: (1, 0)                                          120: (1, 1), (3, 1), (3, 1)     10: (0, 1), (4, 1)
+                                                          Requirement 0:                  10: (2, 1), (4, 1)
+                                                          0: (0, 2)                       120: (0, 1), (2, 1), (2, 1)
+                                                          Requirement 1:                  Requirement 0:
+                                                          0: (2, 0)                       0: (1, 0)
+                                                                                          Requirement 1:
+                                                                                          0: (3, 2)
+       Explanation: placing the bottommost point in row 1
+       +-+-+-+                         +-+                +-+-+-+-+                       +-+-+-+-+-+
+       |\| |1|                      =  |●|             +  |\| | |1|                    +  |\| |\| |1|
+       +-+-+-+                         +-+                +-+-+-+-+                       +-+-+-+-+-+
+       | |●| |                         ●: point           | |●| | |                       | | | |●| |
+       +-+-+-+                         Requirement 0:     +-+-+-+-+                       +-+-+-+-+-+
+       1: Av(120)                      0: (0, 0)          | | |●| |                       | |●| | | |
+       \: Av(01)                                          +-+-+-+-+                       +-+-+-+-+-+
+       ●: point                                           1: Av(120)                      1: Av(120)
+       Crossing obstructions:                             \: Av(01)                       \: Av(01)
+       120: (0, 1), (2, 1), (2, 1)                        ●: point                        ●: point
+       Requirement 0:                                     Crossing obstructions:          Crossing obstructions:
+       0: (1, 0)                                          120: (0, 2), (3, 2), (3, 2)     01: (0, 2), (2, 2)
+                                                          Requirement 0:                  120: (0, 2), (4, 2), (4, 2)
+                                                          0: (1, 1)                       120: (2, 2), (4, 2), (4, 2)
+                                                          Requirement 1:                  Requirement 0:
+                                                          0: (2, 0)                       0: (1, 0)
+                                                                                          Requirement 1:
+                                                                                          0: (3, 1)
+
+
 
 
 Using the fusion strategy
