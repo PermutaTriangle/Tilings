@@ -62,7 +62,11 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         child = children[0]
         mapped_gps = tuple(
-            tuple(self.forward_map(comb_class, gp, children)[0] for gp in ass.gps)
+            tuple(
+                self.forward_map(comb_class, gp, children)[0]
+                for gp in ass.gps
+                if all(cell in self.forward_cell_map(comb_class) for cell in gp.pos)
+            )
             for ass in comb_class.assumptions
         )
         mapped_assumptions = tuple(

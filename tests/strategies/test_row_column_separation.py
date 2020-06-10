@@ -6,6 +6,7 @@ from comb_spec_searcher.strategies import Rule
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RowColSeparation
+from tilings.assumptions import TrackingAssumption
 from tilings.strategies import RowColumnSeparationStrategy
 
 pytest_plugins = ["tests.fixtures.simple_trans"]
@@ -311,3 +312,33 @@ def test_maps():
         gps = [GriddedPerm(Perm((0,)), (cell,))]
         print(f"{cell} -> {image}")
         assert rule.backward_map(gps) == GriddedPerm(Perm((0,)), (image,))
+
+
+def test_mapping_assumptions():
+    tiling = Tiling(
+        obstructions=(
+            GriddedPerm(Perm((0,)), ((0, 1),)),
+            GriddedPerm(Perm((0,)), ((2, 1),)),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 1))),
+            GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
+            GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 0))),
+            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+            GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 0), (2, 0))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (0, 0), (1, 0))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm(Perm((0, 3, 2, 1)), ((0, 0), (0, 0), (0, 0), (1, 0))),
+        ),
+        requirements=((GriddedPerm(Perm((0,)), ((1, 1),)),),),
+        assumptions=(
+            TrackingAssumption(
+                (GriddedPerm(Perm((0,)), ((1, 0),)), GriddedPerm(Perm((0,)), ((1, 1),)))
+            ),
+        ),
+    )
+    strategy = RowColumnSeparationStrategy()
+    rule = strategy(tiling)
+    assert strategy.extra_parameters(tiling, rule.children) == ({"k_0": "k_0"},)
