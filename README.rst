@@ -264,39 +264,39 @@ done here for sake of brevity in this readme!
        >>> spec = tilescope.auto_search()
        >>> print(spec)
        A combinatorial specification with 5 rules.
-
+       -----------
        0 -> (1, 2)
-       Explanation: insert 0 in cell (0, 0)
+       insert 0 in cell (0, 0)
        +-+            +-+     +-+
        |1|         =  | |  +  |1|
        +-+            +-+     +-+
        1: Av(120)             1: Av+(120)
-                            Requirement 0:
-                            0: (0, 0)
-
+                              Requirement 0:
+                              0: (0, 0)
+       -------
        1 -> ()
-       Explanation: is atom
+       is atom
        +-+
        | |
        +-+
-
-
+       <BLANKLINE>
+       -----
        2 = 3
-       Explanation: placing the topmost point in cell (0, 0), then row and column separation
+       placing the topmost point in cell (0, 0), then row and column separation
        +-+                +-+-+-+                    +-+-+-+
        |1|             =  | |●| |                 =  | |●| |
        +-+                +-+-+-+                    +-+-+-+
        1: Av+(120)        |1| |1|                    | | |1|
        Requirement 0:     +-+-+-+                    +-+-+-+
        0: (0, 0)          1: Av(120)                 |1| | |
-                            ●: point                   +-+-+-+
-                            Crossing obstructions:     1: Av(120)
-                            10: (0, 0), (2, 0)         ●: point
-                            Requirement 0:             Requirement 0:
-                            0: (1, 1)                  0: (1, 2)
-
+                          ●: point                   +-+-+-+
+                          Crossing obstructions:     1: Av(120)
+                          10: (0, 0), (2, 0)         ●: point
+                          Requirement 0:             Requirement 0:
+                          0: (1, 1)                  0: (1, 2)
+       --------------
        3 -> (0, 4, 0)
-       Explanation: factor with partition {(0, 0)} / {(1, 2)} / {(2, 1)}
+       factor with partition {(0, 0)} / {(1, 2)} / {(2, 1)}
        +-+-+-+            +-+            +-+                +-+
        | |●| |         =  |1|         x  |●|             x  |1|
        +-+-+-+            +-+            +-+                +-+
@@ -308,9 +308,9 @@ done here for sake of brevity in this readme!
        ●: point
        Requirement 0:
        0: (1, 2)
-
+       -------
        4 -> ()
-       Explanation: is atom
+       is atom
        +-+
        |●|
        +-+
@@ -337,9 +337,9 @@ attribute. We have done this here, and then used the
 
        >>> gp = spec.random_sample_object_of_size(10)
        >>> perm = gp.patt
-       >>> print(perm)
+       >>> print(perm)  # doctest: +SKIP
        5042136987
-       >>> print(perm.ascii_plot())
+       >>> print(perm.ascii_plot())  # doctest: +SKIP
         | | | | | | | | | |
        -+-+-+-+-+-+-+-●-+-+-
         | | | | | | | | | |
@@ -378,7 +378,7 @@ conditions.
 .. code:: python
 
        >>> spec.get_genf()
-       -sqrt(1 - 4*x)/(2*x) + 1/(2*x)
+       (1 - sqrt(1 - 4*x))/(2*x)
 
 
 StrategyPacks
@@ -434,12 +434,12 @@ This particular pack can be used to enumerate ``Av(123)``.
 .. code:: python
 
        >>> tilescope = TileScope('123', pack)
-       >>> spec = tilescope.auto_search()
+       >>> spec = tilescope.auto_search(smallest=True)
        >>> print(spec)
        A combinatorial specification with 14 rules.
-
+       -----------
        0 -> (1, 2)
-       Explanation: placing the topmost point in cell (0, 0)
+       placing the topmost point in cell (0, 0)
        +-+            +-+     +-+-+-+
        |1|         =  | |  +  | |●| |
        +-+            +-+     +-+-+-+
@@ -452,16 +452,16 @@ This particular pack can be used to enumerate ``Av(123)``.
                               012: (0, 0), (2, 0), (2, 0)
                               Requirement 0:
                               0: (1, 1)
-
+       -------
        1 -> ()
-       Explanation: is atom
+       is atom
        +-+
        | |
        +-+
-
-
+       <BLANKLINE>
+       -----------
        2 -> (3, 4)
-       Explanation: factor with partition {(0, 0), (2, 0)} / {(1, 1)}
+       factor with partition {(0, 0), (2, 0)} / {(1, 1)}
        +-+-+-+                         +-+-+                           +-+
        | |●| |                      =  |\|1|                        x  |●|
        +-+-+-+                         +-+-+                           +-+
@@ -474,9 +474,9 @@ This particular pack can be used to enumerate ``Av(123)``.
        012: (0, 0), (2, 0), (2, 0)
        Requirement 0:
        0: (1, 1)
-
+       --------------
        3 -> (1, 5, 6)
-       Explanation: placing the topmost point in row 0
+       placing the topmost point in row 0
        +-+-+                           +-+     +-+-+-+                         +-+-+-+-+
        |\|1|                        =  | |  +  |●| | |                      +  | | |●| |
        +-+-+                           +-+     +-+-+-+                         +-+-+-+-+
@@ -491,9 +491,9 @@ This particular pack can be used to enumerate ``Av(123)``.
                                                0: (0, 1)                       012: (1, 0), (3, 0), (3, 0)
                                                                                Requirement 0:
                                                                                0: (2, 1)
-
+       -----------
        5 -> (4, 3)
-       Explanation: factor with partition {(0, 1)} / {(1, 0), (2, 0)}
+       factor with partition {(0, 1)} / {(1, 0), (2, 0)}
        +-+-+-+                         +-+                +-+-+
        |●| | |                      =  |●|             x  |\|1|
        +-+-+-+                         +-+                +-+-+
@@ -506,18 +506,18 @@ This particular pack can be used to enumerate ``Av(123)``.
        012: (1, 0), (2, 0), (2, 0)
        Requirement 0:
        0: (0, 1)
-
+       -------
        4 -> ()
-       Explanation: is atom
+       is atom
        +-+
        |●|
        +-+
        ●: point
        Requirement 0:
        0: (0, 0)
-
+       -----------
        6 -> (7, 4)
-       Explanation: factor with partition {(0, 0), (1, 0), (3, 0)} / {(2, 1)}
+       factor with partition {(0, 0), (1, 0), (3, 0)} / {(2, 1)}
        +-+-+-+-+                       +-+-+-+                         +-+
        | | |●| |                    =  |\|\|1|                      x  |●|
        +-+-+-+-+                       +-+-+-+                         +-+
@@ -532,9 +532,9 @@ This particular pack can be used to enumerate ``Av(123)``.
        012: (1, 0), (3, 0), (3, 0)
        Requirement 0:
        0: (2, 1)
-
+       ---------
        7 -> (8,)
-       Explanation: fuse columns 0 and 1
+       fuse columns 0 and 1
        +-+-+-+                         +-+-+
        |\|\|1|                      ↣  |\|1|
        +-+-+-+                         +-+-+
@@ -545,9 +545,9 @@ This particular pack can be used to enumerate ``Av(123)``.
        012: (0, 0), (2, 0), (2, 0)     Assumption 0:
        012: (1, 0), (2, 0), (2, 0)     can count occurences of
                                        0: (0, 0)
-
+       ---------------
        8 -> (1, 9, 10)
-       Explanation: placing the topmost point in row 0
+       placing the topmost point in row 0
        +-+-+                           +-+     +-+-+-+                         +-+-+-+-+
        |\|1|                        =  | |  +  |●| | |                      +  | | |●| |
        +-+-+                           +-+     +-+-+-+                         +-+-+-+-+
@@ -565,9 +565,9 @@ This particular pack can be used to enumerate ``Av(123)``.
                                                0: (0, 1)                       Assumption 0:
                                                0: (1, 0)                       can count occurences of
                                                                                0: (0, 0)
-
+       ----------
        9 -> (11,)
-       Explanation: splitting the assumptions
+       splitting the assumptions
        +-+-+-+                         +-+-+-+
        |●| | |                      ↣  |●| | |
        +-+-+-+                         +-+-+-+
@@ -586,9 +586,9 @@ This particular pack can be used to enumerate ``Av(123)``.
        0: (1, 0)                       Assumption 1:
                                        can count occurences of
                                        0: (1, 0)
-
+       -------------
        11 -> (12, 8)
-       Explanation: factor with partition {(0, 1)} / {(1, 0), (2, 0)}
+       factor with partition {(0, 1)} / {(1, 0), (2, 0)}
        +-+-+-+                         +-+                         +-+-+
        |●| | |                      =  |●|                      x  |\|1|
        +-+-+-+                         +-+                         +-+-+
@@ -607,9 +607,9 @@ This particular pack can be used to enumerate ``Av(123)``.
        Assumption 1:
        can count occurences of
        0: (1, 0)
-
+       --------
        12 -> ()
-       Explanation: is atom
+       is atom
        +-+
        |●|
        +-+
@@ -619,9 +619,9 @@ This particular pack can be used to enumerate ``Av(123)``.
        Assumption 0:
        can count occurences of
        0: (0, 0)
-
+       -------------
        10 -> (13, 4)
-       Explanation: factor with partition {(0, 0), (1, 0), (3, 0)} / {(2, 1)}
+       factor with partition {(0, 0), (1, 0), (3, 0)} / {(2, 1)}
        +-+-+-+-+                       +-+-+-+                         +-+
        | | |●| |                    =  |\|\|1|                      x  |●|
        +-+-+-+-+                       +-+-+-+                         +-+
@@ -639,9 +639,9 @@ This particular pack can be used to enumerate ``Av(123)``.
        Assumption 0:
        can count occurences of
        0: (0, 0)
-
+       ----------
        13 -> (8,)
-       Explanation: fuse columns 0 and 1
+       fuse columns 0 and 1
        +-+-+-+                         +-+-+
        |\|\|1|                      ↣  |\|1|
        +-+-+-+                         +-+-+
@@ -654,7 +654,6 @@ This particular pack can be used to enumerate ``Av(123)``.
        Assumption 0:                   0: (0, 0)
        can count occurences of
        0: (0, 0)
-
        >>> [spec.count_objects_of_size(i) for i in range(10)]
        [1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862]
 
@@ -697,7 +696,7 @@ tilings as either avoiding ``1: (0, 0)`` or containing ``1: (0, 0)``.
        >>> tiling = Tiling.from_string('231')
        >>> for strategy in strategy_generator(tiling):
        ...     print(strategy(tiling))
-       Explanation: insert 0 in cell (0, 0)
+       insert 0 in cell (0, 0)
        +-+            +-+     +-+
        |1|         =  | |  +  |1|
        +-+            +-+     +-+
@@ -722,6 +721,7 @@ The core idea of this strategy is to place a uniquely defined point onto
 its own row and/or column. For example, here is a code snippet that
 shows the rules coming from placing the extreme (rightmost, topmost, leftmost,
 bottommost) points of a non-empty permutation avoiding ``231``.
+
 .. code:: python
 
        >>> from tilings.strategies import PatternPlacementFactory
@@ -729,7 +729,7 @@ bottommost) points of a non-empty permutation avoiding ``231``.
        >>> tiling = Tiling.from_string('231').insert_cell((0,0))
        >>> for rule in strategy(tiling):
        ...     print(rule)
-       Explanation: placing the rightmost point in cell (0, 0)
+       placing the rightmost point in cell (0, 0)
        +-+                +-+-+
        |1|             =  |\| |
        +-+                +-+-+
@@ -744,7 +744,7 @@ bottommost) points of a non-empty permutation avoiding ``231``.
                           120: (0, 0), (0, 2), (0, 0)
                           Requirement 0:
                           0: (1, 1)
-       Explanation: placing the topmost point in cell (0, 0)
+       placing the topmost point in cell (0, 0)
        +-+                +-+-+-+
        |1|             =  | |●| |
        +-+                +-+-+-+
@@ -756,7 +756,7 @@ bottommost) points of a non-empty permutation avoiding ``231``.
                           10: (0, 0), (2, 0)
                           Requirement 0:
                           0: (1, 1)
-       Explanation: placing the leftmost point in cell (0, 0)
+       placing the leftmost point in cell (0, 0)
        +-+                +-+-+
        |1|             =  | |1|
        +-+                +-+-+
@@ -770,7 +770,7 @@ bottommost) points of a non-empty permutation avoiding ``231``.
                           10: (1, 2), (1, 0)
                           Requirement 0:
                           0: (0, 1)
-       Explanation: placing the bottommost point in cell (0, 0)
+       placing the bottommost point in cell (0, 0)
        +-+                +-+-+-+
        |1|             =  |\| |1|
        +-+                +-+-+-+
@@ -799,7 +799,7 @@ points into a row of a tiling.
        >>> placed_tiling = tiling.place_point_in_cell((0, 0), DIR_SOUTH)
        >>> for rule in strategy(placed_tiling):
        ...     print(rule)
-       Explanation: placing the topmost point in row 1
+       placing the topmost point in row 1
        +-+-+-+                         +-+                +-+-+-+-+                       +-+-+-+-+-+
        |\| |1|                      =  |●|             +  |●| | | |                    +  | | | |●| |
        +-+-+-+                         +-+                +-+-+-+-+                       +-+-+-+-+-+
@@ -818,7 +818,7 @@ points into a row of a tiling.
                                                           0: (2, 0)                       0: (1, 0)
                                                                                           Requirement 1:
                                                                                           0: (3, 2)
-       Explanation: placing the bottommost point in row 1
+       placing the bottommost point in row 1
        +-+-+-+                         +-+                +-+-+-+-+                       +-+-+-+-+-+
        |\| |1|                      =  |●|             +  |\| | |1|                    +  |\| |\| |1|
        +-+-+-+                         +-+                +-+-+-+-+                       +-+-+-+-+-+
@@ -854,12 +854,13 @@ much as possible according to the size two crossing obstructions.
 
 .. code:: python
 
+       >>> from permuta.misc import DIR_NORTH
        >>> from tilings.strategies import RowColumnSeparationStrategy
        >>> strategy = RowColumnSeparationStrategy()
        >>> placed_tiling = tiling.place_point_in_cell((0, 0), DIR_NORTH)
        >>> rule = strategy(placed_tiling)
        >>> print(rule)
-       Explanation: row and column separation
+       row and column separation
        +-+-+-+                    +-+-+-+
        | |●| |                 =  | |●| |
        +-+-+-+                    +-+-+-+
@@ -887,7 +888,7 @@ of points in ``b``.
        >>> strategy_generator = FactorFactory()
        >>> for strategy in strategy_generator(separated_tiling):
        ...     print(strategy(separated_tiling))
-       Explanation: factor with partition {(0, 0)} / {(1, 2)} / {(2, 1)}
+       factor with partition {(0, 0)} / {(1, 2)} / {(2, 1)}
        +-+-+-+            +-+            +-+                +-+
        | |●| |         =  |1|         x  |●|             x  |1|
        +-+-+-+            +-+            +-+                +-+
@@ -913,7 +914,7 @@ interleavings going on.
        >>> strategy_generator = FactorFactory()
        >>> for strategy in strategy_generator(placed_tiling):
        ...     print(strategy(placed_tiling))
-       Explanation: factor with partition {(0, 1), (2, 1)} / {(1, 0)}
+       factor with partition {(0, 1), (2, 1)} / {(1, 0)}
        +-+-+-+            +-+-+         +-+
        |\| |/|         =  |\|/|      x  |●|
        +-+-+-+            +-+-+         +-+
@@ -933,7 +934,7 @@ according to only the obstructions and requirements.
        >>> strategy_generator = FactorFactory('all')
        >>> for strategy in strategy_generator(placed_tiling):
        ...     print(strategy(placed_tiling))
-       Explanation: factor with partition {(0, 1)} / {(1, 0)} / {(2, 1)}
+       factor with partition {(0, 1)} / {(1, 0)} / {(2, 1)}
        +-+-+-+            +-+           +-+                +-+
        |\| |/|         =  |\|        *  |●|             *  |/|
        +-+-+-+            +-+           +-+                +-+
@@ -966,7 +967,7 @@ a tiling.
        >>> strategy_generator = ObstructionInferralFactory(3)
        >>> for strategy in strategy_generator(placed_tiling):
        ...     print(strategy(placed_tiling))
-       Explanation: added the obstructions {012: (0, 0), (0, 0), (0, 0)}
+       added the obstructions {012: (0, 0), (0, 0), (0, 0)}
        +-+                                      +-+
        |●|                                   =  |●|
        +-+                                      +-+
@@ -1023,7 +1024,7 @@ capture this idea by fusing the two columns into a single column.
        >>> strategy_generator = FusionFactory()
        >>> for rule in strategy_generator(tiling):
        ...     print(rule)
-       Explanation: fuse columns 0 and 1
+       fuse columns 0 and 1
        +-+-+                      +-+
        |\|\|                   ↣  |\|
        +-+-+                      +-+
@@ -1055,7 +1056,7 @@ example, the following rule was used within specification to enumerate
        ... )
        >>> for rule in strategy_generator(tiling):
        ...     print(rule)
-       Explanation: fuse columns 0 and 1
+       fuse columns 0 and 1
        +-+-+-+                         +-+-+
        |\|\|1|                      ↣  |\|1|
        +-+-+-+                         +-+-+
