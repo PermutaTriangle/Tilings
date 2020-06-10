@@ -383,19 +383,53 @@ The ``TileScope`` has in essence six different strategies that are applied in
 many different ways, resulting in very different universes to search for a
 combinatorial specification in. They are:
 
-- `point placements`: places a uniquely defined point onto its own row and column
-- `requirement insertions`: a disjoint union as to whether or not a tiling contains a requirement
-- `obstruction inferral`: add an obstruction, which the requirements and obstruction of a tiling imply must be avoided
-- `factor`: when the obstructions and requirements become local to a set of cells, we factor out the local subtiling
-- `row and column separation`: if all of the points in a cell in a row must appear below all of the other points in a row, then separate this onto its own row.
-- `fusion`: merge two adjacent rows or columns of a tiling, if it can be viewed as a single row or column with a line drawn between
+- ``requirement insertions``: a disjoint union as to whether or not a tiling contains a requirement
+- ``point placements``: places a uniquely defined point onto its own row and column
+- ``factor``: when the obstructions and requirements become local to a set of cells, we factor out the local subtiling
+- ``row and column separation``: if all of the points in a cell in a row must appear below all of the other points in a row, then separate this onto its own row.
+- ``obstruction inferral``: add an obstruction, which the requirements and obstruction of a tiling imply must be avoided
+- ``fusion``: merge two adjacent rows or columns of a tiling, if it can be viewed as a single row or column with a line drawn between
+
+
+Requirement insertions
+----------------------
+
+The simplest of all arguments when enumeration permutation classes is to say,
+either a tiling is empty or contains a point. This can be viewed in tilings as
+either avoiding ``1: (0, 0)`` or containing ``1: (0, 0)``.
+
+.. code:: python
+
+       >>> from tilings.strategies import CellInsertionFactory
+       >>> strategy_generator = CellInsertionFactory()
+       >>> tiling = Tiling.from_string('231')
+       >>> for strategy in strategy_generator(tiling):
+       ...     print(strategy(tiling))
+       Explanation: insert 0 in cell (0, 0)
+       +-+            +-+     +-+
+       |1|         =  | |  +  |1|
+       +-+            +-+     +-+
+       1: Av(120)             1: Av+(120)
+                              Requirement 0:
+                              0: (0, 0)
+
+The same underlying principal corresponds to avoiding or containing any set of
+gridded permutations. There are many different ways that can prove useful when
+trying to enumerate permutation classes, and used throughout our ``StrategyPacks``.
+
+.. code:: python
+
+       >>> import tilings
+       >>> print(tilings.strategies.requirement_insertion.__all__)
+       ['CellInsertionFactory', 'RootInsertionFactory', 'RequirementExtensionFactory', 'RequirementInsertionFactory', 'FactorInsertionFactory', 'RequirementCorroborationFactory']
 
 Point placements
 ----------------
 
 The core idea of this strategy is to place a uniquely defined onto its own row
-and/or column. For example, here is a code snippet showing how to place the
-extreme points (rightmost, topmost, leftmost, bottommost) points in Av(231).
+and/or column. For example, here is a code snippet that shows how use a
+strategy that places the extreme (rightmost, topmost, leftmost, bottommost)
+points in ``Av(231)``.
 
 .. code:: python
 
@@ -403,7 +437,7 @@ extreme points (rightmost, topmost, leftmost, bottommost) points in Av(231).
        >>> strategy = PatternPlacementFactory()
        >>> tiling = Tiling.from_string('231').insert_cell((0,0))
        >>> for rule in strategy(tiling):
-       >>>     print(rule)
+       ...     print(rule)
        Explanation: placing the rightmost point in cell (0, 0)
        +-+                +-+-+
        |1|             =  |\| |
@@ -463,7 +497,8 @@ extreme points (rightmost, topmost, leftmost, bottommost) points in Av(231).
 Other algorithms used for automatically enumerating permutation classes have
 used variations of point placements. For example, enumeration schemes and the
 insertion encoding essentially consider placing the bottommost point into the
-row of a tiling.
+row of a tiling. Here is a code snippet for calling a strategy that places
+points into a row of a tiling.
 
 .. code:: python
 
@@ -472,7 +507,7 @@ row of a tiling.
        >>> strategy = RowAndColumnPlacementFactory(place_row=True, place_col=False)
        >>> placed_tiling = tiling.place_point_in_cell((0, 0), DIR_SOUTH)
        >>> for rule in strategy(placed_tiling):
-       >>>     print(rule)
+       ...     print(rule)
        Explanation: placing the topmost point in row 1
        +-+-+-+                         +-+                +-+-+-+-+                       +-+-+-+-+-+
        |\| |1|                      =  |●|             +  |●| | | |                    +  | | | |●| |
@@ -514,12 +549,158 @@ row of a tiling.
 
 
 
-
-Using the fusion strategy
+Row and column separation
 -------------------------
 
+Every non-empty permutation in ``Av(231)`` can be written in the form αnβ where
+``α``, ``β`` are permutation avoiding ``231``, and all of the values in ``α``
+are below all of the values in ``β``. The tiling representing placing the
+topmost point in ``Av(231)`` contains a crossing size 2 obstruction
+``10: (0, 0), (2, 0)``. This obstruction precisely says that the points cell
+``(0, 0)`` must appear below the point in cell ``(2, 0)``. The
+``RowColumnSeparationStrategy`` will try to separate the rows and columns as
+much as possible according to the size two crossing obstructions.
+
+.. code:: python
+
+       >>> from tilings.strategies import RowColumnSeparationStrategy
+       >>> strategy = RowColumnSeparationStrategy()
+       >>> placed_tiling = tiling.place_point_in_cell((0, 0), DIR_NORTH)
+       >>> rule = strategy(placed_tiling)
+       >>> print(rule)
+       Explanation: row and column separation
+       +-+-+-+                    +-+-+-+
+       | |●| |                 =  | |●| |
+       +-+-+-+                    +-+-+-+
+       |1| |1|                    | | |1|
+       +-+-+-+                    +-+-+-+
+       1: Av(120)                 |1| | |
+       ●: point                   +-+-+-+
+       Crossing obstructions:     1: Av(120)
+       10: (0, 0), (2, 0)         ●: point
+       Requirement 0:             Requirement 0:
+       0: (1, 1)                  0: (1, 2)
 
 
+Factor
+------
+
+If there are no crossing obstructions between two cells ``a`` and ``b`` on a
+tiling then the choice of points in cell ``a`` are independent from the choice
+of cells in ``b``.
+
+.. code:: python
+
+       >>> separated_tiling = rule.children[0]
+       >>> from tilings.strategies import FactorFactory
+       >>> strategy_generator = FactorFactory()
+       >>> for strategy in strategy_generator(separated_tiling):
+       ...     print(strategy(separated_tiling))
+       Explanation: factor with partition {(0, 0)} / {(1, 2)} / {(2, 1)}
+       +-+-+-+            +-+            +-+                +-+
+       | |●| |         =  |1|         x  |●|             x  |1|
+       +-+-+-+            +-+            +-+                +-+
+       | | |1|            1: Av(120)     ●: point           1: Av(120)
+       +-+-+-+                           Requirement 0:
+       |1| | |                           0: (0, 0)
+       +-+-+-+
+       1: Av(120)
+       ●: point
+       Requirement 0:
+       0: (1, 2)
+
+The ``x`` in the printed above rule is used to denote Cartesian product. To
+guarantee that these rules are always a Cartesian product we must also ensure
+any two cells on the same row or column are also contained in the same factor,
+otherwise when counting the left hand side we have to consider the possible
+interleavings going on.
+
+.. code:: python
+
+       >>> tiling = Tiling.from_string('231_132').insert_cell((0,0))
+       >>> placed_tiling = tiling.place_point_in_cell((0, 0), DIR_SOUTH)
+       >>> strategy_generator = FactorFactory()
+       >>> for strategy in strategy_generator(placed_tiling):
+       ...     print(strategy(placed_tiling))
+       Explanation: factor with partition {(0, 1), (2, 1)} / {(1, 0)}
+       +-+-+-+            +-+-+         +-+
+       |\| |/|         =  |\|/|      x  |●|
+       +-+-+-+            +-+-+         +-+
+       | |●| |            /: Av(10)     ●: point
+       +-+-+-+            \: Av(01)     Requirement 0:
+       /: Av(10)                        0: (0, 0)
+       \: Av(01)
+       ●: point
+       Requirement 0:
+       0: (1, 0)
+
+Using the setting ``all`` in ``FactorFactory`` will allow us to factor
+according to only the obstructions and requirements.
+
+.. code:: python
+
+       >>> strategy_generator = FactorFactory('all')
+       >>> for strategy in strategy_generator(placed_tiling):
+       ...     print(strategy(placed_tiling))
+       Explanation: factor with partition {(0, 1)} / {(1, 0)} / {(2, 1)}
+       +-+-+-+            +-+           +-+                +-+
+       |\| |/|         =  |\|        *  |●|             *  |/|
+       +-+-+-+            +-+           +-+                +-+
+       | |●| |            \: Av(01)     ●: point           /: Av(10)
+       +-+-+-+                          Requirement 0:
+       /: Av(10)                        0: (0, 0)
+       \: Av(01)
+       ●: point
+       Requirement 0:
+       0: (1, 0)
+
+We instead use the symbol ``*`` to make us aware that this is not a Cartesian
+product, but we must also count the possible interleavings.
+
+
+Obstruction inferral
+--------------------
+
+The presence of requirements alongside the obstructions on a tiling can
+sometimes be use to imply that all gridded perms on the tiling avoid some other
+obstruction. The goal of ``ObstructionInferral`` is to add these to a tiling.
+
+.. code:: python
+
+       >>> from permuta.misc import DIR_NORTH
+       >>> tiling = Tiling.from_string('1234_1243_1423_4123')
+       >>> placed_tiling = tiling.partial_place_point_in_cell((0, 0), DIR_NORTH)
+       >>> from tilings.strategies import ObstructionInferralFactory
+       >>> strategy_generator = ObstructionInferralFactory(3)
+       >>> for strategy in strategy_generator(placed_tiling):
+       ...     print(strategy(placed_tiling))
+       Explanation: added the obstructions {012: (0, 0), (0, 0), (0, 0)}
+       +-+                                      +-+
+       |●|                                   =  |●|
+       +-+                                      +-+
+       |1|                                      |1|
+       +-+                                      +-+
+       1: Av(0123, 0132, 0312, 3012)            1: Av(012)
+       ●: point                                 ●: point
+       Crossing obstructions:                   Requirement 0:
+       0123: (0, 0), (0, 0), (0, 0), (0, 1)     0: (0, 1)
+       0132: (0, 0), (0, 0), (0, 1), (0, 0)
+       0312: (0, 0), (0, 1), (0, 0), (0, 0)
+       3012: (0, 1), (0, 0), (0, 0), (0, 0)
+       Requirement 0:
+       0: (0, 1)
+
+Fusion
+------
+
+fusion
+
+StrategyPacks
+=============
+
+somethign
+
+=========
 
 Finally, I'd like reiterate, if you need support, have a suggestion, or just
 want to be up to date with the latest developments please join us on our
