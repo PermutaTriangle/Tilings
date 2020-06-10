@@ -55,7 +55,7 @@ To run the unit tests:
 
        ./setup.py test
 
-You should be all set up to use ``tilings`` and the ``tilescope`` algorithm!
+You should be all set up to use ``tilings`` and the ``TileScope`` algorithm!
 
 What are gridded permutations and tilings?
 ------------------------------------------
@@ -111,11 +111,12 @@ using the ``contradictory`` method.
        >>> gp.contradictory()
        True
 
-A ``Tiling`` is created with an iterable of obstruction and an
-iterable of requirement lists. It is assumed that all cells not
-mentioned in some obstruction or requirement is empty. You can print the
-tiling to get an overview of the tiling created. In this example, we
-have a tiling that corresponds to non-empty permutation avoiding
+A ``Tiling`` is created with an iterable of obstructions and an
+iterable of requirements (which are iterables of gridded permutation).
+It is assumed that all cells not mentioned in some obstruction or
+requirement is empty. You can print the tiling to get an overview of the
+tiling created. In this example, we have a tiling that corresponds to
+non-empty permutation avoiding
 ``123``.
 
 .. code:: python
@@ -151,11 +152,12 @@ have a tiling that corresponds to non-empty permutation avoiding
        >>> tiling.positive_cells
        frozenset({(1, 1)})
 
-A keen reader may have observed that a tiling can also take a third argument
-called assumptions. These can be used to keep track of occurrences gridded
-permutations on tilings. These are still in development mode but are essential
-for certain parts of the ``TileScope`` algorithm. For simplicity we will not
-discuss these again until the `Fusion` section.
+Those who have read ahead, or already started using tilings may have noticed
+the a ``Tiling`` can also take a third argument called assumptions.
+These can be used to keep track of occurrences gridded permutations on
+tilings. These are still in development mode but are essential for certain
+parts of the ``TileScope`` algorithm. For simplicity we will not discuss
+these again until the `Fusion` section.
 
 There are a number of methods available on the tiling. You can generate
 the gridded permutations satisfying the obstructions and requirements
@@ -196,7 +198,7 @@ pip installing ``tilings``:
 
 Once done you can use the ``TileScope`` algorithm in two ways, either directly
 by importing from the ``tilings.tilescope`` module which we will discuss in
-greater detail shortly, or by using the ``tilescope`` command line tool.
+greater detail shortly, or by using the ``TileScope`` command line tool.
 
 The command line tool
 ---------------------
@@ -215,7 +217,7 @@ To search for a combinatorial specification use the subcommand
 
        tilescope spec 231 point_placements
 
-It will always try to solve for the generating functions, although in some
+It will always try to solve for the generating function, although in some
 cases you will come across some unimplemented features, for more information
 please join us on our `Discord server <https://discord.gg/ySJD6SV>`__,
 where we'd be happy to talk about it!
@@ -327,9 +329,9 @@ the ``count_objects_of_size`` method on the CombinatorialSpecification.
 
 Of course we see the Catalan numbers! We can also sample uniformly using the
 ``random_sample_object_of_size`` method. This will return a ``GriddedPerm``. If
-you want the underlying ``Perm``, this can be accessed with ``patt`` attribute.
-We have done this here, and then used the ``permuta.Perm.ascii_plot`` method
-for us to visualise it.
+you want the underlying ``Perm``, this can be accessed with the ``patt``
+attribute. We have done this here, and then used the
+``permuta.Perm.ascii_plot`` method for us to visualise it.
 
 .. code:: python
 
@@ -386,33 +388,36 @@ Each strategy pack is essentially a different algorithm. These can be accessed
 as class methods on ``TileScopePack``. They are
 
 - ``point_placements``: checks if cells are empty or not and places extreme
-points in cells
+  points in cells
 - ``row_and_col_placements``: places the left or rightmost points in columns,
-or the bottom or topmost points in rows
-- ``regular_insertion_encoding``: this pack include the strategies required
-for finding the specification corresponding to a regular insertion encoding
+  or the bottom or topmost points in rows
+- ``regular_insertion_encoding``: this pack includes the strategies required
+  for finding the specification corresponding to a regular insertion encoding
 - ``insertion_row_and_col_placements``: this pack places rows and columns as
- above, but first ensures every active cell contains a point (this is in the
- same vein as "slots" in the regular insertion encoding paper)
+  above, but first ensures every active cell contains a point (this is in the
+  same vein as "slots" in the regular insertion encoding paper)
 - ``insertion_point_placements``: places extreme points in cells, but first
-ensures every active cell contains a point
+  ensures every active cell contains a point
 - ``pattern_placements``: inserts size one requirements into a tiling, and then
-places points with respect to a pattern, e.g. if your permutation contains 123,
-then place the leftmost point that acts as the 2 in the occurrence of 123
+  places points with respect to a pattern, e.g. if your permutation contains 123,
+  then place the leftmost point that acts as a 2 in an occurrence of 123
 - ``requirement_placements``: places points with respect to any requirement,
-e.g. if your permutation contains {12, 21}, then place the rightmost point that
-is either an occurrence of 1 in 12 or an occurrence of 2 in 21.
+  e.g. if your permutation contains {12, 21}, then place the rightmost point
+  that is either an occurrence of 1 in 12 or an occurrence of 2 in 21.
 - ``only_root_placements``: this is the same as ``pattern_placements`` except
-we only allow inserting into 1x1 tilings, therefore making a finite pack
-- ``all_the_strategies``:
+  we only allow inserting into 1x1 tilings, therefore making it a finite pack
+- ``all_the_strategies``: a pack containing most of the strategies
+  (we say all as the pack sounds good then)
 
 Each of these packs have different paramaters that can be set. You can view
-this by using ``help(TileScopePack.pattern_placements)``. If you need help
-picking the right pack to enumerate your class join us on our
+this by using the help command e.g.,
+``help(TileScopePack.pattern_placements)``.
+If you need help picking the right pack to enumerate your class join us on our
 `Discord server <https://discord.gg/ySJD6SV>`__ where we'd be happy to help.
 
-You can make any pack use fusion by using the method ``make_fusion``, for
-example, here is how to create the pack ``row_placements_fusion``.
+You can make any pack use the fusion strategy by using the method
+``make_fusion``, for example, here is how to create the pack
+``row_placements_fusion``.
 
 .. code:: python
 
@@ -653,37 +658,37 @@ This particular pack can be used to enumerate ``Av(123)``.
        >>> [spec.count_objects_of_size(i) for i in range(10)]
        [1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862]
 
-It is possible to make you own pack as well, but for that you should first
+It is possible to make your own pack as well, but for that you should first
 learn more about what the individual strategies do.
 
 The strategies
 ==============
 
-The ``TileScope`` has in essence six different strategies that are applied in
-many different ways, resulting in very different universes to search for a
-combinatorial specification in. They are:
+The ``TileScope`` algorithm has in essence six different strategies that are
+applied in many different ways, resulting in very different universes in which
+to search for a combinatorial specification in. They are:
 
 - ``requirement insertions``: a disjoint union as to whether or not a tiling
-contains a requirement
-- ``point placements``: places a uniquely defined point onto its own row and
-column
+  contains a requirement
+- ``point placements``: places a uniquely defined point onto its own row and/or
+  column
 - ``factor``: when the obstructions and requirements become local to a set of
-cells, we factor out the local subtiling
+  cells, we factor out the local subtiling
 - ``row and column separation``: if all of the points in a cell in a row must
-appear below all of the other points in a row, then separate this onto its own
-row.
-- ``obstruction inferral``: add an obstruction, which the requirements and
-obstruction of a tiling imply must be avoided
+  appear below all of the other points in the row, then separate this onto its own
+  row.
+- ``obstruction inferral``: add obstuctions which the requirements and
+  obstruction of a tiling imply must be avoided
 - ``fusion``: merge two adjacent rows or columns of a tiling, if it can be
-viewed as a single row or column with a line drawn between
+  viewed as a single row or column with a line drawn between
 
 
 Requirement insertions
 ----------------------
 
-The simplest of all arguments when enumeration permutation classes is to say,
-either a tiling is empty or contains a point. This can be viewed in tilings as
-either avoiding ``1: (0, 0)`` or containing ``1: (0, 0)``.
+The simplest of all the arguments when enumerating permutation classes is to
+say, either a tiling is empty or contains a point. This can be viewed in
+tilings as either avoiding ``1: (0, 0)`` or containing ``1: (0, 0)``.
 
 .. code:: python
 
@@ -701,9 +706,8 @@ either avoiding ``1: (0, 0)`` or containing ``1: (0, 0)``.
                               0: (0, 0)
 
 The same underlying principal corresponds to avoiding or containing any set of
-gridded permutations. There are many different ways that can prove useful when
-trying to enumerate permutation classes, and used throughout our
-``StrategyPacks``.
+gridded permutations. There are many different variations of this strategy
+used throughout our ``StrategyPacks``.
 
 .. code:: python
 
@@ -714,11 +718,10 @@ trying to enumerate permutation classes, and used throughout our
 Point placements
 ----------------
 
-The core idea of this strategy is to place a uniquely defined onto its own row
-and/or column. For example, here is a code snippet that shows how use a
-strategy that places the extreme (rightmost, topmost, leftmost, bottommost)
-points in ``Av(231)``.
-
+The core idea of this strategy is to place a uniquely defined point onto
+its own row and/or column. For example, here is a code snippet that
+shows the rules coming from placing the extreme (rightmost, topmost, leftmost,
+bottommost) points of a non-empty permutation avoiding ``231``.
 .. code:: python
 
        >>> from tilings.strategies import PatternPlacementFactory
@@ -874,8 +877,8 @@ Factor
 ------
 
 If there are no crossing obstructions between two cells ``a`` and ``b`` on a
-tiling then the choice of points in cell ``a`` are independent from the choice
-of cells in ``b``.
+tiling then the choice of points in ``a`` are independent from the choice
+of points in ``b``.
 
 .. code:: python
 
@@ -1063,7 +1066,6 @@ example, the following rule was used within specification to enumerate
        012: (0, 0), (2, 0), (2, 0)     Assumption 0:
        012: (1, 0), (2, 0), (2, 0)     can count occurences of
                                        0: (0, 0)
-
 
 =========
 
