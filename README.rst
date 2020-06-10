@@ -177,8 +177,8 @@ using the ``gridded_perms_of_length`` method.
 
 There are numerous other methods and properties. Many of these specific
 to the ``TileScope`` algorithm, discussed in `Christian Bean’s PhD
-thesis <https://opinvisindi.is/handle/20.500.11815/1184>`__. For the remainder of this
-readme we will focus on the ``TileScope`` algorithm.
+thesis <https://opinvisindi.is/handle/20.500.11815/1184>`__. For the remainder
+of this readme we will focus on the ``TileScope`` algorithm.
 
 The TileScope algorithm
 =======================
@@ -215,44 +215,46 @@ To search for a combinatorial specification use the subcommand
 
        tilescope spec 231 point_placements
 
-It will always try to solve for the generating functions, although in some cases
-you will come across some unimplemented features, for more information please
-join us on our `Discord server <https://discord.gg/ySJD6SV>`__, where we'd be
-happy to talk about it!
+It will always try to solve for the generating functions, although in some
+cases you will come across some unimplemented features, for more information
+please join us on our `Discord server <https://discord.gg/ySJD6SV>`__,
+where we'd be happy to talk about it!
 
 For more information on the packs, skip ahead to the strategies section.
 
 The tilescope module
 --------------------------------
 
-TileScope can be imported in a interactive Python session from ``tilings.tilescope``.
+TileScope can be imported in a interactive Python session from
+``tilings.tilescope``.
 
 .. code:: python
 
        >>> from tilings.tilescope import *
 
-Importing ``*`` from ``tilings.tilescope`` supplies you with the ``TileScope`` and
-``TileScopePack`` classes. Running the ``TileScope`` is as simple as choosing a class
-and a strategy pack. We'll go into more detail about the different strategies
+Importing ``*`` from ``tilings.tilescope`` supplies you with the ``TileScope``
+and ``TileScopePack`` classes. Running the ``TileScope`` is as simple as
+choosing a class and a strategy pack. We'll go into more detail about the
+different strategies
 available shortly, but first lets enumerate our first permutation class. The
-example one always learns first in permutation patterns is enumerating Av(231).
-There are many different packs that will succeed for this class, but to get the
-most commonly described decomposition we can use ``point_placements``. The
-basis can be given to TileScope in several formats: an iterable of permuta.Perm,
-a string where the permutations are separated by ``'_'`` (e.g. ``'231_4321'``, or
-as a ``Tiling``.
+example one always learns first in permutation patterns is enumerating
+Av(231). There are many different packs that will succeed for this class,
+but to get the most commonly described decomposition we can use
+``point_placements``. The basis can be given to TileScope in several
+formats: an iterable of permuta.Perm, a string where the permutations
+are separated by ``'_'`` (e.g. ``'231_4321'``, or as a ``Tiling``.
 
 .. code:: python
 
        >>> pack = TileScopePack.point_placements()
        >>> tilescope = TileScope('231', pack)
 
-Once we have created our ``TileScope`` we can then use the ``auto_search`` method
-which will search for a specification using the strategies given. If successful
-it will return a CombinatorialSpecification.
+Once we have created our ``TileScope`` we can then use the ``auto_search``
+method which will search for a specification using the strategies given.
+If successful it will return a CombinatorialSpecification.
 ``TileScope`` uses ``logzero.logger`` to report information. If you wish to
-surpress these prints, you can set ``logzero.loglevel``, which we have done here
-for sake of brevity in this readme!
+surpress these prints, you can set ``logzero.loglevel``, which we have
+done here for sake of brevity in this readme!
 
 .. code:: python
 
@@ -326,8 +328,8 @@ the ``count_objects_of_size`` method on the CombinatorialSpecification.
 Of course we see the Catalan numbers! We can also sample uniformly using the
 ``random_sample_object_of_size`` method. This will return a ``GriddedPerm``. If
 you want the underlying ``Perm``, this can be accessed with ``patt`` attribute.
-We have done this here, and then used the ``permuta.Perm.ascii_plot`` method for
-us to visualise it.
+We have done this here, and then used the ``permuta.Perm.ascii_plot`` method
+for us to visualise it.
 
 .. code:: python
 
@@ -383,19 +385,34 @@ StrategyPacks
 Each strategy pack is essentially a different algorithm. These can be accessed
 as class methods on ``TileScopePack``. They are
 
-- ``point_placements``: checks if cells are empty or not and places extreme points in cells
-- ``row_and_col_placements``: places the left or rightmost points in columns, or the bottom or topmost points in rows
-- ``regular_insertion_encoding``: this pack include the strategies required for finding the specification corresponding to a regular insertion encoding
-- ``insertion_row_and_col_placements``: this pack places rows and columns as above, but first ensures every active cell contains a point (this is in the same vein as "slots" in the regular insertion encoding paper)
-- ``insertion_point_placements``: places extreme points in cells, but first ensures every active cell contains a point
-- ``pattern_placements``: inserts size one requirements into a tiling, and then places points with respect to a pattern, e.g. if your permutation contains 123, then place the leftmost point that acts as the 2 in the occurrence of 123
-- ``requirement_placements``: places points with respect to any requirement, e.g. if your permutation contains {12, 21}, then place the rightmost point that is either an occurrence of 1 in 12 or an occurrence of 2 in 21.
-- ``only_root_placements``: this is the same as ``pattern_placements`` except we only allow inserting into 1x1 tilings, therefore making a finite pack
+- ``point_placements``: checks if cells are empty or not and places extreme
+points in cells
+- ``row_and_col_placements``: places the left or rightmost points in columns,
+or the bottom or topmost points in rows
+- ``regular_insertion_encoding``: this pack include the strategies required
+for finding the specification corresponding to a regular insertion encoding
+- ``insertion_row_and_col_placements``: this pack places rows and columns as
+ above, but first ensures every active cell contains a point (this is in the
+ same vein as "slots" in the regular insertion encoding paper)
+- ``insertion_point_placements``: places extreme points in cells, but first
+ensures every active cell contains a point
+- ``pattern_placements``: inserts size one requirements into a tiling, and then
+places points with respect to a pattern, e.g. if your permutation contains 123,
+then place the leftmost point that acts as the 2 in the occurrence of 123
+- ``requirement_placements``: places points with respect to any requirement,
+e.g. if your permutation contains {12, 21}, then place the rightmost point that
+is either an occurrence of 1 in 12 or an occurrence of 2 in 21.
+- ``only_root_placements``: this is the same as ``pattern_placements`` except
+we only allow inserting into 1x1 tilings, therefore making a finite pack
 - ``all_the_strategies``:
 
-Each of these packs have different paramaters that can be set. You can view this by using ``help(TileScopePack.pattern_placements)``.
+Each of these packs have different paramaters that can be set. You can view
+this by using ``help(TileScopePack.pattern_placements)``. If you need help
+picking the right pack to enumerate your class join us on our
+`Discord server <https://discord.gg/ySJD6SV>`__ where we'd be happy to help.
 
-You can make any pack use fusion by using the method ``make_fusion``, for example, here is how to create the pack ``row_placements_fusion``.
+You can make any pack use fusion by using the method ``make_fusion``, for
+example, here is how to create the pack ``row_placements_fusion``.
 
 .. code:: python
 
@@ -646,12 +663,19 @@ The ``TileScope`` has in essence six different strategies that are applied in
 many different ways, resulting in very different universes to search for a
 combinatorial specification in. They are:
 
-- ``requirement insertions``: a disjoint union as to whether or not a tiling contains a requirement
-- ``point placements``: places a uniquely defined point onto its own row and column
-- ``factor``: when the obstructions and requirements become local to a set of cells, we factor out the local subtiling
-- ``row and column separation``: if all of the points in a cell in a row must appear below all of the other points in a row, then separate this onto its own row.
-- ``obstruction inferral``: add an obstruction, which the requirements and obstruction of a tiling imply must be avoided
-- ``fusion``: merge two adjacent rows or columns of a tiling, if it can be viewed as a single row or column with a line drawn between
+- ``requirement insertions``: a disjoint union as to whether or not a tiling
+contains a requirement
+- ``point placements``: places a uniquely defined point onto its own row and
+column
+- ``factor``: when the obstructions and requirements become local to a set of
+cells, we factor out the local subtiling
+- ``row and column separation``: if all of the points in a cell in a row must
+appear below all of the other points in a row, then separate this onto its own
+row.
+- ``obstruction inferral``: add an obstruction, which the requirements and
+obstruction of a tiling imply must be avoided
+- ``fusion``: merge two adjacent rows or columns of a tiling, if it can be
+viewed as a single row or column with a line drawn between
 
 
 Requirement insertions
@@ -678,7 +702,8 @@ either avoiding ``1: (0, 0)`` or containing ``1: (0, 0)``.
 
 The same underlying principal corresponds to avoiding or containing any set of
 gridded permutations. There are many different ways that can prove useful when
-trying to enumerate permutation classes, and used throughout our ``StrategyPacks``.
+trying to enumerate permutation classes, and used throughout our
+``StrategyPacks``.
 
 .. code:: python
 
@@ -1009,8 +1034,9 @@ occurrences of ``0: (0, 0)``. If there are ``k`` occurrences of ``0: (0, 0)``
 in a gridded permutation then there will be ``k + 1`` gridded permutations that
 fuse to this gridded permutation. Of course, here occurrences of ``0: (0, 0)``
 is going to be equal to the size of the gridded permutation, but in general,
-the points that need to be counted might not cover the whole tiling. For example,
-the following rule can be used within specification to enumerate ``Av(123)``
+the points that need to be counted might not cover the whole tiling. For
+example, the following rule was used within specification to enumerate
+``Av(123)``.
 
 .. code:: python
 
