@@ -24,7 +24,7 @@ point_placements_component_fusion = point_placements.make_fusion(
 row_and_col_placements_component_fusion_fusion = (
     TileScopePack.row_and_col_placements()
     .make_fusion(component=True, tracked=False)
-    .make_fusion()
+    .make_fusion(tracked=False)
 )
 reginsenc = TileScopePack.regular_insertion_encoding(3)
 

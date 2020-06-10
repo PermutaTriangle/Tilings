@@ -4,7 +4,6 @@ from itertools import chain, product
 import pytest
 import sympy
 
-import comb_spec_searcher
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.exception import InvalidOperationError
@@ -2345,5 +2344,5 @@ class TestGetGenf:
 
     def test_not_enumerable(self):
         t = Tiling.from_string("1324")
-        with pytest.raises(comb_spec_searcher.exception.InvalidOperationError):
+        with pytest.raises(NotImplementedError):
             t.get_genf()
