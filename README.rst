@@ -41,7 +41,7 @@ To install ``tilings`` on your system, run:
 
        pip install tilings
 
-If you would like tot edit the source code, you should install ``tilings`` in
+If you would like to edit the source code, you should install ``tilings`` in
 development mode by cloning the repository, running
 
 .. code:: bash
@@ -381,12 +381,38 @@ conditions.
        >>> spec.get_genf()
        (1 - sqrt(1 - 4*x))/(2*x)
 
+The ``sympy.solve`` method can be very slow, particularly on big systems. If
+you are having troubles, then other softwares such as Mathematica and Maple are
+often better. You can also use the method `get_maple_equations` which will
+return a string containing Maple code for the equations.
+
+.. code:: python
+
+       >>> print(spec.get_maple_equations())
+       # The system of 5 equations
+       root_func := F_0:
+       eqs := [
+       F_0 = F_1 + F_2,
+       F_1 = 1,
+       F_2 = F_3,
+       F_3 = F_0**2*F_4,
+       F_4 = x
+       ]:
+       count := [1, 1, 2, 5, 14, 42, 132]:
+
+
 
 StrategyPacks
 =============
 
-Each strategy pack is essentially a different algorithm. These can be accessed
-as class methods on ``TileScopePack``. They are
+We have implemented a large number of structural decomposition strategies that
+we will discuss a bit more in the strategies section that follows. One can use
+any subset of these strategies to search for a combinatorial specification.
+This can be done by creating a ``TileScopePack``.
+
+We have prepared a number of curated pack of strategies that we find to be
+rather effective. These can accessed as class methods on ``TileScopePack``.
+They are:
 
 - ``point_placements``: checks if cells are empty or not and places extreme
   points in cells
@@ -901,11 +927,17 @@ of points in ``b``.
        Requirement 0:
        0: (1, 2)
 
-The ``x`` in the printed above rule is used to denote Cartesian product. To
-guarantee that these rules are always a Cartesian product we must also ensure
-any two cells on the same row or column are also contained in the same factor,
-otherwise when counting the left hand side we have to consider the possible
-interleavings going on.
+The ``x`` in the printed above rule is used to denote Cartesian product.
+We do this to signify that there is a size-preserving bijection between the
+gridded permutations on the left hand side, to the set of 3-tuples coming from
+the Cartesian product on the right hand side, where the size of a tuple is the
+sum of the sizes of the parts. In particular, in order to count we can use the
+Cauchy product.
+
+To guarantee that these rules are always counted using the Cauchy product
+we must also ensure any two cells on the same row or column are also contained
+in the same factor, otherwise when counting the left hand side we have to
+consider the possible interleavings going on.
 
 .. code:: python
 
@@ -946,8 +978,8 @@ according to only the obstructions and requirements.
        Requirement 0:
        0: (1, 0)
 
-We instead use the symbol ``*`` to make us aware that this is not a Cartesian
-product, but we must also count the possible interleavings.
+We instead use the symbol ``*`` to make us aware that this is not counted
+by the Cauchy product, but we must also count the possible interleavings.
 
 
 Obstruction inferral
@@ -983,7 +1015,11 @@ a tiling.
        Requirement 0:
        0: (0, 1)
 
-  # TODO: explain the simplification
+In the above code snippet, we have added the obstruction
+``gp = 012: (0, 0), (0, 0), (0, 0)``. In particular, the 4 crossing
+obstructions, and the 4 localised obstructions, all contained a copy of ``gp``,
+so we simplify the right hand side by removing these from the tiling.
+This simplification step happens automatically when creating a ``Tiling``.
 
 Fusion
 ------
@@ -1035,6 +1071,8 @@ capture this idea by fusing the two columns into a single column.
        01: (0, 0), (1, 0)         can count occurrences of
                                   0: (0, 0)
 
+We use the symbol ``↣`` instead of ``=`` to remind us that the counts of the
+two sides are definitely not the same.
 Notice, the right hand side tiling here also now requires that we can count the
 occurrences of ``0: (0, 0)``. If there are ``k`` occurrences of ``0: (0, 0)``
 in a gridded permutation then there will be ``k + 1`` gridded permutations that
