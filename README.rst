@@ -70,7 +70,7 @@ permutations is defined the same as containment of permutations, except
 including the preservation of the cells.
 
 
-For example, here is ``284376915: (0, 0), (0, 3), (1, 1), (1, 1), (2, 3), (2, 2), (3, 4), (3, 0), (2, 2)`` where the dotted lines are used to denote the cells.
+As an example, ``(284376915: ((0, 0), (0, 3), (1, 1), (1, 1), (2, 3), (2, 2), (3, 4), (3, 0), (2, 2))`` has been drawn on a grid where the dashed lines are used to indicate the cells.
 
 .. image:: README-images/griddedperm.png
   :width: 400
