@@ -464,7 +464,7 @@ class GriddedPerm(CombinatorialObject):
     def pos(self) -> Tuple[Cell, ...]:
         return self._pos
 
-    def ascii_plot(self):
+    def ascii_plot(self) -> str:
         max_x = max(cell[0] for cell in self.pos)
         max_y = max(cell[1] for cell in self.pos)
         res = ""
@@ -483,18 +483,24 @@ class GriddedPerm(CombinatorialObject):
         )
 
         for j in range(max_y, -1, -1):
-            k = points_in_row(j)
-            res += "\n".join([row_boundary] + [col_boundary for i in range(k)]) + "\n"
+            res += (
+                "\n".join(
+                    [row_boundary] + [col_boundary for i in range(points_in_row(j))]
+                )
+                + "\n"
+            )
         res += row_boundary
 
         for (idx, val) in enumerate(self.patt):
             x, y = self.pos[idx]
-            # idx is points to left, x + 1 counts number of col boundaries to left
-            horizontal_index = idx + x + 1
-            # val is points below, and y + 1 counts number of - below
-            vertical_index = (len(self) + max_y + 1) - (val + y + 1)
-            # insert into this spot
-            insert = horizontal_index + vertical_index * (len(col_boundary) + 1)
+            # insert into this spot:
+            # (idx + x + 1) is the horizontal index. idx is points to left, and
+            #               x + 1 counts number of col boundaries to left
+            # (len(self) + max_y) - (val + y) is vertical index.
+            #               val is points below, and y + 1 counts number of - below
+            insert = (idx + x + 1) + ((len(self) + max_y) - (val + y)) * (
+                len(col_boundary) + 1
+            )
             res = res[:insert] + "●" + res[insert + 1 :]
         return res
 
