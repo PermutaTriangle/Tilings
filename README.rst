@@ -69,7 +69,8 @@ denote the cells in which the points of ``π`` are drawn on a grid. Let
 permutations is defined the same as containment of permutations, except
 including the preservation of the cells.
 
-For example, here is the gridded permutation ``284376915: (0, 0), (0, 3), (1, 1), (1, 1), (2, 3), (2, 2), (3, 4), (3, 0), (2, 2)``
+
+For example, here is ``284376915: (0, 0), (0, 3), (1, 1), (1, 1), (2, 3), (2, 2), (3, 4), (3, 0), (2, 2)`` where the dotted lines are used to denote the cells.
 
 .. image:: README-images/griddedperm.png
   :width: 400
