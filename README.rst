@@ -142,6 +142,11 @@ non-empty permutations avoiding
        012: (0, 0), (2, 0), (2, 0)
        Requirement 0:
        0: (1, 1)
+
+There are several properties of ``Tiling`` that you can use, e.g.,
+
+.. code:: python
+
        >>> tiling.dimensions
        (3, 2)
        >>> sorted(tiling.active_cells)
@@ -155,7 +160,7 @@ non-empty permutations avoiding
 
 Those who have read ahead, or already started using tilings may have noticed
 that a ``Tiling`` can also be defined with a third argument called ``assumptions``.
-These can be used to keep track of occurrences gridded permutations on
+These can be used to keep track of occurrences of gridded permutations on
 tilings. These are still in development but are essential for certain
 parts of the ``TileScope`` algorithm. For simplicity we will not discuss
 these again until the `Fusion` section.
@@ -178,7 +183,7 @@ using the ``gridded_perms_of_length`` method.
        021: (0, 0), (1, 1), (2, 0)
        102: (0, 0), (0, 0), (1, 1)
 
-There are numerous other methods and properties. Many of these specific
+There are numerous other methods and properties. Many of these are specific
 to the ``TileScope`` algorithm, discussed in `Christian Bean’s PhD
 thesis <https://opinvisindi.is/handle/20.500.11815/1184>`__. For the remainder
 of this readme we will focus on the ``TileScope`` algorithm.
@@ -218,16 +223,17 @@ To search for a combinatorial specification use the subcommand
 
        tilescope spec 231 point_placements
 
-It will always try to solve for the generating function, although in some
-cases you will come across some not-yet-implemented features; for more information
-please join us on our `Discord server <https://discord.gg/ySJD6SV>`__,
-where we'd be happy to talk about it!
+By default this command will try to solve for the generating function,
+although in some cases you will come across some not-yet-implemented features;
+for more information please join us on our
+`Discord server <https://discord.gg/ySJD6SV>`__, where we'd be happy to talk
+about it!
 
-For more information on the packs, skip ahead to the strategies section.
+The ``point_placements`` argument above is a strategy pack, which we explain in
+more detail in the ``StrategyPacks`` section.
 
 The tilescope module
---------------------------------
-
+--------------------
 TileScope can be imported in a interactive Python session from
 ``tilings.tilescope``.
 
@@ -730,7 +736,7 @@ tilings as either avoiding ``1: (0, 0)`` or containing ``1: (0, 0)``.
                               Requirement 0:
                               0: (0, 0)
 
-The same underlying principal corresponds to avoiding or containing any set of
+The same underlying principle corresponds to avoiding or containing any set of
 gridded permutations. There are many different variations of this strategy
 used throughout our ``StrategyPacks``.
 
@@ -873,8 +879,8 @@ Every non-empty permutation in ``Av(231)`` can be written in the form αnβ wher
 ``α``, ``β`` are permutation avoiding ``231``, and all of the values in ``α``
 are below all of the values in ``β``. The tiling representing placing the
 topmost point in ``Av(231)`` contains a crossing size 2 obstruction
-``10: (0, 0), (2, 0)``. This obstruction precisely says that the points cell
-``(0, 0)`` must appear below the point in cell ``(2, 0)``. The
+``10: (0, 0), (2, 0)``. This obstruction precisely says that the points in the
+cell ``(0, 0)`` must appear below the points in the cell ``(2, 0)``. The
 ``RowColumnSeparationStrategy`` will try to separate the rows and columns as
 much as possible according to the size two crossing obstructions.
 
@@ -986,7 +992,7 @@ Obstruction inferral
 --------------------
 
 The presence of requirements alongside the obstructions on a tiling can
-sometimes be use to imply that all of the gridded permutations on a tiling also avoid
+sometimes be used to imply that all of the gridded permutations on a tiling also avoid
 some additional obstruction. The goal of ``ObstructionInferral`` is to add these to
 a tiling.
 
