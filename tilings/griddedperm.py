@@ -495,7 +495,7 @@ class GriddedPerm(CombinatorialObject):
             vertical_index = (len(self) + max_y + 1) - (val + y + 1)
             # insert into this spot
             insert = horizontal_index + vertical_index * (len(col_boundary) + 1)
-            res = res[:insert] + "o" + res[insert + 1 :]
+            res = res[:insert] + "●" + res[insert + 1 :]
         return res
 
     def __len__(self) -> int:

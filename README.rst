@@ -69,7 +69,26 @@ denote the cells in which the points of ``π`` are drawn on a grid. Let
 permutations is defined the same as containment of permutations, except
 including the preservation of the cells.
 
-# TODO: add an example
+For example, ``(284376915, ((0, 0), (0, 3), (1, 1), (1, 1), (2, 3), (2, 2), (3, 4), (3, 0), (4, 2))`` is drawn on the grid as follows.
+
+.. code:: python
+
+       +--+--+--+--+-+
+       |  |  |  |● | |
+       +--+--+--+--+-+
+       | ●|  |  |  | |
+       |  |  |● |  | |
+       +--+--+--+--+-+
+       |  |  | ●|  | |
+       |  |  |  |  |●|
+       +--+--+--+--+-+
+       |  |● |  |  | |
+       |  | ●|  |  | |
+       +--+--+--+--+-+
+       |● |  |  |  | |
+       |  |  |  | ●| |
+       +--+--+--+--+-+
+
 
 A ``tiling`` is a triple ``T = ((n, m), O, R)``, where ``n`` and ``m``
 are positive integers, ``O`` is a set of gridded permutations called
@@ -335,38 +354,54 @@ the ``count_objects_of_size`` method on the CombinatorialSpecification.
        [1, 1, 2, 5, 14, 42, 132, 429, 1430, 4862]
 
 Of course we see the Catalan numbers! We can also sample uniformly using the
-``random_sample_object_of_size`` method. This will return a ``GriddedPerm``. If
-you want the underlying ``Perm``, this can be accessed with the ``patt``
-attribute. We have done this here, and then used the
-``permuta.Perm.ascii_plot`` method for us to visualise it.
+``random_sample_object_of_size`` method. This will return a ``GriddedPerm``.
+We have used the ``ascii_plot`` method for us to visualise it.
+If you want the underlying ``Perm``, this can be accessed with the ``patt``
+attribute. We also highlighted here the ``permuta.Perm.ascii_plot`` method for
+an alternative visualisation.
 
 .. code:: python
 
        >>> gp = spec.random_sample_object_of_size(10)
+       >>> print(gp)  # doctest: +SKIP
+       9543102768: (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)
+       >>> print(gp.ascii_plot())  # doctest: +SKIP
+       +----------+
+       |●         |
+       |         ●|
+       |       ●  |
+       |        ● |
+       | ●        |
+       |  ●       |
+       |   ●      |
+       |      ●   |
+       |    ●     |
+       |     ●    |
+       +----------+
        >>> perm = gp.patt
        >>> print(perm)  # doctest: +SKIP
-       5042136987
+       9543102768
        >>> print(perm.ascii_plot())  # doctest: +SKIP
+        | | | | | | | | | |
+       -●-+-+-+-+-+-+-+-+-+-
+        | | | | | | | | | |
+       -+-+-+-+-+-+-+-+-+-●-
         | | | | | | | | | |
        -+-+-+-+-+-+-+-●-+-+-
         | | | | | | | | | |
        -+-+-+-+-+-+-+-+-●-+-
         | | | | | | | | | |
-       -+-+-+-+-+-+-+-+-+-●-
-        | | | | | | | | | |
-       -+-+-+-+-+-+-●-+-+-+-
-        | | | | | | | | | |
-       -●-+-+-+-+-+-+-+-+-+-
+       -+-●-+-+-+-+-+-+-+-+-
         | | | | | | | | | |
        -+-+-●-+-+-+-+-+-+-+-
         | | | | | | | | | |
-       -+-+-+-+-+-●-+-+-+-+-
-        | | | | | | | | | |
        -+-+-+-●-+-+-+-+-+-+-
+        | | | | | | | | | |
+       -+-+-+-+-+-+-●-+-+-+-
         | | | | | | | | | |
        -+-+-+-+-●-+-+-+-+-+-
         | | | | | | | | | |
-       -+-●-+-+-+-+-+-+-+-+-
+       -+-+-+-+-+-●-+-+-+-+-
         | | | | | | | | | |
 
 
