@@ -69,11 +69,11 @@ denote the cells in which the points of ``π`` are drawn on a grid. Let
 permutations is defined the same as containment of permutations, except
 including the preservation of the cells.
 
-# TODO: add an example
+For example, here is the gridded permutation ``284376915: (0, 0), (0, 3), (1, 1), (1, 1), (2, 3), (2, 2), (3, 4), (3, 0), (2, 2)``
 
 .. image:: README-images/griddedperm.png
   :width: 400
-  :alt: The gridded permutation 284376915: (0, 0), (0, 3), (1, 1), (1, 1), (2, 3), (2, 2), (3, 4), (3, 0), (2, 2)
+  :alt: The gridded permutation ``284376915: (0, 0), (0, 3), (1, 1), (1, 1), (2, 3), (2, 2), (3, 4), (3, 0), (2, 2)``
 
 
 A ``tiling`` is a triple ``T = ((n, m), O, R)``, where ``n`` and ``m``
