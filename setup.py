@@ -27,7 +27,7 @@ setup(
     package_data={"tilings": ["py.typed"]},
     long_description=read("README.rst"),
     install_requires=[
-        "comb-spec-searcher==0.5.0",
+        "comb-spec-searcher==1.0.0",
         "permuta==1.4.0",
         "requests==2.20.0",
         "sympy==1.6",
