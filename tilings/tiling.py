@@ -27,7 +27,6 @@ from typing_extensions import TypedDict
 
 from comb_spec_searcher import CombinatorialClass, VerificationStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.utils import cssmethodtimer
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_WEST
 
@@ -94,7 +93,6 @@ class Tiling(CombinatorialClass):
     func_calls = func_calls
     func_times = func_times
 
-    # @cssmethodtimer("Tiling.__init__")
     def __init__(
         self,
         obstructions: Iterable[GriddedPerm] = tuple(),
@@ -183,7 +181,6 @@ class Tiling(CombinatorialClass):
             t = t.add_list_requirement(req_list)
         return t
 
-    @cssmethodtimer("Tiling._prepare_properties")
     def _prepare_properties(self) -> None:
         """
         Compute _active_cells, _empty_cells, _dimensions, and store them
@@ -229,7 +226,6 @@ class Tiling(CombinatorialClass):
         self._cached_properties["empty_cells"] = frozenset(empty_cells)
         self._cached_properties["dimensions"] = dimensions
 
-    @cssmethodtimer("Tiling._simplify_griddedperms")
     def _simplify_griddedperms(self, already_minimized_obs=False) -> None:
         """
         Simplifies the set of obstructions and the set of requirement lists.
@@ -248,7 +244,6 @@ class Tiling(CombinatorialClass):
         self._obstructions = GPR.obstructions
         self._requirements = GPR.requirements
 
-    @cssmethodtimer("Tiling._remove_empty_rows_and_cols")
     def _remove_empty_rows_and_cols(self) -> None:
         """Remove empty rows and columns."""
         # Produce the mapping between the two tilings
@@ -318,7 +313,6 @@ class Tiling(CombinatorialClass):
             max(row_mapping.values()) + 1,
         )
 
-    @cssmethodtimer("Tiling._minimize_mapping")
     def _minimize_mapping(self) -> Tuple[Dict[int, int], Dict[int, int], bool]:
         """
         Returns a pair of dictionaries, that map rows/columns to an
