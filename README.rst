@@ -406,6 +406,9 @@ return a string containing Maple code for the equations.
        ]:
        count := [1, 1, 2, 5, 14, 42, 132]:
 
+If you have a system of equations you are unable to solve, then please feel
+free to send them to our `Discord server <https://discord.gg/ySJD6SV>`__.
+
 
 
 StrategyPacks
