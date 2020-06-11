@@ -464,6 +464,46 @@ class GriddedPerm(CombinatorialObject):
     def pos(self) -> Tuple[Cell, ...]:
         return self._pos
 
+    def ascii_plot(self) -> str:
+        max_x = max(cell[0] for cell in self.pos)
+        max_y = max(cell[1] for cell in self.pos)
+        res = ""
+
+        def points_in_col(i):
+            return sum(1 for cell in self.pos if cell[0] == i)
+
+        def points_in_row(j):
+            return sum(1 for cell in self.pos if cell[1] == j)
+
+        row_boundary = (
+            "+" + "+".join("-" * points_in_col(i) for i in range(max_x + 1)) + "+"
+        )
+        col_boundary = (
+            "|" + "|".join(" " * points_in_col(i) for i in range(max_x + 1)) + "|"
+        )
+
+        for j in range(max_y, -1, -1):
+            res += (
+                "\n".join(
+                    [row_boundary] + [col_boundary for i in range(points_in_row(j))]
+                )
+                + "\n"
+            )
+        res += row_boundary
+
+        for (idx, val) in enumerate(self.patt):
+            x, y = self.pos[idx]
+            # insert into this spot:
+            # (idx + x + 1) is the horizontal index. idx is points to left, and
+            #               x + 1 counts number of col boundaries to left
+            # (len(self) + max_y) - (val + y) is vertical index.
+            #               val is points below, and y + 1 counts number of - below
+            insert = (idx + x + 1) + ((len(self) + max_y) - (val + y)) * (
+                len(col_boundary) + 1
+            )
+            res = res[:insert] + "●" + res[insert + 1 :]
+        return res
+
     def __len__(self) -> int:
         return len(self._patt)
 
