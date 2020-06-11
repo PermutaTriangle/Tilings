@@ -71,6 +71,11 @@ including the preservation of the cells.
 
 # TODO: add an example
 
+.. image:: README-images/griddedperm.png
+  :width: 400
+  :alt: The gridded permutation 284376915: (0, 0), (0, 3), (1, 1), (1, 1), (2, 3), (2, 2), (3, 4), (3, 0), (2, 2)
+
+
 A ``tiling`` is a triple ``T = ((n, m), O, R)``, where ``n`` and ``m``
 are positive integers, ``O`` is a set of gridded permutations called
 ``obstructions``, and ``R`` is a set of sets of gridded permutations
@@ -410,7 +415,7 @@ we will discuss a bit more in the strategies section that follows. One can use
 any subset of these strategies to search for a combinatorial specification.
 This can be done by creating a ``TileScopePack``.
 
-We have prepared a number of curated pack of strategies that we find to be
+We have prepared a number of curated packs of strategies that we find to be
 rather effective. These can accessed as class methods on ``TileScopePack``.
 They are:
 
