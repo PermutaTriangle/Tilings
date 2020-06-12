@@ -1,6 +1,7 @@
 import argparse
 import inspect
 from functools import partial
+from logzero import logger
 from typing import Callable, Dict
 
 from permuta import Perm
@@ -97,7 +98,7 @@ def search_spec(args):
     start_class = Tiling.from_string(args.basis)
     css = TileScope(start_class, pack)
     spec = css.auto_search(status_update=30)
-    spec.get_genf()
+    logger.info("The generating function is %s", spec.get_genf())
     return 0
 
 
