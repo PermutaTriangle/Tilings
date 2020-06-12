@@ -57,7 +57,9 @@ and then verifying your installation by running the unit tests with the command
 
        ./setup.py test
 
-You should then be all set up to use ``tilings`` and the ``TileScope`` algorithm!
+You should then be all set up to use ``tilings`` and the ``TileScope`` algorithm! The
+"Performance" section at the end of this document provides some more technical
+information.
 
 What are gridded permutations and tilings?
 ------------------------------------------
@@ -1176,9 +1178,31 @@ example, the following rule was used within specification to enumerate
        012: (1, 0), (2, 0), (2, 0)     can count occurrences of
                                        0: (0, 0)
 
+Performance
+-----------
+The `TileScope` algorithm can be resource-intensive in both time and memory. This
+codebase is fully compatible with `PyPy <https://www.pypy.org/>`__, an alternative
+Python interpreter that usually runs `TileScope` 5x - 7x faster, at the cost of higher
+memory usage (sometimes as high as 2x). This extra memory usage is largely caused by
+PyPy's approach to incremental garbage collection, and as a result can be partially
+mitigating by setting the environmental variables
+`described here <https://doc.pypy.org/en/latest/gc_info.html#environment-variables>`__.
+For example, the configuration
+
+.. code::
+
+    PYPY_GC_MAJOR_COLLECT=1.1
+    PYPY_GC_MAX_DELTA=200MB
+    PYPY_GC_INCREMENT_STEP=10GB
+
+tends to improve memory usage at the cost of 30% - 50% extra time.
+
+If memory usage, rather than time usage, is a bottleneck, then the default interpreter
+``CPython`` is preferred.
+
 =========
 
-Finally, I'd like reiterate, if you need support, have a suggestion, or just
+Finally, we'd like reiterate, if you need support, have a suggestion, or just
 want to be up to date with the latest developments please join us on our
 `Discord server <https://discord.gg/ySJD6SV>`__ where we'd be happy to hear
 from you!
