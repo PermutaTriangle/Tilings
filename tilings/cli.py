@@ -1,8 +1,9 @@
 import argparse
 import inspect
 from functools import partial
-from logzero import logger
 from typing import Callable, Dict
+
+from logzero import logger
 
 from permuta import Perm
 from permuta.misc import DIR_SOUTH, DIR_WEST
