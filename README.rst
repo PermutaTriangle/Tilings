@@ -1202,7 +1202,7 @@ If memory usage, rather than time usage, is a bottleneck, then the default inter
 
 =========
 
-Finally, we'd like reiterate, if you need support, have a suggestion, or just
+Finally, we'd like to reiterate, if you need support, have a suggestion, or just
 want to be up to date with the latest developments please join us on our
 `Discord server <https://discord.gg/ySJD6SV>`__ where we'd be happy to hear
 from you!
