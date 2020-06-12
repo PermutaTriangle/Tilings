@@ -8,14 +8,8 @@ from ..griddedperm import GriddedPerm
 Cell = Tuple[int, int]
 Requirement = Tuple[GriddedPerm, ...]
 
-func_calls: Dict[str, int] = defaultdict(int)
-func_times: Dict[str, float] = defaultdict(float)
-
 
 class GriddedPermReduction:
-    func_calls = func_calls
-    func_times = func_times
-
     def __init__(
         self,
         obstructions: Tuple[GriddedPerm, ...],

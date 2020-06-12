@@ -46,7 +46,6 @@ from .algorithms import (
     RowColSeparation,
     SubobstructionInferral,
 )
-from .algorithms.gridded_perm_reduction import func_calls, func_times
 from .assumptions import TrackingAssumption
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
@@ -89,9 +88,6 @@ class Tiling(CombinatorialClass):
     Tilings store the obstructions and requirements but also caches the empty
     cells and the active cells.
     """
-
-    func_calls = func_calls
-    func_times = func_times
 
     def __init__(
         self,
