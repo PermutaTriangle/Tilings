@@ -1185,7 +1185,7 @@ codebase is fully compatible with `PyPy <https://www.pypy.org/>`__, an alternati
 Python interpreter that usually runs `TileScope` 5x - 7x faster, at the cost of higher
 memory usage (sometimes as high as 2x). This extra memory usage is largely caused by
 PyPy's approach to incremental garbage collection, and as a result can be partially
-mitigating by setting the environmental variables
+mitigated by setting the environmental variables
 `described here <https://doc.pypy.org/en/latest/gc_info.html#environment-variables>`__.
 For example, the configuration
 
