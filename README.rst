@@ -30,7 +30,10 @@ will be the same as for ``tilings``.
 If you need support, have a suggestion, or just want to be up to date with the
 latest developments please join us on our
 `Discord server <https://discord.gg/ySJD6SV>`__ where we'd be happy to hear
-from you!
+from you! To receive an email notification about major new releases,
+send an email to `permutatriangle@gmail.com <mailto:permutatriangle@gmail.com>`_
+(but please direct all requests for assistance to the
+`Discord server <https://discord.gg/ySJD6SV>`__).
 
 Installing
 ----------
