@@ -3,22 +3,13 @@ from functools import partial
 from itertools import chain, islice
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
-from comb_spec_searcher.utils import cssmethodtimer
-
 from ..griddedperm import GriddedPerm
 
 Cell = Tuple[int, int]
 Requirement = Tuple[GriddedPerm, ...]
 
-func_calls: Dict[str, int] = defaultdict(int)
-func_times: Dict[str, float] = defaultdict(float)
-
 
 class GriddedPermReduction:
-    func_calls = func_calls
-    func_times = func_times
-
-    @cssmethodtimer("GriddedPermReduction.__init__")
     def __init__(
         self,
         obstructions: Tuple[GriddedPerm, ...],
@@ -44,7 +35,6 @@ class GriddedPermReduction:
     def requirements(self) -> Tuple[Requirement, ...]:
         return self._requirements
 
-    @cssmethodtimer("GriddedPermReduction._minimize_griddedperms")
     def _minimize_griddedperms(self, already_minimized_obs=False) -> None:
         """Minimizes the set of obstructions and the set of requirement lists.
         The set of obstructions are first reduced to a minimal set. The
@@ -87,7 +77,6 @@ class GriddedPermReduction:
     # if there is a requirement for which every component contains the same factor of
     # obstruction, then that factor can be removed from obstruction
     # [subobstruction inferral]
-    @cssmethodtimer("GriddedPermReduction._clean_isolated")
     def _clean_isolated(self, obstruction: GriddedPerm) -> GriddedPerm:
         """Remove the isolated factors that are implied by requirements
         from all obstructions."""
@@ -99,7 +88,6 @@ class GriddedPermReduction:
             obstruction = obstruction.remove_cells(cells_to_remove)
         return obstruction
 
-    @cssmethodtimer("GriddedPermReduction.minimal_obs")
     def minimal_obs(self, already_minimized_obs=False) -> Tuple[GriddedPerm, ...]:
         min_perms = (
             self._obstructions
@@ -121,7 +109,6 @@ class GriddedPermReduction:
             [gp for gp in unchanged if gp.avoids(*changed)]
         )
 
-    @cssmethodtimer("GriddedPermReduction.minimal_reqs")
     def minimal_reqs(
         self, obstructions: Tuple[GriddedPerm, ...]
     ) -> Tuple[Requirement, ...]:
@@ -140,7 +127,6 @@ class GriddedPermReduction:
     # If all of the gp's in a requirment list contain the same factor, you can remove
     # that factor from all of them and add it as it's own size one requirement list
     # [size one requirement list inferral]
-    # @cssmethodtimer("GriddedPermReduction.factored_reqs")
     @staticmethod
     def factored_reqs(requirements: Iterable[Requirement],) -> List[Requirement]:
         """
@@ -184,7 +170,6 @@ class GriddedPermReduction:
     # NOTE: This handles the following case:
     #   requirement R2 makes requirement R1 redundant if:
     #   For all G in R2, there exists H in R1 such that H <= G
-    @cssmethodtimer("GriddedPermReduction.cleaned_requirements")
     def cleaned_requirements(
         self, requirements: List[Requirement]
     ) -> List[Requirement]:
@@ -215,7 +200,6 @@ class GriddedPermReduction:
     # We can remove any gridded perm in any requirement if the gridded perm contains
     # an obstruction
     # [requirement component deletion]
-    @cssmethodtimer("GriddedPermReduction.remove_avoided")
     def remove_avoided(
         self,
         requirements: List[Requirement],
@@ -254,7 +238,6 @@ class GriddedPermReduction:
 
     # detect if there exists a requirement such that every component in that requirement
     # contains griddedperm
-    @cssmethodtimer("GriddedPermReduction._griddedperm_implied_by_some_requirement")
     def _griddedperm_implied_by_some_requirement(
         self,
         griddedperm: GriddedPerm,

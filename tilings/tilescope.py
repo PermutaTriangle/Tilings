@@ -6,11 +6,9 @@ from logzero import logger
 
 from comb_spec_searcher import CombinatorialSpecificationSearcher
 from comb_spec_searcher.strategies import StrategyFactory
-from comb_spec_searcher.utils import cssmethodtimer
 from permuta import Perm
 from permuta.descriptors import Basis
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import GriddedPermReduction
 from tilings.strategy_pack import TileScopePack
 
 __all__ = ("TileScope", "TileScopePack")
@@ -62,29 +60,6 @@ class TileScope(CombinatorialSpecificationSearcher):
         super().__init__(
             start_tiling, strategy_pack, logger_kwargs=logger_kwargs, **kwargs,
         )
-
-    @cssmethodtimer("tilescope status")
-    def status(self, elaborate: bool) -> str:
-        """
-        Return a string of the current status of the TileScope.
-        Calls the status function of the parent CombSpecSearcher.
-
-        "elaborate" status updates are those that provide information that
-        may be slow to compute
-        """
-        status = super().status(elaborate)
-        total = sum(self.func_times.values())
-
-        status += "Tilescope Status:\n"
-        for explanation in GriddedPermReduction.func_calls:
-            count = GriddedPermReduction.func_calls[explanation]
-            time_spent = GriddedPermReduction.func_times[explanation]
-            percentage = int((time_spent * 100) / total)
-            status += (
-                f"\tApplied {explanation} {count} times."
-                f" Time spent is {round(time_spent, 2)} seconds (~{percentage}%).\n"
-            )
-        return status
 
     @staticmethod
     def _strat_dict_to_jsonable(dict_):
