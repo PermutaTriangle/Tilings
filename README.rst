@@ -529,7 +529,7 @@ This particular pack can be used to enumerate ``Av(123)``.
 
        >>> tilescope = TileScope('123', pack)
        >>> spec = tilescope.auto_search(smallest=True)
-       >>> print(spec)
+       >>> print(spec)  # doctest: +SKIP
        A combinatorial specification with 14 rules.
        -----------
        0 -> (1, 2)
