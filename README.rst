@@ -973,14 +973,16 @@ of points in ``b``.
 
 The ``x`` in the printed above rule is used to denote Cartesian product.
 We do this to signify that there is a size-preserving bijection between the
-gridded permutations on the left hand side, to the set of 3-tuples coming from
-the Cartesian product on the right hand side, where the size of a tuple is the
-sum of the sizes of the parts. In particular, in order to count we can use the
-Cauchy product.
+gridded permutations on the left-hand side, to the set of 3-tuples coming from
+the Cartesian product on the right-hand side, where the size of a tuple is the
+sum of the sizes of the parts. In particular, it implies that the enumeration
+of the gridded permutations on the left-hand side can be computed by applying the
+Cauchy product to the enumerations of the three sets of gridded permutations on
+the right-hand side.
 
 To guarantee that these rules are always counted using the Cauchy product
 we must also ensure any two cells on the same row or column are also contained
-in the same factor, otherwise when counting the left hand side we have to
+in the same factor, otherwise when counting the left-hand side we have to
 consider the possible interleavings going on.
 
 .. code:: python
@@ -1062,7 +1064,7 @@ a tiling.
 In the above code snippet, we have added the obstruction
 ``gp = 012: (0, 0), (0, 0), (0, 0)``. In particular, the 4 crossing
 obstructions, and the 4 localised obstructions, all contained a copy of ``gp``,
-so we simplify the right hand side by removing these from the tiling.
+so we simplify the right-hand side by removing these from the tiling.
 This simplification step happens automatically when creating a ``Tiling``.
 
 Fusion
@@ -1117,7 +1119,7 @@ capture this idea by fusing the two columns into a single column.
 
 We use the symbol ``↣`` instead of ``=`` to remind us that the counts of the
 two sides are definitely not the same.
-Notice, the right hand side tiling here also now requires that we can count the
+Notice, the right-hand side tiling here also now requires that we can count the
 occurrences of ``0: (0, 0)``. If there are ``k`` occurrences of ``0: (0, 0)``
 in a gridded permutation then there will be ``k + 1`` gridded permutations that
 fuse to this gridded permutation. Of course, here occurrences of ``0: (0, 0)``
