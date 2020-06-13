@@ -117,7 +117,7 @@ or an interactive Python session, just like any other Python library:
 
        >>> from tilings import *
 
-Importing ``*`` from it supplies you with the ‘GriddedPerm’ and ‘Tiling’
+Importing ``*`` from it supplies you with the ``GriddedPerm`` and ``Tiling``
 classes.
 
 As above, a gridded permutation is a pair ``(π, P)`` where ``π`` is a
@@ -478,7 +478,7 @@ we will discuss a bit more in the strategies section that follows. One can use
 any subset of these strategies to search for a combinatorial specification.
 This can be done by creating a ``TileScopePack``.
 
-We have prepared a number of curated pack of strategies that we find to be
+We have prepared a number of curated packs of strategies that we find to be
 rather effective. These can accessed as class methods on ``TileScopePack``.
 They are:
 
