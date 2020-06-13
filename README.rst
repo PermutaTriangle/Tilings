@@ -771,7 +771,7 @@ to search for a combinatorial specification in. They are:
   appear below all of the other points in the row, then separate this onto its own
   row.
 - ``obstruction inferral``: add obstructions that the requirements and
-  obstruction of a tiling imply must be avoided
+  obstructions of a tiling imply must be avoided
 - ``fusion``: merge two adjacent rows or columns of a tiling, if it can be
   viewed as a single row or column with a line drawn between
 
