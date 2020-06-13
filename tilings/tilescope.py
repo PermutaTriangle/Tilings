@@ -11,6 +11,8 @@ from permuta.descriptors import Basis
 from tilings import GriddedPerm, Tiling
 from tilings.strategy_pack import TileScopePack
 
+__all__ = ("TileScope", "TileScopePack")
+
 
 class TileScope(CombinatorialSpecificationSearcher):
     """

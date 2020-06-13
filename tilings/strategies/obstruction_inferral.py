@@ -12,6 +12,7 @@ from tilings.assumptions import TrackingAssumption
 
 __all__ = [
     "EmptyCellInferralFactory",
+    "ObstructionInferralFactory",
     "ObstructionTransitivityFactory",
     "SubobstructionInferralFactory",
 ]
