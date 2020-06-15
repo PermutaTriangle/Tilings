@@ -1073,7 +1073,7 @@ class Tiling(CombinatorialClass):
         try:
             idx = self._assumptions.index(assumption)
         except ValueError:
-            raise ValueError(f"following assumption not on tiling:\n'{assumption}'")
+            raise ValueError(f"following assumption not on tiling: '{assumption}'")
         return "k_{}".format(idx)
 
     def maximum_length_of_minimum_gridded_perm(self) -> int:

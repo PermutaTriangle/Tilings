@@ -204,3 +204,44 @@ def test_formal_step_component(component_col_fusion, component_row_fusion):
     assert component_col_fusion.workable
     assert not component_col_fusion.possibly_empty
     assert isinstance(component_col_fusion.constructor, ComponentFusionConstructor)
+
+
+def test_fuse_parameter():
+    tiling = Tiling(
+        obstructions=(
+            GriddedPerm(Perm((0,)), ((0, 0),)),
+            GriddedPerm(Perm((0,)), ((0, 2),)),
+            GriddedPerm(Perm((0,)), ((1, 1),)),
+            GriddedPerm(Perm((0,)), ((1, 2),)),
+            GriddedPerm(Perm((0,)), ((2, 0),)),
+            GriddedPerm(Perm((0,)), ((2, 1),)),
+            GriddedPerm(Perm((0,)), ((3, 0),)),
+            GriddedPerm(Perm((0,)), ((3, 1),)),
+            GriddedPerm(Perm((0,)), ((4, 0),)),
+            GriddedPerm(Perm((0,)), ((4, 2),)),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (2, 2))),
+            GriddedPerm(Perm((0, 1)), ((1, 0), (3, 2))),
+            GriddedPerm(Perm((1, 0)), ((4, 1), (4, 1))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 1), (2, 2))),
+            GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 1), (3, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm(Perm((0, 2, 1)), ((0, 1), (0, 1), (4, 1))),
+            GriddedPerm(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm(Perm((0, 2, 1)), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((2, 2), (2, 2), (3, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((2, 2), (3, 2), (3, 2))),
+            GriddedPerm(Perm((0, 2, 1)), ((3, 2), (3, 2), (3, 2))),
+            GriddedPerm(Perm((1, 0, 2)), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm(Perm((1, 0, 2)), ((2, 2), (2, 2), (3, 2))),
+            GriddedPerm(Perm((1, 0, 2)), ((2, 2), (3, 2), (3, 2))),
+            GriddedPerm(Perm((1, 0, 2)), ((3, 2), (3, 2), (3, 2))),
+        ),
+        requirements=(
+            (GriddedPerm(Perm((0,)), ((2, 2),)), GriddedPerm(Perm((0,)), ((3, 2),))),
+        ),
+        assumptions=(),
+    )
+    strategy = FusionStrategy(col_idx=2, tracked=True)
+    assert strategy._fuse_parameter(tiling) == "k_0"
+    rule = strategy(tiling)
+    assert isinstance(rule.constructor, FusionConstructor)
