@@ -1070,7 +1070,10 @@ class Tiling(CombinatorialClass):
         return tuple("k_{}".format(i) for i in range(len(self._assumptions)))
 
     def get_parameter(self, assumption: TrackingAssumption) -> str:
-        idx = self._assumptions.index(assumption)
+        try:
+            idx = self._assumptions.index(assumption)
+        except ValueError:
+            raise ValueError(f"following assumption not on tiling:\n'{assumption}'")
         return "k_{}".format(idx)
 
     def maximum_length_of_minimum_gridded_perm(self) -> int:
