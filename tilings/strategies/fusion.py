@@ -512,7 +512,9 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def _fuse_parameter(self, comb_class: Tiling) -> str:
         algo = self.fusion_algorithm(comb_class)
         child = algo.fused_tiling()
-        fuse_assumption = algo.new_assumption()
+        fuse_assumption = TrackingAssumption(
+            child.forward_map(gp) for gp in algo.new_assumption().gps
+        )
         return child.get_parameter(fuse_assumption)
 
     def formal_step(self) -> str:
