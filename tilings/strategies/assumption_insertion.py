@@ -1,4 +1,4 @@
-from typing import Iterable, Iterator, Optional, Tuple
+from typing import Dict, Iterable, Iterator, Optional, Tuple
 
 
 from comb_spec_searcher import (
@@ -25,6 +25,12 @@ class AddAssumptionConstructor(Constructor):
     The constructor used to cound when a new variable is added.
     """
 
+    def __init__(self, new_parameter: str, extra_parameters: Dict[str, str]):
+        #  parent parameter -> child parameter mapping
+        self.extra_parameters = extra_parameters
+        #  the paramater that was added, to count we must sum over all possible values
+        self.new_parameter = new_parameter
+
     def is_equivalence(self) -> bool:
         return False
 
@@ -35,7 +41,13 @@ class AddAssumptionConstructor(Constructor):
         raise NotImplementedError
 
     def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-        raise NotImplementedError
+        subrec = subrecs[0]
+        new_params = {self.extra_parameters[k]: val for k, val in parameters.items()}
+        res = 0
+        for i in range(n + 1):
+            new_params[self.new_parameter] = i
+            res += subrec(n, **new_params)
+        return res
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int
@@ -74,7 +86,25 @@ class AddAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
             children = self.decomposition_function(comb_class)
             if children is None:
                 raise StrategyDoesNotApply("Can't split the tracking assumption")
-        return AddAssumptionConstructor()
+        new_parameter = children[0].get_parameter(self.assumption)
+        return AddAssumptionConstructor(
+            new_parameter, self.extra_parameters(comb_class, children)[0]
+        )
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Dict[str, str]]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        child = children[0]
+        return (
+            {
+                comb_class.get_parameter(ass): child.get_parameter(ass)
+                for ass in comb_class.assumptions
+            },
+        )
 
     def formal_step(self) -> str:
         return "adding the assumption '{}'".format(self.assumption)
