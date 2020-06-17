@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [2.0.0] - 2020-06-17
+### Added
+All the necessary strategies for combinatorial exploration.
+
+### Changed
+Refactoring and speed up of many algorithm most notably the is empty check.
+
+### Removed
+- Support for Python 3.5 and earlier
+
 ## [1.0.2] - 2019-03-30
 ### Changed
 - Update dependency versions
