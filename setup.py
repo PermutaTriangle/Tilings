@@ -46,4 +46,5 @@ setup(
         "Topic :: Education",
         "Topic :: Scientific/Engineering :: Mathematics",
     ],
+    entry_points={"console_scripts": ["tilescope=tilings.cli:main"]},
 )
