@@ -49,6 +49,8 @@ class TileScopePack(StrategyPack):
             pack = pack.add_initial(
                 strat.SplittingStrategy(ignore_parent=True), apply_first=True
             )
+        if strat.AddAssumptionFactory() not in self:
+            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
         if component:
             pack = pack.add_initial(
                 strat.ComponentFusionFactory(tracked=tracked), "component_fusion"

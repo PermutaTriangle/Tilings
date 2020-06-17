@@ -561,6 +561,37 @@ class Tiling(CombinatorialClass):
         new_req_list = (GriddedPerm.single_cell(patt, cell),)
         return self.add_list_requirement(new_req_list)
 
+    def add_assumption(self, assumption: TrackingAssumption) -> "Tiling":
+        """Returns a new tiling with the added assumption."""
+        return Tiling(
+            self._obstructions, self._requirements, self._assumptions + (assumption,)
+        )
+
+    def remove_assumption(self, assumption: TrackingAssumption):
+        """Returns a new tiling with assumption removed."""
+        try:
+            idx = self._assumptions.index(assumption)
+        except ValueError:
+            raise ValueError(f"following assumption not on tiling: '{assumption}'")
+        return Tiling(
+            self._obstructions,
+            self._requirements,
+            self._assumptions[:idx] + self._assumptions[idx + 1 :],
+        )
+
+    def remove_assumptions(self):
+        """
+        Return the tiling with all assumptions removed.
+        """
+        return self.__class__(
+            self._obstructions,
+            self._requirements,
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
+        )
+
     def fully_isolated(self) -> bool:
         """Check if all cells are isolated on their rows and columns."""
         seen_row: List[int] = []
@@ -1305,19 +1336,6 @@ class Tiling(CombinatorialClass):
         except KeyError:
             self._prepare_properties()
             return self._cached_properties["dimensions"]
-
-    def remove_assumptions(self):
-        """
-        Return the tiling with all assumptions removed.
-        """
-        return self.__class__(
-            self._obstructions,
-            self._requirements,
-            remove_empty_rows_and_cols=False,
-            derive_empty=False,
-            simplify=False,
-            sorted_input=True,
-        )
 
     def add_obstruction_in_all_ways(self, patt: Perm) -> "Tiling":
         """
