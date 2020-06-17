@@ -30,7 +30,6 @@ setup(
         "comb-spec-searcher==1.0.0",
         "permuta==1.4.1",
         "requests==2.20.0",
-        "sympy==1.6",
         "typing-extensions==3.7.4.2",
     ],
     python_requires=">=3.6",
