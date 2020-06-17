@@ -73,7 +73,7 @@ class AddAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
     def __init__(self, gps: Iterable[GriddedPerm]):
         self.assumption = TrackingAssumption(gps)
         super().__init__(
-            ignore_parent=False, inferrable=True, possibly_empty=False, workable=True
+            ignore_parent=False, inferrable=True, possibly_empty=False, workable=False
         )
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
