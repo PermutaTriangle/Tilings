@@ -35,7 +35,10 @@ class AddAssumptionConstructor(Constructor):
         return False
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
-        raise NotImplementedError
+        rhs_func = rhs_funcs[0]
+        subs = {child: parent for parent, child in self.extra_parameters.items()}
+        subs[self.new_parameter] = 1
+        return Eq(lhs_func, rhs_func.subs(subs))
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
