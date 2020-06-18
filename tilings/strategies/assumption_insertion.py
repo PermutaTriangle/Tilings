@@ -1,5 +1,6 @@
 from typing import Dict, Iterable, Iterator, Optional, Tuple
 
+from sympy import Eq, Function
 
 from comb_spec_searcher import (
     CombinatorialObject,
@@ -15,7 +16,6 @@ from comb_spec_searcher.strategies.constructor import (
     SubRecs,
     SubSamplers,
 )
-from sympy import Eq, Function
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
 

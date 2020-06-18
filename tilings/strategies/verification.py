@@ -1,4 +1,6 @@
+from functools import reduce
 from itertools import chain
+from operator import mul
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
 from sympy import Expr, Function, var
@@ -46,6 +48,10 @@ TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
 
 
 class BasicVerificationStrategy(AtomStrategy):
+    """
+    TODO: can this be moved to the CSS atom strategy?
+    """
+
     @staticmethod
     def count_objects_of_size(
         comb_class: CombinatorialClass, n: int, **parameters: int
@@ -64,6 +70,22 @@ class BasicVerificationStrategy(AtomStrategy):
         if expected == actual:
             return 1
         return 0
+
+    def get_genf(
+        self,
+        comb_class: CombinatorialClass,
+        funcs: Optional[Dict[CombinatorialClass, Function]] = None,
+    ) -> Expr:
+        if not self.verified(comb_class):
+            raise StrategyDoesNotApply("Can't find generating functon for non-atom.")
+        if not isinstance(comb_class, Tiling):
+            raise NotImplementedError
+        cast(Tiling, comb_class)
+        gp = next(comb_class.minimal_gridded_perms())
+        expected = {"x": len(gp)}
+        for assumption in comb_class.assumptions:
+            expected[comb_class.get_parameter(assumption)] = assumption.get_value(gp)
+        return reduce(mul, [var(k) ** n for k, n in expected.items()], 1)
 
 
 class OneByOneVerificationStrategy(TileScopeVerificationStrategy):

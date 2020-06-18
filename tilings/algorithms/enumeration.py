@@ -197,6 +197,10 @@ class MonotoneTreeEnumeration(Enumeration):
         # pylint: disable=too-many-locals
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
+        if self.tiling.extra_parameters:
+            raise NotImplementedError(
+                "Not implemented monotone verified with extra parameters."
+            )
         try:
             start = next(
                 c

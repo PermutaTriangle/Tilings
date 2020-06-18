@@ -18,7 +18,7 @@ from functools import reduce
 from operator import mul
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
-from sympy import Eq, Function, var
+from sympy import Eq, Expr, Function, Number, var
 
 from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -155,7 +155,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         rhs_func = rhs_funcs[0]
-        subs = {
+        subs: Dict[str, Expr] = {
             child: reduce(mul, [var(k) for k in parent_vars], 1)
             for child, parent_vars in self.reversed_extra_parameters.items()
         }
@@ -177,7 +177,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             ],
             1,
         )
-        p, q = 1, 1
+        p, q = Number(1), Number(1)
         for parent_fuse_parameter, fuse_type in zip(
             self.parent_fusion_parameters, self.fusion_types
         ):
@@ -191,9 +191,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 "parameter, or only parent fusion parameter covered entire region"
             )
         subs1 = {**subs}
-        subs1[self.fuse_parameter] = q / left_vars if q / left_vars != 1 else 1
+        subs1[self.fuse_parameter] = q / left_vars
         subs2 = {**subs}
-        subs2[self.fuse_parameter] = p / right_vars if p / right_vars != 1 else 1
+        subs2[self.fuse_parameter] = p / right_vars
         return Eq(
             lhs_func,
             (
@@ -540,7 +540,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
 
     def left_right_both_neither_sided_parameters(
         self, comb_class: Tiling,
-    ) -> Tuple[Set[str], Set[str], Set[str]]:
+    ) -> Tuple[Set[str], Set[str], Set[str], Set[str]]:
         left_sided_params: Set[str] = set()
         right_sided_params: Set[str] = set()
         both_sided_params: Set[str] = set()
