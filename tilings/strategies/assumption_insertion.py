@@ -153,7 +153,8 @@ class AddAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "AddAssumptionStrategy":
-        return cls(**d)
+        gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
+        return cls(gps)
 
     def __repr__(self):
         return self.__class__.__name__ + "(gps={})".format(
