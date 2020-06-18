@@ -5,22 +5,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2.0.0] - 2020-06-17
 ### Added
-- `fusion` method for tilings based on the `Fusion` class.
-- `row_and_column_separation` method for tilings based on the
-  `RowColSeperation` class.
-- Adding `Factor`, `FactorWithInterleaving` and
-  `FactorWithMonotoneInterleaving` algorithm. They are available by setting the
-  right `interleaving` flag in the `find_factors` method of tilings
-- Added `GriddedPermsOnTiling` algorithm, that is now used
-  for `Tiling.gridded_perms`.
-- Added `GriddedPerm.get_gridded_perm_at_indices` method.
-- Added `MinimalGriddedPerms` algorithm used by the new
-  `Tiling.minimal_gridded_perms` method.
+All the necessary strategies for combinatorial exploration.
 
 ### Changed
-- Update permuta to 1.2.1
-- Update comb_spec_searcher to 0.2.2
+Refactoring and speed up of many algorithm most notably the is empty check.
 
 ### Removed
 - Support for Python 3.5 and earlier
