@@ -51,11 +51,12 @@ development mode by cloning the repository, running
 
        ./setup.py develop
 
-and then verifying your installation by running the unit tests with the command
+To verify that your installation is correct, you can try to get a specification for
+`Av(12)` by running in your terminal:
 
 .. code:: bash
 
-       ./setup.py test
+        tilescope spec 12 point_placements
 
 You should then be all set up to use ``tilings`` and the ``TileScope`` algorithm! The
 "Performance" section at the end of this document provides some more technical
