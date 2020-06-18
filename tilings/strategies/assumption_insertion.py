@@ -1,6 +1,6 @@
 from typing import Dict, Iterable, Iterator, Optional, Tuple
 
-from sympy import Eq, Function
+from sympy import Eq, Expr, Function, Number, Symbol, var
 
 from comb_spec_searcher import (
     CombinatorialObject,
@@ -36,8 +36,10 @@ class AddAssumptionConstructor(Constructor):
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         rhs_func = rhs_funcs[0]
-        subs = {child: parent for parent, child in self.extra_parameters.items()}
-        subs[self.new_parameter] = 1
+        subs: Dict[Symbol, Expr] = {
+            var(child): var(parent) for parent, child in self.extra_parameters.items()
+        }
+        subs[self.new_parameter] = Number(1)
         return Eq(lhs_func, rhs_func.subs(subs))
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
