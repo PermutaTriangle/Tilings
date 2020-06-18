@@ -22,7 +22,7 @@ from tilings.assumptions import TrackingAssumption
 
 class AddAssumptionConstructor(Constructor):
     """
-    The constructor used to cound when a new variable is added.
+    The constructor used to count when a new variable is added.
     """
 
     def __init__(self, new_parameter: str, extra_parameters: Dict[str, str]):
@@ -112,7 +112,9 @@ class AddAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         )
 
     def formal_step(self) -> str:
-        return "adding the assumption '{}'".format(self.assumption)
+        return "adding the assumption can count occurrences of " + ", ".join(
+            str(p) for p in self.assumption.gps
+        )
 
     def backward_map(
         self,
@@ -126,7 +128,8 @@ class AddAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         """
         if children is None:
             children = self.decomposition_function(comb_class)
-        raise NotImplementedError
+        assert len(objs) == 1 and objs[0] is not None
+        return objs[0]
 
     def forward_map(
         self,
@@ -140,7 +143,7 @@ class AddAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         """
         if children is None:
             children = self.decomposition_function(comb_class)
-        raise NotImplementedError
+        return (obj,)
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()

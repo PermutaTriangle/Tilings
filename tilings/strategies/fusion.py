@@ -55,8 +55,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                                 being fused.
     - both_sided_parameters:    all of the parent parameters which overlap
                                 fully the entire region that is being fused
-    - neither_sided_parameters: the parent parameter doesn't overlap the region
-                                being fused.
     """
 
     def __init__(
@@ -66,7 +64,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         left_sided_parameters=Iterable[str],
         right_sided_parameters=Iterable[str],
         both_sided_parameters=Iterable[str],
-        neither_sided_parameters=Iterable[str],
     ):
         # parent -> child parameters
         self.extra_parameters = extra_parameters
@@ -83,7 +80,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         self.left_sided_parameters = frozenset(left_sided_parameters)
         self.right_sided_parameters = frozenset(right_sided_parameters)
         self.both_sided_parameters = frozenset(both_sided_parameters)
-        self.neither_sided_parameters = frozenset(neither_sided_parameters)
 
         self._init_checked()
 
@@ -516,7 +512,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         return FusionConstructor(
             self._fuse_parameter(comb_class),
             self.extra_parameters(comb_class, children)[0],
-            *self.left_right_both_neither_sided_parameters(comb_class),
+            *self.left_right_both_sided_parameters(comb_class),
         )
 
     def extra_parameters(
@@ -538,13 +534,12 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             },
         )
 
-    def left_right_both_neither_sided_parameters(
+    def left_right_both_sided_parameters(
         self, comb_class: Tiling,
-    ) -> Tuple[Set[str], Set[str], Set[str], Set[str]]:
+    ) -> Tuple[Set[str], Set[str], Set[str]]:
         left_sided_params: Set[str] = set()
         right_sided_params: Set[str] = set()
         both_sided_params: Set[str] = set()
-        neither_sided_params: Set[str] = set()
         algo = self.fusion_algorithm(comb_class)
         for assumption in comb_class.assumptions:
             parent_var = comb_class.get_parameter(assumption)
@@ -556,13 +551,10 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
                 right_sided_params.add(parent_var)
             elif not left_sided and not right_sided:
                 both_sided_params.add(parent_var)
-            else:
-                neither_sided_params.add(parent_var)
         return (
             left_sided_params,
             right_sided_params,
             both_sided_params,
-            neither_sided_params,
         )
 
     def _fuse_parameter(self, comb_class: Tiling) -> str:

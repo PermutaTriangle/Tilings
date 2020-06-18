@@ -148,7 +148,8 @@ def test_1234_fusion():
         d = json.loads(f.read())
     spec = CombinatorialSpecification.from_dict(d)
     assert isinstance(spec, CombinatorialSpecification)
-    assert [spec.count_objects_of_size(i) for i in range(20)] == [
+    assert not any("NOTIMPLEMENTED" in str(eq.rhs) for eq in spec.get_equations())
+    assert [spec.count_objects_of_size(i) for i in range(15)] == [
         1,
         1,
         2,
@@ -164,9 +165,4 @@ def test_1234_fusion():
         24792705,
         167078577,
         1148208090,
-        8026793118,
-        56963722223,
-        409687815151,
-        2981863943718,
-        21937062144834,
     ]
