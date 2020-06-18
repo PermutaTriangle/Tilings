@@ -37,7 +37,7 @@ class Split(Constructor):
         for parent, children in self.split_parameters.items():
             for child in children:
                 subs[child] = parent
-        return Eq(lhs_func, rhs_func.subs(subs))
+        return Eq(lhs_func, rhs_func.subs(subs, simultaneous=True))
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError

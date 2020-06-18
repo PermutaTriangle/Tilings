@@ -193,8 +193,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         return Eq(
             lhs_func,
             (
-                (q * right_vars * rhs_func.subs(subs1))
-                - (p * left_vars * rhs_func.subs(subs2))
+                (q * right_vars * rhs_func.subs(subs1, simultaneous=True))
+                - (p * left_vars * rhs_func.subs(subs2, simultaneous=True))
             )
             / (q * right_vars - p * left_vars),
         )

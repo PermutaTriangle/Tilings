@@ -40,7 +40,7 @@ class AddAssumptionConstructor(Constructor):
             var(child): var(parent) for parent, child in self.extra_parameters.items()
         }
         subs[self.new_parameter] = Number(1)
-        return Eq(lhs_func, rhs_func.subs(subs))
+        return Eq(lhs_func, rhs_func.subs(subs, simultaneous=True))
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError

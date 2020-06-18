@@ -5,11 +5,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
 - add a new `AddAssumptionStrategy` which adds an assumption to a tiling.
   In practice, when expanding a class, we actually remove an assumption to
   determine which rules to add.
 - the `get_equations` method is now implemented for the strategies
   `AddAssumptionStrategy`, `SplittingStrategy`, and `FusionStrategy`.
+- the `extra_paramters` method was implemented for symmetry strategies,
+  allowing these to be used when enumerating tracked trees.
 
 ## [2.0.0] - 2020-06-17
 ### Added
