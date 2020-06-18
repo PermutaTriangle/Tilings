@@ -142,6 +142,15 @@ class AddAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
             children = self.decomposition_function(comb_class)
         raise NotImplementedError
 
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d.pop("ignore_parent")
+        d.pop("inferrable")
+        d.pop("possibly_empty")
+        d.pop("workable")
+        d["gps"] = [gp.to_jsonable() for gp in self.assumption.gps]
+        return d
+
     @classmethod
     def from_dict(cls, d: dict) -> "AddAssumptionStrategy":
         return cls(**d)
