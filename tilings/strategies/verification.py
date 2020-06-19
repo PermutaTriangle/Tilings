@@ -418,30 +418,10 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         super().__init__(ignore_parent=ignore_parent)
 
     def pack(self, tiling: Tiling) -> StrategyPack:
-
-        # pylint: disable=import-outside-toplevel
-        from tilings.strategy_pack import TileScopePack
-
-        if tiling.dimensions[0] == 1:
-            if all(
-                is_insertion_encodable_rightmost(basis)
-                for basis, _ in tiling.cell_basis().values()
-            ):
-                return TileScopePack.regular_insertion_encoding(2).add_initial(
-                    SplittingStrategy(ignore_parent=True), apply_first=True
-                )
-            # TODO: check if one cell has topmost regular insenc and rest are
-            # finite, then have topmost insertion encoding
-        if tiling.dimensions[1] == 1:
-            if all(
-                is_insertion_encodable_maximum(basis)
-                for basis, _ in tiling.cell_basis().values()
-            ):
-                return TileScopePack.regular_insertion_encoding(3).add_initial(
-                    SplittingStrategy(ignore_parent=True), apply_first=True
-                )
-            # TODO: check if one cell has rightmost regular insenc and rest are
-            # finite, then have rightmost insertion encoding
+        try:
+            return InsertionEncodingVerificationStrategy().pack(tiling)
+        except StrategyDoesNotApply:
+            pass
         if self.no_factors:
             raise InvalidOperationError("Cannot get a simpler specification")
         return StrategyPack(
@@ -507,6 +487,83 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         return "local verification"
 
 
+class InsertionEncodingVerificationStrategy(TileScopeVerificationStrategy):
+    """
+    Verify all n x 1 and 1 x n tilings that have a regular insertion encoding.
+    """
+
+    def __init__(self, ignore_parent: bool = True):
+        super().__init__(ignore_parent=ignore_parent)
+
+    def pack(self, tiling: Tiling) -> StrategyPack:
+
+        # pylint: disable=import-outside-toplevel
+        from tilings.strategy_pack import TileScopePack
+
+        if self.has_rightmost_insertion_encoding(tiling):
+            return TileScopePack.regular_insertion_encoding(2).add_initial(
+                SplittingStrategy(ignore_parent=True), apply_first=True
+            )
+        if self.has_topmost_insertion_encoding(tiling):
+            return TileScopePack.regular_insertion_encoding(3).add_initial(
+                SplittingStrategy(ignore_parent=True), apply_first=True
+            )
+        raise StrategyDoesNotApply("tiling does not has a regular insertion encoding")
+
+    @staticmethod
+    def has_rightmost_insertion_encoding(tiling: Tiling) -> bool:
+        return tiling.dimensions[0] == 1 and all(
+            is_insertion_encodable_rightmost(basis)
+            for basis, _ in tiling.cell_basis().values()
+        )
+
+    @staticmethod
+    def has_topmost_insertion_encoding(tiling: Tiling) -> bool:
+        return tiling.dimensions[1] == 1 and all(
+            is_insertion_encodable_maximum(basis)
+            for basis, _ in tiling.cell_basis().values()
+        )
+
+    def verified(self, tiling: Tiling) -> bool:
+        return self.has_rightmost_insertion_encoding(
+            tiling
+        ) or self.has_topmost_insertion_encoding(tiling)
+
+    @staticmethod
+    def formal_step() -> str:
+        return "tiling has a regular insertion encoding"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "InsertionEncodingVerificationStrategy":
+        return cls(**d)
+
+    def count_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> int:
+        raise NotImplementedError(
+            "Not implemented method to count objects for insertion encoding "
+            "verified tilings"
+        )
+
+    def generate_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError(
+            "Not implemented method to generate objects for insertion encoding "
+            "verified tilings"
+        )
+
+    def random_sample_object_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        raise NotImplementedError(
+            "Not implemented random sample for insertion encoding verified tilings"
+        )
+
+    def __str__(self) -> str:
+        return "insertion encoding verified"
+
+
 class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
     """
     Verify all tiling that is a monotone tree.
@@ -517,30 +574,10 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
         super().__init__(ignore_parent=ignore_parent)
 
     def pack(self, tiling: Tiling) -> StrategyPack:
-        # pylint: disable=import-outside-toplevel
-        from tilings.strategy_pack import TileScopePack
-
-        if tiling.dimensions[0] == 1:
-            if all(
-                is_insertion_encodable_rightmost(basis)
-                for basis, _ in tiling.cell_basis().values()
-            ):
-                return TileScopePack.regular_insertion_encoding(2).add_initial(
-                    SplittingStrategy(ignore_parent=True), apply_first=True
-                )
-            # TODO: check if one cell has topmost regular insenc and rest are
-            # finite, then have topmost insertion encoding
-        if tiling.dimensions[1] == 1:
-            if all(
-                is_insertion_encodable_maximum(basis)
-                for basis, _ in tiling.cell_basis().values()
-            ):
-                return TileScopePack.regular_insertion_encoding(3).add_initial(
-                    SplittingStrategy(ignore_parent=True), apply_first=True
-                )
-            # TODO: check if one cell has rightmost regular insenc and rest are
-            # finite, then have rightmost insertion encoding
-
+        try:
+            return InsertionEncodingVerificationStrategy().pack(tiling)
+        except StrategyDoesNotApply:
+            pass
         if self.no_factors:
             raise InvalidOperationError(
                 "Cannot get a specification for a tiling in the database"

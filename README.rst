@@ -51,11 +51,12 @@ development mode by cloning the repository, running
 
        ./setup.py develop
 
-and then verifying your installation by running the unit tests with the command
+To verify that your installation is correct, you can try to get a specification for
+`Av(12)` by running in your terminal:
 
 .. code:: bash
 
-       ./setup.py test
+        tilescope spec 12 point_placements
 
 You should then be all set up to use ``tilings`` and the ``TileScope`` algorithm! The
 "Performance" section at the end of this document provides some more technical
@@ -520,7 +521,7 @@ You can make any pack use the fusion strategy by using the method
        Looking for recursive combinatorial specification with the strategies:
        Inferral: row and column separation, obstruction transitivity
        Initial: add assumptions, splitting the assumptions, factor, requirement corroboration, tracked fusion
-       Verification: verify atoms, one by one verification, locally factorable verification
+       Verification: verify atoms, insertion encoding verified, one by one verification, locally factorable verification
        Set 1: row placement
 
 This particular pack can be used to enumerate ``Av(123)``.

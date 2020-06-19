@@ -28,6 +28,7 @@ from .verification import (
     BasicVerificationStrategy,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
+    InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
@@ -69,6 +70,7 @@ __all__ = [
     "ElementaryVerificationStrategy",
     "LocallyFactorableVerificationStrategy",
     "LocalVerificationStrategy",
+    "InsertionEncodingVerificationStrategy",
     "MonotoneTreeVerificationStrategy",
     "OneByOneVerificationStrategy",
 ]

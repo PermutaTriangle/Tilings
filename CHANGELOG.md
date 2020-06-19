@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `AddAssumptionStrategy`, `SplittingStrategy`, and `FusionStrategy`.
 - the `extra_paramters` method was implemented for symmetry strategies,
   allowing these to be used when enumerating tracked trees.
+- Add the `InsertionEncodingVerificationStrategy` which verifies n x 1 and
+  1 x n tilings which have a regular topmost or bottommost insertion encoding.
 
 ## [2.0.0] - 2020-06-17
 ### Added
