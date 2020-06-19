@@ -41,9 +41,6 @@ class TileScopePack(StrategyPack):
         self, component: bool = False, tracked: bool = True
     ) -> "TileScopePack":
         """Create a new pack by adding fusion to the current pack."""
-        assert not (
-            component and tracked
-        ), "not implemented tracking for component fusion"
         pack = self
         if strat.SplittingStrategy() not in self:
             pack = pack.add_initial(

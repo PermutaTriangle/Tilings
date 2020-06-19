@@ -24,6 +24,7 @@ from tilings.algorithms.enumeration import (
     LocalEnumeration,
     MonotoneTreeEnumeration,
 )
+from tilings.assumptions import SkewComponentAssumption, SumComponentAssumption
 from tilings.strategies import (
     FactorFactory,
     FactorInsertionFactory,
@@ -184,9 +185,12 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         )
 
     def verified(self, tiling: Tiling) -> bool:
-        return (
-            tiling.dimensions == (1, 1)
-            and frozenset(ob.patt for ob in tiling.obstructions) not in self.symmetries
+        return tiling.dimensions == (1, 1) and (
+            frozenset(ob.patt for ob in tiling.obstructions) not in self.symmetries
+            or SumComponentAssumption([GriddedPerm(Perm((0,)), ((0, 0),))])
+            in tiling.assumptions
+            or SkewComponentAssumption([GriddedPerm(Perm((0,)), ((0, 0),))])
+            in tiling.assumptions
         )
 
     def get_genf(

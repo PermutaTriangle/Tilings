@@ -46,7 +46,11 @@ from .algorithms import (
     RowColSeparation,
     SubobstructionInferral,
 )
-from .assumptions import TrackingAssumption
+from .assumptions import (
+    SkewComponentAssumption,
+    SumComponentAssumption,
+    TrackingAssumption,
+)
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
@@ -373,6 +377,14 @@ class Tiling(CombinatorialClass):
         if self.assumptions:
             result.extend(split_16bit(len(self.assumptions)))
             for assumption in self.assumptions:
+                if isinstance(assumption, SkewComponentAssumption):
+                    result.append(2)
+                elif isinstance(assumption, SumComponentAssumption):
+                    result.append(1)
+                elif isinstance(assumption, TrackingAssumption):
+                    result.append(0)
+                else:
+                    raise ValueError("Not a valid assumption.")
                 result.extend(split_16bit(len(assumption.gps)))
                 result.extend(
                     chain.from_iterable(
@@ -432,9 +444,20 @@ class Tiling(CombinatorialClass):
             nassumptions = merge_8bit(arr[offset], arr[offset + 1])
             offset += 2
             for _ in range(nassumptions):
-                # tracking
+                assumption_type = arr[offset]
+                offset += 1
                 gps, offset = recreate_gp_list(offset)
-                assumptions.append(TrackingAssumption(gps))
+                if assumption_type == 0:
+                    # tracking
+                    assumptions.append(TrackingAssumption(gps))
+                elif assumption_type == 1:
+                    # sum
+                    assumptions.append(SumComponentAssumption(gps))
+                elif assumption_type == 2:
+                    # skew
+                    assumptions.append(SkewComponentAssumption(gps))
+                else:
+                    raise ValueError("Invalid assumption type.")
         return cls(
             obstructions=obstructions,
             requirements=requirements,
@@ -786,7 +809,7 @@ class Tiling(CombinatorialClass):
                 [gptransf(req) for req in reqlist] for reqlist in self.requirements
             ),
             assumptions=(
-                TrackingAssumption(gptransf(gp) for gp in ass.gps)
+                ass.__class__(gptransf(gp) for gp in ass.gps)
                 for ass in self._assumptions
             ),
         )

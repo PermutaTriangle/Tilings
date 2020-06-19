@@ -620,7 +620,6 @@ class ComponentFusionConstructor(FusionConstructor):
 
 class ComponentFusionStrategy(FusionStrategy):
     def __init__(self, row_idx=None, col_idx=None, tracked: bool = False):
-        assert not tracked, "tracking not implemented for component fusion"
         super().__init__(row_idx=row_idx, col_idx=col_idx, tracked=False)
 
     def fusion_algorithm(self, tiling: Tiling) -> Fusion:
@@ -639,8 +638,61 @@ class ComponentFusionStrategy(FusionStrategy):
                 raise StrategyDoesNotApply("Strategy does not apply")
         return ComponentFusionConstructor(
             self._fuse_parameter(comb_class),
-            *self.extra_parameters(comb_class, children),
+            self.extra_parameters(comb_class, children)[0],
+            *self.left_right_both_sided_parameters(comb_class),
         )
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Dict[str, str]]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        raise NotImplementedError
+        # algo = self.fusion_algorithm(comb_class)
+        # child = children[0]
+        # mapped_assumptions = [
+        #     TrackingAssumption(gps) for gps in algo.assumptions_fuse_counters
+        # ]
+        # return (
+        #     {
+        #         k: child.get_parameter(ass)
+        #         for k, ass in zip(comb_class.extra_parameters, mapped_assumptions)
+        #     },
+        # )
+
+    def left_right_both_sided_parameters(
+        self, comb_class: Tiling,
+    ) -> Tuple[Set[str], Set[str], Set[str]]:
+        raise NotImplementedError
+        # left_sided_params: Set[str] = set()
+        # right_sided_params: Set[str] = set()
+        # both_sided_params: Set[str] = set()
+        # algo = self.fusion_algorithm(comb_class)
+        # for assumption in comb_class.assumptions:
+        #     parent_var = comb_class.get_parameter(assumption)
+        #     left_sided = algo.is_left_sided_assumption(assumption)
+        #     right_sided = algo.is_right_sided_assumption(assumption)
+        #     if left_sided and not right_sided:
+        #         left_sided_params.add(parent_var)
+        #     elif right_sided and not left_sided:
+        #         right_sided_params.add(parent_var)
+        #     elif not left_sided and not right_sided:
+        #         both_sided_params.add(parent_var)
+        # return (
+        #     left_sided_params,
+        #     right_sided_params,
+        #     both_sided_params,
+        # )
+
+    def _fuse_parameter(self, comb_class: Tiling) -> str:
+        algo = self.fusion_algorithm(comb_class)
+        child = algo.fused_tiling()
+        fuse_assumption = TrackingAssumption(
+            child.forward_map(gp) for gp in algo.new_assumption().gps
+        )
+        return child.get_parameter(fuse_assumption)
 
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"
@@ -692,7 +744,6 @@ class FusionFactory(StrategyFactory[Tiling]):
 
 class ComponentFusionFactory(StrategyFactory[Tiling]):
     def __init__(self, tracked: bool = False):
-        assert not tracked, "tracking not implemented for component fusion"
         self.tracked = tracked
 
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
@@ -700,17 +751,17 @@ class ComponentFusionFactory(StrategyFactory[Tiling]):
             return
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
-            algo = ComponentFusion(comb_class, row_idx=row_idx)
+            algo = ComponentFusion(comb_class, row_idx=row_idx, tracked=self.tracked)
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield ComponentFusionStrategy(row_idx=row_idx)(
+                yield ComponentFusionStrategy(row_idx=row_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
         for col_idx in range(cols - 1):
-            algo = ComponentFusion(comb_class, col_idx=col_idx)
+            algo = ComponentFusion(comb_class, col_idx=col_idx, tracked=self.tracked)
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield ComponentFusionStrategy(col_idx=col_idx)(
+                yield ComponentFusionStrategy(col_idx=col_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
 

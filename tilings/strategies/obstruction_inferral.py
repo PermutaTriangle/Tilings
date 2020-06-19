@@ -8,7 +8,6 @@ from tilings.algorithms import (
     ObstructionTransitivity,
     SubobstructionInferral,
 )
-from tilings.assumptions import TrackingAssumption
 
 __all__ = [
     "EmptyCellInferralFactory",
@@ -47,17 +46,16 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
         av = children[0]
-        av_mapped_gps = [
-            tuple(
-                av.forward_map(gp)
-                for gp in ass.gps
-                if gp.avoids(*self.gps)
-                and all(cell in av.forward_cell_map for cell in gp.pos)
-            )
-            for ass in comb_class.assumptions
-        ]
         av_mapped_ass = [
-            TrackingAssumption(gps).avoiding(av.obstructions) for gps in av_mapped_gps
+            ass.__class__(
+                tuple(
+                    av.forward_map(gp)
+                    for gp in ass.gps
+                    if gp.avoids(*self.gps)
+                    and all(cell in av.forward_cell_map for cell in gp.pos)
+                )
+            ).avoiding(av.obstructions)
+            for ass in comb_class.assumptions
         ]
         av_params: Dict[str, str] = {}
         for assumption, mapped_assumption in zip(comb_class.assumptions, av_mapped_ass):
