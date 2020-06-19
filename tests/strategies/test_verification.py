@@ -18,9 +18,9 @@ from tilings.strategies import (
     BasicVerificationStrategy,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
+    InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
-    InsertionEncodingVerificationStrategy,
     MonotoneTreeVerificationStrategy,
     OneByOneVerificationStrategy,
     SplittingStrategy,
@@ -352,10 +352,10 @@ class TestLocalVerificationStrategy(CommonTest):
         )
 
 
-class InsertionEncodingVerificationStrategy(CommonTest):
+class TestInsertionEncodingVerificationStrategy(CommonTest):
     @pytest.fixture
     def strategy(self):
-        raise InsertionEncodingVerificationStrategy()
+        return InsertionEncodingVerificationStrategy()
 
     @pytest.fixture
     def formal_step(self):
@@ -406,6 +406,7 @@ class InsertionEncodingVerificationStrategy(CommonTest):
             )
 
     def test_get_genf(self, strategy, enum_verified):
+        x = sympy.Symbol("x")
         expected_gf = (1 - x) / (4 * x ** 2 - 4 * x + 1)
         assert sympy.simplify(strategy.get_genf(enum_verified[0]) - expected_gf) == 0
 
