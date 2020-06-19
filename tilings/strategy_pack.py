@@ -182,7 +182,8 @@ class TileScopePack(StrategyPack):
         name = "insertion_"
         if length > 1:
             name += "length_{}_".format(length)
-        name += "point_placements"
+        partial_str = "partial" if partial else ""
+        name += f"{partial_str}point_placements"
         return TileScopePack(
             initial_strats=[
                 strat.FactorFactory(),
@@ -292,10 +293,13 @@ class TileScopePack(StrategyPack):
         max_placement_rules_per_req: Optional[int] = None,
         partial: bool = False,
     ) -> "TileScopePack":
+        partial_str = "partial_" if partial else ""
         if max_num_req is not None:
-            name = f"only_length_{length}_{max_num_req}_reqs_root_placements"
+            name = (
+                f"only_length_{length}_{max_num_req}_reqs_root_{partial_str}placements"
+            )
         else:
-            name = f"only_length_{length}_root_placements"
+            name = f"only_length_{length}_root_{partial_str}placements"
         placement_factory = strat.RequirementPlacementFactory(
             max_rules_per_req=max_placement_rules_per_req, partial=partial
         )
