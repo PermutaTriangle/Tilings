@@ -14,9 +14,11 @@ We will assume we are always fusing two adjacent columns, and discuss the left
 and right hand sides accordingly.
 """
 from collections import defaultdict
+from functools import reduce
+from operator import mul
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
-from sympy import Eq, Function
+from sympy import Eq, Expr, Function, Number, var
 
 from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -52,8 +54,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                                 fully the right side of the region that is
                                 being fused.
     - both_sided_parameters:    all of the parent parameters which overlap
-                                fully the entire region that is being fused or
-                                not at all. # TODO: better name?
+                                fully the entire region that is being fused
     """
 
     def __init__(
@@ -149,7 +150,54 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         return False
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
-        raise NotImplementedError
+        rhs_func = rhs_funcs[0]
+        subs: Dict[str, Expr] = {
+            child: reduce(mul, [var(k) for k in parent_vars], 1)
+            for child, parent_vars in self.reversed_extra_parameters.items()
+        }
+        left_vars = reduce(
+            mul,
+            [
+                var(k)
+                for k in self.left_sided_parameters
+                if k not in self.parent_fusion_parameters
+            ],
+            1,
+        )
+        right_vars = reduce(
+            mul,
+            [
+                var(k)
+                for k in self.right_sided_parameters
+                if k not in self.parent_fusion_parameters
+            ],
+            1,
+        )
+        p, q = Number(1), Number(1)
+        for parent_fuse_parameter, fuse_type in zip(
+            self.parent_fusion_parameters, self.fusion_types
+        ):
+            if fuse_type in ("left", "both"):
+                p *= var(parent_fuse_parameter)
+            if fuse_type in ("right", "both"):
+                q *= var(parent_fuse_parameter)
+        if left_vars == 1 and right_vars == 1 and p == q:
+            raise NotImplementedError(
+                "Not handled case with no left and right vars, and new fuse "
+                "parameter, or only parent fusion parameter covered entire region"
+            )
+        subs1 = {**subs}
+        subs1[self.fuse_parameter] = q / left_vars
+        subs2 = {**subs}
+        subs2[self.fuse_parameter] = p / right_vars
+        return Eq(
+            lhs_func,
+            (
+                (q * right_vars * rhs_func.subs(subs1, simultaneous=True))
+                - (p * left_vars * rhs_func.subs(subs2, simultaneous=True))
+            )
+            / (q * right_vars - p * left_vars),
+        )
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError

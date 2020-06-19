@@ -1,8 +1,9 @@
 import abc
 from functools import partial
-from typing import Iterator, Optional, Tuple, cast
+from typing import Dict, Iterator, Optional, Tuple, cast
 
 from comb_spec_searcher import StrategyFactory, SymmetryStrategy
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
 
@@ -34,6 +35,34 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
                 derive_empty=False,
                 simplify=False,
             ),
+        )
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Dict[str, str], ...]:
+        if not comb_class.extra_parameters:
+            return super().extra_parameters(comb_class, children)
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        child = children[0]
+        mapped_gps = tuple(
+            tuple(self.gp_transform(comb_class, gp) for gp in ass.gps)
+            for ass in comb_class.assumptions
+        )
+        mapped_assumptions = tuple(
+            TrackingAssumption(gps).avoiding(child.obstructions) for gps in mapped_gps
+        )
+        return (
+            {
+                comb_class.get_parameter(assumption): child.get_parameter(
+                    mapped_assumption
+                )
+                for assumption, mapped_assumption in zip(
+                    comb_class.assumptions, mapped_assumptions
+                )
+            },
         )
 
     def backward_map(

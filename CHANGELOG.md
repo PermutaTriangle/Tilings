@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- add a new `AddAssumptionStrategy` which adds an assumption to a tiling.
+  In practice, when expanding a class, we actually remove an assumption to
+  determine which rules to add.
+- the `get_equations` method is now implemented for the strategies
+  `AddAssumptionStrategy`, `SplittingStrategy`, and `FusionStrategy`.
+- the `extra_paramters` method was implemented for symmetry strategies,
+  allowing these to be used when enumerating tracked trees.
 - Add the `InsertionEncodingVerificationStrategy` which verifies n x 1 and
   1 x n tilings which have a regular topmost or bottommost insertion encoding.
 

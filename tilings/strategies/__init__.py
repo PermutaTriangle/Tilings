@@ -1,3 +1,4 @@
+from .assumption_insertion import AddAssumptionFactory
 from .assumption_splitting import SplittingStrategy
 from .factor import FactorFactory
 from .fusion import ComponentFusionFactory, FusionFactory
@@ -36,6 +37,7 @@ from .verification import (
 
 __all__ = [
     # Assumptions
+    "AddAssumptionFactory",
     "SplittingStrategy",
     # Batch
     "CellInsertionFactory",

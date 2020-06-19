@@ -32,7 +32,12 @@ class Split(Constructor):
         return False
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
-        raise NotImplementedError
+        rhs_func = rhs_funcs[0]
+        subs: Dict[str, str] = {}
+        for parent, children in self.split_parameters.items():
+            for child in children:
+                subs[child] = parent
+        return Eq(lhs_func, rhs_func.subs(subs, simultaneous=True))
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
