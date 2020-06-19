@@ -521,7 +521,7 @@ You can make any pack use the fusion strategy by using the method
        Looking for recursive combinatorial specification with the strategies:
        Inferral: row and column separation, obstruction transitivity
        Initial: splitting the assumptions, factor, requirement corroboration, tracked fusion
-       Verification: verify atoms, one by one verification, locally factorable verification
+       Verification: verify atoms, insertion encoding verified, one by one verification, locally factorable verification
        Set 1: row placement
 
 This particular pack can be used to enumerate ``Av(123)``.

@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Add the `InsertionEncodingVerificationStrategy` which verifies n x 1 and
+  1 x n tilings which have a regular topmost or bottommost insertion encoding.
 
 ## [2.0.0] - 2020-06-17
 ### Added
