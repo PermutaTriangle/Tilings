@@ -20,6 +20,7 @@ from tilings.strategies import (
     ElementaryVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
+    InsertionEncodingVerificationStrategy,
     MonotoneTreeVerificationStrategy,
     OneByOneVerificationStrategy,
     SplittingStrategy,
@@ -349,6 +350,64 @@ class TestLocalVerificationStrategy(CommonTest):
         assert not LocalVerificationStrategy(no_factors=True).verified(
             enum_crossing_req
         )
+
+
+class InsertionEncodingVerificationStrategy(CommonTest):
+    @pytest.fixture
+    def strategy(self):
+        raise InsertionEncodingVerificationStrategy()
+
+    @pytest.fixture
+    def formal_step(self):
+        return "tiling has a regular insertion encoding"
+
+    @pytest.fixture
+    def enum_verified(self):
+        return [
+            Tiling(
+                obstructions=(
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+                    GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                    GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+                ),
+                requirements=(),
+                assumptions=(),
+            )
+        ]
+
+    @pytest.fixture
+    def enum_not_verified(self):
+        return [
+            Tiling(
+                obstructions=(
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+                    GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                    GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+                    GriddedPerm(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
+                ),
+                requirements=(),
+                assumptions=(),
+            )
+        ]
+
+    def test_pack(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            strategy.pack(tiling) == TileScopePack.regular_insertion_encoding(
+                3
+            ).add_initial(SplittingStrategy(ignore_parent=True), apply_first=True)
+
+    @pytest.mark.timeout(60)
+    def test_get_specification(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            assert isinstance(
+                strategy.get_specification(tiling), CombinatorialSpecification
+            )
+
+    def test_get_genf(self, strategy, enum_verified):
+        expected_gf = (1 - x) / (4 * x ** 2 - 4 * x + 1)
+        assert sympy.simplify(strategy.get_genf(enum_verified[0]) - expected_gf) == 0
 
 
 class TestMonotoneTreeVerificationStrategy(CommonTest):

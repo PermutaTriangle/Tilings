@@ -103,10 +103,10 @@ def test_json_encoding(strategy_pack):
 
 def test_fix_one_by_one():
     pack = TileScopePack.point_placements()
-    assert not pack.ver_strats[1].basis
+    assert not pack.ver_strats[2].basis
     fixed_pack = pack.fix_one_by_one([Perm((0, 1, 2, 3))])
-    assert isinstance(pack.ver_strats[1], strat.OneByOneVerificationStrategy)
-    assert not pack.ver_strats[1].basis
+    assert isinstance(pack.ver_strats[2], strat.OneByOneVerificationStrategy)
+    assert not pack.ver_strats[2].basis
     assert isinstance(fixed_pack, TileScopePack)
-    assert isinstance(fixed_pack.ver_strats[1], strat.OneByOneVerificationStrategy)
-    assert fixed_pack.ver_strats[1].basis == (Perm((0, 1, 2, 3)),)
+    assert isinstance(fixed_pack.ver_strats[2], strat.OneByOneVerificationStrategy)
+    assert fixed_pack.ver_strats[2].basis == (Perm((0, 1, 2, 3)),)

@@ -397,7 +397,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
 
     def pack(self, tiling: Tiling) -> StrategyPack:
         try:
-            return InsertionEncodingVerified().pack(tiling)
+            return InsertionEncodingVerificationStrategy().pack(tiling)
         except StrategyDoesNotApply:
             pass
         if self.no_factors:
@@ -465,7 +465,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         return "local verification"
 
 
-class InsertionEncodingVerified(TileScopeVerificationStrategy):
+class InsertionEncodingVerificationStrategy(TileScopeVerificationStrategy):
     """
     Verify all n x 1 and 1 x n tilings that have a regular insertion encoding.
     """
@@ -512,7 +512,7 @@ class InsertionEncodingVerified(TileScopeVerificationStrategy):
         return "tiling has a regular insertion encoding"
 
     @classmethod
-    def from_dict(cls, d: dict) -> "InsertionEncodingVerified":
+    def from_dict(cls, d: dict) -> "InsertionEncodingVerificationStrategy":
         return cls(**d)
 
     def count_objects_of_size(
@@ -553,7 +553,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
 
     def pack(self, tiling: Tiling) -> StrategyPack:
         try:
-            return InsertionEncodingVerified().pack(tiling)
+            return InsertionEncodingVerificationStrategy().pack(tiling)
         except StrategyDoesNotApply:
             pass
         if self.no_factors:
