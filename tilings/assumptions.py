@@ -119,8 +119,7 @@ class ComponentAssumption(TrackingAssumption):
         gps = [GriddedPerm.single_cell(Perm((0,)), cell) for cell in d["cells"]]
         if d.pop("sum"):
             return SumComponentAssumption(gps)
-        else:
-            return SkewComponentAssumption(gps)
+        return SkewComponentAssumption(gps)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, ComponentAssumption) and self.__class__ == other.__class__:

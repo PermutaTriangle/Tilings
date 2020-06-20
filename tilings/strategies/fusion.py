@@ -26,7 +26,6 @@ from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.strategies.constructor import RelianceProfile, SubRecs
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import ComponentFusion, Fusion
-from tilings.assumptions import TrackingAssumption
 
 __all__ = ["FusionStrategy", "ComponentFusionStrategy"]
 

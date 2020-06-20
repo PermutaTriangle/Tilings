@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, Iterator, Optional, Tuple
+from typing import Dict, Iterator, Optional, Tuple
 
 from sympy import Eq, Expr, Function, Number, Symbol, var
 

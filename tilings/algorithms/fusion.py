@@ -429,8 +429,7 @@ class ComponentFusion(Fusion):
             sum_ob = GriddedPerm(Perm((1, 0)), (fcell, scell))
         if sum_ob in self._tiling.obstructions:
             return SumComponentAssumption(gps)
-        else:
-            return SkewComponentAssumption(gps)
+        return SkewComponentAssumption(gps)
 
     def __str__(self):
         s = "ComponentFusion Algorithm for:\n"
