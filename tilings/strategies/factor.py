@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Dict, Iterable, Iterator, Optional, Tuple, cast
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 from sympy import Eq, Function
 
@@ -182,8 +182,77 @@ class Interleaving(CartesianProduct):
 
 
 class FactorWithInterleavingStrategy(FactorStrategy):
+    def __init__(
+        self,
+        partition: Iterable[Iterable[Cell]],
+        ignore_parent: bool = True,
+        workable: bool = True,
+        tracked: bool = True,
+    ):
+        self.tracked = tracked
+        super().__init__(partition, ignore_parent, workable)
+
+    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
+        if not self.tracked:
+            return super().decomposition_function(tiling)
+        cols, rows = self._interleaving_rows_and_cols()
+        return tuple(
+            tiling.sub_tiling(
+                cells, add_assumptions=self._assumptions_to_add(cells, cols, rows)
+            )
+            for cells in self.partition
+        )
+
+    @staticmethod
+    def _assumptions_to_add(
+        cells: Tuple[Cell, ...], cols: Set[int], rows: Set[int]
+    ) -> Tuple[TrackingAssumption, ...]:
+        """
+        Return the assumption that should be tracked if we are interleaving
+        the given rows and cols.
+        """
+        col_assumptions = [
+            TrackingAssumption(
+                [
+                    GriddedPerm.single_cell(Perm((0,)), cell)
+                    for cell in cells
+                    if x == cell[0]
+                ]
+            )
+            for x in cols
+        ]
+        row_assumptions = [
+            TrackingAssumption(
+                [
+                    GriddedPerm.single_cell(Perm((0,)), cell)
+                    for cell in cells
+                    if y == cell[1]
+                ]
+            )
+            for y in rows
+        ]
+        return tuple(ass for ass in chain(col_assumptions, row_assumptions) if ass.gps)
+
+    def _interleaving_rows_and_cols(self) -> Tuple[Set[int], Set[int]]:
+        """
+        Return the set of cols and the set of rows that are being interleaved.
+        """
+        cols: Set[int] = set()
+        rows: Set[int] = set()
+        x_seen: Set[int] = set()
+        y_seen: Set[int] = set()
+        for part in self.partition:
+            cols.update(x for x, _ in part if x in x_seen)
+            rows.update(y for _, y in part if y in y_seen)
+            x_seen.update(x for x, _ in part)
+            y_seen.update(y for _, y in part)
+        return cols, rows
+
+    def formal_step(self) -> str:
+        return "interleaving " + super().formal_step()
+
     def constructor(
-        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Interleaving:
         if children is None:
             children = self.decomposition_function(tiling)
@@ -204,6 +273,21 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm, ...]:
         raise NotImplementedError
+
+    def to_jsonable(self) -> dict:
+        """Return a dictionary form of the strategy."""
+        d: dict = super().to_jsonable()
+        d["tracked"] = self.tracked
+        return d
+
+    def __str__(self) -> str:
+        return ("tracked " if self.tracked else "") + "interleaving factors"
+
+    def __repr__(self) -> str:
+        return (
+            self.__class__.__name__
+            + f"(partition={self.partition}, workable={self.workable}, tracked={self.tracked})"
+        )
 
 
 class MonotoneInterleaving(Interleaving):
@@ -236,6 +320,7 @@ class FactorFactory(StrategyFactory[Tiling]):
         unions: bool = False,
         ignore_parent: bool = True,
         workable: bool = True,
+        tracked: bool = True,
     ) -> None:
         try:
             self.factor_algo, self.factor_class = self.FACTOR_ALGO_AND_CLASS[
@@ -250,6 +335,21 @@ class FactorFactory(StrategyFactory[Tiling]):
         self.unions = unions
         self.ignore_parent = ignore_parent
         self.workable = workable
+        self.tracked = tracked and self.factor_class in (
+            FactorWithInterleavingStrategy,
+            FactorWithMonotoneInterleaving,
+        )
+
+    @staticmethod
+    def interleaving_components(components: Iterable[Iterable[Cell]]) -> bool:
+        x_seen: Set[int] = set()
+        y_seen: Set[int] = set()
+        for component in components:
+            if any(x in x_seen or y in y_seen for x, y in component):
+                return True
+            x_seen.update(x for x, _ in component)
+            y_seen.update(y for _, y in component)
+        return False
 
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Strategy]:
         factor_algo = self.factor_algo(comb_class)
@@ -260,12 +360,28 @@ class FactorFactory(StrategyFactory[Tiling]):
                     components = tuple(
                         tuple(chain.from_iterable(part)) for part in partition
                     )
-                    yield self.factor_class(
-                        components, ignore_parent=self.ignore_parent, workable=False
-                    )
-            yield self.factor_class(
-                min_comp, ignore_parent=self.ignore_parent, workable=self.workable
-            )
+                    if self.interleaving_components(components):
+                        yield FactorWithInterleavingStrategy(
+                            components,
+                            ignore_parent=self.ignore_parent,
+                            workable=False,
+                            tracked=True,
+                        )
+                    else:
+                        yield FactorStrategy(
+                            components, ignore_parent=self.ignore_parent, workable=False
+                        )
+            if self.interleaving_components(min_comp):
+                yield FactorWithInterleavingStrategy(
+                    min_comp,
+                    ignore_parent=self.ignore_parent,
+                    workable=self.workable,
+                    tracked=self.tracked,
+                )
+            else:
+                yield FactorStrategy(
+                    min_comp, ignore_parent=self.ignore_parent, workable=self.workable
+                )
 
     def __str__(self) -> str:
         if self.factor_class is FactorStrategy:
@@ -278,6 +394,8 @@ class FactorFactory(StrategyFactory[Tiling]):
             raise Exception("Invalid interleaving type")
         if self.unions:
             s = "unions of " + s
+        if self.tracked:
+            s = "tracked " + s
         return s
 
     def __repr__(self) -> str:
@@ -304,6 +422,7 @@ class FactorFactory(StrategyFactory[Tiling]):
         d["unions"] = self.unions
         d["ignore_parent"] = self.ignore_parent
         d["workable"] = self.workable
+        d["tracked"] = self.tracked
         return d
 
     @classmethod
