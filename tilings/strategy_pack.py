@@ -182,7 +182,7 @@ class TileScopePack(StrategyPack):
         name = "insertion_"
         if length > 1:
             name += "length_{}_".format(length)
-        partial_str = "partial" if partial else ""
+        partial_str = "partial_" if partial else ""
         name += f"{partial_str}point_placements"
         return TileScopePack(
             initial_strats=[
