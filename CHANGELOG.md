@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   allowing these to be used when enumerating tracked trees.
 - Add the `InsertionEncodingVerificationStrategy` which verifies n x 1 and
   1 x n tilings which have a regular topmost or bottommost insertion encoding.
+- add partial flag to `insertion_point_placements` and
+  `insertion_row_and_col_placements`
+
+### Fixed
+- untracked fusion packs don't add assumption strategies
+- the length parameter for `all_the_strategies` is passed correctly to the
+  requirement insertion strategy.
 
 ## [2.0.0] - 2020-06-17
 ### Added
