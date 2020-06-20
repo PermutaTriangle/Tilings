@@ -525,7 +525,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         child = children[0]
         mapped_assumptions = [
-            TrackingAssumption(gps) for gps in algo.assumptions_fuse_counters
+            ass.__class__(gps)
+            for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
         ]
         return (
             {
@@ -560,9 +561,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def _fuse_parameter(self, comb_class: Tiling) -> str:
         algo = self.fusion_algorithm(comb_class)
         child = algo.fused_tiling()
-        fuse_assumption = TrackingAssumption(
-            child.forward_map(gp) for gp in algo.new_assumption().gps
-        )
+        ass = algo.new_assumption()
+        fuse_assumption = ass.__class__(child.forward_map(gp) for gp in ass.gps)
         return child.get_parameter(fuse_assumption)
 
     def formal_step(self) -> str:
@@ -614,85 +614,11 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         return cls(**d)
 
 
-class ComponentFusionConstructor(FusionConstructor):
-    pass
-
-
 class ComponentFusionStrategy(FusionStrategy):
-    def __init__(self, row_idx=None, col_idx=None, tracked: bool = False):
-        super().__init__(row_idx=row_idx, col_idx=col_idx, tracked=False)
-
     def fusion_algorithm(self, tiling: Tiling) -> Fusion:
-        return ComponentFusion(tiling, row_idx=self.row_idx, col_idx=self.col_idx)
-
-    def constructor(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> ComponentFusionConstructor:
-        if not self.tracked:
-            # constructor only enumerates when tracked.
-            return ComponentFusionConstructor("n", {}, tuple(), tuple(), tuple())
-        # TODO: extra parameters?
-        if children is None:
-            children = self.decomposition_function(comb_class)
-            if children is None:
-                raise StrategyDoesNotApply("Strategy does not apply")
-        return ComponentFusionConstructor(
-            self._fuse_parameter(comb_class),
-            self.extra_parameters(comb_class, children)[0],
-            *self.left_right_both_sided_parameters(comb_class),
+        return ComponentFusion(
+            tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked
         )
-
-    def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Tuple[Dict[str, str]]:
-        if children is None:
-            children = self.decomposition_function(comb_class)
-            if children is None:
-                raise StrategyDoesNotApply("Strategy does not apply")
-        raise NotImplementedError
-        # algo = self.fusion_algorithm(comb_class)
-        # child = children[0]
-        # mapped_assumptions = [
-        #     TrackingAssumption(gps) for gps in algo.assumptions_fuse_counters
-        # ]
-        # return (
-        #     {
-        #         k: child.get_parameter(ass)
-        #         for k, ass in zip(comb_class.extra_parameters, mapped_assumptions)
-        #     },
-        # )
-
-    def left_right_both_sided_parameters(
-        self, comb_class: Tiling,
-    ) -> Tuple[Set[str], Set[str], Set[str]]:
-        raise NotImplementedError
-        # left_sided_params: Set[str] = set()
-        # right_sided_params: Set[str] = set()
-        # both_sided_params: Set[str] = set()
-        # algo = self.fusion_algorithm(comb_class)
-        # for assumption in comb_class.assumptions:
-        #     parent_var = comb_class.get_parameter(assumption)
-        #     left_sided = algo.is_left_sided_assumption(assumption)
-        #     right_sided = algo.is_right_sided_assumption(assumption)
-        #     if left_sided and not right_sided:
-        #         left_sided_params.add(parent_var)
-        #     elif right_sided and not left_sided:
-        #         right_sided_params.add(parent_var)
-        #     elif not left_sided and not right_sided:
-        #         both_sided_params.add(parent_var)
-        # return (
-        #     left_sided_params,
-        #     right_sided_params,
-        #     both_sided_params,
-        # )
-
-    def _fuse_parameter(self, comb_class: Tiling) -> str:
-        algo = self.fusion_algorithm(comb_class)
-        child = algo.fused_tiling()
-        fuse_assumption = TrackingAssumption(
-            child.forward_map(gp) for gp in algo.new_assumption().gps
-        )
-        return child.get_parameter(fuse_assumption)
 
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"
