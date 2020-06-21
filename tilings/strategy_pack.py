@@ -3,7 +3,6 @@ from typing import Iterable, Optional
 from logzero import logger
 
 from comb_spec_searcher import StrategyPack
-from comb_spec_searcher.strategies import AbstractStrategy
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import strategies as strat
@@ -38,17 +37,6 @@ class TileScopePack(StrategyPack):
             iterative=self.iterative,
         )
 
-    def make_tracked(self):
-        """Add assumption tracking strategies."""
-        pack = self
-        if strat.SplittingStrategy() not in self:
-            pack = pack.add_initial(
-                strat.SplittingStrategy(ignore_parent=True), apply_first=True
-            )
-        if strat.AddAssumptionFactory() not in self:
-            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
-        return pack
-
     def make_fusion(
         self, component: bool = False, tracked: bool = True
     ) -> "TileScopePack":
@@ -57,47 +45,18 @@ class TileScopePack(StrategyPack):
             component and tracked
         ), "not implemented tracking for component fusion"
         pack = self
-        if tracked:
-            pack = pack.make_tracked()
+        if tracked and strat.SplittingStrategy() not in self:
+            pack = pack.add_initial(
+                strat.SplittingStrategy(ignore_parent=True), apply_first=True
+            )
+        if tracked and strat.AddAssumptionFactory() not in self:
+            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
         if component:
             pack = pack.add_initial(
                 strat.ComponentFusionFactory(tracked=tracked), "component_fusion"
             )
         else:
             pack = pack.add_initial(strat.FusionFactory(tracked=tracked), "fusion")
-        return pack
-
-    def make_interleaving(self, tracked=True) -> "TileScopePack":
-        """
-        Return a new pack where the factor strategy is replaced with an
-        interleaving factor strategy.
-        """
-
-        def replace_list(strats):
-            """Return a new list with the replaced 1x1 strat."""
-            res = []
-            for strategy in strats:
-                if isinstance(strategy, strat.FactorFactory):
-                    d = strategy.to_jsonable()
-                    d["interleaving"] = "all"
-                    d["tracked"] = tracked
-                    res.append(AbstractStrategy.from_dict(d))
-                else:
-                    res.append(strategy)
-            return res
-
-        pack = self.__class__(
-            ver_strats=replace_list(self.ver_strats),
-            inferral_strats=replace_list(self.inferral_strats),
-            initial_strats=replace_list(self.initial_strats),
-            expansion_strats=list(map(replace_list, self.expansion_strats)),
-            name=self.name + "_interleaving",
-            symmetries=self.symmetries,
-            iterative=self.iterative,
-        )
-        if tracked:
-            pack = pack.make_tracked()
-
         return pack
 
     def make_elementary(self) -> "TileScopePack":
