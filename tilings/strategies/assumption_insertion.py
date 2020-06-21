@@ -1,3 +1,4 @@
+from itertools import chain, product
 from typing import Dict, Iterable, Iterator, Optional, Tuple
 
 from sympy import Eq, Expr, Function, Number, Symbol, var
@@ -17,19 +18,25 @@ from comb_spec_searcher.strategies.constructor import (
     SubSamplers,
 )
 from tilings import GriddedPerm, Tiling
+from tilings.algorithms import FactorWithInterleaving
 from tilings.assumptions import TrackingAssumption
+from tilings.misc import partitions_iterator
+
+from .factor import assumptions_to_add, interleaving_rows_and_cols
+
+Cell = Tuple[int, int]
 
 
-class AddAssumptionConstructor(Constructor):
+class AddAssumptionsConstructor(Constructor):
     """
     The constructor used to count when a new variable is added.
     """
 
-    def __init__(self, new_parameter: str, extra_parameters: Dict[str, str]):
+    def __init__(self, new_parameters: Iterable[str], extra_parameters: Dict[str, str]):
         #  parent parameter -> child parameter mapping
         self.extra_parameters = extra_parameters
         #  the paramater that was added, to count we must sum over all possible values
-        self.new_parameter = new_parameter
+        self.new_parameters = tuple(new_parameters)
 
     def is_equivalence(self) -> bool:
         return False
@@ -39,7 +46,8 @@ class AddAssumptionConstructor(Constructor):
         subs: Dict[Symbol, Expr] = {
             var(child): var(parent) for parent, child in self.extra_parameters.items()
         }
-        subs[self.new_parameter] = Number(1)
+        for k in self.new_parameters:
+            subs[k] = Number(1)
         return Eq(lhs_func, rhs_func.subs(subs, simultaneous=True))
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
@@ -49,8 +57,9 @@ class AddAssumptionConstructor(Constructor):
         subrec = subrecs[0]
         new_params = {self.extra_parameters[k]: val for k, val in parameters.items()}
         res = 0
-        for i in range(n + 1):
-            new_params[self.new_parameter] = i
+        for values in product(*[range(n + 1) for _ in self.new_parameters]):
+            for k, val in zip(self.new_parameters, values):
+                new_params[k] = val
             res += subrec(n, **new_params)
         return res
 
@@ -74,26 +83,29 @@ class AddAssumptionConstructor(Constructor):
         return "↣"
 
 
-class AddAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
-    def __init__(self, gps: Iterable[GriddedPerm]):
-        self.assumption = TrackingAssumption(gps)
+class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
+    def __init__(self, assumptions: Iterable[TrackingAssumption], workable=False):
+        self.assumptions = tuple(assumptions)
         super().__init__(
-            ignore_parent=False, inferrable=True, possibly_empty=False, workable=False
+            ignore_parent=False,
+            inferrable=True,
+            possibly_empty=False,
+            workable=workable,
         )
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
-        return (tiling.add_assumption(self.assumption),)
+        return (tiling.add_assumptions(self.assumptions),)
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> AddAssumptionConstructor:
+    ) -> AddAssumptionsConstructor:
         if children is None:
             children = self.decomposition_function(comb_class)
             if children is None:
                 raise StrategyDoesNotApply("Can't split the tracking assumption")
-        new_parameter = children[0].get_parameter(self.assumption)
-        return AddAssumptionConstructor(
-            new_parameter, self.extra_parameters(comb_class, children)[0]
+        new_parameters = [children[0].get_parameter(ass) for ass in self.assumptions]
+        return AddAssumptionsConstructor(
+            new_parameters, self.extra_parameters(comb_class, children)[0]
         )
 
     def extra_parameters(
@@ -112,9 +124,10 @@ class AddAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         )
 
     def formal_step(self) -> str:
-        return "adding the assumption can count occurrences of " + ", ".join(
-            str(p) for p in self.assumption.gps
-        )
+        if len(self.assumptions) == 1:
+            return f"adding the assumption '{self.assumptions[0]}"
+        assumptions = ", ".join([f"'{ass}'" for ass in self.assumptions])
+        return f"adding the assumptions '{assumptions}'"
 
     def backward_map(
         self,
@@ -150,18 +163,18 @@ class AddAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         d.pop("ignore_parent")
         d.pop("inferrable")
         d.pop("possibly_empty")
-        d.pop("workable")
-        d["gps"] = [gp.to_jsonable() for gp in self.assumption.gps]
+        d["assumptions"] = [ass.to_jsonable() for ass in self.assumptions]
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "AddAssumptionStrategy":
-        gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
-        return cls(gps)
+    def from_dict(cls, d: dict) -> "AddAssumptionsStrategy":
+        assumptions = [TrackingAssumption.from_dict(ass) for ass in d["gps"]]
+        return cls(assumptions)
 
     def __repr__(self):
-        return self.__class__.__name__ + "(gps={})".format(
-            repr(tuple(self.assumption.gps))
+        return (
+            self.__class__.__name__
+            + f"(assumptions={repr(self.assumptions)}, workable={self.workable})"
         )
 
 
@@ -169,7 +182,7 @@ class AddAssumptionFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         for assumption in comb_class.assumptions:
             without = comb_class.remove_assumption(assumption)
-            strategy = AddAssumptionStrategy(assumption.gps)
+            strategy = AddAssumptionsStrategy((assumption,))
             yield strategy(without)
 
     def __repr__(self) -> str:
@@ -185,3 +198,48 @@ class AddAssumptionFactory(StrategyFactory[Tiling]):
     @classmethod
     def from_dict(cls, d: dict) -> "AddAssumptionFactory":
         return cls()
+
+
+class AddInterleavingAssumptionFactory(StrategyFactory[Tiling]):
+    def __init__(self, unions: bool = True):
+        self.unions = unions
+
+    # TODO: unions? monotone?
+    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
+        factor_algo = FactorWithInterleaving(comb_class)
+        if factor_algo.factorable():
+            min_comp = tuple(tuple(part) for part in factor_algo.get_components())
+            if self.unions:
+                for partition in partitions_iterator(min_comp):
+                    components = tuple(
+                        tuple(chain.from_iterable(part)) for part in partition
+                    )
+                    cols, rows = interleaving_rows_and_cols(components)
+                    assumptions = chain.from_iterable(
+                        assumptions_to_add(cells, cols, rows) for cells in components
+                    )
+                    if assumptions:
+                        strategy = AddAssumptionsStrategy(assumptions, workable=True)
+                        yield strategy(comb_class)
+            cols, rows = interleaving_rows_and_cols(min_comp)
+            assumptions = chain.from_iterable(
+                assumptions_to_add(cells, cols, rows) for cells in min_comp
+            )
+            if assumptions:
+                strategy = AddAssumptionsStrategy(assumptions, workable=True)
+                yield strategy(comb_class)
+
+    def __repr__(self) -> str:
+        return self.__class__.__name__ + "()"
+
+    def __str__(self) -> str:
+        return "add interleaving assumptions to factor"
+
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["unions"] = self.unions
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "AddInterleavingAssumptionFactory":
+        return cls(**d)

@@ -95,7 +95,11 @@ class TileScopePack(StrategyPack):
             symmetries=self.symmetries,
             iterative=self.iterative,
         )
+
         if tracked:
+            pack = pack.add_initial(
+                strat.AddInterleavingAssumptionFactory(), apply_first=True
+            )
             pack = pack.make_tracked()
 
         return pack

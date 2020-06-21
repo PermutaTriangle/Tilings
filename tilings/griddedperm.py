@@ -44,6 +44,11 @@ class GriddedPerm(CombinatorialObject):
         """Construct the empty gridded permutation."""
         return cls(Perm(tuple()), tuple())
 
+    @classmethod
+    def point_perm(cls, cell: Cell) -> "GriddedPerm":
+        """Construct the point gridded permutation using the cell."""
+        return cls(Perm((0,)), (cell,))
+
     def contradictory(self) -> bool:
         """Checks if the points of the griddedperm contradict the permutation.
 

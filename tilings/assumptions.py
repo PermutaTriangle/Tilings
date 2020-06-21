@@ -69,6 +69,9 @@ class TrackingAssumption:
         return self.__class__.__name__ + "({})".format(self.gps)
 
     def __str__(self):
-        return "can count occurrences of\n{}".format(
-            "\n".join(str(gp) for gp in self.gps)
+        if all(len(gp) == 1 for gp in self.gps):
+            cells = ", ".join(str(gp.pos[0]) for gp in self.gps)
+            return f"can count points in cell{'s' if len(self.gps) > 1 else ''} {cells}"
+        return "can count occurrences of{}".format(
+            ", ".join(str(gp) for gp in self.gps)
         )
