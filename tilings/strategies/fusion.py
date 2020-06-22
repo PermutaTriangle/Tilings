@@ -691,7 +691,7 @@ class ComponentFusionFactory(StrategyFactory[Tiling]):
                 )
 
     def __str__(self) -> str:
-        return "component fusion"
+        return f"{'tracked ' if self.tracked else ''}component fusion"
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + "()"
