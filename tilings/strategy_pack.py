@@ -42,11 +42,11 @@ class TileScopePack(StrategyPack):
     ) -> "TileScopePack":
         """Create a new pack by adding fusion to the current pack."""
         pack = self
-        if strat.SplittingStrategy() not in self:
+        if tracked and strat.SplittingStrategy() not in self:
             pack = pack.add_initial(
                 strat.SplittingStrategy(ignore_parent=True), apply_first=True
             )
-        if strat.AddAssumptionFactory() not in self:
+        if tracked and strat.AddAssumptionFactory() not in self:
             pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
         if component:
             pack = pack.add_initial(
@@ -91,7 +91,7 @@ class TileScopePack(StrategyPack):
     def all_the_strategies(cls, length: int = 1) -> "TileScopePack":
         return TileScopePack(
             initial_strats=[
-                strat.FactorFactory(unions=True),
+                strat.FactorFactory(unions=False),
                 strat.RequirementCorroborationFactory(),
             ],
             ver_strats=[
@@ -105,10 +105,7 @@ class TileScopePack(StrategyPack):
                 strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
-                [
-                    strat.CellInsertionFactory(maxreqlen=length),
-                    strat.RequirementInsertionFactory(),
-                ],
+                [strat.RequirementInsertionFactory(maxreqlen=length)],
                 [strat.AllPlacementsFactory()],
             ],
             name="all_the_strategies",
@@ -176,11 +173,14 @@ class TileScopePack(StrategyPack):
         )
 
     @classmethod
-    def insertion_point_placements(cls, length: int = 1) -> "TileScopePack":
+    def insertion_point_placements(
+        cls, length: int = 1, partial: bool = False
+    ) -> "TileScopePack":
         name = "insertion_"
         if length > 1:
             name += "length_{}_".format(length)
-        name += "point_placements"
+        partial_str = "partial_" if partial else ""
+        name += f"{partial_str}point_placements"
         return TileScopePack(
             initial_strats=[
                 strat.FactorFactory(),
@@ -197,7 +197,7 @@ class TileScopePack(StrategyPack):
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityFactory(),
             ],
-            expansion_strats=[[strat.PatternPlacementFactory()]],
+            expansion_strats=[[strat.PatternPlacementFactory(partial=partial)]],
             name=name,
         )
 
@@ -273,9 +273,9 @@ class TileScopePack(StrategyPack):
 
     @classmethod
     def insertion_row_and_col_placements(
-        cls, row_only=False, col_only=False
+        cls, row_only: bool = False, col_only: bool = False, partial: bool = False
     ) -> "TileScopePack":
-        pack = cls.row_and_col_placements(row_only, col_only)
+        pack = cls.row_and_col_placements(row_only, col_only, partial)
         pack.name = "insertion_" + pack.name
         pack = pack.add_initial(
             strat.CellInsertionFactory(maxreqlen=1, ignore_parent=True)
@@ -288,13 +288,17 @@ class TileScopePack(StrategyPack):
         length: int = 3,
         max_num_req: Optional[int] = 1,
         max_placement_rules_per_req: Optional[int] = None,
+        partial: bool = False,
     ) -> "TileScopePack":
+        partial_str = "partial_" if partial else ""
         if max_num_req is not None:
-            name = f"only_length_{length}_{max_num_req}_reqs_root_placements"
+            name = (
+                f"only_length_{length}_{max_num_req}_reqs_root_{partial_str}placements"
+            )
         else:
-            name = f"only_length_{length}_root_placements"
+            name = f"only_length_{length}_root_{partial_str}placements"
         placement_factory = strat.RequirementPlacementFactory(
-            max_rules_per_req=max_placement_rules_per_req
+            max_rules_per_req=max_placement_rules_per_req, partial=partial
         )
         return TileScopePack(
             initial_strats=[

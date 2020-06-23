@@ -37,10 +37,10 @@ def length(pack):
     return [pack(length=length) for length in (1, 2, 3)]
 
 
-def length_maxnumreq(pack):
+def length_maxnumreq_partial(pack):
     return [
-        pack(length=length, max_num_req=max_num_req)
-        for length, max_num_req in product((1, 2, 3), (1, 2, 3),)
+        pack(length=length, max_num_req=max_num_req, partial=partial)
+        for length, max_num_req, partial in product((1, 2, 3), (1, 2, 3), (True, False))
     ]
 
 
@@ -55,10 +55,6 @@ def directions(pack):
     return [pack(direction=direction) for direction in DIRS]
 
 
-def row_col(pack):
-    return [pack(), pack(row_only=True), pack(col_only=True)]
-
-
 def row_col_partial(pack):
     return [
         pack(row_only=row_only, col_only=col_only, partial=partial)
@@ -71,9 +67,9 @@ def row_col_partial(pack):
 
 packs = (
     length(TileScopePack.all_the_strategies)
-    + length(TileScopePack.insertion_point_placements)
-    + row_col(TileScopePack.insertion_row_and_col_placements)
-    + length_maxnumreq(TileScopePack.only_root_placements)
+    + length_partial(TileScopePack.insertion_point_placements)
+    + row_col_partial(TileScopePack.insertion_row_and_col_placements)
+    + length_maxnumreq_partial(TileScopePack.only_root_placements)
     + [
         TileScopePack.only_root_placements(
             length=3, max_num_req=2, max_placement_rules_per_req=100
@@ -92,6 +88,7 @@ packs.extend(
     + [pack.make_fusion() for pack in packs]
     + [pack.add_all_symmetry() for pack in packs]
     + [pack.make_database().add_all_symmetry() for pack in packs]
+    + [pack.make_fusion().add_all_symmetry() for pack in packs]
 )
 
 
