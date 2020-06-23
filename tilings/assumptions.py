@@ -1,6 +1,7 @@
 import abc
+from importlib import import_module
 from itertools import chain
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Type
 
 from permuta import Perm
 
@@ -48,14 +49,25 @@ class TrackingAssumption:
         return len(list(chain.from_iterable(p.occurrences_in(gp) for p in self.gps)))
 
     def to_jsonable(self) -> dict:
-        return {"gps": [gp.to_jsonable() for gp in self.gps]}
+        """Return a dictionary form of the assumption."""
+        c = self.__class__
+        return {
+            "class_module": c.__module__,
+            "assumption": c.__name__,
+            "gps": [gp.to_jsonable() for gp in self.gps],
+        }
 
     @classmethod
-    def from_dict(cls, d: dict) -> Union["TrackingAssumption", "ComponentAssumption"]:
-        if "cells" in d:
-            return ComponentAssumption.from_dict(d)
+    @abc.abstractmethod
+    def from_dict(cls, d: dict) -> "TrackingAssumption":
+        """Return the assumption from the json dict representation."""
+        module = import_module(d["class_module"])
+        AssClass: Type["TrackingAssumption"] = getattr(module, d["assumption"])
+        assert issubclass(
+            AssClass, TrackingAssumption
+        ), "Not a valid CombinatorialClass"
         gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
-        return cls(gps)
+        return AssClass(gps)
 
     def __eq__(self, other) -> bool:
         if other.__class__ == TrackingAssumption:
@@ -84,7 +96,7 @@ class TrackingAssumption:
 
 class ComponentAssumption(TrackingAssumption):
     """
-    An assumption used to keep track of the number of omponents in a
+    An assumption used to keep track of the number of components in a
     region of a tiling.
 
     In order to inherit from TrackingAssumption, the set of cells should be
@@ -97,29 +109,17 @@ class ComponentAssumption(TrackingAssumption):
         assert all(len(gp) == 1 for gp in self.gps)
         self.cells = frozenset(gp.pos[0] for gp in self.gps)
 
-    @abc.abstractproperty
-    def decomposition(self):
+    @abc.abstractmethod
+    def decomposition(self, perm: Perm) -> List[Perm]:
+        """Count the number of component in a permutation."""
         pass
 
     def get_value(self, gp: GriddedPerm) -> int:
         """
-        Return the number of occurrences of each of the gridded perms being track in
-        the gridded perm gp.
+        Return the number of components in the tracked region of the gridded perm.
         """
         subgp = gp.get_gridded_perm_in_cells(self.cells)
         return len(self.decomposition(subgp.patt))
-
-    def to_jsonable(self) -> dict:
-        return {"cells": tuple(self.cells)}
-
-    @classmethod
-    def from_dict(
-        cls, d: dict
-    ) -> Union["SumComponentAssumption", "SkewComponentAssumption"]:
-        gps = [GriddedPerm.single_cell(Perm((0,)), cell) for cell in d["cells"]]
-        if d.pop("sum"):
-            return SumComponentAssumption(gps)
-        return SkewComponentAssumption(gps)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, ComponentAssumption) and self.__class__ == other.__class__:
@@ -153,12 +153,7 @@ class SumComponentAssumption(ComponentAssumption):
                 curr_block_start_idx = idx + 1
         return res
 
-    decomposition = sum_decomposition
-
-    def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
-        d["sum"] = True
-        return d
+    decomposition = Perm.sum_decomposition
 
     def __str__(self):
         return f"can count sum components in cells {self.cells}"
@@ -184,12 +179,7 @@ class SkewComponentAssumption(ComponentAssumption):
                 curr_block_start_idx = idx + 1
         return res
 
-    decomposition = skew_decomposition
-
-    def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
-        d["sum"] = False
-        return d
+    decomposition = Perm.skew_decomposition
 
     def __str__(self):
         return f"can count skew components in cells {self.cells}"

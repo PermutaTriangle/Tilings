@@ -413,16 +413,11 @@ class ComponentFusion(Fusion):
 
     def new_assumption(self):
         """
-        Return the assumption that needs to counted in order to enumerate.
+        Return the assumption that needs to be counted in order to enumerate.
         """
-        gps = (
-            GriddedPerm.single_cell(Perm((0,)), cell)
-            for cell in self._tiling.active_cells
-            if (self._fuse_row and cell[1] == self._row_idx)
-            or (not self._fuse_row and cell[0] == self._col_idx)
-        )
         fcell = self.first_cell
         scell = self.second_cell
+        gps = (GriddedPerm.single_cell(Perm((0,)), fcell),)
         if self._fuse_row:
             sum_ob = GriddedPerm(Perm((1, 0)), (scell, fcell))
         else:
