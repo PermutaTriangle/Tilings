@@ -64,7 +64,7 @@ class TrackingAssumption:
         AssClass: Type["TrackingAssumption"] = getattr(module, d["assumption"])
         assert issubclass(
             AssClass, TrackingAssumption
-        ), "Not a valid CombinatorialClass"
+        ), "Not a valid TrackingAssumption"
         gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
         return AssClass(gps)
 
