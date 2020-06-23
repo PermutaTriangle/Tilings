@@ -58,7 +58,6 @@ class TrackingAssumption:
         }
 
     @classmethod
-    @abc.abstractmethod
     def from_dict(cls, d: dict) -> "TrackingAssumption":
         """Return the assumption from the json dict representation."""
         module = import_module(d["class_module"])
@@ -112,7 +111,6 @@ class ComponentAssumption(TrackingAssumption):
     @abc.abstractmethod
     def decomposition(self, perm: Perm) -> List[Perm]:
         """Count the number of component in a permutation."""
-        pass
 
     def get_value(self, gp: GriddedPerm) -> int:
         """
