@@ -135,21 +135,6 @@ class ComponentAssumption(TrackingAssumption):
 
 
 class SumComponentAssumption(ComponentAssumption):
-    @staticmethod
-    def sum_decomposition(perm: Perm) -> List[Perm]:
-        """
-        Return the sum decomposition of the permutation.
-        TODO: this method should be on permuta.
-        """
-        res: List[Perm] = []
-        max_val = -1
-        curr_block_start_idx = 0
-        for idx, val in enumerate(perm):
-            max_val = max(max_val, val)
-            if idx == max_val:
-                res.append(Perm.to_standard(perm[curr_block_start_idx : idx + 1]))
-                curr_block_start_idx = idx + 1
-        return res
 
     decomposition = Perm.sum_decomposition
 
@@ -160,22 +145,7 @@ class SumComponentAssumption(ComponentAssumption):
         return hash(self.gps)
 
 
-class SkewComponentAssumption(ComponentAssumption):
-    @staticmethod
-    def skew_decomposition(perm: Perm) -> List[Perm]:
-        """
-        Return the skew decomposition of the permutation.
-        TODO: this method should be on permuta.
-        """
-        res: List[Perm] = []
-        min_val = len(perm) + 1
-        curr_block_start_idx = 0
-        for idx, val in enumerate(perm):
-            min_val = min(min_val, val)
-            if len(perm) - idx - 1 == min_val:
-                res.append(Perm.to_standard(perm[curr_block_start_idx : idx + 1]))
-                curr_block_start_idx = idx + 1
-        return res
+class SkewComponentAssumption(ComponentAssumption): 
 
     decomposition = Perm.skew_decomposition
 
