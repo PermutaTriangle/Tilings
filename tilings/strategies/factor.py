@@ -20,6 +20,7 @@ from tilings.algorithms import (
     FactorWithInterleaving,
     FactorWithMonotoneInterleaving,
 )
+from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
 from tilings.misc import multinomial, partitions_iterator
 
@@ -214,6 +215,24 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
         super().__init__(children, extra_parameters)
         self.interleaving_parameters = tuple(interleaving_parameters)
 
+    @classmethod
+    def untracked(
+        cls, children: Iterable[Tiling], extra_parameters: Tuple[Dict[str, str], ...]
+    ) -> "Interleaving":
+        res = cls(children, extra_parameters, [])
+
+        def f(*args, **kwargs):
+            raise NotImplementedError(
+                "enumeration for untracked interleaving factors is not implemented"
+            )
+
+        # Overwriting methods is bad practice, but useful here!
+        res.get_recurrence = f  # type: ignore
+        res.get_equation = f  # type: ignore
+        res.get_sub_objects = f  # type: ignore
+        res.random_sample_sub_objects = f  # type: ignore
+        return res
+
     @staticmethod
     def is_equivalence() -> bool:
         return False
@@ -271,27 +290,29 @@ class FactorWithInterleavingStrategy(FactorStrategy):
     ) -> Interleaving:
         if children is None:
             children = self.decomposition_function(tiling)
+        try:
+            interleaving_parameters = self.interleaving_parameters(tiling)
+        except ValueError:
+            # must be untracked
+            return Interleaving.untracked(
+                children, self.extra_parameters(tiling, children)
+            )
         return Interleaving(
-            children,
-            self.extra_parameters(tiling, children),
-            self.interleaving_parameters(tiling, self.partition),
+            children, self.extra_parameters(tiling, children), interleaving_parameters,
         )
 
-    @staticmethod
-    def interleaving_parameters(
-        comb_class: Tiling, partition: Tuple[Tuple[Cell, ...], ...]
-    ) -> List[Tuple[str, ...]]:
+    def interleaving_parameters(self, comb_class: Tiling,) -> List[Tuple[str, ...]]:
         """
         Return the parameters on the parent tiling that needed to be interleaved.
         """
         res: List[Tuple[str, ...]] = []
-        cols, rows = interleaving_rows_and_cols(partition)
+        cols, rows = interleaving_rows_and_cols(self.partition)
         for x in cols:
             assumptions = [
                 TrackingAssumption(
                     GriddedPerm.point_perm(cell) for cell in cells if x == cell[0]
                 )
-                for cells in partition
+                for cells in self.partition
             ]
             res.append(
                 tuple(comb_class.get_parameter(ass) for ass in assumptions if ass.gps)
@@ -301,7 +322,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
                 TrackingAssumption(
                     GriddedPerm.point_perm(cell) for cell in cells if y == cell[1]
                 )
-                for cells in partition
+                for cells in self.partition
             ]
             res.append(
                 tuple(comb_class.get_parameter(ass) for ass in assumptions if ass.gps)
@@ -341,10 +362,18 @@ class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
     ) -> MonotoneInterleaving:
         if children is None:
             children = self.decomposition_function(tiling)
+        try:
+            interleaving_parameters = self.interleaving_parameters(tiling)
+        except ValueError:
+            # must be untracked
+            return cast(
+                MonotoneInterleaving,
+                MonotoneInterleaving.untracked(
+                    children, self.extra_parameters(tiling, children)
+                ),
+            )
         return MonotoneInterleaving(
-            children,
-            self.extra_parameters(tiling, children),
-            self.interleaving_parameters(tiling, self.partition),
+            children, self.extra_parameters(tiling, children), interleaving_parameters,
         )
 
 
