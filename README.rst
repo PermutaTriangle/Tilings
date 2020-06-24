@@ -1091,7 +1091,7 @@ according to only the obstructions and requirements.
        >>> strategy_generator = FactorFactory('all')
        >>> for strategy in strategy_generator(placed_tiling):
        ...     print(strategy(placed_tiling))
-       factor with partition {(0, 1)} / {(1, 0)} / {(2, 1)}
+       interleaving factor with partition {(0, 1)} / {(1, 0)} / {(2, 1)}
        +-+-+-+            +-+           +-+                +-+
        |\| |/|         =  |\|        *  |●|             *  |/|
        +-+-+-+            +-+           +-+                +-+
