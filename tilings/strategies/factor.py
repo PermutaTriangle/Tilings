@@ -242,20 +242,16 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
         raise NotImplementedError
 
     def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
+        # multinomial counts the number of ways to interleave the values k1, ..., kn.
         multiplier = reduce(
             mul,
             [
-                self.count_interleavings([parameters[k] for k in int_parameters])
+                multinomial([parameters[k] for k in int_parameters])
                 for int_parameters in self.interleaving_parameters
             ],
             1,
         )
         return multiplier * super().get_recurrence(subrecs, n, **parameters)
-
-    @staticmethod
-    def count_interleavings(values: List[int]):
-        """Count the number of ways to interleave the values k1, ..., kn."""
-        return multinomial(values)
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int
@@ -415,7 +411,6 @@ class FactorFactory(StrategyFactory[Tiling]):
         )
 
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Strategy]:
-        # TODO: if tracked, ensure that assumptions are present before factoring
         factor_algo = self.factor_algo(comb_class)
         if factor_algo.factorable():
             min_comp = tuple(tuple(part) for part in factor_algo.get_components())

@@ -201,7 +201,7 @@ class AddAssumptionFactory(StrategyFactory[Tiling]):
 
 
 class AddInterleavingAssumptionFactory(StrategyFactory[Tiling]):
-    def __init__(self, unions: bool = True):
+    def __init__(self, unions: bool = False):
         self.unions = unions
 
     @staticmethod
@@ -219,7 +219,7 @@ class AddInterleavingAssumptionFactory(StrategyFactory[Tiling]):
             strategy = AddAssumptionsStrategy(assumptions, workable=True)
             yield strategy(comb_class)
 
-    # TODO: unions? monotone?
+    # TODO: monotone?
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         factor_algo = FactorWithInterleaving(comb_class)
         if factor_algo.factorable():

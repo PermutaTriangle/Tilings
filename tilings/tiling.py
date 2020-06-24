@@ -952,7 +952,10 @@ class Tiling(CombinatorialClass):
         return self._fusion(row, col, ComponentFusion)
 
     def sub_tiling(
-        self, cells: Iterable[Cell], factors: bool = False, add_assumptions=tuple()
+        self,
+        cells: Iterable[Cell],
+        factors: bool = False,
+        add_assumptions: Iterable[TrackingAssumption] = tuple(),
     ) -> "Tiling":
         """Return the tiling using only the obstructions and requirements
         completely contained in the given cells. If factors is set to True,
@@ -969,17 +972,12 @@ class Tiling(CombinatorialClass):
             if (factors and req[0].pos[0] in cells)
             or all(c in cells for c in chain.from_iterable(r.pos for r in req))
         )
-        assumptions = (
-            tuple(
-                ass
-                for ass in self._assumptions
-                if (factors and ass.gps[0].pos[0] in cells)
-                or all(
-                    c in cells for c in chain.from_iterable(gp.pos for gp in ass.gps)
-                )
-            )
-            + add_assumptions
-        )
+        assumptions = tuple(
+            ass
+            for ass in self._assumptions
+            if (factors and ass.gps[0].pos[0] in cells)
+            or all(c in cells for c in chain.from_iterable(gp.pos for gp in ass.gps))
+        ) + tuple(add_assumptions)
         return self.__class__(
             obstructions, requirements, assumptions, simplify=False, sorted_input=True
         )
