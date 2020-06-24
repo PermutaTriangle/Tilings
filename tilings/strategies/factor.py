@@ -20,7 +20,6 @@ from tilings.algorithms import (
     FactorWithInterleaving,
     FactorWithMonotoneInterleaving,
 )
-from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
 from tilings.misc import multinomial, partitions_iterator
 
@@ -60,7 +59,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         ):
             for i, cells in enumerate(self.partition):
                 if assumption.gps[0].pos[0] in cells:
-                    new_assumption = TrackingAssumption(
+                    new_assumption = assumption.__class__(
                         children[i].forward_map(gp) for gp in assumption.gps
                     )
                     child_var = children[i].get_parameter(new_assumption)

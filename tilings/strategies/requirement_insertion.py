@@ -6,7 +6,6 @@ from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import TrackingAssumption
 
 ListRequirement = Tuple[GriddedPerm, ...]
 
@@ -82,28 +81,26 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
         av, co = children
-        av_mapped_gps = [
-            tuple(
-                av.forward_map(gp)
-                for gp in ass.gps
-                if gp.avoids(*self.gps)
-                and all(cell in av.forward_cell_map for cell in gp.pos)
-            )
-            for ass in comb_class.assumptions
-        ]
-        co_mapped_gps = [
-            tuple(
-                co.forward_map(gp)
-                for gp in ass.gps
-                if all(cell in co.forward_cell_map for cell in gp.pos)
-            )
-            for ass in comb_class.assumptions
-        ]
         av_mapped_ass = [
-            TrackingAssumption(gps).avoiding(av.obstructions) for gps in av_mapped_gps
+            ass.__class__(
+                tuple(
+                    av.forward_map(gp)
+                    for gp in ass.gps
+                    if gp.avoids(*self.gps)
+                    and all(cell in av.forward_cell_map for cell in gp.pos)
+                )
+            ).avoiding(av.obstructions)
+            for ass in comb_class.assumptions
         ]
         co_mapped_ass = [
-            TrackingAssumption(gps).avoiding(co.obstructions) for gps in co_mapped_gps
+            ass.__class__(
+                tuple(
+                    co.forward_map(gp)
+                    for gp in ass.gps
+                    if all(cell in co.forward_cell_map for cell in gp.pos)
+                )
+            ).avoiding(co.obstructions)
+            for ass in comb_class.assumptions
         ]
         av_params: Dict[str, str] = {}
         for assumption, mapped_assumption in zip(comb_class.assumptions, av_mapped_ass):

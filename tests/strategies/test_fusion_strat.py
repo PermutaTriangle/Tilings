@@ -6,7 +6,6 @@ from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
 from tilings.strategies import ComponentFusionFactory, FusionFactory
 from tilings.strategies.fusion import (
-    ComponentFusionConstructor,
     ComponentFusionStrategy,
     FusionConstructor,
     FusionStrategy,
@@ -199,11 +198,11 @@ def test_formal_step_component(component_col_fusion, component_row_fusion):
     assert component_row_fusion.inferrable
     assert component_row_fusion.workable
     assert not component_row_fusion.possibly_empty
-    assert isinstance(component_row_fusion.constructor, ComponentFusionConstructor)
+    assert isinstance(component_row_fusion.constructor, FusionConstructor)
     assert component_col_fusion.inferrable
     assert component_col_fusion.workable
     assert not component_col_fusion.possibly_empty
-    assert isinstance(component_col_fusion.constructor, ComponentFusionConstructor)
+    assert isinstance(component_col_fusion.constructor, FusionConstructor)
 
 
 def test_fuse_parameter():
