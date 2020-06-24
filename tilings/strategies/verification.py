@@ -665,3 +665,73 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
 
     def __str__(self) -> str:
         return "monotone tree verification"
+
+
+class MinerVerificationStrategy(TileScopeVerificationStrategy):
+    """ # TODO
+    Verification strategy for a locally factorable tiling.
+
+    A tiling is locally factorable if all its obstructions and requirements are
+    locally factorable, i.e. each obstruction or requirement use at most one
+    cell on each row and column. To be locally factorable, a tiling
+    should not be equivalent to a 1x1 tiling.
+
+    A locally factorable tiling can be describe with a specification with only subset
+    verified tiling.
+    """
+
+    @staticmethod
+    def pack(tiling: Tiling) -> StrategyPack:  # TODO
+        raise InvalidOperationError
+
+    @staticmethod
+    def _standard_miner(tiling: Tiling):
+        """
+        Check if the tiling fits the standard Miner verification scheme.
+        It is assumed the tiling has the correct dimensions: (1, 2)
+        """
+        bottom_patt = False  # We want a localized 012 or 021 in bottom
+        crossing_patt = False  # ... and a 01-2 or a 0-2-1 crossing obs
+        for ob in tiling.obstructions:
+            if ob.is_single_cell():
+                # No conditions on the local obs in cell (0, 1)
+                if ob.pos[0] == (0, 0) and (
+                    ob.patt in [Perm((0, 1, 2)), Perm((0, 2, 1))]
+                ):
+                    bottom_patt = True
+            else:
+                if ob.patt not in [Perm((0, 1, 2)), Perm((0, 2, 1))]:
+                    return False
+                if ob.pos == ((0, 0), (0, 0), (0, 1)):
+                    crossing_patt = True
+                else:
+                    return False
+        if bottom_patt and crossing_patt:
+            return True
+
+    def verified(self, tiling: Tiling):
+        if tiling.dimensions == (1, 2):
+            if self._standard_miner(tiling):
+                return True
+            else:
+                if self._standard_miner(tiling.reverse()):
+                    return True
+                ct = tiling.complement()
+                if self._standard_miner(ct):
+                    return True
+                rct = ct.reverse()
+                if self._standard_miner(rct):
+                    return True
+        if tiling.dimensions == (2, 1):
+            return self.verified(tiling.inverse())
+
+    @staticmethod
+    def formal_step() -> str:
+        return "Miner verified"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "MinerVerificationStrategy":
+        return cls(**d)
+
+    def __str__(self) -> str:
+        return "Miner verification"

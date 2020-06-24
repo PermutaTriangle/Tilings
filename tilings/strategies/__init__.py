@@ -31,6 +31,7 @@ from .verification import (
     InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
+    MinerVerificationStrategy,
     MonotoneTreeVerificationStrategy,
     OneByOneVerificationStrategy,
 )
@@ -71,6 +72,7 @@ __all__ = [
     "LocallyFactorableVerificationStrategy",
     "LocalVerificationStrategy",
     "InsertionEncodingVerificationStrategy",
+    "MinerVerificationStrategy",
     "MonotoneTreeVerificationStrategy",
     "OneByOneVerificationStrategy",
 ]
