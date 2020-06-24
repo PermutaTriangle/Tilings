@@ -168,7 +168,7 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "AddAssumptionsStrategy":
-        assumptions = [TrackingAssumption.from_dict(ass) for ass in d["gps"]]
+        assumptions = [TrackingAssumption.from_dict(ass) for ass in d["assumptions"]]
         return cls(assumptions)
 
     def __repr__(self):
