@@ -74,7 +74,7 @@ class AddAssumptionsConstructor(Constructor):
         subsamplers: SubSamplers,
         subrecs: SubRecs,
         n: int,
-        **parameters: int
+        **parameters: int,
     ):
         raise NotImplementedError
 
@@ -204,6 +204,21 @@ class AddInterleavingAssumptionFactory(StrategyFactory[Tiling]):
     def __init__(self, unions: bool = True):
         self.unions = unions
 
+    @staticmethod
+    def strategy_from_components(
+        comb_class: Tiling, components: Tuple[Tuple[Cell, ...], ...]
+    ) -> Iterator[Rule]:
+        """
+        Yield an AddAssumption strategy for the given component if needed.
+        """
+        cols, rows = interleaving_rows_and_cols(components)
+        assumptions = chain.from_iterable(
+            assumptions_to_add(cells, cols, rows) for cells in components
+        )
+        if assumptions:
+            strategy = AddAssumptionsStrategy(assumptions, workable=True)
+            yield strategy(comb_class)
+
     # TODO: unions? monotone?
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         factor_algo = FactorWithInterleaving(comb_class)
@@ -214,20 +229,8 @@ class AddInterleavingAssumptionFactory(StrategyFactory[Tiling]):
                     components = tuple(
                         tuple(chain.from_iterable(part)) for part in partition
                     )
-                    cols, rows = interleaving_rows_and_cols(components)
-                    assumptions = chain.from_iterable(
-                        assumptions_to_add(cells, cols, rows) for cells in components
-                    )
-                    if assumptions:
-                        strategy = AddAssumptionsStrategy(assumptions, workable=True)
-                        yield strategy(comb_class)
-            cols, rows = interleaving_rows_and_cols(min_comp)
-            assumptions = chain.from_iterable(
-                assumptions_to_add(cells, cols, rows) for cells in min_comp
-            )
-            if assumptions:
-                strategy = AddAssumptionsStrategy(assumptions, workable=True)
-                yield strategy(comb_class)
+                    yield from self.strategy_from_components(comb_class, components)
+            yield from self.strategy_from_components(comb_class, min_comp)
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + "()"
