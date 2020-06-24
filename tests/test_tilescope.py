@@ -2,7 +2,7 @@ import pytest
 import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
-from comb_spec_searcher.limited_strategy_db import LimitedStrategyRuleDB
+from comb_spec_searcher.rule_db import LimitedStrategyRuleDB
 from comb_spec_searcher.strategies import EmptyStrategy
 from comb_spec_searcher.strategies.rule import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
@@ -287,10 +287,7 @@ def test_expansion():
 @pytest.mark.timeout(10)
 def test_single_fusion_db():
     ruledb = LimitedStrategyRuleDB(
-        strategies_to_limit=set([FusionStrategy]),
-        limit=1,
-        mark_verified=False,
-        minimization_time_limit=0,
+        strategies_to_limit=set([FusionStrategy]), limit=1, mark_verified=False,
     )
     searcher = TileScope("0123_0132", row_placements_fusion, ruledb=ruledb)
     spec = searcher.auto_search()
