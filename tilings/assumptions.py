@@ -77,7 +77,7 @@ class TrackingAssumption:
         if isinstance(other, TrackingAssumption):
             return bool(
                 self.__class__.__name__ < other.__class__.__name__
-                and self.gps < other.gps
+                or self.gps < other.gps
             )
         return NotImplemented
 
