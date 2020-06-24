@@ -8,7 +8,11 @@ from itertools import chain
 from typing import TYPE_CHECKING
 
 from permuta import Perm
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import (
+    SkewComponentAssumption,
+    SumComponentAssumption,
+    TrackingAssumption,
+)
 from tilings.griddedperm import GriddedPerm
 
 if TYPE_CHECKING:
@@ -231,7 +235,10 @@ class Fusion:
         Return the fused tiling.
         """
         assumptions = [
-            TrackingAssumption(gps) for gps in self.assumptions_fuse_counters
+            ass.__class__(gps)
+            for ass, gps in zip(
+                self._tiling.assumptions, self.assumptions_fuse_counters
+            )
         ]
         if self._tracked:
             assumptions.append(self.new_assumption())
@@ -262,7 +269,6 @@ class ComponentFusion(Fusion):
             raise NotImplementedError(
                 "Component fusion does not handle " "requirements at the moment"
             )
-        assert not tracked, "tracking not implemented for component fusion"
         super().__init__(tiling, row_idx=row_idx, col_idx=col_idx, tracked=tracked)
         self._first_cell = None
         self._second_cell = None
@@ -404,6 +410,21 @@ class ComponentFusion(Fusion):
             return False
         new_tiling = self._tiling.add_obstructions(self.obstructions_to_add())
         return self._tiling == new_tiling
+
+    def new_assumption(self):
+        """
+        Return the assumption that needs to be counted in order to enumerate.
+        """
+        fcell = self.first_cell
+        scell = self.second_cell
+        gps = (GriddedPerm.single_cell(Perm((0,)), fcell),)
+        if self._fuse_row:
+            sum_ob = GriddedPerm(Perm((1, 0)), (scell, fcell))
+        else:
+            sum_ob = GriddedPerm(Perm((1, 0)), (fcell, scell))
+        if sum_ob in self._tiling.obstructions:
+            return SumComponentAssumption(gps)
+        return SkewComponentAssumption(gps)
 
     def __str__(self):
         s = "ComponentFusion Algorithm for:\n"

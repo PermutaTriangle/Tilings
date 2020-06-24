@@ -12,7 +12,6 @@ from itertools import combinations, product
 from typing import TYPE_CHECKING, Dict, List, Tuple
 
 from tilings import GriddedPerm
-from tilings.assumptions import TrackingAssumption
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -437,7 +436,7 @@ class _RowColSeparationSingleApplication:
                 mapped_gp = self._map_gridded_perm(cell_map, gp)
                 if not mapped_gp.contradictory():
                     gps.append(mapped_gp)
-            yield TrackingAssumption(gps)
+            yield ass.__class__(gps)
 
     @property
     def max_row_order(self):

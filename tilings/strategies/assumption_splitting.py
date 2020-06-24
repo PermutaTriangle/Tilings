@@ -1,5 +1,5 @@
 from itertools import product
-from typing import Dict, Iterator, List, Optional, Set, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from sympy import Eq, Function
 
@@ -12,9 +12,14 @@ from comb_spec_searcher.strategies.constructor import (
     SubSamplers,
 )
 from comb_spec_searcher.utils import compositions
+from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import (
+    SkewComponentAssumption,
+    SumComponentAssumption,
+    TrackingAssumption,
+)
 
 Cell = Tuple[int, int]
 
@@ -142,8 +147,17 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             new_assumptions.extend(self._split_assumption(ass, components))
         return (Tiling(tiling.obstructions, tiling.requirements, new_assumptions),)
 
-    @staticmethod
     def _split_assumption(
+        self, assumption: TrackingAssumption, components: Tuple[Set[Cell], ...]
+    ) -> List[TrackingAssumption]:
+        if isinstance(assumption, SkewComponentAssumption):
+            return self._split_skew_assumption(assumption)
+        if isinstance(assumption, SumComponentAssumption):
+            return self._split_sum_assumption(assumption)
+        return self._split_tracking_assumption(assumption, components)
+
+    @staticmethod
+    def _split_tracking_assumption(
         assumption: TrackingAssumption, components: Tuple[Set[Cell], ...]
     ) -> List[TrackingAssumption]:
         split_gps: List[List[GriddedPerm]] = [[] for _ in range(len(components))]
@@ -157,7 +171,70 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
                 # gridded perm can't be partitioned, so the partition can't be
                 # partitioned
                 return [assumption]
-        return [TrackingAssumption(gps) for gps in split_gps if gps]
+        return [assumption.__class__(gps) for gps in split_gps if gps]
+
+    def _split_skew_assumption(
+        self, assumption: SkewComponentAssumption,
+    ) -> List[TrackingAssumption]:
+        decomposition = self.skew_decomposition(assumption.cells)
+        return [
+            SkewComponentAssumption(
+                GriddedPerm.single_cell(Perm((0,)), cell) for cell in cells
+            )
+            for cells in decomposition
+        ]
+
+    def _split_sum_assumption(
+        self, assumption: SumComponentAssumption,
+    ) -> List[TrackingAssumption]:
+        decomposition = self.sum_decomposition(assumption.cells)
+        return [
+            SumComponentAssumption(
+                GriddedPerm.single_cell(Perm((0,)), cell) for cell in cells
+            )
+            for cells in decomposition
+        ]
+
+    @staticmethod
+    def sum_decomposition(
+        cells: Iterable[Cell], skew: bool = False
+    ) -> List[List[Cell]]:
+        """
+        Returns the sum decomposition of the cells.
+        If skew is True then returns the skew decomposition instead.
+        """
+        cells = sorted(cells)
+        decomposition: List[List[Cell]] = []
+        while len(cells) > 0:
+            x = cells[0][0]  # x boundary, maximum in both cases
+            y = cells[0][1]  # y boundary, maximum in sum, minimum in skew
+            change = True
+            while change:
+                change = False
+                for c in cells:
+                    if c[0] <= x:
+                        if (skew and c[1] < y) or (not skew and c[1] > y):
+                            y = c[1]
+                            change = True
+                    if (skew and c[1] >= y) or (not skew and c[1] <= y):
+                        if c[0] > x:
+                            x = c[0]
+                            change = True
+            decomposition.append([])
+            new_cells = []
+            for c in cells:
+                if c[0] <= x:
+                    decomposition[-1].append(c)
+                else:
+                    new_cells.append(c)
+            cells = new_cells
+        return decomposition
+
+    def skew_decomposition(self, cells: Iterable[Cell]) -> List[List[Cell]]:
+        """
+        Returns the skew decomposition of the cells
+        """
+        return self.sum_decomposition(cells, skew=True)
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,

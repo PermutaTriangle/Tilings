@@ -11,7 +11,6 @@ from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
-from tilings.assumptions import TrackingAssumption
 
 __all__ = [
     "PatternPlacementFactory",
@@ -79,7 +78,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         if self.include_empty:
             child = children[0]
             mapped_assumptions = [
-                TrackingAssumption(
+                ass.__class__(
                     child.forward_map(gp)
                     for gp in ass.gps
                     if all(cell in child.forward_cell_map for cell in gp.pos)
@@ -97,23 +96,21 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         for idx, (cell, child) in enumerate(
             zip(self._placed_cells, children[1:] if self.include_empty else children)
         ):
-            mapped_gps = [
-                tuple(
-                    child.forward_map(gp)
-                    for gp in ass.gps
-                    if gp.avoids(
-                        *algo.stretched_obstructions(cell),
-                        *algo.forced_obstructions_from_requirement(
-                            self.gps, self.indices, cell, self.direction
-                        ),
-                    )
-                    and all(cell in child.forward_cell_map for cell in gp.pos)
-                )
-                for ass in algo.stretched_assumptions(cell)
-            ]
             mapped_assumptions = [
-                TrackingAssumption(gps).avoiding(child.obstructions)
-                for gps in mapped_gps
+                ass.__class__(
+                    tuple(
+                        child.forward_map(gp)
+                        for gp in ass.gps
+                        if gp.avoids(
+                            *algo.stretched_obstructions(cell),
+                            *algo.forced_obstructions_from_requirement(
+                                self.gps, self.indices, cell, self.direction
+                            ),
+                        )
+                        and all(cell in child.forward_cell_map for cell in gp.pos)
+                    )
+                ).avoiding(child.obstructions)
+                for ass in algo.stretched_assumptions(cell)
             ]
             for assumption, mapped_assumption in zip(
                 comb_class.assumptions, mapped_assumptions

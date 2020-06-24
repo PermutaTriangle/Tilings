@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, Iterator, Optional, Tuple
+from typing import Dict, Iterator, Optional, Tuple
 
 from sympy import Eq, Expr, Function, Number, Symbol, var
 
@@ -75,8 +75,8 @@ class AddAssumptionConstructor(Constructor):
 
 
 class AddAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
-    def __init__(self, gps: Iterable[GriddedPerm]):
-        self.assumption = TrackingAssumption(gps)
+    def __init__(self, assumption: TrackingAssumption):
+        self.assumption = assumption
         super().__init__(
             ignore_parent=False, inferrable=True, possibly_empty=False, workable=False
         )
@@ -112,9 +112,7 @@ class AddAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         )
 
     def formal_step(self) -> str:
-        return "adding the assumption can count occurrences of " + ", ".join(
-            str(p) for p in self.assumption.gps
-        )
+        return f"adding the assumption '{self.assumption}'"
 
     def backward_map(
         self,
@@ -151,25 +149,23 @@ class AddAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         d.pop("inferrable")
         d.pop("possibly_empty")
         d.pop("workable")
-        d["gps"] = [gp.to_jsonable() for gp in self.assumption.gps]
+        d["assumption"] = self.assumption.to_jsonable()
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "AddAssumptionStrategy":
-        gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
-        return cls(gps)
+        assumption = TrackingAssumption.from_dict(d["assumption"])
+        return cls(assumption)
 
     def __repr__(self):
-        return self.__class__.__name__ + "(gps={})".format(
-            repr(tuple(self.assumption.gps))
-        )
+        return self.__class__.__name__ + "(assumption={})".format(repr(self.assumption))
 
 
 class AddAssumptionFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         for assumption in comb_class.assumptions:
             without = comb_class.remove_assumption(assumption)
-            strategy = AddAssumptionStrategy(assumption.gps)
+            strategy = AddAssumptionStrategy(assumption)
             yield strategy(without)
 
     def __repr__(self) -> str:

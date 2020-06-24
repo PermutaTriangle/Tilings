@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   allowing these to be used when enumerating tracked trees.
 - Add the `InsertionEncodingVerificationStrategy` which verifies n x 1 and
   1 x n tilings which have a regular topmost or bottommost insertion encoding.
+- Added the `SumComponentAssumption` and `SkewComponentAssumption` giving the
+  ability to track specifications using component fusion.
 - add partial flag to `insertion_point_placements` and
   `insertion_row_and_col_placements`
 
