@@ -90,6 +90,7 @@ packs.extend(
     + [pack.make_interleaving() for pack in packs]
     + [pack.make_database().add_all_symmetry() for pack in packs]
     + [pack.make_fusion().add_all_symmetry() for pack in packs]
+    + [pack.make_interleaving().make_tracked() for pack in packs]
 )
 
 
