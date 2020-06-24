@@ -123,7 +123,7 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
 
     @staticmethod
     def pack(tiling: Tiling) -> StrategyPack:
-        if any(isinstance(ass, ComponentAssumption) for ass in tiling._assumptions):
+        if any(isinstance(ass, ComponentAssumption) for ass in tiling.assumptions):
             raise InvalidOperationError(
                 "Can't find generating function with component assumption."
             )
@@ -329,7 +329,7 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
 
     @staticmethod
     def pack(tiling: Tiling) -> StrategyPack:
-        if any(isinstance(ass, ComponentAssumption) for ass in tiling._assumptions):
+        if any(isinstance(ass, ComponentAssumption) for ass in tiling.assumptions):
             raise InvalidOperationError(
                 "Can't find generating function with component assumption."
             )
@@ -434,7 +434,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         if self.no_factors:
             raise InvalidOperationError("Cannot get a simpler specification")
         if (
-            any(isinstance(ass, ComponentAssumption) for ass in tiling._assumptions)
+            any(isinstance(ass, ComponentAssumption) for ass in tiling.assumptions)
             and len(tiling.find_factors()) == 1
         ):
             raise InvalidOperationError(
@@ -512,7 +512,7 @@ class InsertionEncodingVerificationStrategy(TileScopeVerificationStrategy):
         super().__init__(ignore_parent=ignore_parent)
 
     def pack(self, tiling: Tiling) -> StrategyPack:
-        if any(isinstance(ass, ComponentAssumption) for ass in tiling._assumptions):
+        if any(isinstance(ass, ComponentAssumption) for ass in tiling.assumptions):
             raise InvalidOperationError(
                 "Can't find generating function with component assumption."
             )
@@ -593,7 +593,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
         super().__init__(ignore_parent=ignore_parent)
 
     def pack(self, tiling: Tiling) -> StrategyPack:
-        if any(isinstance(ass, ComponentAssumption) for ass in tiling._assumptions):
+        if any(isinstance(ass, ComponentAssumption) for ass in tiling.assumptions):
             raise InvalidOperationError(
                 "Can't find generating function with component assumption."
             )

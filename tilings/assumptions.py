@@ -145,7 +145,7 @@ class SumComponentAssumption(ComponentAssumption):
         return hash(self.gps)
 
 
-class SkewComponentAssumption(ComponentAssumption): 
+class SkewComponentAssumption(ComponentAssumption):
 
     decomposition = Perm.skew_decomposition
 
