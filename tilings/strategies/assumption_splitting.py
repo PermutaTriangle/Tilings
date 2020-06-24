@@ -14,7 +14,7 @@ from comb_spec_searcher.strategies.constructor import (
 from comb_spec_searcher.utils import compositions
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import Factor
+from tilings.algorithms import factor
 from tilings.assumptions import (
     SkewComponentAssumption,
     SumComponentAssumption,
@@ -119,7 +119,7 @@ class Split(Constructor):
         subsamplers: SubSamplers,
         subrecs: SubRecs,
         n: int,
-        **parameters: int
+        **parameters: int,
     ):
         raise NotImplementedError
 
@@ -136,10 +136,38 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     TODO: iterate over all possible union of factors
     """
 
+    FACTOR_ALGO = {
+        "none": factor.Factor,
+        "monotone": factor.FactorWithMonotoneInterleaving,
+        "all": factor.FactorWithInterleaving,
+    }
+
+    def __init__(
+        self,
+        interleaving: str = "none",
+        ignore_parent: bool = False,
+        inferrable: bool = True,
+        possibly_empty: bool = True,
+        workable: bool = True,
+    ):
+        try:
+            self.factor_class = SplittingStrategy.FACTOR_ALGO[interleaving]
+        except KeyError:
+            raise ValueError(
+                "interleaving argument must be in "
+                f"{list(SplittingStrategy.FACTOR_ALGO)}"
+            )
+        super().__init__(
+            ignore_parent=ignore_parent,
+            inferrable=inferrable,
+            possibly_empty=possibly_empty,
+            workable=workable,
+        )
+
     def decomposition_function(self, tiling: Tiling) -> Optional[Tuple[Tiling]]:
         if not tiling.assumptions:
             return None
-        components = Factor(tiling.remove_assumptions()).get_components()
+        components = self.factor_class(tiling.remove_assumptions()).get_components()
         if len(components) == 1:
             return None
         new_assumptions: List[TrackingAssumption] = []
@@ -245,7 +273,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Can't split the tracking assumption")
         child = children[0]
         split_parameters: Dict[str, Tuple[str, ...]] = {"n": ("n",)}
-        components = Factor(comb_class.remove_assumptions()).get_components()
+        components = self.factor_class(comb_class.remove_assumptions()).get_components()
         for idx, assumption in enumerate(comb_class.assumptions):
             split_assumptions = self._split_assumption(assumption, components)
             child_vars = tuple(
@@ -288,6 +316,15 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(comb_class)
         raise NotImplementedError
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["interleaving"] = next(
+            k
+            for k, v in SplittingStrategy.FACTOR_ALGO.items()
+            if v == self.factor_class
+        )
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "SplittingStrategy":
