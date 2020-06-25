@@ -228,7 +228,24 @@ class Fusion:
                 self._tiling.assumptions, self.assumptions_fuse_counters
             )
         )
-        return obs_fusable and req_fusable and ass_fusable
+        if self._fuse_row:
+            fusing_cells = [
+                (i, self._row_idx) for i in range(self._tiling.dimensions[0])
+            ] + [(i, self._row_idx + 1) for i in range(self._tiling.dimensions[0])]
+        else:
+            fusing_cells = [
+                (self._col_idx, i) for i in range(self._tiling.dimensions[1])
+            ] + [(self._col_idx + 1, i) for i in range(self._tiling.dimensions[1])]
+        num_fusing_assumptions = len(
+            [
+                assumption
+                for assumption in self._tiling.assumptions
+                if any(cell in gp.pos for gp in assumption.gps for cell in fusing_cells)
+            ]
+        )
+        return (
+            obs_fusable and req_fusable and ass_fusable and num_fusing_assumptions <= 1
+        )
 
     def fused_tiling(self) -> "Tiling":
         """
@@ -242,11 +259,33 @@ class Fusion:
         ]
         if self._tracked:
             assumptions.append(self.new_assumption())
-        return self._tiling.__class__(
+        fused_tiling = self._tiling.__class__(
             obstructions=self.obstruction_fuse_counter.keys(),
             requirements=self.requirements_fuse_counters,
             assumptions=assumptions,
         )
+        print("=" * 100)
+        print("parent:")
+        print(self._tiling)
+        print("child:")
+        print(fused_tiling)
+        if self._fuse_row:
+            fusing_cells = [
+                (i, self._row_idx) for i in range(self._tiling.dimensions[0])
+            ] + [(i, self._row_idx + 1) for i in range(self._tiling.dimensions[0])]
+        else:
+            fusing_cells = [
+                (self._col_idx, i) for i in range(self._tiling.dimensions[1])
+            ] + [(self._col_idx + 1, i) for i in range(self._tiling.dimensions[1])]
+        num_fusing_assumptions = len(
+            [
+                assumption
+                for assumption in self._tiling.assumptions
+                if any(cell in gp.pos for gp in assumption.gps for cell in fusing_cells)
+            ]
+        )
+        print("num assumptions:", num_fusing_assumptions)
+        return fused_tiling
 
 
 class ComponentFusion(Fusion):
@@ -409,7 +448,22 @@ class ComponentFusion(Fusion):
         if not self._pre_check() or not self.has_crossing_len2_ob():
             return False
         new_tiling = self._tiling.add_obstructions(self.obstructions_to_add())
-        return self._tiling == new_tiling
+        if self._fuse_row:
+            fusing_cells = [
+                (i, self._row_idx) for i in range(self._tiling.dimensions[0])
+            ] + [(i, self._row_idx + 1) for i in range(self._tiling.dimensions[0])]
+        else:
+            fusing_cells = [
+                (self._col_idx, i) for i in range(self._tiling.dimensions[1])
+            ] + [(self._col_idx + 1, i) for i in range(self._tiling.dimensions[1])]
+        num_fusing_assumptions = len(
+            [
+                assumption
+                for assumption in self._tiling.assumptions
+                if any(cell in gp.pos for gp in assumption.gps for cell in fusing_cells)
+            ]
+        )
+        return self._tiling == new_tiling and len(num_fusing_assumptions) <= 1
 
     def new_assumption(self):
         """
