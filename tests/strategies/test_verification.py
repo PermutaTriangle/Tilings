@@ -21,6 +21,7 @@ from tilings.strategies import (
     InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
+    MinerVerificationStrategy,
     MonotoneTreeVerificationStrategy,
     OneByOneVerificationStrategy,
     SplittingStrategy,
@@ -915,3 +916,64 @@ class TestOneByOneVerificationStrategy(CommonTest):
         # no method for Av(1324) yet
         with pytest.raises(InvalidOperationError):
             strategy.pack(enum_verified[6])
+
+
+class TestMinerVerificationStrategy(CommonTest):
+    @pytest.fixture
+    def strategy(self):
+        return MinerVerificationStrategy()
+
+    @pytest.fixture
+    def formal_step(self):
+        return "Miner verified"
+
+    @pytest.fixture
+    def enum_verified(self):
+        return [
+            # 123 with topmost point placed, factored
+            Tiling(
+                obstructions=(
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0))),
+                    GriddedPerm(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
+                ),
+                requirements=(),
+                assumptions=(),
+            )
+        ]
+
+    @pytest.fixture
+    def enum_not_verified(self):
+        return [
+            # 1x1 tilings should not be verified
+            Tiling.from_string("321"),
+            # 123 with topmost point placed, not factored
+            Tiling(
+                obstructions=(
+                    GriddedPerm(Perm((0,)), ((0, 1),)),
+                    GriddedPerm(Perm((0,)), ((1, 0),)),
+                    GriddedPerm(Perm((0,)), ((2, 1),)),
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
+                    GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (2, 0), (2, 0))),
+                    GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
+                ),
+                requirements=((GriddedPerm(Perm((0,)), ((1, 1),)),),),
+                assumptions=(),
+            ),
+            # Missing the local length 3 pattern
+            Tiling(
+                obstructions=(
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                ),
+                requirements=(),
+                assumptions=(),
+            ),
+        ]
+
+    def test_get_genf(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            with pytest.raises(NotImplementedError):
+                strategy.get_genf(tiling)

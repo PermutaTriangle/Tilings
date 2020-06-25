@@ -734,5 +734,27 @@ class MinerVerificationStrategy(TileScopeVerificationStrategy):
     def from_dict(cls, d: dict) -> "MinerVerificationStrategy":
         return cls(**d)
 
+    def get_genf(
+        self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
+    ) -> Expr:
+        if not self.verified(tiling):
+            raise StrategyDoesNotApply("tiling not Miner verified")
+        raise NotImplementedError
+
+    def count_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> int:
+        raise NotImplementedError
+
+    def generate_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError
+
+    def random_sample_object_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        raise NotImplementedError
+
     def __str__(self) -> str:
         return "Miner verification"
