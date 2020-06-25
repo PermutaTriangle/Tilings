@@ -668,20 +668,18 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
 
 
 class MinerVerificationStrategy(TileScopeVerificationStrategy):
-    """ # TODO
-    Verification strategy for a locally factorable tiling.
+    """
+    Verification strategy for a 1x2 and 2x1 tilings satisfying certain conditions.
 
-    A tiling is locally factorable if all its obstructions and requirements are
-    locally factorable, i.e. each obstruction or requirement use at most one
-    cell on each row and column. To be locally factorable, a tiling
-    should not be equivalent to a 1x1 tiling.
+    A 1x2 tiling (one column, two rows) is Miner verified if there is a local 012
+    (or 021) obstruction in cell (0, 0); there is a crossing 012 (or 021) with one
+    point in cell (0, 0); and no other crossing obstructions.
 
-    A locally factorable tiling can be describe with a specification with only subset
-    verified tiling.
+    The enumeration can be stated in terms of a generating function.
     """
 
     @staticmethod
-    def pack(tiling: Tiling) -> StrategyPack:  # TODO
+    def pack(tiling: Tiling) -> StrategyPack:  # TODO Help!
         raise InvalidOperationError
 
     @staticmethod
@@ -710,18 +708,21 @@ class MinerVerificationStrategy(TileScopeVerificationStrategy):
             return True
 
     def verified(self, tiling: Tiling):
+        """
+        We check the tiling and the appropriate symmetries for Miner verification.
+        """
         if tiling.dimensions == (1, 2):
             if self._standard_miner(tiling):
                 return True
-            else:
-                if self._standard_miner(tiling.reverse()):
-                    return True
-                ct = tiling.complement()
-                if self._standard_miner(ct):
-                    return True
-                rct = ct.reverse()
-                if self._standard_miner(rct):
-                    return True
+            if self._standard_miner(tiling.reverse()):
+                return True
+            ct = tiling.complement()
+            if self._standard_miner(ct):
+                return True
+            rct = ct.reverse()
+            if self._standard_miner(rct):
+                return True
+
         if tiling.dimensions == (2, 1):
             return self.verified(tiling.inverse())
 
