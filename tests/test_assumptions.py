@@ -169,7 +169,8 @@ def test_123_positive_fusions():
         477638700,
         1767263190,
     ]
-    
+
+
 @pytest.mark.timeout(60)
 def test_123_interleaving():
     pack = TileScopePack.point_placements().make_interleaving()
