@@ -331,8 +331,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         the number of points in A gives us an upper bound for the number of points
         on the left or the right.
         """
-        min_left_points, max_left_points = self.min_points[0], n
-        min_right_points, max_right_points = self.min_points[1], n
+        min_left_points, max_left_points = self.min_points[0], n - self.min_points[1]
+        min_right_points, max_right_points = self.min_points[1], n - self.min_points[0]
         min_both_points, max_both_points = sum(self.min_points), n
         for parent_fusion_parameter, fusion_type in zip(
             self.parent_fusion_parameters, self.fusion_types,

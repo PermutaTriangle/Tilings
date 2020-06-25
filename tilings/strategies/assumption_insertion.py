@@ -94,6 +94,8 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
         )
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
+        if any(assumption in tiling.assumptions for assumption in self.assumptions):
+            raise StrategyDoesNotApply("The assumption is already on the tiling.")
         return (tiling.add_assumptions(self.assumptions),)
 
     def constructor(
