@@ -94,6 +94,8 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
         )
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
+        if any(assumption in tiling.assumptions for assumption in self.assumptions):
+            raise StrategyDoesNotApply("The assumption is already on the tiling.")
         return (tiling.add_assumptions(self.assumptions),)
 
     def constructor(
@@ -212,9 +214,13 @@ class AddInterleavingAssumptionFactory(StrategyFactory[Tiling]):
         Yield an AddAssumption strategy for the given component if needed.
         """
         cols, rows = interleaving_rows_and_cols(components)
-        assumptions = chain.from_iterable(
-            assumptions_to_add(cells, cols, rows) for cells in components
-        )
+        assumptions = [
+            ass
+            for ass in chain.from_iterable(
+                assumptions_to_add(cells, cols, rows) for cells in components
+            )
+            if ass not in comb_class.assumptions
+        ]
         if assumptions:
             strategy = AddAssumptionsStrategy(assumptions, workable=True)
             yield strategy(comb_class)
