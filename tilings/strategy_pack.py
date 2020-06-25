@@ -52,18 +52,28 @@ class TileScopePack(StrategyPack):
         return pack
 
     def make_fusion(
-        self, component: bool = False, tracked: bool = True
+        self, component: bool = False, tracked: bool = True, apply_first: bool = False
     ) -> "TileScopePack":
-        """Create a new pack by adding fusion to the current pack."""
+        """
+        Create a new pack by adding fusion to the current pack.
+
+        If component, it will add component fusion.
+        If tracked, it will return the pack for finding a tracked tree.
+        If apply_first, it will add fusion to the front of the initial strategies.
+        """
         pack = self
         if tracked:
             pack = pack.make_tracked()
         if component:
             pack = pack.add_initial(
-                strat.ComponentFusionFactory(tracked=tracked), "component_fusion"
+                strat.ComponentFusionFactory(tracked=tracked),
+                "component_fusion",
+                apply_first=apply_first,
             )
         else:
-            pack = pack.add_initial(strat.FusionFactory(tracked=tracked), "fusion")
+            pack = pack.add_initial(
+                strat.FusionFactory(tracked=tracked), "fusion", apply_first=apply_first
+            )
         return pack
 
     def make_interleaving(

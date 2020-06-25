@@ -140,6 +140,38 @@ def test_123_fusion():
 
 
 @pytest.mark.timeout(60)
+def test_123_positive_fusions():
+    pack = TileScopePack.insertion_row_and_col_placements(row_only=True).make_fusion(
+        tracked=True, apply_first=True
+    )
+    css = TileScope("123", pack)
+    spec = css.auto_search(status_update=30)
+    assert isinstance(spec, CombinatorialSpecification)
+    assert [spec.count_objects_of_size(i) for i in range(20)] == [
+        1,
+        1,
+        2,
+        5,
+        14,
+        42,
+        132,
+        429,
+        1430,
+        4862,
+        16796,
+        58786,
+        208012,
+        742900,
+        2674440,
+        9694845,
+        35357670,
+        129644790,
+        477638700,
+        1767263190,
+    ]
+
+
+@pytest.mark.timeout(60)
 def test_123_interleaving():
     pack = TileScopePack.point_placements().make_interleaving()
     css = TileScope("123", pack)

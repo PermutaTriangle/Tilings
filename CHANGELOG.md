@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   ability to track specifications using component fusion.
 - add partial flag to `insertion_point_placements` and
   `insertion_row_and_col_placements`
+- Allow fusing rows and columns which are positive on either or both sides.
 - The tracking of interleaving factors is implemented, including the poly time
   algorithm. This includes the new strategy `AddInterleavingAssumptionFactory`
   which adds the assumptions required in order to enumerate when performing
