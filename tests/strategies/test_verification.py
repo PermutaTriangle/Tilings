@@ -797,7 +797,7 @@ class TestOneByOneVerificationStrategy(CommonTest):
             # subclass of Av(123) avoiding patterns of length <= 4, positive or not
             Tiling.from_string("012_2301").add_requirement(Perm((0,)), [(0, 0)]),
             # uses fusion
-            Tiling.from_string("123"),
+            Tiling.from_string("123").insert_cell((0, 0)),
             # no pack yet
             Tiling.from_string("1324"),
         ]
