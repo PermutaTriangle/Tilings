@@ -32,6 +32,7 @@ from tilings.strategies import (
     RootInsertionFactory,
     RowAndColumnPlacementFactory,
     RowColumnSeparationStrategy,
+    SplittingStrategy,
     SubobstructionInferralFactory,
     SymmetriesFactory,
 )
@@ -293,6 +294,12 @@ strategy_objects = (
         ObstructionInferralStrategy(
             [GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 2)))]
         )
+    ]
+    + [
+        SplittingStrategy(),
+        SplittingStrategy("none"),
+        SplittingStrategy("monotone"),
+        SplittingStrategy("all"),
     ]
 )
 

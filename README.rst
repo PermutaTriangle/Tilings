@@ -1091,7 +1091,7 @@ according to only the obstructions and requirements.
        >>> strategy_generator = FactorFactory('all')
        >>> for strategy in strategy_generator(placed_tiling):
        ...     print(strategy(placed_tiling))
-       factor with partition {(0, 1)} / {(1, 0)} / {(2, 1)}
+       interleaving factor with partition {(0, 1)} / {(1, 0)} / {(2, 1)}
        +-+-+-+            +-+           +-+                +-+
        |\| |/|         =  |\|        *  |●|             *  |/|
        +-+-+-+            +-+           +-+                +-+
@@ -1193,15 +1193,14 @@ capture this idea by fusing the two columns into a single column.
        +-+-+                      +-+
        \: Av(01)                  \: Av(01)
        Crossing obstructions:     Assumption 0:
-       01: (0, 0), (1, 0)         can count occurrences of
-                                  0: (0, 0)
+       01: (0, 0), (1, 0)         can count points in cell (0, 0)
 
 We use the symbol ``↣`` instead of ``=`` to remind us that the counts of the
 two sides are definitely not the same.
 Notice, the right-hand side tiling here also now requires that we can count the
-occurrences of ``0: (0, 0)``. If there are ``k`` occurrences of ``0: (0, 0)``
+number of points in cell ``(0, 0)``. If there are ``k`` points in cell ``(0, 0)``
 in a gridded permutation then there will be ``k + 1`` gridded permutations that
-fuse to this gridded permutation. Of course, here occurrences of ``0: (0, 0)``
+fuse to this gridded permutation. Of course, here the number of points in cell``(0, 0)``
 is going to be equal to the size of the gridded permutation, but in general,
 the points that need to be counted might not cover the whole tiling. For
 example, the following rule was used within specification to enumerate
@@ -1230,8 +1229,7 @@ example, the following rule was used within specification to enumerate
        Crossing obstructions:          Crossing obstructions:
        01: (0, 0), (1, 0)              012: (0, 0), (1, 0), (1, 0)
        012: (0, 0), (2, 0), (2, 0)     Assumption 0:
-       012: (1, 0), (2, 0), (2, 0)     can count occurrences of
-                                       0: (0, 0)
+       012: (1, 0), (2, 0), (2, 0)     can count points in cell (0, 0)
 
 Performance
 -----------
