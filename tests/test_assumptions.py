@@ -176,6 +176,7 @@ def test_123_interleaving():
     pack = TileScopePack.point_placements().make_interleaving()
     css = TileScope("123", pack)
     spec = css.auto_search(status_update=30)
+    print(json.dumps(spec.to_jsonable()))
     assert isinstance(spec, CombinatorialSpecification)
     assert [spec.count_objects_of_size(i) for i in range(20)] == [
         1,
