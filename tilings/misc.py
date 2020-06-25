@@ -79,6 +79,21 @@ def is_connected(adj_table: AdjTable) -> bool:
     return all(visited.values())
 
 
+def multinomial(lst):
+    """
+    Returns the multinomial. Taken from
+    https://stackoverflow.com/questions/46374185/does-python-have-a-function-which-computes-multinomial-coefficients
+    """
+    res, i = 1, sum(lst)
+    i0 = lst.index(max(lst))
+    for a in lst[:i0] + lst[i0 + 1 :]:
+        for j in range(1, a + 1):
+            res *= i
+            res //= j
+            i -= 1
+    return res
+
+
 # The code below is magical and comes from
 # https://codereview.stackexchange.com/questions/1526/finding-all-k-subset-partitions
 

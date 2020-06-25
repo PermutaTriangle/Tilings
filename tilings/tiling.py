@@ -586,8 +586,14 @@ class Tiling(CombinatorialClass):
 
     def add_assumption(self, assumption: TrackingAssumption) -> "Tiling":
         """Returns a new tiling with the added assumption."""
+        return self.add_assumptions((assumption,))
+
+    def add_assumptions(self, assumptions: Iterable[TrackingAssumption]) -> "Tiling":
+        """Returns a new tiling with the added assumptions."""
         return Tiling(
-            self._obstructions, self._requirements, self._assumptions + (assumption,)
+            self._obstructions,
+            self._requirements,
+            self._assumptions + tuple(assumptions),
         )
 
     def remove_assumption(self, assumption: TrackingAssumption):
@@ -945,7 +951,12 @@ class Tiling(CombinatorialClass):
         """
         return self._fusion(row, col, ComponentFusion)
 
-    def sub_tiling(self, cells: Iterable[Cell], factors: bool = False) -> "Tiling":
+    def sub_tiling(
+        self,
+        cells: Iterable[Cell],
+        factors: bool = False,
+        add_assumptions: Iterable[TrackingAssumption] = tuple(),
+    ) -> "Tiling":
         """Return the tiling using only the obstructions and requirements
         completely contained in the given cells. If factors is set to True,
         then it assumes that the first cells confirms if a gridded perm uses only
@@ -966,7 +977,7 @@ class Tiling(CombinatorialClass):
             for ass in self._assumptions
             if (factors and ass.gps[0].pos[0] in cells)
             or all(c in cells for c in chain.from_iterable(gp.pos for gp in ass.gps))
-        )
+        ) + tuple(add_assumptions)
         return self.__class__(
             obstructions, requirements, assumptions, simplify=False, sorted_input=True
         )
