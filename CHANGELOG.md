@@ -20,6 +20,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - add partial flag to `insertion_point_placements` and
   `insertion_row_and_col_placements`
 - Allow fusing rows and columns which are positive on either or both sides.
+- The tracking of interleaving factors is implemented, including the poly time
+  algorithm. This includes the new strategy `AddInterleavingAssumptionFactory`
+  which adds the assumptions required in order to enumerate when performing
+  an interleaving factor strategy.
+- The `TileScopePack` has a new method `make_interleaving` which by will change
+  any factor strategy in the pack to allow interleaving. The default setting is
+  for tracked, and so the assumption strategies are also added. This can be
+  turned off with the flag `tracked=False`.
 
 ### Fixed
 - untracked fusion packs don't add assumption strategies
