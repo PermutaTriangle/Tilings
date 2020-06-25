@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   ability to track specifications using component fusion.
 - add partial flag to `insertion_point_placements` and
   `insertion_row_and_col_placements`
+- add `MinerVerificationStrategy` which allows verification of certain
+  domino tilings.
 
 ### Fixed
 - untracked fusion packs don't add assumption strategies
