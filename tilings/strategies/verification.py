@@ -161,10 +161,7 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
             and len(tiling.requirements[0]) == 1
             and len(tiling.requirements[0][0]) == 1
         ):
-            if not tiling.requirements and basis in (
-                [Perm((0, 1, 2))],
-                [Perm((2, 1, 0))],
-            ):
+            if basis in ([Perm((0, 1, 2))], [Perm((2, 1, 0))]):
                 # Av(123) or Av(321) - use fusion!
                 return (
                     TileScopePack.row_and_col_placements(row_only=True)
