@@ -214,9 +214,13 @@ class AddInterleavingAssumptionFactory(StrategyFactory[Tiling]):
         Yield an AddAssumption strategy for the given component if needed.
         """
         cols, rows = interleaving_rows_and_cols(components)
-        assumptions = chain.from_iterable(
-            assumptions_to_add(cells, cols, rows) for cells in components
-        )
+        assumptions = [
+            ass
+            for ass in chain.from_iterable(
+                assumptions_to_add(cells, cols, rows) for cells in components
+            )
+            if ass not in comb_class.assumptions
+        ]
         if assumptions:
             strategy = AddAssumptionsStrategy(assumptions, workable=True)
             yield strategy(comb_class)
