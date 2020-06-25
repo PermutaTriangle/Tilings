@@ -3,8 +3,8 @@ import pytest
 from comb_spec_searcher.strategies import Rule
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import TrackingAssumption
 from tilings.algorithms import Fusion
+from tilings.assumptions import TrackingAssumption
 from tilings.strategies import ComponentFusionFactory, FusionFactory
 from tilings.strategies.fusion import (
     ComponentFusionStrategy,
@@ -303,4 +303,3 @@ def test_positive_fusion():
             assumptions=(TrackingAssumption((GriddedPerm(Perm((0,)), ((0, 0),)),)),),
         ),
     )
-
