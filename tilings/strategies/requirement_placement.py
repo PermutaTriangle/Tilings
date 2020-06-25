@@ -623,7 +623,7 @@ class RowAndColumnPlacementFactory(AbstractRequirementPlacementFactory):
                 indices = tuple(0 for _ in gps)
                 yield tuple(gps), indices, direction
         if self.place_row:
-            row_dirs = tuple(d for d in self.dirs if d in (DIR_SOUTH,))
+            row_dirs = tuple(d for d in self.dirs if d in (DIR_NORTH, DIR_SOUTH))
             for gps, direction in product(rows.values(), row_dirs):
                 indices = tuple(0 for _ in gps)
                 yield tuple(gps), indices, direction

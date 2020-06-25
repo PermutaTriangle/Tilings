@@ -102,8 +102,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             for child_var, parent_vars in self.reversed_extra_parameters.items()
             if child_var != self.fuse_parameter and len(parent_vars) >= 2
         ]
-        self.min_left = min_left
-        self.min_right = min_right
+        self.min_points = min_left, min_right
 
     def _init_checked(self):
         """
@@ -153,7 +152,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         return False
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
-        if self.min_left or self.min_right:
+        if self.min_points != (0, 0):
             raise NotImplementedError(
                 "not implemented equation in the case of "
                 "positive left or positive right"
@@ -332,9 +331,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         the number of points in A gives us an upper bound for the number of points
         on the left or the right.
         """
-        min_left_points, max_left_points = self.min_left, n
-        min_right_points, max_right_points = self.min_right, n
-        min_both_points, max_both_points = self.min_left + self.min_right, n
+        min_left_points, max_left_points = self.min_points[0], n
+        min_right_points, max_right_points = self.min_points[1], n
+        min_both_points, max_both_points = sum(self.min_points), n
         for parent_fusion_parameter, fusion_type in zip(
             self.parent_fusion_parameters, self.fusion_types,
         ):

@@ -151,7 +151,7 @@ class Fusion:
                     else:
                         res.append(GriddedPerm(Perm((1, 0)), (c1, c2)))
             return sorted(res)
-        elif self._positive_left or self._positive_right:
+        if self._positive_left or self._positive_right:
             return sorted(GriddedPerm.single_cell(Perm((0,)), cell) for cell in cells)
         raise ValueError("no positive left right requirement")
 
