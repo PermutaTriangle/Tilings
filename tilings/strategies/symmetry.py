@@ -127,7 +127,7 @@ class TilingComplement(TilingSymmetryStrategy):
 
     @staticmethod
     def formal_step() -> str:
-        return "complement of the tiing"
+        return "complement of the tiling"
 
     def __str__(self) -> str:
         return "complement"
