@@ -147,9 +147,9 @@ class Fusion:
                 for c2 in cells[idx:]:
                     res.append(GriddedPerm(Perm((0, 1)), (c1, c2)))
                     if self._fuse_row:
-                        res.append(GriddedPerm(Perm((1, 0)), (c2, c1)))
-                    else:
                         res.append(GriddedPerm(Perm((1, 0)), (c1, c2)))
+                    else:
+                        res.append(GriddedPerm(Perm((1, 0)), (c2, c1)))
             return sorted(res)
         if self._positive_left or self._positive_right:
             return sorted(GriddedPerm.single_cell(Perm((0,)), cell) for cell in cells)
