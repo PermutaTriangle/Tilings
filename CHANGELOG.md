@@ -43,6 +43,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   requirement insertion strategy.
 - use fusion on positive `Av(123)` when expanding 1x1 verified classes
 - fix bug that prevented applying all eight symmetries
+- fix assumption mapping bug in `FusionStrategy`
+- fix `__repr__` in `FusionStrategy`
 
 ## [2.0.0] - 2020-06-17
 ### Added
