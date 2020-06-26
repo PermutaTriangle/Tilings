@@ -342,6 +342,7 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
                 LocalVerificationStrategy(no_factors=True),
             ],
@@ -444,6 +445,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
                 LocalVerificationStrategy(no_factors=True),
             ],
@@ -609,6 +611,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
             ],
             name="factor pack",
