@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   any factor strategy in the pack to allow interleaving. The default setting is
   for tracked, and so the assumption strategies are also added. This can be
   turned off with the flag `tracked=False`.
+- `InsertionEncodingVerificationStrategy` was added to verification expansion
+  packs.
+
+### Changed
+- The definition of a local `TrackingAssumption` in `LocalEnumeration` now says
+  it is local if every gp in it is local (before it was they all used the same
+  single cell).
 
 ### Fixed
 - untracked fusion packs don't add assumption strategies
