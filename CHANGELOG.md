@@ -36,6 +36,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   it is local if every gp in it is local (before it was they all used the same
   single cell).
 
+### Changed
+- the default in `LocalVerificationStrategy` is now `no_factors=False`.
+
 ### Fixed
 - untracked fusion packs don't add assumption strategies
 - the length parameter for `all_the_strategies` is passed correctly to the

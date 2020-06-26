@@ -420,7 +420,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
     localized, i.e. in a single cell and the tiling is not 1x1.
     """
 
-    def __init__(self, ignore_parent: bool = True, no_factors: bool = True):
+    def __init__(self, ignore_parent: bool = True, no_factors: bool = False):
         self.no_factors = no_factors
         super().__init__(ignore_parent=ignore_parent)
 
