@@ -628,7 +628,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def __repr__(self) -> str:
         return (
             self.__class__.__name__
-            + f"(row_idx={self.row_idx}, col_idx={self.col_idx}, tracked={self.tracked})"
+            + f"(row_idx={self.row_idx}, col_idx={self.col_idx}, "
+            f"tracked={self.tracked})"
         )
 
 
