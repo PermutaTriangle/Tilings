@@ -342,6 +342,7 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
                 LocalVerificationStrategy(no_factors=True),
             ],
@@ -419,7 +420,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
     localized, i.e. in a single cell and the tiling is not 1x1.
     """
 
-    def __init__(self, ignore_parent: bool = True, no_factors: bool = True):
+    def __init__(self, ignore_parent: bool = True, no_factors: bool = False):
         self.no_factors = no_factors
         super().__init__(ignore_parent=ignore_parent)
 
@@ -444,6 +445,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
                 LocalVerificationStrategy(no_factors=True),
             ],
@@ -609,6 +611,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
             ],
             name="factor pack",

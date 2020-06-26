@@ -280,7 +280,59 @@ class TestLocalVerificationStrategy(CommonTest):
                 [GriddedPerm(Perm((0,)), ((1, 0),))],
             ],
         )
-        return [t]
+        t1 = Tiling(
+            obstructions=[
+                GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)]),
+                GriddedPerm(Perm((0, 1)), [(1, 1), (1, 1)]),
+                GriddedPerm(Perm((0, 1)), [(2, 0), (2, 0)]),
+                GriddedPerm(Perm((1, 0)), [(1, 1), (1, 1)]),
+            ],
+            requirements=[
+                [GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0)))],
+                [GriddedPerm.point_perm((1, 1))],
+                [GriddedPerm.point_perm((2, 0))],
+            ],
+            assumptions=[
+                TrackingAssumption([GriddedPerm.point_perm((0, 0))]),
+                TrackingAssumption([GriddedPerm.point_perm((1, 1))]),
+                TrackingAssumption([GriddedPerm.point_perm((2, 0))]),
+                TrackingAssumption(
+                    [GriddedPerm.point_perm((0, 0)), GriddedPerm.point_perm((2, 0))]
+                ),
+            ],
+        )
+        t2 = Tiling(
+            obstructions=(
+                GriddedPerm(Perm((0,)), ((0, 0),)),
+                GriddedPerm(Perm((0,)), ((1, 1),)),
+                GriddedPerm(Perm((0,)), ((2, 0),)),
+                GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((0, 1)), ((2, 1), (2, 1))),
+                GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+            ),
+            requirements=(
+                (GriddedPerm(Perm((0,)), ((1, 0),)),),
+                (GriddedPerm(Perm((1, 0)), ((2, 1), (2, 1))),),
+            ),
+            assumptions=(
+                TrackingAssumption(
+                    (
+                        GriddedPerm(Perm((0,)), ((0, 1),)),
+                        GriddedPerm(Perm((0,)), ((1, 0),)),
+                    )
+                ),
+                TrackingAssumption(
+                    (
+                        GriddedPerm(Perm((0,)), ((0, 1),)),
+                        GriddedPerm(Perm((0,)), ((1, 0),)),
+                        GriddedPerm(Perm((0,)), ((2, 1),)),
+                    )
+                ),
+                TrackingAssumption((GriddedPerm(Perm((0,)), ((2, 1),)),)),
+            ),
+        )
+        return [t, t1, t2]
 
     @pytest.fixture
     def onebyone_enum(self):
@@ -311,6 +363,8 @@ class TestLocalVerificationStrategy(CommonTest):
         ) == TileScopePack.regular_insertion_encoding(3).add_initial(
             SplittingStrategy(ignore_parent=True), apply_first=True
         )
+        assert strategy.pack(enum_verified[1]).name == "factor pack"
+        assert strategy.pack(enum_verified[2]).name == "factor pack"
 
     @pytest.mark.timeout(10)
     def test_get_specification(self, strategy, enum_verified):
@@ -327,6 +381,7 @@ class TestLocalVerificationStrategy(CommonTest):
             )
             == 0
         )
+        # can't the other tilings due to assumptions.
 
     @pytest.fixture
     def enum_crossing_req(self):
