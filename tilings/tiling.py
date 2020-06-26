@@ -8,7 +8,7 @@ import json
 from array import array
 from collections import Counter, defaultdict
 from functools import partial
-from itertools import chain, product
+from itertools import chain, filterfalse, product
 from operator import xor
 from typing import (
     Callable,
@@ -1500,8 +1500,11 @@ class Tiling(CombinatorialClass):
 
     def __repr__(self) -> str:
         format_string = "Tiling(obstructions={}, requirements={}, assumptions={})"
+        non_point_obstructions = tuple(
+            filterfalse(GriddedPerm.is_point_perm, self.obstructions)
+        )
         return format_string.format(
-            self.obstructions, self.requirements, self.assumptions
+            non_point_obstructions, self.requirements, self.assumptions
         )
 
     def __str__(self) -> str:
