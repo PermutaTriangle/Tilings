@@ -1,16 +1,13 @@
+import pytest
+
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
-from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.assumptions import TrackingAssumption
+from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 
 
 @pytest.fixture
-def single_variable():
-    return []
-
-
-@ptyest.fixture
-def multi_variable():
+def rules_to_check():
     return [
         RequirementInsertionStrategy(
             gps=frozenset({GriddedPerm(Perm((0,)), ((0, 0),))}), ignore_parent=True
@@ -60,18 +57,15 @@ def multi_variable():
                     TrackingAssumption((GriddedPerm(Perm((0,)), ((3, 0),)),)),
                 ),
             )
-        ).to_reverse_rule(),
+        )
+        .to_equivalence_rule()
+        .to_reverse_rule(),
     ]
 
 
-def test_single_variable(single_variable):
-    for rule in single_variable:
-        for i in range(6):
-            rule.sanity_check(i)
-
-
-@pytest.mark.xfail(reason="mutli variable sanity check not implemented")
-def test_multi_variable(multi_variable):
-    for rule in multi_variable:
-        for i in range(6):
-            rule.sanity_check(i)
+def test_sanity_check_rules(rules_to_check):
+    for rule in rules_to_check:
+        print(rule)
+        for n in range(6):
+            for parameters in rule.comb_class.possible_parameters(n):
+                assert rule.sanity_check(n, **parameters)
