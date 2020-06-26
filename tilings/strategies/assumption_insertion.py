@@ -127,7 +127,7 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
 
     def formal_step(self) -> str:
         if len(self.assumptions) == 1:
-            return f"adding the assumption '{self.assumptions[0]}"
+            return f"adding the assumption '{self.assumptions[0]}'"
         assumptions = ", ".join([f"'{ass}'" for ass in self.assumptions])
         return f"adding the assumptions '{assumptions}'"
 
