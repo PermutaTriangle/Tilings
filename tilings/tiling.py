@@ -1179,7 +1179,9 @@ class Tiling(CombinatorialClass):
         if not parameters:
             yield from self.gridded_perms_of_length(n)
         else:
-            assert set(self.extra_parameters) == set(parameters)
+            assert set(self.extra_parameters) == set(
+                parameters
+            ), f"{self.extra_parameters, set(parameters)}"
             for gp in self.gridded_perms_of_length(n):
                 if all(
                     ass.get_value(gp) == parameters[k]

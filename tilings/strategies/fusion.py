@@ -537,7 +537,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         child = children[0]
         mapped_assumptions = [
-            ass.__class__(gps)
+            ass.__class__(child.forward_map(gp) for gp in gps)
             for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
         ]
         return (
@@ -625,6 +625,12 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def from_dict(cls, d: dict) -> "FusionStrategy":
         return cls(**d)
 
+    def __repr__(self) -> str:
+        return (
+            self.__class__.__name__
+            + f"(row_idx={self.row_idx}, col_idx={self.col_idx}, tracked={self.tracked})"
+        )
+
 
 class ComponentFusionStrategy(FusionStrategy):
     def fusion_algorithm(self, tiling: Tiling) -> Fusion:
@@ -707,7 +713,7 @@ class ComponentFusionFactory(StrategyFactory[Tiling]):
         return f"{'tracked ' if self.tracked else ''}component fusion"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "()"
+        return self.__class__.__name__ + f"(tracked={self.tracked})"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
