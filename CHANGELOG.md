@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - the length parameter for `all_the_strategies` is passed correctly to the
   requirement insertion strategy.
 - use fusion on positive `Av(123)` when expanding 1x1 verified classes
+- fix bug that prevented applying all eight symmetries
 
 ## [2.0.0] - 2020-06-17
 ### Added
