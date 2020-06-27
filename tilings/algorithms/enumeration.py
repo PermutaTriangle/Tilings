@@ -67,7 +67,10 @@ class LocalEnumeration(Enumeration):
             all(gp.is_single_cell() for gp in self.tiling.obstructions)
             and all(self._req_is_single_cell(req) for req in self.tiling.requirements)
             and all(
-                self._req_is_single_cell(ass.gps) for ass in self.tiling.assumptions
+                gp.is_single_cell()
+                for gp in chain.from_iterable(
+                    ass.gps for ass in self.tiling.assumptions
+                )
             )
         )
 

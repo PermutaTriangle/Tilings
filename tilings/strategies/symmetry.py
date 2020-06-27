@@ -127,7 +127,7 @@ class TilingComplement(TilingSymmetryStrategy):
 
     @staticmethod
     def formal_step() -> str:
-        return "complement of the tiing"
+        return "complement of the tiling"
 
     def __str__(self) -> str:
         return "complement"
@@ -286,9 +286,10 @@ class SymmetriesFactory(StrategyFactory[Tiling]):
             if comb_class not in symmetries:
                 yield strategy(rotations, False)
             symmetries.add(comb_class)
-            if comb_class not in symmetries:
+            comb_class_inverse = comb_class.inverse()
+            if comb_class_inverse not in symmetries:
                 yield strategy(rotations, True)
-            symmetries.add(comb_class.inverse())
+            symmetries.add(comb_class_inverse)
             comb_class = comb_class.rotate90()
             if comb_class in symmetries:
                 break
