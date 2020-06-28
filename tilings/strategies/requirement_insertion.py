@@ -81,39 +81,22 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
         av, co = children
-        av_mapped_ass = [
-            ass.__class__(
-                tuple(
-                    av.forward_map(gp)
-                    for gp in ass.gps
-                    if gp.avoids(*self.gps)
-                    and all(cell in av.forward_cell_map for cell in gp.pos)
-                )
-            ).avoiding(av.obstructions)
-            for ass in comb_class.assumptions
-        ]
-        co_mapped_ass = [
-            ass.__class__(
-                tuple(
-                    co.forward_map(gp)
-                    for gp in ass.gps
-                    if all(cell in co.forward_cell_map for cell in gp.pos)
-                )
-            ).avoiding(co.obstructions)
-            for ass in comb_class.assumptions
-        ]
         av_params: Dict[str, str] = {}
-        for assumption, mapped_assumption in zip(comb_class.assumptions, av_mapped_ass):
-            if mapped_assumption.gps:
-                parent_var = comb_class.get_parameter(assumption)
-                child_var = av.get_parameter(mapped_assumption)
-                av_params[parent_var] = child_var
-
         co_params: Dict[str, str] = {}
-        for assumption, mapped_assumption in zip(comb_class.assumptions, co_mapped_ass):
-            if mapped_assumption.gps:
+        for assumption in comb_class.assumptions:
+            av_mapped_assumption = av.forward_map_assumption(assumption).avoiding(
+                av.obstructions
+            )
+            if av_mapped_assumption.gps:
                 parent_var = comb_class.get_parameter(assumption)
-                child_var = co.get_parameter(mapped_assumption)
+                child_var = av.get_parameter(av_mapped_assumption)
+                av_params[parent_var] = child_var
+            co_mapped_assumption = co.forward_map_assumption(assumption).avoiding(
+                co.obstructions
+            )
+            if co_mapped_assumption.gps:
+                parent_var = comb_class.get_parameter(assumption)
+                child_var = co.get_parameter(co_mapped_assumption)
                 co_params[parent_var] = child_var
         return av_params, co_params
 

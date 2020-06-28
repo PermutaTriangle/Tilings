@@ -780,6 +780,17 @@ class Tiling(CombinatorialClass):
     def forward_map(self, gp: GriddedPerm) -> GriddedPerm:
         return GriddedPerm(gp.patt, [self.forward_cell_map[cell] for cell in gp.pos])
 
+    def forward_map_assumption(
+        self, assumption: TrackingAssumption
+    ) -> TrackingAssumption:
+        return assumption.__class__(
+            tuple(
+                self.forward_map(gp)
+                for gp in assumption.gps
+                if all(cell in self.forward_cell_map for cell in gp.pos)
+            )
+        ).avoiding(self.obstructions)
+
     @property
     def forward_cell_map(self) -> CellMap:
         try:

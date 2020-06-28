@@ -60,9 +60,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         ):
             for i, cells in enumerate(self.partition):
                 if assumption.gps[0].pos[0] in cells:
-                    new_assumption = assumption.__class__(
-                        children[i].forward_map(gp) for gp in assumption.gps
-                    )
+                    new_assumption = children[i].forward_map_assumption(assumption)
                     child_var = children[i].get_parameter(new_assumption)
                     extra_parameters[i][parent_var] = child_var
                     break
