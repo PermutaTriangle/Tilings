@@ -781,15 +781,24 @@ class Tiling(CombinatorialClass):
         return GriddedPerm(gp.patt, [self.forward_cell_map[cell] for cell in gp.pos])
 
     def forward_map_assumption(
-        self, assumption: TrackingAssumption
+        self, assumption: TrackingAssumption, check_avoidance: bool = True
     ) -> TrackingAssumption:
-        return assumption.__class__(
+        """
+        Maps the assumption using the `forward_map` method on each gridded perm.
+
+        If check_avoidance, it will return the assumption with only the mapped
+        gridded perms that avoid the obstructions on the tiling.
+        """
+        mapped_assumption = assumption.__class__(
             tuple(
                 self.forward_map(gp)
                 for gp in assumption.gps
                 if all(cell in self.forward_cell_map for cell in gp.pos)
             )
-        ).avoiding(self.obstructions)
+        )
+        if check_avoidance:
+            return mapped_assumption.avoiding(self.obstructions)
+        return mapped_assumption
 
     @property
     def forward_cell_map(self) -> CellMap:

@@ -89,7 +89,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             zip(self._placed_cells, children[1:] if self.include_empty else children)
         ):
             mapped_assumptions = [
-                child.forward_map_assumption(ass).avoiding(child.obstructions)
+                child.forward_map_assumption(ass)
                 for ass in algo.stretched_assumptions(cell)
             ]
             for assumption, mapped_assumption in zip(

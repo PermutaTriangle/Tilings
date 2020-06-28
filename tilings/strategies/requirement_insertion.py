@@ -84,18 +84,13 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         av_params: Dict[str, str] = {}
         co_params: Dict[str, str] = {}
         for assumption in comb_class.assumptions:
-            av_mapped_assumption = av.forward_map_assumption(assumption).avoiding(
-                av.obstructions
-            )
+            parent_var = comb_class.get_parameter(assumption)
+            av_mapped_assumption = av.forward_map_assumption(assumption)
             if av_mapped_assumption.gps:
-                parent_var = comb_class.get_parameter(assumption)
                 child_var = av.get_parameter(av_mapped_assumption)
                 av_params[parent_var] = child_var
-            co_mapped_assumption = co.forward_map_assumption(assumption).avoiding(
-                co.obstructions
-            )
+            co_mapped_assumption = co.forward_map_assumption(assumption)
             if co_mapped_assumption.gps:
-                parent_var = comb_class.get_parameter(assumption)
                 child_var = co.get_parameter(co_mapped_assumption)
                 co_params[parent_var] = child_var
         return av_params, co_params
