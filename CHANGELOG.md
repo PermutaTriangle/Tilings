@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   turned off with the flag `tracked=False`.
 - `InsertionEncodingVerificationStrategy` was added to verification expansion
   packs.
+- `forward_map_assumption` method on `Tiling`.
 
 ### Changed
 - The definition of a local `TrackingAssumption` in `LocalEnumeration` now says

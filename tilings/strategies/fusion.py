@@ -537,7 +537,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         child = children[0]
         mapped_assumptions = [
-            ass.__class__(child.forward_map(gp) for gp in gps)
+            child.forward_map_assumption(ass.__class__(gps))
             for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
         ]
         return (

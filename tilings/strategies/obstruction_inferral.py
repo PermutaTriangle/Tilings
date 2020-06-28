@@ -45,25 +45,15 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             children = self.decomposition_function(comb_class)
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
-        av = children[0]
-        av_mapped_ass = [
-            ass.__class__(
-                tuple(
-                    av.forward_map(gp)
-                    for gp in ass.gps
-                    if gp.avoids(*self.gps)
-                    and all(cell in av.forward_cell_map for cell in gp.pos)
-                )
-            ).avoiding(av.obstructions)
-            for ass in comb_class.assumptions
-        ]
-        av_params: Dict[str, str] = {}
-        for assumption, mapped_assumption in zip(comb_class.assumptions, av_mapped_ass):
+        child = children[0]
+        params: Dict[str, str] = {}
+        for assumption in comb_class.assumptions:
+            mapped_assumption = child.forward_map_assumption(assumption)
             if mapped_assumption.gps:
                 parent_var = comb_class.get_parameter(assumption)
-                child_var = av.get_parameter(mapped_assumption)
-                av_params[parent_var] = child_var
-        return (av_params,)
+                child_var = child.get_parameter(mapped_assumption)
+                params[parent_var] = child_var
+        return (params,)
 
     def backward_map(
         self,

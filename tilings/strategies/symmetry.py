@@ -47,9 +47,7 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         child = children[0]
         mapped_assumptions = tuple(
-            ass.__class__(
-                tuple(self.gp_transform(comb_class, gp) for gp in ass.gps)
-            ).avoiding(child.obstructions)
+            ass.__class__(tuple(self.gp_transform(comb_class, gp) for gp in ass.gps))
             for ass in comb_class.assumptions
         )
         return (
