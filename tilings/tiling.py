@@ -1159,7 +1159,10 @@ class Tiling(CombinatorialClass):
             len(gp) > 1
             for gp in chain.from_iterable(ass.gps for ass in self.assumptions)
         ):
-            raise NotImplementedError
+            raise NotImplementedError(
+                "possible parameters only implemented for assumptions with "
+                "size one gridded perms"
+            )
         parameters = [self.get_parameter(ass) for ass in self.assumptions]
         for values in product(*[range(n + 1) for _ in parameters]):
             yield dict(zip(parameters, values))
