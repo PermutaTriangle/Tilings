@@ -30,11 +30,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   turned off with the flag `tracked=False`.
 - The `possible_parameters` method on `Tiling` allowing for sanity checking
   specifications with multiple variables.
+- `InsertionEncodingVerificationStrategy` was added to verification expansion
+  packs.
+- `forward_map_assumption` method on `Tiling`.
+
+### Changed
+- The definition of a local `TrackingAssumption` in `LocalEnumeration` now says
+  it is local if every gp in it is local (before it was they all used the same
+  single cell).
+- the default in `LocalVerificationStrategy` is now `no_factors=False`.
 
 ### Fixed
 - untracked fusion packs don't add assumption strategies
 - the length parameter for `all_the_strategies` is passed correctly to the
   requirement insertion strategy.
+- use fusion on positive `Av(123)` when expanding 1x1 verified classes
+- fix bug that prevented applying all eight symmetries
+- fix assumption mapping bug in `FusionStrategy`
+- fix `__repr__` in `FusionStrategy`
 
 ## [2.0.0] - 2020-06-17
 ### Added

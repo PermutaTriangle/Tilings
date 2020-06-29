@@ -331,8 +331,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         the number of points in A gives us an upper bound for the number of points
         on the left or the right.
         """
-        min_left_points, max_left_points = self.min_points[0], n
-        min_right_points, max_right_points = self.min_points[1], n
+        min_left_points, max_left_points = self.min_points[0], n - self.min_points[1]
+        min_right_points, max_right_points = self.min_points[1], n - self.min_points[0]
         min_both_points, max_both_points = sum(self.min_points), n
         for parent_fusion_parameter, fusion_type in zip(
             self.parent_fusion_parameters, self.fusion_types,
@@ -537,7 +537,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         child = children[0]
         mapped_assumptions = [
-            ass.__class__(gps)
+            child.forward_map_assumption(ass.__class__(gps))
             for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
         ]
         return (
@@ -625,6 +625,13 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def from_dict(cls, d: dict) -> "FusionStrategy":
         return cls(**d)
 
+    def __repr__(self) -> str:
+        return (
+            self.__class__.__name__
+            + f"(row_idx={self.row_idx}, col_idx={self.col_idx}, "
+            f"tracked={self.tracked})"
+        )
+
 
 class ComponentFusionStrategy(FusionStrategy):
     def fusion_algorithm(self, tiling: Tiling) -> Fusion:
@@ -707,7 +714,7 @@ class ComponentFusionFactory(StrategyFactory[Tiling]):
         return f"{'tracked ' if self.tracked else ''}component fusion"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "()"
+        return self.__class__.__name__ + f"(tracked={self.tracked})"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
