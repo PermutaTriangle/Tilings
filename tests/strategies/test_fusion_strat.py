@@ -4,9 +4,9 @@ from comb_spec_searcher.strategies import Rule
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
+from tilings.assumptions import TrackingAssumption
 from tilings.strategies import ComponentFusionFactory, FusionFactory
 from tilings.strategies.fusion import (
-    ComponentFusionConstructor,
     ComponentFusionStrategy,
     FusionConstructor,
     FusionStrategy,
@@ -199,11 +199,11 @@ def test_formal_step_component(component_col_fusion, component_row_fusion):
     assert component_row_fusion.inferrable
     assert component_row_fusion.workable
     assert not component_row_fusion.possibly_empty
-    assert isinstance(component_row_fusion.constructor, ComponentFusionConstructor)
+    assert isinstance(component_row_fusion.constructor, FusionConstructor)
     assert component_col_fusion.inferrable
     assert component_col_fusion.workable
     assert not component_col_fusion.possibly_empty
-    assert isinstance(component_col_fusion.constructor, ComponentFusionConstructor)
+    assert isinstance(component_col_fusion.constructor, FusionConstructor)
 
 
 def test_fuse_parameter():
@@ -245,3 +245,61 @@ def test_fuse_parameter():
     assert strategy._fuse_parameter(tiling) == "k_0"
     rule = strategy(tiling)
     assert isinstance(rule.constructor, FusionConstructor)
+
+
+def test_positive_fusion():
+    tiling = Tiling(
+        [
+            GriddedPerm(Perm((0, 1, 2)), [(0, 0), (0, 0), (0, 0)]),
+            GriddedPerm(Perm((0, 1, 2)), [(0, 0), (0, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1, 2)), [(0, 0), (1, 0), (1, 0)]),
+            GriddedPerm(Perm((0, 1, 2)), [(1, 0), (1, 0), (1, 0)]),
+        ]
+    )
+
+    positive_left = tiling.insert_cell((0, 0))
+    positive_right = tiling.insert_cell((1, 0))
+    positive_both = tiling.insert_cell((0, 0)).insert_cell((1, 0))
+
+    strategy = FusionStrategy(col_idx=0, tracked=True)
+
+    rule = strategy(tiling)
+    assert rule.children == (
+        Tiling(
+            obstructions=(GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),),
+            requirements=(),
+            assumptions=(TrackingAssumption((GriddedPerm(Perm((0,)), ((0, 0),)),)),),
+        ),
+    )
+
+    rule = strategy(positive_left)
+    assert rule.children == (
+        Tiling(
+            obstructions=(GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),),
+            requirements=((GriddedPerm(Perm((0,)), ((0, 0),)),),),
+            assumptions=(TrackingAssumption((GriddedPerm(Perm((0,)), ((0, 0),)),)),),
+        ),
+    )
+
+    rule = strategy(positive_right)
+    assert rule.children == (
+        Tiling(
+            obstructions=(GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),),
+            requirements=((GriddedPerm(Perm((0,)), ((0, 0),)),),),
+            assumptions=(TrackingAssumption((GriddedPerm(Perm((0,)), ((0, 0),)),)),),
+        ),
+    )
+
+    rule = strategy(positive_both)
+    assert rule.children == (
+        Tiling(
+            obstructions=(GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),),
+            requirements=(
+                (
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+                ),
+            ),
+            assumptions=(TrackingAssumption((GriddedPerm(Perm((0,)), ((0, 0),)),)),),
+        ),
+    )

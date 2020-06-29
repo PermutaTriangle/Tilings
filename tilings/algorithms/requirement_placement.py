@@ -252,7 +252,7 @@ class RequirementPlacement:
         """
         if cell not in self._stretched_assumptions_cache:
             self._stretched_assumptions_cache[cell] = [
-                TrackingAssumption(self._stretch_gridded_perms(ass.gps, cell))
+                ass.__class__(self._stretch_gridded_perms(ass.gps, cell))
                 for ass in self._tiling.assumptions
             ]
         return self._stretched_assumptions_cache[cell]

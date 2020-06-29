@@ -8,7 +8,11 @@ from itertools import chain
 from typing import TYPE_CHECKING
 
 from permuta import Perm
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import (
+    SkewComponentAssumption,
+    SumComponentAssumption,
+    TrackingAssumption,
+)
 from tilings.griddedperm import GriddedPerm
 
 if TYPE_CHECKING:
@@ -34,6 +38,8 @@ class Fusion:
         self._obstruction_fuse_counter = None
         self._requirements_fuse_counters = None
         self._tracked = tracked  # add a TrackingAssumption to the region being tracked.
+        self._positive_left = False
+        self._positive_right = False
         if row_idx is None and col_idx is not None:
             self._col_idx = col_idx
             self._fuse_row = False
@@ -112,6 +118,62 @@ class Fusion:
         return self._obstruction_fuse_counter
 
     @property
+    def positive_left_right_requirements(self):
+        """
+        Return the pair of requirements that ensures the left contains at least
+        one point, and the right contains at least one point.
+        """
+        left, right = [], []
+        for (x, y) in self._tiling.active_cells:
+            if self._fuse_row and y == self._row_idx:
+                left.append(GriddedPerm.single_cell(Perm((0,)), (x, y)))
+                right.append(GriddedPerm.single_cell(Perm((0,)), (x, y + 1)))
+            if not self._fuse_row and x == self._col_idx:
+                left.append(GriddedPerm.single_cell(Perm((0,)), (x, y)))
+                right.append(GriddedPerm.single_cell(Perm((0,)), (x + 1, y)))
+        return tuple(sorted(left)), tuple(sorted(right))
+
+    def new_positive_requirement(self):
+        cells = [
+            (x, y)
+            for (x, y) in self._tiling.active_cells
+            if (self._fuse_row and y == self._row_idx)
+            or (not self._fuse_row and x == self._col_idx)
+        ]
+        if self._positive_left and self._positive_right:
+            cells.sort()
+            res = []
+            for idx, c1 in enumerate(cells):
+                for c2 in cells[idx:]:
+                    res.append(GriddedPerm(Perm((0, 1)), (c1, c2)))
+                    if self._fuse_row:
+                        res.append(GriddedPerm(Perm((1, 0)), (c1, c2)))
+                    else:
+                        res.append(GriddedPerm(Perm((1, 0)), (c2, c1)))
+            return sorted(res)
+        if self._positive_left or self._positive_right:
+            return sorted(GriddedPerm.single_cell(Perm((0,)), cell) for cell in cells)
+        raise ValueError("no positive left right requirement")
+
+    def is_positive_left_or_right_requirement(self, requirement):
+        """
+        Return True if the requirement is a positive right or left requirement,
+        but also set this to True on the algorithm, as these will be skipped
+        when determining whether or not fusable.
+        """
+        left, right = self.positive_left_right_requirements
+        if requirement == left:
+            self._positive_left = True
+            return True
+        if requirement == right:
+            self._positive_right = True
+            return True
+        return False
+
+    def min_left_right_points(self):
+        return int(self._positive_left), int(self._positive_right)
+
+    @property
     def requirements_fuse_counters(self):
         """
         List of fuse counters for each of the requirements list of the tiling.
@@ -119,7 +181,9 @@ class Fusion:
         if self._requirements_fuse_counters is not None:
             return self._requirements_fuse_counters
         counters = [
-            self._fuse_counter(req_list) for req_list in self._tiling.requirements
+            self._fuse_counter(req_list)
+            for req_list in self._tiling.requirements
+            if not self.is_positive_left_or_right_requirement(req_list)
         ]
         self._requirements_fuse_counters = counters
         return self._requirements_fuse_counters
@@ -231,13 +295,20 @@ class Fusion:
         Return the fused tiling.
         """
         assumptions = [
-            TrackingAssumption(gps) for gps in self.assumptions_fuse_counters
+            ass.__class__(gps)
+            for ass, gps in zip(
+                self._tiling.assumptions, self.assumptions_fuse_counters
+            )
         ]
         if self._tracked:
             assumptions.append(self.new_assumption())
+        requirements = self.requirements_fuse_counters
+        if self._positive_left or self._positive_right:
+            new_positive_requirement = self.new_positive_requirement()
+            requirements = requirements + [new_positive_requirement]
         return self._tiling.__class__(
             obstructions=self.obstruction_fuse_counter.keys(),
-            requirements=self.requirements_fuse_counters,
+            requirements=requirements,
             assumptions=assumptions,
         )
 
@@ -262,7 +333,6 @@ class ComponentFusion(Fusion):
             raise NotImplementedError(
                 "Component fusion does not handle " "requirements at the moment"
             )
-        assert not tracked, "tracking not implemented for component fusion"
         super().__init__(tiling, row_idx=row_idx, col_idx=col_idx, tracked=tracked)
         self._first_cell = None
         self._second_cell = None
@@ -404,6 +474,21 @@ class ComponentFusion(Fusion):
             return False
         new_tiling = self._tiling.add_obstructions(self.obstructions_to_add())
         return self._tiling == new_tiling
+
+    def new_assumption(self):
+        """
+        Return the assumption that needs to be counted in order to enumerate.
+        """
+        fcell = self.first_cell
+        scell = self.second_cell
+        gps = (GriddedPerm.single_cell(Perm((0,)), fcell),)
+        if self._fuse_row:
+            sum_ob = GriddedPerm(Perm((1, 0)), (scell, fcell))
+        else:
+            sum_ob = GriddedPerm(Perm((1, 0)), (fcell, scell))
+        if sum_ob in self._tiling.obstructions:
+            return SumComponentAssumption(gps)
+        return SkewComponentAssumption(gps)
 
     def __str__(self):
         s = "ComponentFusion Algorithm for:\n"
