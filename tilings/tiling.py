@@ -1155,6 +1155,11 @@ class Tiling(CombinatorialClass):
         return tuple("k_{}".format(i) for i in range(len(self._assumptions)))
 
     def possible_parameters(self, n: int) -> Iterator[Dict[str, int]]:
+        if any(
+            len(gp) > 1
+            for gp in chain.from_iterable(ass.gps for ass in self.assumptions)
+        ):
+            raise NotImplementedError
         parameters = [self.get_parameter(ass) for ass in self.assumptions]
         for values in product(*[range(n + 1) for _ in parameters]):
             yield dict(zip(parameters, values))
