@@ -8,7 +8,7 @@ import json
 from array import array
 from collections import Counter, defaultdict
 from functools import partial
-from itertools import chain, product
+from itertools import chain, filterfalse, product
 from operator import xor
 from typing import (
     Callable,
@@ -780,6 +780,26 @@ class Tiling(CombinatorialClass):
     def forward_map(self, gp: GriddedPerm) -> GriddedPerm:
         return GriddedPerm(gp.patt, [self.forward_cell_map[cell] for cell in gp.pos])
 
+    def forward_map_assumption(
+        self, assumption: TrackingAssumption, check_avoidance: bool = True
+    ) -> TrackingAssumption:
+        """
+        Maps the assumption using the `forward_map` method on each gridded perm.
+
+        If check_avoidance, it will return the assumption with only the mapped
+        gridded perms that avoid the obstructions on the tiling.
+        """
+        mapped_assumption = assumption.__class__(
+            tuple(
+                self.forward_map(gp)
+                for gp in assumption.gps
+                if all(cell in self.forward_cell_map for cell in gp.pos)
+            )
+        )
+        if check_avoidance:
+            return mapped_assumption.avoiding(self.obstructions)
+        return mapped_assumption
+
     @property
     def forward_cell_map(self) -> CellMap:
         try:
@@ -1179,7 +1199,9 @@ class Tiling(CombinatorialClass):
         if not parameters:
             yield from self.gridded_perms_of_length(n)
         else:
-            assert set(self.extra_parameters) == set(parameters)
+            assert set(self.extra_parameters) == set(
+                parameters
+            ), f"{self.extra_parameters, set(parameters)}"
             for gp in self.gridded_perms_of_length(n):
                 if all(
                     ass.get_value(gp) == parameters[k]
@@ -1500,8 +1522,11 @@ class Tiling(CombinatorialClass):
 
     def __repr__(self) -> str:
         format_string = "Tiling(obstructions={}, requirements={}, assumptions={})"
+        non_point_obstructions = tuple(
+            filterfalse(GriddedPerm.is_point_perm, self.obstructions)
+        )
         return format_string.format(
-            self.obstructions, self.requirements, self.assumptions
+            non_point_obstructions, self.requirements, self.assumptions
         )
 
     def __str__(self) -> str:

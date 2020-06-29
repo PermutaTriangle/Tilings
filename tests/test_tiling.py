@@ -1413,6 +1413,12 @@ def test_is_monotone_cell(isolated_tiling):
     assert not t.is_monotone_cell((0, 0))
 
 
+def test_repr(factorable_tiling, empty_tiling):
+    assert factorable_tiling == eval(repr(factorable_tiling))
+    assert empty_tiling == eval(repr(empty_tiling))
+    assert repr(Tiling()) == "Tiling(obstructions=(), requirements=(), assumptions=())"
+
+
 # ------------------------------------------------------------
 # Test for algorithms
 # ------------------------------------------------------------

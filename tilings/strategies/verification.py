@@ -161,10 +161,7 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
             and len(tiling.requirements[0]) == 1
             and len(tiling.requirements[0][0]) == 1
         ):
-            if not tiling.requirements and basis in (
-                [Perm((0, 1, 2))],
-                [Perm((2, 1, 0))],
-            ):
+            if basis in ([Perm((0, 1, 2))], [Perm((2, 1, 0))]):
                 # Av(123) or Av(321) - use fusion!
                 return (
                     TileScopePack.row_and_col_placements(row_only=True)
@@ -345,6 +342,7 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
                 LocalVerificationStrategy(no_factors=True),
             ],
@@ -422,7 +420,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
     localized, i.e. in a single cell and the tiling is not 1x1.
     """
 
-    def __init__(self, ignore_parent: bool = True, no_factors: bool = True):
+    def __init__(self, ignore_parent: bool = True, no_factors: bool = False):
         self.no_factors = no_factors
         super().__init__(ignore_parent=ignore_parent)
 
@@ -447,6 +445,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
                 LocalVerificationStrategy(no_factors=True),
             ],
@@ -612,6 +611,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
             ],
             name="factor pack",
