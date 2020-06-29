@@ -436,14 +436,13 @@ return a string containing Maple code for the equations.
 .. code:: python
 
        >>> print(spec.get_maple_equations())
-       # The system of 5 equations
-       root_func := F_0:
+       root_func := F[0, x]:
        eqs := [
-       F_0 = F_1 + F_2,
-       F_1 = 1,
-       F_2 = F_3,
-       F_3 = F_0**2*F_4,
-       F_4 = x
+       F[0, x] = (F[1, x] + F[2, x]),
+       F[1, x] = (1),
+       F[2, x] = F[3, x],
+       F[3, x] = ((F[0, x]**(2)) * F[4, x]),
+       F[4, x] = x
        ]:
        count := [1, 1, 2, 5, 14, 42, 132]:
 
