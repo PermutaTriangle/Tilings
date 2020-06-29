@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `InsertionEncodingVerificationStrategy` was added to verification expansion
   packs.
 - `forward_map_assumption` method on `Tiling`.
+- Added the `initial_conditions` method to `Tiling`.
 
 ### Changed
 - The definition of a local `TrackingAssumption` in `LocalEnumeration` now says

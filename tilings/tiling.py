@@ -7,9 +7,9 @@
 import json
 from array import array
 from collections import Counter, defaultdict
-from functools import partial
+from functools import partial, reduce
 from itertools import chain, filterfalse, product
-from operator import xor
+from operator import mul, xor
 from typing import (
     Callable,
     Dict,
@@ -1165,6 +1165,26 @@ class Tiling(CombinatorialClass):
         except ValueError:
             raise ValueError(f"following assumption not on tiling: '{assumption}'")
         return "k_{}".format(idx)
+
+    def initial_conditions(self, check: int = 6) -> List[sympy.Expr]:
+        def gp_monomial(gp):
+            return reduce(
+                mul,
+                [
+                    sympy.var(self.get_parameter(ass)) ** ass.get_value(gp)
+                    for ass in self.assumptions
+                ],
+                sympy.Number(1),
+            )
+
+        return [
+            sum(
+                gp_monomial(gp)
+                for parameters in self.possible_parameters(n)
+                for gp in self.objects_of_size(n=n, **parameters)
+            )
+            for n in range(check + 1)
+        ]
 
     def maximum_length_of_minimum_gridded_perm(self) -> int:
         """Returns the maximum length of the minimum gridded permutation that
