@@ -3,6 +3,7 @@ from typing import Iterable, Optional
 from logzero import logger
 
 from comb_spec_searcher import StrategyPack
+from comb_spec_searcher.strategies import AbstractStrategy
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import strategies as strat
@@ -37,26 +38,85 @@ class TileScopePack(StrategyPack):
             iterative=self.iterative,
         )
 
-    def make_fusion(
-        self, component: bool = False, tracked: bool = True
-    ) -> "TileScopePack":
-        """Create a new pack by adding fusion to the current pack."""
-        assert not (
-            component and tracked
-        ), "not implemented tracking for component fusion"
+    def make_tracked(self, interleaving: str = "none"):
+        """Add assumption tracking strategies.
+        The interleaving parameter are passed to the SplittingStrategy."""
         pack = self
-        if tracked and strat.SplittingStrategy() not in self:
+        if strat.SplittingStrategy() not in self:
             pack = pack.add_initial(
-                strat.SplittingStrategy(ignore_parent=True), apply_first=True
+                strat.SplittingStrategy(interleaving=interleaving, ignore_parent=True),
+                apply_first=True,
             )
-        if tracked and strat.AddAssumptionFactory() not in self:
+        if strat.AddAssumptionFactory() not in self:
             pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
+        return pack
+
+    def make_fusion(
+        self, component: bool = False, tracked: bool = True, apply_first: bool = False
+    ) -> "TileScopePack":
+        """
+        Create a new pack by adding fusion to the current pack.
+
+        If component, it will add component fusion.
+        If tracked, it will return the pack for finding a tracked tree.
+        If apply_first, it will add fusion to the front of the initial strategies.
+        """
+        pack = self
+        if tracked:
+            pack = pack.make_tracked()
         if component:
             pack = pack.add_initial(
-                strat.ComponentFusionFactory(tracked=tracked), "component_fusion"
+                strat.ComponentFusionFactory(tracked=tracked),
+                "component_fusion",
+                apply_first=apply_first,
             )
         else:
-            pack = pack.add_initial(strat.FusionFactory(tracked=tracked), "fusion")
+            pack = pack.add_initial(
+                strat.FusionFactory(tracked=tracked), "fusion", apply_first=apply_first
+            )
+        return pack
+
+    def make_interleaving(
+        self, tracked: bool = True, unions: bool = False
+    ) -> "TileScopePack":
+        """
+        Return a new pack where the factor strategy is replaced with an
+        interleaving factor strategy.
+
+        If unions is set to True it will overwrite unions on the strategy, and
+        also pass the argument to AddInterleavingAssumption method.
+        """
+
+        def replace_list(strats):
+            """Return a new list with the replaced tracked factor strategy."""
+            res = []
+            for strategy in strats:
+                if isinstance(strategy, strat.FactorFactory):
+                    d = strategy.to_jsonable()
+                    d["interleaving"] = "all"
+                    d["tracked"] = tracked
+                    d["unions"] = d["unions"] or unions
+                    res.append(AbstractStrategy.from_dict(d))
+                else:
+                    res.append(strategy)
+            return res
+
+        pack = self.__class__(
+            ver_strats=replace_list(self.ver_strats),
+            inferral_strats=replace_list(self.inferral_strats),
+            initial_strats=replace_list(self.initial_strats),
+            expansion_strats=list(map(replace_list, self.expansion_strats)),
+            name=self.name + "_interleaving",
+            symmetries=self.symmetries,
+            iterative=self.iterative,
+        )
+
+        if tracked:
+            pack = pack.add_initial(
+                strat.AddInterleavingAssumptionFactory(unions=unions), apply_first=True
+            )
+            pack = pack.make_tracked(interleaving="all")
+
         return pack
 
     def make_elementary(self) -> "TileScopePack":

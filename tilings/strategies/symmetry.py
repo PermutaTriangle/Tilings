@@ -5,7 +5,6 @@ from typing import Dict, Iterator, Optional, Tuple, cast
 from comb_spec_searcher import StrategyFactory, SymmetryStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import TrackingAssumption
 
 __all__ = ("SymmetriesFactory",)
 
@@ -28,7 +27,7 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
                     for req in tiling.requirements
                 ),
                 tuple(
-                    TrackingAssumption(map(partial(self.gp_transform, tiling), ass.gps))
+                    ass.__class__(map(partial(self.gp_transform, tiling), ass.gps))
                     for ass in tiling.assumptions
                 ),
                 remove_empty_rows_and_cols=False,
@@ -47,12 +46,9 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
         child = children[0]
-        mapped_gps = tuple(
-            tuple(self.gp_transform(comb_class, gp) for gp in ass.gps)
-            for ass in comb_class.assumptions
-        )
         mapped_assumptions = tuple(
-            TrackingAssumption(gps).avoiding(child.obstructions) for gps in mapped_gps
+            ass.__class__(tuple(self.gp_transform(comb_class, gp) for gp in ass.gps))
+            for ass in comb_class.assumptions
         )
         return (
             {
@@ -129,7 +125,7 @@ class TilingComplement(TilingSymmetryStrategy):
 
     @staticmethod
     def formal_step() -> str:
-        return "complement of the tiing"
+        return "complement of the tiling"
 
     def __str__(self) -> str:
         return "complement"
@@ -288,9 +284,10 @@ class SymmetriesFactory(StrategyFactory[Tiling]):
             if comb_class not in symmetries:
                 yield strategy(rotations, False)
             symmetries.add(comb_class)
-            if comb_class not in symmetries:
+            comb_class_inverse = comb_class.inverse()
+            if comb_class_inverse not in symmetries:
                 yield strategy(rotations, True)
-            symmetries.add(comb_class.inverse())
+            symmetries.add(comb_class_inverse)
             comb_class = comb_class.rotate90()
             if comb_class in symmetries:
                 break

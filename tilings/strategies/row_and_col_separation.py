@@ -8,7 +8,6 @@ from comb_spec_searcher import DisjointUnionStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RowColSeparation
-from tilings.assumptions import TrackingAssumption
 
 __all__ = ["RowColumnSeparationStrategy"]
 
@@ -61,16 +60,15 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
         child = children[0]
-        mapped_gps = tuple(
-            tuple(
-                self.forward_map(comb_class, gp, children)[0]
-                for gp in ass.gps
-                if all(cell in self.forward_cell_map(comb_class) for cell in gp.pos)
-            )
-            for ass in comb_class.assumptions
-        )
         mapped_assumptions = tuple(
-            TrackingAssumption(gps).avoiding(child.obstructions) for gps in mapped_gps
+            ass.__class__(
+                tuple(
+                    self.forward_map(comb_class, gp, children)[0]
+                    for gp in ass.gps
+                    if all(cell in self.forward_cell_map(comb_class) for cell in gp.pos)
+                )
+            ).avoiding(child.obstructions)
+            for ass in comb_class.assumptions
         )
         return (
             {
