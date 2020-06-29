@@ -1,3 +1,4 @@
+from .assumption_insertion import AddAssumptionFactory, AddInterleavingAssumptionFactory
 from .assumption_splitting import SplittingStrategy
 from .factor import FactorFactory
 from .fusion import ComponentFusionFactory, FusionFactory
@@ -27,6 +28,7 @@ from .verification import (
     BasicVerificationStrategy,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
+    InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
@@ -35,6 +37,8 @@ from .verification import (
 
 __all__ = [
     # Assumptions
+    "AddAssumptionFactory",
+    "AddInterleavingAssumptionFactory",
     "SplittingStrategy",
     # Batch
     "CellInsertionFactory",
@@ -67,6 +71,7 @@ __all__ = [
     "ElementaryVerificationStrategy",
     "LocallyFactorableVerificationStrategy",
     "LocalVerificationStrategy",
+    "InsertionEncodingVerificationStrategy",
     "MonotoneTreeVerificationStrategy",
     "OneByOneVerificationStrategy",
 ]

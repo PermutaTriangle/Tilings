@@ -1,4 +1,6 @@
+from functools import reduce
 from itertools import chain
+from operator import mul
 from typing import Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
 from sympy import Expr, Function, var
@@ -22,6 +24,7 @@ from tilings.algorithms.enumeration import (
     LocalEnumeration,
     MonotoneTreeEnumeration,
 )
+from tilings.assumptions import ComponentAssumption
 from tilings.strategies import (
     FactorFactory,
     FactorInsertionFactory,
@@ -46,6 +49,10 @@ TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
 
 
 class BasicVerificationStrategy(AtomStrategy):
+    """
+    TODO: can this be moved to the CSS atom strategy?
+    """
+
     @staticmethod
     def count_objects_of_size(
         comb_class: CombinatorialClass, n: int, **parameters: int
@@ -64,6 +71,22 @@ class BasicVerificationStrategy(AtomStrategy):
         if expected == actual:
             return 1
         return 0
+
+    def get_genf(
+        self,
+        comb_class: CombinatorialClass,
+        funcs: Optional[Dict[CombinatorialClass, Function]] = None,
+    ) -> Expr:
+        if not self.verified(comb_class):
+            raise StrategyDoesNotApply("Can't find generating functon for non-atom.")
+        if not isinstance(comb_class, Tiling):
+            raise NotImplementedError
+        cast(Tiling, comb_class)
+        gp = next(comb_class.minimal_gridded_perms())
+        expected = {"x": len(gp)}
+        for assumption in comb_class.assumptions:
+            expected[comb_class.get_parameter(assumption)] = assumption.get_value(gp)
+        return reduce(mul, [var(k) ** n for k, n in expected.items()], 1)
 
 
 class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
@@ -100,6 +123,10 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
 
     @staticmethod
     def pack(tiling: Tiling) -> StrategyPack:
+        if any(isinstance(ass, ComponentAssumption) for ass in tiling.assumptions):
+            raise InvalidOperationError(
+                "Can't find generating function with component assumption."
+            )
         # pylint: disable=import-outside-toplevel
         from tilings.tilescope import TileScopePack
 
@@ -134,10 +161,7 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
             and len(tiling.requirements[0]) == 1
             and len(tiling.requirements[0][0]) == 1
         ):
-            if not tiling.requirements and basis in (
-                [Perm((0, 1, 2))],
-                [Perm((2, 1, 0))],
-            ):
+            if basis in ([Perm((0, 1, 2))], [Perm((2, 1, 0))]):
                 # Av(123) or Av(321) - use fusion!
                 return (
                     TileScopePack.row_and_col_placements(row_only=True)
@@ -162,9 +186,9 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         )
 
     def verified(self, tiling: Tiling) -> bool:
-        return (
-            tiling.dimensions == (1, 1)
-            and frozenset(ob.patt for ob in tiling.obstructions) not in self.symmetries
+        return tiling.dimensions == (1, 1) and (
+            frozenset(ob.patt for ob in tiling.obstructions) not in self.symmetries
+            or any(isinstance(ass, ComponentAssumption) for ass in tiling.assumptions)
         )
 
     def get_genf(
@@ -302,6 +326,10 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
 
     @staticmethod
     def pack(tiling: Tiling) -> StrategyPack:
+        if any(isinstance(ass, ComponentAssumption) for ass in tiling.assumptions):
+            raise InvalidOperationError(
+                "Can't find generating function with component assumption."
+            )
         return StrategyPack(
             name="LocallyFactorable",
             initial_strats=[
@@ -314,6 +342,7 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
                 LocalVerificationStrategy(no_factors=True),
             ],
@@ -391,37 +420,24 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
     localized, i.e. in a single cell and the tiling is not 1x1.
     """
 
-    def __init__(self, ignore_parent: bool = True, no_factors: bool = True):
+    def __init__(self, ignore_parent: bool = True, no_factors: bool = False):
         self.no_factors = no_factors
         super().__init__(ignore_parent=ignore_parent)
 
     def pack(self, tiling: Tiling) -> StrategyPack:
-
-        # pylint: disable=import-outside-toplevel
-        from tilings.strategy_pack import TileScopePack
-
-        if tiling.dimensions[0] == 1:
-            if all(
-                is_insertion_encodable_rightmost(basis)
-                for basis, _ in tiling.cell_basis().values()
-            ):
-                return TileScopePack.regular_insertion_encoding(2).add_initial(
-                    SplittingStrategy(ignore_parent=True), apply_first=True
-                )
-            # TODO: check if one cell has topmost regular insenc and rest are
-            # finite, then have topmost insertion encoding
-        if tiling.dimensions[1] == 1:
-            if all(
-                is_insertion_encodable_maximum(basis)
-                for basis, _ in tiling.cell_basis().values()
-            ):
-                return TileScopePack.regular_insertion_encoding(3).add_initial(
-                    SplittingStrategy(ignore_parent=True), apply_first=True
-                )
-            # TODO: check if one cell has rightmost regular insenc and rest are
-            # finite, then have rightmost insertion encoding
+        try:
+            return InsertionEncodingVerificationStrategy().pack(tiling)
+        except StrategyDoesNotApply:
+            pass
         if self.no_factors:
             raise InvalidOperationError("Cannot get a simpler specification")
+        if (
+            any(isinstance(ass, ComponentAssumption) for ass in tiling.assumptions)
+            and len(tiling.find_factors()) == 1
+        ):
+            raise InvalidOperationError(
+                "Can't find generating function with component assumption."
+            )
         return StrategyPack(
             initial_strats=[SplittingStrategy(ignore_parent=True), FactorFactory()],
             inferral_strats=[],
@@ -429,6 +445,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
                 LocalVerificationStrategy(no_factors=True),
             ],
@@ -485,6 +502,86 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         return "local verification"
 
 
+class InsertionEncodingVerificationStrategy(TileScopeVerificationStrategy):
+    """
+    Verify all n x 1 and 1 x n tilings that have a regular insertion encoding.
+    """
+
+    def __init__(self, ignore_parent: bool = True):
+        super().__init__(ignore_parent=ignore_parent)
+
+    def pack(self, tiling: Tiling) -> StrategyPack:
+        if any(isinstance(ass, ComponentAssumption) for ass in tiling.assumptions):
+            raise InvalidOperationError(
+                "Can't find generating function with component assumption."
+            )
+        # pylint: disable=import-outside-toplevel
+        from tilings.strategy_pack import TileScopePack
+
+        if self.has_rightmost_insertion_encoding(tiling):
+            return TileScopePack.regular_insertion_encoding(2).add_initial(
+                SplittingStrategy(ignore_parent=True), apply_first=True
+            )
+        if self.has_topmost_insertion_encoding(tiling):
+            return TileScopePack.regular_insertion_encoding(3).add_initial(
+                SplittingStrategy(ignore_parent=True), apply_first=True
+            )
+        raise StrategyDoesNotApply("tiling does not has a regular insertion encoding")
+
+    @staticmethod
+    def has_rightmost_insertion_encoding(tiling: Tiling) -> bool:
+        return tiling.dimensions[0] == 1 and all(
+            is_insertion_encodable_rightmost(basis)
+            for basis, _ in tiling.cell_basis().values()
+        )
+
+    @staticmethod
+    def has_topmost_insertion_encoding(tiling: Tiling) -> bool:
+        return tiling.dimensions[1] == 1 and all(
+            is_insertion_encodable_maximum(basis)
+            for basis, _ in tiling.cell_basis().values()
+        )
+
+    def verified(self, tiling: Tiling) -> bool:
+        return self.has_rightmost_insertion_encoding(
+            tiling
+        ) or self.has_topmost_insertion_encoding(tiling)
+
+    @staticmethod
+    def formal_step() -> str:
+        return "tiling has a regular insertion encoding"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "InsertionEncodingVerificationStrategy":
+        return cls(**d)
+
+    def count_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> int:
+        raise NotImplementedError(
+            "Not implemented method to count objects for insertion encoding "
+            "verified tilings"
+        )
+
+    def generate_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError(
+            "Not implemented method to generate objects for insertion encoding "
+            "verified tilings"
+        )
+
+    def random_sample_object_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        raise NotImplementedError(
+            "Not implemented random sample for insertion encoding verified tilings"
+        )
+
+    def __str__(self) -> str:
+        return "insertion encoding verified"
+
+
 class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
     """
     Verify all tiling that is a monotone tree.
@@ -495,30 +592,14 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
         super().__init__(ignore_parent=ignore_parent)
 
     def pack(self, tiling: Tiling) -> StrategyPack:
-        # pylint: disable=import-outside-toplevel
-        from tilings.strategy_pack import TileScopePack
-
-        if tiling.dimensions[0] == 1:
-            if all(
-                is_insertion_encodable_rightmost(basis)
-                for basis, _ in tiling.cell_basis().values()
-            ):
-                return TileScopePack.regular_insertion_encoding(2).add_initial(
-                    SplittingStrategy(ignore_parent=True), apply_first=True
-                )
-            # TODO: check if one cell has topmost regular insenc and rest are
-            # finite, then have topmost insertion encoding
-        if tiling.dimensions[1] == 1:
-            if all(
-                is_insertion_encodable_maximum(basis)
-                for basis, _ in tiling.cell_basis().values()
-            ):
-                return TileScopePack.regular_insertion_encoding(3).add_initial(
-                    SplittingStrategy(ignore_parent=True), apply_first=True
-                )
-            # TODO: check if one cell has rightmost regular insenc and rest are
-            # finite, then have rightmost insertion encoding
-
+        if any(isinstance(ass, ComponentAssumption) for ass in tiling.assumptions):
+            raise InvalidOperationError(
+                "Can't find generating function with component assumption."
+            )
+        try:
+            return InsertionEncodingVerificationStrategy().pack(tiling)
+        except StrategyDoesNotApply:
+            pass
         if self.no_factors:
             raise InvalidOperationError(
                 "Cannot get a specification for a tiling in the database"
@@ -530,6 +611,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
             ],
             name="factor pack",

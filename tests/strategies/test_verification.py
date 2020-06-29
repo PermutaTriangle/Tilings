@@ -18,6 +18,7 @@ from tilings.strategies import (
     BasicVerificationStrategy,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
+    InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
@@ -279,7 +280,59 @@ class TestLocalVerificationStrategy(CommonTest):
                 [GriddedPerm(Perm((0,)), ((1, 0),))],
             ],
         )
-        return [t]
+        t1 = Tiling(
+            obstructions=[
+                GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)]),
+                GriddedPerm(Perm((0, 1)), [(1, 1), (1, 1)]),
+                GriddedPerm(Perm((0, 1)), [(2, 0), (2, 0)]),
+                GriddedPerm(Perm((1, 0)), [(1, 1), (1, 1)]),
+            ],
+            requirements=[
+                [GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0)))],
+                [GriddedPerm.point_perm((1, 1))],
+                [GriddedPerm.point_perm((2, 0))],
+            ],
+            assumptions=[
+                TrackingAssumption([GriddedPerm.point_perm((0, 0))]),
+                TrackingAssumption([GriddedPerm.point_perm((1, 1))]),
+                TrackingAssumption([GriddedPerm.point_perm((2, 0))]),
+                TrackingAssumption(
+                    [GriddedPerm.point_perm((0, 0)), GriddedPerm.point_perm((2, 0))]
+                ),
+            ],
+        )
+        t2 = Tiling(
+            obstructions=(
+                GriddedPerm(Perm((0,)), ((0, 0),)),
+                GriddedPerm(Perm((0,)), ((1, 1),)),
+                GriddedPerm(Perm((0,)), ((2, 0),)),
+                GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((0, 1)), ((2, 1), (2, 1))),
+                GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+            ),
+            requirements=(
+                (GriddedPerm(Perm((0,)), ((1, 0),)),),
+                (GriddedPerm(Perm((1, 0)), ((2, 1), (2, 1))),),
+            ),
+            assumptions=(
+                TrackingAssumption(
+                    (
+                        GriddedPerm(Perm((0,)), ((0, 1),)),
+                        GriddedPerm(Perm((0,)), ((1, 0),)),
+                    )
+                ),
+                TrackingAssumption(
+                    (
+                        GriddedPerm(Perm((0,)), ((0, 1),)),
+                        GriddedPerm(Perm((0,)), ((1, 0),)),
+                        GriddedPerm(Perm((0,)), ((2, 1),)),
+                    )
+                ),
+                TrackingAssumption((GriddedPerm(Perm((0,)), ((2, 1),)),)),
+            ),
+        )
+        return [t, t1, t2]
 
     @pytest.fixture
     def onebyone_enum(self):
@@ -310,6 +363,8 @@ class TestLocalVerificationStrategy(CommonTest):
         ) == TileScopePack.regular_insertion_encoding(3).add_initial(
             SplittingStrategy(ignore_parent=True), apply_first=True
         )
+        assert strategy.pack(enum_verified[1]).name == "factor pack"
+        assert strategy.pack(enum_verified[2]).name == "factor pack"
 
     @pytest.mark.timeout(10)
     def test_get_specification(self, strategy, enum_verified):
@@ -326,6 +381,7 @@ class TestLocalVerificationStrategy(CommonTest):
             )
             == 0
         )
+        # can't the other tilings due to assumptions.
 
     @pytest.fixture
     def enum_crossing_req(self):
@@ -349,6 +405,65 @@ class TestLocalVerificationStrategy(CommonTest):
         assert not LocalVerificationStrategy(no_factors=True).verified(
             enum_crossing_req
         )
+
+
+class TestInsertionEncodingVerificationStrategy(CommonTest):
+    @pytest.fixture
+    def strategy(self):
+        return InsertionEncodingVerificationStrategy()
+
+    @pytest.fixture
+    def formal_step(self):
+        return "tiling has a regular insertion encoding"
+
+    @pytest.fixture
+    def enum_verified(self):
+        return [
+            Tiling(
+                obstructions=(
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+                    GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                    GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+                ),
+                requirements=(),
+                assumptions=(),
+            )
+        ]
+
+    @pytest.fixture
+    def enum_not_verified(self):
+        return [
+            Tiling(
+                obstructions=(
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+                    GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                    GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+                    GriddedPerm(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
+                ),
+                requirements=(),
+                assumptions=(),
+            )
+        ]
+
+    def test_pack(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            strategy.pack(tiling) == TileScopePack.regular_insertion_encoding(
+                3
+            ).add_initial(SplittingStrategy(ignore_parent=True), apply_first=True)
+
+    @pytest.mark.timeout(60)
+    def test_get_specification(self, strategy, enum_verified):
+        for tiling in enum_verified:
+            assert isinstance(
+                strategy.get_specification(tiling), CombinatorialSpecification
+            )
+
+    def test_get_genf(self, strategy, enum_verified):
+        x = sympy.Symbol("x")
+        expected_gf = (1 - x) / (4 * x ** 2 - 4 * x + 1)
+        assert sympy.simplify(strategy.get_genf(enum_verified[0]) - expected_gf) == 0
 
 
 class TestMonotoneTreeVerificationStrategy(CommonTest):
@@ -737,7 +852,7 @@ class TestOneByOneVerificationStrategy(CommonTest):
             # subclass of Av(123) avoiding patterns of length <= 4, positive or not
             Tiling.from_string("012_2301").add_requirement(Perm((0,)), [(0, 0)]),
             # uses fusion
-            Tiling.from_string("123"),
+            Tiling.from_string("123").insert_cell((0, 0)),
             # no pack yet
             Tiling.from_string("1324"),
         ]

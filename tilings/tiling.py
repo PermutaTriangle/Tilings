@@ -8,7 +8,7 @@ import json
 from array import array
 from collections import Counter, defaultdict
 from functools import partial
-from itertools import chain, product
+from itertools import chain, filterfalse, product
 from operator import xor
 from typing import (
     Callable,
@@ -46,7 +46,11 @@ from .algorithms import (
     RowColSeparation,
     SubobstructionInferral,
 )
-from .assumptions import TrackingAssumption
+from .assumptions import (
+    SkewComponentAssumption,
+    SumComponentAssumption,
+    TrackingAssumption,
+)
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
 from .misc import intersection_reduce, map_cell, union_reduce
@@ -373,6 +377,14 @@ class Tiling(CombinatorialClass):
         if self.assumptions:
             result.extend(split_16bit(len(self.assumptions)))
             for assumption in self.assumptions:
+                if isinstance(assumption, SkewComponentAssumption):
+                    result.append(2)
+                elif isinstance(assumption, SumComponentAssumption):
+                    result.append(1)
+                elif isinstance(assumption, TrackingAssumption):
+                    result.append(0)
+                else:
+                    raise ValueError("Not a valid assumption.")
                 result.extend(split_16bit(len(assumption.gps)))
                 result.extend(
                     chain.from_iterable(
@@ -432,9 +444,20 @@ class Tiling(CombinatorialClass):
             nassumptions = merge_8bit(arr[offset], arr[offset + 1])
             offset += 2
             for _ in range(nassumptions):
-                # tracking
+                assumption_type = arr[offset]
+                offset += 1
                 gps, offset = recreate_gp_list(offset)
-                assumptions.append(TrackingAssumption(gps))
+                if assumption_type == 0:
+                    # tracking
+                    assumptions.append(TrackingAssumption(gps))
+                elif assumption_type == 1:
+                    # sum
+                    assumptions.append(SumComponentAssumption(gps))
+                elif assumption_type == 2:
+                    # skew
+                    assumptions.append(SkewComponentAssumption(gps))
+                else:
+                    raise ValueError("Invalid assumption type.")
         return cls(
             obstructions=obstructions,
             requirements=requirements,
@@ -560,6 +583,43 @@ class Tiling(CombinatorialClass):
         patt in the given cell."""
         new_req_list = (GriddedPerm.single_cell(patt, cell),)
         return self.add_list_requirement(new_req_list)
+
+    def add_assumption(self, assumption: TrackingAssumption) -> "Tiling":
+        """Returns a new tiling with the added assumption."""
+        return self.add_assumptions((assumption,))
+
+    def add_assumptions(self, assumptions: Iterable[TrackingAssumption]) -> "Tiling":
+        """Returns a new tiling with the added assumptions."""
+        return Tiling(
+            self._obstructions,
+            self._requirements,
+            self._assumptions + tuple(assumptions),
+        )
+
+    def remove_assumption(self, assumption: TrackingAssumption):
+        """Returns a new tiling with assumption removed."""
+        try:
+            idx = self._assumptions.index(assumption)
+        except ValueError:
+            raise ValueError(f"following assumption not on tiling: '{assumption}'")
+        return Tiling(
+            self._obstructions,
+            self._requirements,
+            self._assumptions[:idx] + self._assumptions[idx + 1 :],
+        )
+
+    def remove_assumptions(self):
+        """
+        Return the tiling with all assumptions removed.
+        """
+        return self.__class__(
+            self._obstructions,
+            self._requirements,
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
+        )
 
     def fully_isolated(self) -> bool:
         """Check if all cells are isolated on their rows and columns."""
@@ -720,6 +780,26 @@ class Tiling(CombinatorialClass):
     def forward_map(self, gp: GriddedPerm) -> GriddedPerm:
         return GriddedPerm(gp.patt, [self.forward_cell_map[cell] for cell in gp.pos])
 
+    def forward_map_assumption(
+        self, assumption: TrackingAssumption, check_avoidance: bool = True
+    ) -> TrackingAssumption:
+        """
+        Maps the assumption using the `forward_map` method on each gridded perm.
+
+        If check_avoidance, it will return the assumption with only the mapped
+        gridded perms that avoid the obstructions on the tiling.
+        """
+        mapped_assumption = assumption.__class__(
+            tuple(
+                self.forward_map(gp)
+                for gp in assumption.gps
+                if all(cell in self.forward_cell_map for cell in gp.pos)
+            )
+        )
+        if check_avoidance:
+            return mapped_assumption.avoiding(self.obstructions)
+        return mapped_assumption
+
     @property
     def forward_cell_map(self) -> CellMap:
         try:
@@ -755,7 +835,7 @@ class Tiling(CombinatorialClass):
                 [gptransf(req) for req in reqlist] for reqlist in self.requirements
             ),
             assumptions=(
-                TrackingAssumption(gptransf(gp) for gp in ass.gps)
+                ass.__class__(gptransf(gp) for gp in ass.gps)
                 for ass in self._assumptions
             ),
         )
@@ -891,7 +971,12 @@ class Tiling(CombinatorialClass):
         """
         return self._fusion(row, col, ComponentFusion)
 
-    def sub_tiling(self, cells: Iterable[Cell], factors: bool = False) -> "Tiling":
+    def sub_tiling(
+        self,
+        cells: Iterable[Cell],
+        factors: bool = False,
+        add_assumptions: Iterable[TrackingAssumption] = tuple(),
+    ) -> "Tiling":
         """Return the tiling using only the obstructions and requirements
         completely contained in the given cells. If factors is set to True,
         then it assumes that the first cells confirms if a gridded perm uses only
@@ -912,7 +997,7 @@ class Tiling(CombinatorialClass):
             for ass in self._assumptions
             if (factors and ass.gps[0].pos[0] in cells)
             or all(c in cells for c in chain.from_iterable(gp.pos for gp in ass.gps))
-        )
+        ) + tuple(add_assumptions)
         return self.__class__(
             obstructions, requirements, assumptions, simplify=False, sorted_input=True
         )
@@ -1069,6 +1154,19 @@ class Tiling(CombinatorialClass):
     def extra_parameters(self) -> Tuple[str, ...]:
         return tuple("k_{}".format(i) for i in range(len(self._assumptions)))
 
+    def possible_parameters(self, n: int) -> Iterator[Dict[str, int]]:
+        if any(
+            len(gp) > 1
+            for gp in chain.from_iterable(ass.gps for ass in self.assumptions)
+        ):
+            raise NotImplementedError(
+                "possible parameters only implemented for assumptions with "
+                "size one gridded perms"
+            )
+        parameters = [self.get_parameter(ass) for ass in self.assumptions]
+        for values in product(*[range(n + 1) for _ in parameters]):
+            yield dict(zip(parameters, values))
+
     def get_parameter(self, assumption: TrackingAssumption) -> str:
         try:
             idx = self._assumptions.index(assumption)
@@ -1114,7 +1212,9 @@ class Tiling(CombinatorialClass):
         if not parameters:
             yield from self.gridded_perms_of_length(n)
         else:
-            assert set(self.extra_parameters) == set(parameters)
+            assert set(self.extra_parameters) == set(
+                parameters
+            ), f"{self.extra_parameters, set(parameters)}"
             for gp in self.gridded_perms_of_length(n):
                 if all(
                     ass.get_value(gp) == parameters[k]
@@ -1306,19 +1406,6 @@ class Tiling(CombinatorialClass):
             self._prepare_properties()
             return self._cached_properties["dimensions"]
 
-    def remove_assumptions(self):
-        """
-        Return the tiling with all assumptions removed.
-        """
-        return self.__class__(
-            self._obstructions,
-            self._requirements,
-            remove_empty_rows_and_cols=False,
-            derive_empty=False,
-            simplify=False,
-            sorted_input=True,
-        )
-
     def add_obstruction_in_all_ways(self, patt: Perm) -> "Tiling":
         """
         Adds an obstruction of the pattern patt in all possible ways to
@@ -1393,6 +1480,7 @@ class Tiling(CombinatorialClass):
             BasicVerificationStrategy,
             DatabaseVerificationStrategy,
             LocallyFactorableVerificationStrategy,
+            InsertionEncodingVerificationStrategy,
             MonotoneTreeVerificationStrategy,
             LocalVerificationStrategy,
             OneByOneVerificationStrategy,
@@ -1402,6 +1490,7 @@ class Tiling(CombinatorialClass):
             BasicVerificationStrategy(),
             OneByOneVerificationStrategy(),
             LocallyFactorableVerificationStrategy(),
+            InsertionEncodingVerificationStrategy(),
             MonotoneTreeVerificationStrategy(),
             DatabaseVerificationStrategy(),
             LocalVerificationStrategy(),
@@ -1446,8 +1535,11 @@ class Tiling(CombinatorialClass):
 
     def __repr__(self) -> str:
         format_string = "Tiling(obstructions={}, requirements={}, assumptions={})"
+        non_point_obstructions = tuple(
+            filterfalse(GriddedPerm.is_point_perm, self.obstructions)
+        )
         return format_string.format(
-            self.obstructions, self.requirements, self.assumptions
+            non_point_obstructions, self.requirements, self.assumptions
         )
 
     def __str__(self) -> str:

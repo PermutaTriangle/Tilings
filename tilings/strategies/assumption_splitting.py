@@ -1,5 +1,5 @@
 from itertools import product
-from typing import Dict, Iterator, List, Optional, Set, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from sympy import Eq, Function
 
@@ -12,9 +12,14 @@ from comb_spec_searcher.strategies.constructor import (
     SubSamplers,
 )
 from comb_spec_searcher.utils import compositions
+from permuta import Perm
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import Factor
-from tilings.assumptions import TrackingAssumption
+from tilings.algorithms import factor
+from tilings.assumptions import (
+    SkewComponentAssumption,
+    SumComponentAssumption,
+    TrackingAssumption,
+)
 
 Cell = Tuple[int, int]
 
@@ -32,7 +37,12 @@ class Split(Constructor):
         return False
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
-        raise NotImplementedError
+        rhs_func = rhs_funcs[0]
+        subs: Dict[str, str] = {}
+        for parent, children in self.split_parameters.items():
+            for child in children:
+                subs[child] = parent
+        return Eq(lhs_func, rhs_func.subs(subs, simultaneous=True))
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
@@ -109,7 +119,7 @@ class Split(Constructor):
         subsamplers: SubSamplers,
         subrecs: SubRecs,
         n: int,
-        **parameters: int
+        **parameters: int,
     ):
         raise NotImplementedError
 
@@ -126,10 +136,38 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     TODO: iterate over all possible union of factors
     """
 
+    FACTOR_ALGO = {
+        "none": factor.Factor,
+        "monotone": factor.FactorWithMonotoneInterleaving,
+        "all": factor.FactorWithInterleaving,
+    }
+
+    def __init__(
+        self,
+        interleaving: str = "none",
+        ignore_parent: bool = False,
+        inferrable: bool = True,
+        possibly_empty: bool = True,
+        workable: bool = True,
+    ):
+        try:
+            self.factor_class = SplittingStrategy.FACTOR_ALGO[interleaving]
+        except KeyError:
+            raise ValueError(
+                "interleaving argument must be in "
+                f"{list(SplittingStrategy.FACTOR_ALGO)}"
+            )
+        super().__init__(
+            ignore_parent=ignore_parent,
+            inferrable=inferrable,
+            possibly_empty=possibly_empty,
+            workable=workable,
+        )
+
     def decomposition_function(self, tiling: Tiling) -> Optional[Tuple[Tiling]]:
         if not tiling.assumptions:
             return None
-        components = Factor(tiling.remove_assumptions()).get_components()
+        components = self.factor_class(tiling.remove_assumptions()).get_components()
         if len(components) == 1:
             return None
         new_assumptions: List[TrackingAssumption] = []
@@ -137,8 +175,17 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             new_assumptions.extend(self._split_assumption(ass, components))
         return (Tiling(tiling.obstructions, tiling.requirements, new_assumptions),)
 
-    @staticmethod
     def _split_assumption(
+        self, assumption: TrackingAssumption, components: Tuple[Set[Cell], ...]
+    ) -> List[TrackingAssumption]:
+        if isinstance(assumption, SkewComponentAssumption):
+            return self._split_skew_assumption(assumption)
+        if isinstance(assumption, SumComponentAssumption):
+            return self._split_sum_assumption(assumption)
+        return self._split_tracking_assumption(assumption, components)
+
+    @staticmethod
+    def _split_tracking_assumption(
         assumption: TrackingAssumption, components: Tuple[Set[Cell], ...]
     ) -> List[TrackingAssumption]:
         split_gps: List[List[GriddedPerm]] = [[] for _ in range(len(components))]
@@ -152,7 +199,70 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
                 # gridded perm can't be partitioned, so the partition can't be
                 # partitioned
                 return [assumption]
-        return [TrackingAssumption(gps) for gps in split_gps if gps]
+        return [assumption.__class__(gps) for gps in split_gps if gps]
+
+    def _split_skew_assumption(
+        self, assumption: SkewComponentAssumption,
+    ) -> List[TrackingAssumption]:
+        decomposition = self.skew_decomposition(assumption.cells)
+        return [
+            SkewComponentAssumption(
+                GriddedPerm.single_cell(Perm((0,)), cell) for cell in cells
+            )
+            for cells in decomposition
+        ]
+
+    def _split_sum_assumption(
+        self, assumption: SumComponentAssumption,
+    ) -> List[TrackingAssumption]:
+        decomposition = self.sum_decomposition(assumption.cells)
+        return [
+            SumComponentAssumption(
+                GriddedPerm.single_cell(Perm((0,)), cell) for cell in cells
+            )
+            for cells in decomposition
+        ]
+
+    @staticmethod
+    def sum_decomposition(
+        cells: Iterable[Cell], skew: bool = False
+    ) -> List[List[Cell]]:
+        """
+        Returns the sum decomposition of the cells.
+        If skew is True then returns the skew decomposition instead.
+        """
+        cells = sorted(cells)
+        decomposition: List[List[Cell]] = []
+        while len(cells) > 0:
+            x = cells[0][0]  # x boundary, maximum in both cases
+            y = cells[0][1]  # y boundary, maximum in sum, minimum in skew
+            change = True
+            while change:
+                change = False
+                for c in cells:
+                    if c[0] <= x:
+                        if (skew and c[1] < y) or (not skew and c[1] > y):
+                            y = c[1]
+                            change = True
+                    if (skew and c[1] >= y) or (not skew and c[1] <= y):
+                        if c[0] > x:
+                            x = c[0]
+                            change = True
+            decomposition.append([])
+            new_cells = []
+            for c in cells:
+                if c[0] <= x:
+                    decomposition[-1].append(c)
+                else:
+                    new_cells.append(c)
+            cells = new_cells
+        return decomposition
+
+    def skew_decomposition(self, cells: Iterable[Cell]) -> List[List[Cell]]:
+        """
+        Returns the skew decomposition of the cells
+        """
+        return self.sum_decomposition(cells, skew=True)
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
@@ -163,7 +273,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Can't split the tracking assumption")
         child = children[0]
         split_parameters: Dict[str, Tuple[str, ...]] = {"n": ("n",)}
-        components = Factor(comb_class.remove_assumptions()).get_components()
+        components = self.factor_class(comb_class.remove_assumptions()).get_components()
         for idx, assumption in enumerate(comb_class.assumptions):
             split_assumptions = self._split_assumption(assumption, components)
             child_vars = tuple(
@@ -206,6 +316,15 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(comb_class)
         raise NotImplementedError
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["interleaving"] = next(
+            k
+            for k, v in SplittingStrategy.FACTOR_ALGO.items()
+            if v == self.factor_class
+        )
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "SplittingStrategy":

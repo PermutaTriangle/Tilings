@@ -1,10 +1,10 @@
 import abc
 from functools import partial
-from typing import Iterator, Optional, Tuple, cast
+from typing import Dict, Iterator, Optional, Tuple, cast
 
 from comb_spec_searcher import StrategyFactory, SymmetryStrategy
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import TrackingAssumption
 
 __all__ = ("SymmetriesFactory",)
 
@@ -27,13 +27,38 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
                     for req in tiling.requirements
                 ),
                 tuple(
-                    TrackingAssumption(map(partial(self.gp_transform, tiling), ass.gps))
+                    ass.__class__(map(partial(self.gp_transform, tiling), ass.gps))
                     for ass in tiling.assumptions
                 ),
                 remove_empty_rows_and_cols=False,
                 derive_empty=False,
                 simplify=False,
             ),
+        )
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Dict[str, str], ...]:
+        if not comb_class.extra_parameters:
+            return super().extra_parameters(comb_class, children)
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        child = children[0]
+        mapped_assumptions = tuple(
+            ass.__class__(tuple(self.gp_transform(comb_class, gp) for gp in ass.gps))
+            for ass in comb_class.assumptions
+        )
+        return (
+            {
+                comb_class.get_parameter(assumption): child.get_parameter(
+                    mapped_assumption
+                )
+                for assumption, mapped_assumption in zip(
+                    comb_class.assumptions, mapped_assumptions
+                )
+            },
         )
 
     def backward_map(
@@ -100,7 +125,7 @@ class TilingComplement(TilingSymmetryStrategy):
 
     @staticmethod
     def formal_step() -> str:
-        return "complement of the tiing"
+        return "complement of the tiling"
 
     def __str__(self) -> str:
         return "complement"
@@ -259,9 +284,10 @@ class SymmetriesFactory(StrategyFactory[Tiling]):
             if comb_class not in symmetries:
                 yield strategy(rotations, False)
             symmetries.add(comb_class)
-            if comb_class not in symmetries:
+            comb_class_inverse = comb_class.inverse()
+            if comb_class_inverse not in symmetries:
                 yield strategy(rotations, True)
-            symmetries.add(comb_class.inverse())
+            symmetries.add(comb_class_inverse)
             comb_class = comb_class.rotate90()
             if comb_class in symmetries:
                 break
