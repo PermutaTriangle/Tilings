@@ -77,18 +77,10 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         extra_parameters: Tuple[Dict[str, str], ...] = tuple({} for _ in children)
         if self.include_empty:
             child = children[0]
-            mapped_assumptions = [
-                ass.__class__(
-                    child.forward_map(gp)
-                    for gp in ass.gps
-                    if all(cell in child.forward_cell_map for cell in gp.pos)
-                    and gp.avoids(*self.gps)
+            for assumption in comb_class.assumptions:
+                mapped_assumption = child.forward_map_assumption(assumption).avoiding(
+                    child.obstructions
                 )
-                for ass in comb_class.assumptions
-            ]
-            for assumption, mapped_assumption in zip(
-                comb_class.assumptions, mapped_assumptions
-            ):
                 if mapped_assumption.gps:
                     parent_var = comb_class.get_parameter(assumption)
                     child_var = child.get_parameter(mapped_assumption)
@@ -97,19 +89,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             zip(self._placed_cells, children[1:] if self.include_empty else children)
         ):
             mapped_assumptions = [
-                ass.__class__(
-                    tuple(
-                        child.forward_map(gp)
-                        for gp in ass.gps
-                        if gp.avoids(
-                            *algo.stretched_obstructions(cell),
-                            *algo.forced_obstructions_from_requirement(
-                                self.gps, self.indices, cell, self.direction
-                            ),
-                        )
-                        and all(cell in child.forward_cell_map for cell in gp.pos)
-                    )
-                ).avoiding(child.obstructions)
+                child.forward_map_assumption(ass)
                 for ass in algo.stretched_assumptions(cell)
             ]
             for assumption, mapped_assumption in zip(

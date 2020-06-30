@@ -780,6 +780,26 @@ class Tiling(CombinatorialClass):
     def forward_map(self, gp: GriddedPerm) -> GriddedPerm:
         return GriddedPerm(gp.patt, [self.forward_cell_map[cell] for cell in gp.pos])
 
+    def forward_map_assumption(
+        self, assumption: TrackingAssumption, check_avoidance: bool = True
+    ) -> TrackingAssumption:
+        """
+        Maps the assumption using the `forward_map` method on each gridded perm.
+
+        If check_avoidance, it will return the assumption with only the mapped
+        gridded perms that avoid the obstructions on the tiling.
+        """
+        mapped_assumption = assumption.__class__(
+            tuple(
+                self.forward_map(gp)
+                for gp in assumption.gps
+                if all(cell in self.forward_cell_map for cell in gp.pos)
+            )
+        )
+        if check_avoidance:
+            return mapped_assumption.avoiding(self.obstructions)
+        return mapped_assumption
+
     @property
     def forward_cell_map(self) -> CellMap:
         try:
@@ -1133,6 +1153,19 @@ class Tiling(CombinatorialClass):
     @property
     def extra_parameters(self) -> Tuple[str, ...]:
         return tuple("k_{}".format(i) for i in range(len(self._assumptions)))
+
+    def possible_parameters(self, n: int) -> Iterator[Dict[str, int]]:
+        if any(
+            len(gp) > 1
+            for gp in chain.from_iterable(ass.gps for ass in self.assumptions)
+        ):
+            raise NotImplementedError(
+                "possible parameters only implemented for assumptions with "
+                "size one gridded perms"
+            )
+        parameters = [self.get_parameter(ass) for ass in self.assumptions]
+        for values in product(*[range(n + 1) for _ in parameters]):
+            yield dict(zip(parameters, values))
 
     def get_parameter(self, assumption: TrackingAssumption) -> str:
         try:

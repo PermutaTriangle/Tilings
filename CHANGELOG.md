@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2.1.0] - 2020-06-29
 ### Added
 - add a new `AddAssumptionStrategy` which adds an assumption to a tiling.
   In practice, when expanding a class, we actually remove an assumption to
@@ -28,8 +30,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   any factor strategy in the pack to allow interleaving. The default setting is
   for tracked, and so the assumption strategies are also added. This can be
   turned off with the flag `tracked=False`.
+- The `possible_parameters` method on `Tiling` allowing for sanity checking
+  specifications with multiple variables.
 - `InsertionEncodingVerificationStrategy` was added to verification expansion
   packs.
+- `forward_map_assumption` method on `Tiling`.
 
 ### Changed
 - The definition of a local `TrackingAssumption` in `LocalEnumeration` now says
