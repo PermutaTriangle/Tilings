@@ -443,6 +443,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         """
         res = {self.fuse_parameter: number_of_left_points + number_of_right_points}
         for parameter, value in parameters.items():
+            if parameter not in self.extra_parameters and value != 0:
+                return None
             if (
                 parameter in self.left_sided_parameters
                 and number_of_left_points > value
@@ -544,6 +546,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             {
                 k: child.get_parameter(ass)
                 for k, ass in zip(comb_class.extra_parameters, mapped_assumptions)
+                if ass.gps
             },
         )
 
