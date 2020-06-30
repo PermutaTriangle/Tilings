@@ -323,7 +323,7 @@ class Fusion:
         if self._positive_left or self._positive_right:
             new_positive_requirement = self.new_positive_requirement()
             requirements = requirements + [new_positive_requirement]
-        return self._tiling.__class__(
+        fused_tiling = self._tiling.__class__(
             obstructions=self.obstruction_fuse_counter.keys(),
             requirements=requirements,
             assumptions=assumptions,
@@ -527,7 +527,7 @@ class ComponentFusion(Fusion):
                 if any(cell in gp.pos for gp in assumption.gps for cell in fusing_cells)
             ]
         )
-        return self._tiling == new_tiling and len(num_fusing_assumptions) <= 1
+        return self._tiling == new_tiling and num_fusing_assumptions <= 1
 
     def new_assumption(self):
         """
