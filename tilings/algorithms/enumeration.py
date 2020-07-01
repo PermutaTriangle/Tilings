@@ -124,6 +124,11 @@ class LocalEnumeration(Enumeration):
                 self.tiling.__class__.from_string("10"),
             ):
                 return 1 / (1 - x)
+            if self.tiling in (
+                self.tiling.__class__.from_string("123"),
+                self.tiling.__class__.from_string("321"),
+            ):
+                return sympify("-1/2*(sqrt(-4*x + 1) - 1)/x")
             # TODO: should this create a spec as in the strategy?
             raise NotImplementedError("Look up the combopal database")
         gf = None
@@ -237,8 +242,9 @@ class MonotoneTreeEnumeration(Enumeration):
             visited.add(cell)
         F = simplify(F.subs({v: 1 for v in F.free_symbols if v != x}))
         # A simple test to warn us if the code is wrong
-        expected = [len(list(self.tiling.objects_of_size(i))) for i in range(11)]
-        assert taylor_expand(F) == expected, f"Bad genf\n{taylor_expand(F)}\n{expected}"
+        assert taylor_expand(F) == [
+            len(list(self.tiling.objects_of_size(i))) for i in range(11)
+        ], f"Bad genf\n{taylor_expand(F)}\n{expected}"
         return F
 
     @staticmethod
