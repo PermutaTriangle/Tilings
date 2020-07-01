@@ -196,6 +196,11 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
     ) -> Expr:
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling not locally verified")
+        if len(tiling.obstructions) == 1 and tiling.obstructions[0] in (
+            GriddedPerm.single_cell(Perm((0, 1, 2)), (0, 0)),
+            GriddedPerm.single_cell(Perm((2, 1, 0)), (0, 0)),
+        ):
+            return LocalEnumeration(tiling).get_genf(funcs=funcs)
         try:
             return super().get_genf(tiling, funcs)
         except InvalidOperationError:
@@ -472,6 +477,11 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
     ) -> Expr:
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling not locally verified")
+        if len(tiling.obstructions) == 1 and tiling.obstructions[0] in (
+            GriddedPerm.single_cell(Perm((0, 1, 2)), (0, 0)),
+            GriddedPerm.single_cell(Perm((2, 1, 0)), (0, 0)),
+        ):
+            return LocalEnumeration(tiling).get_genf(funcs=funcs)
         try:
             return super().get_genf(tiling, funcs)
         except InvalidOperationError:
