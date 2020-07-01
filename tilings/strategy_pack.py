@@ -315,7 +315,7 @@ class TileScopePack(StrategyPack):
             place_row=place_row, place_col=place_col, partial=partial
         )
         return TileScopePack(
-            initial_strats=[strat.FactorFactory(),],
+            initial_strats=[strat.FactorFactory()],
             ver_strats=[
                 strat.BasicVerificationStrategy(),
                 strat.InsertionEncodingVerificationStrategy(),
