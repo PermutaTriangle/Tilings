@@ -1497,8 +1497,6 @@ class Tiling(CombinatorialClass):
         ]
         for enum_strat in enum_stragies:
             try:
-                if isinstance(enum_strat, LocalVerificationStrategy):
-                    return enum_strat.get_genf(self)
                 return enum_strat.get_genf(self)
             except StrategyDoesNotApply:
                 continue
