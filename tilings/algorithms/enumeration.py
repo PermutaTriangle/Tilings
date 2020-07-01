@@ -242,9 +242,10 @@ class MonotoneTreeEnumeration(Enumeration):
             visited.add(cell)
         F = simplify(F.subs({v: 1 for v in F.free_symbols if v != x}))
         # A simple test to warn us if the code is wrong
-        assert taylor_expand(F) == [
-            len(list(self.tiling.objects_of_size(i))) for i in range(7)
-        ], f"Bad genf\n{taylor_expand(F)}\n{expected}"
+        if __debug__:
+            lhs = taylor_expand(F, n=6)
+            rhs = [len(list(self.tiling.objects_of_size(i))) for i in range(7)]
+        assert lhs == rhs, f"Bad genf\n{lhs}\n{rhs}"
         return F
 
     @staticmethod
