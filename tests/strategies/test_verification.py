@@ -5,7 +5,6 @@ import sympy
 
 from comb_spec_searcher import CombinatorialSpecification, StrategyPack
 from comb_spec_searcher.exception import (
-    IncorrectGeneratingFunctionError,
     InvalidOperationError,
     StrategyDoesNotApply,
 )
@@ -580,10 +579,7 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
             )
             - 1
         ) / (2 * x * (x ** 2 - 3 * x + 1))
-        with pytest.raises(IncorrectGeneratingFunctionError):
-            assert (
-                sympy.simplify(strategy.get_genf(enum_verified[0]) - expected_gf) == 0
-            )
+        assert sympy.simplify(strategy.get_genf(enum_verified[0]) - expected_gf) == 0
 
         expected_gf = -1 / ((x - 1) * (x / (x - 1) + 1))
         assert sympy.simplify(strategy.get_genf(enum_verified[1]) - expected_gf) == 0
