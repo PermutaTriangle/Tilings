@@ -81,9 +81,9 @@ def test_splitting_gf():
         ),
         assumptions=(
             TrackingAssumption(
-                [GriddedPerm.point_perm((0, 1)), GriddedPerm.point_perm((1, 0)),]
+                [GriddedPerm.point_perm((0, 1)), GriddedPerm.point_perm((1, 0))]
             ),
-            TrackingAssumption([GriddedPerm.point_perm((1, 0)),]),
+            TrackingAssumption([GriddedPerm.point_perm((1, 0))]),
         ),
     )
     child = Tiling(
@@ -93,7 +93,7 @@ def test_splitting_gf():
         ),
         assumptions=(
             TrackingAssumption([GriddedPerm.point_perm((0, 1))]),
-            TrackingAssumption([GriddedPerm.point_perm((1, 0)),]),
+            TrackingAssumption([GriddedPerm.point_perm((1, 0))]),
         ),
     )
     strat = SplittingStrategy()
