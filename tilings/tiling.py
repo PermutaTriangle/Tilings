@@ -1174,6 +1174,10 @@ class Tiling(CombinatorialClass):
             raise ValueError(f"following assumption not on tiling: '{assumption}'")
         return "k_{}".format(idx)
 
+    def get_assumption(self, parameter: str) -> TrackingAssumption:
+        idx = parameter.split("_")[1]
+        return self.assumptions[int(idx)]
+
     def maximum_length_of_minimum_gridded_perm(self) -> int:
         """Returns the maximum length of the minimum gridded permutation that
         can be gridded on the tiling.
@@ -1209,18 +1213,12 @@ class Tiling(CombinatorialClass):
         )
 
     def objects_of_size(self, n: int, **parameters: int) -> Iterator[GriddedPerm]:
-        if not parameters:
-            yield from self.gridded_perms_of_length(n)
-        else:
-            assert set(self.extra_parameters) == set(
-                parameters
-            ), f"{self.extra_parameters, set(parameters)}"
-            for gp in self.gridded_perms_of_length(n):
-                if all(
-                    ass.get_value(gp) == parameters[k]
-                    for k, ass in zip(self.extra_parameters, self._assumptions)
-                ):
-                    yield gp
+        for gp in self.gridded_perms_of_length(n):
+            if all(
+                self.get_assumption(k).get_value(gp) == val
+                for k, val in parameters.items()
+            ):
+                yield gp
 
     def gridded_perms_of_length(self, length: int) -> Iterator[GriddedPerm]:
         for gp in self.gridded_perms(maxlen=length):
