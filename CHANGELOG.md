@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - remove empty assumptions when creating extra parameters in `FusionStrategy`
 - the method `Tiling.get_genf` returns the Catalan generating function for Av(123).
+- correct the generating function equations for `SplittingStrategy`
 
 ## [2.1.0] - 2020-06-29
 ### Added
