@@ -73,9 +73,8 @@ class Factor:
         """
         For each TrackingAssumption unite all the positions of the gridded perms.
         """
-        for ass in self._tiling.assumptions:
-            ass_cells = chain.from_iterable(gp.pos for gp in ass.gps)
-            self._unite_cells(ass_cells)
+        for gp in chain.from_iterable(ass.gps for ass in self._tiling.assumptions):
+            self._unite_cells(gp.pos)
 
     def _unite_obstructions(self) -> None:
         """
@@ -158,10 +157,10 @@ class Factor:
             requirements = tuple(
                 req for req in self._tiling.requirements if req[0].pos[0] in component
             )
+            # TODO: consider skew/sum assumptions
             assumptions = tuple(
-                ass
+                ass.__class__(gp for gp in ass.gps if gp.pos[0] in component)
                 for ass in self._tiling.assumptions
-                if ass.gps[0].pos[0] in component
             )
             factors.append((obstructions, requirements, assumptions))
         self._factors_obs_and_reqs = factors

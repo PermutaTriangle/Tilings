@@ -993,11 +993,15 @@ class Tiling(CombinatorialClass):
             or all(c in cells for c in chain.from_iterable(r.pos for r in req))
         )
         assumptions = tuple(
-            ass
-            for ass in self._assumptions
-            if (factors and ass.gps[0].pos[0] in cells)
-            or all(c in cells for c in chain.from_iterable(gp.pos for gp in ass.gps))
+            ass.__class__(
+                gp
+                for gp in ass.gps
+                if (factors and gp.pos[0] in cells) or all(c in cells for c in gp.pos)
+            )
+            for ass in self.assumptions
         ) + tuple(add_assumptions)
+        # TODO: check sum/skew assumptions
+        assumptions = set((ass for ass in assumptions if ass.gps))
         return self.__class__(
             obstructions, requirements, assumptions, simplify=False, sorted_input=True
         )
@@ -1173,6 +1177,17 @@ class Tiling(CombinatorialClass):
         except ValueError:
             raise ValueError(f"following assumption not on tiling: '{assumption}'")
         return "k_{}".format(idx)
+
+    def get_assumption(self, parameter: str) -> TrackingAssumption:
+        idx = parameter.split("_")[1]
+        return self.assumptions[int(idx)]
+
+    def get_minimum_value(self, parameter: str) -> int:
+        """
+        Return the minimum value that can be taken by the parameter.
+        """
+        assumption = self.get_assumption(parameter)
+        return min(assumption.get_value(gp) for gp in self.minimal_gridded_perms())
 
     def maximum_length_of_minimum_gridded_perm(self) -> int:
         """Returns the maximum length of the minimum gridded permutation that
