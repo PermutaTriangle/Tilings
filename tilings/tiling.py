@@ -1001,9 +1001,12 @@ class Tiling(CombinatorialClass):
             for ass in self.assumptions
         ) + tuple(add_assumptions)
         # TODO: check sum/skew assumptions
-        assumptions = set((ass for ass in assumptions if ass.gps))
         return self.__class__(
-            obstructions, requirements, assumptions, simplify=False, sorted_input=True
+            obstructions,
+            requirements,
+            set(ass for ass in assumptions if ass.gps),
+            simplify=False,
+            sorted_input=True,
         )
 
     def find_factors(self, interleaving: str = "none") -> Tuple["Tiling", ...]:

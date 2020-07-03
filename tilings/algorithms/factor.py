@@ -162,7 +162,13 @@ class Factor:
                 ass.__class__(gp for gp in ass.gps if gp.pos[0] in component)
                 for ass in self._tiling.assumptions
             )
-            factors.append((obstructions, requirements, assumptions))
+            factors.append(
+                (
+                    obstructions,
+                    requirements,
+                    tuple(set(ass for ass in assumptions if ass.gps)),
+                )
+            )
         self._factors_obs_and_reqs = factors
         return self._factors_obs_and_reqs
 
