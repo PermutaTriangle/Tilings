@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- add the `can_be_equivalent` methods to `AddAssumptionsStrategy`,
+  `SplittingStrategy`, and `FusionStrategy`.
+
 ### Fixed
 - remove empty assumptions when creating extra parameters in `FusionStrategy`
 - the method `Tiling.get_genf` returns the Catalan generating function for Av(123).
