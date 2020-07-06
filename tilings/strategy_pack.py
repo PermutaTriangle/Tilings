@@ -58,6 +58,10 @@ class TileScopePack(StrategyPack):
         pack = self
         if tracked:
             pack = pack.make_tracked()
+            if component:
+                pack = pack.add_initial(
+                    strat.SplittingStrategy(ignore_parent=True), apply_first=True
+                )
         if component:
             pack = pack.add_initial(
                 strat.ComponentFusionFactory(tracked=tracked),

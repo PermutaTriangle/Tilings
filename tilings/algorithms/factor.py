@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set,
 
 from permuta.misc import UnionFind
 from tilings import GriddedPerm
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import ComponentAssumption, TrackingAssumption
 from tilings.misc import partitions_iterator
 
 if TYPE_CHECKING:
@@ -73,8 +73,12 @@ class Factor:
         """
         For each TrackingAssumption unite all the positions of the gridded perms.
         """
-        for gp in chain.from_iterable(ass.gps for ass in self._tiling.assumptions):
-            self._unite_cells(gp.pos)
+        for assumption in self._tiling.assumptions:
+            if isinstance(assumption, ComponentAssumption):
+                self._unite_cells(chain.from_iterable(gp.pos for gp in assumption.gps))
+            else:
+                for gp in assumption.gps:
+                    self._unite_cells(gp.pos)
 
     def _unite_obstructions(self) -> None:
         """
