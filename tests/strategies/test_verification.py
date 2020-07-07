@@ -19,7 +19,6 @@ from tilings.strategies import (
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
     OneByOneVerificationStrategy,
-    SplittingStrategy,
 )
 from tilings.tilescope import TileScopePack
 
@@ -356,9 +355,7 @@ class TestLocalVerificationStrategy(CommonTest):
     def test_pack(self, strategy, enum_verified):
         assert strategy.pack(
             enum_verified[0]
-        ) == TileScopePack.regular_insertion_encoding(3).add_initial(
-            SplittingStrategy(ignore_parent=True), apply_first=True
-        )
+        ) == TileScopePack.regular_insertion_encoding(3)
         assert strategy.pack(enum_verified[1]).name == "factor pack"
         assert strategy.pack(enum_verified[2]).name == "factor pack"
 
@@ -445,9 +442,7 @@ class TestInsertionEncodingVerificationStrategy(CommonTest):
 
     def test_pack(self, strategy, enum_verified):
         for tiling in enum_verified:
-            strategy.pack(tiling) == TileScopePack.regular_insertion_encoding(
-                3
-            ).add_initial(SplittingStrategy(ignore_parent=True), apply_first=True)
+            strategy.pack(tiling) == TileScopePack.regular_insertion_encoding(3)
 
     @pytest.mark.timeout(60)
     def test_get_specification(self, strategy, enum_verified):
@@ -554,9 +549,7 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
             strategy.pack(enum_verified[0])
         assert strategy.pack(
             enum_verified[1]
-        ) == TileScopePack.regular_insertion_encoding(3).add_initial(
-            SplittingStrategy(ignore_parent=True), apply_first=True
-        )
+        ) == TileScopePack.regular_insertion_encoding(3)
 
     @pytest.mark.timeout(30)
     def test_get_specification(self, strategy, enum_verified):
@@ -862,36 +855,24 @@ class TestOneByOneVerificationStrategy(CommonTest):
     def test_pack(self, strategy, enum_verified):
         assert strategy.pack(
             enum_verified[0]
-        ) == TileScopePack.point_placements().add_initial(
-            SplittingStrategy(ignore_parent=True), apply_first=True
-        ).add_verification(
+        ) == TileScopePack.point_placements().add_verification(
             BasicVerificationStrategy(), replace=True
         )
         assert strategy.pack(enum_verified[1]) in (
-            TileScopePack.regular_insertion_encoding(2).add_initial(
-                SplittingStrategy(ignore_parent=True), apply_first=True
-            ),
-            TileScopePack.regular_insertion_encoding(3).add_initial(
-                SplittingStrategy(ignore_parent=True), apply_first=True
-            ),
+            TileScopePack.regular_insertion_encoding(2),
+            TileScopePack.regular_insertion_encoding(3),
         )
 
         assert strategy.pack(
             enum_verified[2]
-        ) == TileScopePack.regular_insertion_encoding(3).add_initial(
-            SplittingStrategy(ignore_parent=True), apply_first=True
-        )
+        ) == TileScopePack.regular_insertion_encoding(3)
 
         assert strategy.pack(
             enum_verified[3]
-        ) == TileScopePack.regular_insertion_encoding(2).add_initial(
-            SplittingStrategy(ignore_parent=True), apply_first=True
-        )
+        ) == TileScopePack.regular_insertion_encoding(2)
         assert strategy.pack(
             enum_verified[4]
-        ) == TileScopePack.row_and_col_placements().add_initial(
-            SplittingStrategy(ignore_parent=True), apply_first=True
-        ).fix_one_by_one(
+        ) == TileScopePack.row_and_col_placements().fix_one_by_one(
             [Perm((0, 1, 2)), Perm((2, 3, 0, 1))]
         )
 

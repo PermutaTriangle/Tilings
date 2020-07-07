@@ -58,16 +58,14 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         for parent_var, assumption in zip(
             comb_class.extra_parameters, comb_class.assumptions
         ):
-            for i, cells in enumerate(self.partition):
-                if assumption.gps[0].pos[0] in cells:
-                    new_assumption = children[i].forward_map_assumption(
-                        assumption, check_avoidance=False
-                    )
-                    child_var = children[i].get_parameter(new_assumption)
-                    extra_parameters[i][parent_var] = child_var
-                    break
-            else:
-                raise ValueError("Assumption was not mapped to any child")
+            for idx, child in enumerate(children):
+                # TODO: consider skew/sum
+                new_assumption = child.forward_map_assumption(
+                    assumption, check_avoidance=False
+                )
+                if new_assumption.gps:
+                    child_var = child.get_parameter(new_assumption)
+                    extra_parameters[idx][parent_var] = child_var
         return extra_parameters
 
     def formal_step(self) -> str:

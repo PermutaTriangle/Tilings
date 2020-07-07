@@ -39,14 +39,8 @@ class TileScopePack(StrategyPack):
         )
 
     def make_tracked(self, interleaving: str = "none"):
-        """Add assumption tracking strategies.
-        The interleaving parameter are passed to the SplittingStrategy."""
+        """Add assumption tracking strategies."""
         pack = self
-        if strat.SplittingStrategy() not in self:
-            pack = pack.add_initial(
-                strat.SplittingStrategy(interleaving=interleaving, ignore_parent=True),
-                apply_first=True,
-            )
         if strat.AddAssumptionFactory() not in self:
             pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
         return pack
@@ -64,6 +58,10 @@ class TileScopePack(StrategyPack):
         pack = self
         if tracked:
             pack = pack.make_tracked()
+            if component:
+                pack = pack.add_initial(
+                    strat.SplittingStrategy(ignore_parent=True), apply_first=True
+                )
         if component:
             pack = pack.add_initial(
                 strat.ComponentFusionFactory(tracked=tracked),
