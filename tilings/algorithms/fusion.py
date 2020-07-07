@@ -328,11 +328,11 @@ class Fusion:
             requirements=requirements,
             assumptions=assumptions,
         )
-        print("=" * 100)
-        print("parent:")
-        print(self._tiling)
-        print("child:")
-        print(fused_tiling)
+        # print("=" * 100)
+        # print("parent:")
+        # print(self._tiling)
+        # print("child:")
+        # print(fused_tiling)
         if self._fuse_row:
             fusing_cells = [
                 (i, self._row_idx) for i in range(self._tiling.dimensions[0])
@@ -348,7 +348,7 @@ class Fusion:
                 if any(cell in gp.pos for gp in assumption.gps for cell in fusing_cells)
             ]
         )
-        print("num assumptions:", num_fusing_assumptions)
+        # print("num assumptions:", num_fusing_assumptions)
         return fused_tiling
 
 
