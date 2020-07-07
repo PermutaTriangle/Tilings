@@ -140,7 +140,7 @@ class ComponentAssumption(TrackingAssumption):
 class SumComponentAssumption(ComponentAssumption):
     @staticmethod
     def decomposition(perm: Perm) -> List[Perm]:
-        return perm.sum_decomposition()
+        return perm.sum_decomposition()  # type: ignore
 
     def __str__(self):
         return f"can count sum components in cells {self.cells}"
@@ -152,7 +152,7 @@ class SumComponentAssumption(ComponentAssumption):
 class SkewComponentAssumption(ComponentAssumption):
     @staticmethod
     def decomposition(perm: Perm) -> List[Perm]:
-        return perm.skew_decomposition()
+        return perm.skew_decomposition()  # type: ignore
 
     def __str__(self):
         return f"can count skew components in cells {self.cells}"
