@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- add the `can_be_equivalent` methods to `AddAssumptionsStrategy`,
+  `SplittingStrategy`, and `FusionStrategy`.
 - added a `get_assumption` method to `Tiling`
 
 ### Fixed

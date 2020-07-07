@@ -208,18 +208,22 @@ def contains_interleaving_assumptions(
 class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
     def __init__(
         self,
+        parent: Tiling,
         children: Iterable[Tiling],
         extra_parameters: Tuple[Dict[str, str], ...],
         interleaving_parameters: Iterable[Tuple[str, ...]],
     ):
-        super().__init__(children, extra_parameters)
+        super().__init__(parent, children, extra_parameters)
         self.interleaving_parameters = tuple(interleaving_parameters)
 
     @classmethod
     def untracked(
-        cls, children: Iterable[Tiling], extra_parameters: Tuple[Dict[str, str], ...]
+        cls,
+        parent: Tiling,
+        children: Iterable[Tiling],
+        extra_parameters: Tuple[Dict[str, str], ...],
     ) -> "Interleaving":
-        res = cls(children, extra_parameters, [])
+        res = cls(parent, children, extra_parameters, [])
 
         def f(*args, **kwargs):
             raise NotImplementedError(
@@ -291,10 +295,13 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         except ValueError:
             # must be untracked
             return Interleaving.untracked(
-                children, self.extra_parameters(tiling, children)
+                tiling, children, self.extra_parameters(tiling, children)
             )
         return Interleaving(
-            children, self.extra_parameters(tiling, children), interleaving_parameters,
+            tiling,
+            children,
+            self.extra_parameters(tiling, children),
+            interleaving_parameters,
         )
 
     def interleaving_parameters(self, comb_class: Tiling,) -> List[Tuple[str, ...]]:
@@ -365,11 +372,14 @@ class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
             return cast(
                 MonotoneInterleaving,
                 MonotoneInterleaving.untracked(
-                    children, self.extra_parameters(tiling, children)
+                    tiling, children, self.extra_parameters(tiling, children)
                 ),
             )
         return MonotoneInterleaving(
-            children, self.extra_parameters(tiling, children), interleaving_parameters,
+            tiling,
+            children,
+            self.extra_parameters(tiling, children),
+            interleaving_parameters,
         )
 
 

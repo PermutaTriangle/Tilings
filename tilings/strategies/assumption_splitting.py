@@ -36,9 +36,6 @@ class Split(Constructor):
     def __init__(self, split_parameters: Dict[str, Tuple[str, ...]]):
         self.split_parameters = split_parameters
 
-    def is_equivalence(self) -> bool:
-        return False
-
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         rhs_func = rhs_funcs[0]
         subs: Dict[var, List[var]] = defaultdict(list)
@@ -169,6 +166,10 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             possibly_empty=possibly_empty,
             workable=workable,
         )
+
+    @staticmethod
+    def can_be_equivalent() -> bool:
+        return False
 
     def decomposition_function(self, tiling: Tiling) -> Optional[Tuple[Tiling]]:
         if not tiling.assumptions:
