@@ -255,7 +255,6 @@ class TestMonotoneTreeEnumeration(CommonTest):
         )
         assert not MonotoneTreeEnumeration(forest_tiling).verified()
 
-    @pytest.mark.xfail(reason="No database setup")
     def test_get_genf(self, enum_verified):
         x = sympy.Symbol("x")
         expected_gf = -(

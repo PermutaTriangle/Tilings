@@ -120,6 +120,33 @@ def rules_to_check():
                 ),
             )
         ),
+        RequirementInsertionStrategy(
+            gps=frozenset({GriddedPerm(Perm((0,)), ((0, 2),))}), ignore_parent=True
+        )(
+            Tiling(
+                obstructions=(
+                    GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((0, 1)), ((0, 1), (0, 2))),
+                    GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2))),
+                    GriddedPerm(Perm((1, 0)), ((0, 1), (0, 0))),
+                    GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((1, 0)), ((0, 2), (0, 0))),
+                    GriddedPerm(Perm((1, 0)), ((0, 2), (0, 1))),
+                    GriddedPerm(Perm((1, 0)), ((0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 1))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 2))),
+                    GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
+                    GriddedPerm(Perm((1, 2, 0)), ((0, 0), (0, 0), (0, 0))),
+                ),
+                requirements=((GriddedPerm(Perm((0,)), ((0, 1),)),),),
+                assumptions=(
+                    TrackingAssumption((GriddedPerm(Perm((0,)), ((0, 2),)),)),
+                ),
+            )
+        )
+        .to_equivalence_rule()
+        .to_reverse_rule(),
     ]
 
 
