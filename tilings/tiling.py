@@ -1185,7 +1185,7 @@ class Tiling(CombinatorialClass):
         idx = parameter.split("_")[1]
         return self.assumptions[int(idx)]
 
-      def get_minimum_value(self, parameter: str) -> int:
+    def get_minimum_value(self, parameter: str) -> int:
         """
         Return the minimum value that can be taken by the parameter.
         """
