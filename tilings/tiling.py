@@ -1185,7 +1185,7 @@ class Tiling(CombinatorialClass):
         idx = parameter.split("_")[1]
         return self.assumptions[int(idx)]
 
-    def get_minimum_value(self, parameter: str) -> int:
+      def get_minimum_value(self, parameter: str) -> int:
         """
         Return the minimum value that can be taken by the parameter.
         """
@@ -1227,18 +1227,12 @@ class Tiling(CombinatorialClass):
         )
 
     def objects_of_size(self, n: int, **parameters: int) -> Iterator[GriddedPerm]:
-        if not parameters:
-            yield from self.gridded_perms_of_length(n)
-        else:
-            assert set(self.extra_parameters) == set(
-                parameters
-            ), f"{self.extra_parameters, set(parameters)}"
-            for gp in self.gridded_perms_of_length(n):
-                if all(
-                    ass.get_value(gp) == parameters[k]
-                    for k, ass in zip(self.extra_parameters, self._assumptions)
-                ):
-                    yield gp
+        for gp in self.gridded_perms_of_length(n):
+            if all(
+                self.get_assumption(k).get_value(gp) == val
+                for k, val in parameters.items()
+            ):
+                yield gp
 
     def gridded_perms_of_length(self, length: int) -> Iterator[GriddedPerm]:
         for gp in self.gridded_perms(maxlen=length):

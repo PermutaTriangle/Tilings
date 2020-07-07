@@ -38,9 +38,6 @@ class AddAssumptionsConstructor(Constructor):
         #  the paramater that was added, to count we must sum over all possible values
         self.new_parameters = tuple(new_parameters)
 
-    def is_equivalence(self) -> bool:
-        return False
-
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         rhs_func = rhs_funcs[0]
         subs: Dict[Symbol, Expr] = {
@@ -92,6 +89,10 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
             possibly_empty=False,
             workable=workable,
         )
+
+    @staticmethod
+    def can_be_equivalent() -> bool:
+        return False
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
         if any(assumption in tiling.assumptions for assumption in self.assumptions):

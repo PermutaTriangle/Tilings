@@ -147,10 +147,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             if len(parent_vars) == 2
         )
 
-    @staticmethod
-    def is_equivalence() -> bool:
-        return False
-
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         if self.min_points != (0, 0):
             raise NotImplementedError(
@@ -507,6 +503,10 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         if algo.fusable():
             return (algo.fused_tiling(),)
+
+    @staticmethod
+    def can_be_equivalent() -> bool:
+        return False
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
