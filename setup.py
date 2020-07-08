@@ -27,6 +27,7 @@ setup(
     long_description=read("README.rst"),
     install_requires=[
         "comb-spec-searcher==1.3.0",
+
         "permuta==1.5.0",
         "requests==2.24.0",
         "typing-extensions==3.7.4.2",

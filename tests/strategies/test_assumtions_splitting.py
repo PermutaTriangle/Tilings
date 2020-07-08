@@ -1,5 +1,4 @@
 from sympy import Eq, Function, var
-
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
