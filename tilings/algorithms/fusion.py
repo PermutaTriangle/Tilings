@@ -292,13 +292,7 @@ class Fusion:
             or (not self._fuse_row and cell[0] == self._col_idx)
         )
 
-    def check_isolation_level(self):
-        """
-        Checks whether the requirements for self.isolation_level are met.
-        """
-        if self.isolation_level is None:
-            return True
-
+    def _num_fusing_assumptions(self):
         if self._fuse_row:
             fusing_cells = [
                 (i, self._row_idx) for i in range(self._tiling.dimensions[0])
@@ -307,7 +301,7 @@ class Fusion:
             fusing_cells = [
                 (self._col_idx, i) for i in range(self._tiling.dimensions[1])
             ] + [(self._col_idx + 1, i) for i in range(self._tiling.dimensions[1])]
-        num_fusing_assumptions = len(
+        return len(
             [
                 assumption
                 for assumption in self._tiling.assumptions
@@ -315,12 +309,20 @@ class Fusion:
             ]
         )
 
+    def _check_isolation_level(self):
+        """
+        Checks whether the requirements for self.isolation_level are met.
+        """
+        if self.isolation_level is None:
+            return True
+
         if self.isolation_level == "noninteracting":
-            return num_fusing_assumptions <= 1
+            return self._num_fusing_assumptions() <= 1
 
         if self.isolation_level == "isolated":
             return len(self._tiling.assumptions) == 0 or (
-                len(self._tiling.assumptions) == 1 and num_fusing_assumptions == 1
+                len(self._tiling.assumptions) == 1
+                and self._num_fusing_assumptions() == 1
             )
 
         assert False, "{} is an invalid isolation_level".format(self.isolation_level)
@@ -342,7 +344,10 @@ class Fusion:
         )
 
         return (
-            obs_fusable and req_fusable and ass_fusable and self.check_isolation_level()
+            obs_fusable
+            and req_fusable
+            and ass_fusable
+            and self._check_isolation_level()
         )
 
     def fused_tiling(self) -> "Tiling":
@@ -543,7 +548,7 @@ class ComponentFusion(Fusion):
             return False
         new_tiling = self._tiling.add_obstructions(self.obstructions_to_add())
 
-        return self._tiling == new_tiling and self.check_isolation_level()
+        return self._tiling == new_tiling and self._check_isolation_level()
 
     def new_assumption(self):
         """
