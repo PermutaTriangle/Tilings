@@ -519,7 +519,7 @@ You can make any pack use the fusion strategy by using the method
        >>> print(pack)
        Looking for recursive combinatorial specification with the strategies:
        Inferral: row and column separation, obstruction transitivity
-       Initial: add assumptions, splitting the assumptions, factor, requirement corroboration, tracked fusion
+       Initial: add assumptions, factor, tracked fusion
        Verification: verify atoms, insertion encoding verified, one by one verification, locally factorable verification
        Set 1: row placement
 
@@ -530,7 +530,7 @@ This particular pack can be used to enumerate ``Av(123)``.
        >>> tilescope = TileScope('123', pack)
        >>> spec = tilescope.auto_search(smallest=True)
        >>> print(spec)  # doctest: +SKIP
-       A combinatorial specification with 16 rules.
+       A combinatorial specification with 10 rules.
        -----------
        0 -> (1, 2)
        insert 0 in cell (0, 0)
@@ -546,24 +546,6 @@ This particular pack can be used to enumerate ``Av(123)``.
        +-+
        | |
        +-+
-
-       -----
-       2 = 3
-       placing the rightmost point in cell (0, 0)
-       +-+                +-+-+
-       |1|             =  |1| |
-       +-+                +-+-+
-       1: Av+(012)        | |●|
-       Requirement 0:     +-+-+
-       0: (0, 0)          |\| |
-                          +-+-+
-                          1: Av(012)
-                          \: Av(01)
-                          ●: point
-                          Crossing obstructions:
-                          012: (0, 0), (0, 2), (0, 2)
-                          Requirement 0:
-                          0: (1, 1)
        -----------
        3 -> (4, 5)
        factor with partition {(0, 0), (0, 2)} / {(1, 1)}
@@ -582,103 +564,55 @@ This particular pack can be used to enumerate ``Av(123)``.
        Requirement 0:
        0: (1, 1)
        ---------
-       4 -> (6,)
-       adding the assumption can count occurrences of 0: (0, 0)
-       +-+                             +-+
-       |1|                          ↣  |1|
-       +-+                             +-+
-       |\|                             |\|
-       +-+                             +-+
+       3 -> (5,)
+       adding the assumption 'can count points in cell (0, 0)'
+       +-+-+                           +-+-+
+       |\|1|                        ↣  |\|1|
+       +-+-+                           +-+-+
        1: Av(012)                      1: Av(012)
        \: Av(01)                       \: Av(01)
        Crossing obstructions:          Crossing obstructions:
-       012: (0, 0), (0, 1), (0, 1)     012: (0, 0), (0, 1), (0, 1)
+       012: (0, 0), (1, 0), (1, 0)     012: (0, 0), (1, 0), (1, 0)
                                        Assumption 0:
-                                       can count occurrences of
-                                       0: (0, 0)
+                                       can count points in cell (0, 0)
+       --------------
+       5 -> (1, 6, 7)
+       placing the topmost point in row 0
+       +-+-+                               +-+     +-+-+-+                                      +-+-+-+-+
+       |\|1|                            =  | |  +  |●| | |                                   +  | | |●| |
+       +-+-+                               +-+     +-+-+-+                                      +-+-+-+-+
+       1: Av(012)                                  | |\|1|                                      |\|\| |1|
+       \: Av(01)                                   +-+-+-+                                      +-+-+-+-+
+       Crossing obstructions:                      1: Av(012)                                   1: Av(012)
+       012: (0, 0), (1, 0), (1, 0)                 \: Av(01)                                    \: Av(01)
+       Assumption 0:                               ●: point                                     ●: point
+       can count points in cell (0, 0)             Crossing obstructions:                       Crossing obstructions:
+                                                   012: (1, 0), (2, 0), (2, 0)                  01: (0, 0), (1, 0)
+                                                   Requirement 0:                               012: (0, 0), (3, 0), (3, 0)
+                                                   0: (0, 1)                                    012: (1, 0), (3, 0), (3, 0)
+                                                   Assumption 0:                                Requirement 0:
+                                                   can count points in cells (0, 1), (1, 0)     0: (2, 1)
+                                                                                                Assumption 0:
+                                                                                                can count points in cell (0, 0)
        -----------
-       6 -> (7, 8)
-       insert 0 in cell (0, 1)
-       +-+                             +-+                          +-+
-       |1|                          =  |\|                       +  |1|
-       +-+                             +-+                          +-+
-       |\|                             \: Av(01)                    |\|
-       +-+                             Assumption 0:                +-+
-       1: Av(012)                      can count occurrences of     1: Av+(012)
-       \: Av(01)                       0: (0, 0)                    \: Av(01)
-       Crossing obstructions:                                       Crossing obstructions:
-       012: (0, 0), (0, 1), (0, 1)                                  012: (0, 0), (0, 1), (0, 1)
-       Assumption 0:                                                Requirement 0:
-       can count occurrences of                                     0: (0, 1)
-       0: (0, 0)                                                    Assumption 0:
-                                                                    can count occurrences of
-                                                                    0: (0, 0)
-       -----------
-       7 -> (1, 9)
-       insert 0 in cell (0, 0)
-       +-+                          +-+     +-+
-       |\|                       =  | |  +  |\|
-       +-+                          +-+     +-+
-       \: Av(01)                            \: Av+(01)
-       Assumption 0:                        Requirement 0:
-       can count occurrences of             0: (0, 0)
-       0: (0, 0)                            Assumption 0:
-                                            can count occurrences of
-                                            0: (0, 0)
-       ------
-       9 = 10
-       placing the bottommost point in cell (0, 0)
-       +-+                          +-+-+
-       |\|                       =  |\| |
-       +-+                          +-+-+
-       \: Av+(01)                   | |●|
-       Requirement 0:               +-+-+
-       0: (0, 0)                    \: Av(01)
-       Assumption 0:                ●: point
-       can count occurrences of     Requirement 0:
-       0: (0, 0)                    0: (1, 0)
-                                    Assumption 0:
-                                    can count occurrences of
-                                    0: (0, 1)
-                                    0: (1, 0)
-       -----------
-       10 -> (11,)
-       splitting the assumptions
-       +-+-+                        +-+-+
-       |\| |                     ↣  |\| |
-       +-+-+                        +-+-+
-       | |●|                        | |●|
-       +-+-+                        +-+-+
-       \: Av(01)                    \: Av(01)
-       ●: point                     ●: point
-       Requirement 0:               Requirement 0:
-       0: (1, 0)                    0: (1, 0)
-       Assumption 0:                Assumption 0:
-       can count occurrences of     can count occurrences of
-       0: (0, 1)                    0: (0, 1)
-       0: (1, 0)                    Assumption 1:
-                                    can count occurrences of
-                                    0: (1, 0)
-       -------------
-       11 -> (7, 12)
-       factor with partition {(0, 1)} / {(1, 0)}
-       +-+-+                        +-+                          +-+
-       |\| |                     =  |\|                       x  |●|
-       +-+-+                        +-+                          +-+
-       | |●|                        \: Av(01)                    ●: point
-       +-+-+                        Assumption 0:                Requirement 0:
-       \: Av(01)                    can count occurrences of     0: (0, 0)
-       ●: point                     0: (0, 0)                    Assumption 0:
-       Requirement 0:                                            can count occurrences of
-       0: (1, 0)                                                 0: (0, 0)
-       Assumption 0:
-       can count occurrences of
+       6 -> (8, 5)
+       factor with partition {(0, 1)} / {(1, 0), (2, 0)}
+       +-+-+-+                                      +-+                                 +-+-+
+       |●| | |                                   =  |●|                              x  |\|1|
+       +-+-+-+                                      +-+                                 +-+-+
+       | |\|1|                                      ●: point                            1: Av(012)
+       +-+-+-+                                      Requirement 0:                      \: Av(01)
+       1: Av(012)                                   0: (0, 0)                           Crossing obstructions:
+       \: Av(01)                                    Assumption 0:                       012: (0, 0), (1, 0), (1, 0)
+       ●: point                                     can count points in cell (0, 0)     Assumption 0:
+       Crossing obstructions:                                                           can count points in cell (0, 0)
+       012: (1, 0), (2, 0), (2, 0)
+       Requirement 0:
        0: (0, 1)
-       Assumption 1:
-       can count occurrences of
-       0: (1, 0)
-       --------
-       12 -> ()
+       Assumption 0:
+       can count points in cells (0, 1), (1, 0)
+       -------
+       8 -> ()
        is atom
        +-+
        |●|
@@ -687,114 +621,42 @@ This particular pack can be used to enumerate ``Av(123)``.
        Requirement 0:
        0: (0, 0)
        Assumption 0:
-       can count occurrences of
-       0: (0, 0)
-       ------
-       8 = 13
-       placing the rightmost point in cell (0, 1), then row and column separation
-       +-+                             +-+-+-+                         +-+-+-+
-       |1|                          =  |1| | |                      =  |1| | |
-       +-+                             +-+-+-+                         +-+-+-+
-       |\|                             | |●| |                         | |●| |
-       +-+                             +-+-+-+                         +-+-+-+
-       1: Av+(012)                     |\| | |                         |\| | |
-       \: Av(01)                       +-+-+-+                         +-+-+-+
-       Crossing obstructions:          |\| |\|                         |\| | |
-       012: (0, 0), (0, 1), (0, 1)     +-+-+-+                         +-+-+-+
-       Requirement 0:                  1: Av(012)                      | | |\|
-       0: (0, 1)                       \: Av(01)                       +-+-+-+
-       Assumption 0:                   ●: point                        1: Av(012)
-       can count occurrences of        Crossing obstructions:          \: Av(01)
-       0: (0, 0)                       01: (0, 0), (0, 1)              ●: point
-                                       01: (0, 0), (2, 0)              Crossing obstructions:
-                                       012: (0, 0), (0, 3), (0, 3)     01: (0, 1), (0, 2)
-                                       012: (0, 1), (0, 3), (0, 3)     012: (0, 1), (0, 4), (0, 4)
-                                       Requirement 0:                  012: (0, 2), (0, 4), (0, 4)
-                                       0: (1, 2)                       Requirement 0:
-                                       Assumption 0:                   0: (1, 3)
-                                       can count occurrences of        Assumption 0:
-                                       0: (0, 0)                       can count occurrences of
-                                       0: (2, 0)                       0: (0, 1)
-                                                                       0: (2, 0)
+       can count points in cell (0, 0)
        -----------
-       13 -> (14,)
-       splitting the assumptions
-       +-+-+-+                         +-+-+-+
-       |1| | |                      ↣  |1| | |
-       +-+-+-+                         +-+-+-+
-       | |●| |                         | |●| |
-       +-+-+-+                         +-+-+-+
-       |\| | |                         |\| | |
-       +-+-+-+                         +-+-+-+
-       |\| | |                         |\| | |
-       +-+-+-+                         +-+-+-+
-       | | |\|                         | | |\|
-       +-+-+-+                         +-+-+-+
-       1: Av(012)                      1: Av(012)
-       \: Av(01)                       \: Av(01)
-       ●: point                        ●: point
-       Crossing obstructions:          Crossing obstructions:
-       01: (0, 1), (0, 2)              01: (0, 1), (0, 2)
-       012: (0, 1), (0, 4), (0, 4)     012: (0, 1), (0, 4), (0, 4)
-       012: (0, 2), (0, 4), (0, 4)     012: (0, 2), (0, 4), (0, 4)
-       Requirement 0:                  Requirement 0:
-       0: (1, 3)                       0: (1, 3)
-       Assumption 0:                   Assumption 0:
-       can count occurrences of        can count occurrences of
-       0: (0, 1)                       0: (0, 1)
-       0: (2, 0)                       Assumption 1:
-                                       can count occurrences of
-                                       0: (2, 0)
-       ----------------
-       14 -> (15, 5, 7)
-       factor with partition {(0, 1), (0, 2), (0, 4)} / {(1, 3)} / {(2, 0)}
-       +-+-+-+                         +-+                             +-+                +-+
-       |1| | |                      =  |1|                          x  |●|             x  |\|
-       +-+-+-+                         +-+                             +-+                +-+
-       | |●| |                         |\|                             ●: point           \: Av(01)
-       +-+-+-+                         +-+                             Requirement 0:     Assumption 0:
-       |\| | |                         |\|                             0: (0, 0)          can count occurrences of
-       +-+-+-+                         +-+                                                0: (0, 0)
-       |\| | |                         1: Av(012)
-       +-+-+-+                         \: Av(01)
-       | | |\|                         Crossing obstructions:
-       +-+-+-+                         01: (0, 0), (0, 1)
-       1: Av(012)                      012: (0, 0), (0, 2), (0, 2)
-       \: Av(01)                       012: (0, 1), (0, 2), (0, 2)
-       ●: point                        Assumption 0:
-       Crossing obstructions:          can count occurrences of
-       01: (0, 1), (0, 2)              0: (0, 0)
-       012: (0, 1), (0, 4), (0, 4)
-       012: (0, 2), (0, 4), (0, 4)
+       7 -> (9, 4)
+       factor with partition {(0, 0), (1, 0), (3, 0)} / {(2, 1)}
+       +-+-+-+-+                           +-+-+-+                             +-+
+       | | |●| |                        =  |\|\|1|                          x  |●|
+       +-+-+-+-+                           +-+-+-+                             +-+
+       |\|\| |1|                           1: Av(012)                          ●: point
+       +-+-+-+-+                           \: Av(01)                           Requirement 0:
+       1: Av(012)                          Crossing obstructions:              0: (0, 0)
+       \: Av(01)                           01: (0, 0), (1, 0)
+       ●: point                            012: (0, 0), (2, 0), (2, 0)
+       Crossing obstructions:              012: (1, 0), (2, 0), (2, 0)
+       01: (0, 0), (1, 0)                  Assumption 0:
+       012: (0, 0), (3, 0), (3, 0)         can count points in cell (0, 0)
+       012: (1, 0), (3, 0), (3, 0)
        Requirement 0:
-       0: (1, 3)
+       0: (2, 1)
        Assumption 0:
-       can count occurrences of
-       0: (0, 1)
-       Assumption 1:
-       can count occurrences of
-       0: (2, 0)
-       ----------
-       15 -> (6,)
-       fuse rows 0 and 1
-       +-+                             +-+
-       |1|                          ↣  |1|
-       +-+                             +-+
-       |\|                             |\|
-       +-+                             +-+
-       |\|                             1: Av(012)
-       +-+                             \: Av(01)
-       1: Av(012)                      Crossing obstructions:
-       \: Av(01)                       012: (0, 0), (0, 1), (0, 1)
-       Crossing obstructions:          Assumption 0:
-       01: (0, 0), (0, 1)              can count occurrences of
-       012: (0, 0), (0, 2), (0, 2)     0: (0, 0)
-       012: (0, 1), (0, 2), (0, 2)
+       can count points in cell (0, 0)
+       ---------
+       9 -> (5,)
+       fuse columns 0 and 1
+       +-+-+-+                             +-+-+
+       |\|\|1|                          ↣  |\|1|
+       +-+-+-+                             +-+-+
+       1: Av(012)                          1: Av(012)
+       \: Av(01)                           \: Av(01)
+       Crossing obstructions:              Crossing obstructions:
+       01: (0, 0), (1, 0)                  012: (0, 0), (1, 0), (1, 0)
+       012: (0, 0), (2, 0), (2, 0)         Assumption 0:
+       012: (1, 0), (2, 0), (2, 0)         can count points in cell (0, 0)
        Assumption 0:
-       can count occurrences of
-       0: (0, 0)
+       can count points in cell (0, 0)
        -------
-       5 -> ()
+       4 -> ()
        is atom
        +-+
        |●|

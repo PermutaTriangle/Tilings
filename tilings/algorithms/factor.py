@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set,
 
 from permuta.misc import UnionFind
 from tilings import GriddedPerm
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import ComponentAssumption, TrackingAssumption
 from tilings.misc import partitions_iterator
 
 if TYPE_CHECKING:
@@ -73,9 +73,12 @@ class Factor:
         """
         For each TrackingAssumption unite all the positions of the gridded perms.
         """
-        for ass in self._tiling.assumptions:
-            ass_cells = chain.from_iterable(gp.pos for gp in ass.gps)
-            self._unite_cells(ass_cells)
+        for assumption in self._tiling.assumptions:
+            if isinstance(assumption, ComponentAssumption):
+                self._unite_cells(chain.from_iterable(gp.pos for gp in assumption.gps))
+            else:
+                for gp in assumption.gps:
+                    self._unite_cells(gp.pos)
 
     def _unite_obstructions(self) -> None:
         """
@@ -158,12 +161,18 @@ class Factor:
             requirements = tuple(
                 req for req in self._tiling.requirements if req[0].pos[0] in component
             )
+            # TODO: consider skew/sum assumptions
             assumptions = tuple(
-                ass
+                ass.__class__(gp for gp in ass.gps if gp.pos[0] in component)
                 for ass in self._tiling.assumptions
-                if ass.gps[0].pos[0] in component
             )
-            factors.append((obstructions, requirements, assumptions))
+            factors.append(
+                (
+                    obstructions,
+                    requirements,
+                    tuple(set(ass for ass in assumptions if ass.gps)),
+                )
+            )
         self._factors_obs_and_reqs = factors
         return self._factors_obs_and_reqs
 

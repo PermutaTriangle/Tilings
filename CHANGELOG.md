@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [2.2.0] - 2020-07-08
+### Added
+- add the `can_be_equivalent` methods to `AddAssumptionsStrategy`,
+  `SplittingStrategy`, and `FusionStrategy`.
+- added a `get_assumption` method to `Tiling`
+
+### Changed
+- the `Factor` algorithm will now factor `TrackingAssumptions` if they span
+  multiple factors of the tiling. This means that the `SplittingStrategy` is
+  removed from the tracked `StrategyPack`. It does not factor
+  `ComponentAssumptions`, so using this strategy still requires the
+  `SplittingStrategy`.
+
+### Fixed
+- remove empty assumptions when creating extra parameters in `FusionStrategy`
+- the method `Tiling.get_genf` returns the Catalan generating function for Av(123).
+- correct the generating function equations for `SplittingStrategy`
+
 ## [2.1.0] - 2020-06-29
 ### Added
 - add a new `AddAssumptionStrategy` which adds an assumption to a tiling.

@@ -1,7 +1,10 @@
+from collections import defaultdict
+from functools import reduce
 from itertools import product
+from operator import mul
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
-from sympy import Eq, Function
+from sympy import Eq, Function, var
 
 from comb_spec_searcher import CombinatorialObject, Constructor, Strategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -33,16 +36,16 @@ class Split(Constructor):
     def __init__(self, split_parameters: Dict[str, Tuple[str, ...]]):
         self.split_parameters = split_parameters
 
-    def is_equivalence(self) -> bool:
-        return False
-
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         rhs_func = rhs_funcs[0]
-        subs: Dict[str, str] = {}
+        subs: Dict[var, List[var]] = defaultdict(list)
         for parent, children in self.split_parameters.items():
             for child in children:
-                subs[child] = parent
-        return Eq(lhs_func, rhs_func.subs(subs, simultaneous=True))
+                subs[var(child)].append(var(parent))
+        var_subs = {
+            parent: reduce(mul, children, 1) for parent, children in subs.items()
+        }
+        return Eq(lhs_func, rhs_func.subs(var_subs, simultaneous=True))
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
@@ -163,6 +166,10 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             possibly_empty=possibly_empty,
             workable=workable,
         )
+
+    @staticmethod
+    def can_be_equivalent() -> bool:
+        return False
 
     def decomposition_function(self, tiling: Tiling) -> Optional[Tuple[Tiling]]:
         if not tiling.assumptions:
