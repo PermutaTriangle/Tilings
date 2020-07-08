@@ -66,7 +66,7 @@ class Fusion:
             None,
             "noninteracting",
             "isolated",
-        ], "The only valid isolated levels are None, 'noninteracting', and 'isolated'."
+        ], "The only valid isolation levels are None, 'noninteracting', and 'isolated'."
 
     def _fuse_gridded_perm(self, gp):
         """
