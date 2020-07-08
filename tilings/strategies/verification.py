@@ -29,7 +29,6 @@ from tilings.strategies import (
     FactorFactory,
     FactorInsertionFactory,
     RequirementCorroborationFactory,
-    SplittingStrategy,
 )
 
 x = var("x")
@@ -142,19 +141,13 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
             ]
         ):
             # subclass of Av(231) or a symmetry, use point placements!
-            return (
-                TileScopePack.point_placements()
-                .add_initial(SplittingStrategy(ignore_parent=True), apply_first=True)
-                .add_verification(BasicVerificationStrategy(), replace=True)
+            return TileScopePack.point_placements().add_verification(
+                BasicVerificationStrategy(), replace=True
             )
         if is_insertion_encodable_maximum(basis):
-            return TileScopePack.regular_insertion_encoding(3).add_initial(
-                SplittingStrategy(ignore_parent=True), apply_first=True
-            )
+            return TileScopePack.regular_insertion_encoding(3)
         if is_insertion_encodable_rightmost(basis):
-            return TileScopePack.regular_insertion_encoding(2).add_initial(
-                SplittingStrategy(ignore_parent=True), apply_first=True
-            )
+            return TileScopePack.regular_insertion_encoding(2)
         # if it is the class or positive class
         if not tiling.requirements or (
             len(tiling.requirements) == 1
@@ -173,13 +166,7 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
             ):
                 # is a subclass of Av(123) avoiding patterns of length <= 4
                 # experimentally showed that such clsses always terminates
-                return (
-                    TileScopePack.row_and_col_placements()
-                    .add_initial(
-                        SplittingStrategy(ignore_parent=True), apply_first=True
-                    )
-                    .fix_one_by_one(basis)
-                )
+                return TileScopePack.row_and_col_placements().fix_one_by_one(basis)
         raise InvalidOperationError(
             "Cannot get a specification for one by one verification for "
             f"subclass Av({basis})"
@@ -337,11 +324,7 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
             )
         return StrategyPack(
             name="LocallyFactorable",
-            initial_strats=[
-                SplittingStrategy(ignore_parent=True),
-                FactorFactory(),
-                RequirementCorroborationFactory(),
-            ],
+            initial_strats=[FactorFactory(), RequirementCorroborationFactory()],
             inferral_strats=[],
             expansion_strats=[[FactorInsertionFactory()]],
             ver_strats=[
@@ -444,7 +427,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
                 "Can't find generating function with component assumption."
             )
         return StrategyPack(
-            initial_strats=[SplittingStrategy(ignore_parent=True), FactorFactory()],
+            initial_strats=[FactorFactory()],
             inferral_strats=[],
             expansion_strats=[],
             ver_strats=[
@@ -529,13 +512,9 @@ class InsertionEncodingVerificationStrategy(TileScopeVerificationStrategy):
         from tilings.strategy_pack import TileScopePack
 
         if self.has_rightmost_insertion_encoding(tiling):
-            return TileScopePack.regular_insertion_encoding(2).add_initial(
-                SplittingStrategy(ignore_parent=True), apply_first=True
-            )
+            return TileScopePack.regular_insertion_encoding(2)
         if self.has_topmost_insertion_encoding(tiling):
-            return TileScopePack.regular_insertion_encoding(3).add_initial(
-                SplittingStrategy(ignore_parent=True), apply_first=True
-            )
+            return TileScopePack.regular_insertion_encoding(3)
         raise StrategyDoesNotApply("tiling does not has a regular insertion encoding")
 
     @staticmethod
@@ -615,7 +594,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
                 "Cannot get a specification for a tiling in the database"
             )
         return StrategyPack(
-            initial_strats=[SplittingStrategy(ignore_parent=True), FactorFactory()],
+            initial_strats=[FactorFactory()],
             inferral_strats=[],
             expansion_strats=[],
             ver_strats=[
