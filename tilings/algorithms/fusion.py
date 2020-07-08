@@ -303,9 +303,10 @@ class Fusion:
                 if any(cell in gp.pos for gp in assumption.gps for cell in fusing_cells)
             ]
         )
-        return (
-            obs_fusable and req_fusable and ass_fusable and num_fusing_assumptions <= 1
+        assumptions_valid = len(self._tiling.assumptions) == 0 or (
+            len(self._tiling.assumptions) == 1 and num_fusing_assumptions == 1
         )
+        return obs_fusable and req_fusable and ass_fusable and assumptions_valid
 
     def fused_tiling(self) -> "Tiling":
         """
@@ -328,27 +329,6 @@ class Fusion:
             requirements=requirements,
             assumptions=assumptions,
         )
-        # print("=" * 100)
-        # print("parent:")
-        # print(self._tiling)
-        # print("child:")
-        # print(fused_tiling)
-        if self._fuse_row:
-            fusing_cells = [
-                (i, self._row_idx) for i in range(self._tiling.dimensions[0])
-            ] + [(i, self._row_idx + 1) for i in range(self._tiling.dimensions[0])]
-        else:
-            fusing_cells = [
-                (self._col_idx, i) for i in range(self._tiling.dimensions[1])
-            ] + [(self._col_idx + 1, i) for i in range(self._tiling.dimensions[1])]
-        num_fusing_assumptions = len(
-            [
-                assumption
-                for assumption in self._tiling.assumptions
-                if any(cell in gp.pos for gp in assumption.gps for cell in fusing_cells)
-            ]
-        )
-        # print("num assumptions:", num_fusing_assumptions)
         return fused_tiling
 
 
@@ -527,7 +507,10 @@ class ComponentFusion(Fusion):
                 if any(cell in gp.pos for gp in assumption.gps for cell in fusing_cells)
             ]
         )
-        return self._tiling == new_tiling and num_fusing_assumptions <= 1
+        assumptions_valid = len(self._tiling.assumptions) == 0 or (
+            len(self._tiling.assumptions) == 1 and num_fusing_assumptions == 1
+        )
+        return self._tiling == new_tiling and assumptions_valid
 
     def new_assumption(self):
         """
