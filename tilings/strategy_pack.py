@@ -245,7 +245,6 @@ class TileScopePack(StrategyPack):
         return TileScopePack(
             initial_strats=[
                 strat.FactorFactory(),
-                strat.RequirementCorroborationFactory(),
                 strat.CellInsertionFactory(
                     maxreqlen=length, ignore_parent=True, one_cell_only=True
                 ),
@@ -282,7 +281,6 @@ class TileScopePack(StrategyPack):
         return TileScopePack(
             initial_strats=[
                 strat.FactorFactory(),
-                strat.RequirementCorroborationFactory(),
                 strat.CellInsertionFactory(ignore_parent=True, one_cell_only=True),
             ],
             ver_strats=[strat.BasicVerificationStrategy()],
