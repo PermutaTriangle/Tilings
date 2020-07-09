@@ -533,39 +533,34 @@ This particular pack can be used to enumerate ``Av(123)``.
        A combinatorial specification with 10 rules.
        -----------
        0 -> (1, 2)
-       placing the topmost point in cell (0, 0)
-       +-+            +-+     +-+-+-+
-       |1|         =  | |  +  | |●| |
-       +-+            +-+     +-+-+-+
-       1: Av(012)             |\| |1|
-                              +-+-+-+
-                              1: Av(012)
-                              \: Av(01)
-                              ●: point
-                              Crossing obstructions:
-                              012: (0, 0), (2, 0), (2, 0)
+       insert 0 in cell (0, 0)
+       +-+            +-+     +-+
+       |1|         =  | |  +  |1|
+       +-+            +-+     +-+
+       1: Av(012)             1: Av+(012)
                               Requirement 0:
-                              0: (1, 1)
+                              0: (0, 0)
        -------
        1 -> ()
        is atom
        +-+
        | |
        +-+
-
        -----------
-       2 -> (3, 4)
-       factor with partition {(0, 0), (2, 0)} / {(1, 1)}
-       +-+-+-+                         +-+-+                           +-+
-       | |●| |                      =  |\|1|                        x  |●|
-       +-+-+-+                         +-+-+                           +-+
-       |\| |1|                         1: Av(012)                      ●: point
-       +-+-+-+                         \: Av(01)                       Requirement 0:
-       1: Av(012)                      Crossing obstructions:          0: (0, 0)
-       \: Av(01)                       012: (0, 0), (1, 0), (1, 0)
+       3 -> (4, 5)
+       factor with partition {(0, 0), (0, 2)} / {(1, 1)}
+       +-+-+                           +-+                             +-+
+       |1| |                        =  |1|                          x  |●|
+       +-+-+                           +-+                             +-+
+       | |●|                           |\|                             ●: point
+       +-+-+                           +-+                             Requirement 0:
+       |\| |                           1: Av(012)                      0: (0, 0)
+       +-+-+                           \: Av(01)
+       1: Av(012)                      Crossing obstructions:
+       \: Av(01)                       012: (0, 0), (0, 1), (0, 1)
        ●: point
        Crossing obstructions:
-       012: (0, 0), (2, 0), (2, 0)
+       012: (0, 0), (0, 2), (0, 2)
        Requirement 0:
        0: (1, 1)
        ---------
