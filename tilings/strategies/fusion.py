@@ -484,7 +484,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
 
 
 class FusionStrategy(Strategy[Tiling, GriddedPerm]):
-    def __init__(self, row_idx=None, col_idx=None, tracked: bool = False):
+    def __init__(
+        self, row_idx=None, col_idx=None, tracked: bool = False,
+    ):
         self.col_idx = col_idx
         self.row_idx = row_idx
         self.tracked = tracked
@@ -496,7 +498,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
 
     def fusion_algorithm(self, tiling: Tiling) -> Fusion:
         return Fusion(
-            tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked
+            tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked,
         )
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
@@ -639,7 +641,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
 class ComponentFusionStrategy(FusionStrategy):
     def fusion_algorithm(self, tiling: Tiling) -> Fusion:
         return ComponentFusion(
-            tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked
+            tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked,
         )
 
     def formal_step(self) -> str:
@@ -649,23 +651,34 @@ class ComponentFusionStrategy(FusionStrategy):
 
 
 class FusionFactory(StrategyFactory[Tiling]):
-    def __init__(self, tracked: bool = True):
+    def __init__(self, tracked: bool = True, isolation_level: Optional[str] = None):
         self.tracked = tracked
+        self.isolation_level = isolation_level
 
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
-            algo = Fusion(comb_class, row_idx=row_idx, tracked=self.tracked)
+            algo = Fusion(
+                comb_class,
+                row_idx=row_idx,
+                tracked=self.tracked,
+                isolation_level=self.isolation_level,
+            )
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield FusionStrategy(row_idx=row_idx, tracked=self.tracked)(
+                yield FusionStrategy(row_idx=row_idx, tracked=self.tracked,)(
                     comb_class, (fused_tiling,)
                 )
         for col_idx in range(cols - 1):
-            algo = Fusion(comb_class, col_idx=col_idx, tracked=self.tracked)
+            algo = Fusion(
+                comb_class,
+                col_idx=col_idx,
+                tracked=self.tracked,
+                isolation_level=self.isolation_level,
+            )
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield FusionStrategy(col_idx=col_idx, tracked=self.tracked)(
+                yield FusionStrategy(col_idx=col_idx, tracked=self.tracked,)(
                     comb_class, (fused_tiling,)
                 )
 
@@ -684,32 +697,30 @@ class FusionFactory(StrategyFactory[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "FusionFactory":
-        assert (
-            len(d) == 1 and "tracked" in d
-        ), "FusionFactory takes only tracked argument"
         return cls(**d)
 
 
 class ComponentFusionFactory(StrategyFactory[Tiling]):
-    def __init__(self, tracked: bool = False):
+    def __init__(self, tracked: bool = False, isolation_level: Optional[str] = None):
         self.tracked = tracked
+        self.isolation_level = isolation_level
 
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         if comb_class.requirements:
             return
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
-            algo = ComponentFusion(comb_class, row_idx=row_idx, tracked=self.tracked)
+            algo = ComponentFusion(comb_class, row_idx=row_idx, tracked=self.tracked,)
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield ComponentFusionStrategy(row_idx=row_idx, tracked=self.tracked)(
+                yield ComponentFusionStrategy(row_idx=row_idx, tracked=self.tracked,)(
                     comb_class, (fused_tiling,)
                 )
         for col_idx in range(cols - 1):
-            algo = ComponentFusion(comb_class, col_idx=col_idx, tracked=self.tracked)
+            algo = ComponentFusion(comb_class, col_idx=col_idx, tracked=self.tracked,)
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield ComponentFusionStrategy(col_idx=col_idx, tracked=self.tracked)(
+                yield ComponentFusionStrategy(col_idx=col_idx, tracked=self.tracked,)(
                     comb_class, (fused_tiling,)
                 )
 
@@ -717,16 +728,17 @@ class ComponentFusionFactory(StrategyFactory[Tiling]):
         return f"{'tracked ' if self.tracked else ''}component fusion"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + f"(tracked={self.tracked})"
+        return (
+            self.__class__.__name__
+            + f"(tracked={self.tracked}, isolation_level={self.isolation_level})"
+        )
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
         d["tracked"] = self.tracked
+        d["isolation_level"] = self.isolation_level
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "ComponentFusionFactory":
-        assert (
-            len(d) == 1 and "tracked" in d
-        ), "ComponentFusionFactory takes only tracked argument"
         return cls(**d)

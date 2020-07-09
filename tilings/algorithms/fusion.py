@@ -5,7 +5,7 @@ The implementation of the fusion algorithm
 """
 from collections import Counter
 from itertools import chain
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from permuta import Perm
 from tilings.assumptions import (
@@ -30,9 +30,22 @@ class Fusion:
 
     If incited `col_ids` is provided it attempts to fuse column `col_idx` with
     column `col_idx+1`.
+
+    Isolation Levels:
+      None:             no restrictions
+      "noninteracting": there can be at most one assumption involving the cells in the
+                          fused rows/cols
+      "isolated":       there can be no assumptions except the one induced by the fusion
     """
 
-    def __init__(self, tiling, row_idx=None, col_idx=None, tracked: bool = False):
+    def __init__(
+        self,
+        tiling,
+        row_idx=None,
+        col_idx=None,
+        tracked: bool = False,
+        isolation_level: Optional[str] = None,
+    ):
         self._tiling: "Tiling" = tiling
         self._assumptions_fuse_counters = None
         self._obstruction_fuse_counter = None
@@ -48,6 +61,12 @@ class Fusion:
             self._fuse_row = True
         else:
             raise RuntimeError("Cannot specify a row and a columns")
+        self.isolation_level = isolation_level
+        assert self.isolation_level in [
+            None,
+            "noninteracting",
+            "isolated",
+        ], "The only valid isolation levels are None, 'noninteracting', and 'isolated'."
 
     def _fuse_gridded_perm(self, gp):
         """
@@ -273,6 +292,41 @@ class Fusion:
             or (not self._fuse_row and cell[0] == self._col_idx)
         )
 
+    def _num_fusing_assumptions(self):
+        if self._fuse_row:
+            fusing_cells = [
+                (i, self._row_idx) for i in range(self._tiling.dimensions[0])
+            ] + [(i, self._row_idx + 1) for i in range(self._tiling.dimensions[0])]
+        else:
+            fusing_cells = [
+                (self._col_idx, i) for i in range(self._tiling.dimensions[1])
+            ] + [(self._col_idx + 1, i) for i in range(self._tiling.dimensions[1])]
+        return len(
+            [
+                assumption
+                for assumption in self._tiling.assumptions
+                if any(cell in gp.pos for gp in assumption.gps for cell in fusing_cells)
+            ]
+        )
+
+    def _check_isolation_level(self):
+        """
+        Checks whether the requirements for self.isolation_level are met.
+        """
+        if self.isolation_level is None:
+            return True
+
+        if self.isolation_level == "noninteracting":
+            return self._num_fusing_assumptions() <= 1
+
+        if self.isolation_level == "isolated":
+            return len(self._tiling.assumptions) == 0 or (
+                len(self._tiling.assumptions) == 1
+                and self._num_fusing_assumptions() == 1
+            )
+
+        assert False, "{} is an invalid isolation_level".format(self.isolation_level)
+
     def fusable(self):
         """
         Check if the fusion is possible.
@@ -288,7 +342,13 @@ class Fusion:
                 self._tiling.assumptions, self.assumptions_fuse_counters
             )
         )
-        return obs_fusable and req_fusable and ass_fusable
+
+        return (
+            obs_fusable
+            and req_fusable
+            and ass_fusable
+            and self._check_isolation_level()
+        )
 
     def fused_tiling(self) -> "Tiling":
         """
@@ -328,12 +388,26 @@ class ComponentFusion(Fusion):
     column `col_idx+1`.
     """
 
-    def __init__(self, tiling, *, row_idx=None, col_idx=None, tracked: bool = False):
+    def __init__(
+        self,
+        tiling,
+        *,
+        row_idx=None,
+        col_idx=None,
+        tracked: bool = False,
+        isolation_level: Optional[str] = None
+    ):
         if tiling.requirements:
             raise NotImplementedError(
                 "Component fusion does not handle " "requirements at the moment"
             )
-        super().__init__(tiling, row_idx=row_idx, col_idx=col_idx, tracked=tracked)
+        super().__init__(
+            tiling,
+            row_idx=row_idx,
+            col_idx=col_idx,
+            tracked=tracked,
+            isolation_level=isolation_level,
+        )
         self._first_cell = None
         self._second_cell = None
 
@@ -473,7 +547,8 @@ class ComponentFusion(Fusion):
         if not self._pre_check() or not self.has_crossing_len2_ob():
             return False
         new_tiling = self._tiling.add_obstructions(self.obstructions_to_add())
-        return self._tiling == new_tiling
+
+        return self._tiling == new_tiling and self._check_isolation_level()
 
     def new_assumption(self):
         """
