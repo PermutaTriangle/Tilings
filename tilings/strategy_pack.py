@@ -246,7 +246,9 @@ class TileScopePack(StrategyPack):
             initial_strats=[
                 strat.FactorFactory(),
                 strat.RequirementCorroborationFactory(),
-                strat.CellInsertionFactory(maxreqlen=length, ignore_parent=True),
+                strat.CellInsertionFactory(
+                    maxreqlen=length, ignore_parent=True, one_cell_only=True
+                ),
             ],
             ver_strats=[
                 strat.BasicVerificationStrategy(),
@@ -281,7 +283,7 @@ class TileScopePack(StrategyPack):
             initial_strats=[
                 strat.FactorFactory(),
                 strat.RequirementCorroborationFactory(),
-                strat.CellInsertionFactory(ignore_parent=True),
+                strat.CellInsertionFactory(ignore_parent=True, one_cell_only=True),
             ],
             ver_strats=[strat.BasicVerificationStrategy()],
             inferral_strats=[],
@@ -336,7 +338,9 @@ class TileScopePack(StrategyPack):
         pack = cls.row_and_col_placements(row_only, col_only, partial)
         pack.name = "insertion_" + pack.name
         pack = pack.add_initial(
-            strat.CellInsertionFactory(maxreqlen=1, ignore_parent=True)
+            strat.CellInsertionFactory(
+                maxreqlen=1, ignore_parent=True, one_cell_only=True
+            )
         )
         return pack
 
