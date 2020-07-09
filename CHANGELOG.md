@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Added
 - introduced isolation levels to the fusion strategy
+- added the `one_cell_only` option to `CellInsertionFactory`
+
+### Changed
+- insertion packs now use the `one_cell_only` option, and no longer use
+  `RequirementCorroborationFactory`
 
 ## [2.2.0] - 2020-07-08
 ### Added
