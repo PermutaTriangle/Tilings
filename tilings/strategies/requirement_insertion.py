@@ -237,7 +237,6 @@ class CellInsertionFactory(RequirementInsertionWithRestrictionFactory):
                 frozenset(tiling.active_cells) - frozenset(tiling.positive_cells)
             )
             if cells:
-                print((GriddedPerm.single_cell(Perm((0,)), cells[0]),))
                 yield (GriddedPerm.single_cell(Perm((0,)), cells[0]),)
             return
 
