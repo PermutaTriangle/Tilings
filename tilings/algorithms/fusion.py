@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Optional
 
 from permuta import Perm
 from tilings.assumptions import (
+    ComponentAssumption,
     SkewComponentAssumption,
     SumComponentAssumption,
     TrackingAssumption,
@@ -251,6 +252,10 @@ class Fusion:
         are all contained entirely on the left of the fusion region, entirely
         on the right, or split in every possible way.
         """
+        if isinstance(assumption, ComponentAssumption):
+            return self.is_left_sided_assumption(
+                assumption
+            ) and self.is_right_sided_assumption(assumption)
         return self._can_fuse_set_of_gridded_perms(fuse_counter) or (
             all(count == 1 for gp, count in fuse_counter.items())
             and self._is_one_sided_assumption(assumption)
@@ -531,6 +536,21 @@ class ComponentFusion(Fusion):
         """
         return chain.from_iterable(
             self._unfuse_gridded_perm(ob) for ob in self.obstruction_fuse_counter
+        )
+
+    def _can_fuse_assumption(self, assumption, fuse_counter):
+        """
+        Return True if an assumption can be fused. That is, prefusion, the gps
+        are all contained entirely on the left of the fusion region, entirely
+        on the right, or split in every possible way.
+        """
+        if not isinstance(assumption, ComponentAssumption):
+            return self.is_left_sided_assumption(
+                assumption
+            ) and self.is_right_sided_assumption(assumption)
+        return self._can_fuse_set_of_gridded_perms(fuse_counter) or (
+            all(count == 1 for gp, count in fuse_counter.items())
+            and self._is_one_sided_assumption(assumption)
         )
 
     def _can_fuse_set_of_gridded_perms(self, fuse_counter):

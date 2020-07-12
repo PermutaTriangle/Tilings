@@ -1,13 +1,16 @@
 import abc
 from importlib import import_module
 from itertools import chain
-from typing import Iterable, List, Optional, Tuple, Type
+from typing import Iterable, List, Optional, Set, Tuple, Type, TYPE_CHECKING
 
 from permuta import Perm
 
 from .griddedperm import GriddedPerm
 
 Cell = Tuple[int, int]
+
+if TYPE_CHECKING:
+    from tilings import Tiling
 
 
 class TrackingAssumption:
@@ -47,6 +50,23 @@ class TrackingAssumption:
         the gridded perm gp.
         """
         return len(list(chain.from_iterable(p.occurrences_in(gp) for p in self.gps)))
+
+    def get_components(self, tiling: "Tiling") -> List[List[GriddedPerm]]:
+        """
+        Return the lists of gps that count exactly one occurrence.
+        Only implemented for when a size one gp is in a point cell.
+        """
+        return [
+            [gp] for gp in self.gps if len(gp) == 1 and gp.pos[0] in tiling.point_cells
+        ]
+
+    def remove_components(self, tiling: "Tiling") -> "TrackingAssumption":
+        """
+        Return the TrackingAssumption found by removing all the components
+        found by the get_components method.
+        """
+        gps_to_remove = set(chain.from_iterable(self.get_components(tiling)))
+        return self.__class__(gp for gp in self.gps if gp not in gps_to_remove)
 
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the assumption."""
@@ -115,6 +135,34 @@ class ComponentAssumption(TrackingAssumption):
     def decomposition(self, perm: Perm) -> List[Perm]:
         """Count the number of component in a permutation."""
 
+    @abc.abstractmethod
+    def tiling_decomposition(self, tiling: "Tiling") -> List[List[Cell]]:
+        """Return the components of a given tiling."""
+
+    @abc.abstractmethod
+    def is_component(
+        self, cells: List[Cell], point_cells: Set[Cell], positive_cells: Set[Cell]
+    ) -> bool:
+        """
+        Return True if cells form a component.
+        """
+
+    def get_components(self, tiling: "Tiling") -> List[List[GriddedPerm]]:
+        sub_tiling = tiling.sub_tiling(self.cells)
+        separated_tiling, fwd_map = sub_tiling.row_and_column_separation_with_mapping()
+        back_map = {b: a for a, b in fwd_map.items()}
+        components = self.tiling_decomposition(separated_tiling)
+        return [
+            [
+                GriddedPerm.point_perm(sub_tiling.backward_cell_map[back_map[cell]])
+                for cell in comp
+            ]
+            for comp in components
+            if self.is_component(
+                comp, separated_tiling.point_cells, separated_tiling.positive_cells
+            )
+        ]
+
     def get_value(self, gp: GriddedPerm) -> int:
         """
         Return the number of components in the tracked region of the gridded perm.
@@ -142,6 +190,22 @@ class SumComponentAssumption(ComponentAssumption):
     def decomposition(perm: Perm) -> List[Perm]:
         return perm.sum_decomposition()  # type: ignore
 
+    @staticmethod
+    def tiling_decomposition(tiling: "Tiling") -> List[List[Cell]]:
+        return tiling.sum_decomposition()
+
+    @staticmethod
+    def is_component(
+        cells: List[Cell], point_cells: Set[Cell], positive_cells: Set[Cell]
+    ) -> bool:
+        if len(cells) == 2:
+            (x1, y1), (x2, y2) = sorted(cells)
+            if x1 != x2 and y1 > y2:  # is skew
+                return all(cell in positive_cells for cell in cells) or any(
+                    cell in point_cells for cell in cells
+                )
+        return False
+
     def __str__(self):
         return f"can count sum components in cells {self.cells}"
 
@@ -153,6 +217,22 @@ class SkewComponentAssumption(ComponentAssumption):
     @staticmethod
     def decomposition(perm: Perm) -> List[Perm]:
         return perm.skew_decomposition()  # type: ignore
+
+    @staticmethod
+    def tiling_decomposition(tiling: "Tiling") -> List[List[Cell]]:
+        return tiling.skew_decomposition()
+
+    @staticmethod
+    def is_component(
+        cells: List[Cell], point_cells: Set[Cell], positive_cells: Set[Cell]
+    ) -> bool:
+        if len(cells) == 2:
+            (x1, y1), (x2, y2) = sorted(cells)
+            if x1 != x2 and y1 < y2:  # is sum
+                return all(cell in positive_cells for cell in cells) or any(
+                    cell in point_cells for cell in cells
+                )
+        return False
 
     def __str__(self):
         return f"can count skew components in cells {self.cells}"
