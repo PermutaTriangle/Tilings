@@ -1,7 +1,7 @@
 import abc
 from importlib import import_module
 from itertools import chain
-from typing import Iterable, List, Optional, Set, Tuple, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, FrozenSet, Iterable, List, Optional, Tuple, Type
 
 from permuta import Perm
 
@@ -141,7 +141,10 @@ class ComponentAssumption(TrackingAssumption):
 
     @abc.abstractmethod
     def is_component(
-        self, cells: List[Cell], point_cells: Set[Cell], positive_cells: Set[Cell]
+        self,
+        cells: List[Cell],
+        point_cells: FrozenSet[Cell],
+        positive_cells: FrozenSet[Cell],
     ) -> bool:
         """
         Return True if cells form a component.
@@ -196,7 +199,7 @@ class SumComponentAssumption(ComponentAssumption):
 
     @staticmethod
     def is_component(
-        cells: List[Cell], point_cells: Set[Cell], positive_cells: Set[Cell]
+        cells: List[Cell], point_cells: FrozenSet[Cell], positive_cells: FrozenSet[Cell]
     ) -> bool:
         if len(cells) == 2:
             (x1, y1), (x2, y2) = sorted(cells)
@@ -224,7 +227,7 @@ class SkewComponentAssumption(ComponentAssumption):
 
     @staticmethod
     def is_component(
-        cells: List[Cell], point_cells: Set[Cell], positive_cells: Set[Cell]
+        cells: List[Cell], point_cells: FrozenSet[Cell], positive_cells: FrozenSet[Cell]
     ) -> bool:
         if len(cells) == 2:
             (x1, y1), (x2, y2) = sorted(cells)

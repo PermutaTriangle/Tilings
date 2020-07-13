@@ -2,10 +2,9 @@ from functools import reduce
 from operator import mul
 from typing import Dict, Iterator, Optional, Tuple
 
-from comb_spec_searcher import (
-    Constructor,
-    Strategy,
-)
+from sympy import Eq, Function, var
+
+from comb_spec_searcher import Constructor, Strategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies.constructor import (
     RelianceProfile,
@@ -13,8 +12,7 @@ from comb_spec_searcher.strategies.constructor import (
     SubRecs,
     SubSamplers,
 )
-from sympy import var, Eq, Function
-from tilings import GriddedPerm, Tiling, TrackingAssumption
+from tilings import GriddedPerm, Tiling
 
 
 class CountComponent(Constructor[Tiling, GriddedPerm]):
@@ -56,8 +54,7 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
             if mapped_k is not None:
                 if mapped_k in new_params and new_params[mapped_k] != val:
                     return 0
-                else:
-                    new_params[mapped_k] = val
+                new_params[mapped_k] = val
         return subrecs[0](n, **new_params)
 
     def get_sub_objects(
@@ -85,7 +82,8 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
     def can_be_equivalent() -> bool:
         return False
 
-    def decomposition_function(self, tiling: Tiling) -> Optional[Tuple[Tiling]]:
+    @staticmethod
+    def decomposition_function(tiling: Tiling) -> Optional[Tuple[Tiling]]:
         if not tiling.assumptions:
             return None
         return (tiling.remove_components_from_assumptions(),)
@@ -129,8 +127,8 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
     def formal_step() -> str:
         return "removing exact components"
 
+    @staticmethod
     def backward_map(
-        self,
         comb_class: Tiling,
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
@@ -139,12 +137,11 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
         The forward direction of the underlying bijection used for object
         generation and sampling.
         """
-        if children is None:
-            children = self.decomposition_function(comb_class)
-        raise NotImplementedError
+        assert isinstance(objs[0], GriddedPerm)
+        return objs[0]
 
+    @staticmethod
     def forward_map(
-        self,
         comb_class: Tiling,
         obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
@@ -153,9 +150,7 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
         The backward direction of the underlying bijection used for object
         generation and sampling.
         """
-        if children is None:
-            children = self.decomposition_function(comb_class)
-        raise NotImplementedError
+        return (obj,)
 
     @classmethod
     def from_dict(cls, d: dict) -> "DetectComponentsStrategy":
