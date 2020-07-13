@@ -1,3 +1,5 @@
+from functools import reduce
+from operator import mul
 from typing import Dict, Iterator, Optional, Tuple
 
 from comb_spec_searcher import (
@@ -11,7 +13,7 @@ from comb_spec_searcher.strategies.constructor import (
     SubRecs,
     SubSamplers,
 )
-from sympy import Eq, Function
+from sympy import var, Eq, Function
 from tilings import GriddedPerm, Tiling, TrackingAssumption
 
 
@@ -32,13 +34,31 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
         self.extra_parameters = extra_parameters
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
-        raise NotImplementedError
+        rhs_func = rhs_funcs[0].subs(
+            {b: a for a, b in self.extra_parameters.items()}, simultaneously=True
+        )
+        return Eq(
+            lhs_func,
+            rhs_func
+            * reduce(mul, [var(k) ** val for k, val in self.components.items()], 1),
+        )
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
     def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-        raise NotImplementedError
+        new_params: Dict[str, int] = {}
+        for k, val in parameters.items():
+            val -= self.components.get(k, 0)
+            if val < 0:
+                return 0
+            mapped_k = self.extra_parameters[k]
+            if mapped_k is not None:
+                if mapped_k in new_params and new_params[mapped_k] != val:
+                    return 0
+                else:
+                    new_params[mapped_k] = val
+        return subrecs[0](n, **new_params)
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int
@@ -84,7 +104,26 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
             if value:
                 k = comb_class.get_parameter(ass)
                 removed_components[k] = value
-        return CountComponent(removed_components, {})
+        return CountComponent(
+            removed_components, self.extra_parameters(comb_class, children)[0]
+        )
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Dict[str, str]]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        extra_parameters: Dict[str, str] = {}
+        child = children[0]
+        for assumption in comb_class.assumptions:
+            mapped_assumption = assumption.remove_components(comb_class)
+            if mapped_assumption.gps:
+                extra_parameters[
+                    comb_class.get_parameter(assumption)
+                ] = child.get_parameter(mapped_assumption)
+        return (extra_parameters,)
 
     @staticmethod
     def formal_step() -> str:
