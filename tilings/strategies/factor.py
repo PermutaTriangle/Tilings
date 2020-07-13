@@ -270,14 +270,6 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
     ):
         raise NotImplementedError
 
-    @staticmethod
-    def get_eq_symbol() -> str:
-        return "="
-
-    @staticmethod
-    def get_op_symbol() -> str:
-        return "*"
-
 
 class FactorWithInterleavingStrategy(FactorStrategy):
     def formal_step(self) -> str:
@@ -292,9 +284,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
             interleaving_parameters = self.interleaving_parameters(tiling)
         except ValueError:
             # must be untracked
-            return Interleaving.untracked(
-                tiling, children, self.extra_parameters(tiling, children)
-            )
+            raise NotImplementedError("The interleaving factor was not tracked.")
         return Interleaving(
             tiling,
             children,
@@ -346,6 +336,14 @@ class FactorWithInterleavingStrategy(FactorStrategy):
     ) -> Tuple[GriddedPerm, ...]:
         raise NotImplementedError
 
+    @staticmethod
+    def get_eq_symbol() -> str:
+        return "="
+
+    @staticmethod
+    def get_op_symbol() -> str:
+        return "*"
+
     def __repr__(self) -> str:
         return (
             self.__class__.__name__
@@ -367,12 +365,7 @@ class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
             interleaving_parameters = self.interleaving_parameters(tiling)
         except ValueError:
             # must be untracked
-            return cast(
-                MonotoneInterleaving,
-                MonotoneInterleaving.untracked(
-                    tiling, children, self.extra_parameters(tiling, children)
-                ),
-            )
+            raise NotImplementedError("The monotone interleaving was not tracked.")
         return MonotoneInterleaving(
             tiling,
             children,

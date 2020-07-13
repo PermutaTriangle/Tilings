@@ -75,10 +75,6 @@ class AddAssumptionsConstructor(Constructor):
     ):
         raise NotImplementedError
 
-    @staticmethod
-    def get_eq_symbol() -> str:
-        return "↣"
-
 
 class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
     def __init__(self, assumptions: Iterable[TrackingAssumption], workable=False):
@@ -173,6 +169,10 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
     def from_dict(cls, d: dict) -> "AddAssumptionsStrategy":
         assumptions = [TrackingAssumption.from_dict(ass) for ass in d["assumptions"]]
         return cls(assumptions)
+
+    @staticmethod
+    def get_eq_symbol() -> str:
+        return "↣"
 
     def __repr__(self):
         return (

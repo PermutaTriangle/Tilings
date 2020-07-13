@@ -126,10 +126,6 @@ class Split(Constructor):
     ):
         raise NotImplementedError
 
-    @staticmethod
-    def get_eq_symbol() -> str:
-        return "↣"
-
 
 class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     """
@@ -336,3 +332,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     @classmethod
     def from_dict(cls, d: dict) -> "SplittingStrategy":
         return cls(**d)
+
+    @staticmethod
+    def get_eq_symbol() -> str:
+        return "↣"
