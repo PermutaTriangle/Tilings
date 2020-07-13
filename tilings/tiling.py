@@ -390,7 +390,7 @@ class Tiling(CombinatorialClass):
         return res.tobytes()
 
     @classmethod
-    def from_bytes(cls, b: bytes, **kwargs) -> "Tiling":
+    def from_bytes(cls, b: bytes) -> "Tiling":
         """Given a compressed tiling in the form of an 1-byte array, decompress
         it and return a tiling."""
         # pylint: disable=too-many-locals
@@ -451,10 +451,10 @@ class Tiling(CombinatorialClass):
             obstructions=obstructions,
             requirements=requirements,
             assumptions=assumptions,
-            remove_empty_rows_and_cols=kwargs.get("remove_empty_rows_and_cols", False),
-            derive_empty=kwargs.get("derive_empty", False),
-            simplify=kwargs.get("simplify", False),
-            sorted_input=kwargs.get("sorted_input", True),
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
         )
 
     @classmethod
