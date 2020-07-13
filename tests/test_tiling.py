@@ -417,9 +417,7 @@ def test_bytes_noreq(typical_redundant_obstructions):
         derive_empty=False,
     )
 
-    assert tiling == Tiling.from_bytes(
-        tiling.to_bytes(), remove_empty_rows_and_cols=False, derive_empty=False
-    )
+    assert tiling == Tiling.from_bytes(tiling.to_bytes())
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
@@ -427,18 +425,14 @@ def test_bytes_noreq(typical_redundant_obstructions):
         derive_empty=True,
     )
 
-    assert tiling == Tiling.from_bytes(
-        tiling.to_bytes(), remove_empty_rows_and_cols=False, derive_empty=True
-    )
+    assert tiling == Tiling.from_bytes(tiling.to_bytes())
 
     tiling = Tiling(
         obstructions=typical_redundant_obstructions,
         remove_empty_rows_and_cols=True,
         derive_empty=True,
     )
-    assert tiling == Tiling.from_bytes(
-        tiling.to_bytes(), remove_empty_rows_and_cols=True, derive_empty=True
-    )
+    assert tiling == Tiling.from_bytes(tiling.to_bytes())
 
 
 def test_from_string():
