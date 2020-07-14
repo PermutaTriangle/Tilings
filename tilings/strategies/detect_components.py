@@ -22,9 +22,9 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
     The components dictionary counts how many components are to be counted by
     each parameter, noting they will no longer be tracked in the child.
 
-    The extra_parameters map the parent constructor to the child parameter. If
-    a parent parameter became empty by removing a component, then it will not
-    the parent parameter will not be a key in extra_parameters.
+    The extra_parameters map the parent parameters to the child parameters. If
+    a parent parameter became empty by removing a component the parent
+    parameter will not be a key in extra_parameters.
     """
 
     def __init__(self, components: Dict[str, int], extra_parameters: Dict[str, str]):
@@ -94,7 +94,7 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(comb_class)
             if children is None:
-                raise StrategyDoesNotApply("Can't split the tracking assumption")
+                raise StrategyDoesNotApply("Can't detect components")
 
         removed_components: Dict[str, int] = {}
         for ass in comb_class.assumptions:
