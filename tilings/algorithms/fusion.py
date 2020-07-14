@@ -67,6 +67,7 @@ class Fusion:
             "noninteracting",
             "isolated",
         ], "The only valid isolation levels are None, 'noninteracting', and 'isolated'."
+        self._fused_tiling: Optional["Tiling"] = None
 
     def _fuse_gridded_perm(self, gp):
         """
@@ -342,35 +343,39 @@ class Fusion:
                 self._tiling.assumptions, self.assumptions_fuse_counters
             )
         )
-
         return (
             obs_fusable
             and req_fusable
             and ass_fusable
             and self._check_isolation_level()
+            and not self.fused_tiling()
+            .add_list_requirement(list(self.new_assumption().gps))
+            .is_empty()
         )
 
     def fused_tiling(self) -> "Tiling":
         """
         Return the fused tiling.
         """
-        assumptions = [
-            ass.__class__(gps)
-            for ass, gps in zip(
-                self._tiling.assumptions, self.assumptions_fuse_counters
+        if self._fused_tiling is None:
+            assumptions = [
+                ass.__class__(gps)
+                for ass, gps in zip(
+                    self._tiling.assumptions, self.assumptions_fuse_counters
+                )
+            ]
+            if self._tracked:
+                assumptions.append(self.new_assumption())
+            requirements = self.requirements_fuse_counters
+            if self._positive_left or self._positive_right:
+                new_positive_requirement = self.new_positive_requirement()
+                requirements = requirements + [new_positive_requirement]
+            self._fused_tiling = self._tiling.__class__(
+                obstructions=self.obstruction_fuse_counter.keys(),
+                requirements=requirements,
+                assumptions=assumptions,
             )
-        ]
-        if self._tracked:
-            assumptions.append(self.new_assumption())
-        requirements = self.requirements_fuse_counters
-        if self._positive_left or self._positive_right:
-            new_positive_requirement = self.new_positive_requirement()
-            requirements = requirements + [new_positive_requirement]
-        return self._tiling.__class__(
-            obstructions=self.obstruction_fuse_counter.keys(),
-            requirements=requirements,
-            assumptions=assumptions,
-        )
+        return self._fused_tiling
 
 
 class ComponentFusion(Fusion):
