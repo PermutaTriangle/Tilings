@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - the method `Tiling.get_genf` returns the Catalan generating function for Av(123).
 - correct the generating function equations for `SplittingStrategy`
 
+### Removed
+- Removed optional arguments from the `from_bytes` method on `Tiling`
+
 ## [2.1.0] - 2020-06-29
 ### Added
 - add a new `AddAssumptionStrategy` which adds an assumption to a tiling.
