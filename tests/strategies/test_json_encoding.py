@@ -106,6 +106,23 @@ def maxreqlen_extrabasis_ignoreparent_maxnumreq(strategy):
     ]
 
 
+def maxreqlen_extrabasis_ignoreparent_one_cell_only(strategy):
+    return [
+        strategy(
+            maxreqlen=maxreqlen,
+            extra_basis=extra_basis,
+            ignore_parent=ignore_parent,
+            one_cell_only=one_cell_only,
+        )
+        for (maxreqlen, extra_basis, ignore_parent, one_cell_only,) in product(
+            (1, 2, 3),
+            (None, [Perm((0, 1))], [Perm((0, 2, 1)), Perm((0, 1, 2))]),
+            (True, False),
+            (True, False),
+        )
+    ]
+
+
 def ignoreparent(strategy):
     return [strategy(ignore_parent=True), strategy(ignore_parent=False)]
 
@@ -246,7 +263,7 @@ def row_col_partial_ignoreparent_direction(strategy):
 
 
 strategy_objects = (
-    maxreqlen_extrabasis_ignoreparent(CellInsertionFactory)
+    maxreqlen_extrabasis_ignoreparent_one_cell_only(CellInsertionFactory)
     + ignoreparent(FactorInsertionFactory)
     + interleaving_unions_ignoreparent_workable(FactorFactory)
     + maxlen(ObstructionInferralFactory)

@@ -46,7 +46,11 @@ class TileScopePack(StrategyPack):
         return pack
 
     def make_fusion(
-        self, component: bool = False, tracked: bool = True, apply_first: bool = False
+        self,
+        component: bool = False,
+        tracked: bool = True,
+        apply_first: bool = False,
+        isolation_level: Optional[str] = None,
     ) -> "TileScopePack":
         """
         Create a new pack by adding fusion to the current pack.
@@ -64,13 +68,21 @@ class TileScopePack(StrategyPack):
                 )
         if component:
             pack = pack.add_initial(
-                strat.ComponentFusionFactory(tracked=tracked),
-                "component_fusion",
+                strat.ComponentFusionFactory(
+                    tracked=tracked, isolation_level=isolation_level
+                ),
+                "component_fusion{}".format(
+                    "" if isolation_level is None else "_" + isolation_level
+                ),
                 apply_first=apply_first,
             )
         else:
             pack = pack.add_initial(
-                strat.FusionFactory(tracked=tracked), "fusion", apply_first=apply_first
+                strat.FusionFactory(tracked=tracked, isolation_level=isolation_level),
+                "fusion{}".format(
+                    "" if isolation_level is None else "_" + isolation_level
+                ),
+                apply_first=apply_first,
             )
         return pack
 
@@ -245,8 +257,9 @@ class TileScopePack(StrategyPack):
         return TileScopePack(
             initial_strats=[
                 strat.FactorFactory(),
-                strat.RequirementCorroborationFactory(),
-                strat.CellInsertionFactory(maxreqlen=length, ignore_parent=True),
+                strat.CellInsertionFactory(
+                    maxreqlen=length, ignore_parent=True, one_cell_only=True
+                ),
             ],
             ver_strats=[
                 strat.BasicVerificationStrategy(),
@@ -280,8 +293,7 @@ class TileScopePack(StrategyPack):
         return TileScopePack(
             initial_strats=[
                 strat.FactorFactory(),
-                strat.RequirementCorroborationFactory(),
-                strat.CellInsertionFactory(ignore_parent=True),
+                strat.CellInsertionFactory(ignore_parent=True, one_cell_only=True),
             ],
             ver_strats=[strat.BasicVerificationStrategy()],
             inferral_strats=[],
@@ -336,7 +348,9 @@ class TileScopePack(StrategyPack):
         pack = cls.row_and_col_placements(row_only, col_only, partial)
         pack.name = "insertion_" + pack.name
         pack = pack.add_initial(
-            strat.CellInsertionFactory(maxreqlen=1, ignore_parent=True)
+            strat.CellInsertionFactory(
+                maxreqlen=1, ignore_parent=True, one_cell_only=True
+            )
         )
         return pack
 

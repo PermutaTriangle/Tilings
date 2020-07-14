@@ -213,6 +213,11 @@ class CellInsertionFactory(RequirementInsertionWithRestrictionFactory):
     For each active cell, the strategy considers all patterns (up to some maximum
     length given by `maxreqlen`) and returns two tilings; one which requires the
     pattern in the cell and one where the pattern is obstructed.
+
+    The one_cell_only flag will ensure that the strategy only inserts into the
+    'smallest' non-positive cell. This is used for 'insertion' packs where
+    we are intending to make every cell positive, so with this setting we have
+    a unique path to the fully positive tilings.
     """
 
     def __init__(
@@ -220,10 +225,21 @@ class CellInsertionFactory(RequirementInsertionWithRestrictionFactory):
         maxreqlen: int = 1,
         extra_basis: Optional[List[Perm]] = None,
         ignore_parent: bool = False,
+        one_cell_only: bool = False,
     ) -> None:
         super().__init__(maxreqlen, extra_basis, ignore_parent)
+        self.one_cell_only = one_cell_only
 
     def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        if self.one_cell_only:
+            assert self.maxreqlen == 1 and self.ignore_parent
+            cells = sorted(
+                frozenset(tiling.active_cells) - frozenset(tiling.positive_cells)
+            )
+            if cells:
+                yield (GriddedPerm.single_cell(Perm((0,)), cells[0]),)
+            return
+
         active = tiling.active_cells
         bdict = tiling.cell_basis()
         for cell, length in product(active, range(1, self.maxreqlen + 1)):
@@ -233,6 +249,11 @@ class CellInsertionFactory(RequirementInsertionWithRestrictionFactory):
                 for patt in Av(basis).of_length(length)
                 if not any(patt in perm for perm in bdict[cell][1])
             )
+
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["one_cell_only"] = self.one_cell_only
+        return d
 
     def __str__(self) -> str:
         if self.maxreqlen == 1:
@@ -309,6 +330,7 @@ class RootInsertionFactory(CellInsertionFactory):
         else:
             extra_basis = [Perm(p) for p in d["extra_basis"]]
         d.pop("extra_basis")
+        d.pop("one_cell_only")
         return cls(extra_basis=extra_basis, **d)
 
 

@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- introduced isolation levels to the fusion strategy
+- added the `one_cell_only` option to `CellInsertionFactory`
+
+### Changed
+- insertion packs now use the `one_cell_only` option, and no longer use
+  `RequirementCorroborationFactory`
 
 ## [2.2.0] - 2020-07-08
 ### Added
@@ -23,6 +30,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - remove empty assumptions when creating extra parameters in `FusionStrategy`
 - the method `Tiling.get_genf` returns the Catalan generating function for Av(123).
 - correct the generating function equations for `SplittingStrategy`
+
+### Removed
+- Removed optional arguments from the `from_bytes` method on `Tiling`
 
 ## [2.1.0] - 2020-06-29
 ### Added
