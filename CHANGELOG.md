@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - insertion packs now use the `one_cell_only` option, and no longer use
   `RequirementCorroborationFactory`
 
+### Fixed
+- only fuse non-empty regions to avoid creating unintentional rules a -> b
+  where a and b are equivalent
+
 ## [2.2.0] - 2020-07-08
 ### Added
 - add the `can_be_equivalent` methods to `AddAssumptionsStrategy`,
