@@ -425,7 +425,7 @@ class Tiling(CombinatorialClass):
             for _ in range(ngps):
                 pattlen = arr[offset]
                 offset += 1
-                res.append(GriddedPerm.decompress(arr[offset: offset + 3 * pattlen]))
+                res.append(GriddedPerm.decompress(arr[offset : offset + 3 * pattlen]))
                 offset += 3 * pattlen
             return res, offset
 
@@ -605,7 +605,7 @@ class Tiling(CombinatorialClass):
         return Tiling(
             self._obstructions,
             self._requirements,
-            self._assumptions[:idx] + self._assumptions[idx + 1:],
+            self._assumptions[:idx] + self._assumptions[idx + 1 :],
         )
 
     def remove_assumptions(self):
@@ -1516,7 +1516,10 @@ class Tiling(CombinatorialClass):
             "We were unable to enumerate this tiling:\n" + str(self)
         )
 
-    def to_html_representation(self):
+    def to_html_representation(self) -> str:
+        """
+        Returns an html representation of the object
+        """
         dim_i, dim_j = self.dimensions
         result = []
         # Create tiling html table
@@ -1524,7 +1527,7 @@ class Tiling(CombinatorialClass):
         for _ in range(dim_j):
             result.append("<tr>")
             for _ in range(dim_i):
-                result.append('<th class=tiling>')
+                result.append("<th class=tiling>")
                 result.append(" ")
                 result.append("</th>")
             result.append("</tr>")
@@ -1561,8 +1564,7 @@ class Tiling(CombinatorialClass):
             row_index_from_top = dim_j - cell[1] - 1
             index = row_index_from_top * row_width + cell[0] * 3 + 3
             result[index] = label
-        colors = ["lightSalmon", "lightBlue", "lightGreen",
-                  "lightPink", "lavender", "lightGray", "plum"]
+        colors = ["#b0dbff", "#d1f0af", "#FCEB97", "#FCC997", "#c8bdff"]
         for c, ass in enumerate(self.assumptions):
             for gp in ass.gps:
                 if len(gp.pos) > 1:
@@ -1571,9 +1573,13 @@ class Tiling(CombinatorialClass):
                     i, j = gp.pos[0]
                     row_index_from_top = dim_j - j - 1
                     index = row_index_from_top * row_width + i * 3 + 2
-                    result[index] = '<th class=tiling style="background-color:{}">'.format(
-                        colors[c])
+                    result[
+                        index
+                    ] = '<th class=tiling style="background-color:{}">'.format(
+                        colors[c]
+                    )
         return "".join(result)
+
     # -------------------------------------------------------------
     # Dunder methods
     # -------------------------------------------------------------
