@@ -68,6 +68,8 @@ def test_132_genf():
 def test_132_elementary():
     searcher = TileScope(Tiling.from_string("132"), point_placements.make_elementary())
     spec = searcher.auto_search()
+    assert spec.number_of_rules() == 4
+    spec.expand_verified()
     assert spec.number_of_rules() == 5
     assert isinstance(spec, CombinatorialSpecification)
 
@@ -271,6 +273,7 @@ def test_expansion():
     pack = TileScopePack.only_root_placements(3, 1)
     css = TileScope("132", pack)
     spec = css.auto_search(smallest=True)
+    spec.expand_verified()
     for comb_class, rule in spec.rules_dict.items():
         if isinstance(rule, VerificationRule):
             assert isinstance(
