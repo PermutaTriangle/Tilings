@@ -75,7 +75,8 @@ class Factor:
         """
         for assumption in self._tiling.assumptions:
             if isinstance(assumption, ComponentAssumption):
-                self._unite_cells(chain.from_iterable(gp.pos for gp in assumption.gps))
+                for comp in assumption.get_components(self._tiling):
+                    self._unite_cells(chain.from_iterable(gp.pos for gp in comp))
             else:
                 for gp in assumption.gps:
                     self._unite_cells(gp.pos)
@@ -188,7 +189,10 @@ class Factor:
         """
         return tuple(
             self._tiling.__class__(
-                obstructions=f[0], requirements=f[1], assumptions=f[2], simplify=False
+                obstructions=f[0],
+                requirements=f[1],
+                assumptions=tuple(sorted(f[2])),
+                simplify=False,
             )
             for f in self._get_factors_obs_and_reqs()
         )
@@ -212,7 +216,7 @@ class Factor:
                     self._tiling.__class__(
                         obstructions=chain(*obstructions),
                         requirements=chain(*requirements),
-                        assumptions=chain(*assumptions),
+                        assumptions=tuple(sorted(chain(*assumptions))),
                         simplify=False,
                     )
                 )

@@ -1,9 +1,4 @@
-# pylint: disable=too-many-locals
 # pylint: disable=too-many-lines
-# pylint: disable=too-many-branches
-# pylint: disable=arguments-differ
-# pylint: disable=too-many-statements
-# pylint: disable=import-outside-toplevel
 import json
 from array import array
 from collections import Counter, defaultdict
@@ -395,16 +390,10 @@ class Tiling(CombinatorialClass):
         return res.tobytes()
 
     @classmethod
-    def from_bytes(
-        cls,
-        arrbytes: bytes,
-        remove_empty_rows_and_cols=False,
-        derive_empty=False,
-        simplify=False,
-        sorted_input=True,
-    ) -> "Tiling":
+    def from_bytes(cls, b: bytes) -> "Tiling":
         """Given a compressed tiling in the form of an 1-byte array, decompress
         it and return a tiling."""
+        # pylint: disable=too-many-locals
 
         def merge_8bit(lh, uh):
             """
@@ -429,7 +418,7 @@ class Tiling(CombinatorialClass):
                 offset += 3 * pattlen
             return res, offset
 
-        arr = array("B", arrbytes)
+        arr = array("B", b)
         obstructions, offset = recreate_gp_list(0)
 
         nreqs = merge_8bit(arr[offset], arr[offset + 1])
@@ -462,10 +451,10 @@ class Tiling(CombinatorialClass):
             obstructions=obstructions,
             requirements=requirements,
             assumptions=assumptions,
-            remove_empty_rows_and_cols=remove_empty_rows_and_cols,
-            derive_empty=derive_empty,
-            simplify=simplify,
-            sorted_input=sorted_input,
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
         )
 
     @classmethod
@@ -499,14 +488,12 @@ class Tiling(CombinatorialClass):
         return cls.from_dict(jsondict)
 
     @classmethod
-    def from_dict(cls, jsondict: dict) -> "Tiling":
+    def from_dict(cls, d: dict) -> "Tiling":
         """Returns a Tiling object from a dictionary loaded from a JSON
         serialized Tiling object."""
-        obstructions = map(GriddedPerm.from_dict, jsondict["obstructions"])
-        requirements = map(
-            lambda x: map(GriddedPerm.from_dict, x), jsondict["requirements"]
-        )
-        assumptions = map(TrackingAssumption.from_dict, jsondict["assumptions"])
+        obstructions = map(GriddedPerm.from_dict, d["obstructions"])
+        requirements = map(lambda x: map(GriddedPerm.from_dict, x), d["requirements"])
+        assumptions = map(TrackingAssumption.from_dict, d["assumptions"])
         return cls(
             obstructions=obstructions,
             requirements=requirements,
@@ -619,6 +606,20 @@ class Tiling(CombinatorialClass):
             derive_empty=False,
             simplify=False,
             sorted_input=True,
+        )
+
+    def remove_components_from_assumptions(self):
+        """
+        Return the tiling with all the actual components from individual
+        assumptions removed.
+        """
+        if not self.assumptions:
+            return self
+        assumptions = [ass.remove_components(self) for ass in self.assumptions]
+        return self.__class__(
+            self._obstructions,
+            self._requirements,
+            [ass for ass in assumptions if ass.gps],
         )
 
     def fully_isolated(self) -> bool:
@@ -1004,7 +1005,7 @@ class Tiling(CombinatorialClass):
         return self.__class__(
             obstructions,
             requirements,
-            set(ass for ass in assumptions if ass.gps),
+            tuple(sorted(set(ass for ass in assumptions if ass.gps))),
             simplify=False,
             sorted_input=True,
         )
@@ -1040,6 +1041,12 @@ class Tiling(CombinatorialClass):
         """
         rcs = RowColSeparation(self)
         return rcs.separated_tiling()
+
+    def row_and_column_separation_with_mapping(
+        self,
+    ) -> Tuple["Tiling", Dict[Cell, Cell]]:
+        rcs = RowColSeparation(self)
+        return rcs.separated_tiling(), rcs.get_cell_map()
 
     def obstruction_transitivity(self) -> "Tiling":
         """
@@ -1486,6 +1493,7 @@ class Tiling(CombinatorialClass):
         )
 
     def get_genf(self, *args, **kwargs) -> sympy.Expr:
+        # pylint: disable=import-outside-toplevel
         if self.is_empty():
             return sympy.sympify(0)
         from .strategies import (
@@ -1555,6 +1563,9 @@ class Tiling(CombinatorialClass):
         )
 
     def __str__(self) -> str:
+        # pylint: disable=too-many-locals
+        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-statements
         dim_i, dim_j = self.dimensions
         result = []
         # Create tiling lines

@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - introduced isolation levels to the fusion strategy
 - added the `one_cell_only` option to `CellInsertionFactory`
+- `remove_components_from_assumptions` method to `Tiling`
+- `DetectComponentsStrategy` which removes cells from assumptions
+   which are actual components. This replaces the need for the
+   `SplittingStrategy` in component fusion packs.
 
 ### Changed
 - insertion packs now use the `one_cell_only` option, and no longer use
@@ -17,6 +21,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - untracked constructors raise `NotImplementedError`
+- forbid fusing a region containing a `TrackingAssumption` and a
+  `ComponentAssumption`
+- a tiling factors if a `ComponentAssumption` if the components of the region
+  split into the factors
+
+### Fixed
+- only fuse non-empty regions to avoid creating unintentional rules a -> b
+  where a and b are equivalent
 
 ## [2.2.0] - 2020-07-08
 ### Added
@@ -35,6 +47,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - remove empty assumptions when creating extra parameters in `FusionStrategy`
 - the method `Tiling.get_genf` returns the Catalan generating function for Av(123).
 - correct the generating function equations for `SplittingStrategy`
+
+### Removed
+- Removed optional arguments from the `from_bytes` method on `Tiling`
 
 ## [2.1.0] - 2020-06-29
 ### Added
