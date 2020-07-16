@@ -1528,6 +1528,8 @@ class Tiling(CombinatorialClass):
         """
         Returns an html representation of the object
         """
+        # pylint: disable=too-many-locals
+        # pylint: disable=too-many-branches
         dim_i, dim_j = self.dimensions
         result = []
         # Create tiling html table
