@@ -44,6 +44,7 @@ def test_132():
 def test_132_genf():
     searcher = TileScope([Perm((0, 2, 1))], point_placements)
     spec = searcher.auto_search(smallest=True)
+    spec.expand_verified()
     gf = spec.get_genf()
     gf = sympy.series(spec.get_genf(), n=15)
     x = sympy.Symbol("x")
