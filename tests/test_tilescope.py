@@ -294,3 +294,39 @@ def test_single_fusion_db():
     assert isinstance(spec, CombinatorialSpecification)
     expected_enum = [1, 1, 2, 6, 22, 90, 394, 1806, 8558, 41586, 206098]
     assert [spec.count_objects_of_size(n) for n in range(11)] == expected_enum
+
+
+@pytest.mark.timeout(30)
+def test_domino():
+    domino = Tiling(
+        obstructions=[
+            GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)]),
+            GriddedPerm(Perm((1, 0, 2)), [(0, 1), (0, 1), (0, 1)]),
+            GriddedPerm(Perm((0, 2, 1, 3)), [(0, 0), (0, 1), (0, 0), (0, 1)]),
+        ]
+    )
+    tilescope = TileScope(
+        domino,
+        TileScopePack.row_and_col_placements().make_fusion(
+            tracked=True, component=True
+        ),
+    )
+    spec = tilescope.auto_search()
+    assert isinstance(spec, CombinatorialSpecification)
+    assert [spec.count_objects_of_size(i) for i in range(15)] == [
+        1,
+        2,
+        6,
+        22,
+        91,
+        408,
+        1938,
+        9614,
+        49335,
+        260130,
+        1402440,
+        7702632,
+        42975796,
+        243035536,
+        1390594458,
+    ]

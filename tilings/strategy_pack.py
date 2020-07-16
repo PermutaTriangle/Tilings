@@ -64,7 +64,7 @@ class TileScopePack(StrategyPack):
             pack = pack.make_tracked()
             if component:
                 pack = pack.add_initial(
-                    strat.SplittingStrategy(ignore_parent=True), apply_first=True
+                    strat.DetectComponentsStrategy(ignore_parent=True), apply_first=True
                 )
         if component:
             pack = pack.add_initial(

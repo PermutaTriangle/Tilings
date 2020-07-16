@@ -3,6 +3,7 @@ import pytest
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import ComponentFusion, Fusion
+from tilings.assumptions import TrackingAssumption
 
 
 class TestFusion:
@@ -563,3 +564,30 @@ class TestComponentFusion(TestFusion):
     def test_is_valid_count(self, row_fusion):
         with pytest.raises(NotImplementedError):
             row_fusion._is_valid_count(2, GriddedPerm(Perm((0,)), ((0, 0),)))
+
+    def test_fusing_empty_region(self):
+        tiling = Tiling(
+            obstructions=(
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
+                GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                GriddedPerm(Perm((1, 0)), ((0, 3), (0, 0))),
+                GriddedPerm(Perm((1, 0)), ((0, 3), (0, 1))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 2), (0, 2))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 2), (0, 3))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 3), (0, 3))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 2), (0, 2))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 2), (0, 3))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 3), (0, 3))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 2), (0, 2), (0, 2))),
+                GriddedPerm(Perm((0, 1, 2)), ((0, 2), (0, 3), (0, 3))),
+                GriddedPerm(Perm((2, 0, 1)), ((0, 3), (0, 2), (0, 2))),
+                GriddedPerm(Perm((0, 1, 2, 3)), ((0, 3), (0, 3), (0, 3), (0, 3))),
+                GriddedPerm(Perm((0, 2, 3, 1)), ((0, 2), (0, 2), (0, 3), (0, 2))),
+                GriddedPerm(Perm((0, 2, 3, 1)), ((0, 3), (0, 3), (0, 3), (0, 3))),
+                GriddedPerm(Perm((3, 0, 1, 2)), ((0, 3), (0, 3), (0, 3), (0, 3))),
+            ),
+            requirements=((GriddedPerm(Perm((0, 1)), ((0, 3), (0, 3))),),),
+            assumptions=(TrackingAssumption((GriddedPerm(Perm((0,)), ((0, 0),)),)),),
+        )
+        assert not Fusion(tiling, col_idx=0, tracked=True).fusable()
