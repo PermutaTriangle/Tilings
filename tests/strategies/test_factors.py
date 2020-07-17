@@ -189,7 +189,9 @@ def test_rule(
     factor_rules, factor_with_int_rules, factor_with_mon_int_rules, not_fact_tiling
 ):
     all_rules = factor_rules + factor_with_int_rules + factor_with_mon_int_rules
-    assert all(not rule.inferrable for rule in all_rules)
+    assert all(not rule.inferrable for rule in factor_rules)
+    assert all(rule.inferrable for rule in factor_with_mon_int_rules)
+    assert all(rule.inferrable for rule in factor_with_int_rules)
     assert all(len(rule.strategy.partition) == len(rule.children) for rule in all_rules)
     assert all(rule.workable for rule in all_rules)
     assert all(not rule.possibly_empty for rule in all_rules)
