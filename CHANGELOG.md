@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - only fuse non-empty regions to avoid creating unintentional rules a -> b
   where a and b are equivalent
 - remove duplicate assumptions in the `AddAssumptionsStrategy`
-- `Tiling.from_dict` will make a `Tiling` with no assumptions if ther
+- `Tiling.from_dict` will make a `Tiling` with no assumptions if the
   `assumptions` key is not in the dictionary.
 - a factor with interleaving strategy has `inferrable=True`
 
