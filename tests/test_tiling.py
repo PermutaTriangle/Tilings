@@ -488,6 +488,11 @@ def test_bytes(compresstil):
 
 def test_json(compresstil):
     assert compresstil == Tiling.from_json(json.dumps(compresstil.to_jsonable()))
+    # For backward compatibility make sure we can load from json that don't have
+    # the assumptions field
+    d = compresstil.to_jsonable()
+    d.pop("assumptions")
+    assert compresstil == Tiling.from_json(json.dumps(d))
 
 
 def test_cell_within_bounds(
