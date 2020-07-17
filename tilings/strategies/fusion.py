@@ -194,15 +194,17 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         subs2 = {**subs}
         subs2[self.fuse_parameter] = p / right_vars
 
-        left_empty_term = rhs_func.subs(subs2, simultaneous=True)
-        right_empty_term = rhs_func.subs(subs1, simultaneous=True)
+        left_right_empty = (
+            rhs_func.subs(subs2, simultaneous=True),
+            rhs_func.subs(subs1, simultaneous=True),
+        )
         to_subtract = 0
         if self.min_points[0] == 1:
             # left side is positive, so the right can't be empty
-            to_subtract += right_empty_term
+            to_subtract += left_right_empty[1]
         if self.min_points[1] == 1:
             # right side is positive, so thr left can't be empty
-            to_subtract += left_empty_term
+            to_subtract += left_right_empty[0]
 
         return Eq(
             lhs_func,
