@@ -6,7 +6,7 @@ from comb_spec_searcher import CartesianProduct
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.strategies import FactorFactory
-from tilings.strategies.factor import Interleaving
+from tilings.strategies.factor import FactorStrategy, Interleaving
 
 pytest_plugins = [
     "tests.fixtures.simple_tiling",
@@ -213,3 +213,21 @@ def test_all_union_rules():
     assert all(not rule(t).workable for rule in fo)
     # The workable can be turned on for union of factor
     assert all(rule(t).workable for rule in fo)
+
+
+def test_interleaving_return_normal_factor():
+    """
+    In the case where there is no interleaving we make sure that an interleaving factory
+    still return a plain cartesian product like factor strategy.
+    """
+    t = Tiling(
+        obstructions=[
+            GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),
+            GriddedPerm.single_cell(Perm((0, 1)), (1, 1)),
+        ]
+    )
+    factor_strat = next(FactorFactory(interleaving="all")(t))
+    assert factor_strat.formal_step() == "factor with partition {(0, 0)} / {(1, 1)}"
+    assert factor_strat.__class__ == FactorStrategy
+    rule = factor_strat(t)
+    assert rule.constructor.__class__ == CartesianProduct
