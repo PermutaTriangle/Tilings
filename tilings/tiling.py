@@ -493,7 +493,7 @@ class Tiling(CombinatorialClass):
         serialized Tiling object."""
         obstructions = map(GriddedPerm.from_dict, d["obstructions"])
         requirements = map(lambda x: map(GriddedPerm.from_dict, x), d["requirements"])
-        assumptions = map(TrackingAssumption.from_dict, d["assumptions"])
+        assumptions = map(TrackingAssumption.from_dict, d.get("assumptions", []))
         return cls(
             obstructions=obstructions,
             requirements=requirements,

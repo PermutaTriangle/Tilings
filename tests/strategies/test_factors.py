@@ -1,10 +1,12 @@
+from itertools import chain
+
 import pytest
 
 from comb_spec_searcher import CartesianProduct
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.strategies import FactorFactory
-from tilings.strategies.factor import Interleaving, MonotoneInterleaving
+from tilings.strategies.factor import Interleaving
 
 pytest_plugins = [
     "tests.fixtures.simple_tiling",
@@ -176,20 +178,18 @@ def test_formal_step(factor_rules, factor_with_int_rules, factor_with_mon_int_ru
 
 def test_constructor(factor_rules, factor_with_int_rules, factor_with_mon_int_rules):
     assert all(rule.constructor.__class__ == CartesianProduct for rule in factor_rules)
-    assert all(
-        rule.constructor.__class__ == Interleaving for rule in factor_with_int_rules
-    )
-    assert all(
-        rule.constructor.__class__ == MonotoneInterleaving
-        for rule in factor_with_mon_int_rules
-    )
+    for rule in chain(factor_with_int_rules, factor_with_mon_int_rules):
+        with pytest.raises(NotImplementedError):
+            assert isinstance(rule.constructor, Interleaving)
 
 
 def test_rule(
     factor_rules, factor_with_int_rules, factor_with_mon_int_rules, not_fact_tiling
 ):
     all_rules = factor_rules + factor_with_int_rules + factor_with_mon_int_rules
-    assert all(not rule.inferrable for rule in all_rules)
+    assert all(not rule.inferrable for rule in factor_rules)
+    assert all(rule.inferrable for rule in factor_with_mon_int_rules)
+    assert all(rule.inferrable for rule in factor_with_int_rules)
     assert all(len(rule.strategy.partition) == len(rule.children) for rule in all_rules)
     assert all(rule.workable for rule in all_rules)
     assert all(not rule.possibly_empty for rule in all_rules)

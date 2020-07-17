@@ -75,14 +75,10 @@ class AddAssumptionsConstructor(Constructor):
     ):
         raise NotImplementedError
 
-    @staticmethod
-    def get_eq_symbol() -> str:
-        return "↣"
-
 
 class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
     def __init__(self, assumptions: Iterable[TrackingAssumption], workable=False):
-        self.assumptions = tuple(assumptions)
+        self.assumptions = tuple(set(assumptions))
         super().__init__(
             ignore_parent=False,
             inferrable=True,
@@ -174,6 +170,10 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
         assumptions = [TrackingAssumption.from_dict(ass) for ass in d["assumptions"]]
         return cls(assumptions)
 
+    @staticmethod
+    def get_eq_symbol() -> str:
+        return "↣"
+
     def __repr__(self):
         return (
             self.__class__.__name__
@@ -215,13 +215,13 @@ class AddInterleavingAssumptionFactory(StrategyFactory[Tiling]):
         Yield an AddAssumption strategy for the given component if needed.
         """
         cols, rows = interleaving_rows_and_cols(components)
-        assumptions = [
+        assumptions = set(
             ass
             for ass in chain.from_iterable(
                 assumptions_to_add(cells, cols, rows) for cells in components
             )
             if ass not in comb_class.assumptions
-        ]
+        )
         if assumptions:
             strategy = AddAssumptionsStrategy(assumptions, workable=True)
             yield strategy(comb_class)
