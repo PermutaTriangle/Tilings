@@ -42,7 +42,10 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         workable: bool = True,
     ):
         self.partition = tuple(sorted(tuple(sorted(p)) for p in partition))
-        super().__init__(ignore_parent=ignore_parent, workable=workable)
+        inferrable = any(interleaving_rows_and_cols(self.partition))
+        super().__init__(
+            ignore_parent=ignore_parent, workable=workable, inferrable=inferrable
+        )
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
         return tuple(tiling.sub_tiling(cells) for cells in self.partition)
