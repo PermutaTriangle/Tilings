@@ -341,6 +341,23 @@ class TestComponentFusion(TestFusion):
     def col_fusion(self, col_tiling):
         return ComponentFusion(col_tiling, col_idx=0)
 
+        @pytest.fixture
+        def col_tiling_fin_comp(self):
+            t = Tiling(
+                obstructions=[
+                    GriddedPerm(Perm((2, 1, 0)), ((0, 0),) * 3),
+                    GriddedPerm(Perm((2, 1, 0)), ((1, 0),) * 3),
+                    GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (1, 0))),
+                    GriddedPerm(Perm((2, 1, 0)), ((0, 0), (1, 0), (1, 0))),
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+                ]
+            )
+            return t
+
+    @pytest.fixture
+    def col_fin_comp_fusion(self, col_tiling_fin_comp):
+        return ComponentFusion(col_tiling_fin_comp, col_idx=0)
+
     @pytest.fixture
     def tiling_with_req(self, col_tiling):
         return col_tiling.insert_cell((0, 0))
@@ -379,19 +396,28 @@ class TestComponentFusion(TestFusion):
         with pytest.raises(RuntimeError):
             ComponentFusion(tiling_with_req, col_idx=0)
 
-    def test_pre_check(self, col_fusion, row_fusion, not_prechecked_fusion):
+    def test_pre_check(
+        self, col_fusion, col_fin_comp_fusion, row_fusion, not_prechecked_fusion
+    ):
         assert col_fusion._pre_check()
+        assert col_fin_comp_fusion._pre_check()
         assert row_fusion._pre_check()
         assert not not_prechecked_fusion._pre_check()
 
-    def test_first_cell(self, col_fusion, row_fusion, not_prechecked_fusion):
+    def test_first_cell(
+        self, col_fusion, col_fin_comp_fusion, row_fusion, not_prechecked_fusion
+    ):
         assert col_fusion.first_cell == (0, 0)
+        assert col_fin_comp_fusion.first_cell == (0, 0)
         assert row_fusion.first_cell == (0, 0)
         with pytest.raises(RuntimeError):
             not_prechecked_fusion.first_cell
 
-    def test_second_cell(self, col_fusion, row_fusion, not_prechecked_fusion):
+    def test_second_cell(
+        self, col_fusion, col_fin_comp_fusion, row_fusion, not_prechecked_fusion
+    ):
         assert col_fusion.second_cell == (1, 0)
+        assert col_fin_comp_fusion.second_cell == (1, 0)
         assert row_fusion.second_cell == (0, 1)
         with pytest.raises(RuntimeError):
             not_prechecked_fusion.second_cell
@@ -525,8 +551,11 @@ class TestComponentFusion(TestFusion):
             ]
         )
 
-    def test_fusable(self, col_fusion, row_fusion, not_prechecked_fusion):
+    def test_fusable(
+        self, col_fusion, col_fin_comp_fusion, row_fusion, not_prechecked_fusion
+    ):
         assert col_fusion.fusable()
+        assert col_fin_comp_fusion.fusable()
         assert row_fusion.fusable()
         assert not not_prechecked_fusion.fusable()
         t = Tiling(
@@ -539,8 +568,9 @@ class TestComponentFusion(TestFusion):
         )
         assert not ComponentFusion(t, col_idx=0).fusable()
 
-    def test_fused_tiling(self, col_fusion, row_fusion):
+    def test_fused_tiling(self, col_fusion, col_fin_comp_fusion, row_fusion):
         assert col_fusion.fused_tiling() == Tiling.from_string("021")
+        assert col_fin_comp_fusion.fused_tiling() == Tiling.from_string("210")
         assert row_fusion.fused_tiling() == Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
