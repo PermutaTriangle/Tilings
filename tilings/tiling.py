@@ -493,7 +493,7 @@ class Tiling(CombinatorialClass):
         serialized Tiling object."""
         obstructions = map(GriddedPerm.from_dict, d["obstructions"])
         requirements = map(lambda x: map(GriddedPerm.from_dict, x), d["requirements"])
-        assumptions = map(TrackingAssumption.from_dict, d["assumptions"])
+        assumptions = map(TrackingAssumption.from_dict, d.get("assumptions", []))
         return cls(
             obstructions=obstructions,
             requirements=requirements,
@@ -606,6 +606,20 @@ class Tiling(CombinatorialClass):
             derive_empty=False,
             simplify=False,
             sorted_input=True,
+        )
+
+    def remove_components_from_assumptions(self):
+        """
+        Return the tiling with all the actual components from individual
+        assumptions removed.
+        """
+        if not self.assumptions:
+            return self
+        assumptions = [ass.remove_components(self) for ass in self.assumptions]
+        return self.__class__(
+            self._obstructions,
+            self._requirements,
+            [ass for ass in assumptions if ass.gps],
         )
 
     def fully_isolated(self) -> bool:
@@ -991,7 +1005,7 @@ class Tiling(CombinatorialClass):
         return self.__class__(
             obstructions,
             requirements,
-            set(ass for ass in assumptions if ass.gps),
+            tuple(sorted(set(ass for ass in assumptions if ass.gps))),
             simplify=False,
             sorted_input=True,
         )
@@ -1027,6 +1041,12 @@ class Tiling(CombinatorialClass):
         """
         rcs = RowColSeparation(self)
         return rcs.separated_tiling()
+
+    def row_and_column_separation_with_mapping(
+        self,
+    ) -> Tuple["Tiling", Dict[Cell, Cell]]:
+        rcs = RowColSeparation(self)
+        return rcs.separated_tiling(), rcs.get_cell_map()
 
     def obstruction_transitivity(self) -> "Tiling":
         """

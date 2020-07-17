@@ -42,7 +42,10 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         workable: bool = True,
     ):
         self.partition = tuple(sorted(tuple(sorted(p)) for p in partition))
-        super().__init__(ignore_parent=ignore_parent, workable=workable)
+        inferrable = any(interleaving_rows_and_cols(self.partition))
+        super().__init__(
+            ignore_parent=ignore_parent, workable=workable, inferrable=inferrable
+        )
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
         return tuple(tiling.sub_tiling(cells) for cells in self.partition)
@@ -60,9 +63,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         ):
             for idx, child in enumerate(children):
                 # TODO: consider skew/sum
-                new_assumption = child.forward_map_assumption(
-                    assumption, check_avoidance=False
-                )
+                new_assumption = child.forward_map_assumption(assumption)
                 if new_assumption.gps:
                     child_var = child.get_parameter(new_assumption)
                     extra_parameters[idx][parent_var] = child_var
