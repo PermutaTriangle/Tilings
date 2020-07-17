@@ -20,7 +20,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `ComponentAssumption`
 - a tiling factors if a `ComponentAssumption` if the components of the region
   split into the factors
-- mark the child of an interleaving factor rule as inferable
 
 ### Fixed
 - only fuse non-empty regions to avoid creating unintentional rules a -> b
