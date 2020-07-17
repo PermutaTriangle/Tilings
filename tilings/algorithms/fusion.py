@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Optional
 
 from permuta import Perm
 from tilings.assumptions import (
+    ComponentAssumption,
     SkewComponentAssumption,
     SumComponentAssumption,
     TrackingAssumption,
@@ -67,6 +68,7 @@ class Fusion:
             "noninteracting",
             "isolated",
         ], "The only valid isolation levels are None, 'noninteracting', and 'isolated'."
+        self._fused_tiling: Optional["Tiling"] = None
 
     def _fuse_gridded_perm(self, gp):
         """
@@ -251,6 +253,10 @@ class Fusion:
         are all contained entirely on the left of the fusion region, entirely
         on the right, or split in every possible way.
         """
+        if isinstance(assumption, ComponentAssumption):
+            return self.is_left_sided_assumption(
+                assumption
+            ) and self.is_right_sided_assumption(assumption)
         return self._can_fuse_set_of_gridded_perms(fuse_counter) or (
             all(count == 1 for gp, count in fuse_counter.items())
             and self._is_one_sided_assumption(assumption)
@@ -342,35 +348,39 @@ class Fusion:
                 self._tiling.assumptions, self.assumptions_fuse_counters
             )
         )
-
         return (
             obs_fusable
             and req_fusable
             and ass_fusable
             and self._check_isolation_level()
+            and not self.fused_tiling()
+            .add_list_requirement(list(self.new_assumption().gps))
+            .is_empty()
         )
 
     def fused_tiling(self) -> "Tiling":
         """
         Return the fused tiling.
         """
-        assumptions = [
-            ass.__class__(gps)
-            for ass, gps in zip(
-                self._tiling.assumptions, self.assumptions_fuse_counters
+        if self._fused_tiling is None:
+            assumptions = [
+                ass.__class__(gps)
+                for ass, gps in zip(
+                    self._tiling.assumptions, self.assumptions_fuse_counters
+                )
+            ]
+            if self._tracked:
+                assumptions.append(self.new_assumption())
+            requirements = self.requirements_fuse_counters
+            if self._positive_left or self._positive_right:
+                new_positive_requirement = self.new_positive_requirement()
+                requirements = requirements + [new_positive_requirement]
+            self._fused_tiling = self._tiling.__class__(
+                obstructions=self.obstruction_fuse_counter.keys(),
+                requirements=requirements,
+                assumptions=assumptions,
             )
-        ]
-        if self._tracked:
-            assumptions.append(self.new_assumption())
-        requirements = self.requirements_fuse_counters
-        if self._positive_left or self._positive_right:
-            new_positive_requirement = self.new_positive_requirement()
-            requirements = requirements + [new_positive_requirement]
-        return self._tiling.__class__(
-            obstructions=self.obstruction_fuse_counter.keys(),
-            requirements=requirements,
-            assumptions=assumptions,
-        )
+        return self._fused_tiling
 
 
 class ComponentFusion(Fusion):
@@ -531,6 +541,21 @@ class ComponentFusion(Fusion):
         """
         return chain.from_iterable(
             self._unfuse_gridded_perm(ob) for ob in self.obstruction_fuse_counter
+        )
+
+    def _can_fuse_assumption(self, assumption, fuse_counter):
+        """
+        Return True if an assumption can be fused. That is, prefusion, the gps
+        are all contained entirely on the left of the fusion region, entirely
+        on the right, or split in every possible way.
+        """
+        if not isinstance(assumption, ComponentAssumption):
+            return self.is_left_sided_assumption(
+                assumption
+            ) and self.is_right_sided_assumption(assumption)
+        return self._can_fuse_set_of_gridded_perms(fuse_counter) or (
+            all(count == 1 for gp, count in fuse_counter.items())
+            and self._is_one_sided_assumption(assumption)
         )
 
     def _can_fuse_set_of_gridded_perms(self, fuse_counter):

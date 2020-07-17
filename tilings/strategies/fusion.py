@@ -490,10 +490,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     ):
         raise NotImplementedError
 
-    @staticmethod
-    def get_eq_symbol() -> str:
-        return "↣"
-
 
 class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def __init__(
@@ -527,7 +523,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> FusionConstructor:
         if not self.tracked:
             # constructor only enumerates when tracked.
-            return FusionConstructor("n", {}, tuple(), tuple(), tuple(), 0, 0)
+            raise NotImplementedError("The fusion strategy was not tracked.")
         # Need to recompute some info to count, so ignoring passed in children
         algo = self.fusion_algorithm(comb_class)
         if not algo.fusable():
@@ -641,6 +637,10 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     @classmethod
     def from_dict(cls, d: dict) -> "FusionStrategy":
         return cls(**d)
+
+    @staticmethod
+    def get_eq_symbol() -> str:
+        return "↣"
 
     def __repr__(self) -> str:
         return (

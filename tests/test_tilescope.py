@@ -44,6 +44,7 @@ def test_132():
 def test_132_genf():
     searcher = TileScope([Perm((0, 2, 1))], point_placements)
     spec = searcher.auto_search(smallest=True)
+    spec.expand_verified()
     gf = spec.get_genf()
     gf = sympy.series(spec.get_genf(), n=15)
     x = sympy.Symbol("x")
@@ -68,6 +69,8 @@ def test_132_genf():
 def test_132_elementary():
     searcher = TileScope(Tiling.from_string("132"), point_placements.make_elementary())
     spec = searcher.auto_search()
+    assert spec.number_of_rules() == 4
+    spec.expand_verified()
     assert spec.number_of_rules() == 5
     assert isinstance(spec, CombinatorialSpecification)
 
@@ -271,6 +274,7 @@ def test_expansion():
     pack = TileScopePack.only_root_placements(3, 1)
     css = TileScope("132", pack)
     spec = css.auto_search(smallest=True)
+    spec.expand_verified()
     for comb_class, rule in spec.rules_dict.items():
         if isinstance(rule, VerificationRule):
             assert isinstance(
@@ -294,3 +298,39 @@ def test_single_fusion_db():
     assert isinstance(spec, CombinatorialSpecification)
     expected_enum = [1, 1, 2, 6, 22, 90, 394, 1806, 8558, 41586, 206098]
     assert [spec.count_objects_of_size(n) for n in range(11)] == expected_enum
+
+
+@pytest.mark.timeout(30)
+def test_domino():
+    domino = Tiling(
+        obstructions=[
+            GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)]),
+            GriddedPerm(Perm((1, 0, 2)), [(0, 1), (0, 1), (0, 1)]),
+            GriddedPerm(Perm((0, 2, 1, 3)), [(0, 0), (0, 1), (0, 0), (0, 1)]),
+        ]
+    )
+    tilescope = TileScope(
+        domino,
+        TileScopePack.row_and_col_placements().make_fusion(
+            tracked=True, component=True
+        ),
+    )
+    spec = tilescope.auto_search()
+    assert isinstance(spec, CombinatorialSpecification)
+    assert [spec.count_objects_of_size(i) for i in range(15)] == [
+        1,
+        2,
+        6,
+        22,
+        91,
+        408,
+        1938,
+        9614,
+        49335,
+        260130,
+        1402440,
+        7702632,
+        42975796,
+        243035536,
+        1390594458,
+    ]

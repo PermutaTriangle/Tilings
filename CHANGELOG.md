@@ -8,10 +8,33 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - introduced isolation levels to the fusion strategy
 - added the `one_cell_only` option to `CellInsertionFactory`
+- `remove_components_from_assumptions` method to `Tiling`
+- `DetectComponentsStrategy` which removes cells from assumptions
+   which are actual components. This replaces the need for the
+   `SplittingStrategy` in component fusion packs.
 
 ### Changed
 - insertion packs now use the `one_cell_only` option, and no longer use
   `RequirementCorroborationFactory`
+- the `get_eq_symbol` and `get_op_symbol` are moved to `Strategy` rather than
+  `Constructor`
+
+### Fixed
+- untracked constructors raise `NotImplementedError`
+- forbid fusing a region containing a `TrackingAssumption` and a
+  `ComponentAssumption`
+- a tiling factors if a `ComponentAssumption` if the components of the region
+  split into the factors
+
+### Fixed
+- only fuse non-empty regions to avoid creating unintentional rules a -> b
+  where a and b are equivalent
+- remove duplicate assumptions in the `AddAssumptionsStrategy`
+- `Tiling.from_dict` will make a `Tiling` with no assumptions if the
+  `assumptions` key is not in the dictionary.
+- a factor with interleaving strategy has `inferrable=True`
+- a factor with interleaving strategy return a normal factor strategy when
+  there's no interleaving going on.
 
 ## [2.2.0] - 2020-07-08
 ### Added
