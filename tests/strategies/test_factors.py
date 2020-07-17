@@ -149,6 +149,15 @@ def test_factor_all_interleaving(diverse_tiling):
     )
 
 
+def test_str():
+    assert str(FactorFactory()) == "factor"
+    assert (
+        str(FactorFactory(interleaving="monotone"))
+        == "factor with monotone interleaving"
+    )
+    assert str(FactorFactory(interleaving="all")) == "factor with interleaving"
+
+
 # ------------------------------------------------------------
 #       Test for all classes
 # ------------------------------------------------------------
