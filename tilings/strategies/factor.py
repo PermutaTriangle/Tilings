@@ -224,7 +224,7 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
         raise NotImplementedError
 
     def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-        # multinomial counts the number of ways to interleave the values k, ..., kn.
+        # multinomial counts the number of ways to interleave the values k1, ..., kn.
         multiplier = reduce(
             mul,
             [
