@@ -341,22 +341,60 @@ class TestComponentFusion(TestFusion):
     def col_fusion(self, col_tiling):
         return ComponentFusion(col_tiling, col_idx=0)
 
-        @pytest.fixture
-        def col_tiling_fin_comp(self):
-            t = Tiling(
-                obstructions=[
-                    GriddedPerm(Perm((2, 1, 0)), ((0, 0),) * 3),
-                    GriddedPerm(Perm((2, 1, 0)), ((1, 0),) * 3),
-                    GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (1, 0))),
-                    GriddedPerm(Perm((2, 1, 0)), ((0, 0), (1, 0), (1, 0))),
-                    GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
-                ]
-            )
-            return t
+    @pytest.fixture
+    def col_fin_comp_tiling(self):
+        t = Tiling(
+            obstructions=[
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0),) * 3),
+                GriddedPerm(Perm((2, 1, 0)), ((1, 0),) * 3),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (1, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (1, 0), (1, 0))),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+            ]
+        )
+        return t
 
     @pytest.fixture
-    def col_fin_comp_fusion(self, col_tiling_fin_comp):
-        return ComponentFusion(col_tiling_fin_comp, col_idx=0)
+    def col_fin_comp_fusion(self, col_fin_comp_tiling):
+        return ComponentFusion(col_fin_comp_tiling, col_idx=0)
+
+    @pytest.fixture
+    def col_3x1_unfusable_tiling(self):
+        t = Tiling(
+            obstructions=[
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+                GriddedPerm(Perm((2, 1, 0)), ((1, 0),) * 3),
+                GriddedPerm(Perm((2, 1, 0)), ((2, 0),) * 3),
+                GriddedPerm(Perm((2, 0, 1)), ((0, 0), (1, 0), (1, 0))),
+                GriddedPerm(Perm((2, 0, 1)), ((0, 0), (2, 0), (2, 0))),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+            ]
+        )
+        return t
+
+    @pytest.fixture
+    def col_3x1_unfusable_fusion(self, col_3x1_unfusable_tiling):
+        return ComponentFusion(col_3x1_unfusable_tiling, col_idx=1)
+
+    @pytest.fixture
+    def col_3x1_fusable_tiling(self):
+        t = Tiling(
+            obstructions=[
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+                GriddedPerm(Perm((2, 1, 0)), ((1, 0),) * 3),
+                GriddedPerm(Perm((2, 1, 0)), ((2, 0),) * 3),
+                GriddedPerm(Perm((2, 0, 1)), ((0, 0), (1, 0), (1, 0))),
+                GriddedPerm(Perm((2, 0, 1)), ((0, 0), (2, 0), (2, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (1, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (1, 0), (1, 0))),
+                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+            ]
+        )
+        return t
+
+    @pytest.fixture
+    def col_3x1_fusable_fusion(self, col_3x1_fusable_tiling):
+        return ComponentFusion(col_3x1_fusable_tiling, col_idx=1)
 
     @pytest.fixture
     def tiling_with_req(self, col_tiling):
@@ -552,11 +590,19 @@ class TestComponentFusion(TestFusion):
         )
 
     def test_fusable(
-        self, col_fusion, col_fin_comp_fusion, row_fusion, not_prechecked_fusion
+        self,
+        col_fusion,
+        col_fin_comp_fusion,
+        row_fusion,
+        col_3x1_unfusable_fusion,
+        col_3x1_fusable_fusion,
+        not_prechecked_fusion,
     ):
         assert col_fusion.fusable()
         assert col_fin_comp_fusion.fusable()
         assert row_fusion.fusable()
+        assert not col_3x1_unfusable_fusion.fusable()
+        assert col_3x1_fusable_fusion.fusable()
         assert not not_prechecked_fusion.fusable()
         t = Tiling(
             obstructions=[
@@ -568,9 +614,18 @@ class TestComponentFusion(TestFusion):
         )
         assert not ComponentFusion(t, col_idx=0).fusable()
 
-    def test_fused_tiling(self, col_fusion, col_fin_comp_fusion, row_fusion):
+    def test_fused_tiling(
+        self, col_fusion, col_fin_comp_fusion, col_3x1_fusable_fusion, row_fusion
+    ):
         assert col_fusion.fused_tiling() == Tiling.from_string("021")
         assert col_fin_comp_fusion.fused_tiling() == Tiling.from_string("210")
+        assert col_3x1_fusable_fusion.fused_tiling() == Tiling(
+            obstructions=[
+                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+                GriddedPerm(Perm((2, 1, 0)), ((1, 0),) * 3),
+                GriddedPerm(Perm((2, 0, 1)), ((0, 0), (1, 0), (1, 0))),
+            ]
+        )
         assert row_fusion.fused_tiling() == Tiling(
             obstructions=[
                 GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
