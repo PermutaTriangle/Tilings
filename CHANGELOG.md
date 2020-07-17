@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - insertion packs now use the `one_cell_only` option, and no longer use
   `RequirementCorroborationFactory`
+- the `get_eq_symbol` and `get_op_symbol` are moved to `Strategy` rather than
+  `Constructor`
+
+### Fixed
+- untracked constructors raise `NotImplementedError`
 - forbid fusing a region containing a `TrackingAssumption` and a
   `ComponentAssumption`
 - a tiling factors if a `ComponentAssumption` if the components of the region
