@@ -1,5 +1,4 @@
 import pytest
-
 from sympy import Eq, Function, var
 
 from comb_spec_searcher.strategies import Rule
