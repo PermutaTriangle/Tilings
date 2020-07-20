@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `DetectComponentsStrategy` which removes cells from assumptions
    which are actual components. This replaces the need for the
    `SplittingStrategy` in component fusion packs.
+- added equation generators to `FusionStrategy` for the case where one or both
+   sides are positive
 
 ### Changed
 - insertion packs now use the `one_cell_only` option, and no longer use
