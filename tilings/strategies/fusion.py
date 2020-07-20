@@ -148,10 +148,10 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         )
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
-        if self.min_points != (0, 0):
+        if max(self.min_points) > 1:
             raise NotImplementedError(
                 "not implemented equation in the case of "
-                "positive left or positive right"
+                "left or right containing more than one point"
             )
         rhs_func = rhs_funcs[0]
         subs: Dict[str, Expr] = {
@@ -193,13 +193,27 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         subs1[self.fuse_parameter] = q / left_vars
         subs2 = {**subs}
         subs2[self.fuse_parameter] = p / right_vars
+
+        left_right_empty = (
+            rhs_func.subs(subs2, simultaneous=True),
+            rhs_func.subs(subs1, simultaneous=True),
+        )
+        to_subtract = 0
+        if self.min_points[0] == 1:
+            # left side is positive, so the right can't be empty
+            to_subtract += left_right_empty[1]
+        if self.min_points[1] == 1:
+            # right side is positive, so thr left can't be empty
+            to_subtract += left_right_empty[0]
+
         return Eq(
             lhs_func,
             (
                 (q * right_vars * rhs_func.subs(subs1, simultaneous=True))
                 - (p * left_vars * rhs_func.subs(subs2, simultaneous=True))
             )
-            / (q * right_vars - p * left_vars),
+            / (q * right_vars - p * left_vars)
+            - to_subtract,
         )
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
@@ -478,10 +492,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     ):
         raise NotImplementedError
 
-    @staticmethod
-    def get_eq_symbol() -> str:
-        return "↣"
-
 
 class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def __init__(
@@ -515,7 +525,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> FusionConstructor:
         if not self.tracked:
             # constructor only enumerates when tracked.
-            return FusionConstructor("n", {}, tuple(), tuple(), tuple(), 0, 0)
+            raise NotImplementedError("The fusion strategy was not tracked.")
         # Need to recompute some info to count, so ignoring passed in children
         algo = self.fusion_algorithm(comb_class)
         if not algo.fusable():
@@ -629,6 +639,10 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     @classmethod
     def from_dict(cls, d: dict) -> "FusionStrategy":
         return cls(**d)
+
+    @staticmethod
+    def get_eq_symbol() -> str:
+        return "↣"
 
     def __repr__(self) -> str:
         return (

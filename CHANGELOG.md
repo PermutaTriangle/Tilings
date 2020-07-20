@@ -12,22 +12,32 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `DetectComponentsStrategy` which removes cells from assumptions
    which are actual components. This replaces the need for the
    `SplittingStrategy` in component fusion packs.
+- added equation generators to `FusionStrategy` for the case where one or both
+   sides are positive
 
 ### Changed
 - insertion packs now use the `one_cell_only` option, and no longer use
   `RequirementCorroborationFactory`
+- the `get_eq_symbol` and `get_op_symbol` are moved to `Strategy` rather than
+  `Constructor`
+
+### Fixed
+- untracked constructors raise `NotImplementedError`
 - forbid fusing a region containing a `TrackingAssumption` and a
   `ComponentAssumption`
 - a tiling factors if a `ComponentAssumption` if the components of the region
   split into the factors
-
-### Fixed
 - only fuse non-empty regions to avoid creating unintentional rules a -> b
   where a and b are equivalent
 - remove duplicate assumptions in the `AddAssumptionsStrategy`
 - `Tiling.from_dict` will make a `Tiling` with no assumptions if the
   `assumptions` key is not in the dictionary.
 - a factor with interleaving strategy has `inferrable=True`
+- a factor with interleaving strategy return a normal factor strategy when
+  there's no interleaving going on.
+- removed the length argument to the `insertion_point_placements` pack which
+  was not implemented, and thus raising an error.
+
 
 ## [2.2.0] - 2020-07-08
 ### Added

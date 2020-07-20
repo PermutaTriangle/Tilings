@@ -1,4 +1,5 @@
 import pytest
+from sympy import Eq, Function, var
 
 from comb_spec_searcher.strategies import Rule
 from permuta import Perm
@@ -127,12 +128,12 @@ def test_fusion(small_tiling, big_tiling):
 
 @pytest.fixture
 def row_fusion(small_tiling):
-    return FusionStrategy(row_idx=0)(small_tiling)
+    return FusionStrategy(row_idx=0, tracked=True)(small_tiling)
 
 
 @pytest.fixture
 def col_fusion(small_tiling):
-    return FusionStrategy(col_idx=0)(small_tiling)
+    return FusionStrategy(col_idx=0, tracked=True)(small_tiling)
 
 
 def test_formal_step_fusion(row_fusion, col_fusion):
@@ -143,7 +144,7 @@ def test_formal_step_fusion(row_fusion, col_fusion):
 def test_rule(row_fusion):
     assert row_fusion.formal_step == "fuse rows 0 and 1"
     assert list(row_fusion.children) == [
-        Fusion(row_fusion.comb_class, row_idx=0).fused_tiling()
+        Fusion(row_fusion.comb_class, row_idx=0, tracked=True).fused_tiling()
     ]
     assert row_fusion.inferrable
     assert row_fusion.workable
@@ -183,12 +184,12 @@ def col_tiling():
 
 @pytest.fixture
 def component_row_fusion(row_tiling):
-    return ComponentFusionStrategy(row_idx=0)(row_tiling)
+    return ComponentFusionStrategy(row_idx=0, tracked=True)(row_tiling)
 
 
 @pytest.fixture
 def component_col_fusion(col_tiling):
-    return ComponentFusionStrategy(col_idx=0)(col_tiling)
+    return ComponentFusionStrategy(col_idx=0, tracked=True)(col_tiling)
 
 
 def test_formal_step_component(component_col_fusion, component_row_fusion):
@@ -303,3 +304,189 @@ def test_positive_fusion():
             assumptions=(TrackingAssumption((GriddedPerm(Perm((0,)), ((0, 0),)),)),),
         ),
     )
+
+
+def easy_fusable(
+    pos_left=False,
+    pos_right=False,
+    track_left=False,
+    track_right=False,
+    same_tracking=False,
+):
+    if same_tracking:
+        assert track_left and track_right
+    obs = [
+        GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),
+        GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+        GriddedPerm.single_cell(Perm((0, 1)), (1, 0)),
+    ]
+
+    reqs = []
+    if pos_left:
+        reqs.append([GriddedPerm.single_cell(Perm((0,)), (0, 0))])
+    if pos_right:
+        reqs.append([GriddedPerm.single_cell(Perm((0,)), (1, 0))])
+
+    ass = []
+    if same_tracking:
+        ass.append(
+            TrackingAssumption(
+                [
+                    GriddedPerm.single_cell(Perm((0,)), (0, 0)),
+                    GriddedPerm.single_cell(Perm((0,)), (1, 0)),
+                ]
+            )
+        )
+    else:
+        if track_left:
+            ass.append(
+                TrackingAssumption([GriddedPerm.single_cell(Perm((0,)), (0, 0))])
+            )
+        if track_right:
+            ass.append(
+                TrackingAssumption([GriddedPerm.single_cell(Perm((0,)), (1, 0))])
+            )
+
+    tiling = Tiling(obstructions=obs, requirements=reqs, assumptions=ass)
+    return tiling
+
+
+def test_fusion_gfs():
+
+    x = var("x")
+    k_0 = var("k_0")
+    k_1 = var("k_1")
+
+    def eq_equality(e1, e2):
+        return (e1.rhs - e2.rhs).simplify() == 0
+
+    t1 = easy_fusable()
+    rules = list(FusionFactory()(t1))
+    assert len(rules) == 1
+    # EQ NOT IMPLEMENTED
+
+    t2 = easy_fusable(track_left=True)
+    rules = list(FusionFactory()(t2))
+    assert len(rules) == 1
+    F0 = Function("F0")(x)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(F0, (k_0 * F1 - F1.subs({k_0: 1})) / (k_0 - 1))
+    assert eq_equality(actual_eq, expected_eq)
+
+    t3 = easy_fusable(track_left=True, track_right=True, same_tracking=True)
+    rules = list(FusionFactory()(t3))
+    assert len(rules) == 1
+    # EQ NOT IMPLEMENTED
+
+    t4 = easy_fusable(track_left=True, track_right=True, same_tracking=False)
+    rules = list(FusionFactory()(t4))
+    assert len(rules) == 1
+    F0 = Function("F0")(x, k_0, k_1)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(F0, (k_0 * F1 - k_1 * F1.subs({k_0: k_1})) / (k_0 - k_1))
+    assert eq_equality(actual_eq, expected_eq)
+
+    t5 = easy_fusable(pos_left=True)
+    rules = list(FusionFactory()(t5))
+    assert len(rules) == 1
+    # EQ NOT IMPLEMENTED
+
+    t6 = easy_fusable(pos_left=True, track_left=True)
+    rules = list(FusionFactory()(t6))
+    assert len(rules) == 1
+    F0 = Function("F0")(x, k_0)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(F0, (k_0 * F1 - F1.subs({k_0: 1})) / (k_0 - 1) - F1.subs({k_0: 1}))
+    assert eq_equality(actual_eq, expected_eq)
+
+    t7 = easy_fusable(pos_left=True, track_right=True)
+    rules = list(FusionFactory()(t7))
+    assert len(rules) == 1
+    F0 = Function("F0")(x, k_0)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(F0, (k_0 * F1 - F1.subs({k_0: 1})) / (k_0 - 1) - F1)
+    assert eq_equality(actual_eq, expected_eq)
+
+    t8 = easy_fusable(
+        pos_left=True, track_left=True, track_right=True, same_tracking=True
+    )
+    rules = list(FusionFactory()(t8))
+    assert len(rules) == 1
+    # EQ NOT IMPLEMENTED
+
+    t9 = easy_fusable(
+        pos_left=True, track_left=True, track_right=True, same_tracking=False
+    )
+    rules = list(FusionFactory()(t9))
+    assert len(rules) == 1
+    F0 = Function("F0")(x, k_0, k_1)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(
+        F0, (k_0 * F1 - k_1 * F1.subs({k_0: k_1})) / (k_0 - k_1) - F1.subs({k_0: k_1})
+    )
+    assert eq_equality(actual_eq, expected_eq)
+
+    t10 = easy_fusable(
+        pos_right=True, track_left=True, track_right=True, same_tracking=False
+    )
+    rules = list(FusionFactory()(t10))
+    assert len(rules) == 1
+    F0 = Function("F0")(x, k_0, k_1)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(F0, (k_0 * F1 - k_1 * F1.subs({k_0: k_1})) / (k_0 - k_1) - F1)
+    assert eq_equality(actual_eq, expected_eq)
+
+    t11 = easy_fusable(pos_left=True, pos_right=True)
+    rules = list(FusionFactory()(t11))
+    assert len(rules) == 1
+    # EQ NOT IMPLEMENTED
+
+    t12 = easy_fusable(pos_left=True, pos_right=True, track_left=True)
+    rules = list(FusionFactory()(t12))
+    assert len(rules) == 1
+    F0 = Function("F0")(x, k_0)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(
+        F0, (k_0 * F1 - F1.subs({k_0: 1})) / (k_0 - 1) - F1 - F1.subs({k_0: 1})
+    )
+    assert eq_equality(actual_eq, expected_eq)
+
+    t13 = easy_fusable(
+        pos_left=True,
+        pos_right=True,
+        track_left=True,
+        track_right=True,
+        same_tracking=True,
+    )
+    rules = list(FusionFactory()(t13))
+    assert len(rules) == 1
+    # EQ NOT IMPLEMENTED
+
+    t14 = easy_fusable(
+        pos_left=True,
+        pos_right=True,
+        track_left=True,
+        track_right=True,
+        same_tracking=False,
+    )
+    rules = list(FusionFactory()(t14))
+    assert len(rules) == 1
+    # EQ NOT IMPLEMENTED
+    F0 = Function("F0")(x, k_0, k_1)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(
+        F0,
+        (k_0 * F1 - k_1 * F1.subs({k_0: k_1})) / (k_0 - k_1) - F1 - F1.subs({k_0: k_1}),
+    )
+    assert eq_equality(actual_eq, expected_eq)
+
+    # TODO: Add tests for the versions where there is a list requirement with a point
+    # in each cell. Equations for this are not currently implemented.

@@ -1,10 +1,12 @@
+from itertools import chain
+
 import pytest
 
 from comb_spec_searcher import CartesianProduct
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.strategies import FactorFactory
-from tilings.strategies.factor import Interleaving, MonotoneInterleaving
+from tilings.strategies.factor import FactorStrategy, Interleaving
 
 pytest_plugins = [
     "tests.fixtures.simple_tiling",
@@ -147,6 +149,15 @@ def test_factor_all_interleaving(diverse_tiling):
     )
 
 
+def test_str():
+    assert str(FactorFactory()) == "factor"
+    assert (
+        str(FactorFactory(interleaving="monotone"))
+        == "factor with monotone interleaving"
+    )
+    assert str(FactorFactory(interleaving="all")) == "factor with interleaving"
+
+
 # ------------------------------------------------------------
 #       Test for all classes
 # ------------------------------------------------------------
@@ -176,13 +187,9 @@ def test_formal_step(factor_rules, factor_with_int_rules, factor_with_mon_int_ru
 
 def test_constructor(factor_rules, factor_with_int_rules, factor_with_mon_int_rules):
     assert all(rule.constructor.__class__ == CartesianProduct for rule in factor_rules)
-    assert all(
-        rule.constructor.__class__ == Interleaving for rule in factor_with_int_rules
-    )
-    assert all(
-        rule.constructor.__class__ == MonotoneInterleaving
-        for rule in factor_with_mon_int_rules
-    )
+    for rule in chain(factor_with_int_rules, factor_with_mon_int_rules):
+        with pytest.raises(NotImplementedError):
+            assert isinstance(rule.constructor, Interleaving)
 
 
 def test_rule(
@@ -215,3 +222,21 @@ def test_all_union_rules():
     assert all(not rule(t).workable for rule in fo)
     # The workable can be turned on for union of factor
     assert all(rule(t).workable for rule in fo)
+
+
+def test_interleaving_return_normal_factor():
+    """
+    In the case where there is no interleaving we make sure that an interleaving factory
+    still return a plain cartesian product like factor strategy.
+    """
+    t = Tiling(
+        obstructions=[
+            GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),
+            GriddedPerm.single_cell(Perm((0, 1)), (1, 1)),
+        ]
+    )
+    factor_strat = next(FactorFactory(interleaving="all")(t))
+    assert factor_strat.formal_step() == "factor with partition {(0, 0)} / {(1, 1)}"
+    assert factor_strat.__class__ == FactorStrategy
+    rule = factor_strat(t)
+    assert rule.constructor.__class__ == CartesianProduct
