@@ -246,19 +246,15 @@ class TileScopePack(StrategyPack):
         )
 
     @classmethod
-    def insertion_point_placements(
-        cls, length: int = 1, partial: bool = False
-    ) -> "TileScopePack":
+    def insertion_point_placements(cls, partial: bool = False) -> "TileScopePack":
         name = "insertion_"
-        if length > 1:
-            name += "length_{}_".format(length)
         partial_str = "partial_" if partial else ""
         name += f"{partial_str}point_placements"
         return TileScopePack(
             initial_strats=[
                 strat.FactorFactory(),
                 strat.CellInsertionFactory(
-                    maxreqlen=length, ignore_parent=True, one_cell_only=True
+                    maxreqlen=1, ignore_parent=True, one_cell_only=True
                 ),
             ],
             ver_strats=[
