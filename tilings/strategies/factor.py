@@ -246,7 +246,7 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
         subsamplers: SubSamplers,
         subrecs: SubRecs,
         n: int,
-        **parameters: int
+        **parameters: int,
     ):
         raise NotImplementedError
 
@@ -403,23 +403,35 @@ class FactorFactory(StrategyFactory[Tiling]):
                     if not self.tracked or contains_interleaving_assumptions(
                         comb_class, components
                     ):
-                        yield self.factor_class(
-                            components, ignore_parent=self.ignore_parent, workable=False
-                        )
+                        yield self._build_strategy(components, workable=False)
             if not self.tracked or contains_interleaving_assumptions(
                 comb_class, min_comp
             ):
-                yield self.factor_class(
-                    min_comp, ignore_parent=self.ignore_parent, workable=self.workable,
+                yield self._build_strategy(
+                    min_comp, workable=self.workable,
                 )
+
+    def _build_strategy(
+        self, components: Tuple[Tuple[Cell, ...], ...], workable: bool
+    ) -> FactorStrategy:
+        """
+        Build the factor strategy for the given components.
+
+        It ensure that a plain factor rule is returned.
+        """
+        interleaving = any(interleaving_rows_and_cols(components))
+        factor_strat = self.factor_class if interleaving else FactorStrategy
+        return factor_strat(
+            components, ignore_parent=self.ignore_parent, workable=workable,
+        )
 
     def __str__(self) -> str:
         if self.factor_class is FactorStrategy:
             s = "factor"
         elif self.factor_class is FactorWithInterleavingStrategy:
-            s = "factor with monotone interleaving"
-        elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
             s = "factor with interleaving"
+        elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
+            s = "factor with monotone interleaving"
         else:
             raise Exception("Invalid interleaving type")
         if self.unions:
