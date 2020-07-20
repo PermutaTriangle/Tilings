@@ -25,8 +25,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `ComponentAssumption`
 - a tiling factors if a `ComponentAssumption` if the components of the region
   split into the factors
-
-### Fixed
 - only fuse non-empty regions to avoid creating unintentional rules a -> b
   where a and b are equivalent
 - remove duplicate assumptions in the `AddAssumptionsStrategy`
@@ -35,6 +33,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - a factor with interleaving strategy has `inferrable=True`
 - a factor with interleaving strategy return a normal factor strategy when
   there's no interleaving going on.
+- removed the length argument to the `insertion_point_placements` pack which
+  was not implemented, and thus raising an error.
+
 
 ## [2.2.0] - 2020-07-08
 ### Added
