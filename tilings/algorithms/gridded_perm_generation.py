@@ -40,12 +40,12 @@ class GriddedPermsOnTiling:
         )
         self._cell_counts = self.min_cell_counts()
 
-    def patts_contained_in_cell(self, cell: Cell) -> Set[Perm]:
+    def patts_contained_in_cell(self, cell: Cell) -> Set[GriddedPerm]:
         """
         All the patterns that must be contained in the given cell of the
         tiling.
         """
-        res: Set[Perm] = set()
+        res: Set[GriddedPerm] = set()
         for req_list in self._requirements:
             subgp = req_list[0].get_gridded_perm_in_cells([cell])
             patts = set(subgp.all_subperms(proper=False))

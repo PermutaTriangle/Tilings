@@ -171,8 +171,8 @@ class Tiling(CombinatorialClass):
         t = Tiling(
             obstructions=(GriddedPerm(p, ((0, 0),) * len(p)) for p in obstructions)
         )
-        for req_list in requirements:
-            req_list = [GriddedPerm(p, ((0, 0),) * len(p)) for p in req_list]
+        for perms in requirements:
+            req_list = [GriddedPerm(p, ((0, 0),) * len(p)) for p in perms]
             t = t.add_list_requirement(req_list)
         return t
 
@@ -697,11 +697,13 @@ class Tiling(CombinatorialClass):
                     obdict[cell].append(ob.patt)
 
             for req_list in self.requirements:
-                for req in req_list:
-                    for cell in set(req.pos):
-                        gp = req.get_gridded_perm_in_cells([cell])
-                        if gp not in reqdict[cell] and all(gp in r for r in req_list):
-                            reqdict[cell].append(gp.patt)
+                for gp in req_list:
+                    for cell in set(gp.pos):
+                        subgp = gp.get_gridded_perm_in_cells([cell])
+                        if subgp not in reqdict[cell] and all(
+                            subgp in r for r in req_list
+                        ):
+                            reqdict[cell].append(subgp.patt)
             for cell, contain in reqdict.items():
                 ind_to_remove = set()
                 for i, req in enumerate(contain):

@@ -15,8 +15,8 @@ class GriddedPerm(CombinatorialObject):
         if not isinstance(pattern, Perm):
             raise ValueError("Variable 'pattern' should be an instance of permuta.Perm")
         if not pattern:
-            self._patt = pattern
-            self._pos = tuple(positions)
+            self._patt: Perm = pattern
+            self._pos: Position = tuple(positions)
             self._cells: FrozenSet[Cell] = frozenset()
             self._rows = 1
             self._columns = 1
@@ -366,7 +366,7 @@ class GriddedPerm(CombinatorialObject):
                 if c1[0] == c2[0] or c1[1] == c2[1]:
                     uf.unite(i, j)
         # Collect the connected factors of the cells
-        all_factors: Dict[Cell, List[Cell]] = {}
+        all_factors: Dict[int, List[Cell]] = {}
         for i, cell in enumerate(self.pos):
             x = uf.find(i)
             if x in all_factors:
@@ -419,12 +419,12 @@ class GriddedPerm(CombinatorialObject):
         """ \\
         Flip over the diagonal"""
         flipped = self._patt.flip_antidiagonal()
-        pos = self._patt._rotate_left().apply(self._pos)
+        pos = self._patt.rotate(-1).apply(self._pos)
         return self.__class__(flipped, map(transf, pos))
 
     def rotate270(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
         """Rotate 270 degrees"""
-        rotated = self._patt.rotate_left()
+        rotated = self._patt.rotate(-1)
         pos = rotated.apply(self._pos)
         return self.__class__(rotated, map(transf, pos))
 
@@ -437,14 +437,13 @@ class GriddedPerm(CombinatorialObject):
     def rotate90(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
         """Rotate 90 degrees"""
         return self.__class__(
-            self._patt.rotate_right(),
-            map(transf, self._patt.inverse().apply(self._pos)),
+            self._patt.rotate(), map(transf, self._patt.inverse().apply(self._pos)),
         )
 
     def to_jsonable(self) -> dict:
         """Returns a dictionary object which is JSON serializable representing
         a GriddedPerm."""
-        output = dict()
+        output: dict = dict()
         output["patt"] = self._patt
         output["pos"] = self._pos
         return output
