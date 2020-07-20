@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `Tiling.from_dict` will make a `Tiling` with no assumptions if the
   `assumptions` key is not in the dictionary.
 - a factor with interleaving strategy has `inferrable=True`
+- a factor with interleaving strategy return a normal factor strategy when
+  there's no interleaving going on.
 
 ## [2.2.0] - 2020-07-08
 ### Added
