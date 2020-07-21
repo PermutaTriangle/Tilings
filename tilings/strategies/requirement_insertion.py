@@ -403,6 +403,8 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
     def __call__(
         self, comb_class: Tiling, **kwargs
     ) -> Iterator[RequirementInsertionStrategy]:
+        if comb_class.requirements:
+            return
         yield from super().__call__(comb_class, **kwargs)
 
     def __str__(self) -> str:

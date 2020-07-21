@@ -415,8 +415,8 @@ class TileScopePack(StrategyPack):
                 strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
-                [strat.RequirementInsertionFactory(maxreqlen=length)],
-                [strat.PatternPlacementFactory(partial=partial)],
+                [strat.RequirementInsertionFactory(maxreqlen=length),
+                strat.PatternPlacementFactory(partial=partial)],
             ],
             name=name,
         )
