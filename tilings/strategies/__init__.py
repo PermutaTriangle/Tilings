@@ -34,6 +34,7 @@ from .verification import (
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
     OneByOneVerificationStrategy,
+    SubclassVerificationStrategy,
 )
 
 __all__ = [
@@ -76,4 +77,5 @@ __all__ = [
     "InsertionEncodingVerificationStrategy",
     "MonotoneTreeVerificationStrategy",
     "OneByOneVerificationStrategy",
+    "SubclassVerificationStrategy",
 ]

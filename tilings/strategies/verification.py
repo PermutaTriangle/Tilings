@@ -19,6 +19,7 @@ from permuta.permutils import (
 )
 from permuta.permutils.symmetry import all_symmetry_sets
 from tilings import GriddedPerm, Tiling
+from tilings.algorithms import SubclassVerificationAlgorithm
 from tilings.algorithms.enumeration import (
     DatabaseEnumeration,
     LocalEnumeration,
@@ -41,6 +42,7 @@ __all__ = [
     "ElementaryVerificationStrategy",
     "LocalVerificationStrategy",
     "MonotoneTreeVerificationStrategy",
+    "SubclassVerificationStrategy",
 ]
 
 
@@ -654,3 +656,35 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
 
     def __str__(self) -> str:
         return "monotone tree verification"
+
+
+class SubclassVerificationStrategy(TileScopeVerificationStrategy):
+    """
+    Verify a tiling if its underlying ungridded permutations are contained in a subclass
+    of the search class.
+    """
+
+    def __init__(self, perms_to_check: Iterable[Perm], ignore_parent: bool = True):
+        self.perms_to_check = frozenset(perms_to_check)
+        super().__init__(ignore_parent=ignore_parent)
+
+    def verified(self, tiling: Tiling) -> bool:
+        algo = SubclassVerificationAlgorithm(tiling, self.perms_to_check)
+        return algo.verified()
+
+    @staticmethod
+    def formal_step() -> str:
+        return "tiling is a subclass"
+
+    def __str__(self) -> str:
+        return "subclass verification"
+
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["perms_to_check"] = self.perms_to_check
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "SubclassVerificationStrategy":
+        perms_to_check = d.pop("perms_to_check")
+        return cls(perms_to_check=perms_to_check, **d)
