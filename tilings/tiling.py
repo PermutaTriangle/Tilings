@@ -27,7 +27,6 @@ from permuta.misc import DIR_EAST, DIR_WEST
 
 from .algorithms import (
     AllObstructionInferral,
-    AlternativeGriddedPermsOnTiling,
     ComponentFusion,
     EmptyCellInferral,
     Factor,
@@ -1259,9 +1258,7 @@ class Tiling(CombinatorialClass):
             if maxlen is not None
             else self.maximum_length_of_minimum_gridded_perm()
         )
-        # yield from GriddedPermsOnTiling(self, maxlen=maxlen)
-
-        yield from AlternativeGriddedPermsOnTiling(self).gridded_perms(maxlen)
+        yield from GriddedPermsOnTiling(self).gridded_perms(maxlen)
 
     def merge(self) -> "Tiling":
         """Return an equivalent tiling with a single requirement list.
