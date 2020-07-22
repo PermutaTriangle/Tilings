@@ -175,11 +175,12 @@ class GriddedPermsOnTiling:
 
 class QueuePacket:
     def __init__(
-        self, gp: GriddedPerm, last_cell: Cell, mindices: Dict[Cell, int],
+        self, gp: GriddedPerm, last_cell: Cell, mindices: Dict[Cell, int], placed: int
     ):
         self.gp = gp
         self.last_cell = last_cell
         self.mindices = mindices
+        self.placed: int = placed
 
     def __lt__(self, other: "QueuePacket"):
         return self.gp < other.gp
@@ -198,21 +199,26 @@ class AlternativeGriddedPermsOnTiling:
         self._minimal_gps = MinimalGriddedPerms(tiling)
         self._yielded_gridded_perms: Set[GriddedPerm] = set()
 
-    def gridded_perms(
-        self, size: int,
-    ):
+    def gridded_perms(self, size: int, place_at_most: int = None):
+        if place_at_most is None:
+            place_at_most = size
         queue: List[QueuePacket] = []
         heapify(queue)
         for mgp in self._minimal_gps.minimal_gridded_perms():
             if len(mgp) <= size:
-                packet = QueuePacket(mgp, (-1, -1), dict())
+                packet = QueuePacket(mgp, (-1, -1), dict(), 0)
                 heappush(queue, packet)
             else:
                 break
         work_packets_done: Set[Tuple[GriddedPerm, Cell]] = set()
         while queue:
             packet = heappop(queue)
-            gp, last_cell, mindices = packet.gp, packet.last_cell, packet.mindices
+            gp, last_cell, mindices, placed = (
+                packet.gp,
+                packet.last_cell,
+                packet.mindices,
+                packet.placed,
+            )
             if len(gp) <= size:
                 if gp not in self._yielded_gridded_perms:
                     self._yielded_gridded_perms.add(gp)
@@ -229,8 +235,11 @@ class AlternativeGriddedPermsOnTiling:
                     if key in work_packets_done:
                         continue
                     work_packets_done.add(key)
-                    if not self._minimal_gps.satisfies_obstructions(
-                        nextgp, must_contain=cell
+                    if (
+                        not self._minimal_gps.satisfies_obstructions(
+                            nextgp, must_contain=cell
+                        )
+                        or placed + 1 >= place_at_most
                     ):
                         continue
                     next_mindices = {
@@ -240,5 +249,5 @@ class AlternativeGriddedPermsOnTiling:
                     }
                     next_mindices[cell] = idx + 1
                     heappush(
-                        queue, QueuePacket(nextgp, cell, next_mindices),
+                        queue, QueuePacket(nextgp, cell, next_mindices, placed + 1),
                     )
