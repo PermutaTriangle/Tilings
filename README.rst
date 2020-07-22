@@ -1079,15 +1079,15 @@ Consider the gridded permutations on the following tiling.
        ...     for gp in tiling.gridded_perms_of_length(i):
        ...         print(gp)
        ε:
-       0: (1, 0)
        0: (0, 0)
-       10: (1, 0), (1, 0)
-       10: (0, 0), (1, 0)
+       0: (1, 0)
        10: (0, 0), (0, 0)
-       210: (1, 0), (1, 0), (1, 0)
-       210: (0, 0), (1, 0), (1, 0)
-       210: (0, 0), (0, 0), (1, 0)
+       10: (0, 0), (1, 0)
+       10: (1, 0), (1, 0)
        210: (0, 0), (0, 0), (0, 0)
+       210: (0, 0), (0, 0), (1, 0)
+       210: (0, 0), (1, 0), (1, 0)
+       210: (1, 0), (1, 0), (1, 0)
 
 Due to the crossing ``01`` obstruction it is clear that all of the underlying
 permutations will be decreasing. Moreover, the transition between the left cell
