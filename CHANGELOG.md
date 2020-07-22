@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   there's no interleaving going on.
 - removed the length argument to the `insertion_point_placements` pack which
   was not implemented, and thus raising an error.
+- Bug that occurred when factoring the empty tiling
 
 
 ## [2.2.0] - 2020-07-08
