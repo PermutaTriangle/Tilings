@@ -21,7 +21,7 @@ class QueuePacket:
         self.placed: int = placed
 
     def __lt__(self, other: "QueuePacket"):
-        return self.gp < other.gp
+        return len(self.gp) < len(other.gp)
 
 
 class GriddedPermsOnTiling:
