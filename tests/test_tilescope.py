@@ -108,7 +108,7 @@ def test_123():
     assert isinstance(spec, CombinatorialSpecification)
 
 
-@pytest.mark.timeout(60)
+@pytest.mark.timeout(120)
 def test_123_with_db():
     searcher = TileScope("123", all_the_strategies_verify_database)
     spec = searcher.auto_search(smallest=True)
