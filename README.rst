@@ -200,13 +200,13 @@ using the ``gridded_perms_of_length`` method.
        ...     for gp in tiling.gridded_perms_of_length(i):
        ...         print(gp)
        0: (1, 1)
-       10: (1, 1), (2, 0)
        01: (0, 0), (1, 1)
-       210: (1, 1), (2, 0), (2, 0)
-       201: (1, 1), (2, 0), (2, 0)
-       120: (0, 0), (1, 1), (2, 0)
+       10: (1, 1), (2, 0)
        021: (0, 0), (1, 1), (2, 0)
        102: (0, 0), (0, 0), (1, 1)
+       120: (0, 0), (1, 1), (2, 0)
+       201: (1, 1), (2, 0), (2, 0)
+       210: (1, 1), (2, 0), (2, 0)
 
 There are numerous other methods and properties. Many of these are specific
 to the ``TileScope`` algorithm, discussed in `Christian Bean’s PhD
