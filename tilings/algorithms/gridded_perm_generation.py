@@ -225,6 +225,8 @@ class AlternativeGriddedPermsOnTiling:
                     yield gp
             else:
                 return
+            if placed >= place_at_most:
+                continue
             for cell in self._tiling.active_cells:
                 if cell < last_cell:
                     continue
@@ -235,11 +237,8 @@ class AlternativeGriddedPermsOnTiling:
                     if key in work_packets_done:
                         continue
                     work_packets_done.add(key)
-                    if (
-                        not self._minimal_gps.satisfies_obstructions(
-                            nextgp, must_contain=cell
-                        )
-                        or placed + 1 >= place_at_most
+                    if not self._minimal_gps.satisfies_obstructions(
+                        nextgp, must_contain=cell
                     ):
                         continue
                     next_mindices = {
