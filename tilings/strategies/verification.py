@@ -665,7 +665,7 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
     """
 
     def __init__(self, perms_to_check: Iterable[Perm], ignore_parent: bool = True):
-        self.perms_to_check = frozenset(perms_to_check)
+        self.perms_to_check = set(perms_to_check)
         super().__init__(ignore_parent=ignore_parent)
 
     def verified(self, tiling: Tiling) -> bool:
@@ -681,7 +681,7 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
-        d["perms_to_check"] = self.perms_to_check
+        d["perms_to_check"] = frozenset(self.perms_to_check)
         return d
 
     @classmethod

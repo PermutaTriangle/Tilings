@@ -12,12 +12,10 @@ NOTES:
       depending on which requirement in a list you're placing.
 """
 
-from time import time
 from typing import TYPE_CHECKING, List, Set
 
 from permuta import Perm
-from tilings.algorithms import GriddedPermsOnTiling
-from tilings.algorithms import Factor
+from tilings.algorithms import Factor, GriddedPermsOnTiling
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -67,14 +65,7 @@ class SubclassVerificationAlgorithm:
         if Factor(self.tiling).factorable():
             return False
 
-        tt = time()
-
-        # print("=" * 100)
-        # print(self.tiling)
-        # traceback.print_stack()
         perms_to_check = self.quick_pare()
-        pare_time = time() - tt
-        # print(perms_to_check)
         if len(perms_to_check) == 0:
             return False
 
@@ -97,17 +88,5 @@ class SubclassVerificationAlgorithm:
             for perm_to_remove in to_remove:
                 perms_left.remove(perm_to_remove)
             if len(perms_left) == 0:
-                total_time = time() - tt
-                # print("=" * 100)
-                # print(self.tiling)
-                # print(pare_time)
-                # print(total_time)
-                # print(False)
                 return False
-        total_time = time() - tt
-        # print("=" * 100)
-        # print(self.tiling)
-        # print(pare_time)
-        # print(total_time)
-        # print(True)
         return True
