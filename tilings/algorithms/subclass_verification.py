@@ -59,7 +59,6 @@ class SubclassVerificationAlgorithm:
         return self.perms_to_check
 
     def verified(self) -> bool:
-        # print(self.tiling)
         if len(self.tiling.point_cells) > 0:
             return False
         if Factor(self.tiling).factorable():
