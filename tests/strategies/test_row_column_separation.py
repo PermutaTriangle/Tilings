@@ -130,7 +130,7 @@ def test_row_col_seperation(
     )
 
     for t in not_separable_tilings:
-        with pytest.raises(StrategyDoesNotApply) as excinfo:
+        with pytest.raises(StrategyDoesNotApply):
             RowColumnSeparationStrategy()(t).children
     t1_sep = Tiling(
         obstructions=(
@@ -209,7 +209,7 @@ def test_rule(seperable_tiling1, not_separable_tilings):
         RowColumnSeparationStrategy().decomposition_function(not_separable_tilings[0])
         is None
     )
-    with pytest.raises(StrategyDoesNotApply) as excinfo:
+    with pytest.raises(StrategyDoesNotApply):
         RowColumnSeparationStrategy()(not_separable_tilings[0]).children
 
 
