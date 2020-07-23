@@ -244,9 +244,10 @@ class CellInsertionFactory(RequirementInsertionWithRestrictionFactory):
         bdict = tiling.cell_basis()
         for cell, length in product(active, range(1, self.maxreqlen + 1)):
             basis = bdict[cell][0] + self.extra_basis
+            patterns = Av(basis).of_length(length) if basis else Perm.of_length(length)
             yield from (
                 (GriddedPerm.single_cell(patt, cell),)
-                for patt in Av(basis).of_length(length)
+                for patt in patterns
                 if not any(patt in perm for perm in bdict[cell][1])
             )
 
@@ -356,7 +357,11 @@ class RequirementExtensionFactory(RequirementInsertionWithRestrictionFactory):
         )
         for cell, obs, curr_req in cell_with_req:
             for length in range(len(curr_req) + 1, self.maxreqlen + 1):
-                for patt in Av(obs + self.extra_basis).of_length(length):
+                basis = obs + self.extra_basis
+                patterns = (
+                    Av(basis).of_length(length) if basis else Perm.of_length(length)
+                )
+                for patt in patterns:
                     if curr_req in patt:
                         yield (GriddedPerm.single_cell(patt, cell),)
 

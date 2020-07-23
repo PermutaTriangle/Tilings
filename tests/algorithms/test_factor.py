@@ -170,9 +170,6 @@ def test_unite_multiple_cells(factor1):
 
 
 def test_unite_no_cell(factor1):
-    cells = []
-    with pytest.raises(StopIteration):
-        factor1._unite_cells(cells)
     all_rep = set(
         factor1._get_cell_representative(c) for c in product(range(4), range(3))
     )
@@ -483,6 +480,14 @@ def test_reducible_factorisations():
     f2 = Tiling(obstructions=[GriddedPerm(Perm((0, 1)), ((0, 0),) * 2)])
     assert set([f1, f2]) in map(set, fo.reducible_factorisations())
     assert [f2, f2, f2] not in fo.reducible_factorisations()
+
+
+def test_factor_empty_tiling():
+    t = Tiling(obstructions=[GriddedPerm(Perm(), [])])
+    for fac_algo in [Factor, FactorWithInterleaving, FactorWithMonotoneInterleaving]:
+        assert fac_algo(t).get_components() == tuple()
+        assert not fac_algo(t).factorable()
+        assert fac_algo(t).factors() == (t,)
 
 
 # ------------------------------------------------------------
