@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `RequirementCorroborationFactory`
 - the `get_eq_symbol` and `get_op_symbol` are moved to `Strategy` rather than
   `Constructor`
+- the `GriddedPermsOnTiling` algorithm was changed to build from minimal
+  gridded perms in a breadth first manner. This is also include an option to
+  limit the number of points placed on the minimal gridded perms.
 
 ### Fixed
 - untracked constructors raise `NotImplementedError`
@@ -37,6 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   there's no interleaving going on.
 - removed the length argument to the `insertion_point_placements` pack which
   was not implemented, and thus raising an error.
+- Bug that occurred when factoring the empty tiling
 
 
 ## [2.2.0] - 2020-07-08
