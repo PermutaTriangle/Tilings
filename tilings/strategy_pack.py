@@ -1,4 +1,4 @@
-from typing import Iterable, Optional
+from typing import TYPE_CHECKING, Iterable, Optional
 
 from logzero import logger
 
@@ -7,6 +7,9 @@ from comb_spec_searcher.strategies import AbstractStrategy
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import strategies as strat
+
+if TYPE_CHECKING:
+    from tilings import Tiling
 
 
 class TileScopePack(StrategyPack):
@@ -37,6 +40,47 @@ class TileScopePack(StrategyPack):
             symmetries=self.symmetries,
             iterative=self.iterative,
         )
+
+    def setup_subclass_verification(self, start_tiling: "Tiling") -> "TileScopePack":
+        """
+        If the subclass verification strategy already has a list of perms to check,
+        we leave it alone. Otherwise we:
+         - compute the cell basis for each cell
+         - consider the permutations avoiding some cell basis
+         - add to the list of perms to check any perm that avoids some cell basis and
+           has length strictly smaller than the maximum length cell basis element.
+        """
+
+        def alter_list(strats) -> None:
+            """
+            Find subclass verification and alter its perms_to_check variable.
+            """
+            for strategy in strats:
+                if isinstance(strategy, strat.SubclassVerificationStrategy):
+                    if strategy.perms_to_check is None:
+                        strategy.perms_to_check = set()
+                        cell_bases = set(
+                            tuple(obs) for obs, _ in start_tiling.cell_basis().values()
+                        )
+                        max_length = (
+                            max(max(len(b) for b in basis) for basis in cell_bases) - 1
+                        )
+                        perm_gen = Perm.up_to_length(max_length)
+                        for perm in perm_gen:
+                            if len(perm) == 0:
+                                continue
+                            if any(perm.avoids(*basis) for basis in cell_bases):
+                                strategy.perms_to_check.add(perm)
+                        print("Changed PTC to:")
+                        print(strategy.perms_to_check)
+                    else:
+                        print("NO CHANGE")
+
+        alter_list(self.ver_strats)
+        alter_list(self.inferral_strats)
+        alter_list(self.initial_strats)
+        for exp_set in self.expansion_strats:
+            alter_list(exp_set)
 
     def make_tracked(self, interleaving: str = "none"):
         """Add assumption tracking strategies."""
@@ -239,8 +283,10 @@ class TileScopePack(StrategyPack):
                 strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
-                [strat.CellInsertionFactory(maxreqlen=length)],
-                [strat.PatternPlacementFactory()],
+                [
+                    strat.CellInsertionFactory(maxreqlen=length),
+                    strat.PatternPlacementFactory(),
+                ],
             ],
             name=name,
         )

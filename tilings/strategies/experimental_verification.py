@@ -4,7 +4,7 @@ tilings for which we are not certain we can independently calculate their counti
 sequence or generating function.
 """
 
-from typing import Iterable
+from typing import Iterable, Optional
 
 from comb_spec_searcher import VerificationStrategy
 from permuta import Perm
@@ -25,11 +25,19 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
     of the search class.
     """
 
-    def __init__(self, perms_to_check: Iterable[Perm], ignore_parent: bool = True):
-        self.perms_to_check = set(perms_to_check)
+    def __init__(
+        self,
+        perms_to_check: Optional[Iterable[Perm]] = None,
+        ignore_parent: bool = True,
+    ):
+        if perms_to_check is None:
+            self.perms_to_check = None
+        else:
+            self.perms_to_check = set(perms_to_check)
         super().__init__(ignore_parent=ignore_parent)
 
     def verified(self, tiling: Tiling) -> bool:
+        assert self.perms_to_check is not None, "perms_to_check was never set"
         algo = SubclassVerificationAlgorithm(tiling, self.perms_to_check)
         return algo.verified()
 
@@ -42,7 +50,9 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
-        d["perms_to_check"] = frozenset(self.perms_to_check)
+        d["perms_to_check"] = (
+            frozenset(self.perms_to_check) if self.perms_to_check is not None else None
+        )
         return d
 
     @classmethod

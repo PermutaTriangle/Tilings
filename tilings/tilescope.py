@@ -50,6 +50,7 @@ class TileScope(CombinatorialSpecificationSearcher):
             procname = kwargs.get("logger_kwargs", {"processname": "runner"})
             logger.debug("Fixing basis in OneByOneVerificationStrategy", extra=procname)
             strategy_pack = strategy_pack.fix_one_by_one(basis)
+        strategy_pack.setup_subclass_verification(start_tiling)
 
         super().__init__(
             start_tiling, strategy_pack, logger_kwargs=logger_kwargs, **kwargs,
