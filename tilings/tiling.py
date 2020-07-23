@@ -1531,6 +1531,72 @@ class Tiling(CombinatorialClass):
             "We were unable to enumerate this tiling:\n" + str(self)
         )
 
+    def to_html_representation(self) -> str:
+        """
+        Returns an html representation of the object
+        """
+        # pylint: disable=too-many-locals
+        # pylint: disable=too-many-branches
+        dim_i, dim_j = self.dimensions
+        result = []
+        # Create tiling html table
+        result.append("<table> ")
+        for _ in range(dim_j):
+            result.append("<tr>")
+            for _ in range(dim_i):
+                result.append("<th class=tiling>")
+                result.append(" ")
+                result.append("</th>")
+            result.append("</tr>")
+        result.append("</table>")
+        labels: Dict[Tuple[Tuple[Perm, ...], bool], str] = dict()
+
+        # Put the sets in the tiles
+
+        # How many characters are in a row in the grid
+        row_width = 3 * dim_i + 2
+        curr_label = 1
+        for cell, gridded_perms in sorted(self.cell_basis().items()):
+            obstructions, _ = gridded_perms
+            basis = list(sorted(obstructions))
+            if basis == [Perm((0,))]:
+                continue
+            # the block, is the basis and whether or not positive
+            block = (tuple(basis), cell in self.positive_cells)
+            label = labels.get(block)
+            if label is None:
+                if basis == [Perm((0, 1)), Perm((1, 0))]:
+                    if cell in self.positive_cells:
+                        label = "\u25cf"
+                    else:
+                        label = "\u25cb"
+                elif basis == [Perm((0, 1))]:
+                    label = "\\"
+                elif basis == [Perm((1, 0))]:
+                    label = "/"
+                else:
+                    label = str(curr_label)
+                    curr_label += 1
+                labels[block] = label
+            row_index_from_top = dim_j - cell[1] - 1
+            index = row_index_from_top * row_width + cell[0] * 3 + 3
+            result[index] = label
+        colors = ["#b0dbff", "#d1f0af", "#FCEB97", "#FCC997", "#c8bdff"]
+        for c, ass in enumerate(self.assumptions):
+            for gp in ass.gps:
+                if len(gp.pos) > 1:
+                    pass
+                else:
+                    i, j = gp.pos[0]
+                    row_index_from_top = dim_j - j - 1
+                    index = row_index_from_top * row_width + i * 3 + 2
+                    result[
+                        index
+                    ] = '<th class=tiling style="background-color:{}">'.format(
+                        colors[c]
+                    )
+        return "".join(result)
+
     # -------------------------------------------------------------
     # Dunder methods
     # -------------------------------------------------------------
