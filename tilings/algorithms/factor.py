@@ -2,6 +2,7 @@ from collections import defaultdict
 from itertools import chain, combinations
 from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
+from permuta import Perm
 from permuta.misc import UnionFind
 from tilings import GriddedPerm
 from tilings.assumptions import ComponentAssumption, TrackingAssumption
@@ -63,7 +64,10 @@ class Factor:
         Put all the cells of `cells` in the same component of the UnionFind.
         """
         cell_iterator = iter(cells)
-        c1 = next(cell_iterator)
+        try:
+            c1 = next(cell_iterator)
+        except StopIteration:
+            return
         c1_int = self._cell_to_int(c1)
         for c2 in cell_iterator:
             c2_int = self._cell_to_int(c2)
@@ -154,6 +158,8 @@ class Factor:
         """
         if self._factors_obs_and_reqs is not None:
             return self._factors_obs_and_reqs
+        if self._tiling.is_empty():
+            return [((GriddedPerm(Perm(), []),), tuple(), tuple())]
         factors = []
         for component in self.get_components():
             obstructions = tuple(
