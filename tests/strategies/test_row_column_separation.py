@@ -132,7 +132,6 @@ def test_row_col_seperation(
     for t in not_separable_tilings:
         with pytest.raises(StrategyDoesNotApply) as excinfo:
             RowColumnSeparationStrategy()(t).children
-        assert "row and column separation does not apply" in str(excinfo)
     t1_sep = Tiling(
         obstructions=(
             GriddedPerm(Perm((0,)), ((0, 0),)),
@@ -212,7 +211,6 @@ def test_rule(seperable_tiling1, not_separable_tilings):
     )
     with pytest.raises(StrategyDoesNotApply) as excinfo:
         RowColumnSeparationStrategy()(not_separable_tilings[0]).children
-    assert "row and column separation does not apply" in str(excinfo)
 
 
 def test_formal_step(seperable_tiling1):
