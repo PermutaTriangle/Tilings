@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, List, Set
 
 from permuta import Perm
 from tilings.algorithms import GriddedPermsOnTiling
+from tilings.algorithms import Factor
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -61,8 +62,10 @@ class SubclassVerificationAlgorithm:
 
     def verified(self) -> bool:
         # print(self.tiling)
-        # if len(self.tiling.point_cells) > 0:
-        #     return False
+        if len(self.tiling.point_cells) > 0:
+            return False
+        if Factor(self.tiling).factorable():
+            return False
 
         tt = time()
 
