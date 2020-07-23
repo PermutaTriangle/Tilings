@@ -60,8 +60,9 @@ class SubclassVerificationAlgorithm:
         return self.perms_to_check
 
     def verified(self) -> bool:
-        if len(self.tiling.point_cells) > 0:
-            return False
+        # print(self.tiling)
+        # if len(self.tiling.point_cells) > 0:
+        #     return False
 
         tt = time()
 
@@ -94,16 +95,16 @@ class SubclassVerificationAlgorithm:
                 perms_left.remove(perm_to_remove)
             if len(perms_left) == 0:
                 total_time = time() - tt
-                print("=" * 100)
-                print(self.tiling)
-                print(pare_time)
-                print(total_time)
-                print(False)
+                # print("=" * 100)
+                # print(self.tiling)
+                # print(pare_time)
+                # print(total_time)
+                # print(False)
                 return False
         total_time = time() - tt
-        print("=" * 100)
-        print(self.tiling)
-        print(pare_time)
-        print(total_time)
-        print(True)
+        # print("=" * 100)
+        # print(self.tiling)
+        # print(pare_time)
+        # print(total_time)
+        # print(True)
         return True
