@@ -72,7 +72,7 @@ class TileScopePack(StrategyPack):
                             if any(perm.avoids(*basis) for basis in cell_bases):
                                 strategy.perms_to_check.add(perm)
                     logger.info(
-                        "SubclassVerication set up to check the subclasses: Av(%s)",
+                        "SubclassVerification set up to check the subclasses: Av(%s)",
                         "), Av(".join(map(str, strategy.perms_to_check)),
                     )
 
@@ -283,10 +283,8 @@ class TileScopePack(StrategyPack):
                 strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
-                [
-                    strat.CellInsertionFactory(maxreqlen=length),
-                    strat.PatternPlacementFactory(),
-                ],
+                [strat.CellInsertionFactory(maxreqlen=length)],
+                [strat.PatternPlacementFactory(),],
             ],
             name=name,
         )
