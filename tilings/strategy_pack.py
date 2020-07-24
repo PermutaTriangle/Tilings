@@ -71,10 +71,10 @@ class TileScopePack(StrategyPack):
                                 continue
                             if any(perm.avoids(*basis) for basis in cell_bases):
                                 strategy.perms_to_check.add(perm)
-                        print("Changed PTC to:")
-                        print(strategy.perms_to_check)
-                    else:
-                        print("NO CHANGE")
+                    logger.info(
+                        "SubclassVerication set up to check the subclasses: Av(%s)",
+                        "), Av(".join(map(str, strategy.perms_to_check)),
+                    )
 
         alter_list(self.ver_strats)
         alter_list(self.inferral_strats)
