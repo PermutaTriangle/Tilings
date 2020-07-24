@@ -1163,7 +1163,12 @@ class Tiling(CombinatorialClass):
         req_placement = RequirementPlacement(self, own_row=False, own_col=True)
         return req_placement.col_placement(idx, direction)
 
-    def subclass_verified(self, perms_to_check: Iterable[Perm]):
+    def is_subclass(self, perms_to_check: Iterable[Perm]):
+        """
+        Returns true if the underlying permutations of all the gridded permutations
+        on the tiling lie within one of the principal classes whose basis elements
+        are given in perms_to_check.
+        """
         return SubclassVerificationAlgorithm(self, set(perms_to_check)).is_verified()
 
     # -------------------------------------------------------------
