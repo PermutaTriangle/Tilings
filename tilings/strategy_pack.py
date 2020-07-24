@@ -284,7 +284,7 @@ class TileScopePack(StrategyPack):
             ],
             expansion_strats=[
                 [strat.CellInsertionFactory(maxreqlen=length)],
-                [strat.PatternPlacementFactory(),],
+                [strat.PatternPlacementFactory()],
             ],
             name=name,
         )
