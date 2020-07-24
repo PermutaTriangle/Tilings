@@ -205,7 +205,7 @@ class ObstructionTransitivityFactory(ObstructionInferralFactory):
         return "obstruction transitivity"
 
     def __repr__(self) -> str:
-        return "ObstructionTransitivityStrategy()"
+        return self.__class__.__name__ + "()"
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()

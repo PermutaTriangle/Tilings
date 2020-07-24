@@ -3,7 +3,7 @@ The main algorithm for detecting when the underlying ungridded permutations on a
 are contained in one of a given set of subclasses.
 """
 
-from typing import TYPE_CHECKING, List, Set
+from typing import TYPE_CHECKING, List, Optional, Set, Tuple, cast
 
 from permuta import Perm
 from tilings.algorithms import Factor, GriddedPermsOnTiling
@@ -16,6 +16,7 @@ class SubclassVerificationAlgorithm:
     def __init__(self, tiling: "Tiling", perms_to_check: Set[Perm]) -> None:
         self.tiling = tiling
         self.perms_to_check = perms_to_check
+        self._subclasses: Optional[Tuple[Perm, ...]] = None
 
     def quick_pare(self) -> Set[Perm]:
         """
@@ -58,15 +59,24 @@ class SubclassVerificationAlgorithm:
 
         return self.perms_to_check
 
-    def verified(self) -> bool:
+    @property
+    def subclasses(self) -> Tuple[Perm, ...]:
+        if self._subclasses is None:
+            self.compute_subclasses()
+        return cast(Tuple[Perm, ...], self._subclasses)
+
+    def compute_subclasses(self) -> None:
+
+        self._subclasses = tuple()
+
         # It is a waste of time to check a factorable tiling, since we will check its
         # children eventually.
         if len(self.tiling.point_cells) > 0 or Factor(self.tiling).factorable():
-            return False
+            return
 
         perms_to_check = self.quick_pare()
         if len(perms_to_check) == 0:
-            return False
+            return
 
         max_len_of_perms_to_check = max(map(len, perms_to_check))
         max_length = (
@@ -86,5 +96,5 @@ class SubclassVerificationAlgorithm:
                     to_remove.append(perm)
             perms_left.difference_update(to_remove)
             if len(perms_left) == 0:
-                return False
-        return True
+                return
+        self._subclasses = tuple(sorted(perms_left))

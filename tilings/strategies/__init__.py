@@ -1,7 +1,7 @@
 from .assumption_insertion import AddAssumptionFactory, AddInterleavingAssumptionFactory
 from .assumption_splitting import SplittingStrategy
 from .detect_components import DetectComponentsStrategy
-from .experimental_verification import SubclassVerificationStrategy
+from .experimental_verification import SubclassVerificationFactory
 from .factor import FactorFactory
 from .fusion import ComponentFusionFactory, FusionFactory
 from .obstruction_inferral import (
@@ -77,5 +77,5 @@ __all__ = [
     "InsertionEncodingVerificationStrategy",
     "MonotoneTreeVerificationStrategy",
     "OneByOneVerificationStrategy",
-    "SubclassVerificationStrategy",
+    "SubclassVerificationFactory",
 ]

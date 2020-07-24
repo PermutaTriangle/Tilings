@@ -33,10 +33,11 @@ from tilings.strategies import (
     RowAndColumnPlacementFactory,
     RowColumnSeparationStrategy,
     SplittingStrategy,
-    SubclassVerificationStrategy,
+    SubclassVerificationFactory,
     SubobstructionInferralFactory,
     SymmetriesFactory,
 )
+from tilings.strategies.experimental_verification import SubclassVerificationStrategy
 from tilings.strategies.factor import (
     FactorStrategy,
     FactorWithInterleavingStrategy,
@@ -293,11 +294,13 @@ strategy_objects = (
         OneByOneVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
     ]
     + [
+        SubclassVerificationFactory(perms_to_check=[Perm((0, 1, 2)), Perm((1, 0))]),
+        SubclassVerificationFactory(perms_to_check=list(Perm.up_to_length(3))),
         SubclassVerificationStrategy(
-            perms_to_check=[Perm((0, 1, 2)), Perm((1, 0))], ignore_parent=True
+            subclass_basis=[Perm((0, 1, 2)), Perm((1, 0))], ignore_parent=True
         ),
         SubclassVerificationStrategy(
-            perms_to_check=list(Perm.up_to_length(3)), ignore_parent=False
+            subclass_basis=list(Perm.up_to_length(3)), ignore_parent=False
         ),
     ]
     + pointonly_partial_ignoreparent_dirs(PatternPlacementFactory)

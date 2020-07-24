@@ -57,7 +57,7 @@ class TileScopePack(StrategyPack):
             """
             res = []
             for strategy in strats:
-                if isinstance(strategy, strat.SubclassVerificationStrategy):
+                if isinstance(strategy, strat.SubclassVerificationFactory):
                     printed_log = False
                     if strategy.perms_to_check is None:
                         new_perms_to_check = set()
