@@ -7,12 +7,13 @@ sequence or generating function.
 from typing import Iterable, Iterator, Optional
 
 from comb_spec_searcher import StrategyFactory, VerificationStrategy
-from permuta import Basis, Perm
+from comb_spec_searcher.strategies import VerificationRule
+from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import SubclassVerificationAlgorithm
+from tilings.algorithms import Factor, SubclassVerificationAlgorithm
 
 __all__ = [
-    "SubclassVerificationStrategy",
+    "SubclassVerificationFactory",
 ]
 
 TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
@@ -29,14 +30,12 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
         self.subclass_basis = tuple(sorted(subclass_basis))
         super().__init__(ignore_parent=ignore_parent)
 
-    @staticmethod
-    def verified(tiling: Tiling) -> bool:
-        return True
+    def verified(self, tiling: Tiling) -> bool:
+        algo = SubclassVerificationAlgorithm(tiling, set(self.subclass_basis))
+        return algo.subclasses == self.subclass_basis
 
     def formal_step(self) -> str:
-        return "tiling is contained in the subclass Av({})".format(
-            Basis(*self.subclass_basis)
-        )
+        return "tiling is contained in the subclass {}".format(Av(self.subclass_basis))
 
     def __str__(self) -> str:
         return "subclass verification strategy"
@@ -75,13 +74,17 @@ class SubclassVerificationFactory(StrategyFactory[Tiling]):
             self.perms_to_check = set(perms_to_check)
         super().__init__()
 
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[SubclassVerificationStrategy]:
+    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[VerificationRule]:
         assert self.perms_to_check is not None, "perms_to_check was never set"
+
+        # It is a waste of time to check a factorable tiling, since we will check its
+        # children eventually.
+        if Factor(comb_class).factorable():
+            return
+
         algo = SubclassVerificationAlgorithm(comb_class, self.perms_to_check)
-        if len(algo.subclasses) > 0:
-            yield SubclassVerificationStrategy(algo.subclasses)
+        if algo.subclasses:
+            yield SubclassVerificationStrategy(algo.subclasses)(comb_class, tuple())
 
     def change_perms(
         self, perms_to_check: Iterable[Perm]

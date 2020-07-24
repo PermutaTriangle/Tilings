@@ -6,7 +6,7 @@ are contained in one of a given set of subclasses.
 from typing import TYPE_CHECKING, List, Optional, Set, Tuple, cast
 
 from permuta import Perm
-from tilings.algorithms import Factor, GriddedPermsOnTiling
+from tilings.algorithms import GriddedPermsOnTiling
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -59,6 +59,9 @@ class SubclassVerificationAlgorithm:
 
         return self.perms_to_check
 
+    def is_verified(self) -> bool:
+        return bool(self.subclasses)
+
     @property
     def subclasses(self) -> Tuple[Perm, ...]:
         if self._subclasses is None:
@@ -68,11 +71,6 @@ class SubclassVerificationAlgorithm:
     def compute_subclasses(self) -> None:
 
         self._subclasses = tuple()
-
-        # It is a waste of time to check a factorable tiling, since we will check its
-        # children eventually.
-        if Factor(self.tiling).factorable():
-            return
 
         perms_to_check = self.quick_pare()
         if len(perms_to_check) == 0:

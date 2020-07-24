@@ -39,6 +39,7 @@ from .algorithms import (
     ObstructionTransitivity,
     RequirementPlacement,
     RowColSeparation,
+    SubclassVerificationAlgorithm,
     SubobstructionInferral,
 )
 from .assumptions import (
@@ -1161,6 +1162,9 @@ class Tiling(CombinatorialClass):
         """
         req_placement = RequirementPlacement(self, own_row=False, own_col=True)
         return req_placement.col_placement(idx, direction)
+
+    def subclass_verified(self, perms_to_check: Iterable[Perm]):
+        return SubclassVerificationAlgorithm(self, set(perms_to_check)).is_verified()
 
     # -------------------------------------------------------------
     # Properties and getters
