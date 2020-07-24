@@ -71,7 +71,7 @@ class SubclassVerificationAlgorithm:
 
         # It is a waste of time to check a factorable tiling, since we will check its
         # children eventually.
-        if len(self.tiling.point_cells) > 0 or Factor(self.tiling).factorable():
+        if Factor(self.tiling).factorable():
             return
 
         perms_to_check = self.quick_pare()
