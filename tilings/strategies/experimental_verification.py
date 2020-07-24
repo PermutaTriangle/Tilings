@@ -1,5 +1,5 @@
 """
-This file contains "experimental" verification packs, which are those that verify
+This file contains "experimental" verification strategies, which are those that verify
 tilings for which we are not certain we can independently calculate their counting
 sequence or generating function.
 """
@@ -14,7 +14,6 @@ from tilings.algorithms import SubclassVerificationAlgorithm
 __all__ = [
     "SubclassVerificationStrategy",
 ]
-
 
 TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
 
@@ -41,6 +40,18 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
         algo = SubclassVerificationAlgorithm(tiling, self.perms_to_check)
         return algo.verified()
 
+    def change_perms(
+        self, perms_to_check: Iterable[Perm]
+    ) -> "SubclassVerificationStrategy":
+        """
+        Return a new version of the verfication strategy with the given perms to check
+        instead of the current one.
+        """
+        perms_to_check = set(perms_to_check)
+        return self.__class__(
+            perms_to_check=perms_to_check, ignore_parent=self.ignore_parent
+        )
+
     @staticmethod
     def formal_step() -> str:
         return "tiling is a subclass"
@@ -51,11 +62,18 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
         d["perms_to_check"] = (
-            frozenset(self.perms_to_check) if self.perms_to_check is not None else None
+            tuple(sorted(self.perms_to_check))
+            if self.perms_to_check is not None
+            else None
         )
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "SubclassVerificationStrategy":
-        perms_to_check = d.pop("perms_to_check")
+        if d["perms_to_check"] is not None:
+            perms_to_check: Optional[Iterable[Perm]] = [
+                Perm(p) for p in d.pop("perms_to_check")
+            ]
+        else:
+            perms_to_check = d.pop("perms_to_check")
         return cls(perms_to_check=perms_to_check, **d)

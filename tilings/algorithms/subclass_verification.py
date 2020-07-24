@@ -1,15 +1,6 @@
 """
 The main algorithm for detecting when the underlying ungridded permutations on a tiling
-are contained one of a given set of subclasses.
-
-NOTES:
-    - I suspect this algorithm will perform much better when <GriddedPermsOnTiling> is
-      replaced by a non-minimal version of <MinimalGriddedPerms>, both because of its
-      intense optimization and its breadth-first approach.
-    - This will be both more effective, and faster, if you don't do it until after any
-      points have been factored away.
-    - It may be possible to be smarter, and consider variable upper bounds on max_length
-      depending on which requirement in a list you're placing.
+are contained in one of a given set of subclasses.
 """
 
 from typing import TYPE_CHECKING, List, Set
@@ -27,7 +18,13 @@ class SubclassVerificationAlgorithm:
         self.perms_to_check = perms_to_check
 
     def quick_pare(self) -> Set[Perm]:
+        """
+        Quickly eliminates some subclasses that need to be checked before generating
+        gridded perms. Often this is able to eliminate all subclasses.
+        """
 
+        # First pare: The local gridded permutations on a tiling with no requirements
+        # are those contained in some cell basis.
         if len(self.tiling.requirements) == 0:
             perms_leftover = set()
 
@@ -42,6 +39,9 @@ class SubclassVerificationAlgorithm:
                     perms_leftover.add(perm)
             return perms_leftover
 
+        # Second pare: If a tiling has a single list requirement, which contains a
+        # single requirement, which is a point, then the cell basis of that particular
+        # positive cell can be used to rule out subclasses.
         if (
             len(self.tiling.requirements) == 1
             and len(self.tiling.requirements[0]) == 1
@@ -59,9 +59,9 @@ class SubclassVerificationAlgorithm:
         return self.perms_to_check
 
     def verified(self) -> bool:
-        if len(self.tiling.point_cells) > 0:
-            return False
-        if Factor(self.tiling).factorable():
+        # It is a waste of time to check a factorable tiling, since we will check its
+        # children eventually.
+        if len(self.tiling.point_cells) > 0 or Factor(self.tiling).factorable():
             return False
 
         perms_to_check = self.quick_pare()
@@ -84,8 +84,7 @@ class SubclassVerificationAlgorithm:
             for perm in perms_left:
                 if gp.patt.contains(perm):
                     to_remove.append(perm)
-            for perm_to_remove in to_remove:
-                perms_left.remove(perm_to_remove)
+            perms_left.difference_update(to_remove)
             if len(perms_left) == 0:
                 return False
         return True

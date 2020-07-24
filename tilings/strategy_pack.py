@@ -51,14 +51,16 @@ class TileScopePack(StrategyPack):
            has length strictly smaller than the maximum length cell basis element.
         """
 
-        def alter_list(strats) -> None:
+        def replace_list(strats):
             """
             Find subclass verification and alter its perms_to_check variable.
             """
+            res = []
             for strategy in strats:
                 if isinstance(strategy, strat.SubclassVerificationStrategy):
+                    printed_log = False
                     if strategy.perms_to_check is None:
-                        strategy.perms_to_check = set()
+                        new_perms_to_check = set()
                         cell_bases = set(
                             tuple(obs) for obs, _ in start_tiling.cell_basis().values()
                         )
@@ -70,17 +72,34 @@ class TileScopePack(StrategyPack):
                             if len(perm) == 0:
                                 continue
                             if any(perm.avoids(*basis) for basis in cell_bases):
-                                strategy.perms_to_check.add(perm)
-                    logger.info(
-                        "SubclassVerification set up to check the subclasses: Av(%s)",
-                        "), Av(".join(map(str, strategy.perms_to_check)),
-                    )
+                                new_perms_to_check.add(perm)
+                        res.append(strategy.change_perms(new_perms_to_check))
+                        if start_tiling.dimensions == (1, 1):
+                            logger.info(
+                                "SubclassVerification set up to check the proper "
+                                "principal subclasses of Av(%s)",
+                                ", ".join(map(str, cell_bases.pop())),
+                            )
+                            printed_log = True
+                    if not printed_log:
+                        logger.info(
+                            "SubclassVerification set up to check the subclasses: "
+                            "Av(%s)",
+                            "), Av(".join(map(str, strategy.perms_to_check)),
+                        )
+                else:
+                    res.append(strategy)
+            return res
 
-        alter_list(self.ver_strats)
-        alter_list(self.inferral_strats)
-        alter_list(self.initial_strats)
-        for exp_set in self.expansion_strats:
-            alter_list(exp_set)
+        return self.__class__(
+            ver_strats=replace_list(self.ver_strats),
+            inferral_strats=replace_list(self.inferral_strats),
+            initial_strats=replace_list(self.initial_strats),
+            expansion_strats=list(map(replace_list, self.expansion_strats)),
+            name=self.name,
+            symmetries=self.symmetries,
+            iterative=self.iterative,
+        )
 
     def make_tracked(self, interleaving: str = "none"):
         """Add assumption tracking strategies."""

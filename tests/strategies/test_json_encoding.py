@@ -33,6 +33,7 @@ from tilings.strategies import (
     RowAndColumnPlacementFactory,
     RowColumnSeparationStrategy,
     SplittingStrategy,
+    SubclassVerificationStrategy,
     SubobstructionInferralFactory,
     SymmetriesFactory,
 )
@@ -290,6 +291,14 @@ strategy_objects = (
         ),
         OneByOneVerificationStrategy(basis=[], ignore_parent=False, symmetry=False),
         OneByOneVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
+    ]
+    + [
+        SubclassVerificationStrategy(
+            perms_to_check=[Perm((0, 1, 2)), Perm((1, 0))], ignore_parent=True
+        ),
+        SubclassVerificationStrategy(
+            perms_to_check=list(Perm.up_to_length(3)), ignore_parent=False
+        ),
     ]
     + pointonly_partial_ignoreparent_dirs(PatternPlacementFactory)
     + ignoreparent(RequirementCorroborationFactory)
