@@ -5,7 +5,7 @@ The implementation of the fusion algorithm
 """
 from collections import Counter
 from itertools import chain
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional, Set
 
 from permuta import Perm
 from tilings.assumptions import (
@@ -379,6 +379,104 @@ class Fusion:
                 obstructions=self.obstruction_fuse_counter.keys(),
                 requirements=requirements,
                 assumptions=assumptions,
+            )
+        return self._fused_tiling
+
+
+class GeneralFusion(Fusion):
+    """
+    General fusion algorithm container class.
+
+    Fuse tiling if it can be unfused by drawing a line between some of the
+    points.
+
+    Check if a fusion is valid, compute the fused tiling, and the set of extra
+    obstructions needed to determine where to draw a line.
+
+    If `row_idx` is provided it attempts to fuse row `row_idx` with row
+    `row_idx+1`.
+
+    If `col_idx` is provided it attempts to fuse column `col_idx` with
+    column `col_idx+1`.
+    """
+
+    def __init__(
+        self,
+        tiling,
+        *,
+        row_idx=None,
+        col_idx=None,
+        tracked: bool = False,
+        isolation_level: Optional[str] = None
+    ):
+        if tracked:
+            raise NotImplementedError("Tracked general fusion is not implemented")
+        super().__init__(
+            tiling,
+            row_idx=row_idx,
+            col_idx=col_idx,
+            tracked=tracked,
+            isolation_level=isolation_level,
+        )
+        self._fused_obstructions: Optional[List[GriddedPerm]] = None
+
+    @staticmethod
+    def _get_upward_closure(gps: List[GriddedPerm]) -> List[GriddedPerm]:
+        """Return list of gridded perms such that every gridded perm contained
+        in another is removed."""
+        upward_closure: List[GriddedPerm] = []
+        for gp in sorted(gps, key=len, reverse=True):
+            if all(gp not in g for g in upward_closure):
+                upward_closure.append(gp)
+        return upward_closure
+
+    def fused_obstructions(self) -> List[GriddedPerm]:
+        if self._fused_obstructions is None:
+            obs = [self._fuse_gridded_perm(gp) for gp in self._tiling.obstructions]
+            self._fused_obstructions = self._get_upward_closure(obs)
+        return self._fused_obstructions
+
+    def extra_obstructions(self) -> Set[GriddedPerm]:
+        res: Set[GriddedPerm] = set()
+        fused_obstructions = set(self.fused_obstructions())
+        for gp in self._tiling.obstructions:
+            if self._fuse_gridded_perm(gp) not in fused_obstructions:
+                res.add(gp)
+        return res
+
+    def obstruction_to_add(self) -> Set[GriddedPerm]:
+        return set(
+            chain.from_iterable(
+                self._unfuse_gridded_perm(gp) for gp in self.fused_obstructions()
+            )
+        )
+
+    def fusable(self):
+        """
+        Check if the fusion is possible.
+        """
+        return (
+            not self._tiling.assumptions  # can't handle assumptions yet
+            and all(
+                self._can_fuse_set_of_gridded_perms(counter)
+                for counter in self.requirements_fuse_counters
+            )  # only allow case where can draw a line between any requirement
+            and self._check_isolation_level()
+            and self._tiling == self._tiling.add_obstructions(self.obstruction_to_add())
+        )
+
+    def fused_tiling(self) -> "Tiling":
+        """
+        Return the fused tiling.
+        """
+        if self._fused_tiling is None:
+            if self._tiling.assumptions:
+                raise NotImplementedError
+            if self._tracked:
+                raise NotImplementedError
+            requirements = self.requirements_fuse_counters
+            self._fused_tiling = self._tiling.__class__(
+                obstructions=self.fused_obstructions(), requirements=requirements,
             )
         return self._fused_tiling
 

@@ -25,7 +25,7 @@ from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.strategies.constructor import RelianceProfile, SubRecs
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import ComponentFusion, Fusion
+from tilings.algorithms import ComponentFusion, Fusion, GeneralFusion
 
 __all__ = ["FusionStrategy", "ComponentFusionStrategy"]
 
@@ -664,6 +664,18 @@ class ComponentFusionStrategy(FusionStrategy):
         return "component fuse {} {} and {}".format(fusing, idx, idx + 1)
 
 
+class GeneralFusionStrategy(FusionStrategy):
+    def fusion_algorithm(self, tiling: Tiling) -> Fusion:
+        return GeneralFusion(
+            tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked,
+        )
+
+    def formal_step(self) -> str:
+        fusing = "rows" if self.row_idx is not None else "columns"
+        idx = self.row_idx if self.row_idx is not None else self.col_idx
+        return "general fuse {} {} and {}".format(fusing, idx, idx + 1)
+
+
 class FusionFactory(StrategyFactory[Tiling]):
     def __init__(self, tracked: bool = True, isolation_level: Optional[str] = None):
         self.tracked = tracked
@@ -755,4 +767,48 @@ class ComponentFusionFactory(StrategyFactory[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "ComponentFusionFactory":
+        return cls(**d)
+
+
+class GeneralFusionFactory(StrategyFactory[Tiling]):
+    def __init__(self, tracked: bool = False, isolation_level: Optional[str] = None):
+        if tracked:
+            raise NotImplementedError("not implemented tracking for general fusion")
+        self.tracked = tracked
+        self.isolation_level = isolation_level
+
+    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
+        cols, rows = comb_class.dimensions
+        for row_idx in range(rows - 1):
+            algo = GeneralFusion(comb_class, row_idx=row_idx, tracked=self.tracked,)
+            if algo.fusable():
+                fused_tiling = algo.fused_tiling()
+                yield GeneralFusionStrategy(row_idx=row_idx, tracked=self.tracked,)(
+                    comb_class, (fused_tiling,)
+                )
+        for col_idx in range(cols - 1):
+            algo = GeneralFusion(comb_class, col_idx=col_idx, tracked=self.tracked,)
+            if algo.fusable():
+                fused_tiling = algo.fused_tiling()
+                yield GeneralFusionStrategy(col_idx=col_idx, tracked=self.tracked,)(
+                    comb_class, (fused_tiling,)
+                )
+
+    def __str__(self) -> str:
+        return f"{'tracked ' if self.tracked else ''}general fusion"
+
+    def __repr__(self) -> str:
+        return (
+            self.__class__.__name__
+            + f"(tracked={self.tracked}, isolation_level={self.isolation_level})"
+        )
+
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["tracked"] = self.tracked
+        d["isolation_level"] = self.isolation_level
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "GeneralFusionFactory":
         return cls(**d)
