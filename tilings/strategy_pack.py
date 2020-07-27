@@ -86,6 +86,10 @@ class TileScopePack(StrategyPack):
             )
         return pack
 
+    def make_experimental_fusion(self) -> "TileScopePack":
+        """Return a new pack where the untracked general fusion is added."""
+        return self.add_initial(strat.GeneralFusionFactory(tracked=False))
+
     def make_interleaving(
         self, tracked: bool = True, unions: bool = False
     ) -> "TileScopePack":

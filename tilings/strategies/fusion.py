@@ -27,7 +27,7 @@ from comb_spec_searcher.strategies.constructor import RelianceProfile, SubRecs
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import ComponentFusion, Fusion, GeneralFusion
 
-__all__ = ["FusionStrategy", "ComponentFusionStrategy"]
+__all__ = ["FusionStrategy", "ComponentFusionStrategy", "GeneralFusionStrategy"]
 
 SubGens = Tuple[Callable[..., Iterator[GriddedPerm]], ...]
 SubRec = Callable[..., int]

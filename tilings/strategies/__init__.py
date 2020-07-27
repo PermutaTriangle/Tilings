@@ -2,7 +2,7 @@ from .assumption_insertion import AddAssumptionFactory, AddInterleavingAssumptio
 from .assumption_splitting import SplittingStrategy
 from .detect_components import DetectComponentsStrategy
 from .factor import FactorFactory
-from .fusion import ComponentFusionFactory, FusionFactory
+from .fusion import ComponentFusionFactory, FusionFactory, GeneralFusionFactory
 from .obstruction_inferral import (
     EmptyCellInferralFactory,
     ObstructionInferralFactory,
