@@ -641,6 +641,10 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         return cls(**d)
 
     @staticmethod
+    def get_op_symbol() -> str:
+        return "⚮"
+
+    @staticmethod
     def get_eq_symbol() -> str:
         return "↣"
 
