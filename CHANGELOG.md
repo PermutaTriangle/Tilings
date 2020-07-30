@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - removed the length argument to the `insertion_point_placements` pack which
   was not implemented, and thus raising an error.
 - Bug that occurred when factoring the empty tiling
+- fixed that the `partial` flag was ignored in `point_placements`
 
 
 ## [2.2.0] - 2020-07-08
