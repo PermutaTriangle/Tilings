@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
    `SplittingStrategy` in component fusion packs.
 - added equation generators to `FusionStrategy` for the case where one or both
    sides are positive
+- added `point_and_row_and_col_placements` strategy
 
 ### Changed
 - insertion packs now use the `one_cell_only` option, and no longer use
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - the `GriddedPermsOnTiling` algorithm was changed to build from minimal
   gridded perms in a breadth first manner. This is also include an option to
   limit the number of points placed on the minimal gridded perms.
+- converted the expansion strategies in serveral stategy packs to be a single set
 
 ### Fixed
 - untracked constructors raise `NotImplementedError`
