@@ -209,6 +209,21 @@ def gps_ignoreparent(strategy):
     ]
 
 
+def gps_ignoreparent_limited(factory):
+    return [
+        factory(
+            extra_basis=list(basis),
+            ignore_parent=ignore_parent,
+            limited_insertion=limited_insertion,
+        )
+        for basis, ignore_parent, limited_insertion in product(
+            ((Perm((0,)),), (Perm((0, 1, 2)),), (Perm((0, 1)), Perm((1, 0)))),
+            (True, False),
+            (True, False),
+        )
+    ]
+
+
 def gps_indices_direction_owncol_ownrow_ignoreparent_includeempty(strategy):
     return [
         strategy(
@@ -306,6 +321,7 @@ strategy_objects = (
     + pointonly_partial_ignoreparent_dirs(PatternPlacementFactory)
     + ignoreparent(RequirementCorroborationFactory)
     + gps_ignoreparent(RequirementInsertionStrategy)
+    + gps_ignoreparent_limited(RequirementInsertionFactory)
     + gps_indices_direction_owncol_ownrow_ignoreparent_includeempty(
         RequirementPlacementStrategy
     )

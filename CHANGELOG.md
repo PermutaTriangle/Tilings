@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
    sides are positive
 - `SubclassVerificationFactory` and the corresponding strategy
 - `is_subclass` method to `Tiling`
+- added `point_and_row_and_col_placements` strategy
 
 ### Changed
 - insertion packs now use the `one_cell_only` option, and no longer use
@@ -25,6 +26,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - the `GriddedPermsOnTiling` algorithm was changed to build from minimal
   gridded perms in a breadth first manner. This is also include an option to
   limit the number of points placed on the minimal gridded perms.
+- new default behavior of `RequirementInsertionFactory` is to only insert requirements
+  on tilings that don't already have any
+- converted the expansion strategies in several strategy packs to be a single set
+- requirement corroboration is only enabled when requirements of length > 1 are placed
 
 ### Fixed
 - untracked constructors raise `NotImplementedError`
@@ -43,6 +48,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - removed the length argument to the `insertion_point_placements` pack which
   was not implemented, and thus raising an error.
 - Bug that occurred when factoring the empty tiling
+- fixed that the `partial` flag was ignored in `point_placements`
+- isolation levels were not being passed to component fusion
 
 
 ## [2.2.0] - 2020-07-08
