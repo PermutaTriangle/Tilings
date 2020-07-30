@@ -728,17 +728,27 @@ class ComponentFusionFactory(StrategyFactory[Tiling]):
             return
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
-            algo = ComponentFusion(comb_class, row_idx=row_idx, tracked=self.tracked,)
+            algo = ComponentFusion(
+                comb_class,
+                row_idx=row_idx,
+                tracked=self.tracked,
+                isolation_level=self.isolation_level,
+            )
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield ComponentFusionStrategy(row_idx=row_idx, tracked=self.tracked,)(
+                yield ComponentFusionStrategy(row_idx=row_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
         for col_idx in range(cols - 1):
-            algo = ComponentFusion(comb_class, col_idx=col_idx, tracked=self.tracked,)
+            algo = ComponentFusion(
+                comb_class,
+                col_idx=col_idx,
+                tracked=self.tracked,
+                isolation_level=self.isolation_level,
+            )
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield ComponentFusionStrategy(col_idx=col_idx, tracked=self.tracked,)(
+                yield ComponentFusionStrategy(col_idx=col_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
 

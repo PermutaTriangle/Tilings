@@ -499,7 +499,7 @@ def test_crossing_insertion():
         ],
         requirements=[[GriddedPerm(Perm((0,)), ((0, 0),))]],
     )
-    ci = RequirementInsertionFactory(maxreqlen=2)
+    ci = RequirementInsertionFactory(maxreqlen=2, limited_insertion=False)
     assert set(ci.req_lists_to_insert(t)) == set(
         [
             (GriddedPerm(Perm((0,)), ((0, 0),)),),
@@ -510,7 +510,9 @@ def test_crossing_insertion():
         ]
     )
     assert len(list(ci(t))) == 5
-    ci2 = RequirementInsertionFactory(maxreqlen=3)
+    ci2 = RequirementInsertionFactory(maxreqlen=3, limited_insertion=False)
     assert len(list(ci2(t))) == 9
-    ci3 = RequirementInsertionFactory(maxreqlen=3, extra_basis=[Perm((2, 1, 0))])
+    ci3 = RequirementInsertionFactory(
+        maxreqlen=3, extra_basis=[Perm((2, 1, 0))], limited_insertion=False
+    )
     assert len(list(ci3(t))) == 5
