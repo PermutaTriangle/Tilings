@@ -193,7 +193,7 @@ class TileScopePack(StrategyPack):
         name = "{}{}{}_placements".format(
             "length_{}_".format(length) if length > 1 else "",
             "partial_" if partial else "",
-            "pattern" if length > 1 else "point",
+            "pattern" if length > 1 else "pattern_point",
         )
         return TileScopePack(
             initial_strats=[strat.PatternPlacementFactory(partial=partial)],
@@ -243,7 +243,7 @@ class TileScopePack(StrategyPack):
             expansion_strats=[
                 [
                     strat.CellInsertionFactory(maxreqlen=length),
-                    strat.PatternPlacementFactory(),
+                    strat.PatternPlacementFactory(partial=partial),
                 ],
             ],
             name=name,
@@ -447,7 +447,10 @@ class TileScopePack(StrategyPack):
             place_row=place_row, place_col=place_col, partial=partial
         )
         return TileScopePack(
-            initial_strats=[strat.FactorFactory()],
+            initial_strats=[
+                strat.FactorFactory(),
+                strat.RequirementCorroborationFactory(),
+            ],
             ver_strats=[
                 strat.BasicVerificationStrategy(),
                 strat.InsertionEncodingVerificationStrategy(),
@@ -461,7 +464,7 @@ class TileScopePack(StrategyPack):
             expansion_strats=[
                 [
                     strat.CellInsertionFactory(maxreqlen=length),
-                    strat.PatternPlacementFactory(),
+                    strat.PatternPlacementFactory(partial=partial),
                     rowcol_strat,
                 ],
             ],
