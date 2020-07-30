@@ -178,8 +178,10 @@ class TileScopePack(StrategyPack):
                 strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
-                [strat.RequirementInsertionFactory(maxreqlen=length)],
-                [strat.AllPlacementsFactory()],
+                [
+                    strat.RequirementInsertionFactory(maxreqlen=length),
+                    strat.AllPlacementsFactory(),
+                ],
             ],
             name="all_the_strategies",
         )
@@ -209,8 +211,8 @@ class TileScopePack(StrategyPack):
                 [
                     strat.FactorFactory(unions=True),
                     strat.CellInsertionFactory(maxreqlen=length),
+                    strat.RequirementCorroborationFactory(),
                 ],
-                [strat.RequirementCorroborationFactory()],
             ],
             name=name,
         )
@@ -239,8 +241,10 @@ class TileScopePack(StrategyPack):
                 strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
-                [strat.CellInsertionFactory(maxreqlen=length)],
-                [strat.PatternPlacementFactory()],
+                [
+                    strat.CellInsertionFactory(maxreqlen=length),
+                    strat.PatternPlacementFactory(),
+                ],
             ],
             name=name,
         )
@@ -411,8 +415,55 @@ class TileScopePack(StrategyPack):
                 strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
-                [strat.RequirementInsertionFactory(maxreqlen=length)],
-                [strat.PatternPlacementFactory(partial=partial)],
+                [
+                    strat.RequirementInsertionFactory(maxreqlen=length),
+                    strat.PatternPlacementFactory(partial=partial),
+                ],
+            ],
+            name=name,
+        )
+
+    @classmethod
+    def point_and_row_and_col_placements(
+        cls,
+        length: int = 1,
+        row_only: bool = False,
+        col_only: bool = False,
+        partial: bool = False,
+    ) -> "TileScopePack":
+        if row_only and col_only:
+            raise ValueError("Can't be row and col only.")
+        place_row = not col_only
+        place_col = not row_only
+        both = place_col and place_row
+        name = "{}{}point_and_{}{}{}_placements".format(
+            "length_{}_".format(length) if length > 1 else "",
+            "partial_" if partial else "",
+            "row" if not col_only else "",
+            "_and_" if both else "",
+            "col" if not row_only else "",
+        )
+        rowcol_strat = strat.RowAndColumnPlacementFactory(
+            place_row=place_row, place_col=place_col, partial=partial
+        )
+        return TileScopePack(
+            initial_strats=[strat.FactorFactory()],
+            ver_strats=[
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
+            ],
+            inferral_strats=[
+                strat.RowColumnSeparationStrategy(),
+                strat.ObstructionTransitivityFactory(),
+            ],
+            expansion_strats=[
+                [
+                    strat.CellInsertionFactory(maxreqlen=length),
+                    strat.PatternPlacementFactory(),
+                    rowcol_strat,
+                ],
             ],
             name=name,
         )
