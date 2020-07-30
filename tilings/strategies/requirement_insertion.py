@@ -427,6 +427,27 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
             )
         return "requirement insertion up to " "length {}".format(self.maxreqlen)
 
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["limited_insertion"] = self.limited_insertion
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "RequirementInsertionWithRestrictionFactory":
+        if d["limited_insertion"] is None:
+            extra_basis = None
+        else:
+            extra_basis = [Perm(p) for p in d["extra_basis"]]
+        d.pop("extra_basis")
+        limited_insertion = d.pop("limited_insertion")
+        maxreqlen = d.pop("maxreqlen")
+        return cls(
+            maxreqlen=maxreqlen,
+            extra_basis=extra_basis,
+            limited_insertion=limited_insertion,
+            **d,
+        )
+
 
 class FactorInsertionFactory(AbstractRequirementInsertionFactory):
     """
