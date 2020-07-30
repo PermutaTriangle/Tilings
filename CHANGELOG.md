@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   gridded perms in a breadth first manner. This is also include an option to
   limit the number of points placed on the minimal gridded perms.
 - converted the expansion strategies in serveral stategy packs to be a single set
+- new default behavior of `RequirementInsertionFactory` is to only insert requirements
+  on tilings that don't already have any
 
 ### Fixed
 - untracked constructors raise `NotImplementedError`
