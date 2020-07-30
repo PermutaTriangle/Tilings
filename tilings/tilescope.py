@@ -6,8 +6,7 @@ from logzero import logger
 
 from comb_spec_searcher import CombinatorialSpecificationSearcher
 from comb_spec_searcher.strategies import StrategyFactory
-from permuta import Perm
-from permuta.descriptors import Basis
+from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.strategy_pack import TileScopePack
 
@@ -30,18 +29,13 @@ class TileScope(CombinatorialSpecificationSearcher):
 
         """Initialise TileScope."""
         if isinstance(start_class, str):
-            basis = Basis(
-                [Perm.to_standard([int(c) for c in p]) for p in start_class.split("_")]
-            )
+            basis = Basis.from_string(start_class)
         elif isinstance(start_class, Tiling):
-            start_tiling = start_class
             if start_class.dimensions == (1, 1):
-                basis = Basis([o.patt for o in start_class.obstructions])
+                basis = Basis(*[o.patt for o in start_class.obstructions])
+            start_tiling = start_class
         elif isinstance(start_class, collections.abc.Iterable):
-            basis = Basis(start_class)
-            assert all(
-                isinstance(p, Perm) for p in basis
-            ), "Basis must contains Perm only"
+            basis = Basis(*start_class)
         else:
             raise ValueError(
                 "start class must be a string, an iterable of Perm or a tiling"
