@@ -1,12 +1,19 @@
-from typing import Iterable, Optional
+from typing import Iterable, List, Optional, Union
 
 from logzero import logger
 
 from comb_spec_searcher import StrategyPack
-from comb_spec_searcher.strategies import AbstractStrategy
+from comb_spec_searcher.strategies import (
+    AbstractStrategy,
+    Strategy,
+    StrategyFactory,
+    VerificationStrategy,
+)
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import strategies as strat
+
+CSSstrategy = Union[Strategy, StrategyFactory, VerificationStrategy]
 
 
 class TileScopePack(StrategyPack):
@@ -162,39 +169,12 @@ class TileScopePack(StrategyPack):
     # Creation of the base pack
     @classmethod
     def all_the_strategies(cls, length: int = 1) -> "TileScopePack":
-        return TileScopePack(
-            initial_strats=[
-                strat.FactorFactory(unions=False),
-                strat.RequirementCorroborationFactory(),
-            ],
-            ver_strats=[
-                strat.BasicVerificationStrategy(),
-                strat.InsertionEncodingVerificationStrategy(),
-                strat.OneByOneVerificationStrategy(),
-                strat.LocallyFactorableVerificationStrategy(),
-            ],
-            inferral_strats=[
-                strat.RowColumnSeparationStrategy(),
-                strat.ObstructionTransitivityFactory(),
-            ],
-            expansion_strats=[
-                [strat.RequirementInsertionFactory(maxreqlen=length)],
-                [strat.AllPlacementsFactory()],
-            ],
-            name="all_the_strategies",
-        )
+        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        if length > 1:
+            initial_strats.append(strat.RequirementCorroborationFactory())
 
-    @classmethod
-    def pattern_placements(
-        cls, length: int = 1, partial: bool = False,
-    ) -> "TileScopePack":
-        name = "{}{}{}_placements".format(
-            "length_{}_".format(length) if length > 1 else "",
-            "partial_" if partial else "",
-            "pattern" if length > 1 else "point",
-        )
         return TileScopePack(
-            initial_strats=[strat.PatternPlacementFactory(partial=partial)],
+            initial_strats=initial_strats,
             ver_strats=[
                 strat.BasicVerificationStrategy(),
                 strat.InsertionEncodingVerificationStrategy(),
@@ -207,11 +187,43 @@ class TileScopePack(StrategyPack):
             ],
             expansion_strats=[
                 [
-                    strat.FactorFactory(unions=True),
-                    strat.CellInsertionFactory(maxreqlen=length),
+                    strat.RequirementInsertionFactory(maxreqlen=length),
+                    strat.AllPlacementsFactory(),
                 ],
-                [strat.RequirementCorroborationFactory()],
             ],
+            name="all_the_strategies",
+        )
+
+    @classmethod
+    def pattern_placements(
+        cls, length: int = 1, partial: bool = False,
+    ) -> "TileScopePack":
+        name = "{}{}{}_placements".format(
+            "length_{}_".format(length) if length > 1 else "",
+            "partial_" if partial else "",
+            "pattern" if length > 1 else "pattern_point",
+        )
+
+        expansion_strats: List[CSSstrategy] = [
+            strat.FactorFactory(unions=True),
+            strat.CellInsertionFactory(maxreqlen=length),
+        ]
+        if length > 1:
+            expansion_strats.append(strat.RequirementCorroborationFactory())
+
+        return TileScopePack(
+            initial_strats=[strat.PatternPlacementFactory(partial=partial)],
+            ver_strats=[
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
+            ],
+            inferral_strats=[
+                strat.RowColumnSeparationStrategy(),
+                strat.ObstructionTransitivityFactory(),
+            ],
+            expansion_strats=[expansion_strats],
             name=name,
         )
 
@@ -223,11 +235,13 @@ class TileScopePack(StrategyPack):
             "length_{}_".format(length) if length > 1 else "",
             "partial_" if partial else "",
         )
+
+        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        if length > 1:
+            initial_strats.append(strat.RequirementCorroborationFactory())
+
         return TileScopePack(
-            initial_strats=[
-                strat.FactorFactory(),
-                strat.RequirementCorroborationFactory(),
-            ],
+            initial_strats=initial_strats,
             ver_strats=[
                 strat.BasicVerificationStrategy(),
                 strat.InsertionEncodingVerificationStrategy(),
@@ -239,8 +253,10 @@ class TileScopePack(StrategyPack):
                 strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
-                [strat.CellInsertionFactory(maxreqlen=length)],
-                [strat.PatternPlacementFactory()],
+                [
+                    strat.CellInsertionFactory(maxreqlen=length),
+                    strat.PatternPlacementFactory(partial=partial),
+                ],
             ],
             name=name,
         )
@@ -395,11 +411,13 @@ class TileScopePack(StrategyPack):
             "length_{}_".format(length) if length != 2 else "",
             "partial_" if partial else "",
         )
+
+        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        if length > 1:
+            initial_strats.append(strat.RequirementCorroborationFactory())
+
         return TileScopePack(
-            initial_strats=[
-                strat.FactorFactory(),
-                strat.RequirementCorroborationFactory(),
-            ],
+            initial_strats=initial_strats,
             ver_strats=[
                 strat.BasicVerificationStrategy(),
                 strat.InsertionEncodingVerificationStrategy(),
@@ -411,8 +429,60 @@ class TileScopePack(StrategyPack):
                 strat.ObstructionTransitivityFactory(),
             ],
             expansion_strats=[
-                [strat.RequirementInsertionFactory(maxreqlen=length)],
-                [strat.PatternPlacementFactory(partial=partial)],
+                [
+                    strat.RequirementInsertionFactory(maxreqlen=length),
+                    strat.PatternPlacementFactory(partial=partial),
+                ],
+            ],
+            name=name,
+        )
+
+    @classmethod
+    def point_and_row_and_col_placements(
+        cls,
+        length: int = 1,
+        row_only: bool = False,
+        col_only: bool = False,
+        partial: bool = False,
+    ) -> "TileScopePack":
+        if row_only and col_only:
+            raise ValueError("Can't be row and col only.")
+        place_row = not col_only
+        place_col = not row_only
+        both = place_col and place_row
+        name = "{}{}point_and_{}{}{}_placements".format(
+            "length_{}_".format(length) if length > 1 else "",
+            "partial_" if partial else "",
+            "row" if not col_only else "",
+            "_and_" if both else "",
+            "col" if not row_only else "",
+        )
+        rowcol_strat = strat.RowAndColumnPlacementFactory(
+            place_row=place_row, place_col=place_col, partial=partial
+        )
+
+        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        if length > 1:
+            initial_strats.append(strat.RequirementCorroborationFactory())
+
+        return TileScopePack(
+            initial_strats=initial_strats,
+            ver_strats=[
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
+            ],
+            inferral_strats=[
+                strat.RowColumnSeparationStrategy(),
+                strat.ObstructionTransitivityFactory(),
+            ],
+            expansion_strats=[
+                [
+                    strat.CellInsertionFactory(maxreqlen=length),
+                    strat.PatternPlacementFactory(partial=partial),
+                    rowcol_strat,
+                ],
             ],
             name=name,
         )

@@ -380,14 +380,19 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
     """
     Insert all possible requirements the obstruction allows if the tiling does
     not have requirements.
+
+    If <limited_insertion> is true, the default behavior, requirements will only be
+    inserted on Tilings that have no requirements.
     """
 
     def __init__(
         self,
         maxreqlen: int = 2,
         extra_basis: Optional[List[Perm]] = None,
+        limited_insertion: bool = True,
         ignore_parent: bool = False,
     ) -> None:
+        self.limited_insertion = limited_insertion
         super().__init__(maxreqlen, extra_basis, ignore_parent)
 
     def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
@@ -408,6 +413,8 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
     def __call__(
         self, comb_class: Tiling, **kwargs
     ) -> Iterator[RequirementInsertionStrategy]:
+        if self.limited_insertion and comb_class.requirements:
+            return
         yield from super().__call__(comb_class, **kwargs)
 
     def __str__(self) -> str:
@@ -419,6 +426,27 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
                 perm_class, self.maxreqlen
             )
         return "requirement insertion up to " "length {}".format(self.maxreqlen)
+
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["limited_insertion"] = self.limited_insertion
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "RequirementInsertionWithRestrictionFactory":
+        if d["limited_insertion"] is None:
+            extra_basis = None
+        else:
+            extra_basis = [Perm(p) for p in d["extra_basis"]]
+        d.pop("extra_basis")
+        limited_insertion = d.pop("limited_insertion")
+        maxreqlen = d.pop("maxreqlen")
+        return cls(
+            maxreqlen=maxreqlen,
+            extra_basis=extra_basis,
+            limited_insertion=limited_insertion,
+            **d,
+        )
 
 
 class FactorInsertionFactory(AbstractRequirementInsertionFactory):
