@@ -32,6 +32,7 @@ from tilings.strategies import (
     RootInsertionFactory,
     RowAndColumnPlacementFactory,
     RowColumnSeparationStrategy,
+    ShortObstructionVerificationStrategy,
     SplittingStrategy,
     SubclassVerificationFactory,
     SubobstructionInferralFactory,
@@ -346,6 +347,7 @@ strategy_objects = (
         SplittingStrategy("monotone"),
         SplittingStrategy("all"),
     ]
+    + [ShortObstructionVerificationStrategy()]
 )
 
 # TODO add tests for: ComponentFusionStrategy, FusionStrategy
