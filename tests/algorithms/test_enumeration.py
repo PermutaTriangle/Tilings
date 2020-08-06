@@ -462,7 +462,6 @@ class TestDatabaseEnumeration(CommonTest):
 
     @pytest.mark.slow
     def test_load_verified_tilings(self):
-        assert not DatabaseEnumeration.all_verified_tilings
         DatabaseEnumeration.load_verified_tiling()
         assert DatabaseEnumeration.all_verified_tilings
         sample = next(iter(DatabaseEnumeration.all_verified_tilings))
