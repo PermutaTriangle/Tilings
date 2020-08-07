@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - added equation generators to `FusionStrategy` for the case where one or both
    sides are positive
 - added a `to_html_representation` method to `Tiling`
+- `SubclassVerificationFactory` and the corresponding strategy
+- `is_subclass` method to `Tiling`
 - added `point_and_row_and_col_placements` strategy
 
 ### Changed

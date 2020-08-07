@@ -373,7 +373,7 @@ class DatabaseEnumeration(Enumeration):
         DatabaseEnumeration.num_verified_request += 1
         if DatabaseEnumeration.all_verified_tilings:
             return self.tiling.to_bytes() in DatabaseEnumeration.all_verified_tilings
-        if DatabaseEnumeration.num_verified_request > 100:
+        if DatabaseEnumeration.num_verified_request > 10:
             DatabaseEnumeration.load_verified_tiling()
         return self._get_tiling_entry() is not None
 

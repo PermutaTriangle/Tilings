@@ -1,4 +1,4 @@
-from typing import Iterable, List, Optional, Union
+from typing import TYPE_CHECKING, Iterable, List, Optional, Union
 
 from logzero import logger
 
@@ -12,6 +12,9 @@ from comb_spec_searcher.strategies import (
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import strategies as strat
+
+if TYPE_CHECKING:
+    from tilings import Tiling
 
 CSSstrategy = Union[Strategy, StrategyFactory, VerificationStrategy]
 
@@ -31,6 +34,66 @@ class TileScopePack(StrategyPack):
                     if strategy.basis:
                         logger.warning("Basis changed in OneByOneVerificationStrategy")
                     res.append(strategy.change_basis(basis))
+                else:
+                    res.append(strategy)
+            return res
+
+        return self.__class__(
+            ver_strats=replace_list(self.ver_strats),
+            inferral_strats=replace_list(self.inferral_strats),
+            initial_strats=replace_list(self.initial_strats),
+            expansion_strats=list(map(replace_list, self.expansion_strats)),
+            name=self.name,
+            symmetries=self.symmetries,
+            iterative=self.iterative,
+        )
+
+    def setup_subclass_verification(self, start_tiling: "Tiling") -> "TileScopePack":
+        """
+        If the subclass verification strategy already has a list of perms to check,
+        we leave it alone. Otherwise we:
+         - compute the cell basis for each cell
+         - consider the permutations avoiding some cell basis
+         - add to the list of perms to check any perm that avoids some cell basis and
+           has length strictly smaller than the maximum length cell basis element.
+        """
+
+        def replace_list(strats):
+            """
+            Find subclass verification and alter its perms_to_check variable.
+            """
+            res = []
+            for strategy in strats:
+                if isinstance(strategy, strat.SubclassVerificationFactory):
+                    printed_log = False
+                    if strategy.perms_to_check is None:
+                        new_perms_to_check = set()
+                        cell_bases = set(
+                            tuple(obs) for obs, _ in start_tiling.cell_basis().values()
+                        )
+                        max_length = (
+                            max(max(len(b) for b in basis) for basis in cell_bases) - 1
+                        )
+                        perm_gen = Perm.up_to_length(max_length)
+                        for perm in perm_gen:
+                            if len(perm) == 0:
+                                continue
+                            if any(perm.avoids(*basis) for basis in cell_bases):
+                                new_perms_to_check.add(perm)
+                        res.append(strategy.change_perms(new_perms_to_check))
+                        if start_tiling.dimensions == (1, 1):
+                            logger.info(
+                                "SubclassVerification set up to check the proper "
+                                "principal subclasses of Av(%s)",
+                                ", ".join(map(str, cell_bases.pop())),
+                            )
+                            printed_log = True
+                    if not printed_log:
+                        logger.info(
+                            "SubclassVerification set up to check the subclasses: "
+                            "Av(%s)",
+                            "), Av(".join(map(str, strategy.perms_to_check)),
+                        )
                 else:
                     res.append(strategy)
             return res
