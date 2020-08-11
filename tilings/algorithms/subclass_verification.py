@@ -60,6 +60,8 @@ class SubclassVerificationAlgorithm:
         return self.perms_to_check
 
     def is_verified(self) -> bool:
+        if self.tiling.assumptions:
+            return False
         return bool(self.subclasses)
 
     @property
