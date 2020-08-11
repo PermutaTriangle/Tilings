@@ -109,7 +109,7 @@ def test_factors(
     )
 
 
-@pytest.mark.timeout(60)
+@pytest.mark.timeout(90)
 def test_123_fusion():
     pack = TileScopePack.row_and_col_placements(row_only=True).make_fusion(tracked=True)
     css = TileScope("123", pack)
