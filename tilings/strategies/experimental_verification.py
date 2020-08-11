@@ -13,10 +13,35 @@ from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor, SubclassVerificationAlgorithm
 
 __all__ = [
+    "ShortObstructionVerificationStrategy",
     "SubclassVerificationFactory",
 ]
 
 TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
+
+
+class ShortObstructionVerificationStrategy(TileScopeVerificationStrategy):
+    """
+    A strategy to mark as verified any tiling whose crossing obstructions all have
+    size at most 3. Tilings with dimensions 1x1 are ignored.
+    """
+
+    @staticmethod
+    def verified(tiling: Tiling):
+        return tiling.dimensions != (1, 1) and all(
+            ob.is_single_cell() or len(ob) <= 3 for ob in tiling.obstructions
+        )
+
+    @staticmethod
+    def formal_step() -> str:
+        return "tiling has short crossing obstructions"
+
+    def __str__(self) -> str:
+        return "short crossing obstruction verification"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "ShortObstructionVerificationStrategy":
+        return cls(**d)
 
 
 class SubclassVerificationStrategy(TileScopeVerificationStrategy):

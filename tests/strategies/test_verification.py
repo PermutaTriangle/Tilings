@@ -19,7 +19,9 @@ from tilings.strategies import (
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
     OneByOneVerificationStrategy,
+    ShortObstructionVerificationStrategy,
 )
+from tilings.strategies.experimental_verification import SubclassVerificationStrategy
 from tilings.tilescope import TileScopePack
 
 
@@ -944,3 +946,139 @@ class TestOneByOneVerificationStrategy(CommonTest):
         # no method for Av(1324) yet
         with pytest.raises(InvalidOperationError):
             strategy.pack(enum_verified[6])
+
+
+class TestShortObstructionVerificationStrategy(CommonTest):
+    @pytest.fixture
+    def strategy(self):
+        return ShortObstructionVerificationStrategy()
+
+    @pytest.fixture
+    def formal_step(self):
+        return "tiling has short crossing obstructions"
+
+    @pytest.fixture
+    def enum_verified(self):
+        # +-+-+-+-+
+        # |2| | | |
+        # +-+-+-+-+
+        # | | |●| |
+        # +-+-+-+-+
+        # |\| | | |
+        # +-+-+-+-+
+        # | |●| | |
+        # +-+-+-+-+
+        # |1| | |3|
+        # +-+-+-+-+
+        # 1: Av+(120, 0132)
+        # 2: Av(012)
+        # 3: Av(0132, 0231, 1203)
+        # \: Av(01)
+        # ●: point
+        # Crossing obstructions:
+        # 01: (0, 0), (3, 0)
+        # 012: (0, 0), (0, 0), (0, 2)
+        # 012: (0, 0), (0, 0), (0, 4)
+        # 012: (0, 0), (0, 2), (0, 4)
+        # 012: (0, 0), (0, 4), (0, 4)
+        # 012: (0, 2), (0, 4), (0, 4)
+        # 120: (0, 0), (0, 2), (0, 0)
+        # Requirement 0:
+        # 0: (0, 0)
+        # Requirement 1:
+        # 0: (1, 1)
+        # Requirement 2:
+        # 0: (2, 3)
+        return [
+            Tiling(
+                obstructions=(
+                    GriddedPerm(Perm((0, 1)), ((0, 0), (3, 0))),
+                    GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2))),
+                    GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
+                    GriddedPerm(Perm((0, 1)), ((2, 3), (2, 3))),
+                    GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+                    GriddedPerm(Perm((1, 0)), ((2, 3), (2, 3))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 2))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 4))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 2), (0, 4))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 4), (0, 4))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 2), (0, 4), (0, 4))),
+                    GriddedPerm(Perm((0, 1, 2)), ((0, 4), (0, 4), (0, 4))),
+                    GriddedPerm(Perm((1, 2, 0)), ((0, 0), (0, 0), (0, 0))),
+                    GriddedPerm(Perm((1, 2, 0)), ((0, 0), (0, 2), (0, 0))),
+                    GriddedPerm(Perm((0, 1, 3, 2)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                    GriddedPerm(Perm((0, 1, 3, 2)), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                    GriddedPerm(Perm((0, 2, 3, 1)), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                    GriddedPerm(Perm((1, 2, 0, 3)), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                ),
+                requirements=(
+                    (GriddedPerm(Perm((0,)), ((0, 0),)),),
+                    (GriddedPerm(Perm((0,)), ((1, 1),)),),
+                    (GriddedPerm(Perm((0,)), ((2, 3),)),),
+                ),
+                assumptions=(),
+            )
+        ]
+
+    @pytest.fixture
+    def enum_not_verified(self):
+        return [
+            Tiling.from_string("12"),
+            Tiling.from_string("123"),
+            Tiling.from_string("1234"),
+        ]
+
+    def test_get_genf(self, strategy, enum_verified):
+        pass
+
+
+class TestSubclassVerificationStrategy(CommonTest):
+    @pytest.fixture
+    def strategy(self):
+        return SubclassVerificationStrategy([Perm((0, 1, 2))])
+
+    @pytest.fixture
+    def formal_step(self):
+        return "tiling is contained in the subclass Av(012)"
+
+    @pytest.fixture
+    def enum_verified(self):
+        # +-+-+-+
+        # | |\| |
+        # +-+-+-+
+        # |\| |\|
+        # +-+-+-+
+        # | |\|1|
+        # +-+-+-+
+        # 1: Av(012)
+        # \: Av(01)
+        # Crossing obstructions:
+        # 012: (1, 0), (2, 0), (2, 0)
+        # 012: (1, 0), (2, 0), (2, 1)
+        # 012: (2, 0), (2, 0), (2, 1)
+        return [
+            Tiling(
+                obstructions=(
+                    GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                    GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                    GriddedPerm(Perm((0, 1)), ((1, 2), (1, 2))),
+                    GriddedPerm(Perm((0, 1)), ((2, 1), (2, 1))),
+                    GriddedPerm(Perm((0, 1, 2)), ((1, 0), (2, 0), (2, 0))),
+                    GriddedPerm(Perm((0, 1, 2)), ((1, 0), (2, 0), (2, 1))),
+                    GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
+                    GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 1))),
+                ),
+                requirements=(),
+                assumptions=(),
+            ),
+            Tiling.from_string("123"),
+        ]
+
+    @pytest.fixture
+    def enum_not_verified(self):
+        return [
+            Tiling.from_string("1234"),
+        ]
+
+    def test_get_genf(self, strategy, enum_verified):
+        pass
