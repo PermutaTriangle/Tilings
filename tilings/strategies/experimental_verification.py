@@ -77,6 +77,9 @@ class SubclassVerificationFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[VerificationRule]:
         assert self.perms_to_check is not None, "perms_to_check was never set"
 
+        if comb_class.assumptions:
+            return
+
         # It is a waste of time to check a factorable tiling, since we will check its
         # children eventually.
         if Factor(comb_class).factorable():
