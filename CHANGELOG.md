@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `is_subclass` method to `Tiling`
 - added `point_and_row_and_col_placements` strategy
 - `ShortObstructionVerificationStrategy`
+- using Github Actions for testing and deployment
 
 ### Changed
 - insertion packs now use the `one_cell_only` option, and no longer use
