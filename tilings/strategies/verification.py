@@ -182,7 +182,7 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
     ) -> Expr:
         if not self.verified(tiling):
-            raise StrategyDoesNotApply("tiling not locally verified")
+            raise StrategyDoesNotApply("tiling not 1x1 verified")
         if len(tiling.obstructions) == 1 and tiling.obstructions[0] in (
             GriddedPerm.single_cell((0, 1, 2), (0, 0)),
             GriddedPerm.single_cell((2, 1, 0), (0, 0)),
