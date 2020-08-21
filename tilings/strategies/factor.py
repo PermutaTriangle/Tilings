@@ -262,9 +262,9 @@ class FactorWithInterleavingStrategy(FactorStrategy):
             children = self.decomposition_function(tiling)
         try:
             interleaving_parameters = self.interleaving_parameters(tiling)
-        except ValueError:
+        except ValueError as e:
             # must be untracked
-            raise NotImplementedError("The interleaving factor was not tracked.")
+            raise NotImplementedError("The interleaving factor was not tracked.") from e
         return Interleaving(
             tiling,
             children,
@@ -343,9 +343,11 @@ class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
             children = self.decomposition_function(tiling)
         try:
             interleaving_parameters = self.interleaving_parameters(tiling)
-        except ValueError:
+        except ValueError as e:
             # must be untracked
-            raise NotImplementedError("The monotone interleaving was not tracked.")
+            raise NotImplementedError(
+                "The monotone interleaving was not tracked."
+            ) from e
         return MonotoneInterleaving(
             tiling,
             children,
@@ -377,12 +379,12 @@ class FactorFactory(StrategyFactory[Tiling]):
             self.factor_algo, self.factor_class = self.FACTOR_ALGO_AND_CLASS[
                 interleaving
             ]
-        except KeyError:
+        except KeyError as e:
             raise InvalidOperationError(
-                "Invalid interleaving option. Must be in {}, used {}".format(
-                    FactorFactory.FACTOR_ALGO_AND_CLASS.keys(), interleaving
-                )
-            )
+                "Invalid interleaving option. Must be in "
+                f"{FactorFactory.FACTOR_ALGO_AND_CLASS.keys()}, "
+                f"used {interleaving}"
+            ) from e
         self.unions = unions
         self.ignore_parent = ignore_parent
         self.workable = workable

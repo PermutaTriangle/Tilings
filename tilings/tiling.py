@@ -588,8 +588,10 @@ class Tiling(CombinatorialClass):
         """Returns a new tiling with assumption removed."""
         try:
             idx = self._assumptions.index(assumption)
-        except ValueError:
-            raise ValueError(f"following assumption not on tiling: '{assumption}'")
+        except ValueError as e:
+            raise ValueError(
+                f"following assumption not on tiling: '{assumption}'"
+            ) from e
         return Tiling(
             self._obstructions,
             self._requirements,
@@ -1308,8 +1310,10 @@ class Tiling(CombinatorialClass):
     def get_parameter(self, assumption: TrackingAssumption) -> str:
         try:
             idx = self._assumptions.index(assumption)
-        except ValueError:
-            raise ValueError(f"following assumption not on tiling: '{assumption}'")
+        except ValueError as e:
+            raise ValueError(
+                f"following assumption not on tiling: '{assumption}'"
+            ) from e
         return "k_{}".format(idx)
 
     def get_assumption(self, parameter: str) -> TrackingAssumption:
@@ -1628,10 +1632,10 @@ class Tiling(CombinatorialClass):
         from .strategies import (
             BasicVerificationStrategy,
             DatabaseVerificationStrategy,
-            LocallyFactorableVerificationStrategy,
             InsertionEncodingVerificationStrategy,
-            MonotoneTreeVerificationStrategy,
+            LocallyFactorableVerificationStrategy,
             LocalVerificationStrategy,
+            MonotoneTreeVerificationStrategy,
             OneByOneVerificationStrategy,
         )
 
