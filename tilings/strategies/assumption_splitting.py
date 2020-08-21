@@ -151,11 +151,11 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     ):
         try:
             self.factor_class = SplittingStrategy.FACTOR_ALGO[interleaving]
-        except KeyError:
+        except KeyError as e:
             raise ValueError(
                 "interleaving argument must be in "
                 f"{list(SplittingStrategy.FACTOR_ALGO)}"
-            )
+            ) from e
         super().__init__(
             ignore_parent=ignore_parent,
             inferrable=inferrable,
