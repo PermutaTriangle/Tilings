@@ -857,7 +857,7 @@ class TestOneByOneVerificationStrategy(CommonTest):
     def test_pack(self, strategy, enum_verified):
         assert strategy.pack(
             enum_verified[0]
-        ) == TileScopePack.point_placements().add_verification(
+        ) == TileScopePack.point_and_row_and_col_placements().add_verification(
             BasicVerificationStrategy(), replace=True
         )
         assert strategy.pack(enum_verified[1]) in (
@@ -946,6 +946,25 @@ class TestOneByOneVerificationStrategy(CommonTest):
         # no method for Av(1324) yet
         with pytest.raises(InvalidOperationError):
             strategy.pack(enum_verified[6])
+
+    def test_132_with_two_points(self, strategy):
+        t = Tiling(
+            obstructions=[GriddedPerm(Perm((0, 2, 1)), ((0, 0),) * 3)],
+            requirements=[
+                [
+                    GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
+                    GriddedPerm(Perm((1, 0)), ((0, 0),) * 2),
+                ]
+            ],
+        )
+        assert strategy.verified(t)
+        assert strategy.get_specification(t) is not None
+        assert (
+            sympy.simplify(
+                strategy.get_genf(t) - sympy.sympify("(1 - sqrt(1 - 4*x)) / (2*x)")
+            )
+            == -sympy.var("x") - 1
+        )
 
 
 class TestShortObstructionVerificationStrategy(CommonTest):
