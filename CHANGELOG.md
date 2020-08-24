@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Bug that occurred when factoring the empty tiling
 - fixed that the `partial` flag was ignored in `point_placements`
 - isolation levels were not being passed to component fusion
+- expanding a symmetry of 132 with both length 2 requirements
 
 
 ## [2.2.0] - 2020-07-08

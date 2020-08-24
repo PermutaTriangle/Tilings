@@ -141,7 +141,7 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
             ]
         ):
             # subclass of Av(231) or a symmetry, use point placements!
-            return TileScopePack.point_placements().add_verification(
+            return TileScopePack.point_and_row_and_col_placements().add_verification(
                 BasicVerificationStrategy(), replace=True
             )
         if is_insertion_encodable_maximum(basis):
