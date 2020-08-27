@@ -53,7 +53,7 @@ class TileScope(CombinatorialSpecificationSearcher):
         strategy_pack = strategy_pack.setup_subclass_verification(start_tiling)
 
         super().__init__(
-            start_tiling, strategy_pack, logger_kwargs=logger_kwargs, **kwargs,
+            start_tiling, strategy_pack, logger_kwargs=logger_kwargs, **kwargs
         )
 
     @staticmethod

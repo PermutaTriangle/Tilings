@@ -126,7 +126,7 @@ def obs_inf_til():
 @pytest.fixture
 def typical_redundant_obstructions():
     """Returns a very typical list of obstructions clustered together in a
-    corner of a tiling.  """
+    corner of a tiling."""
     return [
         GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
         GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0))),

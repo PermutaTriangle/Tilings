@@ -355,8 +355,10 @@ class Tiling(CombinatorialClass):
         are the requirement lists."""
 
         def split_16bit(n) -> Tuple[int, int]:
-            """Takes a 16 bit integer and splits it into
-               (lower 8bits, upper 8bits)"""
+            """
+            Takes a 16 bit integer and splits it into
+            (lower 8bits, upper 8bits).
+            """
             return (n & 0xFF, (n >> 8) & 0xFF)
 
         result = []  # type: List[int]
@@ -830,7 +832,8 @@ class Tiling(CombinatorialClass):
     def _transform(
         self, transf, gptransf: Callable[[GriddedPerm], GriddedPerm]
     ) -> "Tiling":
-        """ Transforms the tiling according to the two transformation functions
+        """
+        Transforms the tiling according to the two transformation functions
         given. The first transf is mapping of cells while gptransf is a
         transformation of GriddedPerm that calls some internal method.
         # TODO: transf is not used...
@@ -847,10 +850,11 @@ class Tiling(CombinatorialClass):
         )
 
     def reverse(self, regions=False):
-        """ |
+        """
         Reverses the tiling within its boundary. Every cell and obstruction
         gets flipped over the vertical middle axis.
-        # TODO: remove weird regions flag? """
+        # TODO: remove weird regions flag?
+        """
 
         def reverse_cell(cell: Cell) -> Cell:
             return (self.dimensions[0] - cell[0] - 1, cell[1])
@@ -866,8 +870,7 @@ class Tiling(CombinatorialClass):
         )
 
     def complement(self) -> "Tiling":
-        """ -
-        Flip over the horizontal axis.  """
+        """Flip over the horizontal axis."""
 
         def complement_cell(cell: Cell) -> Cell:
             return (cell[0], self.dimensions[1] - cell[1] - 1)
@@ -877,8 +880,7 @@ class Tiling(CombinatorialClass):
         )
 
     def inverse(self) -> "Tiling":
-        """ /
-        Flip over the diagonal"""
+        """Flip over the diagonal"""
 
         def inverse_cell(cell: Cell) -> Cell:
             return (cell[1], cell[0])

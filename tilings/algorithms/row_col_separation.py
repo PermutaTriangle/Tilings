@@ -394,7 +394,7 @@ class _RowColSeparationSingleApplication:
         reqs = self.map_requirements(cell_map)
         ass = self.map_assumptions(cell_map)
         return self._tiling.__class__(
-            obstructions=obs, requirements=reqs, assumptions=ass,
+            obstructions=obs, requirements=reqs, assumptions=ass
         )
 
     @staticmethod

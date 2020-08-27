@@ -72,7 +72,7 @@ def test_with_unions(diverse_tiling):
 
 def test_with_unions_not_workable(diverse_tiling):
     strats = list(
-        FactorFactory(interleaving="all", unions=True, workable=False,)(diverse_tiling)
+        FactorFactory(interleaving="all", unions=True, workable=False)(diverse_tiling)
     )
     assert sum(1 for s in strats if s.workable) == 0
     assert sum(1 for s in strats if not s.workable) == 14

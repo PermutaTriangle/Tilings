@@ -90,11 +90,11 @@ class TestFusion:
         return Fusion(tiling_with_req, col_idx=0)
 
     @pytest.fixture
-    def gp1(self,):
+    def gp1(self):
         return GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 1)))
 
     @pytest.fixture
-    def gp2(self,):
+    def gp2(self):
         return GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 0)))
 
     @pytest.fixture
@@ -115,7 +115,7 @@ class TestFusion:
             Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 1))
         )
 
-    def test_unfuse_gridded_perm(self,):
+    def test_unfuse_gridded_perm(self):
         rf0 = Fusion(Tiling(), row_idx=0)
         rf1 = Fusion(Tiling(), row_idx=1)
         cf0 = Fusion(Tiling(), col_idx=0)

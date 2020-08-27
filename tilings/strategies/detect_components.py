@@ -89,7 +89,7 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
         return (tiling.remove_components_from_assumptions(),)
 
     def constructor(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> CountComponent:
         if children is None:
             children = self.decomposition_function(comb_class)
@@ -107,7 +107,7 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
         )
 
     def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str]]:
         if children is None:
             children = self.decomposition_function(comb_class)

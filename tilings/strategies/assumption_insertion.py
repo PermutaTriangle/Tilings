@@ -96,7 +96,7 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
         return (tiling.add_assumptions(self.assumptions),)
 
     def constructor(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> AddAssumptionsConstructor:
         if children is None:
             children = self.decomposition_function(comb_class)
@@ -108,7 +108,7 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
         )
 
     def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str]]:
         if children is None:
             children = self.decomposition_function(comb_class)

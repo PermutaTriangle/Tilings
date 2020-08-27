@@ -65,7 +65,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return placed_tilings
 
     def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
         if not comb_class.extra_parameters:
             return super().extra_parameters(comb_class, children)
@@ -125,7 +125,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 return placing + "point in cell {}".format(gp.pos[index])
             if gp.is_localized():
                 return placing + "{} point in {} in cell {}".format(
-                    (index, gp.patt[index]), gp.patt, gp.pos[index],
+                    (index, gp.patt[index]), gp.patt, gp.pos[index]
                 )
             return placing + "{} point in {}".format((index, gp.patt[index]), gp)
         if all(len(gp) == 1 for gp in self.gps):
@@ -136,7 +136,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             if len(row_indices) == 1:
                 return placing + "point in row {}".format(row_indices.pop())
         return placing + "point at indices {} from the requirement ({})".format(
-            self.indices, ", ".join(str(gp) for gp in self.gps),
+            self.indices, ", ".join(str(gp) for gp in self.gps)
         )
 
     def backward_cell_map(self, placed_cell: Cell, cell: Cell) -> Cell:
@@ -653,9 +653,7 @@ class AllPlacementsFactory(AbstractRequirementPlacementFactory):
         RowAndColumnPlacementFactory(place_col=True, place_row=True),
     )
 
-    def __init__(
-        self, ignore_parent: bool = False,
-    ):
+    def __init__(self, ignore_parent: bool = False):
         super().__init__(ignore_parent=ignore_parent, include_empty=True)
 
     def req_placements(self, tiling: Tiling):
