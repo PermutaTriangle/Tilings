@@ -139,7 +139,10 @@ def interleaving_unions_ignoreparent_workable(strategy):
             workable=workable,
         )
         for interleaving, unions, ignore_parent, workable in product(
-            (None, "all", "monotone"), (True, False), (True, False), (True, False),
+            (None, "all", "monotone"),
+            (True, False),
+            (True, False),
+            (True, False),
         )
     ]
 

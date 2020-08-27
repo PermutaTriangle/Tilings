@@ -88,9 +88,7 @@ def test_json(all_tilings):
         assert Tiling.from_json(json.dumps(tiling.to_jsonable())) == tiling
 
 
-def test_factors(
-    tplaced_tracked, tplaced_tracked_factored1, tplaced_tracked_factored2,
-):
+def test_factors(tplaced_tracked, tplaced_tracked_factored1, tplaced_tracked_factored2):
     assert len(tplaced_tracked_factored1.assumptions) == 2
 
     assert all(

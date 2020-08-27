@@ -312,7 +312,7 @@ class RequirementPlacement:
         return res
 
     def _remaining_requirement_from_requirement(
-        self, gps: Iterable[GriddedPerm], indices: Iterable[int], cell: Cell,
+        self, gps: Iterable[GriddedPerm], indices: Iterable[int], cell: Cell
     ) -> List[GriddedPerm]:
         """
         Return the requirements required to ensure that the placed point can be

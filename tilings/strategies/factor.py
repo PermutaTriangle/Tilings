@@ -51,7 +51,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         return tuple(tiling.sub_tiling(cells) for cells in self.partition)
 
     def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
         if children is None:
             children = self.decomposition_function(comb_class)
@@ -256,7 +256,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         return "interleaving " + super().formal_step()
 
     def constructor(
-        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Interleaving:
         if children is None:
             children = self.decomposition_function(tiling)
@@ -272,7 +272,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
             interleaving_parameters,
         )
 
-    def interleaving_parameters(self, comb_class: Tiling,) -> List[Tuple[str, ...]]:
+    def interleaving_parameters(self, comb_class: Tiling) -> List[Tuple[str, ...]]:
         """
         Return the parameters on the parent tiling that needed to be interleaved.
         """
@@ -409,9 +409,7 @@ class FactorFactory(StrategyFactory[Tiling]):
             if not self.tracked or contains_interleaving_assumptions(
                 comb_class, min_comp
             ):
-                yield self._build_strategy(
-                    min_comp, workable=self.workable,
-                )
+                yield self._build_strategy(min_comp, workable=self.workable)
 
     def _build_strategy(
         self, components: Tuple[Tuple[Cell, ...], ...], workable: bool
@@ -424,7 +422,7 @@ class FactorFactory(StrategyFactory[Tiling]):
         interleaving = any(interleaving_rows_and_cols(components))
         factor_strat = self.factor_class if interleaving else FactorStrategy
         return factor_strat(
-            components, ignore_parent=self.ignore_parent, workable=workable,
+            components, ignore_parent=self.ignore_parent, workable=workable
         )
 
     def __str__(self) -> str:

@@ -412,21 +412,37 @@ def test_formal_step():
     # row placements
     row_gps = [GriddedPerm(Perm((0,)), ((0, 0),)), GriddedPerm(Perm((0,)), ((1, 0),))]
     placement_class = RequirementPlacementStrategy(
-        gps=row_gps, indices=(0, 0), direction=1, own_col=True, own_row=True,
+        gps=row_gps,
+        indices=(0, 0),
+        direction=1,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the topmost point in row 0"
     placement_class = RequirementPlacementStrategy(
-        gps=row_gps, indices=(0, 0), direction=3, own_col=True, own_row=True,
+        gps=row_gps,
+        indices=(0, 0),
+        direction=3,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the bottommost point in row 0"
     placement_class = RequirementPlacementStrategy(
-        gps=row_gps, indices=(0, 0), direction=1, own_col=False, own_row=True,
+        gps=row_gps,
+        indices=(0, 0),
+        direction=1,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step() == "partially placing the topmost point in row 0"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=row_gps, indices=(0, 0), direction=3, own_col=False, own_row=True,
+        gps=row_gps,
+        indices=(0, 0),
+        direction=3,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -436,22 +452,38 @@ def test_formal_step():
     # column placements
     col_gps = [GriddedPerm(Perm((0,)), ((2, 3),)), GriddedPerm(Perm((0,)), ((2, 1),))]
     placement_class = RequirementPlacementStrategy(
-        gps=col_gps, indices=(0, 0), direction=0, own_col=True, own_row=True,
+        gps=col_gps,
+        indices=(0, 0),
+        direction=0,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the rightmost point in column 2"
     placement_class = RequirementPlacementStrategy(
-        gps=col_gps, indices=(0, 0), direction=2, own_col=True, own_row=True,
+        gps=col_gps,
+        indices=(0, 0),
+        direction=2,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the leftmost point in column 2"
     placement_class = RequirementPlacementStrategy(
-        gps=col_gps, indices=(0, 0), direction=0, own_col=True, own_row=False,
+        gps=col_gps,
+        indices=(0, 0),
+        direction=0,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
         == "partially placing the rightmost point in column 2"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=col_gps, indices=(0, 0), direction=2, own_col=True, own_row=False,
+        gps=col_gps,
+        indices=(0, 0),
+        direction=2,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
@@ -461,46 +493,78 @@ def test_formal_step():
     # point placements
     point_gps = (GriddedPerm(Perm((0,)), ((2, 2),)),)
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=0, own_col=True, own_row=True,
+        gps=point_gps,
+        indices=(0,),
+        direction=0,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the rightmost point in cell (2, 2)"
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=1, own_col=True, own_row=True,
+        gps=point_gps,
+        indices=(0,),
+        direction=1,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the topmost point in cell (2, 2)"
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=2, own_col=True, own_row=True,
+        gps=point_gps,
+        indices=(0,),
+        direction=2,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the leftmost point in cell (2, 2)"
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=3, own_col=True, own_row=True,
+        gps=point_gps,
+        indices=(0,),
+        direction=3,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step() == "placing the bottommost point in cell (2, 2)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=0, own_col=True, own_row=False,
+        gps=point_gps,
+        indices=(0,),
+        direction=0,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
         == "partially placing the rightmost point in cell (2, 2)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=1, own_col=False, own_row=True,
+        gps=point_gps,
+        indices=(0,),
+        direction=1,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
         == "partially placing the topmost point in cell (2, 2)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=2, own_col=True, own_row=False,
+        gps=point_gps,
+        indices=(0,),
+        direction=2,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
         == "partially placing the leftmost point in cell (2, 2)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=3, own_col=False, own_row=True,
+        gps=point_gps,
+        indices=(0,),
+        direction=3,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -510,35 +574,55 @@ def test_formal_step():
     # pattern placements
     pattern_gps = (GriddedPerm(Perm((1, 0, 2, 3)), ((0, 1), (0, 0), (1, 0), (1, 1))),)
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(3,), direction=0, own_col=True, own_row=True,
+        gps=pattern_gps,
+        indices=(3,),
+        direction=0,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
         == "placing the rightmost (3, 3) point in 1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(2,), direction=1, own_col=True, own_row=True,
+        gps=pattern_gps,
+        indices=(2,),
+        direction=1,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
         == "placing the topmost (2, 2) point in 1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(1,), direction=2, own_col=True, own_row=True,
+        gps=pattern_gps,
+        indices=(1,),
+        direction=2,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
         == "placing the leftmost (1, 0) point in 1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(0,), direction=3, own_col=True, own_row=True,
+        gps=pattern_gps,
+        indices=(0,),
+        direction=3,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
         == "placing the bottommost (0, 1) point in 1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(3,), direction=0, own_col=True, own_row=False,
+        gps=pattern_gps,
+        indices=(3,),
+        direction=0,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
@@ -546,7 +630,11 @@ def test_formal_step():
         "1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(2,), direction=1, own_col=False, own_row=True,
+        gps=pattern_gps,
+        indices=(2,),
+        direction=1,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -554,7 +642,11 @@ def test_formal_step():
         "1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(1,), direction=2, own_col=True, own_row=False,
+        gps=pattern_gps,
+        indices=(1,),
+        direction=2,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
@@ -562,7 +654,11 @@ def test_formal_step():
         "1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(0,), direction=3, own_col=False, own_row=True,
+        gps=pattern_gps,
+        indices=(0,),
+        direction=3,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -668,7 +764,11 @@ def test_formal_step():
         GriddedPerm(Perm((1, 0)), ((1, 1), (2, 1))),
     ]
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(0, 0), direction=0, own_col=True, own_row=True,
+        gps=req_gps,
+        indices=(0, 0),
+        direction=0,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -676,21 +776,33 @@ def test_formal_step():
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(0, 1), direction=1, own_col=True, own_row=True,
+        gps=req_gps,
+        indices=(0, 1),
+        direction=1,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step() == "placing the topmost point at indices (0, 1) "
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(1, 0), direction=2, own_col=True, own_row=True,
+        gps=req_gps,
+        indices=(1, 0),
+        direction=2,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step() == "placing the leftmost point at indices (1, 0) "
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(1, 1), direction=3, own_col=True, own_row=True,
+        gps=req_gps,
+        indices=(1, 1),
+        direction=3,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -698,7 +810,11 @@ def test_formal_step():
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(0, 0), direction=0, own_col=True, own_row=False,
+        gps=req_gps,
+        indices=(0, 0),
+        direction=0,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
@@ -706,7 +822,11 @@ def test_formal_step():
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(0, 1), direction=1, own_col=False, own_row=True,
+        gps=req_gps,
+        indices=(0, 1),
+        direction=1,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -714,7 +834,11 @@ def test_formal_step():
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(1, 0), direction=2, own_col=True, own_row=False,
+        gps=req_gps,
+        indices=(1, 0),
+        direction=2,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
@@ -722,7 +846,11 @@ def test_formal_step():
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(1, 1), direction=3, own_col=False, own_row=True,
+        gps=req_gps,
+        indices=(1, 1),
+        direction=3,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()

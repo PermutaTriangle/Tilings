@@ -49,9 +49,7 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
     A strategy object for holding the results of SubclassVerification
     """
 
-    def __init__(
-        self, subclass_basis=Iterable[Perm], ignore_parent: bool = True,
-    ):
+    def __init__(self, subclass_basis=Iterable[Perm], ignore_parent: bool = True):
         self.subclass_basis = tuple(sorted(subclass_basis))
         super().__init__(ignore_parent=ignore_parent)
 
@@ -90,9 +88,7 @@ class SubclassVerificationFactory(StrategyFactory[Tiling]):
     Note: it isn't really a generator.
     """
 
-    def __init__(
-        self, perms_to_check: Optional[Iterable[Perm]] = None,
-    ):
+    def __init__(self, perms_to_check: Optional[Iterable[Perm]] = None):
         if perms_to_check is None:
             self.perms_to_check = None
         else:

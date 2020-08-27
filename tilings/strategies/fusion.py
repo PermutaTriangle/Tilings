@@ -345,7 +345,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         min_right_points, max_right_points = self.min_points[1], n - self.min_points[0]
         min_both_points, max_both_points = sum(self.min_points), n
         for parent_fusion_parameter, fusion_type in zip(
-            self.parent_fusion_parameters, self.fusion_types,
+            self.parent_fusion_parameters, self.fusion_types
         ):
             number_points_parent_fuse_parameter = parameters[parent_fusion_parameter]
             if fusion_type == "left":
@@ -488,15 +488,13 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         subsamplers: SubSamplers,
         subrecs: SubRecs,
         n: int,
-        **parameters: int
+        **parameters: int,
     ):
         raise NotImplementedError
 
 
 class FusionStrategy(Strategy[Tiling, GriddedPerm]):
-    def __init__(
-        self, row_idx=None, col_idx=None, tracked: bool = False,
-    ):
+    def __init__(self, row_idx=None, col_idx=None, tracked: bool = False):
         self.col_idx = col_idx
         self.row_idx = row_idx
         self.tracked = tracked
@@ -508,7 +506,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
 
     def fusion_algorithm(self, tiling: Tiling) -> Fusion:
         return Fusion(
-            tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked,
+            tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked
         )
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
@@ -521,7 +519,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         return False
 
     def constructor(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> FusionConstructor:
         if not self.tracked:
             # constructor only enumerates when tracked.
@@ -542,7 +540,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         )
 
     def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str]]:
         if children is None:
             children = self.decomposition_function(comb_class)
@@ -563,7 +561,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         )
 
     def left_right_both_sided_parameters(
-        self, comb_class: Tiling,
+        self, comb_class: Tiling
     ) -> Tuple[Set[str], Set[str], Set[str]]:
         left_sided_params: Set[str] = set()
         right_sided_params: Set[str] = set()
@@ -659,7 +657,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
 class ComponentFusionStrategy(FusionStrategy):
     def fusion_algorithm(self, tiling: Tiling) -> Fusion:
         return ComponentFusion(
-            tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked,
+            tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked
         )
 
     def formal_step(self) -> str:
@@ -684,7 +682,7 @@ class FusionFactory(StrategyFactory[Tiling]):
             )
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield FusionStrategy(row_idx=row_idx, tracked=self.tracked,)(
+                yield FusionStrategy(row_idx=row_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
         for col_idx in range(cols - 1):
@@ -696,7 +694,7 @@ class FusionFactory(StrategyFactory[Tiling]):
             )
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
-                yield FusionStrategy(col_idx=col_idx, tracked=self.tracked,)(
+                yield FusionStrategy(col_idx=col_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
 

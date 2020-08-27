@@ -404,13 +404,11 @@ class GriddedPerm(CombinatorialObject):
         )
 
     def complement(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
-        """ -
-        Flip over the horizontal axis.  """
+        """Flip over the horizontal axis."""
         return self.__class__(self._patt.complement(), map(transf, self._pos))
 
     def inverse(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
-        """ /
-        Flip over the diagonal"""
+        """Flip over the diagonal."""
         flipped = self._patt.inverse()
         pos = self._patt.inverse().apply(self._pos)
         return self.__class__(flipped, map(transf, pos))
@@ -437,7 +435,7 @@ class GriddedPerm(CombinatorialObject):
     def rotate90(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
         """Rotate 90 degrees"""
         return self.__class__(
-            self._patt.rotate(), map(transf, self._patt.inverse().apply(self._pos)),
+            self._patt.rotate(), map(transf, self._patt.inverse().apply(self._pos))
         )
 
     def to_jsonable(self) -> dict:

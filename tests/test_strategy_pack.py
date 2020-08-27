@@ -47,7 +47,7 @@ def length_maxnumreq_partial(pack):
 def length_partial(pack):
     return [
         pack(length=length, partial=partial)
-        for length, partial in product((1, 2, 3), (True, False),)
+        for length, partial in product((1, 2, 3), (True, False))
     ]
 
 

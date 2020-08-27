@@ -205,7 +205,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         return [assumption.__class__(gps) for gps in split_gps if gps]
 
     def _split_skew_assumption(
-        self, assumption: SkewComponentAssumption,
+        self, assumption: SkewComponentAssumption
     ) -> List[TrackingAssumption]:
         decomposition = self.skew_decomposition(assumption.cells)
         return [
@@ -216,7 +216,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         ]
 
     def _split_sum_assumption(
-        self, assumption: SumComponentAssumption,
+        self, assumption: SumComponentAssumption
     ) -> List[TrackingAssumption]:
         decomposition = self.sum_decomposition(assumption.cells)
         return [
@@ -268,7 +268,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         return self.sum_decomposition(cells, skew=True)
 
     def constructor(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Split:
         if children is None:
             children = self.decomposition_function(comb_class)

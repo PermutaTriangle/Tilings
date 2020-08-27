@@ -291,7 +291,7 @@ def test_expansion():
 @pytest.mark.timeout(10)
 def test_single_fusion_db():
     ruledb = LimitedStrategyRuleDB(
-        strategies_to_limit=set([FusionStrategy]), limit=1, mark_verified=False,
+        strategies_to_limit=set([FusionStrategy]), limit=1, mark_verified=False
     )
     searcher = TileScope("0123_0132", row_placements_fusion, ruledb=ruledb)
     spec = searcher.auto_search()

@@ -259,7 +259,7 @@ class TileScopePack(StrategyPack):
 
     @classmethod
     def pattern_placements(
-        cls, length: int = 1, partial: bool = False,
+        cls, length: int = 1, partial: bool = False
     ) -> "TileScopePack":
         name = "{}{}{}_placements".format(
             "length_{}_".format(length) if length > 1 else "",
