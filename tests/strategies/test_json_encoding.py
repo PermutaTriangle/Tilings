@@ -201,11 +201,11 @@ def gps_ignoreparent(strategy):
         strategy(gps=gps, ignore_parent=ignore_parent)
         for gps, ignore_parent in product(
             (
-                (GriddedPerm(Perm((0,)), ((0, 0),)),),
-                (GriddedPerm.single_cell(Perm((0, 1, 2)), (2, 1)),),
+                (GriddedPerm((0,), ((0, 0),)),),
+                (GriddedPerm.single_cell((0, 1, 2), (2, 1)),),
                 (
-                    GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
-                    GriddedPerm(Perm((1, 0)), ((2, 2), (3, 1))),
+                    GriddedPerm((0, 1), ((0, 1), (1, 1))),
+                    GriddedPerm((1, 0), ((2, 2), (3, 1))),
                 ),
             ),
             (True, False),
@@ -244,12 +244,12 @@ def gps_indices_direction_owncol_ownrow_ignoreparent_includeempty(strategy):
             indices,
         ), direction, own_col, own_row, ignore_parent, include_empty in product(
             (
-                ((GriddedPerm(Perm((0,)), ((0, 0),)),), (0,)),
-                ((GriddedPerm.single_cell(Perm((0, 1, 2)), (2, 1)),), (1,)),
+                ((GriddedPerm((0,), ((0, 0),)),), (0,)),
+                ((GriddedPerm.single_cell((0, 1, 2), (2, 1)),), (1,)),
                 (
                     (
-                        GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
-                        GriddedPerm(Perm((1, 0)), ((2, 2), (3, 1))),
+                        GriddedPerm((0, 1), ((0, 1), (1, 1))),
+                        GriddedPerm((1, 0), ((2, 2), (3, 1))),
                     ),
                     (1, 0),
                 ),
@@ -339,11 +339,7 @@ strategy_objects = (
     + [ComponentFusionStrategy(col_idx=3)]
     + [FusionFactory()]
     + [ComponentFusionFactory()]
-    + [
-        ObstructionInferralStrategy(
-            [GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 2)))]
-        )
-    ]
+    + [ObstructionInferralStrategy([GriddedPerm((0, 1, 2), ((0, 0), (1, 1), (1, 2)))])]
     + [
         SplittingStrategy(),
         SplittingStrategy("none"),

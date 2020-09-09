@@ -4,7 +4,6 @@ import os
 import pytest
 
 from comb_spec_searcher import CombinatorialSpecification
-from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor
 from tilings.assumptions import TrackingAssumption
@@ -34,9 +33,9 @@ def tplaced_tracked(tplaced):
         tplaced.obstructions,
         tplaced.requirements,
         [
-            TrackingAssumption([GriddedPerm.single_cell(Perm((0,)), (0, 0))]),
-            TrackingAssumption([GriddedPerm.single_cell(Perm((0,)), (0, 0))]),
-            TrackingAssumption([GriddedPerm.single_cell(Perm((0,)), (2, 0))]),
+            TrackingAssumption([GriddedPerm.single_cell((0,), (0, 0))]),
+            TrackingAssumption([GriddedPerm.single_cell((0,), (0, 0))]),
+            TrackingAssumption([GriddedPerm.single_cell((0,), (2, 0))]),
         ],
     )
 
@@ -96,10 +95,10 @@ def test_factors(tplaced_tracked, tplaced_tracked_factored1, tplaced_tracked_fac
         for ass in tplaced_tracked_factored1.assumptions
     )
     assert tplaced_tracked_factored1.assumptions[0].gps == (
-        GriddedPerm.single_cell(Perm((0,)), (0, 0)),
+        GriddedPerm.single_cell((0,), (0, 0)),
     )
     assert tplaced_tracked_factored1.assumptions[1].gps == (
-        GriddedPerm.single_cell(Perm((0,)), (1, 0)),
+        GriddedPerm.single_cell((0,), (1, 0)),
     )
 
     assert set(Factor(tplaced_tracked).factors()) == set(

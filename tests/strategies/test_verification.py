@@ -142,9 +142,9 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
     def enum_not_verified(self, onebyone_enum):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
-                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-                GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+                GriddedPerm((0, 1), ((0, 0), (0, 1))),
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((0, 1), (0, 1))),
             ]
         )
         return [t, onebyone_enum]
@@ -153,28 +153,28 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
     def enum_verified(self):
         t1 = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
+                GriddedPerm((0, 1), ((0, 0), (1, 1))),
+                GriddedPerm((0, 1), ((0, 0),) * 2),
+                GriddedPerm((0, 1), ((0, 1),) * 2),
+                GriddedPerm((0, 1), ((1, 1),) * 2),
             ]
         )
         t2 = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
-                GriddedPerm(Perm((1, 0)), ((0, 1),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((2, 0),) * 2),
+                GriddedPerm((0, 1), ((0, 1),) * 2),
+                GriddedPerm((1, 0), ((0, 1),) * 2),
+                GriddedPerm((0, 1), ((1, 0),) * 2),
+                GriddedPerm((0, 1), ((2, 0),) * 2),
             ],
-            requirements=[[GriddedPerm(Perm((0,)), ((0, 1),))]],
+            requirements=[[GriddedPerm((0,), ((0, 1),))]],
             assumptions=[
                 TrackingAssumption(
                     [
-                        GriddedPerm(Perm((0,)), ((0, 1),)),
-                        GriddedPerm(Perm((0,)), ((1, 0),)),
+                        GriddedPerm((0,), ((0, 1),)),
+                        GriddedPerm((0,), ((1, 0),)),
                     ]
                 ),
-                TrackingAssumption([GriddedPerm(Perm((0,)), ((1, 0),))]),
+                TrackingAssumption([GriddedPerm((0,), ((1, 0),))]),
             ],
         )
         return [t1, t2]
@@ -207,23 +207,23 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
         assert strategy._locally_factorable_requirements(enum_verified[0])
         t1 = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
+                GriddedPerm((0, 1), ((0, 0),) * 2),
+                GriddedPerm((0, 1), ((1, 0),) * 2),
             ],
             requirements=[
-                [GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0)))],
-                [GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0)))],
+                [GriddedPerm((0, 1), ((0, 0), (1, 0)))],
+                [GriddedPerm((1, 0), ((0, 0), (0, 0)))],
             ],
         )
         assert not (strategy._locally_factorable_requirements(t1))
         t2 = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
+                GriddedPerm((0, 1), ((0, 0),) * 2),
+                GriddedPerm((0, 1), ((1, 0),) * 2),
             ],
             requirements=[
-                [GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0)))],
-                [GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0)))],
+                [GriddedPerm((1, 0), ((1, 0), (1, 0)))],
+                [GriddedPerm((1, 0), ((0, 0), (0, 0)))],
             ],
         )
         assert strategy._locally_factorable_requirements(t2)
@@ -238,9 +238,9 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
     def enum_with_tautology(self):
         return Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
-                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0),) * 3),
+                GriddedPerm((0, 1, 2), ((1, 1),) * 3),
+                GriddedPerm((0, 1), ((0, 0), (1, 1))),
             ]
         )
 
@@ -264,28 +264,28 @@ class TestLocalVerificationStrategy(CommonTest):
     def enum_verified(self):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
-                GriddedPerm(Perm((1, 0, 2)), ((0, 0),) * 3),
-                GriddedPerm(Perm((2, 0, 1)), ((0, 0),) * 3),
-                GriddedPerm(Perm((0, 2, 1)), ((1, 0),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
-                GriddedPerm(Perm((1, 0, 2)), ((1, 0),) * 3),
-                GriddedPerm(Perm((2, 0, 1)), ((1, 0),) * 3),
+                GriddedPerm((0, 1, 2), ((0, 0),) * 3),
+                GriddedPerm((1, 0, 2), ((0, 0),) * 3),
+                GriddedPerm((2, 0, 1), ((0, 0),) * 3),
+                GriddedPerm((0, 2, 1), ((1, 0),) * 3),
+                GriddedPerm((0, 1, 2), ((1, 0),) * 3),
+                GriddedPerm((1, 0, 2), ((1, 0),) * 3),
+                GriddedPerm((2, 0, 1), ((1, 0),) * 3),
             ],
             requirements=[
-                [GriddedPerm(Perm((0,)), ((0, 0),))],
-                [GriddedPerm(Perm((0,)), ((1, 0),))],
+                [GriddedPerm((0,), ((0, 0),))],
+                [GriddedPerm((0,), ((1, 0),))],
             ],
         )
         t1 = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)]),
-                GriddedPerm(Perm((0, 1)), [(1, 1), (1, 1)]),
-                GriddedPerm(Perm((0, 1)), [(2, 0), (2, 0)]),
-                GriddedPerm(Perm((1, 0)), [(1, 1), (1, 1)]),
+                GriddedPerm((0, 1), [(0, 0), (0, 0)]),
+                GriddedPerm((0, 1), [(1, 1), (1, 1)]),
+                GriddedPerm((0, 1), [(2, 0), (2, 0)]),
+                GriddedPerm((1, 0), [(1, 1), (1, 1)]),
             ],
             requirements=[
-                [GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0)))],
+                [GriddedPerm((1, 0), ((0, 0), (0, 0)))],
                 [GriddedPerm.point_perm((1, 1))],
                 [GriddedPerm.point_perm((2, 0))],
             ],
@@ -300,33 +300,33 @@ class TestLocalVerificationStrategy(CommonTest):
         )
         t2 = Tiling(
             obstructions=(
-                GriddedPerm(Perm((0,)), ((0, 0),)),
-                GriddedPerm(Perm((0,)), ((1, 1),)),
-                GriddedPerm(Perm((0,)), ((2, 0),)),
-                GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
-                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
-                GriddedPerm(Perm((0, 1)), ((2, 1), (2, 1))),
-                GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+                GriddedPerm((0,), ((0, 0),)),
+                GriddedPerm((0,), ((1, 1),)),
+                GriddedPerm((0,), ((2, 0),)),
+                GriddedPerm((0, 1), ((0, 1), (0, 1))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1), ((2, 1), (2, 1))),
+                GriddedPerm((1, 0), ((1, 0), (1, 0))),
             ),
             requirements=(
-                (GriddedPerm(Perm((0,)), ((1, 0),)),),
-                (GriddedPerm(Perm((1, 0)), ((2, 1), (2, 1))),),
+                (GriddedPerm((0,), ((1, 0),)),),
+                (GriddedPerm((1, 0), ((2, 1), (2, 1))),),
             ),
             assumptions=(
                 TrackingAssumption(
                     (
-                        GriddedPerm(Perm((0,)), ((0, 1),)),
-                        GriddedPerm(Perm((0,)), ((1, 0),)),
+                        GriddedPerm((0,), ((0, 1),)),
+                        GriddedPerm((0,), ((1, 0),)),
                     )
                 ),
                 TrackingAssumption(
                     (
-                        GriddedPerm(Perm((0,)), ((0, 1),)),
-                        GriddedPerm(Perm((0,)), ((1, 0),)),
-                        GriddedPerm(Perm((0,)), ((2, 1),)),
+                        GriddedPerm((0,), ((0, 1),)),
+                        GriddedPerm((0,), ((1, 0),)),
+                        GriddedPerm((0,), ((2, 1),)),
                     )
                 ),
-                TrackingAssumption((GriddedPerm(Perm((0,)), ((2, 1),)),)),
+                TrackingAssumption((GriddedPerm((0,), ((2, 1),)),)),
             ),
         )
         return [t, t1, t2]
@@ -339,16 +339,16 @@ class TestLocalVerificationStrategy(CommonTest):
     def enum_not_verified(self, onebyone_enum):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
-                GriddedPerm(Perm((0, 2, 1)), ((1, 0),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
-                GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
-                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0),) * 3),
+                GriddedPerm((0, 2, 1), ((1, 0),) * 3),
+                GriddedPerm((0, 1, 2), ((1, 0),) * 3),
+                GriddedPerm((0, 1), ((1, 1),) * 2),
+                GriddedPerm((0, 1), ((0, 0), (1, 1))),
             ],
             requirements=[
                 [
-                    GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                    GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
+                    GriddedPerm((0, 1), ((0, 0),) * 2),
+                    GriddedPerm((0, 1), ((1, 0),) * 2),
                 ]
             ],
         )
@@ -382,15 +382,15 @@ class TestLocalVerificationStrategy(CommonTest):
     def enum_crossing_req(self):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
-                GriddedPerm(Perm((0, 2, 1)), ((1, 0),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
-                GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
+                GriddedPerm((0, 1, 2), ((0, 0),) * 3),
+                GriddedPerm((0, 2, 1), ((1, 0),) * 3),
+                GriddedPerm((0, 1, 2), ((1, 0),) * 3),
+                GriddedPerm((0, 1), ((1, 1),) * 2),
             ],
             requirements=[
                 [
-                    GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                    GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
+                    GriddedPerm((0, 1), ((0, 0),) * 2),
+                    GriddedPerm((0, 1), ((1, 0),) * 2),
                 ]
             ],
         )
@@ -416,10 +416,10 @@ class TestInsertionEncodingVerificationStrategy(CommonTest):
         return [
             Tiling(
                 obstructions=(
-                    GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-                    GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
-                    GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
-                    GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                    GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                    GriddedPerm((0, 1), ((2, 0), (2, 0))),
                 ),
                 requirements=(),
                 assumptions=(),
@@ -431,11 +431,11 @@ class TestInsertionEncodingVerificationStrategy(CommonTest):
         return [
             Tiling(
                 obstructions=(
-                    GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-                    GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
-                    GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
-                    GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
-                    GriddedPerm(Perm((0, 1, 2)), ((3, 0), (3, 0), (3, 0))),
+                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                    GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                    GriddedPerm((0, 1), ((2, 0), (2, 0))),
+                    GriddedPerm((0, 1, 2), ((3, 0), (3, 0), (3, 0))),
                 ),
                 requirements=(),
                 assumptions=(),
@@ -472,17 +472,17 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
     def enum_verified(self):
         t1 = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
-                GriddedPerm(Perm((0, 1)), ((0, 2),) * 2),
-                GriddedPerm(Perm((0, 1)), ((2, 0),) * 2),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
+                GriddedPerm((0, 1), ((0, 0),) * 2),
+                GriddedPerm((0, 1), ((0, 1),) * 2),
+                GriddedPerm((0, 1), ((0, 2),) * 2),
+                GriddedPerm((0, 1), ((2, 0),) * 2),
+                GriddedPerm((0, 1, 2), ((1, 1),) * 3),
             ]
         )
         t2 = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
+                GriddedPerm((0, 1), ((0, 0),) * 2),
+                GriddedPerm((0, 1), ((1, 0),) * 2),
             ]
         )
         return [t1, t2]
@@ -491,12 +491,12 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
     def enum_with_crossing(self):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
-                GriddedPerm(Perm((0, 1)), ((0, 2),) * 2),
-                GriddedPerm(Perm((0, 1)), ((2, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
+                GriddedPerm((0, 1), ((0, 0),) * 2),
+                GriddedPerm((0, 1), ((0, 1),) * 2),
+                GriddedPerm((0, 1), ((0, 2),) * 2),
+                GriddedPerm((0, 1), ((2, 0),) * 2),
+                GriddedPerm((0, 1), ((0, 0), (0, 1))),
+                GriddedPerm((0, 1, 2), ((1, 1),) * 3),
             ]
         )
         return t
@@ -505,13 +505,13 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
     def enum_with_list_req(self):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
             ],
             requirements=[
                 [
-                    GriddedPerm(Perm((0,)), ((0, 0),)),
-                    GriddedPerm(Perm((0,)), ((1, 0),)),
+                    GriddedPerm((0,), ((0, 0),)),
+                    GriddedPerm((0,), ((1, 0),)),
                 ]
             ],
         )
@@ -525,24 +525,24 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
     def enum_not_verified(self, enum_with_crossing, enum_with_list_req, onebyone_enum):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
-                GriddedPerm(Perm((0, 1)), ((0, 2),) * 2),
-                GriddedPerm(Perm((0, 1)), ((2, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((2, 2),) * 2),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 1),) * 3),
+                GriddedPerm((0, 1), ((0, 0),) * 2),
+                GriddedPerm((0, 1), ((0, 1),) * 2),
+                GriddedPerm((0, 1), ((0, 2),) * 2),
+                GriddedPerm((0, 1), ((2, 0),) * 2),
+                GriddedPerm((0, 1), ((2, 2),) * 2),
+                GriddedPerm((0, 1, 2), ((1, 1),) * 3),
             ]
         )
         forest_tiling = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0,)), ((0, 0),)),
-                GriddedPerm(Perm((0,)), ((1, 1),)),
-                GriddedPerm(Perm((0,)), ((2, 1),)),
-                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
-                GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
-                GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 1), (0, 1))),
+                GriddedPerm((0,), ((0, 0),)),
+                GriddedPerm((0,), ((1, 1),)),
+                GriddedPerm((0,), ((2, 1),)),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1), ((2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 1))),
             ],
-            requirements=[[GriddedPerm(Perm((0,)), ((0, 1),))]],
+            requirements=[[GriddedPerm((0,), ((0, 1),))]],
         )
         return [t, enum_with_crossing, enum_with_list_req, onebyone_enum, forest_tiling]
 
@@ -579,8 +579,8 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
     def test_get_genf_simple(self, strategy):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((1, 0)), ((1, 0),) * 2),
+                GriddedPerm((0, 1), ((0, 0),) * 2),
+                GriddedPerm((1, 0), ((1, 0),) * 2),
             ]
         )
 
@@ -591,10 +591,10 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
     def test_with_finite_monotone_cell(self, strategy):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((1, 0)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-                GriddedPerm(Perm((1, 0)), ((1, 0),) * 2),
+                GriddedPerm((0, 1), ((0, 0),) * 2),
+                GriddedPerm((1, 0), ((0, 0),) * 2),
+                GriddedPerm((0, 1), ((1, 0),) * 2),
+                GriddedPerm((1, 0), ((1, 0),) * 2),
             ]
         )
         print(t)
@@ -604,10 +604,10 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
     def test_with_finite_monotone_cell2(self, strategy):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((1, 0)), ((0, 1),) * 2),
-                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
-                GriddedPerm(Perm((1, 0)), ((1, 1),) * 2),
+                GriddedPerm((0, 1), ((0, 0),) * 2),
+                GriddedPerm((1, 0), ((0, 1),) * 2),
+                GriddedPerm((0, 1), ((0, 1),) * 2),
+                GriddedPerm((1, 0), ((1, 1),) * 2),
             ]
         )
         print(t)
@@ -619,12 +619,12 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
     def test_genf_with_req(self, strategy):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
+                GriddedPerm((0, 1), ((0, 0),) * 2),
+                GriddedPerm((0, 1), ((1, 0),) * 2),
             ],
             requirements=[
-                [GriddedPerm(Perm((1, 0)), ((0, 0),) * 2)],
-                [GriddedPerm(Perm((0,)), ((1, 0),))],
+                [GriddedPerm((1, 0), ((0, 0),) * 2)],
+                [GriddedPerm((0,), ((1, 0),))],
             ],
         )
         print(t)
@@ -636,10 +636,10 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
     def test_genf_with_big_finite_cell(self, strategy):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-                GriddedPerm(Perm((3, 2, 1, 0)), ((0, 0),) * 4),
-                GriddedPerm(Perm((3, 2, 1, 0)), ((1, 0),) * 4),
+                GriddedPerm((0, 1), ((0, 0),) * 2),
+                GriddedPerm((0, 1), ((1, 0),) * 2),
+                GriddedPerm((3, 2, 1, 0), ((0, 0),) * 4),
+                GriddedPerm((3, 2, 1, 0), ((1, 0),) * 4),
             ]
         )
         print(t)
@@ -660,15 +660,15 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
     def test_with_two_reqs(self, strategy):
         t = Tiling(
             obstructions=(
-                GriddedPerm(Perm((0,)), ((1, 1),)),
-                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-                GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
-                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
-                GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+                GriddedPerm((0,), ((1, 1),)),
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((0, 1), (0, 1))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((1, 0), ((0, 1), (0, 1))),
             ),
             requirements=(
-                (GriddedPerm(Perm((0,)), ((0, 0),)),),
-                (GriddedPerm(Perm((0,)), ((0, 1),)),),
+                (GriddedPerm((0,), ((0, 0),)),),
+                (GriddedPerm((0,), ((0, 1),)),),
             ),
         )
         expected_enum = [0, 0, 2, 7, 19, 47, 111, 255, 575, 1279, 2815]
@@ -685,12 +685,12 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
     def test_corner(self, strategy):
         t = Tiling(
             obstructions=(
-                GriddedPerm(Perm((0,)), ((1, 1),)),
-                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-                GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
-                GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+                GriddedPerm((0,), ((1, 1),)),
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((0, 1), (0, 1))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
             ),
-            requirements=((GriddedPerm(Perm((0,)), ((0, 0),)),),),
+            requirements=((GriddedPerm((0,), ((0, 0),)),),),
         )
         expected_enum = [0, 1, 5, 17, 50, 138, 370, 979, 2575, 6755, 17700]
         assert strategy.verified(t)
@@ -710,14 +710,14 @@ class TestElementaryVerificationStrategy(CommonTest):
     def enum_with_req(self):
         return Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 2, 1)), ((0, 1),) * 3),
-                GriddedPerm(Perm((0, 2, 1)), ((1, 2),) * 3),
-                GriddedPerm(Perm((0, 2, 1)), ((2, 0),) * 3),
-                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
+                GriddedPerm((0, 2, 1), ((0, 1),) * 3),
+                GriddedPerm((0, 2, 1), ((1, 2),) * 3),
+                GriddedPerm((0, 2, 1), ((2, 0),) * 3),
+                GriddedPerm((1, 2, 0), ((0, 1), (1, 2), (2, 0))),
             ],
             requirements=[
-                [GriddedPerm(Perm((0,)), ((0, 1),))],
-                [GriddedPerm(Perm((0, 1)), ((0, 1), (1, 2)))],
+                [GriddedPerm((0,), ((0, 1),))],
+                [GriddedPerm((0, 1), ((0, 1), (1, 2)))],
             ],
         )
 
@@ -725,10 +725,10 @@ class TestElementaryVerificationStrategy(CommonTest):
     def enum_verified(self, enum_with_req):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 2, 1)), ((0, 1),) * 3),
-                GriddedPerm(Perm((0, 2, 1)), ((1, 2),) * 3),
-                GriddedPerm(Perm((0, 2, 1)), ((2, 0),) * 3),
-                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (2, 0))),
+                GriddedPerm((0, 2, 1), ((0, 1),) * 3),
+                GriddedPerm((0, 2, 1), ((1, 2),) * 3),
+                GriddedPerm((0, 2, 1), ((2, 0),) * 3),
+                GriddedPerm((1, 2, 0), ((0, 1), (1, 2), (2, 0))),
             ]
         )
         return [t, enum_with_req]
@@ -741,9 +741,9 @@ class TestElementaryVerificationStrategy(CommonTest):
     def enum_with_interleaving(self):
         return Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
+                GriddedPerm((0, 1, 2), ((0, 1),) * 3),
+                GriddedPerm((0, 1, 2), ((1, 2),) * 3),
+                GriddedPerm((0, 1, 2), ((1, 0),) * 3),
             ]
         )
 
@@ -751,10 +751,10 @@ class TestElementaryVerificationStrategy(CommonTest):
     def enum_not_verified(self, enum_onebyone, enum_with_interleaving):
         t = Tiling(
             obstructions=[
-                GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
-                GriddedPerm(Perm((1, 2, 0)), ((0, 1), (1, 2), (1, 0))),
+                GriddedPerm((0, 1, 2), ((0, 1),) * 3),
+                GriddedPerm((0, 1, 2), ((1, 2),) * 3),
+                GriddedPerm((0, 1, 2), ((1, 0),) * 3),
+                GriddedPerm((1, 2, 0), ((0, 1), (1, 2), (1, 0))),
             ]
         )
         return [t, enum_onebyone, enum_with_interleaving]
@@ -832,8 +832,8 @@ class TestOneByOneVerificationStrategy(CommonTest):
             Tiling.from_string("012_1032"),
             Tiling.from_string("012_1302").add_list_requirement(
                 [
-                    GriddedPerm.single_cell(Perm((1, 0)), (0, 0)),
-                    GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),
+                    GriddedPerm.single_cell((1, 0), (0, 0)),
+                    GriddedPerm.single_cell((0, 1), (0, 0)),
                 ]
             ),
             Tiling.from_string("0231_2103"),
@@ -949,11 +949,11 @@ class TestOneByOneVerificationStrategy(CommonTest):
 
     def test_132_with_two_points(self, strategy):
         t = Tiling(
-            obstructions=[GriddedPerm(Perm((0, 2, 1)), ((0, 0),) * 3)],
+            obstructions=[GriddedPerm((0, 2, 1), ((0, 0),) * 3)],
             requirements=[
                 [
-                    GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                    GriddedPerm(Perm((1, 0)), ((0, 0),) * 2),
+                    GriddedPerm((0, 1), ((0, 0),) * 2),
+                    GriddedPerm((1, 0), ((0, 0),) * 2),
                 ]
             ],
         )
@@ -1011,29 +1011,29 @@ class TestShortObstructionVerificationStrategy(CommonTest):
         return [
             Tiling(
                 obstructions=(
-                    GriddedPerm(Perm((0, 1)), ((0, 0), (3, 0))),
-                    GriddedPerm(Perm((0, 1)), ((0, 2), (0, 2))),
-                    GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
-                    GriddedPerm(Perm((0, 1)), ((2, 3), (2, 3))),
-                    GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
-                    GriddedPerm(Perm((1, 0)), ((2, 3), (2, 3))),
-                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 2))),
-                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 4))),
-                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 2), (0, 4))),
-                    GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 4), (0, 4))),
-                    GriddedPerm(Perm((0, 1, 2)), ((0, 2), (0, 4), (0, 4))),
-                    GriddedPerm(Perm((0, 1, 2)), ((0, 4), (0, 4), (0, 4))),
-                    GriddedPerm(Perm((1, 2, 0)), ((0, 0), (0, 0), (0, 0))),
-                    GriddedPerm(Perm((1, 2, 0)), ((0, 0), (0, 2), (0, 0))),
-                    GriddedPerm(Perm((0, 1, 3, 2)), ((0, 0), (0, 0), (0, 0), (0, 0))),
-                    GriddedPerm(Perm((0, 1, 3, 2)), ((3, 0), (3, 0), (3, 0), (3, 0))),
-                    GriddedPerm(Perm((0, 2, 3, 1)), ((3, 0), (3, 0), (3, 0), (3, 0))),
-                    GriddedPerm(Perm((1, 2, 0, 3)), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                    GriddedPerm((0, 1), ((0, 0), (3, 0))),
+                    GriddedPerm((0, 1), ((0, 2), (0, 2))),
+                    GriddedPerm((0, 1), ((1, 1), (1, 1))),
+                    GriddedPerm((0, 1), ((2, 3), (2, 3))),
+                    GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                    GriddedPerm((1, 0), ((2, 3), (2, 3))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 2))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 4))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 2), (0, 4))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 4), (0, 4))),
+                    GriddedPerm((0, 1, 2), ((0, 2), (0, 4), (0, 4))),
+                    GriddedPerm((0, 1, 2), ((0, 4), (0, 4), (0, 4))),
+                    GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),
+                    GriddedPerm((1, 2, 0), ((0, 0), (0, 2), (0, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                    GriddedPerm((0, 2, 3, 1), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                    GriddedPerm((1, 2, 0, 3), ((3, 0), (3, 0), (3, 0), (3, 0))),
                 ),
                 requirements=(
-                    (GriddedPerm(Perm((0,)), ((0, 0),)),),
-                    (GriddedPerm(Perm((0,)), ((1, 1),)),),
-                    (GriddedPerm(Perm((0,)), ((2, 3),)),),
+                    (GriddedPerm((0,), ((0, 0),)),),
+                    (GriddedPerm((0,), ((1, 1),)),),
+                    (GriddedPerm((0,), ((2, 3),)),),
                 ),
                 assumptions=(),
             )
@@ -1078,14 +1078,14 @@ class TestSubclassVerificationStrategy(CommonTest):
         return [
             Tiling(
                 obstructions=(
-                    GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
-                    GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
-                    GriddedPerm(Perm((0, 1)), ((1, 2), (1, 2))),
-                    GriddedPerm(Perm((0, 1)), ((2, 1), (2, 1))),
-                    GriddedPerm(Perm((0, 1, 2)), ((1, 0), (2, 0), (2, 0))),
-                    GriddedPerm(Perm((0, 1, 2)), ((1, 0), (2, 0), (2, 1))),
-                    GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 0))),
-                    GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 1))),
+                    GriddedPerm((0, 1), ((0, 1), (0, 1))),
+                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                    GriddedPerm((0, 1), ((1, 2), (1, 2))),
+                    GriddedPerm((0, 1), ((2, 1), (2, 1))),
+                    GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
+                    GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 1))),
+                    GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+                    GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 1))),
                 ),
                 requirements=(),
                 assumptions=(),

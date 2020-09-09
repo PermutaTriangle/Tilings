@@ -7,7 +7,6 @@ from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
-from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
@@ -364,7 +363,7 @@ class PatternPlacementFactory(AbstractRequirementPlacementFactory):
         """
         if self.point_only:
             for cell in tiling.positive_cells:
-                gps = (GriddedPerm(Perm((0,)), (cell,)),)
+                gps = (GriddedPerm((0,), (cell,)),)
                 indices = (0,)
                 for direction in self.dirs:
                     yield gps, indices, direction
@@ -594,7 +593,7 @@ class RowAndColumnPlacementFactory(AbstractRequirementPlacementFactory):
         cols: Dict[int, Set[GriddedPerm]] = defaultdict(set)
         rows: Dict[int, Set[GriddedPerm]] = defaultdict(set)
         for cell in tiling.active_cells:
-            gp = GriddedPerm(Perm((0,)), (cell,))
+            gp = GriddedPerm((0,), (cell,))
             cols[cell[0]].add(gp)
             rows[cell[1]].add(gp)
         if self.place_col:

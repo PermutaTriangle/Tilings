@@ -7,7 +7,6 @@ from collections import Counter
 from itertools import chain
 from typing import TYPE_CHECKING, Optional
 
-from permuta import Perm
 from tilings.assumptions import (
     ComponentAssumption,
     SkewComponentAssumption,
@@ -147,11 +146,11 @@ class Fusion:
         left, right = [], []
         for (x, y) in self._tiling.active_cells:
             if self._fuse_row and y == self._row_idx:
-                left.append(GriddedPerm.single_cell(Perm((0,)), (x, y)))
-                right.append(GriddedPerm.single_cell(Perm((0,)), (x, y + 1)))
+                left.append(GriddedPerm.single_cell((0,), (x, y)))
+                right.append(GriddedPerm.single_cell((0,), (x, y + 1)))
             if not self._fuse_row and x == self._col_idx:
-                left.append(GriddedPerm.single_cell(Perm((0,)), (x, y)))
-                right.append(GriddedPerm.single_cell(Perm((0,)), (x + 1, y)))
+                left.append(GriddedPerm.single_cell((0,), (x, y)))
+                right.append(GriddedPerm.single_cell((0,), (x + 1, y)))
         return tuple(sorted(left)), tuple(sorted(right))
 
     def new_positive_requirement(self):
@@ -166,14 +165,14 @@ class Fusion:
             res = []
             for idx, c1 in enumerate(cells):
                 for c2 in cells[idx:]:
-                    res.append(GriddedPerm(Perm((0, 1)), (c1, c2)))
+                    res.append(GriddedPerm((0, 1), (c1, c2)))
                     if self._fuse_row:
-                        res.append(GriddedPerm(Perm((1, 0)), (c1, c2)))
+                        res.append(GriddedPerm((1, 0), (c1, c2)))
                     else:
-                        res.append(GriddedPerm(Perm((1, 0)), (c2, c1)))
+                        res.append(GriddedPerm((1, 0), (c2, c1)))
             return sorted(res)
         if self._positive_left or self._positive_right:
-            return sorted(GriddedPerm.single_cell(Perm((0,)), cell) for cell in cells)
+            return sorted(GriddedPerm.single_cell((0,), cell) for cell in cells)
         raise ValueError("no positive left right requirement")
 
     def is_positive_left_or_right_requirement(self, requirement):
@@ -292,7 +291,7 @@ class Fusion:
         Return the assumption that needs to counted in order to enumerate.
         """
         return TrackingAssumption(
-            GriddedPerm.single_cell(Perm((0,)), cell)
+            GriddedPerm.single_cell((0,), cell)
             for cell in self._tiling.active_cells
             if (self._fuse_row and cell[1] == self._row_idx)
             or (not self._fuse_row and cell[0] == self._col_idx)
@@ -497,13 +496,13 @@ class ComponentFusion(Fusion):
         scell = self.second_cell
         if self._fuse_row:
             possible_obs = [
-                GriddedPerm(Perm((0, 1)), (fcell, scell)),
-                GriddedPerm(Perm((1, 0)), (scell, fcell)),
+                GriddedPerm((0, 1), (fcell, scell)),
+                GriddedPerm((1, 0), (scell, fcell)),
             ]
         else:
             possible_obs = [
-                GriddedPerm(Perm((0, 1)), (fcell, scell)),
-                GriddedPerm(Perm((1, 0)), (fcell, scell)),
+                GriddedPerm((0, 1), (fcell, scell)),
+                GriddedPerm((1, 0), (fcell, scell)),
             ]
         return any(ob in possible_obs for ob in self._tiling.obstructions)
 
@@ -581,11 +580,11 @@ class ComponentFusion(Fusion):
         """
         fcell = self.first_cell
         scell = self.second_cell
-        gps = (GriddedPerm.single_cell(Perm((0,)), fcell),)
+        gps = (GriddedPerm.single_cell((0,), fcell),)
         if self._fuse_row:
-            sum_ob = GriddedPerm(Perm((1, 0)), (scell, fcell))
+            sum_ob = GriddedPerm((1, 0), (scell, fcell))
         else:
-            sum_ob = GriddedPerm(Perm((1, 0)), (fcell, scell))
+            sum_ob = GriddedPerm((1, 0), (fcell, scell))
         if sum_ob in self._tiling.obstructions:
             return SumComponentAssumption(gps)
         return SkewComponentAssumption(gps)

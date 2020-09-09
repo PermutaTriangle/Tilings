@@ -255,9 +255,9 @@ def test_321_1324():
 def test_from_tiling():
     t = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
-            GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1), ((0, 0), (1, 1))),
+            GriddedPerm((0, 1), ((1, 1), (1, 1))),
         ]
     )
     searcher = TileScope(t, TileScopePack.point_placements())
@@ -304,9 +304,9 @@ def test_single_fusion_db():
 def test_domino():
     domino = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 2, 1)), [(0, 0), (0, 0), (0, 0)]),
-            GriddedPerm(Perm((1, 0, 2)), [(0, 1), (0, 1), (0, 1)]),
-            GriddedPerm(Perm((0, 2, 1, 3)), [(0, 0), (0, 1), (0, 0), (0, 1)]),
+            GriddedPerm((0, 2, 1), [(0, 0), (0, 0), (0, 0)]),
+            GriddedPerm((1, 0, 2), [(0, 1), (0, 1), (0, 1)]),
+            GriddedPerm((0, 2, 1, 3), [(0, 0), (0, 1), (0, 0), (0, 1)]),
         ]
     )
     tilescope = TileScope(

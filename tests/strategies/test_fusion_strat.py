@@ -2,7 +2,6 @@ import pytest
 from sympy import Eq, Function, var
 
 from comb_spec_searcher.strategies import Rule
-from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
 from tilings.assumptions import TrackingAssumption
@@ -18,15 +17,15 @@ from tilings.strategies.fusion import (
 def tiling1():
     t = Tiling(
         obstructions=[
-            GriddedPerm(Perm((1, 0)), ((0, 1), (1, 1))),
-            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
-            GriddedPerm(Perm((1, 0)), ((0, 1), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 0))),
-            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((1, 0)), ((0, 0), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+            GriddedPerm((1, 0), ((0, 1), (1, 1))),
+            GriddedPerm((1, 0), ((0, 1), (0, 1))),
+            GriddedPerm((1, 0), ((0, 1), (1, 0))),
+            GriddedPerm((1, 0), ((0, 1), (0, 0))),
+            GriddedPerm((1, 0), ((0, 0), (0, 0))),
+            GriddedPerm((1, 0), ((0, 0), (1, 0))),
+            GriddedPerm((1, 0), ((1, 0), (1, 0))),
+            GriddedPerm((1, 0), ((1, 1), (1, 0))),
+            GriddedPerm((1, 0), ((1, 1), (1, 1))),
         ]
     )
     return t
@@ -36,14 +35,14 @@ def tiling1():
 def tiling2():
     t = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
-            GriddedPerm(Perm((0, 2, 1)), ((0, 0), (0, 0), (0, 0))),
-            GriddedPerm(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
-            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 0), (0, 0), (2, 0), (2, 0))),
-            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 0), (2, 0), (2, 0), (2, 0))),
-            GriddedPerm(Perm((0, 2, 1, 3)), ((1, 0), (1, 0), (2, 0), (2, 0))),
-            GriddedPerm(Perm((0, 2, 1, 3)), ((1, 0), (2, 0), (2, 0), (2, 0))),
-            GriddedPerm(Perm((0, 2, 1, 3)), ((2, 0), (2, 0), (2, 0), (2, 0))),
+            GriddedPerm((0, 1), ((0, 0), (1, 0))),
+            GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 0), (2, 0), (2, 0))),
+            GriddedPerm((0, 2, 1, 3), ((0, 0), (2, 0), (2, 0), (2, 0))),
+            GriddedPerm((0, 2, 1, 3), ((1, 0), (1, 0), (2, 0), (2, 0))),
+            GriddedPerm((0, 2, 1, 3), ((1, 0), (2, 0), (2, 0), (2, 0))),
+            GriddedPerm((0, 2, 1, 3), ((2, 0), (2, 0), (2, 0), (2, 0))),
         ]
     )
     return t
@@ -58,15 +57,15 @@ def test_component_fusion(tiling1, tiling2):
 def small_tiling():
     t = Tiling(
         obstructions=[
-            GriddedPerm(Perm((1, 0)), ((0, 1), (1, 1))),
-            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
-            GriddedPerm(Perm((1, 0)), ((0, 1), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 0))),
-            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((1, 0)), ((0, 0), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+            GriddedPerm((1, 0), ((0, 1), (1, 1))),
+            GriddedPerm((1, 0), ((0, 1), (0, 1))),
+            GriddedPerm((1, 0), ((0, 1), (1, 0))),
+            GriddedPerm((1, 0), ((0, 1), (0, 0))),
+            GriddedPerm((1, 0), ((0, 0), (0, 0))),
+            GriddedPerm((1, 0), ((0, 0), (1, 0))),
+            GriddedPerm((1, 0), ((1, 0), (1, 0))),
+            GriddedPerm((1, 0), ((1, 1), (1, 0))),
+            GriddedPerm((1, 0), ((1, 1), (1, 1))),
         ]
     )
     return t
@@ -77,30 +76,30 @@ def big_tiling():
     """ The original tiling from Jay's idea """
     t = Tiling(
         obstructions=(
-            GriddedPerm(Perm((0,)), ((0, 1),)),
-            GriddedPerm(Perm((0,)), ((0, 2),)),
-            GriddedPerm(Perm((0,)), ((0, 3),)),
-            GriddedPerm(Perm((0,)), ((1, 2),)),
-            GriddedPerm(Perm((0,)), ((1, 3),)),
-            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((1, 0)), ((0, 0), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((0, 0), (2, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 0), (2, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
-            GriddedPerm(Perm((1, 0)), ((1, 1), (2, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 1), (2, 1))),
-            GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
-            GriddedPerm(Perm((1, 0)), ((2, 1), (2, 0))),
-            GriddedPerm(Perm((1, 0)), ((2, 1), (2, 1))),
-            GriddedPerm(Perm((1, 0)), ((2, 2), (2, 0))),
-            GriddedPerm(Perm((1, 0)), ((2, 2), (2, 1))),
-            GriddedPerm(Perm((1, 0)), ((2, 2), (2, 2))),
-            GriddedPerm(Perm((2, 1, 0)), ((2, 3), (2, 3), (2, 0))),
-            GriddedPerm(Perm((2, 1, 0)), ((2, 3), (2, 3), (2, 1))),
-            GriddedPerm(Perm((2, 1, 0)), ((2, 3), (2, 3), (2, 2))),
-            GriddedPerm(Perm((2, 1, 0)), ((2, 3), (2, 3), (2, 3))),
+            GriddedPerm((0,), ((0, 1),)),
+            GriddedPerm((0,), ((0, 2),)),
+            GriddedPerm((0,), ((0, 3),)),
+            GriddedPerm((0,), ((1, 2),)),
+            GriddedPerm((0,), ((1, 3),)),
+            GriddedPerm((1, 0), ((0, 0), (0, 0))),
+            GriddedPerm((1, 0), ((0, 0), (1, 0))),
+            GriddedPerm((1, 0), ((0, 0), (2, 0))),
+            GriddedPerm((1, 0), ((1, 0), (1, 0))),
+            GriddedPerm((1, 0), ((1, 0), (2, 0))),
+            GriddedPerm((1, 0), ((1, 1), (1, 0))),
+            GriddedPerm((1, 0), ((1, 1), (1, 1))),
+            GriddedPerm((1, 0), ((1, 1), (2, 0))),
+            GriddedPerm((1, 0), ((1, 1), (2, 1))),
+            GriddedPerm((1, 0), ((2, 0), (2, 0))),
+            GriddedPerm((1, 0), ((2, 1), (2, 0))),
+            GriddedPerm((1, 0), ((2, 1), (2, 1))),
+            GriddedPerm((1, 0), ((2, 2), (2, 0))),
+            GriddedPerm((1, 0), ((2, 2), (2, 1))),
+            GriddedPerm((1, 0), ((2, 2), (2, 2))),
+            GriddedPerm((2, 1, 0), ((2, 3), (2, 3), (2, 0))),
+            GriddedPerm((2, 1, 0), ((2, 3), (2, 3), (2, 1))),
+            GriddedPerm((2, 1, 0), ((2, 3), (2, 3), (2, 2))),
+            GriddedPerm((2, 1, 0), ((2, 3), (2, 3), (2, 3))),
         ),
         requirements=(),
     )
@@ -117,9 +116,9 @@ def test_fusion(small_tiling, big_tiling):
     )
     t = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
-            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1), ((0, 0), (1, 0))),
+            GriddedPerm((0, 1), ((1, 0), (1, 0))),
         ]
     )
     t_rules = list(FusionFactory()(t))
@@ -156,15 +155,15 @@ def test_rule(row_fusion):
 def row_tiling():
     t = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 2),) * 3),
-            GriddedPerm(Perm((0, 1)), ((1, 2),) * 2),
-            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
-            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 2))),
-            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 2))),
-            GriddedPerm(Perm((2, 0, 1)), ((0, 2), (0, 0), (1, 2))),
-            GriddedPerm(Perm((2, 0, 1)), ((0, 2), (0, 1), (1, 2))),
+            GriddedPerm((0, 1, 2), ((0, 0),) * 3),
+            GriddedPerm((0, 1, 2), ((0, 1),) * 3),
+            GriddedPerm((0, 1, 2), ((0, 2),) * 3),
+            GriddedPerm((0, 1), ((1, 2),) * 2),
+            GriddedPerm((0, 1), ((0, 0), (0, 1))),
+            GriddedPerm((0, 1), ((0, 0), (0, 2))),
+            GriddedPerm((0, 1), ((0, 1), (0, 2))),
+            GriddedPerm((2, 0, 1), ((0, 2), (0, 0), (1, 2))),
+            GriddedPerm((2, 0, 1), ((0, 2), (0, 1), (1, 2))),
         ]
     )
     return t
@@ -174,9 +173,9 @@ def row_tiling():
 def col_tiling():
     t = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 2, 1)), ((0, 0),) * 3),
-            GriddedPerm(Perm((0, 2, 1)), ((1, 0),) * 3),
-            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
+            GriddedPerm((0, 2, 1), ((0, 0),) * 3),
+            GriddedPerm((0, 2, 1), ((1, 0),) * 3),
+            GriddedPerm((0, 1), ((0, 0), (1, 0))),
         ]
     )
     return t
@@ -210,36 +209,34 @@ def test_formal_step_component(component_col_fusion, component_row_fusion):
 def test_fuse_parameter():
     tiling = Tiling(
         obstructions=(
-            GriddedPerm(Perm((0,)), ((0, 0),)),
-            GriddedPerm(Perm((0,)), ((0, 2),)),
-            GriddedPerm(Perm((0,)), ((1, 1),)),
-            GriddedPerm(Perm((0,)), ((1, 2),)),
-            GriddedPerm(Perm((0,)), ((2, 0),)),
-            GriddedPerm(Perm((0,)), ((2, 1),)),
-            GriddedPerm(Perm((0,)), ((3, 0),)),
-            GriddedPerm(Perm((0,)), ((3, 1),)),
-            GriddedPerm(Perm((0,)), ((4, 0),)),
-            GriddedPerm(Perm((0,)), ((4, 2),)),
-            GriddedPerm(Perm((0, 1)), ((1, 0), (2, 2))),
-            GriddedPerm(Perm((0, 1)), ((1, 0), (3, 2))),
-            GriddedPerm(Perm((1, 0)), ((4, 1), (4, 1))),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 1), (2, 2))),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 1), (0, 1), (3, 2))),
-            GriddedPerm(Perm((0, 2, 1)), ((0, 1), (0, 1), (0, 1))),
-            GriddedPerm(Perm((0, 2, 1)), ((0, 1), (0, 1), (4, 1))),
-            GriddedPerm(Perm((0, 2, 1)), ((1, 0), (1, 0), (1, 0))),
-            GriddedPerm(Perm((0, 2, 1)), ((2, 2), (2, 2), (2, 2))),
-            GriddedPerm(Perm((0, 2, 1)), ((2, 2), (2, 2), (3, 2))),
-            GriddedPerm(Perm((0, 2, 1)), ((2, 2), (3, 2), (3, 2))),
-            GriddedPerm(Perm((0, 2, 1)), ((3, 2), (3, 2), (3, 2))),
-            GriddedPerm(Perm((1, 0, 2)), ((2, 2), (2, 2), (2, 2))),
-            GriddedPerm(Perm((1, 0, 2)), ((2, 2), (2, 2), (3, 2))),
-            GriddedPerm(Perm((1, 0, 2)), ((2, 2), (3, 2), (3, 2))),
-            GriddedPerm(Perm((1, 0, 2)), ((3, 2), (3, 2), (3, 2))),
+            GriddedPerm((0,), ((0, 0),)),
+            GriddedPerm((0,), ((0, 2),)),
+            GriddedPerm((0,), ((1, 1),)),
+            GriddedPerm((0,), ((1, 2),)),
+            GriddedPerm((0,), ((2, 0),)),
+            GriddedPerm((0,), ((2, 1),)),
+            GriddedPerm((0,), ((3, 0),)),
+            GriddedPerm((0,), ((3, 1),)),
+            GriddedPerm((0,), ((4, 0),)),
+            GriddedPerm((0,), ((4, 2),)),
+            GriddedPerm((0, 1), ((1, 0), (2, 2))),
+            GriddedPerm((0, 1), ((1, 0), (3, 2))),
+            GriddedPerm((1, 0), ((4, 1), (4, 1))),
+            GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (2, 2))),
+            GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (3, 2))),
+            GriddedPerm((0, 2, 1), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm((0, 2, 1), ((0, 1), (0, 1), (4, 1))),
+            GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm((0, 2, 1), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm((0, 2, 1), ((2, 2), (2, 2), (3, 2))),
+            GriddedPerm((0, 2, 1), ((2, 2), (3, 2), (3, 2))),
+            GriddedPerm((0, 2, 1), ((3, 2), (3, 2), (3, 2))),
+            GriddedPerm((1, 0, 2), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm((1, 0, 2), ((2, 2), (2, 2), (3, 2))),
+            GriddedPerm((1, 0, 2), ((2, 2), (3, 2), (3, 2))),
+            GriddedPerm((1, 0, 2), ((3, 2), (3, 2), (3, 2))),
         ),
-        requirements=(
-            (GriddedPerm(Perm((0,)), ((2, 2),)), GriddedPerm(Perm((0,)), ((3, 2),))),
-        ),
+        requirements=((GriddedPerm((0,), ((2, 2),)), GriddedPerm((0,), ((3, 2),))),),
         assumptions=(),
     )
     strategy = FusionStrategy(col_idx=2, tracked=True)
@@ -251,10 +248,10 @@ def test_fuse_parameter():
 def test_positive_fusion():
     tiling = Tiling(
         [
-            GriddedPerm(Perm((0, 1, 2)), [(0, 0), (0, 0), (0, 0)]),
-            GriddedPerm(Perm((0, 1, 2)), [(0, 0), (0, 0), (1, 0)]),
-            GriddedPerm(Perm((0, 1, 2)), [(0, 0), (1, 0), (1, 0)]),
-            GriddedPerm(Perm((0, 1, 2)), [(1, 0), (1, 0), (1, 0)]),
+            GriddedPerm((0, 1, 2), [(0, 0), (0, 0), (0, 0)]),
+            GriddedPerm((0, 1, 2), [(0, 0), (0, 0), (1, 0)]),
+            GriddedPerm((0, 1, 2), [(0, 0), (1, 0), (1, 0)]),
+            GriddedPerm((0, 1, 2), [(1, 0), (1, 0), (1, 0)]),
         ]
     )
 
@@ -267,41 +264,41 @@ def test_positive_fusion():
     rule = strategy(tiling)
     assert rule.children == (
         Tiling(
-            obstructions=(GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),),
+            obstructions=(GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),),
             requirements=(),
-            assumptions=(TrackingAssumption((GriddedPerm(Perm((0,)), ((0, 0),)),)),),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
         ),
     )
 
     rule = strategy(positive_left)
     assert rule.children == (
         Tiling(
-            obstructions=(GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),),
-            requirements=((GriddedPerm(Perm((0,)), ((0, 0),)),),),
-            assumptions=(TrackingAssumption((GriddedPerm(Perm((0,)), ((0, 0),)),)),),
+            obstructions=(GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),),
+            requirements=((GriddedPerm((0,), ((0, 0),)),),),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
         ),
     )
 
     rule = strategy(positive_right)
     assert rule.children == (
         Tiling(
-            obstructions=(GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),),
-            requirements=((GriddedPerm(Perm((0,)), ((0, 0),)),),),
-            assumptions=(TrackingAssumption((GriddedPerm(Perm((0,)), ((0, 0),)),)),),
+            obstructions=(GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),),
+            requirements=((GriddedPerm((0,), ((0, 0),)),),),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
         ),
     )
 
     rule = strategy(positive_both)
     assert rule.children == (
         Tiling(
-            obstructions=(GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 0))),),
+            obstructions=(GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),),
             requirements=(
                 (
-                    GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-                    GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                    GriddedPerm((1, 0), ((0, 0), (0, 0))),
                 ),
             ),
-            assumptions=(TrackingAssumption((GriddedPerm(Perm((0,)), ((0, 0),)),)),),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
         ),
     )
 
@@ -316,36 +313,32 @@ def easy_fusable(
     if same_tracking:
         assert track_left and track_right
     obs = [
-        GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),
-        GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
-        GriddedPerm.single_cell(Perm((0, 1)), (1, 0)),
+        GriddedPerm.single_cell((0, 1), (0, 0)),
+        GriddedPerm((0, 1), ((0, 0), (1, 0))),
+        GriddedPerm.single_cell((0, 1), (1, 0)),
     ]
 
     reqs = []
     if pos_left:
-        reqs.append([GriddedPerm.single_cell(Perm((0,)), (0, 0))])
+        reqs.append([GriddedPerm.single_cell((0,), (0, 0))])
     if pos_right:
-        reqs.append([GriddedPerm.single_cell(Perm((0,)), (1, 0))])
+        reqs.append([GriddedPerm.single_cell((0,), (1, 0))])
 
     ass = []
     if same_tracking:
         ass.append(
             TrackingAssumption(
                 [
-                    GriddedPerm.single_cell(Perm((0,)), (0, 0)),
-                    GriddedPerm.single_cell(Perm((0,)), (1, 0)),
+                    GriddedPerm.single_cell((0,), (0, 0)),
+                    GriddedPerm.single_cell((0,), (1, 0)),
                 ]
             )
         )
     else:
         if track_left:
-            ass.append(
-                TrackingAssumption([GriddedPerm.single_cell(Perm((0,)), (0, 0))])
-            )
+            ass.append(TrackingAssumption([GriddedPerm.single_cell((0,), (0, 0))]))
         if track_right:
-            ass.append(
-                TrackingAssumption([GriddedPerm.single_cell(Perm((0,)), (1, 0))])
-            )
+            ass.append(TrackingAssumption([GriddedPerm.single_cell((0,), (1, 0))]))
 
     tiling = Tiling(obstructions=obs, requirements=reqs, assumptions=ass)
     return tiling
