@@ -33,6 +33,17 @@ def isolatedob():
     return GriddedPerm((0, 1, 2), ((0, 0), (1, 1), (2, 2)))
 
 
+def test_from_iterable():
+    pos = ((0, 0), (1, 1), (2, 1))
+    gp = GriddedPerm(Perm((0, 1, 2)), pos)
+    assert GriddedPerm((0, 1, 2), pos) == gp
+    assert GriddedPerm([0, 1, 2], pos) == gp
+    assert GriddedPerm(range(3), pos) == gp
+    assert GriddedPerm.single_cell((0, 1), (0, 0)) == GriddedPerm(
+        Perm((0, 1)), ((0, 0), (0, 0))
+    )
+
+
 def test_single_cell():
     gp = GriddedPerm.single_cell((0, 1, 2), (2, 3))
     assert gp.patt == Perm((0, 1, 2))
