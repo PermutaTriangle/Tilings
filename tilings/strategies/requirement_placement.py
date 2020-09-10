@@ -7,7 +7,6 @@ from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
-from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
@@ -65,7 +64,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return placed_tilings
 
     def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
         if not comb_class.extra_parameters:
             return super().extra_parameters(comb_class, children)
@@ -125,7 +124,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 return placing + "point in cell {}".format(gp.pos[index])
             if gp.is_localized():
                 return placing + "{} point in {} in cell {}".format(
-                    (index, gp.patt[index]), gp.patt, gp.pos[index],
+                    (index, gp.patt[index]), gp.patt, gp.pos[index]
                 )
             return placing + "{} point in {}".format((index, gp.patt[index]), gp)
         if all(len(gp) == 1 for gp in self.gps):
@@ -136,7 +135,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             if len(row_indices) == 1:
                 return placing + "point in row {}".format(row_indices.pop())
         return placing + "point at indices {} from the requirement ({})".format(
-            self.indices, ", ".join(str(gp) for gp in self.gps),
+            self.indices, ", ".join(str(gp) for gp in self.gps)
         )
 
     def backward_cell_map(self, placed_cell: Cell, cell: Cell) -> Cell:
@@ -364,7 +363,7 @@ class PatternPlacementFactory(AbstractRequirementPlacementFactory):
         """
         if self.point_only:
             for cell in tiling.positive_cells:
-                gps = (GriddedPerm(Perm((0,)), (cell,)),)
+                gps = (GriddedPerm((0,), (cell,)),)
                 indices = (0,)
                 for direction in self.dirs:
                     yield gps, indices, direction
@@ -594,7 +593,7 @@ class RowAndColumnPlacementFactory(AbstractRequirementPlacementFactory):
         cols: Dict[int, Set[GriddedPerm]] = defaultdict(set)
         rows: Dict[int, Set[GriddedPerm]] = defaultdict(set)
         for cell in tiling.active_cells:
-            gp = GriddedPerm(Perm((0,)), (cell,))
+            gp = GriddedPerm((0,), (cell,))
             cols[cell[0]].add(gp)
             rows[cell[1]].add(gp)
         if self.place_col:
@@ -653,9 +652,7 @@ class AllPlacementsFactory(AbstractRequirementPlacementFactory):
         RowAndColumnPlacementFactory(place_col=True, place_row=True),
     )
 
-    def __init__(
-        self, ignore_parent: bool = False,
-    ):
+    def __init__(self, ignore_parent: bool = False):
         super().__init__(ignore_parent=ignore_parent, include_empty=True)
 
     def req_placements(self, tiling: Tiling):

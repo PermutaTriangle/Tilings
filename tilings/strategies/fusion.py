@@ -148,10 +148,10 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         )
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
-        if self.min_points != (0, 0):
+        if max(self.min_points) > 1:
             raise NotImplementedError(
                 "not implemented equation in the case of "
-                "positive left or positive right"
+                "left or right containing more than one point"
             )
         rhs_func = rhs_funcs[0]
         subs: Dict[str, Expr] = {
@@ -193,13 +193,27 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         subs1[self.fuse_parameter] = q / left_vars
         subs2 = {**subs}
         subs2[self.fuse_parameter] = p / right_vars
+
+        left_right_empty = (
+            rhs_func.subs(subs2, simultaneous=True),
+            rhs_func.subs(subs1, simultaneous=True),
+        )
+        to_subtract = 0
+        if self.min_points[0] == 1:
+            # left side is positive, so the right can't be empty
+            to_subtract += left_right_empty[1]
+        if self.min_points[1] == 1:
+            # right side is positive, so thr left can't be empty
+            to_subtract += left_right_empty[0]
+
         return Eq(
             lhs_func,
             (
                 (q * right_vars * rhs_func.subs(subs1, simultaneous=True))
                 - (p * left_vars * rhs_func.subs(subs2, simultaneous=True))
             )
-            / (q * right_vars - p * left_vars),
+            / (q * right_vars - p * left_vars)
+            - to_subtract,
         )
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
@@ -331,7 +345,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         min_right_points, max_right_points = self.min_points[1], n - self.min_points[0]
         min_both_points, max_both_points = sum(self.min_points), n
         for parent_fusion_parameter, fusion_type in zip(
-            self.parent_fusion_parameters, self.fusion_types,
+            self.parent_fusion_parameters, self.fusion_types
         ):
             number_points_parent_fuse_parameter = parameters[parent_fusion_parameter]
             if fusion_type == "left":
@@ -474,13 +488,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         subsamplers: SubSamplers,
         subrecs: SubRecs,
         n: int,
-        **parameters: int
+        **parameters: int,
     ):
         raise NotImplementedError
-
-    @staticmethod
-    def get_eq_symbol() -> str:
-        return "↣"
 
 
 class FusionStrategy(Strategy[Tiling, GriddedPerm]):
@@ -509,11 +519,11 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         return False
 
     def constructor(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> FusionConstructor:
         if not self.tracked:
             # constructor only enumerates when tracked.
-            return FusionConstructor("n", {}, tuple(), tuple(), tuple(), 0, 0)
+            raise NotImplementedError("The fusion strategy was not tracked.")
         # Need to recompute some info to count, so ignoring passed in children
         algo = self.fusion_algorithm(comb_class)
         if not algo.fusable():
@@ -530,7 +540,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         )
 
     def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str]]:
         if children is None:
             children = self.decomposition_function(comb_class)
@@ -551,7 +561,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         )
 
     def left_right_both_sided_parameters(
-        self, comb_class: Tiling,
+        self, comb_class: Tiling
     ) -> Tuple[Set[str], Set[str], Set[str]]:
         left_sided_params: Set[str] = set()
         right_sided_params: Set[str] = set()
@@ -628,6 +638,14 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def from_dict(cls, d: dict) -> "FusionStrategy":
         return cls(**d)
 
+    @staticmethod
+    def get_op_symbol() -> str:
+        return "⚮"
+
+    @staticmethod
+    def get_eq_symbol() -> str:
+        return "↣"
+
     def __repr__(self) -> str:
         return (
             self.__class__.__name__
@@ -649,20 +667,31 @@ class ComponentFusionStrategy(FusionStrategy):
 
 
 class FusionFactory(StrategyFactory[Tiling]):
-    def __init__(self, tracked: bool = True):
+    def __init__(self, tracked: bool = True, isolation_level: Optional[str] = None):
         self.tracked = tracked
+        self.isolation_level = isolation_level
 
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
-            algo = Fusion(comb_class, row_idx=row_idx, tracked=self.tracked)
+            algo = Fusion(
+                comb_class,
+                row_idx=row_idx,
+                tracked=self.tracked,
+                isolation_level=self.isolation_level,
+            )
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
                 yield FusionStrategy(row_idx=row_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
         for col_idx in range(cols - 1):
-            algo = Fusion(comb_class, col_idx=col_idx, tracked=self.tracked)
+            algo = Fusion(
+                comb_class,
+                col_idx=col_idx,
+                tracked=self.tracked,
+                isolation_level=self.isolation_level,
+            )
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
                 yield FusionStrategy(col_idx=col_idx, tracked=self.tracked)(
@@ -684,29 +713,37 @@ class FusionFactory(StrategyFactory[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "FusionFactory":
-        assert (
-            len(d) == 1 and "tracked" in d
-        ), "FusionFactory takes only tracked argument"
         return cls(**d)
 
 
 class ComponentFusionFactory(StrategyFactory[Tiling]):
-    def __init__(self, tracked: bool = False):
+    def __init__(self, tracked: bool = False, isolation_level: Optional[str] = None):
         self.tracked = tracked
+        self.isolation_level = isolation_level
 
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         if comb_class.requirements:
             return
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
-            algo = ComponentFusion(comb_class, row_idx=row_idx, tracked=self.tracked)
+            algo = ComponentFusion(
+                comb_class,
+                row_idx=row_idx,
+                tracked=self.tracked,
+                isolation_level=self.isolation_level,
+            )
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
                 yield ComponentFusionStrategy(row_idx=row_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
         for col_idx in range(cols - 1):
-            algo = ComponentFusion(comb_class, col_idx=col_idx, tracked=self.tracked)
+            algo = ComponentFusion(
+                comb_class,
+                col_idx=col_idx,
+                tracked=self.tracked,
+                isolation_level=self.isolation_level,
+            )
             if algo.fusable():
                 fused_tiling = algo.fused_tiling()
                 yield ComponentFusionStrategy(col_idx=col_idx, tracked=self.tracked)(
@@ -717,16 +754,17 @@ class ComponentFusionFactory(StrategyFactory[Tiling]):
         return f"{'tracked ' if self.tracked else ''}component fusion"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + f"(tracked={self.tracked})"
+        return (
+            self.__class__.__name__
+            + f"(tracked={self.tracked}, isolation_level={self.isolation_level})"
+        )
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
         d["tracked"] = self.tracked
+        d["isolation_level"] = self.isolation_level
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "ComponentFusionFactory":
-        assert (
-            len(d) == 1 and "tracked" in d
-        ), "ComponentFusionFactory takes only tracked argument"
         return cls(**d)

@@ -25,7 +25,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     def __init__(self):
         super().__init__(
-            ignore_parent=True, inferrable=True, possibly_empty=False, workable=True,
+            ignore_parent=True, inferrable=True, possibly_empty=False, workable=True
         )
 
     def forward_cell_map(self, tiling: Tiling) -> CellMap:
@@ -51,7 +51,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             return (rcs.separated_tiling(),)
 
     def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
         if not comb_class.extra_parameters:
             return super().extra_parameters(comb_class, children)

@@ -72,7 +72,7 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return (None, children[1].forward_map(gp))
 
     def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
         if not comb_class.extra_parameters:
             return super().extra_parameters(comb_class, children)
@@ -213,6 +213,11 @@ class CellInsertionFactory(RequirementInsertionWithRestrictionFactory):
     For each active cell, the strategy considers all patterns (up to some maximum
     length given by `maxreqlen`) and returns two tilings; one which requires the
     pattern in the cell and one where the pattern is obstructed.
+
+    The one_cell_only flag will ensure that the strategy only inserts into the
+    'smallest' non-positive cell. This is used for 'insertion' packs where
+    we are intending to make every cell positive, so with this setting we have
+    a unique path to the fully positive tilings.
     """
 
     def __init__(
@@ -220,19 +225,36 @@ class CellInsertionFactory(RequirementInsertionWithRestrictionFactory):
         maxreqlen: int = 1,
         extra_basis: Optional[List[Perm]] = None,
         ignore_parent: bool = False,
+        one_cell_only: bool = False,
     ) -> None:
         super().__init__(maxreqlen, extra_basis, ignore_parent)
+        self.one_cell_only = one_cell_only
 
     def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        if self.one_cell_only:
+            assert self.maxreqlen == 1 and self.ignore_parent
+            cells = sorted(
+                frozenset(tiling.active_cells) - frozenset(tiling.positive_cells)
+            )
+            if cells:
+                yield (GriddedPerm.single_cell((0,), cells[0]),)
+            return
+
         active = tiling.active_cells
         bdict = tiling.cell_basis()
         for cell, length in product(active, range(1, self.maxreqlen + 1)):
             basis = bdict[cell][0] + self.extra_basis
+            patterns = Av(basis).of_length(length) if basis else Perm.of_length(length)
             yield from (
                 (GriddedPerm.single_cell(patt, cell),)
-                for patt in Av(basis).of_length(length)
+                for patt in patterns
                 if not any(patt in perm for perm in bdict[cell][1])
             )
+
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["one_cell_only"] = self.one_cell_only
+        return d
 
     def __str__(self) -> str:
         if self.maxreqlen == 1:
@@ -309,6 +331,7 @@ class RootInsertionFactory(CellInsertionFactory):
         else:
             extra_basis = [Perm(p) for p in d["extra_basis"]]
         d.pop("extra_basis")
+        d.pop("one_cell_only")
         return cls(extra_basis=extra_basis, **d)
 
 
@@ -334,7 +357,11 @@ class RequirementExtensionFactory(RequirementInsertionWithRestrictionFactory):
         )
         for cell, obs, curr_req in cell_with_req:
             for length in range(len(curr_req) + 1, self.maxreqlen + 1):
-                for patt in Av(obs + self.extra_basis).of_length(length):
+                basis = obs + self.extra_basis
+                patterns = (
+                    Av(basis).of_length(length) if basis else Perm.of_length(length)
+                )
+                for patt in patterns:
                     if curr_req in patt:
                         yield (GriddedPerm.single_cell(patt, cell),)
 
@@ -353,14 +380,19 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
     """
     Insert all possible requirements the obstruction allows if the tiling does
     not have requirements.
+
+    If <limited_insertion> is true, the default behavior, requirements will only be
+    inserted on Tilings that have no requirements.
     """
 
     def __init__(
         self,
         maxreqlen: int = 2,
         extra_basis: Optional[List[Perm]] = None,
+        limited_insertion: bool = True,
         ignore_parent: bool = False,
     ) -> None:
+        self.limited_insertion = limited_insertion
         super().__init__(maxreqlen, extra_basis, ignore_parent)
 
     def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
@@ -381,6 +413,8 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
     def __call__(
         self, comb_class: Tiling, **kwargs
     ) -> Iterator[RequirementInsertionStrategy]:
+        if self.limited_insertion and comb_class.requirements:
+            return
         yield from super().__call__(comb_class, **kwargs)
 
     def __str__(self) -> str:
@@ -392,6 +426,27 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
                 perm_class, self.maxreqlen
             )
         return "requirement insertion up to " "length {}".format(self.maxreqlen)
+
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["limited_insertion"] = self.limited_insertion
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "RequirementInsertionWithRestrictionFactory":
+        if d["limited_insertion"] is None:
+            extra_basis = None
+        else:
+            extra_basis = [Perm(p) for p in d["extra_basis"]]
+        d.pop("extra_basis")
+        limited_insertion = d.pop("limited_insertion")
+        maxreqlen = d.pop("maxreqlen")
+        return cls(
+            maxreqlen=maxreqlen,
+            extra_basis=extra_basis,
+            limited_insertion=limited_insertion,
+            **d,
+        )
 
 
 class FactorInsertionFactory(AbstractRequirementInsertionFactory):

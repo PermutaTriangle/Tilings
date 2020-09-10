@@ -2,7 +2,6 @@ import pytest
 
 from comb_spec_searcher import DisjointUnion
 from comb_spec_searcher.strategies import Rule
-from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
@@ -25,12 +24,12 @@ pytest_plugins = [
 def tiling1():
     t = Tiling(
         obstructions=(
-            GriddedPerm(Perm((2, 1, 0)), ((0, 0),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-            GriddedPerm(Perm((2, 0, 1)), ((3, 0),) * 3),
-            GriddedPerm(Perm((1, 0)), ((1, 1),) * 2),
-            GriddedPerm(Perm((1, 0)), ((2, 2),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 1), (2, 2))),
+            GriddedPerm((2, 1, 0), ((0, 0),) * 3),
+            GriddedPerm((0, 1, 2), ((1, 2),) * 3),
+            GriddedPerm((2, 0, 1), ((3, 0),) * 3),
+            GriddedPerm((1, 0), ((1, 1),) * 2),
+            GriddedPerm((1, 0), ((2, 2),) * 2),
+            GriddedPerm((0, 1), ((1, 1), (2, 2))),
         )
     )
     return t
@@ -40,11 +39,11 @@ def tiling1():
 def t_fully_placed():
     return Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
-            GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1), ((1, 1), (1, 1))),
+            GriddedPerm((1, 0), ((1, 1), (1, 1))),
         ],
-        requirements=[[GriddedPerm(Perm((0,)), ((1, 1),))]],
+        requirements=[[GriddedPerm((0,), ((1, 1),))]],
     )
 
 
@@ -52,11 +51,11 @@ def t_fully_placed():
 def t_row_placed():
     return Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
-            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1), ((0, 1), (0, 1))),
+            GriddedPerm((1, 0), ((0, 1), (0, 1))),
         ],
-        requirements=[[GriddedPerm(Perm((0,)), ((0, 1),))]],
+        requirements=[[GriddedPerm((0,), ((0, 1),))]],
     )
 
 
@@ -64,11 +63,11 @@ def t_row_placed():
 def t_row_placed2():
     return Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
-            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1), ((0, 1), (0, 1))),
+            GriddedPerm((1, 0), ((0, 1), (0, 1))),
         ],
-        requirements=[[GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1)))]],
+        requirements=[[GriddedPerm((0, 1), ((0, 0), (0, 1)))]],
     )
 
 
@@ -76,11 +75,11 @@ def t_row_placed2():
 def t_col_placed():
     return Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1), ((1, 0), (1, 0))),
+            GriddedPerm((1, 0), ((1, 0), (1, 0))),
         ],
-        requirements=[[GriddedPerm(Perm((0,)), ((1, 0),))]],
+        requirements=[[GriddedPerm((0,), ((1, 0),))]],
     )
 
 
@@ -88,11 +87,11 @@ def t_col_placed():
 def t_col_placed2():
     return Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
-            GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1), ((1, 0), (1, 0))),
+            GriddedPerm((1, 0), ((1, 0), (1, 0))),
         ],
-        requirements=[[GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0)))]],
+        requirements=[[GriddedPerm((0, 1), ((0, 0), (1, 0)))]],
     )
 
 
@@ -100,26 +99,26 @@ def t_col_placed2():
 def tiling2():
     t = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-            GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
-            GriddedPerm(Perm((0, 1)), ((3, 3),) * 2),
-            GriddedPerm(Perm((0, 1)), ((4, 3),) * 2),
-            GriddedPerm(Perm((0, 1)), ((4, 3),) * 2),
-            GriddedPerm(Perm((0, 1, 2)), ((2, 3),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((2, 2),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((3, 2),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((4, 2),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 1))),
-            GriddedPerm(Perm((0, 1, 2)), ((2, 2), (3, 2), (4, 2))),
-            GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
+            GriddedPerm((0, 1), ((0, 0),) * 2),
+            GriddedPerm((0, 1), ((0, 1),) * 2),
+            GriddedPerm((0, 1), ((1, 0),) * 2),
+            GriddedPerm((0, 1), ((1, 1),) * 2),
+            GriddedPerm((0, 1), ((3, 3),) * 2),
+            GriddedPerm((0, 1), ((4, 3),) * 2),
+            GriddedPerm((0, 1), ((4, 3),) * 2),
+            GriddedPerm((0, 1, 2), ((2, 3),) * 3),
+            GriddedPerm((0, 1, 2), ((2, 2),) * 3),
+            GriddedPerm((0, 1, 2), ((3, 2),) * 3),
+            GriddedPerm((0, 1, 2), ((4, 2),) * 3),
+            GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 1))),
+            GriddedPerm((0, 1, 2), ((2, 2), (3, 2), (4, 2))),
+            GriddedPerm((0, 1), ((0, 1), (1, 1))),
         ],
         requirements=[
-            [GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1)))],
+            [GriddedPerm((0, 1), ((0, 0), (0, 1)))],
             [
-                GriddedPerm(Perm((0, 1)), ((2, 3), (3, 3))),
-                GriddedPerm(Perm((0, 1)), ((3, 3), (4, 3))),
+                GriddedPerm((0, 1), ((2, 3), (3, 3))),
+                GriddedPerm((0, 1), ((3, 3), (4, 3))),
             ],
         ],
     )
@@ -167,8 +166,8 @@ def placement2owncol(tiling2):
 @pytest.fixture
 def placement_only_west():
     t = Tiling(
-        obstructions=[GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3)],
-        requirements=[[GriddedPerm(Perm((0,)), ((0, 0),))]],
+        obstructions=[GriddedPerm((0, 1, 2), ((0, 0),) * 3)],
+        requirements=[[GriddedPerm((0,), ((0, 0),))]],
     )
     return list(PatternPlacementFactory(dirs=[DIR_WEST])(t))
 
@@ -211,8 +210,8 @@ def test_row_col_placement():
 
 def test_all_placements():
     t = Tiling(
-        obstructions=[GriddedPerm(Perm((0, 1)), ((0, 0),) * 2)],
-        requirements=[[GriddedPerm(Perm((0,)), ((0, 0),))]],
+        obstructions=[GriddedPerm((0, 1), ((0, 0),) * 2)],
+        requirements=[[GriddedPerm((0,), ((0, 0),))]],
     )
     rules = list(AllPlacementsFactory()(t))
     # for rule in rules:
@@ -237,32 +236,32 @@ def test_place_point_of_requirement_point_only(diverse_tiling):
     )
     assert tiling == Tiling(
         obstructions=[
-            GriddedPerm(Perm((0,)), [(1, 0)]),
-            GriddedPerm(Perm((0,)), [(1, 2)]),
-            GriddedPerm(Perm((0,)), [(2, 0)]),
-            GriddedPerm(Perm((0,)), [(2, 2)]),
-            GriddedPerm(Perm((0, 1)), [(2, 1), (2, 1)]),
-            GriddedPerm(Perm((0, 1)), [(4, 3), (4, 3)]),
-            GriddedPerm(Perm((1, 0)), [(2, 1), (2, 1)]),
-            GriddedPerm(Perm((1, 0)), [(4, 3), (4, 3)]),
-            GriddedPerm(Perm((0, 2, 3, 1)), [(0, 0), (1, 3), (1, 3), (4, 0)]),
-            GriddedPerm(Perm((0, 2, 3, 1)), [(0, 0), (1, 3), (1, 3), (4, 2)]),
-            GriddedPerm(Perm((0, 2, 3, 1)), [(0, 0), (1, 3), (3, 3), (4, 0)]),
-            GriddedPerm(Perm((0, 2, 3, 1)), [(0, 0), (1, 3), (3, 3), (4, 2)]),
-            GriddedPerm(Perm((0, 2, 3, 1)), [(0, 0), (3, 3), (3, 3), (4, 0)]),
-            GriddedPerm(Perm((0, 2, 3, 1)), [(0, 0), (3, 3), (3, 3), (4, 2)]),
-            GriddedPerm(Perm((0, 2, 3, 1)), [(0, 2), (1, 3), (1, 3), (4, 2)]),
-            GriddedPerm(Perm((0, 2, 3, 1)), [(0, 2), (1, 3), (3, 3), (4, 2)]),
-            GriddedPerm(Perm((0, 2, 3, 1)), [(0, 2), (3, 3), (3, 3), (4, 2)]),
+            GriddedPerm((0,), [(1, 0)]),
+            GriddedPerm((0,), [(1, 2)]),
+            GriddedPerm((0,), [(2, 0)]),
+            GriddedPerm((0,), [(2, 2)]),
+            GriddedPerm((0, 1), [(2, 1), (2, 1)]),
+            GriddedPerm((0, 1), [(4, 3), (4, 3)]),
+            GriddedPerm((1, 0), [(2, 1), (2, 1)]),
+            GriddedPerm((1, 0), [(4, 3), (4, 3)]),
+            GriddedPerm((0, 2, 3, 1), [(0, 0), (1, 3), (1, 3), (4, 0)]),
+            GriddedPerm((0, 2, 3, 1), [(0, 0), (1, 3), (1, 3), (4, 2)]),
+            GriddedPerm((0, 2, 3, 1), [(0, 0), (1, 3), (3, 3), (4, 0)]),
+            GriddedPerm((0, 2, 3, 1), [(0, 0), (1, 3), (3, 3), (4, 2)]),
+            GriddedPerm((0, 2, 3, 1), [(0, 0), (3, 3), (3, 3), (4, 0)]),
+            GriddedPerm((0, 2, 3, 1), [(0, 0), (3, 3), (3, 3), (4, 2)]),
+            GriddedPerm((0, 2, 3, 1), [(0, 2), (1, 3), (1, 3), (4, 2)]),
+            GriddedPerm((0, 2, 3, 1), [(0, 2), (1, 3), (3, 3), (4, 2)]),
+            GriddedPerm((0, 2, 3, 1), [(0, 2), (3, 3), (3, 3), (4, 2)]),
         ],
         requirements=[
-            [GriddedPerm(Perm((0,)), [(2, 1)])],
-            [GriddedPerm(Perm((0,)), [(4, 3)])],
-            [GriddedPerm(Perm((0,)), [(4, 0)]), GriddedPerm(Perm((0,)), [(4, 2)])],
+            [GriddedPerm((0,), [(2, 1)])],
+            [GriddedPerm((0,), [(4, 3)])],
+            [GriddedPerm((0,), [(4, 0)]), GriddedPerm((0,), [(4, 2)])],
             [
-                GriddedPerm(Perm((1, 0)), [(0, 4), (0, 3)]),
-                GriddedPerm(Perm((0, 2, 1)), [(0, 3), (0, 4), (1, 4)]),
-                GriddedPerm(Perm((0, 2, 1)), [(0, 3), (0, 4), (3, 4)]),
+                GriddedPerm((1, 0), [(0, 4), (0, 3)]),
+                GriddedPerm((0, 2, 1), [(0, 3), (0, 4), (1, 4)]),
+                GriddedPerm((0, 2, 1), [(0, 3), (0, 4), (3, 4)]),
             ],
         ],
     )
@@ -280,32 +279,32 @@ def test_place_point_of_requirement_point_only(diverse_tiling):
     print(
         Tiling(
             obstructions=[
-                GriddedPerm(Perm((0,)), [(2, 0)]),
-                GriddedPerm(Perm((0,)), [(2, 2)]),
-                GriddedPerm(Perm((0, 1)), [(1, 0), (1, 0)]),
-                GriddedPerm(Perm((0, 1)), [(1, 0), (1, 2)]),
-                GriddedPerm(Perm((0, 1)), [(1, 2), (1, 2)]),
-                GriddedPerm(Perm((0, 1)), [(3, 1), (3, 1)]),
-                GriddedPerm(Perm((0, 1)), [(2, 3), (2, 3)]),
-                GriddedPerm(Perm((0, 1)), [(2, 3), (4, 3)]),
-                GriddedPerm(Perm((0, 1)), [(4, 3), (4, 3)]),
-                GriddedPerm(Perm((1, 0)), [(1, 0), (1, 0)]),
-                GriddedPerm(Perm((1, 0)), [(1, 2), (1, 0)]),
-                GriddedPerm(Perm((1, 0)), [(1, 2), (1, 2)]),
-                GriddedPerm(Perm((1, 0)), [(3, 1), (3, 1)]),
-                GriddedPerm(Perm((1, 0)), [(2, 3), (2, 3)]),
-                GriddedPerm(Perm((1, 0)), [(2, 3), (4, 3)]),
-                GriddedPerm(Perm((1, 0)), [(4, 3), (4, 3)]),
-                GriddedPerm(Perm((0, 1, 2)), [(0, 0), (1, 3), (1, 3)]),
-                GriddedPerm(Perm((0, 2, 3, 1)), [(0, 2), (1, 3), (1, 3), (4, 2)]),
+                GriddedPerm((0,), [(2, 0)]),
+                GriddedPerm((0,), [(2, 2)]),
+                GriddedPerm((0, 1), [(1, 0), (1, 0)]),
+                GriddedPerm((0, 1), [(1, 0), (1, 2)]),
+                GriddedPerm((0, 1), [(1, 2), (1, 2)]),
+                GriddedPerm((0, 1), [(3, 1), (3, 1)]),
+                GriddedPerm((0, 1), [(2, 3), (2, 3)]),
+                GriddedPerm((0, 1), [(2, 3), (4, 3)]),
+                GriddedPerm((0, 1), [(4, 3), (4, 3)]),
+                GriddedPerm((1, 0), [(1, 0), (1, 0)]),
+                GriddedPerm((1, 0), [(1, 2), (1, 0)]),
+                GriddedPerm((1, 0), [(1, 2), (1, 2)]),
+                GriddedPerm((1, 0), [(3, 1), (3, 1)]),
+                GriddedPerm((1, 0), [(2, 3), (2, 3)]),
+                GriddedPerm((1, 0), [(2, 3), (4, 3)]),
+                GriddedPerm((1, 0), [(4, 3), (4, 3)]),
+                GriddedPerm((0, 1, 2), [(0, 0), (1, 3), (1, 3)]),
+                GriddedPerm((0, 2, 3, 1), [(0, 2), (1, 3), (1, 3), (4, 2)]),
             ],
             requirements=[
-                [GriddedPerm(Perm((0,)), [(3, 1)])],
-                [GriddedPerm(Perm((0,)), [(1, 0)]), GriddedPerm(Perm((0,)), [(1, 2)])],
-                [GriddedPerm(Perm((0,)), [(2, 3)]), GriddedPerm(Perm((0,)), [(4, 3)])],
+                [GriddedPerm((0,), [(3, 1)])],
+                [GriddedPerm((0,), [(1, 0)]), GriddedPerm((0,), [(1, 2)])],
+                [GriddedPerm((0,), [(2, 3)]), GriddedPerm((0,), [(4, 3)])],
                 [
-                    GriddedPerm(Perm((1, 0)), [(0, 4), (0, 3)]),
-                    GriddedPerm(Perm((0, 2, 1)), [(0, 3), (0, 4), (1, 4)]),
+                    GriddedPerm((1, 0), [(0, 4), (0, 3)]),
+                    GriddedPerm((0, 2, 1), [(0, 3), (0, 4), (1, 4)]),
                 ],
             ],
         )
@@ -315,45 +314,45 @@ def test_place_point_of_requirement_point_only(diverse_tiling):
     )
     assert tiling == Tiling(
         obstructions=[
-            GriddedPerm(Perm((0,)), [(2, 0)]),
-            GriddedPerm(Perm((0,)), [(2, 2)]),
-            GriddedPerm(Perm((0, 1)), [(1, 0), (1, 0)]),
-            GriddedPerm(Perm((0, 1)), [(1, 0), (1, 2)]),
-            GriddedPerm(Perm((0, 1)), [(1, 2), (1, 2)]),
-            GriddedPerm(Perm((0, 1)), [(3, 1), (3, 1)]),
-            GriddedPerm(Perm((0, 1)), [(2, 3), (2, 3)]),
-            GriddedPerm(Perm((0, 1)), [(2, 3), (4, 3)]),
-            GriddedPerm(Perm((0, 1)), [(4, 3), (4, 3)]),
-            GriddedPerm(Perm((1, 0)), [(1, 0), (1, 0)]),
-            GriddedPerm(Perm((1, 0)), [(1, 2), (1, 0)]),
-            GriddedPerm(Perm((1, 0)), [(1, 2), (1, 2)]),
-            GriddedPerm(Perm((1, 0)), [(3, 1), (3, 1)]),
-            GriddedPerm(Perm((1, 0)), [(2, 3), (2, 3)]),
-            GriddedPerm(Perm((1, 0)), [(2, 3), (4, 3)]),
-            GriddedPerm(Perm((1, 0)), [(4, 3), (4, 3)]),
-            GriddedPerm(Perm((0, 1, 2)), [(0, 0), (1, 3), (1, 3)]),
-            GriddedPerm(Perm((0, 2, 3, 1)), [(0, 2), (1, 3), (1, 3), (4, 2)]),
+            GriddedPerm((0,), [(2, 0)]),
+            GriddedPerm((0,), [(2, 2)]),
+            GriddedPerm((0, 1), [(1, 0), (1, 0)]),
+            GriddedPerm((0, 1), [(1, 0), (1, 2)]),
+            GriddedPerm((0, 1), [(1, 2), (1, 2)]),
+            GriddedPerm((0, 1), [(3, 1), (3, 1)]),
+            GriddedPerm((0, 1), [(2, 3), (2, 3)]),
+            GriddedPerm((0, 1), [(2, 3), (4, 3)]),
+            GriddedPerm((0, 1), [(4, 3), (4, 3)]),
+            GriddedPerm((1, 0), [(1, 0), (1, 0)]),
+            GriddedPerm((1, 0), [(1, 2), (1, 0)]),
+            GriddedPerm((1, 0), [(1, 2), (1, 2)]),
+            GriddedPerm((1, 0), [(3, 1), (3, 1)]),
+            GriddedPerm((1, 0), [(2, 3), (2, 3)]),
+            GriddedPerm((1, 0), [(2, 3), (4, 3)]),
+            GriddedPerm((1, 0), [(4, 3), (4, 3)]),
+            GriddedPerm((0, 1, 2), [(0, 0), (1, 3), (1, 3)]),
+            GriddedPerm((0, 2, 3, 1), [(0, 2), (1, 3), (1, 3), (4, 2)]),
         ],
         requirements=[
-            [GriddedPerm(Perm((0,)), [(3, 1)])],
-            [GriddedPerm(Perm((0,)), [(1, 0)]), GriddedPerm(Perm((0,)), [(1, 2)])],
-            [GriddedPerm(Perm((0,)), [(2, 3)]), GriddedPerm(Perm((0,)), [(4, 3)])],
+            [GriddedPerm((0,), [(3, 1)])],
+            [GriddedPerm((0,), [(1, 0)]), GriddedPerm((0,), [(1, 2)])],
+            [GriddedPerm((0,), [(2, 3)]), GriddedPerm((0,), [(4, 3)])],
             [
-                GriddedPerm(Perm((1, 0)), [(0, 4), (0, 3)]),
-                GriddedPerm(Perm((0, 2, 1)), [(0, 3), (0, 4), (1, 4)]),
+                GriddedPerm((1, 0), [(0, 4), (0, 3)]),
+                GriddedPerm((0, 2, 1), [(0, 3), (0, 4), (1, 4)]),
             ],
         ],
     )
 
-    tiling = Tiling(requirements=[[GriddedPerm(Perm((0,)), [(0, 0)])]])
+    tiling = Tiling(requirements=[[GriddedPerm((0,), [(0, 0)])]])
     assert tiling.place_point_of_gridded_permutation(
         tiling.requirements[0][0], 0, DIR_SOUTH
     ) == Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)]),
-            GriddedPerm(Perm((1, 0)), [(0, 0), (0, 0)]),
+            GriddedPerm((0, 1), [(0, 0), (0, 0)]),
+            GriddedPerm((1, 0), [(0, 0), (0, 0)]),
         ],
-        requirements=[[GriddedPerm(Perm((0,)), [(0, 0)])]],
+        requirements=[[GriddedPerm((0,), [(0, 0)])]],
     )
 
 
@@ -363,40 +362,40 @@ def test_place_point_of_requirement(no_point_tiling):
     )
     tiling2 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), [(0, 1), (1, 3)]),
-            GriddedPerm(Perm((0, 1)), [(2, 2), (2, 2)]),
-            GriddedPerm(Perm((1, 0)), [(0, 1), (0, 1)]),
-            GriddedPerm(Perm((1, 0)), [(0, 3), (0, 1)]),
-            GriddedPerm(Perm((1, 0)), [(0, 3), (0, 3)]),
-            GriddedPerm(Perm((1, 0)), [(2, 2), (2, 2)]),
-            GriddedPerm(Perm((0, 1, 2)), [(0, 0), (1, 0), (1, 0)]),
-            GriddedPerm(Perm((0, 1, 2)), [(0, 0), (1, 0), (3, 0)]),
-            GriddedPerm(Perm((0, 1, 2)), [(0, 0), (3, 0), (3, 0)]),
-            GriddedPerm(Perm((0, 1, 2)), [(1, 0), (1, 0), (4, 0)]),
-            GriddedPerm(Perm((0, 1, 2)), [(1, 0), (3, 0), (4, 0)]),
-            GriddedPerm(Perm((0, 1, 2)), [(3, 0), (3, 0), (4, 0)]),
-            GriddedPerm(Perm((0, 2, 1)), [(0, 1), (1, 1), (1, 1)]),
-            GriddedPerm(Perm((0, 2, 1)), [(0, 1), (1, 1), (3, 1)]),
-            GriddedPerm(Perm((0, 2, 1)), [(0, 3), (1, 3), (1, 3)]),
-            GriddedPerm(Perm((0, 2, 1)), [(0, 3), (1, 3), (3, 3)]),
-            GriddedPerm(Perm((0, 2, 1)), [(0, 4), (0, 4), (1, 4)]),
-            GriddedPerm(Perm((0, 2, 1)), [(0, 4), (0, 4), (3, 4)]),
-            GriddedPerm(Perm((0, 2, 1)), [(0, 4), (1, 4), (1, 4)]),
-            GriddedPerm(Perm((0, 2, 1)), [(0, 4), (1, 4), (3, 4)]),
-            GriddedPerm(Perm((0, 2, 1)), [(0, 4), (3, 4), (3, 4)]),
+            GriddedPerm((0, 1), [(0, 1), (1, 3)]),
+            GriddedPerm((0, 1), [(2, 2), (2, 2)]),
+            GriddedPerm((1, 0), [(0, 1), (0, 1)]),
+            GriddedPerm((1, 0), [(0, 3), (0, 1)]),
+            GriddedPerm((1, 0), [(0, 3), (0, 3)]),
+            GriddedPerm((1, 0), [(2, 2), (2, 2)]),
+            GriddedPerm((0, 1, 2), [(0, 0), (1, 0), (1, 0)]),
+            GriddedPerm((0, 1, 2), [(0, 0), (1, 0), (3, 0)]),
+            GriddedPerm((0, 1, 2), [(0, 0), (3, 0), (3, 0)]),
+            GriddedPerm((0, 1, 2), [(1, 0), (1, 0), (4, 0)]),
+            GriddedPerm((0, 1, 2), [(1, 0), (3, 0), (4, 0)]),
+            GriddedPerm((0, 1, 2), [(3, 0), (3, 0), (4, 0)]),
+            GriddedPerm((0, 2, 1), [(0, 1), (1, 1), (1, 1)]),
+            GriddedPerm((0, 2, 1), [(0, 1), (1, 1), (3, 1)]),
+            GriddedPerm((0, 2, 1), [(0, 3), (1, 3), (1, 3)]),
+            GriddedPerm((0, 2, 1), [(0, 3), (1, 3), (3, 3)]),
+            GriddedPerm((0, 2, 1), [(0, 4), (0, 4), (1, 4)]),
+            GriddedPerm((0, 2, 1), [(0, 4), (0, 4), (3, 4)]),
+            GriddedPerm((0, 2, 1), [(0, 4), (1, 4), (1, 4)]),
+            GriddedPerm((0, 2, 1), [(0, 4), (1, 4), (3, 4)]),
+            GriddedPerm((0, 2, 1), [(0, 4), (3, 4), (3, 4)]),
         ],
         requirements=[
-            [GriddedPerm(Perm((0,)), [(2, 2)])],
+            [GriddedPerm((0,), [(2, 2)])],
             [
-                GriddedPerm(Perm((0, 1)), [(0, 0), (0, 0)]),
-                GriddedPerm(Perm((0, 1)), [(0, 0), (4, 0)]),
+                GriddedPerm((0, 1), [(0, 0), (0, 0)]),
+                GriddedPerm((0, 1), [(0, 0), (4, 0)]),
             ],
-            [GriddedPerm(Perm((0, 1)), [(0, 1), (3, 1)])],
+            [GriddedPerm((0, 1), [(0, 1), (3, 1)])],
             [
-                GriddedPerm(Perm((0, 1)), [(1, 1), (4, 1)]),
-                GriddedPerm(Perm((0,)), [(4, 3)]),
-                GriddedPerm(Perm((0,)), [(4, 4)]),
-                GriddedPerm(Perm((0, 1)), [(3, 1), (4, 1)]),
+                GriddedPerm((0, 1), [(1, 1), (4, 1)]),
+                GriddedPerm((0,), [(4, 3)]),
+                GriddedPerm((0,), [(4, 4)]),
+                GriddedPerm((0, 1), [(3, 1), (4, 1)]),
             ],
         ],
     )
@@ -410,23 +409,39 @@ def test_place_point_of_requirement(no_point_tiling):
 
 def test_formal_step():
     # row placements
-    row_gps = [GriddedPerm(Perm((0,)), ((0, 0),)), GriddedPerm(Perm((0,)), ((1, 0),))]
+    row_gps = [GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),))]
     placement_class = RequirementPlacementStrategy(
-        gps=row_gps, indices=(0, 0), direction=1, own_col=True, own_row=True,
+        gps=row_gps,
+        indices=(0, 0),
+        direction=1,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the topmost point in row 0"
     placement_class = RequirementPlacementStrategy(
-        gps=row_gps, indices=(0, 0), direction=3, own_col=True, own_row=True,
+        gps=row_gps,
+        indices=(0, 0),
+        direction=3,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the bottommost point in row 0"
     placement_class = RequirementPlacementStrategy(
-        gps=row_gps, indices=(0, 0), direction=1, own_col=False, own_row=True,
+        gps=row_gps,
+        indices=(0, 0),
+        direction=1,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step() == "partially placing the topmost point in row 0"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=row_gps, indices=(0, 0), direction=3, own_col=False, own_row=True,
+        gps=row_gps,
+        indices=(0, 0),
+        direction=3,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -434,24 +449,40 @@ def test_formal_step():
     )
 
     # column placements
-    col_gps = [GriddedPerm(Perm((0,)), ((2, 3),)), GriddedPerm(Perm((0,)), ((2, 1),))]
+    col_gps = [GriddedPerm((0,), ((2, 3),)), GriddedPerm((0,), ((2, 1),))]
     placement_class = RequirementPlacementStrategy(
-        gps=col_gps, indices=(0, 0), direction=0, own_col=True, own_row=True,
+        gps=col_gps,
+        indices=(0, 0),
+        direction=0,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the rightmost point in column 2"
     placement_class = RequirementPlacementStrategy(
-        gps=col_gps, indices=(0, 0), direction=2, own_col=True, own_row=True,
+        gps=col_gps,
+        indices=(0, 0),
+        direction=2,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the leftmost point in column 2"
     placement_class = RequirementPlacementStrategy(
-        gps=col_gps, indices=(0, 0), direction=0, own_col=True, own_row=False,
+        gps=col_gps,
+        indices=(0, 0),
+        direction=0,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
         == "partially placing the rightmost point in column 2"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=col_gps, indices=(0, 0), direction=2, own_col=True, own_row=False,
+        gps=col_gps,
+        indices=(0, 0),
+        direction=2,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
@@ -459,48 +490,80 @@ def test_formal_step():
     )
 
     # point placements
-    point_gps = (GriddedPerm(Perm((0,)), ((2, 2),)),)
+    point_gps = (GriddedPerm((0,), ((2, 2),)),)
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=0, own_col=True, own_row=True,
+        gps=point_gps,
+        indices=(0,),
+        direction=0,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the rightmost point in cell (2, 2)"
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=1, own_col=True, own_row=True,
+        gps=point_gps,
+        indices=(0,),
+        direction=1,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the topmost point in cell (2, 2)"
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=2, own_col=True, own_row=True,
+        gps=point_gps,
+        indices=(0,),
+        direction=2,
+        own_col=True,
+        own_row=True,
     )
     assert placement_class.formal_step() == "placing the leftmost point in cell (2, 2)"
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=3, own_col=True, own_row=True,
+        gps=point_gps,
+        indices=(0,),
+        direction=3,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step() == "placing the bottommost point in cell (2, 2)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=0, own_col=True, own_row=False,
+        gps=point_gps,
+        indices=(0,),
+        direction=0,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
         == "partially placing the rightmost point in cell (2, 2)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=1, own_col=False, own_row=True,
+        gps=point_gps,
+        indices=(0,),
+        direction=1,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
         == "partially placing the topmost point in cell (2, 2)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=2, own_col=True, own_row=False,
+        gps=point_gps,
+        indices=(0,),
+        direction=2,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
         == "partially placing the leftmost point in cell (2, 2)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=point_gps, indices=(0,), direction=3, own_col=False, own_row=True,
+        gps=point_gps,
+        indices=(0,),
+        direction=3,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -508,37 +571,57 @@ def test_formal_step():
     )
 
     # pattern placements
-    pattern_gps = (GriddedPerm(Perm((1, 0, 2, 3)), ((0, 1), (0, 0), (1, 0), (1, 1))),)
+    pattern_gps = (GriddedPerm((1, 0, 2, 3), ((0, 1), (0, 0), (1, 0), (1, 1))),)
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(3,), direction=0, own_col=True, own_row=True,
+        gps=pattern_gps,
+        indices=(3,),
+        direction=0,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
         == "placing the rightmost (3, 3) point in 1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(2,), direction=1, own_col=True, own_row=True,
+        gps=pattern_gps,
+        indices=(2,),
+        direction=1,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
         == "placing the topmost (2, 2) point in 1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(1,), direction=2, own_col=True, own_row=True,
+        gps=pattern_gps,
+        indices=(1,),
+        direction=2,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
         == "placing the leftmost (1, 0) point in 1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(0,), direction=3, own_col=True, own_row=True,
+        gps=pattern_gps,
+        indices=(0,),
+        direction=3,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
         == "placing the bottommost (0, 1) point in 1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(3,), direction=0, own_col=True, own_row=False,
+        gps=pattern_gps,
+        indices=(3,),
+        direction=0,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
@@ -546,7 +629,11 @@ def test_formal_step():
         "1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(2,), direction=1, own_col=False, own_row=True,
+        gps=pattern_gps,
+        indices=(2,),
+        direction=1,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -554,7 +641,11 @@ def test_formal_step():
         "1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(1,), direction=2, own_col=True, own_row=False,
+        gps=pattern_gps,
+        indices=(1,),
+        direction=2,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
@@ -562,7 +653,11 @@ def test_formal_step():
         "1023: (0, 1), (0, 0), (1, 0), (1, 1)"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=pattern_gps, indices=(0,), direction=3, own_col=False, own_row=True,
+        gps=pattern_gps,
+        indices=(0,),
+        direction=3,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -572,7 +667,7 @@ def test_formal_step():
 
     # localised pattern placement
     localised_pattern_gps = (
-        GriddedPerm(Perm((0, 2, 1, 3)), ((2, 2), (2, 2), (2, 2), (2, 2))),
+        GriddedPerm((0, 2, 1, 3), ((2, 2), (2, 2), (2, 2), (2, 2))),
     )
     placement_class = RequirementPlacementStrategy(
         gps=localised_pattern_gps,
@@ -664,11 +759,15 @@ def test_formal_step():
     )
     # arbitrary requirement placements
     req_gps = [
-        GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
-        GriddedPerm(Perm((1, 0)), ((1, 1), (2, 1))),
+        GriddedPerm((0, 1), ((0, 0), (1, 1))),
+        GriddedPerm((1, 0), ((1, 1), (2, 1))),
     ]
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(0, 0), direction=0, own_col=True, own_row=True,
+        gps=req_gps,
+        indices=(0, 0),
+        direction=0,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -676,21 +775,33 @@ def test_formal_step():
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(0, 1), direction=1, own_col=True, own_row=True,
+        gps=req_gps,
+        indices=(0, 1),
+        direction=1,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step() == "placing the topmost point at indices (0, 1) "
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(1, 0), direction=2, own_col=True, own_row=True,
+        gps=req_gps,
+        indices=(1, 0),
+        direction=2,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step() == "placing the leftmost point at indices (1, 0) "
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(1, 1), direction=3, own_col=True, own_row=True,
+        gps=req_gps,
+        indices=(1, 1),
+        direction=3,
+        own_col=True,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -698,7 +809,11 @@ def test_formal_step():
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(0, 0), direction=0, own_col=True, own_row=False,
+        gps=req_gps,
+        indices=(0, 0),
+        direction=0,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
@@ -706,7 +821,11 @@ def test_formal_step():
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(0, 1), direction=1, own_col=False, own_row=True,
+        gps=req_gps,
+        indices=(0, 1),
+        direction=1,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -714,7 +833,11 @@ def test_formal_step():
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(1, 0), direction=2, own_col=True, own_row=False,
+        gps=req_gps,
+        indices=(1, 0),
+        direction=2,
+        own_col=True,
+        own_row=False,
     )
     assert (
         placement_class.formal_step()
@@ -722,7 +845,11 @@ def test_formal_step():
         "from the requirement (01: (0, 0), (1, 1), 10: (1, 1), (2, 1))"
     )
     placement_class = RequirementPlacementStrategy(
-        gps=req_gps, indices=(1, 1), direction=3, own_col=False, own_row=True,
+        gps=req_gps,
+        indices=(1, 1),
+        direction=3,
+        own_col=False,
+        own_row=True,
     )
     assert (
         placement_class.formal_step()
@@ -842,13 +969,13 @@ def test_all_point_placement_rules(tiling1, tiling2, placement_only_west):
     assert len(rules) == 1
     assert rules[0].children[0] == Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 0))),
-            GriddedPerm(Perm((0, 1, 2)), ((1, 0), (1, 0), (1, 2))),
-            GriddedPerm(Perm((0, 1)), ((1, 2), (1, 2))),
-            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
-            GriddedPerm(Perm((1, 0)), ((0, 1), (0, 1))),
+            GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 2))),
+            GriddedPerm((0, 1), ((1, 2), (1, 2))),
+            GriddedPerm((0, 1), ((0, 1), (0, 1))),
+            GriddedPerm((1, 0), ((0, 1), (0, 1))),
         ],
-        requirements=[[GriddedPerm(Perm((0,)), ((0, 1),))]],
+        requirements=[[GriddedPerm((0,), ((0, 1),))]],
     )
     assert rules[0].formal_step == "placing the leftmost point in cell (0, 0)"
     all_rules.extend(rules)
@@ -864,8 +991,8 @@ def test_all_point_placement_rules(tiling1, tiling2, placement_only_west):
 
 def test_all_requirement_placement_rules():
     t = Tiling(
-        obstructions=[GriddedPerm(Perm((1, 0)), ((0, 0),) * 2)],
-        requirements=[[GriddedPerm(Perm((0, 1)), ((0, 0),) * 2)]],
+        obstructions=[GriddedPerm((1, 0), ((0, 0),) * 2)],
+        requirements=[[GriddedPerm((0, 1), ((0, 0),) * 2)]],
     )
     rules = list(PatternPlacementFactory()(t))
     assert len(rules) == 12
@@ -881,21 +1008,21 @@ def test_all_requirement_placement_rules():
     assert (
         Tiling(
             obstructions=[
-                GriddedPerm(Perm((0,)), ((0, 1),)),
-                GriddedPerm(Perm((0,)), ((0, 2),)),
-                GriddedPerm(Perm((0,)), ((1, 0),)),
-                GriddedPerm(Perm((0,)), ((1, 2),)),
-                GriddedPerm(Perm((0,)), ((2, 0),)),
-                GriddedPerm(Perm((0,)), ((2, 1),)),
-                GriddedPerm(Perm((0, 1)), ((1, 1), (1, 1))),
-                GriddedPerm(Perm((0, 1)), ((2, 2), (2, 2))),
-                GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
-                GriddedPerm(Perm((1, 0)), ((1, 1), (1, 1))),
-                GriddedPerm(Perm((1, 0)), ((2, 2), (2, 2))),
+                GriddedPerm((0,), ((0, 1),)),
+                GriddedPerm((0,), ((0, 2),)),
+                GriddedPerm((0,), ((1, 0),)),
+                GriddedPerm((0,), ((1, 2),)),
+                GriddedPerm((0,), ((2, 0),)),
+                GriddedPerm((0,), ((2, 1),)),
+                GriddedPerm((0, 1), ((1, 1), (1, 1))),
+                GriddedPerm((0, 1), ((2, 2), (2, 2))),
+                GriddedPerm((1, 0), ((0, 0), (0, 0))),
+                GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                GriddedPerm((1, 0), ((2, 2), (2, 2))),
             ],
             requirements=[
-                [GriddedPerm(Perm((0,)), ((1, 1),))],
-                [GriddedPerm(Perm((0,)), ((2, 2),))],
+                [GriddedPerm((0,), ((1, 1),))],
+                [GriddedPerm((0,), ((2, 2),))],
             ],
         )
         in comb_classes
@@ -1081,15 +1208,15 @@ def test_all_requirement_placement_rules_partial(tiling2):
 def test_reverse_rule():
     tiling = Tiling(
         obstructions=(
-            GriddedPerm(Perm((0, 2, 1, 3)), ((0, 0), (0, 0), (0, 0), (0, 0))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (0, 0), (0, 0))),
-            GriddedPerm(Perm((1, 2, 3, 0)), ((0, 0), (0, 0), (0, 0), (0, 0))),
-            GriddedPerm(Perm((2, 0, 1, 3)), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm((1, 2, 3, 0), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm((2, 0, 1, 3), ((0, 0), (0, 0), (0, 0), (0, 0))),
         ),
-        requirements=((GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),),),
+        requirements=((GriddedPerm((0, 1), ((0, 0), (0, 0))),),),
     )
     strategy = RequirementPlacementStrategy(
-        gps=(GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),),
+        gps=(GriddedPerm((0, 1), ((0, 0), (0, 0))),),
         indices=(1,),
         direction=0,
         own_col=True,
@@ -1108,9 +1235,9 @@ def test_reverse_rule():
 def test_reverse_rule_non_empty_children():
     strategy = RequirementPlacementStrategy(
         gps=(
-            GriddedPerm(Perm((0,)), ((5, 1),)),
-            GriddedPerm(Perm((1, 0)), ((2, 3), (2, 0))),
-            GriddedPerm(Perm((1, 0)), ((2, 6), (2, 0))),
+            GriddedPerm((0,), ((5, 1),)),
+            GriddedPerm((1, 0), ((2, 3), (2, 0))),
+            GriddedPerm((1, 0), ((2, 6), (2, 0))),
         ),
         indices=(0, 1, 0),
         direction=2,
@@ -1121,92 +1248,92 @@ def test_reverse_rule_non_empty_children():
     )
     tiling = Tiling(
         obstructions=(
-            GriddedPerm(Perm((0, 1)), ((1, 2), (1, 2))),
-            GriddedPerm(Perm((0, 1)), ((2, 3), (2, 6))),
-            GriddedPerm(Perm((0, 1)), ((2, 3), (4, 4))),
-            GriddedPerm(Perm((0, 1)), ((2, 6), (2, 6))),
-            GriddedPerm(Perm((0, 1)), ((3, 5), (3, 5))),
-            GriddedPerm(Perm((0, 1)), ((4, 4), (4, 4))),
-            GriddedPerm(Perm((0, 1)), ((5, 1), (5, 1))),
-            GriddedPerm(Perm((1, 0)), ((0, 6), (4, 4))),
-            GriddedPerm(Perm((1, 0)), ((0, 6), (5, 1))),
-            GriddedPerm(Perm((1, 0)), ((1, 2), (1, 2))),
-            GriddedPerm(Perm((1, 0)), ((2, 6), (2, 3))),
-            GriddedPerm(Perm((1, 0)), ((3, 5), (3, 5))),
-            GriddedPerm(Perm((1, 0)), ((5, 7), (5, 7))),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 3), (0, 3), (0, 6))),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 3), (0, 3), (2, 6))),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 3), (0, 3), (4, 4))),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 3), (0, 6), (0, 6))),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 3), (0, 6), (2, 6))),
-            GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (2, 6))),
-            GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (4, 4))),
-            GriddedPerm(Perm((0, 1, 2)), ((2, 0), (2, 0), (5, 1))),
-            GriddedPerm(Perm((0, 2, 1)), ((0, 3), (0, 6), (0, 3))),
-            GriddedPerm(Perm((0, 2, 1)), ((0, 3), (0, 6), (2, 3))),
-            GriddedPerm(Perm((0, 2, 1)), ((2, 0), (2, 3), (5, 1))),
-            GriddedPerm(Perm((0, 2, 1)), ((2, 0), (2, 6), (2, 0))),
-            GriddedPerm(Perm((0, 2, 1)), ((2, 0), (5, 7), (5, 1))),
-            GriddedPerm(Perm((0, 2, 1)), ((2, 3), (2, 3), (2, 3))),
-            GriddedPerm(Perm((1, 2, 0)), ((2, 0), (2, 0), (2, 0))),
-            GriddedPerm(Perm((1, 2, 0)), ((2, 0), (2, 3), (2, 0))),
-            GriddedPerm(Perm((1, 2, 0)), ((2, 0), (2, 6), (2, 0))),
-            GriddedPerm(Perm((1, 2, 0)), ((2, 3), (2, 3), (2, 3))),
-            GriddedPerm(Perm((1, 2, 0)), ((5, 1), (5, 7), (5, 1))),
-            GriddedPerm(Perm((2, 0, 1)), ((0, 3), (0, 3), (0, 3))),
-            GriddedPerm(Perm((2, 0, 1)), ((0, 6), (0, 3), (0, 3))),
-            GriddedPerm(Perm((2, 0, 1)), ((0, 6), (0, 3), (0, 6))),
-            GriddedPerm(Perm((2, 0, 1)), ((0, 6), (0, 6), (0, 6))),
-            GriddedPerm(Perm((2, 0, 1)), ((0, 6), (0, 6), (2, 6))),
-            GriddedPerm(Perm((2, 0, 1)), ((2, 3), (2, 3), (2, 3))),
-            GriddedPerm(Perm((2, 0, 1)), ((2, 6), (2, 0), (4, 4))),
-            GriddedPerm(Perm((2, 1, 0)), ((0, 3), (2, 3), (2, 0))),
-            GriddedPerm(Perm((2, 1, 0)), ((0, 3), (2, 3), (5, 1))),
-            GriddedPerm(Perm((2, 1, 0)), ((0, 6), (2, 3), (2, 0))),
-            GriddedPerm(Perm((2, 1, 0)), ((0, 6), (2, 6), (2, 0))),
-            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 3), (0, 3), (0, 3), (0, 3))),
-            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 3), (0, 3), (0, 3), (2, 3))),
-            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 3), (0, 3), (2, 3), (2, 3))),
-            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 6), (0, 6), (0, 6), (0, 6))),
-            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 6), (0, 6), (0, 6), (2, 6))),
-            GriddedPerm(Perm((0, 1, 3, 2)), ((0, 6), (0, 6), (2, 6), (2, 6))),
-            GriddedPerm(Perm((0, 1, 3, 2)), ((2, 0), (2, 0), (2, 0), (2, 0))),
-            GriddedPerm(Perm((0, 1, 3, 2)), ((2, 0), (2, 0), (2, 3), (2, 0))),
-            GriddedPerm(Perm((0, 1, 3, 2)), ((2, 0), (2, 0), (2, 3), (2, 3))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 3), (0, 3), (0, 3), (0, 3))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 3), (0, 3), (0, 3), (2, 3))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 3), (0, 3), (2, 3), (2, 3))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 6), (0, 6), (0, 6), (0, 6))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 6), (0, 6), (0, 6), (2, 6))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 6), (0, 6), (2, 6), (2, 6))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((2, 0), (2, 3), (2, 3), (2, 0))),
-            GriddedPerm(Perm((0, 3, 1, 2)), ((0, 3), (0, 3), (0, 3), (2, 3))),
-            GriddedPerm(Perm((0, 3, 1, 2)), ((0, 3), (0, 3), (2, 3), (2, 3))),
-            GriddedPerm(Perm((0, 3, 1, 2)), ((2, 0), (2, 0), (2, 0), (2, 0))),
-            GriddedPerm(Perm((0, 3, 1, 2)), ((2, 0), (2, 3), (2, 0), (2, 0))),
-            GriddedPerm(Perm((0, 3, 1, 2)), ((2, 0), (2, 3), (2, 0), (2, 3))),
-            GriddedPerm(Perm((3, 1, 2, 0)), ((0, 3), (0, 3), (2, 3), (2, 3))),
-            GriddedPerm(Perm((3, 1, 2, 0)), ((0, 6), (0, 3), (2, 3), (2, 3))),
+            GriddedPerm((0, 1), ((1, 2), (1, 2))),
+            GriddedPerm((0, 1), ((2, 3), (2, 6))),
+            GriddedPerm((0, 1), ((2, 3), (4, 4))),
+            GriddedPerm((0, 1), ((2, 6), (2, 6))),
+            GriddedPerm((0, 1), ((3, 5), (3, 5))),
+            GriddedPerm((0, 1), ((4, 4), (4, 4))),
+            GriddedPerm((0, 1), ((5, 1), (5, 1))),
+            GriddedPerm((1, 0), ((0, 6), (4, 4))),
+            GriddedPerm((1, 0), ((0, 6), (5, 1))),
+            GriddedPerm((1, 0), ((1, 2), (1, 2))),
+            GriddedPerm((1, 0), ((2, 6), (2, 3))),
+            GriddedPerm((1, 0), ((3, 5), (3, 5))),
+            GriddedPerm((1, 0), ((5, 7), (5, 7))),
+            GriddedPerm((0, 1, 2), ((0, 3), (0, 3), (0, 6))),
+            GriddedPerm((0, 1, 2), ((0, 3), (0, 3), (2, 6))),
+            GriddedPerm((0, 1, 2), ((0, 3), (0, 3), (4, 4))),
+            GriddedPerm((0, 1, 2), ((0, 3), (0, 6), (0, 6))),
+            GriddedPerm((0, 1, 2), ((0, 3), (0, 6), (2, 6))),
+            GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 6))),
+            GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (4, 4))),
+            GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (5, 1))),
+            GriddedPerm((0, 2, 1), ((0, 3), (0, 6), (0, 3))),
+            GriddedPerm((0, 2, 1), ((0, 3), (0, 6), (2, 3))),
+            GriddedPerm((0, 2, 1), ((2, 0), (2, 3), (5, 1))),
+            GriddedPerm((0, 2, 1), ((2, 0), (2, 6), (2, 0))),
+            GriddedPerm((0, 2, 1), ((2, 0), (5, 7), (5, 1))),
+            GriddedPerm((0, 2, 1), ((2, 3), (2, 3), (2, 3))),
+            GriddedPerm((1, 2, 0), ((2, 0), (2, 0), (2, 0))),
+            GriddedPerm((1, 2, 0), ((2, 0), (2, 3), (2, 0))),
+            GriddedPerm((1, 2, 0), ((2, 0), (2, 6), (2, 0))),
+            GriddedPerm((1, 2, 0), ((2, 3), (2, 3), (2, 3))),
+            GriddedPerm((1, 2, 0), ((5, 1), (5, 7), (5, 1))),
+            GriddedPerm((2, 0, 1), ((0, 3), (0, 3), (0, 3))),
+            GriddedPerm((2, 0, 1), ((0, 6), (0, 3), (0, 3))),
+            GriddedPerm((2, 0, 1), ((0, 6), (0, 3), (0, 6))),
+            GriddedPerm((2, 0, 1), ((0, 6), (0, 6), (0, 6))),
+            GriddedPerm((2, 0, 1), ((0, 6), (0, 6), (2, 6))),
+            GriddedPerm((2, 0, 1), ((2, 3), (2, 3), (2, 3))),
+            GriddedPerm((2, 0, 1), ((2, 6), (2, 0), (4, 4))),
+            GriddedPerm((2, 1, 0), ((0, 3), (2, 3), (2, 0))),
+            GriddedPerm((2, 1, 0), ((0, 3), (2, 3), (5, 1))),
+            GriddedPerm((2, 1, 0), ((0, 6), (2, 3), (2, 0))),
+            GriddedPerm((2, 1, 0), ((0, 6), (2, 6), (2, 0))),
+            GriddedPerm((0, 1, 3, 2), ((0, 3), (0, 3), (0, 3), (0, 3))),
+            GriddedPerm((0, 1, 3, 2), ((0, 3), (0, 3), (0, 3), (2, 3))),
+            GriddedPerm((0, 1, 3, 2), ((0, 3), (0, 3), (2, 3), (2, 3))),
+            GriddedPerm((0, 1, 3, 2), ((0, 6), (0, 6), (0, 6), (0, 6))),
+            GriddedPerm((0, 1, 3, 2), ((0, 6), (0, 6), (0, 6), (2, 6))),
+            GriddedPerm((0, 1, 3, 2), ((0, 6), (0, 6), (2, 6), (2, 6))),
+            GriddedPerm((0, 1, 3, 2), ((2, 0), (2, 0), (2, 0), (2, 0))),
+            GriddedPerm((0, 1, 3, 2), ((2, 0), (2, 0), (2, 3), (2, 0))),
+            GriddedPerm((0, 1, 3, 2), ((2, 0), (2, 0), (2, 3), (2, 3))),
+            GriddedPerm((0, 2, 3, 1), ((0, 3), (0, 3), (0, 3), (0, 3))),
+            GriddedPerm((0, 2, 3, 1), ((0, 3), (0, 3), (0, 3), (2, 3))),
+            GriddedPerm((0, 2, 3, 1), ((0, 3), (0, 3), (2, 3), (2, 3))),
+            GriddedPerm((0, 2, 3, 1), ((0, 6), (0, 6), (0, 6), (0, 6))),
+            GriddedPerm((0, 2, 3, 1), ((0, 6), (0, 6), (0, 6), (2, 6))),
+            GriddedPerm((0, 2, 3, 1), ((0, 6), (0, 6), (2, 6), (2, 6))),
+            GriddedPerm((0, 2, 3, 1), ((2, 0), (2, 3), (2, 3), (2, 0))),
+            GriddedPerm((0, 3, 1, 2), ((0, 3), (0, 3), (0, 3), (2, 3))),
+            GriddedPerm((0, 3, 1, 2), ((0, 3), (0, 3), (2, 3), (2, 3))),
+            GriddedPerm((0, 3, 1, 2), ((2, 0), (2, 0), (2, 0), (2, 0))),
+            GriddedPerm((0, 3, 1, 2), ((2, 0), (2, 3), (2, 0), (2, 0))),
+            GriddedPerm((0, 3, 1, 2), ((2, 0), (2, 3), (2, 0), (2, 3))),
+            GriddedPerm((3, 1, 2, 0), ((0, 3), (0, 3), (2, 3), (2, 3))),
+            GriddedPerm((3, 1, 2, 0), ((0, 6), (0, 3), (2, 3), (2, 3))),
         ),
         requirements=(
             (
-                GriddedPerm(Perm((0,)), ((0, 6),)),
-                GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
-                GriddedPerm(Perm((0, 1)), ((2, 0), (5, 1))),
-                GriddedPerm(Perm((1, 0)), ((0, 3), (2, 3))),
-                GriddedPerm(Perm((1, 0)), ((2, 6), (2, 0))),
-                GriddedPerm(Perm((2, 0, 1)), ((2, 3), (2, 0), (2, 3))),
+                GriddedPerm((0,), ((0, 6),)),
+                GriddedPerm((0, 1), ((2, 0), (2, 0))),
+                GriddedPerm((0, 1), ((2, 0), (5, 1))),
+                GriddedPerm((1, 0), ((0, 3), (2, 3))),
+                GriddedPerm((1, 0), ((2, 6), (2, 0))),
+                GriddedPerm((2, 0, 1), ((2, 3), (2, 0), (2, 3))),
             ),
             (
-                GriddedPerm(Perm((0,)), ((0, 6),)),
-                GriddedPerm(Perm((1, 0)), ((2, 6), (2, 0))),
+                GriddedPerm((0,), ((0, 6),)),
+                GriddedPerm((1, 0), ((2, 6), (2, 0))),
             ),
-            (GriddedPerm(Perm((0,)), ((1, 2),)),),
-            (GriddedPerm(Perm((0,)), ((3, 5),)),),
+            (GriddedPerm((0,), ((1, 2),)),),
+            (GriddedPerm((0,), ((3, 5),)),),
             (
-                GriddedPerm(Perm((0,)), ((5, 1),)),
-                GriddedPerm(Perm((1, 0)), ((2, 3), (2, 0))),
-                GriddedPerm(Perm((1, 0)), ((2, 6), (2, 0))),
+                GriddedPerm((0,), ((5, 1),)),
+                GriddedPerm((1, 0), ((2, 3), (2, 0))),
+                GriddedPerm((1, 0), ((2, 6), (2, 0))),
             ),
         ),
         assumptions=(),
@@ -1222,44 +1349,44 @@ def test_reverse_rule_non_empty_children():
 def test_multiple_parent_parameters_to_same_child_parameter():
     tiling = Tiling(
         obstructions=(
-            GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))),
-            GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
-            GriddedPerm(Perm((0, 1)), ((2, 0), (3, 0))),
-            GriddedPerm(Perm((0, 1)), ((3, 0), (3, 0))),
-            GriddedPerm(Perm((1, 2, 0)), ((1, 0), (2, 0), (2, 0))),
-            GriddedPerm(Perm((1, 2, 0)), ((1, 0), (2, 0), (3, 0))),
-            GriddedPerm(Perm((1, 2, 0)), ((1, 0), (3, 0), (3, 0))),
-            GriddedPerm(Perm((0, 1, 2, 3)), ((0, 0), (0, 0), (0, 0), (0, 0))),
-            GriddedPerm(Perm((0, 1, 2, 3)), ((0, 0), (0, 0), (0, 0), (1, 0))),
-            GriddedPerm(Perm((0, 1, 2, 3)), ((0, 0), (0, 0), (0, 0), (2, 0))),
-            GriddedPerm(Perm((0, 1, 2, 3)), ((0, 0), (0, 0), (0, 0), (3, 0))),
-            GriddedPerm(Perm((0, 1, 2, 3)), ((0, 0), (0, 0), (1, 0), (2, 0))),
-            GriddedPerm(Perm((0, 1, 2, 3)), ((0, 0), (0, 0), (1, 0), (3, 0))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (0, 0), (0, 0))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (0, 0), (1, 0))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (0, 0), (2, 0))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (0, 0), (3, 0))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (1, 0), (1, 0))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (1, 0), (2, 0))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (1, 0), (3, 0))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (2, 0), (2, 0))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (2, 0), (3, 0))),
-            GriddedPerm(Perm((0, 2, 3, 1)), ((0, 0), (0, 0), (3, 0), (3, 0))),
+            GriddedPerm((0, 1), ((1, 0), (1, 0))),
+            GriddedPerm((0, 1), ((2, 0), (2, 0))),
+            GriddedPerm((0, 1), ((2, 0), (3, 0))),
+            GriddedPerm((0, 1), ((3, 0), (3, 0))),
+            GriddedPerm((1, 2, 0), ((1, 0), (2, 0), (2, 0))),
+            GriddedPerm((1, 2, 0), ((1, 0), (2, 0), (3, 0))),
+            GriddedPerm((1, 2, 0), ((1, 0), (3, 0), (3, 0))),
+            GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (1, 0))),
+            GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (2, 0))),
+            GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (3, 0))),
+            GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (1, 0), (3, 0))),
+            GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+            GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 0), (0, 0), (2, 0))),
+            GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 0), (0, 0), (3, 0))),
+            GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 0), (1, 0), (1, 0))),
+            GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 0), (1, 0), (3, 0))),
+            GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 0), (2, 0), (2, 0))),
+            GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 0), (2, 0), (3, 0))),
+            GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 0), (3, 0), (3, 0))),
         ),
         requirements=(),
         assumptions=(
-            TrackingAssumption((GriddedPerm(Perm((0,)), ((2, 0),)),)),
+            TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
             TrackingAssumption(
-                (GriddedPerm(Perm((0,)), ((2, 0),)), GriddedPerm(Perm((0,)), ((3, 0),)))
+                (GriddedPerm((0,), ((2, 0),)), GriddedPerm((0,), ((3, 0),)))
             ),
         ),
     )
     strategy = RequirementPlacementStrategy(
         gps=(
-            GriddedPerm(Perm((0,)), ((1, 0),)),
-            GriddedPerm(Perm((0,)), ((2, 0),)),
-            GriddedPerm(Perm((0,)), ((3, 0),)),
-            GriddedPerm(Perm((0,)), ((0, 0),)),
+            GriddedPerm((0,), ((1, 0),)),
+            GriddedPerm((0,), ((2, 0),)),
+            GriddedPerm((0,), ((3, 0),)),
+            GriddedPerm((0,), ((0, 0),)),
         ),
         indices=(0, 0, 0, 0),
         direction=3,

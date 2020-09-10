@@ -15,7 +15,6 @@ from comb_spec_searcher.strategies.constructor import (
     SubSamplers,
 )
 from comb_spec_searcher.utils import compositions
-from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import factor
 from tilings.assumptions import (
@@ -126,10 +125,6 @@ class Split(Constructor):
     ):
         raise NotImplementedError
 
-    @staticmethod
-    def get_eq_symbol() -> str:
-        return "↣"
-
 
 class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     """
@@ -155,11 +150,11 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     ):
         try:
             self.factor_class = SplittingStrategy.FACTOR_ALGO[interleaving]
-        except KeyError:
+        except KeyError as e:
             raise ValueError(
                 "interleaving argument must be in "
                 f"{list(SplittingStrategy.FACTOR_ALGO)}"
-            )
+            ) from e
         super().__init__(
             ignore_parent=ignore_parent,
             inferrable=inferrable,
@@ -209,23 +204,23 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         return [assumption.__class__(gps) for gps in split_gps if gps]
 
     def _split_skew_assumption(
-        self, assumption: SkewComponentAssumption,
+        self, assumption: SkewComponentAssumption
     ) -> List[TrackingAssumption]:
         decomposition = self.skew_decomposition(assumption.cells)
         return [
             SkewComponentAssumption(
-                GriddedPerm.single_cell(Perm((0,)), cell) for cell in cells
+                GriddedPerm.single_cell((0,), cell) for cell in cells
             )
             for cells in decomposition
         ]
 
     def _split_sum_assumption(
-        self, assumption: SumComponentAssumption,
+        self, assumption: SumComponentAssumption
     ) -> List[TrackingAssumption]:
         decomposition = self.sum_decomposition(assumption.cells)
         return [
             SumComponentAssumption(
-                GriddedPerm.single_cell(Perm((0,)), cell) for cell in cells
+                GriddedPerm.single_cell((0,), cell) for cell in cells
             )
             for cells in decomposition
         ]
@@ -272,7 +267,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         return self.sum_decomposition(cells, skew=True)
 
     def constructor(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Split:
         if children is None:
             children = self.decomposition_function(comb_class)
@@ -336,3 +331,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     @classmethod
     def from_dict(cls, d: dict) -> "SplittingStrategy":
         return cls(**d)
+
+    @staticmethod
+    def get_eq_symbol() -> str:
+        return "↣"

@@ -20,12 +20,12 @@ from tilings.algorithms import (
 def tiling1():
     t = Tiling(
         obstructions=(
-            GriddedPerm(Perm((2, 1, 0)), ((0, 0),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-            GriddedPerm(Perm((2, 0, 1)), ((3, 0),) * 3),
-            GriddedPerm(Perm((1, 0)), ((1, 1),) * 2),
-            GriddedPerm(Perm((1, 0)), ((2, 2),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 1), (2, 2))),
+            GriddedPerm((2, 1, 0), ((0, 0),) * 3),
+            GriddedPerm((0, 1, 2), ((1, 2),) * 3),
+            GriddedPerm((2, 0, 1), ((3, 0),) * 3),
+            GriddedPerm((1, 0), ((1, 1),) * 2),
+            GriddedPerm((1, 0), ((2, 2),) * 2),
+            GriddedPerm((0, 1), ((1, 1), (2, 2))),
         )
     )
     return t
@@ -35,26 +35,26 @@ def tiling1():
 def tiling2():
     t = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-            GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
-            GriddedPerm(Perm((0, 1)), ((3, 3),) * 2),
-            GriddedPerm(Perm((0, 1)), ((4, 3),) * 2),
-            GriddedPerm(Perm((0, 1)), ((4, 3),) * 2),
-            GriddedPerm(Perm((0, 1, 2)), ((2, 3),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((2, 2),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((3, 2),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((4, 2),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 1))),
-            GriddedPerm(Perm((0, 1, 2)), ((2, 2), (3, 2), (4, 2))),
-            GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
+            GriddedPerm((0, 1), ((0, 0),) * 2),
+            GriddedPerm((0, 1), ((0, 1),) * 2),
+            GriddedPerm((0, 1), ((1, 0),) * 2),
+            GriddedPerm((0, 1), ((1, 1),) * 2),
+            GriddedPerm((0, 1), ((3, 3),) * 2),
+            GriddedPerm((0, 1), ((4, 3),) * 2),
+            GriddedPerm((0, 1), ((4, 3),) * 2),
+            GriddedPerm((0, 1, 2), ((2, 3),) * 3),
+            GriddedPerm((0, 1, 2), ((2, 2),) * 3),
+            GriddedPerm((0, 1, 2), ((3, 2),) * 3),
+            GriddedPerm((0, 1, 2), ((4, 2),) * 3),
+            GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 1))),
+            GriddedPerm((0, 1, 2), ((2, 2), (3, 2), (4, 2))),
+            GriddedPerm((0, 1), ((0, 1), (1, 1))),
         ],
         requirements=[
-            [GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1)))],
+            [GriddedPerm((0, 1), ((0, 0), (0, 1)))],
             [
-                GriddedPerm(Perm((0, 1)), ((2, 3), (3, 3))),
-                GriddedPerm(Perm((0, 1)), ((3, 3), (4, 3))),
+                GriddedPerm((0, 1), ((2, 3), (3, 3))),
+                GriddedPerm((0, 1), ((3, 3), (4, 3))),
             ],
         ],
     )
@@ -65,9 +65,9 @@ def tiling2():
 def not_fact_tiling():
     not_fact_tiling = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),
-            GriddedPerm(Perm((0, 1)), ((0, 1), (0, 1))),
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1), ((0, 0), (0, 1))),
+            GriddedPerm((0, 1), ((0, 1), (0, 1))),
         ]
     )
     return not_fact_tiling
@@ -170,9 +170,6 @@ def test_unite_multiple_cells(factor1):
 
 
 def test_unite_no_cell(factor1):
-    cells = []
-    with pytest.raises(StopIteration):
-        factor1._unite_cells(cells)
     all_rep = set(
         factor1._get_cell_representative(c) for c in product(range(4), range(3))
     )
@@ -324,10 +321,10 @@ def test_get_components(factor1, factor2):
 
     point_tiling = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((1, 0), ((0, 0), (0, 0))),
         ],
-        requirements=[[GriddedPerm(Perm((0,)), ((0, 0),))]],
+        requirements=[[GriddedPerm((0,), ((0, 0),))]],
     )
     assert Factor(point_tiling).get_components() == ({(0, 0)},)
 
@@ -336,18 +333,18 @@ def test_get_factor_obs_and_reqs(factor1, factor2):
     obs1 = tuple(
         sorted(
             [
-                GriddedPerm(Perm((2, 1, 0)), ((0, 0),) * 3),
-                GriddedPerm(Perm((2, 0, 1)), ((3, 0),) * 3),
+                GriddedPerm((2, 1, 0), ((0, 0),) * 3),
+                GriddedPerm((2, 0, 1), ((3, 0),) * 3),
             ]
         )
     )
     obs2 = tuple(
         sorted(
             [
-                GriddedPerm(Perm((0, 1, 2)), ((1, 2),) * 3),
-                GriddedPerm(Perm((1, 0)), ((1, 1),) * 2),
-                GriddedPerm(Perm((1, 0)), ((2, 2),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 1), (2, 2))),
+                GriddedPerm((0, 1, 2), ((1, 2),) * 3),
+                GriddedPerm((1, 0), ((1, 1),) * 2),
+                GriddedPerm((1, 0), ((2, 2),) * 2),
+                GriddedPerm((0, 1), ((1, 1), (2, 2))),
             ]
         )
     )
@@ -359,33 +356,33 @@ def test_get_factor_obs_and_reqs(factor1, factor2):
     obs1 = tuple(
         sorted(
             [
-                GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-                GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
-                GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 1))),
-                GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
+                GriddedPerm((0, 1), ((0, 0),) * 2),
+                GriddedPerm((0, 1), ((0, 1),) * 2),
+                GriddedPerm((0, 1), ((1, 0),) * 2),
+                GriddedPerm((0, 1), ((1, 1),) * 2),
+                GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 1))),
+                GriddedPerm((0, 1), ((0, 1), (1, 1))),
             ]
         )
     )
     obs2 = tuple(
         sorted(
             [
-                GriddedPerm(Perm((0, 1)), ((3, 3),) * 2),
-                GriddedPerm(Perm((0, 1)), ((4, 3),) * 2),
-                GriddedPerm(Perm((0, 1, 2)), ((2, 3),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((2, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((3, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((4, 2),) * 3),
-                GriddedPerm(Perm((0, 1, 2)), ((2, 2), (3, 2), (4, 2))),
+                GriddedPerm((0, 1), ((3, 3),) * 2),
+                GriddedPerm((0, 1), ((4, 3),) * 2),
+                GriddedPerm((0, 1, 2), ((2, 3),) * 3),
+                GriddedPerm((0, 1, 2), ((2, 2),) * 3),
+                GriddedPerm((0, 1, 2), ((3, 2),) * 3),
+                GriddedPerm((0, 1, 2), ((4, 2),) * 3),
+                GriddedPerm((0, 1, 2), ((2, 2), (3, 2), (4, 2))),
             ]
         )
     )
-    reqs1 = ((GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1))),),)
+    reqs1 = ((GriddedPerm((0, 1), ((0, 0), (0, 1))),),)
     reqs2 = (
         (
-            GriddedPerm(Perm((0, 1)), ((2, 3), (3, 3))),
-            GriddedPerm(Perm((0, 1)), ((3, 3), (4, 3))),
+            GriddedPerm((0, 1), ((2, 3), (3, 3))),
+            GriddedPerm((0, 1), ((3, 3), (4, 3))),
         ),
     )
     f2_obs_and_reqs = factor2._get_factors_obs_and_reqs()
@@ -403,10 +400,10 @@ def test_factorable(factor1, factor2, not_fact_tiling):
 
     point_tiling = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-            GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((1, 0), ((0, 0), (0, 0))),
         ],
-        requirements=[[GriddedPerm(Perm((0,)), ((0, 0),))]],
+        requirements=[[GriddedPerm((0,), ((0, 0),))]],
     )
     assert not Factor(point_tiling).factorable()
 
@@ -416,16 +413,16 @@ def test_factorable(factor1, factor2, not_fact_tiling):
 def test_factor(factor1, factor2):
     f1 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((2, 1, 0)), ((0, 0),) * 3),
-            GriddedPerm(Perm((2, 0, 1)), ((1, 0),) * 3),
+            GriddedPerm((2, 1, 0), ((0, 0),) * 3),
+            GriddedPerm((2, 0, 1), ((1, 0),) * 3),
         ]
     )
     f2 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-            GriddedPerm(Perm((1, 0)), ((0, 0),) * 2),
-            GriddedPerm(Perm((1, 0)), ((1, 1),) * 2),
-            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
+            GriddedPerm((0, 1, 2), ((0, 1),) * 3),
+            GriddedPerm((1, 0), ((0, 0),) * 2),
+            GriddedPerm((1, 0), ((1, 1),) * 2),
+            GriddedPerm((0, 1), ((0, 0), (1, 1))),
         ]
     )
     assert len(factor1.factors()) == 2
@@ -434,29 +431,29 @@ def test_factor(factor1, factor2):
 
     f1 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-            GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 1))),
-            GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
+            GriddedPerm((0, 1), ((0, 0),) * 2),
+            GriddedPerm((0, 1), ((0, 1),) * 2),
+            GriddedPerm((0, 1), ((1, 0),) * 2),
+            GriddedPerm((0, 1), ((1, 1),) * 2),
+            GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 1))),
+            GriddedPerm((0, 1), ((0, 1), (1, 1))),
         ],
-        requirements=[[GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1)))]],
+        requirements=[[GriddedPerm((0, 1), ((0, 0), (0, 1)))]],
     )
     f2 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
-            GriddedPerm(Perm((0, 1)), ((2, 1),) * 2),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((2, 0),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 1), ((1, 1),) * 2),
+            GriddedPerm((0, 1), ((2, 1),) * 2),
+            GriddedPerm((0, 1, 2), ((0, 1),) * 3),
+            GriddedPerm((0, 1, 2), ((0, 0),) * 3),
+            GriddedPerm((0, 1, 2), ((1, 0),) * 3),
+            GriddedPerm((0, 1, 2), ((2, 0),) * 3),
+            GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
         ],
         requirements=[
             [
-                GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
-                GriddedPerm(Perm((0, 1)), ((1, 1), (2, 1))),
+                GriddedPerm((0, 1), ((0, 1), (1, 1))),
+                GriddedPerm((0, 1), ((1, 1), (2, 1))),
             ],
         ],
     )
@@ -468,21 +465,29 @@ def test_factor(factor1, factor2):
 def test_reducible_factorisations():
     t = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
-            GriddedPerm(Perm((0, 1)), ((2, 2),) * 2),
+            GriddedPerm((0, 1), ((0, 0),) * 2),
+            GriddedPerm((0, 1), ((1, 1),) * 2),
+            GriddedPerm((0, 1), ((2, 2),) * 2),
         ]
     )
     fo = Factor(t)
     f1 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
+            GriddedPerm((0, 1), ((0, 0),) * 2),
+            GriddedPerm((0, 1), ((1, 1),) * 2),
         ]
     )
-    f2 = Tiling(obstructions=[GriddedPerm(Perm((0, 1)), ((0, 0),) * 2)])
+    f2 = Tiling(obstructions=[GriddedPerm((0, 1), ((0, 0),) * 2)])
     assert set([f1, f2]) in map(set, fo.reducible_factorisations())
     assert [f2, f2, f2] not in fo.reducible_factorisations()
+
+
+def test_factor_empty_tiling():
+    t = Tiling(obstructions=[GriddedPerm(Perm(), [])])
+    for fac_algo in [Factor, FactorWithInterleaving, FactorWithMonotoneInterleaving]:
+        assert fac_algo(t).get_components() == tuple()
+        assert not fac_algo(t).factorable()
+        assert fac_algo(t).factors() == (t,)
 
 
 # ------------------------------------------------------------
@@ -519,18 +524,18 @@ def test_unite_rows_and_cols_monotone_interleaving(
 def test_mon_int_factor(factor1_with_mon_int, factor2_with_mon_int):
     f1 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((2, 1, 0)), ((0, 0),) * 3),
-            GriddedPerm(Perm((2, 0, 1)), ((1, 0),) * 3),
+            GriddedPerm((2, 1, 0), ((0, 0),) * 3),
+            GriddedPerm((2, 0, 1), ((1, 0),) * 3),
         ]
     )
     f2 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((1, 0)), ((0, 0),) * 2),
-            GriddedPerm(Perm((1, 0)), ((1, 1),) * 2),
-            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
+            GriddedPerm((1, 0), ((0, 0),) * 2),
+            GriddedPerm((1, 0), ((1, 1),) * 2),
+            GriddedPerm((0, 1), ((0, 0), (1, 1))),
         ]
     )
-    f3 = Tiling(obstructions=[GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3)])
+    f3 = Tiling(obstructions=[GriddedPerm((0, 1, 2), ((0, 1),) * 3)])
     assert len(factor1_with_mon_int.factors()) == 3
     assert f1 in factor1_with_mon_int.factors()
     assert f2 in factor1_with_mon_int.factors()
@@ -538,29 +543,29 @@ def test_mon_int_factor(factor1_with_mon_int, factor2_with_mon_int):
 
     f1 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-            GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 1))),
-            GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
+            GriddedPerm((0, 1), ((0, 0),) * 2),
+            GriddedPerm((0, 1), ((0, 1),) * 2),
+            GriddedPerm((0, 1), ((1, 0),) * 2),
+            GriddedPerm((0, 1), ((1, 1),) * 2),
+            GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 1))),
+            GriddedPerm((0, 1), ((0, 1), (1, 1))),
         ],
-        requirements=[[GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1)))]],
+        requirements=[[GriddedPerm((0, 1), ((0, 0), (0, 1)))]],
     )
     f2 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
-            GriddedPerm(Perm((0, 1)), ((2, 1),) * 2),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((2, 0),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 1), ((1, 1),) * 2),
+            GriddedPerm((0, 1), ((2, 1),) * 2),
+            GriddedPerm((0, 1, 2), ((0, 1),) * 3),
+            GriddedPerm((0, 1, 2), ((0, 0),) * 3),
+            GriddedPerm((0, 1, 2), ((1, 0),) * 3),
+            GriddedPerm((0, 1, 2), ((2, 0),) * 3),
+            GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
         ],
         requirements=[
             [
-                GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
-                GriddedPerm(Perm((0, 1)), ((1, 1), (2, 1))),
+                GriddedPerm((0, 1), ((0, 1), (1, 1))),
+                GriddedPerm((0, 1), ((1, 1), (2, 1))),
             ],
         ],
     )
@@ -604,16 +609,16 @@ def test_unite_all_interleaving(factor1_with_int):
 
 
 def test_int_factor(factor1_with_int, factor2_with_int):
-    f1 = Tiling(obstructions=[GriddedPerm(Perm((2, 1, 0)), ((0, 0),) * 3)])
-    f2 = Tiling(obstructions=[GriddedPerm(Perm((2, 0, 1)), ((1, 0),) * 3)])
+    f1 = Tiling(obstructions=[GriddedPerm((2, 1, 0), ((0, 0),) * 3)])
+    f2 = Tiling(obstructions=[GriddedPerm((2, 0, 1), ((1, 0),) * 3)])
     f3 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((1, 0)), ((0, 0),) * 2),
-            GriddedPerm(Perm((1, 0)), ((1, 1),) * 2),
-            GriddedPerm(Perm((0, 1)), ((0, 0), (1, 1))),
+            GriddedPerm((1, 0), ((0, 0),) * 2),
+            GriddedPerm((1, 0), ((1, 1),) * 2),
+            GriddedPerm((0, 1), ((0, 0), (1, 1))),
         ]
     )
-    f4 = Tiling(obstructions=[GriddedPerm(Perm((0, 1, 2)), ((0, 1),) * 3)])
+    f4 = Tiling(obstructions=[GriddedPerm((0, 1, 2), ((0, 1),) * 3)])
     assert len(factor1_with_int.factors()) == 4
     assert f1 in factor1_with_int.factors()
     assert f2 in factor1_with_int.factors()
@@ -622,33 +627,33 @@ def test_int_factor(factor1_with_int, factor2_with_int):
 
     f1 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((0, 0),) * 2),
-            GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-            GriddedPerm(Perm((0, 1)), ((1, 1),) * 2),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (1, 1))),
-            GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
+            GriddedPerm((0, 1), ((0, 0),) * 2),
+            GriddedPerm((0, 1), ((0, 1),) * 2),
+            GriddedPerm((0, 1), ((1, 0),) * 2),
+            GriddedPerm((0, 1), ((1, 1),) * 2),
+            GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 1))),
+            GriddedPerm((0, 1), ((0, 1), (1, 1))),
         ],
-        requirements=[[GriddedPerm(Perm((0, 1)), ((0, 0), (0, 1)))]],
+        requirements=[[GriddedPerm((0, 1), ((0, 0), (0, 1)))]],
     )
     f2 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((1, 0),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((2, 0),) * 3),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 1, 2), ((0, 0),) * 3),
+            GriddedPerm((0, 1, 2), ((1, 0),) * 3),
+            GriddedPerm((0, 1, 2), ((2, 0),) * 3),
+            GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
         ]
     )
     f3 = Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 1)), ((1, 0),) * 2),
-            GriddedPerm(Perm((0, 1)), ((2, 0),) * 2),
-            GriddedPerm(Perm((0, 1, 2)), ((0, 0),) * 3),
+            GriddedPerm((0, 1), ((1, 0),) * 2),
+            GriddedPerm((0, 1), ((2, 0),) * 2),
+            GriddedPerm((0, 1, 2), ((0, 0),) * 3),
         ],
         requirements=[
             [
-                GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))),
-                GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0))),
+                GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                GriddedPerm((0, 1), ((1, 0), (2, 0))),
             ],
         ],
     )

@@ -21,7 +21,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def __init__(self, gps: Iterable[GriddedPerm]):
         self.gps = tuple(sorted(gps))
         super().__init__(
-            ignore_parent=True, inferrable=True, possibly_empty=False, workable=True,
+            ignore_parent=True, inferrable=True, possibly_empty=False, workable=True
         )
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
@@ -37,7 +37,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         )
 
     def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
         if not comb_class.extra_parameters:
             return super().extra_parameters(comb_class, children)
@@ -205,7 +205,7 @@ class ObstructionTransitivityFactory(ObstructionInferralFactory):
         return "obstruction transitivity"
 
     def __repr__(self) -> str:
-        return "ObstructionTransitivityStrategy()"
+        return self.__class__.__name__ + "()"
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()

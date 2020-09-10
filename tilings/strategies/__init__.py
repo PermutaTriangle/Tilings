@@ -1,5 +1,10 @@
 from .assumption_insertion import AddAssumptionFactory, AddInterleavingAssumptionFactory
 from .assumption_splitting import SplittingStrategy
+from .detect_components import DetectComponentsStrategy
+from .experimental_verification import (
+    ShortObstructionVerificationStrategy,
+    SubclassVerificationFactory,
+)
 from .factor import FactorFactory
 from .fusion import ComponentFusionFactory, FusionFactory
 from .obstruction_inferral import (
@@ -39,6 +44,7 @@ __all__ = [
     # Assumptions
     "AddAssumptionFactory",
     "AddInterleavingAssumptionFactory",
+    "DetectComponentsStrategy",
     "SplittingStrategy",
     # Batch
     "CellInsertionFactory",
@@ -74,4 +80,6 @@ __all__ = [
     "InsertionEncodingVerificationStrategy",
     "MonotoneTreeVerificationStrategy",
     "OneByOneVerificationStrategy",
+    "ShortObstructionVerificationStrategy",
+    "SubclassVerificationFactory",
 ]

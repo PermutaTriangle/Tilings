@@ -63,7 +63,10 @@ class Factor:
         Put all the cells of `cells` in the same component of the UnionFind.
         """
         cell_iterator = iter(cells)
-        c1 = next(cell_iterator)
+        try:
+            c1 = next(cell_iterator)
+        except StopIteration:
+            return
         c1_int = self._cell_to_int(c1)
         for c2 in cell_iterator:
             c2_int = self._cell_to_int(c2)
@@ -75,7 +78,8 @@ class Factor:
         """
         for assumption in self._tiling.assumptions:
             if isinstance(assumption, ComponentAssumption):
-                self._unite_cells(chain.from_iterable(gp.pos for gp in assumption.gps))
+                for comp in assumption.get_components(self._tiling):
+                    self._unite_cells(chain.from_iterable(gp.pos for gp in comp))
             else:
                 for gp in assumption.gps:
                     self._unite_cells(gp.pos)
@@ -153,6 +157,8 @@ class Factor:
         """
         if self._factors_obs_and_reqs is not None:
             return self._factors_obs_and_reqs
+        if self._tiling.is_empty():
+            return [((GriddedPerm((), []),), tuple(), tuple())]
         factors = []
         for component in self.get_components():
             obstructions = tuple(
@@ -188,7 +194,10 @@ class Factor:
         """
         return tuple(
             self._tiling.__class__(
-                obstructions=f[0], requirements=f[1], assumptions=f[2], simplify=False
+                obstructions=f[0],
+                requirements=f[1],
+                assumptions=tuple(sorted(f[2])),
+                simplify=False,
             )
             for f in self._get_factors_obs_and_reqs()
         )
@@ -212,7 +221,7 @@ class Factor:
                     self._tiling.__class__(
                         obstructions=chain(*obstructions),
                         requirements=chain(*requirements),
-                        assumptions=chain(*assumptions),
+                        assumptions=tuple(sorted(chain(*assumptions))),
                         simplify=False,
                     )
                 )

@@ -37,7 +37,7 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
         )
 
     def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
         if not comb_class.extra_parameters:
             return super().extra_parameters(comb_class, children)

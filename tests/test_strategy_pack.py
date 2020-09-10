@@ -47,8 +47,12 @@ def length_maxnumreq_partial(pack):
 def length_partial(pack):
     return [
         pack(length=length, partial=partial)
-        for length, partial in product((1, 2, 3), (True, False),)
+        for length, partial in product((1, 2, 3), (True, False))
     ]
+
+
+def partial(pack):
+    return [pack(partial=partial) for partial in (True, False)]
 
 
 def directions(pack):
@@ -67,7 +71,7 @@ def row_col_partial(pack):
 
 packs = (
     length(TileScopePack.all_the_strategies)
-    + length_partial(TileScopePack.insertion_point_placements)
+    + partial(TileScopePack.insertion_point_placements)
     + row_col_partial(TileScopePack.insertion_row_and_col_placements)
     + length_maxnumreq_partial(TileScopePack.only_root_placements)
     + [

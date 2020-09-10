@@ -197,16 +197,16 @@ using the ``gridded_perms_of_length`` method.
 .. code:: python
 
        >>> for i in range(4):
-       ...     for gp in tiling.gridded_perms_of_length(i):
+       ...     for gp in sorted(tiling.gridded_perms_of_length(i)):
        ...         print(gp)
        0: (1, 1)
-       10: (1, 1), (2, 0)
        01: (0, 0), (1, 1)
-       210: (1, 1), (2, 0), (2, 0)
-       201: (1, 1), (2, 0), (2, 0)
-       120: (0, 0), (1, 1), (2, 0)
+       10: (1, 1), (2, 0)
        021: (0, 0), (1, 1), (2, 0)
        102: (0, 0), (0, 0), (1, 1)
+       120: (0, 0), (1, 1), (2, 0)
+       201: (1, 1), (2, 0), (2, 0)
+       210: (1, 1), (2, 0), (2, 0)
 
 There are numerous other methods and properties. Many of these are specific
 to the ``TileScope`` algorithm, discussed in `Christian Bean’s PhD
@@ -294,6 +294,59 @@ done here for sake of brevity in this readme!
 
        >>> import logzero; import logging; logzero.loglevel(logging.CRITICAL)
        >>> spec = tilescope.auto_search()
+       >>> print(spec)
+       A combinatorial specification with 4 rules.
+       -----------
+       0 -> (1, 2)
+       insert 0 in cell (0, 0)
+       +-+            +-+     +-+
+       |1|         =  | |  +  |1|
+       +-+            +-+     +-+
+       1: Av(120)             1: Av+(120)
+                              Requirement 0:
+                              0: (0, 0)
+       -------
+       1 -> ()
+       is atom
+       +-+
+       | |
+       +-+
+       <BLANKLINE>
+       -----
+       2 = 3
+       placing the topmost point in cell (0, 0), then row and column separation
+       +-+                +-+-+-+                    +-+-+-+
+       |1|             =  | |●| |                 =  | |●| |
+       +-+                +-+-+-+                    +-+-+-+
+       1: Av+(120)        |1| |1|                    | | |1|
+       Requirement 0:     +-+-+-+                    +-+-+-+
+       0: (0, 0)          1: Av(120)                 |1| | |
+                          ●: point                   +-+-+-+
+                          Crossing obstructions:     1: Av(120)
+                          10: (0, 0), (2, 0)         ●: point
+                          Requirement 0:             Requirement 0:
+                          0: (1, 1)                  0: (1, 2)
+       -------
+       3 -> ()
+       tiling is locally factorable
+       +-+-+-+
+       | |●| |
+       +-+-+-+
+       | | |1|
+       +-+-+-+
+       |1| | |
+       +-+-+-+
+       1: Av(120)
+       ●: point
+       Requirement 0:
+       0: (1, 2)
+
+The locally factorable tiling in the rule `3 -> ()` could be further expanded
+down to atoms. This can be done using the `expand_verified` method.
+
+.. code:: python
+
+       >>> spec.expand_verified()
        >>> print(spec)
        A combinatorial specification with 5 rules.
        -----------
@@ -1023,18 +1076,18 @@ Consider the gridded permutations on the following tiling.
        Crossing obstructions:
        01: (0, 0), (1, 0)
        >>> for i in range(4):
-       ...     for gp in tiling.gridded_perms_of_length(i):
+       ...     for gp in sorted(tiling.gridded_perms_of_length(i)):
        ...         print(gp)
        ε:
-       0: (1, 0)
        0: (0, 0)
-       10: (1, 0), (1, 0)
-       10: (0, 0), (1, 0)
+       0: (1, 0)
        10: (0, 0), (0, 0)
-       210: (1, 0), (1, 0), (1, 0)
-       210: (0, 0), (1, 0), (1, 0)
-       210: (0, 0), (0, 0), (1, 0)
+       10: (0, 0), (1, 0)
+       10: (1, 0), (1, 0)
        210: (0, 0), (0, 0), (0, 0)
+       210: (0, 0), (0, 0), (1, 0)
+       210: (0, 0), (1, 0), (1, 0)
+       210: (1, 0), (1, 0), (1, 0)
 
 Due to the crossing ``01`` obstruction it is clear that all of the underlying
 permutations will be decreasing. Moreover, the transition between the left cell

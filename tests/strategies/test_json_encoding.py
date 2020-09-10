@@ -32,10 +32,13 @@ from tilings.strategies import (
     RootInsertionFactory,
     RowAndColumnPlacementFactory,
     RowColumnSeparationStrategy,
+    ShortObstructionVerificationStrategy,
     SplittingStrategy,
+    SubclassVerificationFactory,
     SubobstructionInferralFactory,
     SymmetriesFactory,
 )
+from tilings.strategies.experimental_verification import SubclassVerificationStrategy
 from tilings.strategies.factor import (
     FactorStrategy,
     FactorWithInterleavingStrategy,
@@ -106,6 +109,23 @@ def maxreqlen_extrabasis_ignoreparent_maxnumreq(strategy):
     ]
 
 
+def maxreqlen_extrabasis_ignoreparent_one_cell_only(strategy):
+    return [
+        strategy(
+            maxreqlen=maxreqlen,
+            extra_basis=extra_basis,
+            ignore_parent=ignore_parent,
+            one_cell_only=one_cell_only,
+        )
+        for (maxreqlen, extra_basis, ignore_parent, one_cell_only,) in product(
+            (1, 2, 3),
+            (None, [Perm((0, 1))], [Perm((0, 2, 1)), Perm((0, 1, 2))]),
+            (True, False),
+            (True, False),
+        )
+    ]
+
+
 def ignoreparent(strategy):
     return [strategy(ignore_parent=True), strategy(ignore_parent=False)]
 
@@ -119,7 +139,10 @@ def interleaving_unions_ignoreparent_workable(strategy):
             workable=workable,
         )
         for interleaving, unions, ignore_parent, workable in product(
-            (None, "all", "monotone"), (True, False), (True, False), (True, False),
+            (None, "all", "monotone"),
+            (True, False),
+            (True, False),
+            (True, False),
         )
     ]
 
@@ -178,13 +201,28 @@ def gps_ignoreparent(strategy):
         strategy(gps=gps, ignore_parent=ignore_parent)
         for gps, ignore_parent in product(
             (
-                (GriddedPerm(Perm((0,)), ((0, 0),)),),
-                (GriddedPerm.single_cell(Perm((0, 1, 2)), (2, 1)),),
+                (GriddedPerm((0,), ((0, 0),)),),
+                (GriddedPerm.single_cell((0, 1, 2), (2, 1)),),
                 (
-                    GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
-                    GriddedPerm(Perm((1, 0)), ((2, 2), (3, 1))),
+                    GriddedPerm((0, 1), ((0, 1), (1, 1))),
+                    GriddedPerm((1, 0), ((2, 2), (3, 1))),
                 ),
             ),
+            (True, False),
+        )
+    ]
+
+
+def gps_ignoreparent_limited(factory):
+    return [
+        factory(
+            extra_basis=list(basis),
+            ignore_parent=ignore_parent,
+            limited_insertion=limited_insertion,
+        )
+        for basis, ignore_parent, limited_insertion in product(
+            ((Perm((0,)),), (Perm((0, 1, 2)),), (Perm((0, 1)), Perm((1, 0)))),
+            (True, False),
             (True, False),
         )
     ]
@@ -206,12 +244,12 @@ def gps_indices_direction_owncol_ownrow_ignoreparent_includeempty(strategy):
             indices,
         ), direction, own_col, own_row, ignore_parent, include_empty in product(
             (
-                ((GriddedPerm(Perm((0,)), ((0, 0),)),), (0,)),
-                ((GriddedPerm.single_cell(Perm((0, 1, 2)), (2, 1)),), (1,)),
+                ((GriddedPerm((0,), ((0, 0),)),), (0,)),
+                ((GriddedPerm.single_cell((0, 1, 2), (2, 1)),), (1,)),
                 (
                     (
-                        GriddedPerm(Perm((0, 1)), ((0, 1), (1, 1))),
-                        GriddedPerm(Perm((1, 0)), ((2, 2), (3, 1))),
+                        GriddedPerm((0, 1), ((0, 1), (1, 1))),
+                        GriddedPerm((1, 0), ((2, 2), (3, 1))),
                     ),
                     (1, 0),
                 ),
@@ -246,7 +284,7 @@ def row_col_partial_ignoreparent_direction(strategy):
 
 
 strategy_objects = (
-    maxreqlen_extrabasis_ignoreparent(CellInsertionFactory)
+    maxreqlen_extrabasis_ignoreparent_one_cell_only(CellInsertionFactory)
     + ignoreparent(FactorInsertionFactory)
     + interleaving_unions_ignoreparent_workable(FactorFactory)
     + maxlen(ObstructionInferralFactory)
@@ -274,9 +312,20 @@ strategy_objects = (
         OneByOneVerificationStrategy(basis=[], ignore_parent=False, symmetry=False),
         OneByOneVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
     ]
+    + [
+        SubclassVerificationFactory(perms_to_check=[Perm((0, 1, 2)), Perm((1, 0))]),
+        SubclassVerificationFactory(perms_to_check=list(Perm.up_to_length(3))),
+        SubclassVerificationStrategy(
+            subclass_basis=[Perm((0, 1, 2)), Perm((1, 0))], ignore_parent=True
+        ),
+        SubclassVerificationStrategy(
+            subclass_basis=list(Perm.up_to_length(3)), ignore_parent=False
+        ),
+    ]
     + pointonly_partial_ignoreparent_dirs(PatternPlacementFactory)
     + ignoreparent(RequirementCorroborationFactory)
     + gps_ignoreparent(RequirementInsertionStrategy)
+    + gps_ignoreparent_limited(RequirementInsertionFactory)
     + gps_indices_direction_owncol_ownrow_ignoreparent_includeempty(
         RequirementPlacementStrategy
     )
@@ -290,17 +339,14 @@ strategy_objects = (
     + [ComponentFusionStrategy(col_idx=3)]
     + [FusionFactory()]
     + [ComponentFusionFactory()]
-    + [
-        ObstructionInferralStrategy(
-            [GriddedPerm(Perm((0, 1, 2)), ((0, 0), (1, 1), (1, 2)))]
-        )
-    ]
+    + [ObstructionInferralStrategy([GriddedPerm((0, 1, 2), ((0, 0), (1, 1), (1, 2)))])]
     + [
         SplittingStrategy(),
         SplittingStrategy("none"),
         SplittingStrategy("monotone"),
         SplittingStrategy("all"),
     ]
+    + [ShortObstructionVerificationStrategy()]
 )
 
 # TODO add tests for: ComponentFusionStrategy, FusionStrategy

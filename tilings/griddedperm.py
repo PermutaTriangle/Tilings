@@ -11,18 +11,16 @@ Position = Tuple[Cell, ...]
 
 
 class GriddedPerm(CombinatorialObject):
-    def __init__(self, pattern: Perm, positions: Iterable[Cell]):
-        if not isinstance(pattern, Perm):
-            raise ValueError("Variable 'pattern' should be an instance of permuta.Perm")
+    def __init__(self, pattern: Iterable[int], positions: Iterable[Cell]):
         if not pattern:
-            self._patt = pattern
-            self._pos = tuple(positions)
+            self._patt: Perm = Perm(())
+            self._pos: Position = tuple(positions)
             self._cells: FrozenSet[Cell] = frozenset()
             self._rows = 1
             self._columns = 1
         else:
             # Pattern should be a Perm of course
-            self._patt = pattern
+            self._patt = Perm(pattern)
             # Position is a tuple of (x, y) coordinates, where the ith (x, y)
             # corresponds to the i-th point in the pattern.
             self._pos = tuple(positions)
@@ -34,20 +32,21 @@ class GriddedPerm(CombinatorialObject):
             self._cells = frozenset(self._pos)
 
     @classmethod
-    def single_cell(cls, pattern: Perm, cell: Cell) -> "GriddedPerm":
+    def single_cell(cls, pattern: Iterable[int], cell: Cell) -> "GriddedPerm":
         """Construct a gridded permutation where the cells are all located in a
         single cell."""
-        return cls(pattern, [cell for _ in range(len(pattern))])
+        pattern = Perm(pattern)
+        return cls(pattern, (cell for _ in range(len(pattern))))
 
     @classmethod
     def empty_perm(cls) -> "GriddedPerm":
         """Construct the empty gridded permutation."""
-        return cls(Perm(tuple()), tuple())
+        return cls((), ())
 
     @classmethod
     def point_perm(cls, cell: Cell) -> "GriddedPerm":
         """Construct the point gridded permutation using the cell."""
-        return cls(Perm((0,)), (cell,))
+        return cls((0,), (cell,))
 
     def contradictory(self) -> bool:
         """Checks if the points of the griddedperm contradict the permutation.
@@ -366,7 +365,7 @@ class GriddedPerm(CombinatorialObject):
                 if c1[0] == c2[0] or c1[1] == c2[1]:
                     uf.unite(i, j)
         # Collect the connected factors of the cells
-        all_factors: Dict[Cell, List[Cell]] = {}
+        all_factors: Dict[int, List[Cell]] = {}
         for i, cell in enumerate(self.pos):
             x = uf.find(i)
             if x in all_factors:
@@ -404,13 +403,11 @@ class GriddedPerm(CombinatorialObject):
         )
 
     def complement(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
-        """ -
-        Flip over the horizontal axis.  """
+        """Flip over the horizontal axis."""
         return self.__class__(self._patt.complement(), map(transf, self._pos))
 
     def inverse(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
-        """ /
-        Flip over the diagonal"""
+        """Flip over the diagonal."""
         flipped = self._patt.inverse()
         pos = self._patt.inverse().apply(self._pos)
         return self.__class__(flipped, map(transf, pos))
@@ -419,12 +416,12 @@ class GriddedPerm(CombinatorialObject):
         """ \\
         Flip over the diagonal"""
         flipped = self._patt.flip_antidiagonal()
-        pos = self._patt._rotate_left().apply(self._pos)
+        pos = self._patt.rotate(-1).apply(self._pos)
         return self.__class__(flipped, map(transf, pos))
 
     def rotate270(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
         """Rotate 270 degrees"""
-        rotated = self._patt.rotate_left()
+        rotated = self._patt.rotate(-1)
         pos = rotated.apply(self._pos)
         return self.__class__(rotated, map(transf, pos))
 
@@ -437,14 +434,13 @@ class GriddedPerm(CombinatorialObject):
     def rotate90(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
         """Rotate 90 degrees"""
         return self.__class__(
-            self._patt.rotate_right(),
-            map(transf, self._patt.inverse().apply(self._pos)),
+            self._patt.rotate(), map(transf, self._patt.inverse().apply(self._pos))
         )
 
     def to_jsonable(self) -> dict:
         """Returns a dictionary object which is JSON serializable representing
         a GriddedPerm."""
-        output = dict()
+        output: dict = dict()
         output["patt"] = self._patt
         output["pos"] = self._pos
         return output
@@ -459,7 +455,7 @@ class GriddedPerm(CombinatorialObject):
     def from_dict(cls, jsondict: dict) -> "GriddedPerm":
         """Returns a GriddedPerm object from a dictionary loaded from a JSON
         serialized GriddedPerm object."""
-        return cls(Perm(jsondict["patt"]), map(tuple, jsondict["pos"]))  # type: ignore
+        return cls(jsondict["patt"], map(tuple, jsondict["pos"]))  # type: ignore
 
     @property
     def patt(self) -> Perm:
@@ -513,7 +509,7 @@ class GriddedPerm(CombinatorialObject):
         return len(self._patt)
 
     def __repr__(self) -> str:
-        return "{}({}, {})".format(self.__class__.__name__, repr(self._patt), self._pos)
+        return f"{self.__class__.__name__}({tuple(self._patt)!r}, {self.pos})"
 
     def __str__(self) -> str:
         return "{}: {}".format(str(self._patt), ", ".join(str(c) for c in self.pos))

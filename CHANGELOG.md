@@ -6,6 +6,60 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [2.3.0] - 2020-09-10
+### Added
+- introduced isolation levels to the fusion strategy
+- added the `one_cell_only` option to `CellInsertionFactory`
+- `remove_components_from_assumptions` method to `Tiling`
+- `DetectComponentsStrategy` which removes cells from assumptions
+   which are actual components. This replaces the need for the
+   `SplittingStrategy` in component fusion packs.
+- added equation generators to `FusionStrategy` for the case where one or both
+   sides are positive
+- added a `to_html_representation` method to `Tiling`
+- `SubclassVerificationFactory` and the corresponding strategy
+- `is_subclass` method to `Tiling`
+- added `point_and_row_and_col_placements` strategy
+- `ShortObstructionVerificationStrategy`
+- using Github Actions for testing and deployment
+
+### Changed
+- insertion packs now use the `one_cell_only` option, and no longer use
+  `RequirementCorroborationFactory`
+- the `get_eq_symbol` and `get_op_symbol` are moved to `Strategy` rather than
+  `Constructor`
+- the `GriddedPermsOnTiling` algorithm was changed to build from minimal
+  gridded perms in a breadth first manner. This is also include an option to
+  limit the number of points placed on the minimal gridded perms.
+- new default behavior of `RequirementInsertionFactory` is to only insert requirements
+  on tilings that don't already have any
+- converted the expansion strategies in several strategy packs to be a single set
+- requirement corroboration is only enabled when requirements of length > 1 are placed
+- A gridded permutation can now be built from any iterable of integer, not only
+  from permutation.
+
+### Fixed
+- untracked constructors raise `NotImplementedError`
+- forbid fusing a region containing a `TrackingAssumption` and a
+  `ComponentAssumption`
+- a tiling factors if a `ComponentAssumption` if the components of the region
+  split into the factors
+- only fuse non-empty regions to avoid creating unintentional rules a -> b
+  where a and b are equivalent
+- remove duplicate assumptions in the `AddAssumptionsStrategy`
+- `Tiling.from_dict` will make a `Tiling` with no assumptions if the
+  `assumptions` key is not in the dictionary.
+- a factor with interleaving strategy has `inferrable=True`
+- a factor with interleaving strategy return a normal factor strategy when
+  there's no interleaving going on.
+- removed the length argument to the `insertion_point_placements` pack which
+  was not implemented, and thus raising an error.
+- Bug that occurred when factoring the empty tiling
+- fixed that the `partial` flag was ignored in `point_placements`
+- isolation levels were not being passed to component fusion
+- expanding a symmetry of 132 with both length 2 requirements
+
+
 ## [2.2.0] - 2020-07-08
 ### Added
 - add the `can_be_equivalent` methods to `AddAssumptionsStrategy`,
@@ -23,6 +77,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - remove empty assumptions when creating extra parameters in `FusionStrategy`
 - the method `Tiling.get_genf` returns the Catalan generating function for Av(123).
 - correct the generating function equations for `SplittingStrategy`
+
+### Removed
+- Removed optional arguments from the `from_bytes` method on `Tiling`
 
 ## [2.1.0] - 2020-06-29
 ### Added

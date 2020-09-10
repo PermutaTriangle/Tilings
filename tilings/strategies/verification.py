@@ -141,7 +141,7 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
             ]
         ):
             # subclass of Av(231) or a symmetry, use point placements!
-            return TileScopePack.point_placements().add_verification(
+            return TileScopePack.point_and_row_and_col_placements().add_verification(
                 BasicVerificationStrategy(), replace=True
             )
         if is_insertion_encodable_maximum(basis):
@@ -182,10 +182,10 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         self, tiling: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
     ) -> Expr:
         if not self.verified(tiling):
-            raise StrategyDoesNotApply("tiling not locally verified")
+            raise StrategyDoesNotApply("tiling not 1x1 verified")
         if len(tiling.obstructions) == 1 and tiling.obstructions[0] in (
-            GriddedPerm.single_cell(Perm((0, 1, 2)), (0, 0)),
-            GriddedPerm.single_cell(Perm((2, 1, 0)), (0, 0)),
+            GriddedPerm.single_cell((0, 1, 2), (0, 0)),
+            GriddedPerm.single_cell((2, 1, 0), (0, 0)),
         ):
             return LocalEnumeration(tiling).get_genf(funcs=funcs)
         try:
@@ -461,8 +461,8 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         if not self.verified(tiling):
             raise StrategyDoesNotApply("tiling not locally verified")
         if len(tiling.obstructions) == 1 and tiling.obstructions[0] in (
-            GriddedPerm.single_cell(Perm((0, 1, 2)), (0, 0)),
-            GriddedPerm.single_cell(Perm((2, 1, 0)), (0, 0)),
+            GriddedPerm.single_cell((0, 1, 2), (0, 0)),
+            GriddedPerm.single_cell((2, 1, 0), (0, 0)),
         ):
             return LocalEnumeration(tiling).get_genf(funcs=funcs)
         try:

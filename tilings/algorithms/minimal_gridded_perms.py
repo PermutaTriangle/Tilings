@@ -34,7 +34,7 @@ class QueuePacket:
         self.mindices = mindices
 
     def __lt__(self, other: "QueuePacket"):
-        return self.gp < other.gp
+        return len(self.gp) < len(other.gp)
 
 
 class MinimalGriddedPerms:
@@ -78,7 +78,7 @@ class MinimalGriddedPerms:
         return res
 
     def get_relevant_obstructions_by_cell(self, gp: GriddedPerm, cell: Cell) -> GPTuple:
-        """ Get the obstructions that involve only cells in gp
+        """Get the obstructions that involve only cells in gp
         and involve cell"""
         cells = frozenset(gp.pos)
         res = self.relevant_obstructions_by_cell.get((cell, cells))
@@ -420,7 +420,7 @@ class MinimalGriddedPerms:
             return gp.contains(*yielded)
 
         def _process_work_packet(
-            qpacket: QueuePacket, queue: List[QueuePacket],
+            qpacket: QueuePacket, queue: List[QueuePacket]
         ) -> Iterator[GriddedPerm]:
             # now we try inserting a new point into the cell
             for (cell, localised) in self._get_cells_to_try(qpacket):

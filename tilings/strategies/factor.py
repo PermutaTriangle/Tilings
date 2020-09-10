@@ -42,13 +42,16 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         workable: bool = True,
     ):
         self.partition = tuple(sorted(tuple(sorted(p)) for p in partition))
-        super().__init__(ignore_parent=ignore_parent, workable=workable)
+        inferrable = any(interleaving_rows_and_cols(self.partition))
+        super().__init__(
+            ignore_parent=ignore_parent, workable=workable, inferrable=inferrable
+        )
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
         return tuple(tiling.sub_tiling(cells) for cells in self.partition)
 
     def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
         if children is None:
             children = self.decomposition_function(comb_class)
@@ -60,9 +63,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         ):
             for idx, child in enumerate(children):
                 # TODO: consider skew/sum
-                new_assumption = child.forward_map_assumption(
-                    assumption, check_avoidance=False
-                )
+                new_assumption = child.forward_map_assumption(assumption)
                 if new_assumption.gps:
                     child_var = child.get_parameter(new_assumption)
                     extra_parameters[idx][parent_var] = child_var
@@ -214,27 +215,6 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
         super().__init__(parent, children, extra_parameters)
         self.interleaving_parameters = tuple(interleaving_parameters)
 
-    @classmethod
-    def untracked(
-        cls,
-        parent: Tiling,
-        children: Iterable[Tiling],
-        extra_parameters: Tuple[Dict[str, str], ...],
-    ) -> "Interleaving":
-        res = cls(parent, children, extra_parameters, [])
-
-        def f(*args, **kwargs):
-            raise NotImplementedError(
-                "enumeration for untracked interleaving factors is not implemented"
-            )
-
-        # Overwriting methods is bad practice, but useful here!
-        res.get_recurrence = f  # type: ignore
-        res.get_equation = f  # type: ignore
-        res.get_sub_objects = f  # type: ignore
-        res.random_sample_sub_objects = f  # type: ignore
-        return res
-
     @staticmethod
     def is_equivalence() -> bool:
         return False
@@ -266,17 +246,9 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
         subsamplers: SubSamplers,
         subrecs: SubRecs,
         n: int,
-        **parameters: int
+        **parameters: int,
     ):
         raise NotImplementedError
-
-    @staticmethod
-    def get_eq_symbol() -> str:
-        return "="
-
-    @staticmethod
-    def get_op_symbol() -> str:
-        return "*"
 
 
 class FactorWithInterleavingStrategy(FactorStrategy):
@@ -284,17 +256,15 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         return "interleaving " + super().formal_step()
 
     def constructor(
-        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None,
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Interleaving:
         if children is None:
             children = self.decomposition_function(tiling)
         try:
             interleaving_parameters = self.interleaving_parameters(tiling)
-        except ValueError:
+        except ValueError as e:
             # must be untracked
-            return Interleaving.untracked(
-                tiling, children, self.extra_parameters(tiling, children)
-            )
+            raise NotImplementedError("The interleaving factor was not tracked.") from e
         return Interleaving(
             tiling,
             children,
@@ -302,7 +272,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
             interleaving_parameters,
         )
 
-    def interleaving_parameters(self, comb_class: Tiling,) -> List[Tuple[str, ...]]:
+    def interleaving_parameters(self, comb_class: Tiling) -> List[Tuple[str, ...]]:
         """
         Return the parameters on the parent tiling that needed to be interleaved.
         """
@@ -346,6 +316,14 @@ class FactorWithInterleavingStrategy(FactorStrategy):
     ) -> Tuple[GriddedPerm, ...]:
         raise NotImplementedError
 
+    @staticmethod
+    def get_eq_symbol() -> str:
+        return "="
+
+    @staticmethod
+    def get_op_symbol() -> str:
+        return "*"
+
     def __repr__(self) -> str:
         return (
             self.__class__.__name__
@@ -365,14 +343,11 @@ class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
             children = self.decomposition_function(tiling)
         try:
             interleaving_parameters = self.interleaving_parameters(tiling)
-        except ValueError:
+        except ValueError as e:
             # must be untracked
-            return cast(
-                MonotoneInterleaving,
-                MonotoneInterleaving.untracked(
-                    tiling, children, self.extra_parameters(tiling, children)
-                ),
-            )
+            raise NotImplementedError(
+                "The monotone interleaving was not tracked."
+            ) from e
         return MonotoneInterleaving(
             tiling,
             children,
@@ -404,12 +379,12 @@ class FactorFactory(StrategyFactory[Tiling]):
             self.factor_algo, self.factor_class = self.FACTOR_ALGO_AND_CLASS[
                 interleaving
             ]
-        except KeyError:
+        except KeyError as e:
             raise InvalidOperationError(
-                "Invalid interleaving option. Must be in {}, used {}".format(
-                    FactorFactory.FACTOR_ALGO_AND_CLASS.keys(), interleaving
-                )
-            )
+                "Invalid interleaving option. Must be in "
+                f"{FactorFactory.FACTOR_ALGO_AND_CLASS.keys()}, "
+                f"used {interleaving}"
+            ) from e
         self.unions = unions
         self.ignore_parent = ignore_parent
         self.workable = workable
@@ -430,23 +405,33 @@ class FactorFactory(StrategyFactory[Tiling]):
                     if not self.tracked or contains_interleaving_assumptions(
                         comb_class, components
                     ):
-                        yield self.factor_class(
-                            components, ignore_parent=self.ignore_parent, workable=False
-                        )
+                        yield self._build_strategy(components, workable=False)
             if not self.tracked or contains_interleaving_assumptions(
                 comb_class, min_comp
             ):
-                yield self.factor_class(
-                    min_comp, ignore_parent=self.ignore_parent, workable=self.workable,
-                )
+                yield self._build_strategy(min_comp, workable=self.workable)
+
+    def _build_strategy(
+        self, components: Tuple[Tuple[Cell, ...], ...], workable: bool
+    ) -> FactorStrategy:
+        """
+        Build the factor strategy for the given components.
+
+        It ensure that a plain factor rule is returned.
+        """
+        interleaving = any(interleaving_rows_and_cols(components))
+        factor_strat = self.factor_class if interleaving else FactorStrategy
+        return factor_strat(
+            components, ignore_parent=self.ignore_parent, workable=workable
+        )
 
     def __str__(self) -> str:
         if self.factor_class is FactorStrategy:
             s = "factor"
         elif self.factor_class is FactorWithInterleavingStrategy:
-            s = "factor with monotone interleaving"
-        elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
             s = "factor with interleaving"
+        elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
+            s = "factor with monotone interleaving"
         else:
             raise Exception("Invalid interleaving type")
         if self.unions:

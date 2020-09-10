@@ -128,7 +128,7 @@ class GriddedPermReduction:
     # that factor from all of them and add it as it's own size one requirement list
     # [size one requirement list inferral]
     @staticmethod
-    def factored_reqs(requirements: Iterable[Requirement],) -> List[Requirement]:
+    def factored_reqs(requirements: Iterable[Requirement]) -> List[Requirement]:
         """
         Add factors of requirements as size one requirements, removing them
         from each of the gridded permutations in the requirement it is

@@ -120,17 +120,17 @@ class ObstructionTransitivity:
         """
         left, right = ineq
         if left == right:
-            return GriddedPerm(Perm((0,)), (left,))
+            return GriddedPerm((0,), (left,))
         if left[0] == right[0]:
             # same column
             if left[1] < right[1]:
-                return GriddedPerm(Perm((1, 0)), [right, left])
-            return GriddedPerm(Perm((0, 1)), [right, left])
+                return GriddedPerm((1, 0), [right, left])
+            return GriddedPerm((0, 1), [right, left])
         if left[1] == right[1]:
             # same row
             if left[0] < right[0]:
-                return GriddedPerm(Perm((1, 0)), [left, right])
-            return GriddedPerm(Perm((0, 1)), [right, left])
+                return GriddedPerm((1, 0), [left, right])
+            return GriddedPerm((0, 1), [right, left])
         raise ValueError(
             ("Can not construct an obstruction from inequality {} < {}").format(
                 left, right

@@ -4,7 +4,6 @@ import os
 import pytest
 
 from comb_spec_searcher import CombinatorialSpecification
-from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor
 from tilings.assumptions import TrackingAssumption
@@ -34,9 +33,9 @@ def tplaced_tracked(tplaced):
         tplaced.obstructions,
         tplaced.requirements,
         [
-            TrackingAssumption([GriddedPerm.single_cell(Perm((0,)), (0, 0))]),
-            TrackingAssumption([GriddedPerm.single_cell(Perm((0,)), (0, 0))]),
-            TrackingAssumption([GriddedPerm.single_cell(Perm((0,)), (2, 0))]),
+            TrackingAssumption([GriddedPerm.single_cell((0,), (0, 0))]),
+            TrackingAssumption([GriddedPerm.single_cell((0,), (0, 0))]),
+            TrackingAssumption([GriddedPerm.single_cell((0,), (2, 0))]),
         ],
     )
 
@@ -88,9 +87,7 @@ def test_json(all_tilings):
         assert Tiling.from_json(json.dumps(tiling.to_jsonable())) == tiling
 
 
-def test_factors(
-    tplaced_tracked, tplaced_tracked_factored1, tplaced_tracked_factored2,
-):
+def test_factors(tplaced_tracked, tplaced_tracked_factored1, tplaced_tracked_factored2):
     assert len(tplaced_tracked_factored1.assumptions) == 2
 
     assert all(
@@ -98,10 +95,10 @@ def test_factors(
         for ass in tplaced_tracked_factored1.assumptions
     )
     assert tplaced_tracked_factored1.assumptions[0].gps == (
-        GriddedPerm.single_cell(Perm((0,)), (0, 0)),
+        GriddedPerm.single_cell((0,), (0, 0)),
     )
     assert tplaced_tracked_factored1.assumptions[1].gps == (
-        GriddedPerm.single_cell(Perm((0,)), (1, 0)),
+        GriddedPerm.single_cell((0,), (1, 0)),
     )
 
     assert set(Factor(tplaced_tracked).factors()) == set(
@@ -109,11 +106,12 @@ def test_factors(
     )
 
 
-@pytest.mark.timeout(60)
+@pytest.mark.timeout(90)
 def test_123_fusion():
     pack = TileScopePack.row_and_col_placements(row_only=True).make_fusion(tracked=True)
     css = TileScope("123", pack)
     spec = css.auto_search(status_update=30)
+    spec.expand_verified()
     assert isinstance(spec, CombinatorialSpecification)
     assert [spec.count_objects_of_size(i) for i in range(20)] == [
         1,
@@ -146,6 +144,8 @@ def test_123_positive_fusions():
     )
     css = TileScope("123", pack)
     spec = css.auto_search(status_update=30)
+    spec.expand_verified()
+    print(spec)
     assert isinstance(spec, CombinatorialSpecification)
     assert [spec.count_objects_of_size(i) for i in range(20)] == [
         1,
@@ -176,6 +176,7 @@ def test_123_interleaving():
     pack = TileScopePack.point_placements().make_interleaving()
     css = TileScope("123", pack)
     spec = css.auto_search(status_update=30)
+    spec.expand_verified()
     assert isinstance(spec, CombinatorialSpecification)
     assert [spec.count_objects_of_size(i) for i in range(20)] == [
         1,
