@@ -1,16 +1,15 @@
 from sympy import Eq, Function, var
 
-from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
 from tilings.strategies import SplittingStrategy
 
 t = Tiling(
     obstructions=[
-        GriddedPerm.single_cell(Perm((0, 1, 2)), (0, 0)),
-        GriddedPerm.single_cell(Perm((0, 1)), (1, 0)),
-        GriddedPerm.single_cell(Perm((0, 1, 2)), (2, 1)),
-        GriddedPerm.single_cell(Perm((0, 1, 2)), (3, 1)),
+        GriddedPerm.single_cell((0, 1, 2), (0, 0)),
+        GriddedPerm.single_cell((0, 1), (1, 0)),
+        GriddedPerm.single_cell((0, 1, 2), (2, 1)),
+        GriddedPerm.single_cell((0, 1, 2), (3, 1)),
     ],
     assumptions=[
         TrackingAssumption(
@@ -76,8 +75,8 @@ def test_any_interleaving():
 def test_splitting_gf():
     parent = Tiling(
         obstructions=(
-            GriddedPerm.single_cell(Perm((0, 1)), (0, 1)),
-            GriddedPerm.single_cell(Perm((0, 1)), (1, 0)),
+            GriddedPerm.single_cell((0, 1), (0, 1)),
+            GriddedPerm.single_cell((0, 1), (1, 0)),
         ),
         assumptions=(
             TrackingAssumption(
@@ -88,8 +87,8 @@ def test_splitting_gf():
     )
     child = Tiling(
         obstructions=(
-            GriddedPerm.single_cell(Perm((0, 1)), (0, 1)),
-            GriddedPerm.single_cell(Perm((0, 1)), (1, 0)),
+            GriddedPerm.single_cell((0, 1), (0, 1)),
+            GriddedPerm.single_cell((0, 1), (1, 0)),
         ),
         assumptions=(
             TrackingAssumption([GriddedPerm.point_perm((0, 1))]),

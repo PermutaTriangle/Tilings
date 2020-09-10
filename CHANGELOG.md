@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   on tilings that don't already have any
 - converted the expansion strategies in several strategy packs to be a single set
 - requirement corroboration is only enabled when requirements of length > 1 are placed
+- A gridded permutation can now be built from any iterable of integer, not only
+  from permutation.
 
 ### Fixed
 - untracked constructors raise `NotImplementedError`

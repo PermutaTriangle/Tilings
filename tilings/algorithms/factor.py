@@ -2,7 +2,6 @@ from collections import defaultdict
 from itertools import chain, combinations
 from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
-from permuta import Perm
 from permuta.misc import UnionFind
 from tilings import GriddedPerm
 from tilings.assumptions import ComponentAssumption, TrackingAssumption
@@ -159,7 +158,7 @@ class Factor:
         if self._factors_obs_and_reqs is not None:
             return self._factors_obs_and_reqs
         if self._tiling.is_empty():
-            return [((GriddedPerm(Perm(), []),), tuple(), tuple())]
+            return [((GriddedPerm((), []),), tuple(), tuple())]
         factors = []
         for component in self.get_components():
             obstructions = tuple(

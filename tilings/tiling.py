@@ -214,7 +214,7 @@ class Tiling(CombinatorialClass):
             non_point_obstructions = self._obstructions[index:]
 
             new_point_obstructions = tuple(
-                GriddedPerm(Perm((0,)), (cell,)) for cell in empty_cells
+                GriddedPerm((0,), (cell,)) for cell in empty_cells
             )
             self._obstructions = new_point_obstructions + non_point_obstructions
 
@@ -246,7 +246,7 @@ class Tiling(CombinatorialClass):
         if not self.active_cells:
             assert GriddedPerm.empty_perm() not in self.obstructions
             self._cached_properties["forward_map"] = {}
-            self._obstructions = (GriddedPerm.single_cell(Perm((0,)), (0, 0)),)
+            self._obstructions = (GriddedPerm.single_cell((0,), (0, 0)),)
             self._requirements = tuple()
             self._assumptions = tuple()
             self._cached_properties["dimensions"] = (1, 1)
@@ -1442,8 +1442,8 @@ class Tiling(CombinatorialClass):
     def is_point_or_empty(self) -> bool:
         point_or_empty_tiling = Tiling(
             obstructions=(
-                GriddedPerm(Perm((0, 1)), ((0, 0), (0, 0))),
-                GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((1, 0), ((0, 0), (0, 0))),
             )
         )
         return self == point_or_empty_tiling
@@ -1622,9 +1622,7 @@ class Tiling(CombinatorialClass):
         permutation 'p'
         """
         return cls(
-            requirements=[
-                [GriddedPerm(Perm((0,)), ((i, p[i]),))] for i in range(len(p))
-            ]
+            requirements=[[GriddedPerm((0,), ((i, p[i]),))] for i in range(len(p))]
         )
 
     def get_genf(self, *args, **kwargs) -> sympy.Expr:

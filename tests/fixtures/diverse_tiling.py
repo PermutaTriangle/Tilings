@@ -1,6 +1,5 @@
 import pytest
 
-from permuta import Perm
 from tilings import GriddedPerm, Tiling
 
 
@@ -12,19 +11,19 @@ def diverse_tiling():
     requirements and a long obstructions."""
     return Tiling(
         obstructions=[
-            GriddedPerm(Perm((0, 2, 3, 1)), [(0, 0), (1, 1), (1, 1), (2, 0)]),
-            GriddedPerm(Perm((0, 1)), [(1, 0), (1, 0)]),
-            GriddedPerm(Perm((1, 0)), [(1, 0), (1, 0)]),
-            GriddedPerm(Perm((0, 1)), [(2, 1), (2, 1)]),
-            GriddedPerm(Perm((1, 0)), [(2, 1), (2, 1)]),
+            GriddedPerm((0, 2, 3, 1), [(0, 0), (1, 1), (1, 1), (2, 0)]),
+            GriddedPerm((0, 1), [(1, 0), (1, 0)]),
+            GriddedPerm((1, 0), [(1, 0), (1, 0)]),
+            GriddedPerm((0, 1), [(2, 1), (2, 1)]),
+            GriddedPerm((1, 0), [(2, 1), (2, 1)]),
         ],
         requirements=[
             [
-                GriddedPerm(Perm((0, 2, 1)), [(0, 1), (0, 2), (1, 2)]),
-                GriddedPerm(Perm((1, 0)), [(0, 2), (0, 1)]),
+                GriddedPerm((0, 2, 1), [(0, 1), (0, 2), (1, 2)]),
+                GriddedPerm((1, 0), [(0, 2), (0, 1)]),
             ],
-            [GriddedPerm(Perm((0,)), [(1, 0)])],
-            [GriddedPerm(Perm((0,)), [(2, 0)])],
-            [GriddedPerm(Perm((0,)), [(2, 1)])],
+            [GriddedPerm((0,), [(1, 0)])],
+            [GriddedPerm((0,), [(2, 0)])],
+            [GriddedPerm((0,), [(2, 1)])],
         ],
     )

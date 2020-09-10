@@ -15,7 +15,6 @@ from comb_spec_searcher.strategies.constructor import (
     SubSamplers,
 )
 from comb_spec_searcher.utils import compositions
-from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import factor
 from tilings.assumptions import (
@@ -210,7 +209,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         decomposition = self.skew_decomposition(assumption.cells)
         return [
             SkewComponentAssumption(
-                GriddedPerm.single_cell(Perm((0,)), cell) for cell in cells
+                GriddedPerm.single_cell((0,), cell) for cell in cells
             )
             for cells in decomposition
         ]
@@ -221,7 +220,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         decomposition = self.sum_decomposition(assumption.cells)
         return [
             SumComponentAssumption(
-                GriddedPerm.single_cell(Perm((0,)), cell) for cell in cells
+                GriddedPerm.single_cell((0,), cell) for cell in cells
             )
             for cells in decomposition
         ]
