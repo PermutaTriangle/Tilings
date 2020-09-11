@@ -29,7 +29,6 @@ setup(
         "comb-spec-searcher==2.2.1",
         "permuta==2.0.2",
         "requests==2.24.0",
-        "typing-extensions==3.7.4.3",
     ],
     python_requires=">=3.6",
     classifiers=[
