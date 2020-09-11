@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [2.3.1] - 2020-09-11
+### Fixed
+- Dependency issue when installing
+
 ## [2.3.0] - 2020-09-10
 ### Added
 - introduced isolation levels to the fusion strategy
