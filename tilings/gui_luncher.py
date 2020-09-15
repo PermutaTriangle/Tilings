@@ -1,9 +1,12 @@
+import re
 import subprocess
 import sys
 from importlib.util import find_spec
 from typing import Optional, Tuple
 
-if tuple(map(int, sys.version.split()[0].split("."))) < (3, 8, 0):
+if tuple(
+    map(lambda z: int(re.sub("[^0-9]", "", z)), sys.version.split()[0].split("."))
+) < (3, 8, 0):
     from importlib_metadata import version  # pylint: disable=import-error
 else:
     from importlib.metadata import version  # pylint: disable=ungrouped-imports
