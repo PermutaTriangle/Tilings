@@ -4,7 +4,7 @@ from typing import Callable, Dict, FrozenSet, Iterable, Iterator, List, Optional
 
 from comb_spec_searcher import CombinatorialObject
 from permuta import Perm
-from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, UnionFind
+from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, HTMLViewer, UnionFind
 
 Cell = Tuple[int, int]
 Position = Tuple[Cell, ...]
@@ -505,6 +505,134 @@ class GriddedPerm(CombinatorialObject):
             res = res[:insert] + "●" + res[insert + 1 :]
         return res
 
+    def to_tex(self, one_line_notation: bool = True, one_based: bool = True) -> str:
+        """Return the GriddedPerm in LaTeX math mode."""
+        if one_line_notation:
+            return "".join(f"{val + one_based}^{{({x},{y})}}" for val, (x, y) in self)
+        perm = (
+            "".join(
+                (f"({val + one_based})" for val in self.patt)
+                if len(self) > 9
+                else (f"{val + one_based}" for val in self.patt)
+            )
+            if one_based
+            else f"{self.patt}"
+        )
+        return f"({perm}, {self.pos})"
+
+    def _get_plot_pos(self) -> Tuple[Dict[int, Tuple[float, float]], Tuple[int, int]]:
+        """Helper that positions visualization points of GriddedPerm."""
+        dim = (1 + max(x for _, (x, _) in self), 1 + max(y for _, (_, y) in self))
+        col_to_val: List[List[Tuple[int, int]]] = [[] for i in range(dim[0])]
+        row_to_val: List[List[Tuple[int, int]]] = [[] for i in range(dim[1])]
+        val_to_pos = {}
+        for val, (x, y) in self:
+            col_to_val[x].append((val, len(col_to_val[x])))
+            row_to_val[y].append((val, len(row_to_val[y])))
+            val_to_pos[val] = (x, y)
+        return {
+            val: (
+                next(
+                    (
+                        x + (k + 1) * (1 / (len(col_to_val[x]) + 1))
+                        for j, k in sorted(col_to_val[x])
+                        if j == val
+                    )
+                ),
+                next(
+                    (
+                        y + (i + 1) * (1 / (len(row_to_val[y]) + 1))
+                        for i, (j, _) in enumerate(sorted(row_to_val[y]))
+                        if j == val
+                    )
+                ),
+            )
+            for val, (x, y) in val_to_pos.items()
+        }, dim
+
+    def to_tikz(self, tab: str = "  ") -> str:
+        """Return the tikz code to plot the GriddedPerm."""
+        val_to_pos, (max_x, max_y) = self._get_plot_pos()
+        return "".join(
+            (
+                "\\begin{tikzpicture}\n",
+                f"{tab}\\def\\xs{{1.0}}\n",
+                f"{tab}\\def\\ys{{1.0}}\n",
+                f"{tab}\\def\\ps{{1.0}}\n",
+                (
+                    f"{tab}\\draw (0,0) grid[xscale=\\xs,yscale=\\ys] "
+                    f"({max_x}, {max_y});\n"
+                ),
+                "\n".join(
+                    (
+                        f"{tab}\\coordinate (p{i}) at "
+                        f"({val_to_pos[v][0]}*\\xs,{val_to_pos[v][1]}*\\ys);"
+                    )
+                    for i, v in enumerate(self.patt)
+                ),
+                f'\n{tab}\\draw {"--".join(f"(p{i})" for i in range(len(self)))};\n',
+                "\n".join(
+                    f"{tab}\\fill (p{i}) circle (0.1*\\ps);" for i in range(len(self))
+                ),
+                "\n\\end{tikzpicture}",
+            )
+        )
+
+    def to_svg(self, image_scale: float = 10.0) -> str:
+        """Return the svg code to plot the GriddedPerm."""
+        i_scale = int(image_scale * 10)
+        val_to_pos, (m_x, m_y) = self._get_plot_pos()
+        return "".join(
+            [
+                (
+                    '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width='
+                    f'"{m_x * i_scale}" height="{m_y * i_scale}" '
+                    f'viewBox="0 0 {m_x*10} {m_y*10}">\n'
+                ),
+                "\n".join(
+                    (
+                        f'<line x1="{i*10}" y1="0" x2="{i*10}" y2="{m_y*10}" '
+                        'style="stroke:rgb(0,0,0);stroke-width:0.5" />'
+                    )
+                    for i in range(m_x + 1)
+                ),
+                "\n",
+                "\n".join(
+                    (
+                        f'<line x1="0" y1="{i*10}" x2="{m_x*10}" y2="{i*10}" '
+                        'style="stroke:rgb(0,0,0);stroke-width:0.5" />'
+                    )
+                    for i in range(m_y + 1)
+                ),
+                "\n",
+                (
+                    lambda path: (
+                        f'<polyline points="{path}" fill="none" '
+                        'stroke="black" stroke-width="0.65" />\n'
+                    )
+                )(
+                    " ".join(
+                        f"{x * 10},{(m_y - y) * 10}"
+                        for x, y in (val_to_pos[val] for val in self.patt)
+                    )
+                ),
+                "\n".join(
+                    (
+                        f'<circle cx="{(10 * x):.4f}" cy="{(10 * (m_y - y)):.4f}" '
+                        'r="0.5" stroke="black" fill="rgb(0,0,0)" />'
+                    )
+                    for x, y in (val_to_pos[val] for val in self.patt)
+                ),
+                "\n</svg>",
+            ]
+        )
+
+    def show(self, scale: float = 10.0) -> None:
+        """Open a browser tab and display GriddedPerm graphically. Image can be
+        enlarged with scale parameter
+        """
+        HTMLViewer.open_svg(self.to_svg(image_scale=scale))
+
     def __len__(self) -> int:
         return len(self._patt)
 
@@ -526,8 +654,7 @@ class GriddedPerm(CombinatorialObject):
         return (self._patt, self._pos) < (other.patt, other.pos)
 
     def __contains__(self, other: "GriddedPerm") -> bool:
-        try:
-            next(other.occurrences_in(self))
-            return True
-        except StopIteration:
-            return False
+        return next((True for _ in other.occurrences_in(self)), False)
+
+    def __iter__(self) -> Iterator[Tuple[int, Cell]]:
+        return zip(self.patt, self.pos)

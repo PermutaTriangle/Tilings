@@ -361,3 +361,21 @@ def test_compression(simpleob, singlecellob, everycellob, typicalob, isolatedob)
     assert everycellob == GriddedPerm.decompress(everycellob.compress())
     assert typicalob == GriddedPerm.decompress(typicalob.compress())
     assert isolatedob == GriddedPerm.decompress(isolatedob.compress())
+
+
+def test_plot_helper():
+    gp = GriddedPerm(
+        Perm((0, 3, 6, 1, 4, 7, 2, 5, 8)),
+        ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)),
+    )
+    pos, dim = gp._get_plot_pos()
+    assert dim == (3, 3)
+    assert pos[0] == (0.25, 0.25)
+    assert pos[3] == (0.5, 1.25)
+    assert pos[6] == (0.75, 2.25)
+    assert pos[1] == (1.25, 0.5)
+    assert pos[4] == (1.5, 1.5)
+    assert pos[7] == (1.75, 2.5)
+    assert pos[2] == (2.25, 0.75)
+    assert pos[5] == (2.5, 1.75)
+    assert pos[8] == (2.75, 2.75)
