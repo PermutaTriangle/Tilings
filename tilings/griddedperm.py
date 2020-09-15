@@ -520,39 +520,38 @@ class GriddedPerm(CombinatorialObject):
         )
         return f"({perm}, {self.pos})"
 
-    def _get_plot_pos(self):
+    def _get_plot_pos(self) -> Tuple[Dict[int, Tuple[float, float]], Tuple[int, int]]:
+        """Helper that positions visualization points of GriddedPerm."""
         dim = (1 + max(x for _, (x, _) in self), 1 + max(y for _, (_, y) in self))
-        col_to_val = {i: [] for i in range(dim[0])}
-        row_to_val = {i: [] for i in range(dim[1])}
+        col_to_val: List[List[Tuple[int, int]]] = [[] for i in range(dim[0])]
+        row_to_val: List[List[Tuple[int, int]]] = [[] for i in range(dim[1])]
         val_to_pos = {}
         for val, (x, y) in self:
             col_to_val[x].append((val, len(col_to_val[x])))
             row_to_val[y].append((val, len(row_to_val[y])))
             val_to_pos[val] = (x, y)
-        for col, value in col_to_val.items():
-            col_to_val[col] = sorted(value)
-        for row, value in row_to_val.items():
-            row_to_val[row] = sorted(value)
-        for val, (x, y) in val_to_pos.items():
-            val_to_pos[val] = (
+        return {
+            val: (
                 next(
                     (
                         x + (k + 1) * (1 / (len(col_to_val[x]) + 1))
-                        for j, k in col_to_val[x]
+                        for j, k in sorted(col_to_val[x])
                         if j == val
                     )
                 ),
                 next(
                     (
                         y + (i + 1) * (1 / (len(row_to_val[y]) + 1))
-                        for i, (j, _) in enumerate(row_to_val[y])
+                        for i, (j, _) in enumerate(sorted(row_to_val[y]))
                         if j == val
                     )
                 ),
             )
-        return val_to_pos, dim
+            for val, (x, y) in val_to_pos.items()
+        }, dim
 
     def to_tikz(self, tab: str = "  ") -> str:
+        """Return the tikz code to plot the GriddedPerm."""
         val_to_pos, (max_x, max_y) = self._get_plot_pos()
         return "".join(
             (
@@ -580,6 +579,7 @@ class GriddedPerm(CombinatorialObject):
         )
 
     def to_svg(self, image_scale: float = 10.0) -> str:
+        """Return the svg code to plot the GriddedPerm."""
         i_scale = int(image_scale * 10)
         val_to_pos, (m_x, m_y) = self._get_plot_pos()
         return "".join(
@@ -628,6 +628,9 @@ class GriddedPerm(CombinatorialObject):
         )
 
     def show(self, scale: float = 10.0) -> None:
+        """Open a browser tab and display GriddedPerm graphically. Image can be
+        enlarged with scale parameter
+        """
         HTMLViewer.open_svg(self.to_svg(image_scale=scale))
 
     def __len__(self) -> int:
