@@ -152,7 +152,7 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         if not tiling.requirements or (
             len(tiling.requirements) == 1
             and len(tiling.requirements[0]) == 1
-            and len(tiling.requirements[0][0]) == 1
+            and len(tiling.requirements[0][0]) <= 2
         ):
             if basis in ([Perm((0, 1, 2))], [Perm((2, 1, 0))]):
                 # Av(123) or Av(321) - use fusion!

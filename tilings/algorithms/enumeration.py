@@ -130,7 +130,9 @@ class LocalEnumeration(Enumeration):
             ):
                 return sympify("-1/2*(sqrt(-4*x + 1) - 1)/x")
             # TODO: should this create a spec as in the strategy?
-            raise NotImplementedError("Look up the combopal database")
+            raise NotImplementedError(
+                f"Look up the combopal database for:\n{self.tiling}"
+            )
         gf = None
         if MonotoneTreeEnumeration(self.tiling).verified():
             gf = MonotoneTreeEnumeration(self.tiling).get_genf()
