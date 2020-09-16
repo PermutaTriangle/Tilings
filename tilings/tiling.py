@@ -49,6 +49,7 @@ from .assumptions import (
 )
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
+from .gui_luncher import run_gui
 from .misc import intersection_reduce, map_cell, union_reduce
 
 __all__ = ["Tiling"]
@@ -1656,6 +1657,10 @@ class Tiling(CombinatorialClass):
         raise NotImplementedError(
             "We were unable to enumerate this tiling:\n" + str(self)
         )
+
+    def to_gui(self):
+        """Try to open the current tiling in the GUI."""
+        run_gui(json.dumps(self.to_jsonable(), separators=(",", ":")))
 
     # -------------------------------------------------------------
     # Dunder methods
