@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `to_tex` for gridded perms.
 - `to_tikz` for gridded perms.
 - `to_svg` for gridded perms.
+- `to_gui` for tilings.
 
 ## [2.3.1] - 2020-09-11
 ### Fixed

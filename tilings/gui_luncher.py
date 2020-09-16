@@ -30,6 +30,7 @@ def in_path_version(interpreter: str) -> Optional[Tuple[int, ...]]:
                         "tilingsgui",
                     ],
                     stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
                     check=True,
                 )
                 .stdout.decode("utf-8")
