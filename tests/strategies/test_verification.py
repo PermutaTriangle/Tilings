@@ -972,6 +972,36 @@ class TestOneByOneVerificationStrategy(CommonTest):
         assert strategy.verified(t)
         assert strategy.get_genf(t) == sympy.sympify("-1/(k_0*x - 1)")
 
+    def test_with_123_subclass_12req(self, strategy):
+        t2 = Tiling(
+            obstructions=[
+                GriddedPerm((2, 1, 0), ((0, 0),) * 3),
+                GriddedPerm((1, 0, 3, 2), ((0, 0),) * 4),
+            ],
+            requirements=[[GriddedPerm((1, 0), ((0, 0),) * 2)]],
+        )
+        assert strategy.verified(t2)
+        genf = strategy.get_genf(t2)
+        assert taylor_expand(genf, 16) == [
+            0,
+            0,
+            1,
+            4,
+            12,
+            32,
+            79,
+            184,
+            410,
+            884,
+            1861,
+            3852,
+            7880,
+            15992,
+            32283,
+            64944,
+            130358,
+        ]
+
 
 class TestShortObstructionVerificationStrategy(CommonTest):
     @pytest.fixture
