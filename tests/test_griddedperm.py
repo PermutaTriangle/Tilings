@@ -379,3 +379,58 @@ def test_plot_helper():
     assert pos[2] == (2.25, 0.75)
     assert pos[5] == (2.5, 1.75)
     assert pos[8] == (2.75, 2.75)
+
+
+def test_permute_columns():
+    gp1 = GriddedPerm(
+        (5, 1, 4, 2, 7, 3, 6, 0),
+        ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2), (2, 1), (3, 2), (3, 0)),
+    )
+    perm1 = (3, 2, 0, 1)
+    expected1 = GriddedPerm(
+        (6, 0, 3, 5, 1, 4, 2, 7),
+        ((0, 2), (0, 0), (1, 1), (2, 1), (2, 0), (3, 1), (3, 0), (3, 2)),
+    )
+
+    gp2 = GriddedPerm(
+        (0,),
+        ((0, 0),),
+    )
+    perm2 = (1, 2, 0)
+    expected2 = GriddedPerm(
+        (0,),
+        ((2, 0),),
+    )
+
+    assert gp1.permute_columns(perm1) == expected1
+    assert gp2.permute_columns(perm2) == expected2
+
+
+def test_column_reverse():
+    assert GriddedPerm(
+        (4, 1, 3, 0, 5, 2), ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2), (2, 1))
+    ).column_reverse(1) == GriddedPerm(
+        (4, 1, 5, 0, 3, 2), ((0, 1), (0, 0), (1, 2), (1, 0), (1, 1), (2, 1))
+    )
+
+
+def test_row_complement():
+    assert GriddedPerm(
+        (2, 0, 4, 5, 8, 1, 7, 6, 3),
+        ((0, 1), (0, 0), (0, 1), (0, 1), (0, 2), (1, 0), (1, 2), (1, 1), (1, 1)),
+    ).row_complement(1) == GriddedPerm(
+        (6, 0, 4, 3, 8, 1, 7, 2, 5),
+        ((0, 1), (0, 0), (0, 1), (0, 1), (0, 2), (1, 0), (1, 2), (1, 1), (1, 1)),
+    )
+
+    for gp in (
+        GriddedPerm((1, 0), ((2, 2), (2, 1))),
+        GriddedPerm(
+            (5, 1, 4, 2, 7, 3, 6, 0),
+            ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2), (2, 1), (3, 2), (3, 0)),
+        ),
+    ):
+        for i in range(3):
+            assert gp.rotate90(lambda z: (z[1], 3 - z[0] - 1)).column_reverse(
+                i
+            ).rotate270(lambda z: (3 - z[1] - 1, z[0])) == gp.row_complement(i)
