@@ -1,5 +1,5 @@
 import json
-from itertools import chain, combinations, islice, product
+from itertools import chain, combinations, islice, product, tee
 from typing import Callable, Dict, FrozenSet, Iterable, Iterator, List, Optional, Tuple
 
 from comb_spec_searcher import CombinatorialObject
@@ -98,19 +98,13 @@ class GriddedPerm(CombinatorialObject):
     def isolated_cells(self) -> Iterator[Cell]:
         """Yields the cells that contain only one point of the gridded
         permutation and are in their own row and column."""
-        for i in range(len(self)):
-            isolated = True
-            for j in range(len(self)):
-                if i == j:
-                    continue
-                if (
-                    self._pos[i][0] == self._pos[j][0]
-                    or self._pos[i][1] == self._pos[j][1]
-                ):
-                    isolated = False
-                    break
-            if isolated:
-                yield self._pos[i]
+        return (
+            (x1, y1)
+            for i, (_, (x1, y1)) in enumerate(self)
+            if not any(
+                x1 == x2 or y1 == y2 for j, (_, (x2, y2)) in enumerate(self) if i != j
+            )
+        )
 
     def is_isolated(self, indices: Iterable[int]) -> bool:
         """Checks if the cells at the indices do not share a row or column with
@@ -199,11 +193,9 @@ class GriddedPerm(CombinatorialObject):
 
     def get_subperm_left_col(self, col: int) -> "GriddedPerm":
         """Returns the gridded subpermutation of points left of column col."""
+        gen1, gen2 = tee((i for i, _ in self.get_points_left_col(col)), 2)
         return self.__class__(
-            Perm.to_standard(
-                self.patt[i] for i in range(len(self)) if self.pos[i][0] < col
-            ),
-            (self.pos[i] for i in range(len(self)) if self.pos[i][0] < col),
+            Perm.to_standard(self.patt[i] for i in gen1), (self.pos[i] for i in gen2)
         )
 
     def get_points_right_col(self, col: int) -> Iterator[Tuple[int, int]]:
@@ -311,11 +303,11 @@ class GriddedPerm(CombinatorialObject):
 
     def is_single_cell(self) -> bool:
         """Check if the gridded permutation occupies only a single cell."""
-        return len(set(self._pos)) == 1
+        return len(self._cells) == 1
 
     def is_single_row(self) -> bool:
         """Check if the gridded permutation occupies only a single row."""
-        return len(set(y for (x, y) in self._pos)) == 1
+        return len(set(y for (x, y) in self._cells)) == 1
 
     def is_empty(self) -> bool:
         """Check if the gridded permutation is the gridded permutation."""
@@ -341,10 +333,9 @@ class GriddedPerm(CombinatorialObject):
         A factor is a sub gridded permutation that is isolated on its own rows
         and columns."""
         uf = UnionFind(len(self.pos))
-        for i in range(len(self.pos)):
-            for j in range(i + 1, len(self.pos)):
-                c1, c2 = self.pos[i], self.pos[j]
-                if c1[0] == c2[0] or c1[1] == c2[1]:
+        for j, (_, (x_r, y_r)) in enumerate(self):
+            for i, (_, (x_l, y_l)) in enumerate(islice(self, j)):
+                if x_l == x_r or y_l == y_r:
                     uf.unite(i, j)
         # Collect the connected factors of the cells
         all_factors: Dict[int, List[Cell]] = {}
