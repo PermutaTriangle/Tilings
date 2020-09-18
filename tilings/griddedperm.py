@@ -391,7 +391,7 @@ class GriddedPerm(CombinatorialObject):
         parts: Tuple[List[Tuple[int, Tuple[int, int]]], ...] = ([], [], [])
         for v, (x, y) in self:
             parts[(x >= column) + (x > column)].append((v, (x, y)))
-        return GriddedPerm(*zip(*chain(parts[0], reversed(parts[1]), parts[2])))
+        return type(self)(*zip(*chain(parts[0], reversed(parts[1]), parts[2])))
 
     def row_complement(self, row: int) -> "GriddedPerm":
         """Replace the part of the gridded perm that belongs to a row with its
@@ -404,7 +404,7 @@ class GriddedPerm(CombinatorialObject):
         st = Perm.to_standard(vals)
         unstandardized = dict(zip(st, vals))
         in_row = (unstandardized[val] for val in st.complement())
-        return GriddedPerm(
+        return type(self)(
             Perm(
                 next(in_row) if i in indices else val for i, val in enumerate(self.patt)
             ),
@@ -426,13 +426,26 @@ class GriddedPerm(CombinatorialObject):
             for v, y in col:
                 patt.append(v)
                 positions.append((x, y))
-        return GriddedPerm(patt, positions)
+        return type(self)(patt, positions)
 
     def permute_rows(self, perm: Iterable[int]) -> "GriddedPerm":
+        """Given an initial state of rows 12...n, permute them using the provided
+        permutation.
+        """
         if not isinstance(perm, Perm):
             perm = Perm(perm)
         assert len(perm) > max(x for x, y in self.pos)
-        return self  # TODO
+        back_map = dict(zip(perm, range(len(perm))))
+        positions = [(x, back_map[y]) for x, y in self.pos]
+        occ: List[List[int]] = [[] for _ in range(len(perm))]
+        for val, (_, y) in zip(self.patt, positions):
+            occ[y].append(val)
+        offset, val_map = 0, {}
+        for lis in occ:
+            for a, b in zip(lis, Perm.to_standard(lis)):
+                val_map[a] = b + offset
+            offset += len(lis)
+        return type(self)((val_map[val] for val in self.patt), positions)
 
     def to_jsonable(self) -> dict:
         """Returns a dictionary object which is JSON serializable representing

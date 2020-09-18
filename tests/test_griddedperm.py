@@ -483,6 +483,19 @@ def test_row_complement():
             ).rotate270(lambda z: (3 - z[1] - 1, z[0])) == gp.row_complement(i)
 
 
+def test_permute_rows():
+    assert GriddedPerm(
+        Perm((0, 2, 1, 4, 3)), ((0, 0), (0, 1), (0, 0), (1, 2), (2, 1))
+    ).permute_rows((2, 0, 1)) == GriddedPerm(
+        Perm((1, 3, 2, 0, 4)), ((0, 1), (0, 2), (0, 1), (1, 0), (2, 2))
+    )
+
+    assert GriddedPerm((0,), ((0, 0),),).permute_rows((1, 2, 0)) == GriddedPerm(
+        (0,),
+        ((0, 2),),
+    )
+
+
 def test_to_jsonable():
     assert GriddedPerm(
         (5, 1, 4, 2, 7, 3, 6, 0),
