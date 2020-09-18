@@ -75,8 +75,8 @@ class GriddedPerm(CombinatorialObject):
         """Remove any points in the cell given and return a new gridded
         permutation."""
         cells = set(cells)
-        remaining = [i for i in range(len(self)) if self._pos[i] not in cells]
-        return self.__class__(
+        remaining = [i for i, (_, pos) in enumerate(self) if pos not in cells]
+        return type(self)(
             Perm.to_standard(self._patt[i] for i in remaining),
             (self._pos[i] for i in remaining),
         )
@@ -135,11 +135,11 @@ class GriddedPerm(CombinatorialObject):
         def directionmost(i1: int, i2: int) -> int:
             """return the directionmost between i1 and i2."""
             if direction == DIR_EAST:
-                return max((i1, i2))
+                return max(i1, i2)
             if direction == DIR_NORTH:
                 return max((self._patt[p], p) for p in (i1, i2))[1]
             if direction == DIR_WEST:
-                return min((i1, i2))
+                return min(i1, i2)
             if direction == DIR_SOUTH:
                 return min((self._patt[p], p) for p in (i1, i2))[1]
             raise ValueError("You're lost, no valid direction")
@@ -179,7 +179,7 @@ class GriddedPerm(CombinatorialObject):
     def get_subperm_left_col(self, col: int) -> "GriddedPerm":
         """Returns the gridded subpermutation of points left of column col."""
         gen1, gen2 = tee((i for i, _ in self.get_points_left_col(col)), 2)
-        return self.__class__(
+        return type(self)(
             Perm.to_standard(self.patt[i] for i in gen1), (self.pos[i] for i in gen2)
         )
 
@@ -193,18 +193,17 @@ class GriddedPerm(CombinatorialObject):
         indices. Indices must be sorted.
         """
         gen1, gen2 = tee(indices, 2)
-        return self.__class__(
+        return type(self)(
             Perm.to_standard(self.patt[i] for i in gen1),
             (self.pos[i] for i in gen2),
         )
 
     def get_gridded_perm_in_cells(self, cells: Iterable[Cell]) -> "GriddedPerm":
         """Returns the subgridded permutation of points in cells."""
-        return self.__class__(
-            Perm.to_standard(
-                self.patt[i] for i in range(len(self)) if self.pos[i] in cells
-            ),
-            (self.pos[i] for i in range(len(self)) if self.pos[i] in cells),
+        cells = set(cells)
+        return type(self)(
+            Perm.to_standard(val for val, pos in self if pos in cells),
+            (pos for pos in self.pos if pos in cells),
         )
 
     def get_bounding_box(self, cell: Cell) -> Tuple[int, int, int, int]:
@@ -253,7 +252,7 @@ class GriddedPerm(CombinatorialObject):
 
     def insert_specific_point(self, cell: Cell, idx: int, val: int) -> "GriddedPerm":
         """Insert a point in the given cell with the given idx and val."""
-        return self.__class__(
+        return type(self)(
             self._patt.insert(idx, val), self._pos[:idx] + (cell,) + self._pos[idx:]
         )
 
@@ -261,13 +260,13 @@ class GriddedPerm(CombinatorialObject):
         """Remove the point at index from the gridded permutation."""
         patt = Perm.to_standard(self.patt[:index] + self.patt[index + 1 :])
         pos = self.pos[:index] + self.pos[index + 1 :]
-        return self.__class__(patt, pos)
+        return type(self)(patt, pos)
 
     def all_subperms(self, proper: bool = True) -> Iterator["GriddedPerm"]:
         """Yields all gridded subpermutations."""
         for r in range(len(self) if proper else len(self) + 1):
             for subidx in combinations(range(len(self)), r):
-                yield self.__class__(
+                yield type(self)(
                     Perm.to_standard(self._patt[i] for i in subidx),
                     (self._pos[i] for i in subidx),
                 )
@@ -275,7 +274,7 @@ class GriddedPerm(CombinatorialObject):
     def apply_map(self, cell_mapping: Callable[[Cell], Cell]) -> "GriddedPerm":
         """Map the coordinates to a new list of coordinates according to the
         cell_mapping given."""
-        return self.__class__(self._patt, [cell_mapping(cell) for cell in self._pos])
+        return type(self)(self._patt, [cell_mapping(cell) for cell in self._pos])
 
     def is_point_perm(self) -> bool:
         """Checks if the gridded permutation is of length 1."""
@@ -352,44 +351,88 @@ class GriddedPerm(CombinatorialObject):
         """
         Reverses the tiling within its boundary. Every cell and obstruction
         gets flipped over the vertical middle axis."""
-        return self.__class__(
-            self._patt.reverse(), reversed(list(map(transf, self._pos)))
-        )
+        return type(self)(self._patt.reverse(), reversed(list(map(transf, self._pos))))
 
     def complement(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
         """Flip over the horizontal axis."""
-        return self.__class__(self._patt.complement(), map(transf, self._pos))
+        return type(self)(self._patt.complement(), map(transf, self._pos))
 
     def inverse(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
         """Flip over the diagonal."""
         flipped = self._patt.inverse()
         pos = self._patt.inverse().apply(self._pos)
-        return self.__class__(flipped, map(transf, pos))
+        return type(self)(flipped, map(transf, pos))
 
     def antidiagonal(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
         """ \\
         Flip over the diagonal"""
         flipped = self._patt.flip_antidiagonal()
         pos = self._patt.rotate(-1).apply(self._pos)
-        return self.__class__(flipped, map(transf, pos))
+        return type(self)(flipped, map(transf, pos))
 
     def rotate270(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
         """Rotate 270 degrees"""
         rotated = self._patt.rotate(-1)
         pos = rotated.apply(self._pos)
-        return self.__class__(rotated, map(transf, pos))
+        return type(self)(rotated, map(transf, pos))
 
     def rotate180(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
         """Rotate 180 degrees"""
-        return self.__class__(
-            self._patt.rotate(2), reversed(list(map(transf, self._pos)))
-        )
+        return type(self)(self._patt.rotate(2), reversed(list(map(transf, self._pos))))
 
     def rotate90(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
         """Rotate 90 degrees"""
-        return self.__class__(
+        return type(self)(
             self._patt.rotate(), map(transf, self._patt.inverse().apply(self._pos))
         )
+
+    def column_reverse(self, column: int) -> "GriddedPerm":
+        """Reverse the part of the gridded perm that belongs to a given column."""
+        parts: Tuple[List[Tuple[int, Tuple[int, int]]], ...] = ([], [], [])
+        for v, (x, y) in self:
+            parts[(x >= column) + (x > column)].append((v, (x, y)))
+        return GriddedPerm(*zip(*chain(parts[0], reversed(parts[1]), parts[2])))
+
+    def row_complement(self, row: int) -> "GriddedPerm":
+        """Replace the part of the gridded perm that belongs to a row with its
+        complement."""
+        indices, vals = set(), []
+        for i, (val, (_, y)) in enumerate(self):
+            if y == row:
+                indices.add(i)
+                vals.append(val)
+        st = Perm.to_standard(vals)
+        unstandardized = dict(zip(st, vals))
+        in_row = (unstandardized[val] for val in st.complement())
+        return GriddedPerm(
+            Perm(
+                next(in_row) if i in indices else val for i, val in enumerate(self.patt)
+            ),
+            self.pos,
+        )
+
+    def permute_columns(self, perm: Iterable[int]) -> "GriddedPerm":
+        """Given an initial state of columns 12...n, permute them using the provided
+        permutation.
+        """
+        if not isinstance(perm, Perm):
+            perm = Perm(perm)
+        assert len(perm) > max(x for x, y in self.pos)
+        cols: List[List[Tuple[int, int]]] = [[] for _ in range(len(perm))]
+        for v, (x, y) in self:
+            cols[x].append((v, y))
+        patt, positions = [], []
+        for x, col in enumerate(perm.apply(cols)):
+            for v, y in col:
+                patt.append(v)
+                positions.append((x, y))
+        return GriddedPerm(patt, positions)
+
+    def permute_rows(self, perm: Iterable[int]) -> "GriddedPerm":
+        if not isinstance(perm, Perm):
+            perm = Perm(perm)
+        assert len(perm) > max(x for x, y in self.pos)
+        return self  # TODO
 
     def to_jsonable(self) -> dict:
         """Returns a dictionary object which is JSON serializable representing
@@ -588,7 +631,7 @@ class GriddedPerm(CombinatorialObject):
         return len(self._patt)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({tuple(self._patt)!r}, {self.pos})"
+        return f"{type(self).__name__}({tuple(self._patt)!r}, {self.pos})"
 
     def __str__(self) -> str:
         return "{}: {}".format(str(self._patt), ", ".join(str(c) for c in self.pos))
@@ -597,7 +640,7 @@ class GriddedPerm(CombinatorialObject):
         return hash(self._patt) ^ hash(self._pos)
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, self.__class__):
+        if not isinstance(other, type(self)):
             return False
         return self._patt == other.patt and self._pos == other.pos
 
@@ -609,55 +652,3 @@ class GriddedPerm(CombinatorialObject):
 
     def __iter__(self) -> Iterator[Tuple[int, Cell]]:
         return zip(self.patt, self.pos)
-
-    #######
-    # NEW #
-    #######
-
-    def column_reverse(self, column: int) -> "GriddedPerm":
-        """Reverse the part of the gridded perm that belongs to a given column."""
-        parts: Tuple[List[Tuple[int, Tuple[int, int]]], ...] = ([], [], [])
-        for v, (x, y) in self:
-            parts[(x >= column) + (x > column)].append((v, (x, y)))
-        return GriddedPerm(*zip(*chain(parts[0], reversed(parts[1]), parts[2])))
-
-    def row_complement(self, row: int) -> "GriddedPerm":
-        """Replace the part of the gridded perm that belongs to a row with its
-        complement."""
-        indices, vals = set(), []
-        for i, (val, (_, y)) in enumerate(self):
-            if y == row:
-                indices.add(i)
-                vals.append(val)
-        st = Perm.to_standard(vals)
-        unstandardized = dict(zip(st, vals))
-        in_row = (unstandardized[val] for val in st.complement())
-        return GriddedPerm(
-            Perm(
-                next(in_row) if i in indices else val for i, val in enumerate(self.patt)
-            ),
-            self.pos,
-        )
-
-    def permute_columns(self, perm: Iterable[int]) -> "GriddedPerm":
-        """Given an initial state of columns 12...n, permute them using the provided
-        permutation.
-        """
-        if not isinstance(perm, Perm):
-            perm = Perm(perm)
-        assert len(perm) > max(x for x, y in self.pos)
-        cols: List[List[Tuple[int, int]]] = [[] for _ in range(len(perm))]
-        for v, (x, y) in self:
-            cols[x].append((v, y))
-        patt, positions = [], []
-        for x, col in enumerate(perm.apply(cols)):
-            for v, y in col:
-                patt.append(v)
-                positions.append((x, y))
-        return GriddedPerm(patt, positions)
-
-    def permute_row(self, perm: Iterable[int]) -> "GriddedPerm":
-        if not isinstance(perm, Perm):
-            perm = Perm(perm)
-        assert len(perm) > max(x for x, y in self.pos)
-        return self
