@@ -11,25 +11,14 @@ Position = Tuple[Cell, ...]
 
 
 class GriddedPerm(CombinatorialObject):
-    def __init__(self, pattern: Iterable[int], positions: Iterable[Cell]):
-        if not pattern:
-            self._patt: Perm = Perm(())
-            self._pos: Position = tuple(positions)
-            self._cells: FrozenSet[Cell] = frozenset()
-            self._rows = 1
-            self._columns = 1
-        else:
-            # Pattern should be a Perm of course
-            self._patt = Perm(pattern)
-            # Position is a tuple of (x, y) coordinates, where the ith (x, y)
-            # corresponds to the i-th point in the pattern.
-            self._pos = tuple(positions)
-
-            if len(self._patt) != len(self._pos):
-                raise ValueError(("Pattern and position list have unequal" "lengths."))
-
-            # Immutable set of cells which the gridded permutation spans.
-            self._cells = frozenset(self._pos)
+    def __init__(
+        self, pattern: Iterable[int] = (), positions: Iterable[Cell] = ()
+    ) -> None:
+        self._patt = Perm(pattern)
+        self._pos = tuple(positions)
+        if len(self._patt) != len(self._pos):
+            raise ValueError("Pattern and position list have unequal lengths.")
+        self._cells: FrozenSet[Cell] = frozenset(self._pos)
 
     @classmethod
     def single_cell(cls, pattern: Iterable[int], cell: Cell) -> "GriddedPerm":
@@ -85,6 +74,7 @@ class GriddedPerm(CombinatorialObject):
     def remove_cells(self, cells: Iterable[Cell]) -> "GriddedPerm":
         """Remove any points in the cell given and return a new gridded
         permutation."""
+        cells = set(cells)
         remaining = [i for i in range(len(self)) if self._pos[i] not in cells]
         return self.__class__(
             Perm.to_standard(self._patt[i] for i in remaining),
@@ -109,32 +99,27 @@ class GriddedPerm(CombinatorialObject):
     def is_isolated(self, indices: Iterable[int]) -> bool:
         """Checks if the cells at the indices do not share a row or column with
         any other cell in the gridded permutation."""
-        for i in range(len(self)):
-            if i in indices:
-                continue
-            if any(
-                (
-                    self._pos[i][0] == self._pos[j][0]
-                    or self._pos[i][1] == self._pos[j][1]
-                )
-                for j in indices
-            ):
-                return False
-        return True
+        indices = set(indices)
+        return not any(
+            x == self._pos[j][0] or y == self._pos[j][1]
+            for j in indices
+            for i, (_, (x, y)) in enumerate(self)
+            if i not in indices
+        )
 
     def forced_point_index(self, cell: Cell, direction: int) -> int:
         """Search in the cell given for the point with the strongest force with
         respect to the given force."""
         if self.occupies(cell):
-            points = list(self.points_in_cell(cell))
+            indices = self.points_in_cell(cell)
             if direction == DIR_EAST:
-                return max(points)
+                return max(indices)
             if direction == DIR_NORTH:
-                return max((self._patt[p], p) for p in points)[1]
+                return max((self._patt[idx], idx) for idx in indices)[1]
             if direction == DIR_WEST:
-                return min(points)
+                return min(indices)
             if direction == DIR_SOUTH:
-                return min((self._patt[p], p) for p in points)[1]
+                return min((self._patt[idx], idx) for idx in indices)[1]
             raise ValueError("You're lost, no valid direction")
 
     def forced_point_of_requirement(
@@ -205,13 +190,12 @@ class GriddedPerm(CombinatorialObject):
     def get_gridded_perm_at_indices(self, indices: Iterable[int]) -> "GriddedPerm":
         """
         Returns the subgridded perm that contains only the point at the given
-        indices.
-
-        Indices must be sorted.
+        indices. Indices must be sorted.
         """
+        gen1, gen2 = tee(indices, 2)
         return self.__class__(
-            Perm.to_standard(self.patt[i] for i in indices),
-            (self.pos[i] for i in indices),
+            Perm.to_standard(self.patt[i] for i in gen1),
+            (self.pos[i] for i in gen2),
         )
 
     def get_gridded_perm_in_cells(self, cells: Iterable[Cell]) -> "GriddedPerm":
@@ -307,7 +291,7 @@ class GriddedPerm(CombinatorialObject):
 
     def is_single_row(self) -> bool:
         """Check if the gridded permutation occupies only a single row."""
-        return len(set(y for (x, y) in self._cells)) == 1
+        return len(set(y for (_, y) in self._cells)) == 1
 
     def is_empty(self) -> bool:
         """Check if the gridded permutation is the gridded permutation."""
@@ -348,23 +332,20 @@ class GriddedPerm(CombinatorialObject):
         factor_cells = list(set(cells) for cells in all_factors.values())
         return [self.get_gridded_perm_in_cells(comp) for comp in factor_cells]
 
-    def compress(self):
+    def compress(self) -> List[int]:
         """Compresses the gridded permutation into a list of integers.
         It starts with a list of the values in the permutation. The rest is
-        the list of positions flattened.
-        # TODO: type annotate"""
-        array = list(self._patt)
-        array.extend(chain.from_iterable(self._pos))
-        return array
+        the list of positions flattened."""
+        return list(chain(self._patt, chain.from_iterable(self._pos)))
 
     @classmethod
-    def decompress(cls, array) -> "GriddedPerm":
+    def decompress(cls, array: List[int]) -> "GriddedPerm":
         """Decompresses a list of integers in the form outputted by the
         compress method and constructs an Obstruction."""
-        n = len(array)
-        patt = Perm(array[i] for i in range(n // 3))
-        pos = zip(array[n // 3 :: 2], array[n // 3 + 1 :: 2])
-        return cls(patt, pos)
+        n, it = len(array) // 3, iter(array)
+        return cls(
+            Perm(next(it) for _ in range(n)), ((next(it), next(it)) for _ in range(n))
+        )
 
     # Symmetries
     def reverse(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
@@ -413,10 +394,7 @@ class GriddedPerm(CombinatorialObject):
     def to_jsonable(self) -> dict:
         """Returns a dictionary object which is JSON serializable representing
         a GriddedPerm."""
-        output: dict = dict()
-        output["patt"] = self._patt
-        output["pos"] = self._pos
-        return output
+        return {"patt": self._patt, "pos": self._pos}
 
     @classmethod
     def from_json(cls, jsonstr: str) -> "GriddedPerm":
@@ -651,9 +629,9 @@ class GriddedPerm(CombinatorialObject):
             if y == row:
                 indices.add(i)
                 vals.append(val)
-        in_row = (
-            lambda st: (lambda d: (d[z] for z in st.complement()))(dict(zip(st, vals)))
-        )(Perm.to_standard(vals))
+        st = Perm.to_standard(vals)
+        unstandardized = dict(zip(st, vals))
+        in_row = (unstandardized[val] for val in st.complement())
         return GriddedPerm(
             Perm(
                 next(in_row) if i in indices else val for i, val in enumerate(self.patt)

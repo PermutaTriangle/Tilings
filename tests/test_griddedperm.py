@@ -39,9 +39,18 @@ def test_from_iterable():
     assert GriddedPerm((0, 1, 2), pos) == gp
     assert GriddedPerm([0, 1, 2], pos) == gp
     assert GriddedPerm(range(3), pos) == gp
+    assert GriddedPerm((i for i in range(3)), pos) == gp
     assert GriddedPerm.single_cell((0, 1), (0, 0)) == GriddedPerm(
         Perm((0, 1)), ((0, 0), (0, 0))
     )
+    assert GriddedPerm(
+        (0, 2, 1, 3, 4), ((0, 0), (0, 1), (1, 0), (1, 1), (1, 1))
+    )._cells == {
+        (0, 0),
+        (0, 1),
+        (1, 0),
+        (1, 1),
+    }
 
 
 def test_single_cell():
@@ -58,6 +67,8 @@ def test_empty_perm():
     gp = GriddedPerm.empty_perm()
     assert gp.patt == Perm(())
     assert gp.pos == ()
+    assert len(gp._cells) == 0
+    assert GriddedPerm() == gp == GriddedPerm((), ())
 
 
 def test_contradictory(simpleob, singlecellob, everycellob):
@@ -67,6 +78,8 @@ def test_contradictory(simpleob, singlecellob, everycellob):
     gp = GriddedPerm((0, 1), [(0, 1), (1, 0)])
     assert gp.contradictory()
     gp = GriddedPerm((0, 1), [(1, 0), (0, 0)])
+    assert gp.contradictory()
+    gp = GriddedPerm((1, 0), [(0, 0), (1, 1)])
     assert gp.contradictory()
 
 
@@ -105,10 +118,44 @@ def test_occurrences_in(simpleob):
     assert ob in ob
 
 
-def test_remove_cells(simpleob):
+def test_avoids():
+    gp = GriddedPerm(
+        Perm((0, 5, 1, 4, 2, 3, 6)),
+        ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+    )
+    assert gp.avoids(GriddedPerm((0, 2, 1), ((0, 0),) * 3))
+    assert gp.avoids(
+        GriddedPerm((0, 2, 1), ((0, 0),) * 3),
+        GriddedPerm((0, 2, 1), ((1, 1), (1, 1), (2, 2))),
+    )
+
+
+def test_contains():
+    gp = GriddedPerm(
+        Perm((0, 5, 1, 4, 2, 3, 6)),
+        ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+    )
+    assert gp.contains(GriddedPerm())
+    assert all(gp.contains(GriddedPerm((0,), (pos,))) for pos in gp._cells)
+    assert gp.contains(GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 2))))
+    assert gp.contains(GriddedPerm((2, 0, 1), ((1, 1),) * 3))
+    assert gp.contains(
+        GriddedPerm((0, 2, 1), ((0, 0),) * 3),
+        GriddedPerm((0, 2, 1), ((1, 1), (1, 1), (2, 2))),
+        GriddedPerm((1, 0, 2), ((1, 1), (1, 1), (2, 2))),
+    )
+    assert GriddedPerm().contains(GriddedPerm())
+
+
+def test_remove_cells(simpleob, everycellob):
     assert simpleob.remove_cells([(0, 0)]) == GriddedPerm((1, 0), ((2, 2), (2, 1)))
     assert simpleob.remove_cells([(0, 0), (2, 2)]) == GriddedPerm((0,), ((2, 1),))
     assert simpleob.remove_cells([(0, 1), (1, 2)]) == simpleob
+    gen = (cell for cell in ((0, 1), (1, 0)))
+    assert everycellob.remove_cells(gen) == GriddedPerm(
+        Perm((0, 4, 2, 5, 1, 3, 6)),
+        ((0, 0), (0, 2), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)),
+    )
 
 
 def test_points_in_cell(simpleob):
@@ -434,3 +481,14 @@ def test_row_complement():
             assert gp.rotate90(lambda z: (z[1], 3 - z[0] - 1)).column_reverse(
                 i
             ).rotate270(lambda z: (3 - z[1] - 1, z[0])) == gp.row_complement(i)
+
+
+def test_to_jsonable():
+    assert GriddedPerm(
+        (5, 1, 4, 2, 7, 3, 6, 0),
+        ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2), (2, 1), (3, 2), (3, 0)),
+    ).to_jsonable() == {
+        "patt": Perm((5, 1, 4, 2, 7, 3, 6, 0)),
+        "pos": ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2), (2, 1), (3, 2), (3, 0)),
+    }
+    assert GriddedPerm((), ()).to_jsonable() == {"patt": Perm(()), "pos": ()}
