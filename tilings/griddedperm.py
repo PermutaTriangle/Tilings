@@ -447,6 +447,18 @@ class GriddedPerm(CombinatorialObject):
             offset += len(lis)
         return type(self)((val_map[val] for val in self.patt), positions)
 
+    def apply_perm_map_to_cell(
+        self, perm_mapping: Callable[[Perm], Perm], cell: Cell
+    ) -> "GriddedPerm":
+        """Apply a permutation map to the subperm within a cell."""
+        subperm = [val for val, pos in self if pos == cell]
+        st = Perm.to_standard(subperm)
+        back_map = dict(zip(st, subperm))
+        new_subperm = (back_map[val] for val in perm_mapping(st))
+        return type(self)(
+            (next(new_subperm) if pos == cell else val for val, pos in self), self.pos
+        )
+
     def to_jsonable(self) -> dict:
         """Returns a dictionary object which is JSON serializable representing
         a GriddedPerm."""

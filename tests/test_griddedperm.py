@@ -505,3 +505,30 @@ def test_to_jsonable():
         "pos": ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2), (2, 1), (3, 2), (3, 0)),
     }
     assert GriddedPerm((), ()).to_jsonable() == {"patt": Perm(()), "pos": ()}
+
+
+def test_apply_perm_map_to_cell():
+    def do_nothing_for_empty_perm(perm):
+        assert perm == ()
+        return perm
+
+    gp = GriddedPerm((1, 0, 2, 4, 3), ((1, 2), (1, 2), (2, 2), (2, 3), (2, 3)))
+    assert gp.apply_perm_map_to_cell(do_nothing_for_empty_perm, (0, 0)) == gp
+
+    assert (
+        GriddedPerm().apply_perm_map_to_cell(do_nothing_for_empty_perm, (0, 0))
+        == GriddedPerm()
+    )
+
+    pos = [(0, 0), (0, 1), (0, 0), (0, 1), (0, 1), (0, 2), (1, 1)]
+    gp = GriddedPerm((0, 4, 1, 2, 3, 6, 5), pos)
+
+    assert gp.apply_perm_map_to_cell(lambda p: p.complement(), (0, 1)) == GriddedPerm(
+        (0, 2, 1, 4, 3, 6, 5), pos
+    )
+    assert gp.apply_perm_map_to_cell(lambda p: p.inverse(), (0, 1)) == GriddedPerm(
+        (0, 3, 1, 4, 2, 6, 5), pos
+    )
+    assert gp.apply_perm_map_to_cell(lambda p: p.reverse(), (0, 1)) == GriddedPerm(
+        (0, 3, 1, 2, 4, 6, 5), pos
+    )
