@@ -299,16 +299,13 @@ class GriddedPerm(CombinatorialObject):
     def is_interleaving(self) -> bool:
         """Check if the gridded permutation occupies two cells that are in the
         same row or column."""
-        seen: List[Cell] = []
-        for cell in self._pos:
-            for seen_cell in seen:
-                if cell[0] == seen_cell[0]:
-                    if cell[1] != seen_cell[1]:
-                        return True
-                else:
-                    if cell[1] == seen_cell[1]:
-                        return True
-            seen.append(cell)
+        xs: Dict[int, int] = {}
+        ys: Dict[int, int] = {}
+        for x, y in self._cells:
+            if xs.get(x, y) != y or ys.get(y, x) != x:
+                return True
+            xs[x] = y
+            ys[y] = x
         return False
 
     def factors(self) -> List["GriddedPerm"]:

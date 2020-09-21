@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `to_tikz` for gridded perms.
 - `to_svg` for gridded perms.
 - `to_gui` for tilings.
+- Mappings for gridded perms: `column_reverse`, `row_complement`, 
+   `permute_columns`, `permute_rows` and `apply_perm_map_to_cell`.
 
 ## [2.3.1] - 2020-09-11
 ### Fixed

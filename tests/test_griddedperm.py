@@ -532,3 +532,23 @@ def test_apply_perm_map_to_cell():
     assert gp.apply_perm_map_to_cell(lambda p: p.reverse(), (0, 1)) == GriddedPerm(
         (0, 3, 1, 2, 4, 6, 5), pos
     )
+
+
+def test_is_interleaving():
+    assert GriddedPerm(
+        (5, 1, 4, 2, 7, 3, 6, 0),
+        ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2), (2, 1), (3, 2), (3, 0)),
+    ).is_interleaving()
+    assert not GriddedPerm(
+        Perm((0, 1, 2, 3, 4, 5)), ((i, i) for i in range(6))
+    ).is_interleaving()
+    assert not GriddedPerm().is_interleaving()
+    assert not GriddedPerm((0,), ((0, 0),)).is_interleaving()
+    assert GriddedPerm(
+        Perm((0, 6, 1, 2, 3, 4, 5)),
+        [(0, 0), (0, 20), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5)],
+    ).is_interleaving()
+    assert GriddedPerm(
+        Perm((0, 2, 3, 4, 5, 6, 1)),
+        [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 0)],
+    ).is_interleaving()
