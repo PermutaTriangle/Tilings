@@ -6,6 +6,7 @@ import sympy
 
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
+from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
 
 
@@ -1392,6 +1393,26 @@ def test_repr(factorable_tiling, empty_tiling):
     assert factorable_tiling == eval(repr(factorable_tiling))
     assert empty_tiling == eval(repr(empty_tiling))
     assert repr(Tiling()) == "Tiling(obstructions=(), requirements=(), assumptions=())"
+
+
+def test_initial_conditions(empty_tiling, finite_tiling):
+    assert empty_tiling.initial_conditions(4) == [0, 0, 0, 0, 0]
+    assert finite_tiling.initial_conditions(6) == [0, 1, 3, 6, 5, 0, 0]
+    with_ass = Tiling(
+        obstructions=[
+            GriddedPerm((0, 1), ((0, 0),) * 2),
+            GriddedPerm((0, 1), ((0, 1),) * 2),
+        ],
+        assumptions=[TrackingAssumption([GriddedPerm((0,), ((0, 1),))])],
+    )
+    assert with_ass.initial_conditions(5) == [
+        1,
+        sympy.sympify("1+k_0"),
+        sympy.sympify("1+2*k_0+k_0**2"),
+        sympy.sympify("k_0**3 + 3*k_0**2 + 3*k_0 + 1"),
+        sympy.sympify("k_0**4 + 4*k_0**3 + 6*k_0**2 + 4*k_0 + 1"),
+        sympy.sympify("k_0**5 + 5*k_0**4 + 10*k_0**3 + 10*k_0**2 + 5*k_0 + 1"),
+    ]
 
 
 # ------------------------------------------------------------

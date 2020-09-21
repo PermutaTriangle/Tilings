@@ -2,9 +2,9 @@
 import json
 from array import array
 from collections import Counter, defaultdict
-from functools import partial
+from functools import partial, reduce
 from itertools import chain, filterfalse, product
-from operator import xor
+from operator import mul, xor
 from typing import (
     Callable,
     Dict,
@@ -1376,6 +1376,29 @@ class Tiling(CombinatorialClass):
         for gp in self.gridded_perms(maxlen=length):
             if len(gp) == length:
                 yield gp
+
+    def initial_conditions(self, check: int = 6) -> List[sympy.Expr]:
+        """
+        Returns a list with the initial conditions to size `check` of the
+        CombinatorialClass.
+        """
+        res = [0 for _ in range(check + 1)]
+        extra_params = self.extra_parameters
+        ass_counter = [
+            (sympy.var(k), self.get_assumption(k).get_value) for k in extra_params
+        ]
+
+        def monomial(gp: GriddedPerm) -> sympy.Expr:
+            return reduce(
+                mul,
+                (var ** func(gp) for var, func in ass_counter),
+                sympy.Number(1),
+            )
+
+        for gp in self.gridded_perms(check):
+            mon = monomial(gp)
+            res[len(gp)] += mon
+        return res
 
     def gridded_perms(self, maxlen: Optional[int] = None) -> Iterator[GriddedPerm]:
         """
