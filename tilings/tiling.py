@@ -49,7 +49,7 @@ from .assumptions import (
 )
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
-from .gui_luncher import run_gui
+from .gui_launcher import run_gui
 from .misc import intersection_reduce, map_cell, union_reduce
 
 __all__ = ["Tiling"]
@@ -1848,6 +1848,7 @@ class Tiling(CombinatorialClass):
         )
 
     def contains_all_patterns_locally_for_crossing(self, cell: Cell) -> bool:
+        """."""
         crossing_obs = {
             obs
             for obs in self.obstructions
@@ -1870,6 +1871,7 @@ class Tiling(CombinatorialClass):
         return True
 
     def generate_known_equinumerous_tilings(self) -> Set["Tiling"]:
+        """."""
         stack, visited = [self], {self}
         while stack:
             for neighbor in Tiling._equinumerous_transpositions(stack.pop()):

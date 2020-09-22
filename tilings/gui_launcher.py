@@ -4,12 +4,23 @@ import sys
 from importlib.util import find_spec
 from typing import Optional, Tuple
 
-if tuple(
-    map(lambda z: int(re.sub("[^0-9]", "", z)), sys.version.split()[0].split("."))
-) < (3, 8, 0):
-    from importlib_metadata import version  # pylint: disable=import-error
-else:
-    from importlib.metadata import version  # pylint: disable=ungrouped-imports
+try:
+    if tuple(
+        map(lambda z: int(re.sub("[^0-9]", "", z)), sys.version.split()[0].split("."))
+    ) < (3, 8, 0):
+        from importlib_metadata import version  # pylint: disable=import-error
+    else:
+        from importlib.metadata import version  # pylint: disable=ungrouped-imports
+except ImportError:
+
+    def _fake_version(_str: str) -> str:
+
+        print("=== If you are using older python than 3.8 ===")
+        print(f"To use for {sys.executable} you need importlib-metadata.")
+        print(f"{sys.executable} -m pip install importlib-metadata", flush=True)
+        return "0.0.0"
+
+    version = _fake_version
 
 
 _MIN_VERSION = (0, 2, 1)
@@ -67,10 +78,10 @@ def look_for_tilingsgui() -> Tuple[int, str]:
         search_current_interpreter,
         lambda: search_path_interpreter("python"),
         lambda: search_path_interpreter("python3"),
+        lambda: search_path_interpreter("pypy3"),
         lambda: search_path_interpreter("python3.8"),
         lambda: search_path_interpreter("python3.7"),
         lambda: search_path_interpreter("python3.6"),
-        lambda: search_path_interpreter("pypy3"),
         lambda: search_path_interpreter("python3.9"),
     ):
         status, interpreter = search()
