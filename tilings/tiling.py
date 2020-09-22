@@ -1387,17 +1387,12 @@ class Tiling(CombinatorialClass):
         ass_counter = [
             (sympy.var(k), self.get_assumption(k).get_value) for k in extra_params
         ]
-
-        def monomial(gp: GriddedPerm) -> sympy.Expr:
-            return reduce(
+        for gp in self.gridded_perms(check):
+            res[len(gp)] += reduce(
                 mul,
                 (var ** func(gp) for var, func in ass_counter),
                 sympy.Number(1),
             )
-
-        for gp in self.gridded_perms(check):
-            mon = monomial(gp)
-            res[len(gp)] += mon
         return res
 
     def gridded_perms(self, maxlen: Optional[int] = None) -> Iterator[GriddedPerm]:
