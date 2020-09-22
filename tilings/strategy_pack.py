@@ -25,6 +25,7 @@ class TileScopePack(StrategyPack):
 
     def fix_one_by_one(self, basis: Iterable[Perm]) -> "TileScopePack":
         basis = tuple(basis)
+        symmetry = bool(self.symmetries)
 
         def replace_list(strats):
             """Return a new list with the replaced 1x1 strat."""
@@ -33,7 +34,7 @@ class TileScopePack(StrategyPack):
                 if isinstance(strategy, strat.OneByOneVerificationStrategy):
                     if strategy.basis:
                         logger.warning("Basis changed in OneByOneVerificationStrategy")
-                    res.append(strategy.change_basis(basis))
+                    res.append(strategy.change_basis(basis, symmetry))
                 else:
                     res.append(strategy)
             return res

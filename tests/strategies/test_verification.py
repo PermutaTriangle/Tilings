@@ -850,7 +850,7 @@ class TestOneByOneVerificationStrategy(CommonTest):
         return [Tiling.from_string("321")]
 
     def test_change_basis(self, strategy):
-        new_s = strategy.change_basis([Perm((0, 1, 2))])
+        new_s = strategy.change_basis([Perm((0, 1, 2))], False)
         assert strategy.basis == (Perm((2, 1, 0)),)
         assert new_s.basis == (Perm((0, 1, 2)),)
 
