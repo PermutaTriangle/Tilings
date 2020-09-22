@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 from itertools import chain, product
 
 import pytest
@@ -2348,3 +2349,225 @@ class TestGetGenf:
         t = Tiling.from_string("1324")
         with pytest.raises(NotImplementedError):
             t.get_genf()
+
+
+def test_enmerate_gp_up_to():
+    assert (
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((1, 2), (1, 2))),
+                GriddedPerm((1, 0), ((1, 2), (1, 2))),
+                GriddedPerm((0, 2, 1), ((0, 1), (0, 1), (0, 1))),
+                GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (2, 0))),
+            ),
+            requirements=((GriddedPerm((0,), ((1, 2),)),),),
+            assumptions=(),
+        ).enmerate_gp_up_to(8)
+        == [0, 1, 2, 5, 14, 42, 132, 429, 1430]
+    )
+
+
+def test_column_reverse():
+    assert Tiling(
+        obstructions=(
+            GriddedPerm((0, 3, 1, 2), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm((0, 2, 1), ((0, 0), (0, 2), (0, 0))),
+            GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 1), ((1, 1), (1, 1))),
+            GriddedPerm((1, 0), ((1, 1), (1, 1))),
+        ),
+        requirements=(
+            (GriddedPerm((0,), ((1, 1),)),),
+            (GriddedPerm((1, 0), ((0, 2), (0, 0))),),
+        ),
+        assumptions=(),
+    ).column_reverse(0) == Tiling(
+        obstructions=(
+            GriddedPerm((0, 1), ((1, 1), (1, 1))),
+            GriddedPerm((1, 0), ((1, 1), (1, 1))),
+            GriddedPerm((1, 2, 0), ((0, 0), (0, 2), (0, 0))),
+            GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm((2, 1, 3, 0), ((0, 2), (0, 2), (0, 2), (0, 2))),
+        ),
+        requirements=(
+            (GriddedPerm((0,), ((1, 1),)),),
+            (GriddedPerm((0, 1), ((0, 0), (0, 2))),),
+        ),
+        assumptions=(),
+    )
+    t = Tiling(
+        obstructions=(
+            GriddedPerm((0, 1), ((0, 1), (0, 1))),
+            GriddedPerm((0, 1), ((1, 2), (1, 2))),
+            GriddedPerm((0, 1), ((2, 0), (2, 0))),
+            GriddedPerm((1, 0), ((0, 1), (0, 1))),
+            GriddedPerm((1, 0), ((1, 2), (1, 2))),
+            GriddedPerm((1, 0), ((1, 2), (2, 0))),
+            GriddedPerm((1, 0), ((2, 0), (2, 0))),
+            GriddedPerm((1, 2, 0), ((0, 1), (0, 2), (2, 0))),
+            GriddedPerm((1, 2, 0), ((0, 2), (0, 2), (0, 1))),
+            GriddedPerm((1, 2, 0), ((0, 2), (0, 2), (0, 2))),
+            GriddedPerm((1, 2, 0), ((0, 2), (0, 2), (1, 2))),
+            GriddedPerm((1, 2, 0), ((0, 2), (0, 2), (2, 0))),
+            GriddedPerm((2, 0, 1), ((0, 2), (0, 1), (0, 2))),
+            GriddedPerm((2, 0, 1), ((0, 2), (0, 1), (1, 2))),
+            GriddedPerm((2, 0, 1), ((0, 2), (0, 2), (0, 2))),
+            GriddedPerm((2, 0, 1), ((0, 2), (0, 2), (1, 2))),
+        ),
+        requirements=(
+            (GriddedPerm((0,), ((0, 1),)),),
+            (GriddedPerm((0,), ((1, 2),)), GriddedPerm((0,), ((2, 0),))),
+        ),
+        assumptions=(),
+    )
+    assert (
+        Counter(len(gp) for gp in t.gridded_perms(7))
+        == Counter(len(gp) for gp in t.column_reverse(0).gridded_perms(7))
+        == Counter(len(gp) for gp in t.column_reverse(1).gridded_perms(7))
+        == Counter(len(gp) for gp in t.column_reverse(2).gridded_perms(7))
+    )
+
+
+def test_row_complement():
+    assert Tiling(
+        obstructions=(
+            GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (1, 1))),
+            GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 1), ((0, 0), (1, 0), (1, 0))),
+            GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+        ),
+        requirements=((GriddedPerm((2, 1, 0), ((1, 1), (1, 0), (1, 0))),),),
+        assumptions=(),
+    ).row_complement(0) == Tiling(
+        obstructions=(
+            GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (1, 1))),
+            GriddedPerm((2, 0, 1), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm((2, 0, 1), ((0, 0), (1, 0), (1, 0))),
+            GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+        ),
+        requirements=((GriddedPerm((2, 0, 1), ((1, 1), (1, 0), (1, 0))),),),
+        assumptions=(),
+    )
+    t = Tiling(
+        obstructions=(
+            GriddedPerm((0, 1), ((0, 1), (0, 1))),
+            GriddedPerm((0, 1), ((1, 2), (1, 2))),
+            GriddedPerm((0, 1), ((2, 0), (2, 0))),
+            GriddedPerm((1, 0), ((0, 1), (0, 1))),
+            GriddedPerm((1, 0), ((1, 2), (1, 2))),
+            GriddedPerm((1, 0), ((1, 2), (2, 0))),
+            GriddedPerm((1, 0), ((2, 0), (2, 0))),
+            GriddedPerm((1, 2, 0), ((0, 1), (0, 2), (2, 0))),
+            GriddedPerm((1, 2, 0), ((0, 2), (0, 2), (0, 1))),
+            GriddedPerm((1, 2, 0), ((0, 2), (0, 2), (0, 2))),
+            GriddedPerm((1, 2, 0), ((0, 2), (0, 2), (1, 2))),
+            GriddedPerm((1, 2, 0), ((0, 2), (0, 2), (2, 0))),
+            GriddedPerm((2, 0, 1), ((0, 2), (0, 1), (0, 2))),
+            GriddedPerm((2, 0, 1), ((0, 2), (0, 1), (1, 2))),
+            GriddedPerm((2, 0, 1), ((0, 2), (0, 2), (0, 2))),
+            GriddedPerm((2, 0, 1), ((0, 2), (0, 2), (1, 2))),
+        ),
+        requirements=(
+            (GriddedPerm((0,), ((0, 1),)),),
+            (GriddedPerm((0,), ((1, 2),)), GriddedPerm((0,), ((2, 0),))),
+        ),
+        assumptions=(),
+    )
+    assert (
+        Counter(len(gp) for gp in t.gridded_perms(7))
+        == Counter(len(gp) for gp in t.row_complement(0).gridded_perms(7))
+        == Counter(len(gp) for gp in t.row_complement(1).gridded_perms(7))
+        == Counter(len(gp) for gp in t.row_complement(2).gridded_perms(7))
+    )
+
+
+def test_permute_columns():
+    assert Tiling(
+        obstructions=(
+            GriddedPerm((1, 0), ((1, 1), (2, 0))),
+            GriddedPerm((1, 0), ((2, 0), (2, 0))),
+            GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
+            GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (0, 1))),
+            GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm((2, 0, 1, 3), ((0, 1), (0, 1), (0, 1), (1, 2))),
+        ),
+        requirements=((GriddedPerm((1, 0), ((0, 2), (0, 0))),),),
+        assumptions=(),
+    ).permute_columns((2, 0, 1)) == Tiling(
+        obstructions=(
+            GriddedPerm((1, 0), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 1))),
+            GriddedPerm((0, 1, 2), ((1, 0), (1, 1), (1, 1))),
+            GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm((0, 1), ((0, 0), (2, 1))),
+            GriddedPerm((2, 0, 1, 3), ((1, 1), (1, 1), (1, 1), (2, 2))),
+        ),
+        requirements=((GriddedPerm((1, 0), ((1, 2), (1, 0))),),),
+        assumptions=(),
+    )
+
+
+def test_permute_rows():
+    assert Tiling(
+        obstructions=(
+            GriddedPerm((1, 0), ((1, 0), (1, 0))),
+            GriddedPerm((2, 0, 1), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 1), ((0, 0), (0, 2), (1, 1))),
+            GriddedPerm((0, 2, 1), ((0, 0), (1, 2), (1, 0))),
+            GriddedPerm((0, 2, 1), ((1, 1), (1, 2), (1, 1))),
+        ),
+        requirements=(),
+        assumptions=(),
+    ).permute_rows((1, 2, 0)) == Tiling(
+        obstructions=(
+            GriddedPerm((1, 0), ((1, 2), (1, 2))),
+            GriddedPerm((0, 2, 1), ((0, 2), (0, 2), (0, 2))),
+            GriddedPerm((2, 0, 1), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm((2, 1, 0), ((0, 2), (0, 1), (1, 0))),
+            GriddedPerm((1, 0, 2), ((0, 2), (1, 1), (1, 2))),
+            GriddedPerm((0, 2, 1), ((1, 0), (1, 1), (1, 0))),
+        ),
+        requirements=(),
+        assumptions=(),
+    )
+
+
+def test_apply_perm_map_to_cell():
+    assert Tiling(
+        obstructions=(
+            GriddedPerm((1, 0), ((1, 0), (1, 0))),
+            GriddedPerm((1, 0), ((2, 1), (2, 1))),
+            GriddedPerm((0, 2, 1), ((0, 2), (2, 2), (2, 2))),
+            GriddedPerm((0, 2, 1), ((2, 1), (2, 2), (2, 2))),
+            GriddedPerm((2, 1, 0), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm((0, 3, 2, 1), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm((0, 3, 2, 1), ((0, 2), (0, 2), (0, 2), (2, 2))),
+            GriddedPerm((0, 3, 2, 1), ((1, 0), (2, 2), (2, 2), (2, 1))),
+            GriddedPerm((1, 0, 3, 2), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm((1, 0, 3, 2), ((0, 2), (0, 2), (0, 2), (2, 2))),
+            GriddedPerm((1, 0, 3, 2), ((2, 2), (2, 2), (2, 2), (2, 2))),
+        ),
+        requirements=((GriddedPerm((0,), ((2, 1),)),),),
+        assumptions=(),
+    ).apply_perm_map_to_cell(lambda p: p.complement(), (0, 2)) == Tiling(
+        obstructions=(
+            GriddedPerm((1, 0), ((1, 0), (1, 0))),
+            GriddedPerm((1, 0), ((2, 1), (2, 1))),
+            GriddedPerm((0, 2, 1), ((0, 2), (2, 2), (2, 2))),
+            GriddedPerm((0, 2, 1), ((2, 1), (2, 2), (2, 2))),
+            GriddedPerm((2, 1, 0), ((2, 2), (2, 2), (2, 2))),
+            GriddedPerm((0, 3, 2, 1), ((1, 0), (2, 2), (2, 2), (2, 1))),
+            GriddedPerm((1, 0, 3, 2), ((2, 2), (2, 2), (2, 2), (2, 2))),
+            GriddedPerm((1, 3, 0, 2), ((0, 2), (0, 2), (0, 2), (2, 2))),
+            GriddedPerm(
+                Perm((0, 3, 2, 1)).complement(), ((0, 2), (0, 2), (0, 2), (0, 2))
+            ),
+            GriddedPerm(
+                Perm((1, 0, 3, 2)).complement(), ((0, 2), (0, 2), (0, 2), (0, 2))
+            ),
+            GriddedPerm((3, 0, 2, 1), ((0, 2), (0, 2), (0, 2), (2, 2))),
+        ),
+        requirements=((GriddedPerm((0,), ((2, 1),)),),),
+        assumptions=(),
+    )

@@ -1809,3 +1809,78 @@ class Tiling(CombinatorialClass):
             result = result[:-1]
 
         return "".join(result)
+
+    def enmerate_gp_up_to(self, max_length: int) -> List[int]:
+        """Count gridded perms of each length up to a max length."""
+        cnt = Counter(len(gp) for gp in self.gridded_perms(max_length))
+        return [cnt[i] for i in range(max_length + 1)]
+
+    def column_reverse(self, column: int) -> "Tiling":
+        """Reverse a given column in the tiling."""
+        return self._transform(lambda _c: _c, lambda gp: gp.column_reverse(column))
+
+    def row_complement(self, row: int) -> "Tiling":
+        """."""
+        return self._transform(lambda _c: _c, lambda gp: gp.row_complement(row))
+
+    def permute_columns(self, perm: Iterable[int]) -> "Tiling":
+        """."""
+        if not isinstance(perm, Perm):
+            perm = Perm(perm)
+        assert len(perm) == self.dimensions[0]
+        return self._transform(lambda _c: _c, lambda gp: gp.permute_columns(perm))
+
+    def permute_rows(self, perm: Iterable[int]) -> "Tiling":
+        """."""
+        if not isinstance(perm, Perm):
+            perm = Perm(perm)
+        assert len(perm) == self.dimensions[1]
+        return self._transform(lambda _c: _c, lambda gp: gp.permute_rows(perm))
+
+    def apply_perm_map_to_cell(
+        self,
+        perm_mapping: Callable[[Perm], Perm],
+        cell: Cell,
+    ) -> "Tiling":
+        """."""
+        return self._transform(
+            lambda _c: _c, lambda gp: gp.apply_perm_map_to_cell(perm_mapping, cell)
+        )
+
+    def contains_all_patterns_locally_for_crossing(self, cell: Cell) -> bool:
+        crossing_obs = {
+            obs
+            for obs in self.obstructions
+            if not obs.is_localized() and obs.occupies(cell)
+        }
+        while crossing_obs:
+            obs = next(iter(crossing_obs))
+            perm = tuple(obs.patt[i] for i in obs.points_in_cell(cell))
+            back_map = dict(zip(Perm.to_standard(perm), perm))
+            for patt in Perm.of_length(len(perm)):
+                it = iter(patt)
+                gp = GriddedPerm(
+                    (back_map[next(it)] if c == cell else val for val, c in obs),
+                    obs.pos,
+                )
+                try:
+                    crossing_obs.remove(gp)
+                except KeyError:
+                    return False
+        return True
+
+    def generate_known_equinumerous_tilings(self) -> Set["Tiling"]:
+        stack, visited = [self], {self}
+        while stack:
+            for neighbor in Tiling._equinumerous_transpositions(stack.pop()):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    stack.append(neighbor)
+        return visited
+
+    @staticmethod
+    def _equinumerous_transpositions(tiling: "Tiling") -> Iterator["Tiling"]:
+        columns, _ = tiling.dimensions
+        yield from tiling.all_symmetries()
+        yield from (tiling.column_reverse(c) for c in range(columns))
+        yield from (tiling.permute_columns(perm) for perm in Perm.of_length(columns))
