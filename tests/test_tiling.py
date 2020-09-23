@@ -2571,3 +2571,126 @@ def test_apply_perm_map_to_cell():
         requirements=((GriddedPerm((0,), ((2, 1),)),),),
         assumptions=(),
     )
+
+
+def test_contains_all_patterns_locally_for_crossing():
+    t = Tiling(obstructions=(), requirements=(), assumptions=())
+    assert t.contains_all_patterns_locally_for_crossing((0, 0))
+    t = Tiling(
+        obstructions=(GriddedPerm((0,), ((0, 0),)),),
+        requirements=(),
+        assumptions=(),
+    )
+    assert t.contains_all_patterns_locally_for_crossing((0, 0))
+    t = Tiling(
+        obstructions=(GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),),
+        requirements=(),
+        assumptions=(),
+    )
+    assert all(t.contains_all_patterns_locally_for_crossing((i, 0)) for i in range(3))
+    t = Tiling(
+        obstructions=(GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (1, 0), (2, 0))),),
+        requirements=(),
+        assumptions=(),
+    )
+    assert not t.contains_all_patterns_locally_for_crossing((1, 0))
+    assert all(t.contains_all_patterns_locally_for_crossing((i, 0)) for i in (0, 2))
+    t = Tiling(
+        obstructions=(
+            GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 2, 1, 3), ((0, 0), (1, 0), (1, 0), (2, 0))),
+        ),
+        requirements=(),
+        assumptions=(),
+    )
+    assert all(t.contains_all_patterns_locally_for_crossing((i, 0)) for i in range(3))
+    t = Tiling(
+        obstructions=(
+            GriddedPerm((0, 1, 2, 4, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 1, 4, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 4, 1, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+        ),
+        requirements=(),
+        assumptions=(),
+    )
+    assert not t.contains_all_patterns_locally_for_crossing((1, 0))
+    assert all(t.contains_all_patterns_locally_for_crossing((i, 0)) for i in (0, 2))
+    t = Tiling(
+        obstructions=(
+            GriddedPerm((0, 1, 2, 4, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 1, 4, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 4, 1, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 4, 2, 1, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+        ),
+        requirements=(),
+        assumptions=(),
+    )
+    assert all(t.contains_all_patterns_locally_for_crossing((i, 0)) for i in range(3))
+    t = Tiling(
+        obstructions=(
+            GriddedPerm((0, 1, 2, 4, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 1, 4, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 4, 1, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 4, 2, 1, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm(
+                (0, 1, 2, 3, 4, 5), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0), (2, 0))
+            ),
+        ),
+        requirements=(),
+        assumptions=(),
+    )
+    assert t.contains_all_patterns_locally_for_crossing((0, 0))
+    assert not any(t.contains_all_patterns_locally_for_crossing((i, 0)) for i in (1, 2))
+    t = Tiling(
+        obstructions=(
+            GriddedPerm((0, 1, 2, 4, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 1, 4, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 4, 1, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 4, 2, 1, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm(
+                (0, 3, 1, 2, 4, 6, 7),
+                ((0, 0), (0, 0), (1, 0), (1, 0), (2, 0), (2, 0), (2, 0)),
+            ),
+            GriddedPerm(
+                (0, 3, 2, 1, 4, 6, 7),
+                ((0, 0), (0, 0), (1, 0), (1, 0), (2, 0), (2, 0), (2, 0)),
+            ),
+        ),
+        requirements=(),
+        assumptions=(),
+    )
+    assert t.contains_all_patterns_locally_for_crossing((1, 0))
+    assert not any(t.contains_all_patterns_locally_for_crossing((i, 0)) for i in (0, 2))
+    t = Tiling(
+        obstructions=(GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),),
+        requirements=((GriddedPerm((0, 2, 1), ((0, 0), (1, 0), (1, 0))),),),
+        assumptions=(),
+    )
+    assert not t.contains_all_patterns_locally_for_crossing((1, 0))
+    assert all(t.contains_all_patterns_locally_for_crossing((i, 0)) for i in (0, 2))
+    t = Tiling(
+        obstructions=(GriddedPerm((0, 2, 1), ((0, 0), (1, 0), (1, 0))),),
+        requirements=((GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),),),
+        assumptions=(),
+    )
+    assert not t.contains_all_patterns_locally_for_crossing((1, 0))
+    assert all(t.contains_all_patterns_locally_for_crossing((i, 0)) for i in (0, 2))
+    t = Tiling(
+        obstructions=(GriddedPerm((0, 2, 1), ((0, 0), (1, 0), (2, 0))),),
+        requirements=(
+            (
+                GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 2, 1), ((0, 0), (1, 0), (1, 0))),
+            ),
+        ),
+        assumptions=(),
+    )
+    assert all(t.contains_all_patterns_locally_for_crossing((i, 0)) for i in range(3))

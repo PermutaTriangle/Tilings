@@ -15,7 +15,7 @@ except ImportError:
 
     def _fake_version(_str: str) -> str:
 
-        print("=== If you are using older python than 3.8 ===")
+        print("=== If you are using older version of python than 3.8 ===")
         print(f"To use for {sys.executable} you need importlib-metadata.")
         print(f"{sys.executable} -m pip install importlib-metadata", flush=True)
         return "0.0.0"

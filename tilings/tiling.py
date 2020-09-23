@@ -1820,18 +1820,20 @@ class Tiling(CombinatorialClass):
         return self._transform(lambda _c: _c, lambda gp: gp.column_reverse(column))
 
     def row_complement(self, row: int) -> "Tiling":
-        """."""
+        """Changes a row to its complement."""
         return self._transform(lambda _c: _c, lambda gp: gp.row_complement(row))
 
     def permute_columns(self, perm: Iterable[int]) -> "Tiling":
-        """."""
+        """Given an initial state of columns 12...n, permute them using the provided
+        permutation.."""
         if not isinstance(perm, Perm):
             perm = Perm(perm)
         assert len(perm) == self.dimensions[0]
         return self._transform(lambda _c: _c, lambda gp: gp.permute_columns(perm))
 
     def permute_rows(self, perm: Iterable[int]) -> "Tiling":
-        """."""
+        """Given an initial state of rows 12...n, permute them using the provided
+        permutation.."""
         if not isinstance(perm, Perm):
             perm = Perm(perm)
         assert len(perm) == self.dimensions[1]
@@ -1842,36 +1844,57 @@ class Tiling(CombinatorialClass):
         perm_mapping: Callable[[Perm], Perm],
         cell: Cell,
     ) -> "Tiling":
-        """."""
+        """Apply a permutation mapping on anything within a cell."""
         return self._transform(
             lambda _c: _c, lambda gp: gp.apply_perm_map_to_cell(perm_mapping, cell)
         )
 
     def contains_all_patterns_locally_for_crossing(self, cell: Cell) -> bool:
-        """."""
-        crossing_obs = {
-            obs
-            for obs in self.obstructions
-            if not obs.is_localized() and obs.occupies(cell)
-        }
-        while crossing_obs:
-            obs = next(iter(crossing_obs))
-            perm = tuple(obs.patt[i] for i in obs.points_in_cell(cell))
+        """Check if for all crossing XXX through a given cell the tiling
+        contains the same XXX but with all permutations of its subpattern
+        within the cell.
+        """
+        return all(
+            Tiling._contains_all_subpatterns_in_cell(gp_set, cell)
+            for gp_set in chain(
+                (
+                    {
+                        req
+                        for req in req_list
+                        if not req.is_localized() and req.occupies(cell)
+                    }
+                    for req_list in self.requirements
+                ),
+                (
+                    {
+                        obs
+                        for obs in self.obstructions
+                        if not obs.is_localized() and obs.occupies(cell)
+                    },
+                ),
+            )
+        )
+
+    @staticmethod
+    def _contains_all_subpatterns_in_cell(gps: Set[GriddedPerm], cell: Cell) -> bool:
+        while gps:
+            gp = next(iter(gps))
+            perm = tuple(gp.patt[i] for i in gp.points_in_cell(cell))
             back_map = dict(zip(Perm.to_standard(perm), perm))
             for patt in Perm.of_length(len(perm)):
                 it = iter(patt)
                 gp = GriddedPerm(
-                    (back_map[next(it)] if c == cell else val for val, c in obs),
-                    obs.pos,
+                    (back_map[next(it)] if c == cell else val for val, c in gp),
+                    gp.pos,
                 )
                 try:
-                    crossing_obs.remove(gp)
+                    gps.remove(gp)
                 except KeyError:
                     return False
         return True
 
     def generate_known_equinumerous_tilings(self) -> Set["Tiling"]:
-        """."""
+        """Generate all tilings from known equinumerous mappings."""
         stack, visited = [self], {self}
         while stack:
             for neighbor in Tiling._equinumerous_transpositions(stack.pop()):
