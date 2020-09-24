@@ -46,6 +46,8 @@ class TileScope(CombinatorialSpecificationSearcher):
                 obstructions=[GriddedPerm.single_cell(patt, (0, 0)) for patt in basis]
             )
 
+        self._max_assumptions = kwargs.get("max_assumptions", None)
+
         if start_tiling.dimensions == (1, 1):
             procname = kwargs.get("logger_kwargs", {"processname": "runner"})
             logger.debug("Fixing basis in OneByOneVerificationStrategy", extra=procname)
@@ -80,3 +82,9 @@ class TileScope(CombinatorialSpecificationSearcher):
                 d[StrategyFactory.from_dict(k)] = v
             values.append(v)
         return defaultdict(int, d)
+
+    def valid_class(self, comb_class):
+        return (
+            self._max_assumptions is None
+            or len(comb_class.assumptions) <= self._max_assumptions
+        )
