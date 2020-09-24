@@ -351,7 +351,7 @@ class Fusion:
             obs_fusable
             and req_fusable
             and ass_fusable
-            and len(self._tiling.assumptions) <= 1
+            and len(self._tiling.assumptions) <= 2
             and self._check_isolation_level()
             and not self.fused_tiling()
             .add_list_requirement(list(self.new_assumption().gps))
