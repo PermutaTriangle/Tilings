@@ -1850,9 +1850,9 @@ class Tiling(CombinatorialClass):
         )
 
     def contains_all_patterns_locally_for_crossing(self, cell: Cell) -> bool:
-        """Check if for all crossing XXX through a given cell the tiling
-        contains the same XXX but with all permutations of its subpattern
-        within the cell.
+        """Check if for all crossing obstructions and requirements through a given cell,
+        the tiling contains the same crossing obstructions and requirements but with all
+        permutations of its subpattern within the cell.
         """
         return all(
             Tiling._contains_all_subpatterns_in_cell(gp_set, cell)
@@ -1905,7 +1905,38 @@ class Tiling(CombinatorialClass):
 
     @staticmethod
     def _equinumerous_transpositions(tiling: "Tiling") -> Iterator["Tiling"]:
-        columns, _ = tiling.dimensions
+        columns, rows = tiling.dimensions
         yield from tiling.all_symmetries()
         yield from (tiling.column_reverse(c) for c in range(columns))
         yield from (tiling.permute_columns(perm) for perm in Perm.of_length(columns))
+
+        for cell in (
+            (c, r)
+            for c in range(columns)
+            for r in range(rows)
+            if tiling.contains_all_patterns_locally_for_crossing((c, r))
+            and (
+                rows == 1
+                or all(
+                    tiling.is_empty_cell((c, _r))
+                    for _r in chain(range(0, r - 1), range(r + 1, rows))
+                )
+            )
+        ):
+            yield from Tiling._apply_all_symmetries_to_cell(tiling, cell)
+
+    @staticmethod
+    def _apply_all_symmetries_to_cell(
+        tiling: "Tiling", cell: Cell
+    ) -> Iterator["Tiling"]:
+        yield from (
+            tiling.apply_perm_map_to_cell(mapping, cell)
+            for mapping in (
+                lambda perm: perm.rotate(),
+                lambda perm: perm.rotate().inverse(),
+                lambda perm: perm.rotate(2),
+                lambda perm: perm.rotate(2).inverse(),
+                lambda perm: perm.rotate(3),
+                lambda perm: perm.rotate(3).inverse(),
+            )
+        )
