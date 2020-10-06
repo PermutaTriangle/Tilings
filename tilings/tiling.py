@@ -1909,7 +1909,6 @@ class Tiling(CombinatorialClass):
         yield from tiling.all_symmetries()
         yield from (tiling.column_reverse(c) for c in range(columns))
         yield from (tiling.permute_columns(perm) for perm in Perm.of_length(columns))
-
         for cell in (
             (c, r)
             for c in range(columns)
@@ -1924,6 +1923,7 @@ class Tiling(CombinatorialClass):
             )
         ):
             yield from Tiling._apply_all_symmetries_to_cell(tiling, cell)
+        # Add other pre-existing here:
 
     @staticmethod
     def _apply_all_symmetries_to_cell(

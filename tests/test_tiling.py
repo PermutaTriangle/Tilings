@@ -2694,3 +2694,24 @@ def test_contains_all_patterns_locally_for_crossing():
         assumptions=(),
     )
     assert all(t.contains_all_patterns_locally_for_crossing((i, 0)) for i in range(3))
+
+
+@pytest.mark.slow
+def test_generate_known_equinumerous_tilings():
+    check_up_to = 5
+    t = Tiling(
+        obstructions=(
+            GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (1, 0))),
+            GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (2, 0))),
+            GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (1, 0))),
+            GriddedPerm((2, 1, 0, 3), ((0, 0), (1, 0), (1, 0), (2, 0))),
+            GriddedPerm((2, 0, 1, 3), ((0, 0), (1, 0), (1, 0), (2, 0))),
+        ),
+        requirements=(),
+    )
+    expected = t.enmerate_gp_up_to(check_up_to)
+    assert all(
+        til.enmerate_gp_up_to(check_up_to) == expected
+        for til in t.generate_known_equinumerous_tilings()
+    )
