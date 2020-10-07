@@ -8,9 +8,17 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname), encoding="utf-8").read()
 
 
+def get_version(rel_path):
+    for line in read(rel_path).splitlines():
+        if line.startswith("__version__"):
+            delim = '"' if '"' in line else "'"
+            return line.split(delim)[1]
+    raise RuntimeError("Unable to find version string.")
+
+
 setup(
     name="tilings",
-    version="2.3.1",
+    version=get_version("tilings/__init__.py"),
     author="Permuta Triangle",
     author_email="permutatriangle@gmail.com",
     description="A Python library for gridded permutations and tilings.",
