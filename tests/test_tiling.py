@@ -2726,7 +2726,6 @@ def test_guess_from_gridded_perms():
                 assumptions=(),
             ),
             5,
-            False,
         ),
         (
             Tiling(
@@ -2735,7 +2734,6 @@ def test_guess_from_gridded_perms():
                 assumptions=(),
             ),
             3,
-            True,
         ),
         (
             Tiling(
@@ -2750,7 +2748,6 @@ def test_guess_from_gridded_perms():
                 requirements=(),
             ),
             4,
-            True,
         ),
         (
             Tiling(
@@ -2778,7 +2775,6 @@ def test_guess_from_gridded_perms():
                 assumptions=(),
             ),
             5,
-            True,
         ),
         (
             Tiling(
@@ -2798,7 +2794,6 @@ def test_guess_from_gridded_perms():
                 assumptions=(),
             ),
             4,
-            True,
         ),
         (
             Tiling(
@@ -2820,19 +2815,22 @@ def test_guess_from_gridded_perms():
                 assumptions=(),
             ),
             7,
-            True,
         ),
     ]
 
-    for tiling, gen_up_to, test_rem in tilings:
+    for tiling, gen_up_to in tilings:
         # Test for the generated gps of the tiling
         set_of_perms = set(tiling.gridded_perms(gen_up_to))
         assert Tiling.guess_from_gridded_perms(set_of_perms) == tiling
-        if not test_rem:
+        to_rem_len = max(len(gp) for gp in tiling.obstructions) - 1
+        if to_rem_len < 1:
+            continue
+        to_rem = next((gp for gp in set_of_perms if len(gp) == to_rem_len), None)
+        if to_rem is None:
             continue
         # Remove any and make sure it fails
         # This requires the set of gps to have no larger gps than the largest obs
-        set_of_perms.pop()
+        set_of_perms.remove(to_rem)
         try:
             Tiling.guess_from_gridded_perms(set_of_perms)
             assert False
