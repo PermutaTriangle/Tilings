@@ -2715,3 +2715,115 @@ def test_generate_known_equinumerous_tilings():
         til.enmerate_gp_up_to(check_up_to) == expected
         for til in t.generate_known_equinumerous_tilings()
     )
+
+
+def test_guess_from_gridded_perms():
+    tilings = [
+        (
+            Tiling(
+                obstructions=(GriddedPerm((0, 1), ((0, 0), (0, 0))),),
+                requirements=(),
+                assumptions=(),
+            ),
+            5,
+        ),
+        (
+            Tiling(
+                obstructions=(GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),),
+                requirements=(),
+                assumptions=(),
+            ),
+            3,
+        ),
+        (
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+                    GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (1, 0))),
+                    GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (2, 0))),
+                    GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (1, 0))),
+                    GriddedPerm((2, 1, 0, 3), ((0, 0), (1, 0), (1, 0), (2, 0))),
+                    GriddedPerm((2, 0, 1, 3), ((0, 0), (1, 0), (1, 0), (2, 0))),
+                ),
+                requirements=(),
+            ),
+            4,
+        ),
+        (
+            Tiling(
+                obstructions=(
+                    GriddedPerm(
+                        (0, 1, 2, 4, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))
+                    ),
+                    GriddedPerm(
+                        (0, 1, 4, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))
+                    ),
+                    GriddedPerm(
+                        (0, 2, 1, 4, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))
+                    ),
+                    GriddedPerm(
+                        (0, 2, 4, 1, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))
+                    ),
+                    GriddedPerm(
+                        (0, 4, 1, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))
+                    ),
+                    GriddedPerm(
+                        (0, 4, 2, 1, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))
+                    ),
+                ),
+                requirements=(),
+                assumptions=(),
+            ),
+            5,
+        ),
+        (
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                    GriddedPerm((0, 1), ((1, 0), (2, 0))),
+                    GriddedPerm((0, 1), ((2, 0), (2, 0))),
+                    GriddedPerm((0, 1), ((3, 1), (3, 1))),
+                    GriddedPerm((1, 0), ((3, 1), (3, 1))),
+                    GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+                    GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (2, 0))),
+                    GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (2, 0))),
+                    GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (2, 0))),
+                    GriddedPerm((3, 2, 1, 0), ((1, 1), (2, 0), (2, 0), (2, 0))),
+                ),
+                requirements=(),
+                assumptions=(),
+            ),
+            4,
+        ),
+        (
+            Tiling(
+                obstructions=(
+                    GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (0, 0))),
+                    GriddedPerm(
+                        (0, 3, 1, 2, 4), ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0))
+                    ),
+                    GriddedPerm(
+                        (0, 3, 1, 4, 5, 2),
+                        ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)),
+                    ),
+                    GriddedPerm(
+                        (0, 2, 4, 5, 1, 6, 3),
+                        ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)),
+                    ),
+                ),
+                requirements=(),
+                assumptions=(),
+            ),
+            7,
+        ),
+    ]
+
+    for tiling, gen_up_to in tilings:
+        set_of_perms = set(tiling.gridded_perms(gen_up_to))
+        assert Tiling.guess_from_gridded_perms(set_of_perms) == tiling
+        set_of_perms.pop()
+        try:
+            Tiling.guess_from_gridded_perms(set_of_perms)
+            assert False
+        except ValueError:
+            assert True

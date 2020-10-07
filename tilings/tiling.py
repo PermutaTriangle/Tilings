@@ -1,12 +1,13 @@
 # pylint: disable=too-many-lines
 import json
 from array import array
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from functools import partial, reduce
 from itertools import chain, filterfalse, product
 from operator import mul, xor
 from typing import (
     Callable,
+    Deque,
     Dict,
     FrozenSet,
     Iterable,
@@ -1940,3 +1941,77 @@ class Tiling(CombinatorialClass):
                 lambda perm: perm.rotate(3).inverse(),
             )
         )
+
+    @classmethod
+    def guess_from_gridded_perms(
+        cls, gps: Iterable[GriddedPerm], max_len: int = -1
+    ) -> "Tiling":
+        """Given a collection of gridded permutations, attempt to find the Tilings T
+        such that the collection of gridded permutations belong to Grid(T). The method
+        only looks for obstructions.
+
+        Raises:
+        ValueError: If the collection does not contain a pattern that is not avoided
+        by all.
+        """
+        gps = set(gps)
+        c, r, longest = cls._get_dimensions(gps)
+        max_len = longest if max_len == -1 else min(max_len, longest)
+        obs = cls._search(deque([GriddedPerm()]), gps, c, r, max_len)
+        return cls(obstructions=obs, requirements=(), assumptions=())
+
+    @staticmethod
+    def _extend_gp(gp: GriddedPerm, c: int, r: int) -> Iterator[GriddedPerm]:
+        """Add n+1 to all possible positions in perm and all allowed positions given that
+        placement."""
+        n = len(gp)
+        if n == 0:
+            yield from (
+                GriddedPerm((0,), ((x, y),)) for x in range(c) for y in range(r)
+            )
+        else:
+            min_y = max(y for _, (_, y) in gp)
+            yield from (
+                GriddedPerm(
+                    gp.patt.insert(index),
+                    gp.pos[:index] + ((x, y),) + gp.pos[index:],
+                )
+                for index in range(n + 1)
+                for x in range(
+                    gp.pos[index - 1][0] if index > 0 else 0,
+                    gp.pos[index][0] + 1 if index < n else c,
+                )
+                for y in range(min_y, r)
+            )
+
+    @staticmethod
+    def _search(
+        frontier: Deque[GriddedPerm],
+        gps: Set[GriddedPerm],
+        c: int,
+        r: int,
+        max_len: int,
+    ) -> Set[GriddedPerm]:
+        obstructions: Set[GriddedPerm] = set()
+        while frontier:
+            curr = frontier.popleft()
+            if len(curr) > max_len:
+                break
+            if all(gp.avoids(curr) for gp in gps):
+                obstructions.add(curr)
+            else:
+                if curr not in gps:
+                    raise ValueError(f"Set should contain {repr(curr)}")
+                for gp in Tiling._extend_gp(curr, c, r):
+                    frontier.append(gp)
+        return obstructions
+
+    @staticmethod
+    def _get_dimensions(gps: Iterable[GriddedPerm]) -> Tuple[int, int, int]:
+        m_x, m_y, m_len = 0, 0, 0
+        for gp in gps:
+            m_len = max(m_len, len(gp))
+            for _, (x, y) in gp:
+                m_x = max(m_x, x)
+                m_y = max(m_y, y)
+        return m_x + 1, m_y + 1, m_len
