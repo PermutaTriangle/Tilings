@@ -9,11 +9,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python: 3.9
             os: ubuntu-latest
-          - python: 3.9
             os: macos-latest
-          - python: 3.9
             os: windows-latest
 
     runs-on: ${{ matrix.os }}
@@ -21,7 +18,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: ${{  matrix.python }}
+          python-version: 3.9
       - name: install dependencies
         run: python -m pip install --upgrade pip
       - name: setup
