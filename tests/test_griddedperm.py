@@ -2,7 +2,7 @@ import pytest
 
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST
-from tilings import GriddedPerm
+from tilings import GriddedPerm, Tiling
 
 
 @pytest.fixture
@@ -552,3 +552,46 @@ def test_is_interleaving():
         Perm((0, 2, 3, 4, 5, 6, 1)),
         [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 0)],
     ).is_interleaving()
+
+
+def test_slide():
+    t1 = (
+        Tiling(
+            obstructions=(
+                GriddedPerm(Perm((1, 0)), ((2, 0), (2, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (1, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (1, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (2, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (1, 0), (1, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (1, 0), (2, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((1, 0), (1, 0), (2, 0))),
+            ),
+            requirements=(),
+            assumptions=(),
+        )
+        .rotate180()
+        .reverse()
+    )
+    t2 = (
+        Tiling(
+            obstructions=(
+                GriddedPerm(Perm((1, 0)), ((1, 0), (1, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((2, 0), (2, 0), (2, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (1, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (0, 0), (2, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (1, 0), (2, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((0, 0), (2, 0), (2, 0))),
+                GriddedPerm(Perm((2, 1, 0)), ((1, 0), (2, 0), (2, 0))),
+            ),
+            requirements=(),
+            assumptions=(),
+        )
+        .rotate180()
+        .reverse()
+    )
+    up_to = 7
+    mapped_gps_from_t1 = {gp.slide() for gp in t1.gridded_perms(up_to)}
+    gps_from_t2 = set(t2.gridded_perms(up_to))
+    assert mapped_gps_from_t1 == gps_from_t2

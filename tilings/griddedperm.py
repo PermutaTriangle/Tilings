@@ -1,6 +1,17 @@
 import json
+from collections import deque
 from itertools import chain, combinations, islice, product, tee
-from typing import Callable, Dict, FrozenSet, Iterable, Iterator, List, Optional, Tuple
+from typing import (
+    Callable,
+    Deque,
+    Dict,
+    FrozenSet,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+)
 
 from comb_spec_searcher import CombinatorialObject
 from permuta import Perm
@@ -674,3 +685,49 @@ class GriddedPerm(CombinatorialObject):
 
     def __iter__(self) -> Iterator[Tuple[int, Cell]]:
         return zip(self.patt, self.pos)
+
+    def slide(self) -> "GriddedPerm":
+        """Sliding lemma for gridded permutations within a boundary of 1x3."""
+        assert len(self) == 0 or (
+            max(x for _, (x, _) in self) < 3 and max(y for _, (_, y) in self) < 1
+        )
+
+        perms: Tuple[Deque[int], Deque[int], Deque[int], Deque[int]] = (
+            deque([]),
+            deque([]),
+            deque([]),
+            deque([]),
+        )
+
+        for val, (x, _) in self:
+            perms[x].append(val)
+
+        if not perms[1]:
+            return type(self)(
+                self.patt, ((0, 0),) * len(perms[0]) + ((1, 0),) * len(perms[2])
+            )
+
+        if not perms[2]:
+            return type(self)(
+                self.patt, ((0, 0),) * len(perms[0]) + ((2, 0),) * len(perms[1])
+            )
+
+        while perms[1]:
+            val = perms[1].pop()
+            r_val, idx = min(
+                ((r_val, i) for i, r_val in enumerate(perms[2]) if r_val > val),
+                default=(-1, -1),
+            )
+            if idx != -1:
+                perms[2][idx] = val
+                perms[3].appendleft(r_val)
+            else:
+                perms[2].appendleft(val)
+                perms[3].appendleft(perms[2].pop())
+
+        return type(self)(
+            Perm(chain(perms[0], perms[2], perms[3])),
+            ((0, 0),) * len(perms[0])
+            + ((1, 0),) * len(perms[2])
+            + ((2, 0),) * len(perms[3]),
+        )
