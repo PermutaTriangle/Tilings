@@ -1,0 +1,28 @@
+name: build-and-deploy
+
+on: [push, pull_request]
+
+jobs:
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: 3.8
+            os: ubuntu-latest
+          - python: 3.8
+            os: macos-latest
+          - python: 3.8
+            os: windows-latest
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{  matrix.python }}
+      - name: install dependencies
+        run: python -m pip install --upgrade pip
+      - name: setup
+        run: python setup.py install
