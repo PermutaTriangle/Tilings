@@ -346,6 +346,128 @@ class Tiling(CombinatorialClass):
                 res.append(ass)
         self._assumptions = tuple(sorted(set(res)))
 
+    @classmethod
+    def guess_from_gridded_perms(
+        cls, gps: Iterable[GriddedPerm], max_len: int = -1
+    ) -> "Tiling":
+        """Given a collection of gridded permutations, attempt to find the Tilings T
+        such that the collection of gridded permutations belong to Grid(T). The method
+        only looks for obstructions.
+
+        Raises:
+        ValueError: If the collection does not contain a pattern that is not avoided
+        by all.
+        """
+        gps = set(gps)
+        c, r, longest = cls._get_dimensions(gps)
+        max_len = longest if max_len == -1 else min(max_len, longest)
+        obs = cls._search(deque([GriddedPerm()]), gps, c, r, max_len)
+        return cls(obstructions=obs, requirements=(), assumptions=())
+
+    @staticmethod
+    def _extend_gp(gp: GriddedPerm, c: int, r: int) -> Iterator[GriddedPerm]:
+        """Add n+1 to all possible positions in perm and all allowed positions given that
+        placement."""
+        n = len(gp)
+        if n == 0:
+            yield from (
+                GriddedPerm((0,), ((x, y),)) for x in range(c) for y in range(r)
+            )
+        else:
+            min_y = max(y for _, (_, y) in gp)
+            yield from (
+                GriddedPerm(
+                    gp.patt.insert(index),
+                    gp.pos[:index] + ((x, y),) + gp.pos[index:],
+                )
+                for index in range(n + 1)
+                for x in range(
+                    gp.pos[index - 1][0] if index > 0 else 0,
+                    gp.pos[index][0] + 1 if index < n else c,
+                )
+                for y in range(min_y, r)
+            )
+
+    @staticmethod
+    def _search(
+        frontier: Deque[GriddedPerm],
+        gps: Set[GriddedPerm],
+        c: int,
+        r: int,
+        max_len: int,
+    ) -> Set[GriddedPerm]:
+        obstructions: Set[GriddedPerm] = set()
+        while frontier:
+            curr = frontier.popleft()
+            if len(curr) > max_len:
+                break
+            if all(gp.avoids(curr) for gp in gps):
+                obstructions.add(curr)
+            else:
+                if curr not in gps:
+                    raise ValueError(f"Set should contain {repr(curr)}")
+                for gp in Tiling._extend_gp(curr, c, r):
+                    frontier.append(gp)
+        return obstructions
+
+    @staticmethod
+    def _get_dimensions(gps: Iterable[GriddedPerm]) -> Tuple[int, int, int]:
+        m_x, m_y, m_len = 0, 0, 0
+        for gp in gps:
+            m_len = max(m_len, len(gp))
+            for _, (x, y) in gp:
+                m_x = max(m_x, x)
+                m_y = max(m_y, y)
+        return m_x + 1, m_y + 1, m_len
+
+    def generate_known_equinumerous_tilings(self) -> Set["Tiling"]:
+        """Generate all tilings from known equinumerous mappings."""
+        stack, visited = [self], {self}
+        while stack:
+            for neighbor in Tiling._equinumerous_transpositions(stack.pop()):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    stack.append(neighbor)
+        return visited
+
+    @staticmethod
+    def _equinumerous_transpositions(tiling: "Tiling") -> Iterator["Tiling"]:
+        columns, rows = tiling.dimensions
+        yield from tiling.all_symmetries()
+        yield from (tiling.column_reverse(c) for c in range(columns))
+        yield from (tiling.permute_columns(perm) for perm in Perm.of_length(columns))
+        for cell in (
+            (c, r)
+            for c in range(columns)
+            for r in range(rows)
+            if tiling.contains_all_patterns_locally_for_crossing((c, r))
+            and (
+                rows == 1
+                or all(
+                    tiling.is_empty_cell((c, _r))
+                    for _r in chain(range(0, r - 1), range(r + 1, rows))
+                )
+            )
+        ):
+            yield from Tiling._apply_all_symmetries_to_cell(tiling, cell)
+        # Add other pre-existing here:
+
+    @staticmethod
+    def _apply_all_symmetries_to_cell(
+        tiling: "Tiling", cell: Cell
+    ) -> Iterator["Tiling"]:
+        yield from (
+            tiling.apply_perm_map_to_cell(mapping, cell)
+            for mapping in (
+                lambda perm: perm.rotate(),
+                lambda perm: perm.rotate().inverse(),
+                lambda perm: perm.rotate(2),
+                lambda perm: perm.rotate(2).inverse(),
+                lambda perm: perm.rotate(3),
+                lambda perm: perm.rotate(3).inverse(),
+            )
+        )
+
     # -------------------------------------------------------------
     # Compression
     # -------------------------------------------------------------
@@ -938,6 +1060,40 @@ class Tiling(CombinatorialClass):
                 break
         return symmetries
 
+    def column_reverse(self, column: int) -> "Tiling":
+        """Reverse a given column in the tiling."""
+        return self._transform(lambda _c: _c, lambda gp: gp.column_reverse(column))
+
+    def row_complement(self, row: int) -> "Tiling":
+        """Changes a row to its complement."""
+        return self._transform(lambda _c: _c, lambda gp: gp.row_complement(row))
+
+    def permute_columns(self, perm: Iterable[int]) -> "Tiling":
+        """Given an initial state of columns 12...n, permute them using the provided
+        permutation.."""
+        if not isinstance(perm, Perm):
+            perm = Perm(perm)
+        assert len(perm) == self.dimensions[0]
+        return self._transform(lambda _c: _c, lambda gp: gp.permute_columns(perm))
+
+    def permute_rows(self, perm: Iterable[int]) -> "Tiling":
+        """Given an initial state of rows 12...n, permute them using the provided
+        permutation.."""
+        if not isinstance(perm, Perm):
+            perm = Perm(perm)
+        assert len(perm) == self.dimensions[1]
+        return self._transform(lambda _c: _c, lambda gp: gp.permute_rows(perm))
+
+    def apply_perm_map_to_cell(
+        self,
+        perm_mapping: Callable[[Perm], Perm],
+        cell: Cell,
+    ) -> "Tiling":
+        """Apply a permutation mapping on anything within a cell."""
+        return self._transform(
+            lambda _c: _c, lambda gp: gp.apply_perm_map_to_cell(perm_mapping, cell)
+        )
+
     # -------------------------------------------------------------
     # Algorithms
     # -------------------------------------------------------------
@@ -1410,6 +1566,11 @@ class Tiling(CombinatorialClass):
         )
         yield from GriddedPermsOnTiling(self).gridded_perms(maxlen)
 
+    def enmerate_gp_up_to(self, max_length: int) -> List[int]:
+        """Count gridded perms of each length up to a max length."""
+        cnt = Counter(len(gp) for gp in self.gridded_perms(max_length))
+        return [cnt[i] for i in range(max_length + 1)]
+
     def merge(self) -> "Tiling":
         """Return an equivalent tiling with a single requirement list.
         # TODO: this doesn't work due to minimization on initialising"""
@@ -1480,6 +1641,50 @@ class Tiling(CombinatorialClass):
         """
         local_obs = self.cell_basis()[cell][0]
         return any(ob in [Perm((0,)), Perm((0, 1)), Perm((1, 0))] for ob in local_obs)
+
+    def contains_all_patterns_locally_for_crossing(self, cell: Cell) -> bool:
+        """Check if for all crossing obstructions and requirements through a given cell,
+        the tiling contains the same crossing obstructions and requirements but with all
+        permutations of its subpattern within the cell.
+        """
+        return all(
+            Tiling._contains_all_subpatterns_in_cell(gp_set, cell)
+            for gp_set in chain(
+                (
+                    {
+                        req
+                        for req in req_list
+                        if not req.is_localized() and req.occupies(cell)
+                    }
+                    for req_list in self.requirements
+                ),
+                (
+                    {
+                        obs
+                        for obs in self.obstructions
+                        if not obs.is_localized() and obs.occupies(cell)
+                    },
+                ),
+            )
+        )
+
+    @staticmethod
+    def _contains_all_subpatterns_in_cell(gps: Set[GriddedPerm], cell: Cell) -> bool:
+        while gps:
+            gp = next(iter(gps))
+            perm = tuple(gp.patt[i] for i in gp.points_in_cell(cell))
+            back_map = dict(zip(Perm.to_standard(perm), perm))
+            for patt in Perm.of_length(len(perm)):
+                it = iter(patt)
+                gp = GriddedPerm(
+                    (back_map[next(it)] if c == cell else val for val, c in gp),
+                    gp.pos,
+                )
+                try:
+                    gps.remove(gp)
+                except KeyError:
+                    return False
+        return True
 
     @property
     def point_cells(self) -> CellFrozenSet:
@@ -1810,208 +2015,3 @@ class Tiling(CombinatorialClass):
             result = result[:-1]
 
         return "".join(result)
-
-    def enmerate_gp_up_to(self, max_length: int) -> List[int]:
-        """Count gridded perms of each length up to a max length."""
-        cnt = Counter(len(gp) for gp in self.gridded_perms(max_length))
-        return [cnt[i] for i in range(max_length + 1)]
-
-    def column_reverse(self, column: int) -> "Tiling":
-        """Reverse a given column in the tiling."""
-        return self._transform(lambda _c: _c, lambda gp: gp.column_reverse(column))
-
-    def row_complement(self, row: int) -> "Tiling":
-        """Changes a row to its complement."""
-        return self._transform(lambda _c: _c, lambda gp: gp.row_complement(row))
-
-    def permute_columns(self, perm: Iterable[int]) -> "Tiling":
-        """Given an initial state of columns 12...n, permute them using the provided
-        permutation.."""
-        if not isinstance(perm, Perm):
-            perm = Perm(perm)
-        assert len(perm) == self.dimensions[0]
-        return self._transform(lambda _c: _c, lambda gp: gp.permute_columns(perm))
-
-    def permute_rows(self, perm: Iterable[int]) -> "Tiling":
-        """Given an initial state of rows 12...n, permute them using the provided
-        permutation.."""
-        if not isinstance(perm, Perm):
-            perm = Perm(perm)
-        assert len(perm) == self.dimensions[1]
-        return self._transform(lambda _c: _c, lambda gp: gp.permute_rows(perm))
-
-    def apply_perm_map_to_cell(
-        self,
-        perm_mapping: Callable[[Perm], Perm],
-        cell: Cell,
-    ) -> "Tiling":
-        """Apply a permutation mapping on anything within a cell."""
-        return self._transform(
-            lambda _c: _c, lambda gp: gp.apply_perm_map_to_cell(perm_mapping, cell)
-        )
-
-    def contains_all_patterns_locally_for_crossing(self, cell: Cell) -> bool:
-        """Check if for all crossing obstructions and requirements through a given cell,
-        the tiling contains the same crossing obstructions and requirements but with all
-        permutations of its subpattern within the cell.
-        """
-        return all(
-            Tiling._contains_all_subpatterns_in_cell(gp_set, cell)
-            for gp_set in chain(
-                (
-                    {
-                        req
-                        for req in req_list
-                        if not req.is_localized() and req.occupies(cell)
-                    }
-                    for req_list in self.requirements
-                ),
-                (
-                    {
-                        obs
-                        for obs in self.obstructions
-                        if not obs.is_localized() and obs.occupies(cell)
-                    },
-                ),
-            )
-        )
-
-    @staticmethod
-    def _contains_all_subpatterns_in_cell(gps: Set[GriddedPerm], cell: Cell) -> bool:
-        while gps:
-            gp = next(iter(gps))
-            perm = tuple(gp.patt[i] for i in gp.points_in_cell(cell))
-            back_map = dict(zip(Perm.to_standard(perm), perm))
-            for patt in Perm.of_length(len(perm)):
-                it = iter(patt)
-                gp = GriddedPerm(
-                    (back_map[next(it)] if c == cell else val for val, c in gp),
-                    gp.pos,
-                )
-                try:
-                    gps.remove(gp)
-                except KeyError:
-                    return False
-        return True
-
-    def generate_known_equinumerous_tilings(self) -> Set["Tiling"]:
-        """Generate all tilings from known equinumerous mappings."""
-        stack, visited = [self], {self}
-        while stack:
-            for neighbor in Tiling._equinumerous_transpositions(stack.pop()):
-                if neighbor not in visited:
-                    visited.add(neighbor)
-                    stack.append(neighbor)
-        return visited
-
-    @staticmethod
-    def _equinumerous_transpositions(tiling: "Tiling") -> Iterator["Tiling"]:
-        columns, rows = tiling.dimensions
-        yield from tiling.all_symmetries()
-        yield from (tiling.column_reverse(c) for c in range(columns))
-        yield from (tiling.permute_columns(perm) for perm in Perm.of_length(columns))
-        for cell in (
-            (c, r)
-            for c in range(columns)
-            for r in range(rows)
-            if tiling.contains_all_patterns_locally_for_crossing((c, r))
-            and (
-                rows == 1
-                or all(
-                    tiling.is_empty_cell((c, _r))
-                    for _r in chain(range(0, r - 1), range(r + 1, rows))
-                )
-            )
-        ):
-            yield from Tiling._apply_all_symmetries_to_cell(tiling, cell)
-        # Add other pre-existing here:
-
-    @staticmethod
-    def _apply_all_symmetries_to_cell(
-        tiling: "Tiling", cell: Cell
-    ) -> Iterator["Tiling"]:
-        yield from (
-            tiling.apply_perm_map_to_cell(mapping, cell)
-            for mapping in (
-                lambda perm: perm.rotate(),
-                lambda perm: perm.rotate().inverse(),
-                lambda perm: perm.rotate(2),
-                lambda perm: perm.rotate(2).inverse(),
-                lambda perm: perm.rotate(3),
-                lambda perm: perm.rotate(3).inverse(),
-            )
-        )
-
-    @classmethod
-    def guess_from_gridded_perms(
-        cls, gps: Iterable[GriddedPerm], max_len: int = -1
-    ) -> "Tiling":
-        """Given a collection of gridded permutations, attempt to find the Tilings T
-        such that the collection of gridded permutations belong to Grid(T). The method
-        only looks for obstructions.
-
-        Raises:
-        ValueError: If the collection does not contain a pattern that is not avoided
-        by all.
-        """
-        gps = set(gps)
-        c, r, longest = cls._get_dimensions(gps)
-        max_len = longest if max_len == -1 else min(max_len, longest)
-        obs = cls._search(deque([GriddedPerm()]), gps, c, r, max_len)
-        return cls(obstructions=obs, requirements=(), assumptions=())
-
-    @staticmethod
-    def _extend_gp(gp: GriddedPerm, c: int, r: int) -> Iterator[GriddedPerm]:
-        """Add n+1 to all possible positions in perm and all allowed positions given that
-        placement."""
-        n = len(gp)
-        if n == 0:
-            yield from (
-                GriddedPerm((0,), ((x, y),)) for x in range(c) for y in range(r)
-            )
-        else:
-            min_y = max(y for _, (_, y) in gp)
-            yield from (
-                GriddedPerm(
-                    gp.patt.insert(index),
-                    gp.pos[:index] + ((x, y),) + gp.pos[index:],
-                )
-                for index in range(n + 1)
-                for x in range(
-                    gp.pos[index - 1][0] if index > 0 else 0,
-                    gp.pos[index][0] + 1 if index < n else c,
-                )
-                for y in range(min_y, r)
-            )
-
-    @staticmethod
-    def _search(
-        frontier: Deque[GriddedPerm],
-        gps: Set[GriddedPerm],
-        c: int,
-        r: int,
-        max_len: int,
-    ) -> Set[GriddedPerm]:
-        obstructions: Set[GriddedPerm] = set()
-        while frontier:
-            curr = frontier.popleft()
-            if len(curr) > max_len:
-                break
-            if all(gp.avoids(curr) for gp in gps):
-                obstructions.add(curr)
-            else:
-                if curr not in gps:
-                    raise ValueError(f"Set should contain {repr(curr)}")
-                for gp in Tiling._extend_gp(curr, c, r):
-                    frontier.append(gp)
-        return obstructions
-
-    @staticmethod
-    def _get_dimensions(gps: Iterable[GriddedPerm]) -> Tuple[int, int, int]:
-        m_x, m_y, m_len = 0, 0, 0
-        for gp in gps:
-            m_len = max(m_len, len(gp))
-            for _, (x, y) in gp:
-                m_x = max(m_x, x)
-                m_y = max(m_y, y)
-        return m_x + 1, m_y + 1, m_len
