@@ -107,14 +107,14 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         super().__init__(ignore_parent=ignore_parent)
 
     def change_basis(
-        self, basis: Iterable[Perm], symmetry: bool = False
+        self, basis: Iterable[Perm], symmetry: bool
     ) -> "OneByOneVerificationStrategy":
         """
         Return a new version of the verfication strategy with the given basis instead of
         the current one.
         """
         basis = tuple(basis)
-        return self.__class__(basis, self._symmetry, self.ignore_parent)
+        return self.__class__(basis, symmetry, self.ignore_parent)
 
     @property
     def basis(self) -> Tuple[Perm, ...]:
