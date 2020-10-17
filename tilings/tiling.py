@@ -1,13 +1,12 @@
 # pylint: disable=too-many-lines
 import json
 from array import array
-from collections import Counter, defaultdict, deque
+from collections import Counter, defaultdict
 from functools import partial, reduce
 from itertools import chain, filterfalse, product
 from operator import mul, xor
 from typing import (
     Callable,
-    Deque,
     Dict,
     FrozenSet,
     Iterable,
@@ -42,6 +41,7 @@ from .algorithms import (
     RowColSeparation,
     SubclassVerificationAlgorithm,
     SubobstructionInferral,
+    guess_obstructions,
 )
 from .assumptions import (
     SkewComponentAssumption,
@@ -358,43 +358,11 @@ class Tiling(CombinatorialClass):
         ValueError: If the collection does not contain a pattern that is not avoided
         by all.
         """
-        gps = set(gps)
-        c, r, longest = cls._get_dimensions(gps)
-        max_len = longest if max_len == -1 else min(max_len, longest)
-        obs = cls._search(deque([GriddedPerm()]), gps, c, r, max_len)
-        return cls(obstructions=obs, requirements=(), assumptions=())
-
-    @staticmethod
-    def _search(
-        frontier: Deque[GriddedPerm],
-        gps: Set[GriddedPerm],
-        c: int,
-        r: int,
-        max_len: int,
-    ) -> Set[GriddedPerm]:
-        obstructions: Set[GriddedPerm] = set()
-        while frontier:
-            curr = frontier.popleft()
-            if len(curr) > max_len:
-                break
-            if all(gp.avoids(curr) for gp in gps):
-                obstructions.add(curr)
-            else:
-                if curr not in gps:
-                    raise ValueError(f"Set should contain {repr(curr)}")
-                for gp in curr.extend(c, r):
-                    frontier.append(gp)
-        return obstructions
-
-    @staticmethod
-    def _get_dimensions(gps: Iterable[GriddedPerm]) -> Tuple[int, int, int]:
-        m_x, m_y, m_len = 0, 0, 0
-        for gp in gps:
-            m_len = max(m_len, len(gp))
-            for _, (x, y) in gp:
-                m_x = max(m_x, x)
-                m_y = max(m_y, y)
-        return m_x + 1, m_y + 1, m_len
+        return cls(
+            obstructions=guess_obstructions(gps, max_len),
+            requirements=(),
+            assumptions=(),
+        )
 
     def generate_known_equinumerous_tilings(self) -> Set["Tiling"]:
         """Generate all tilings from known equinumerous mappings."""

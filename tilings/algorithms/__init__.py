@@ -3,6 +3,7 @@ from .factor import Factor, FactorWithInterleaving, FactorWithMonotoneInterleavi
 from .fusion import ComponentFusion, Fusion
 from .gridded_perm_generation import GriddedPermsOnTiling
 from .gridded_perm_reduction import GriddedPermReduction
+from .guess_obstructions import guess_obstructions
 from .minimal_gridded_perms import MinimalGriddedPerms
 from .obstruction_inferral import (
     AllObstructionInferral,
@@ -33,4 +34,5 @@ __all__ = [
     "RequirementPlacement",
     "RowColSeparation",
     "SubclassVerificationAlgorithm",
+    "guess_obstructions",
 ]
