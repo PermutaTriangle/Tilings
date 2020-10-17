@@ -365,30 +365,6 @@ class Tiling(CombinatorialClass):
         return cls(obstructions=obs, requirements=(), assumptions=())
 
     @staticmethod
-    def _extend_gp(gp: GriddedPerm, c: int, r: int) -> Iterator[GriddedPerm]:
-        """Add n+1 to all possible positions in perm and all allowed positions given that
-        placement."""
-        n = len(gp)
-        if n == 0:
-            yield from (
-                GriddedPerm((0,), ((x, y),)) for x in range(c) for y in range(r)
-            )
-        else:
-            min_y = max(y for _, (_, y) in gp)
-            yield from (
-                GriddedPerm(
-                    gp.patt.insert(index),
-                    gp.pos[:index] + ((x, y),) + gp.pos[index:],
-                )
-                for index in range(n + 1)
-                for x in range(
-                    gp.pos[index - 1][0] if index > 0 else 0,
-                    gp.pos[index][0] + 1 if index < n else c,
-                )
-                for y in range(min_y, r)
-            )
-
-    @staticmethod
     def _search(
         frontier: Deque[GriddedPerm],
         gps: Set[GriddedPerm],
@@ -406,7 +382,7 @@ class Tiling(CombinatorialClass):
             else:
                 if curr not in gps:
                     raise ValueError(f"Set should contain {repr(curr)}")
-                for gp in Tiling._extend_gp(curr, c, r):
+                for gp in curr.extend(c, r):
                     frontier.append(gp)
         return obstructions
 

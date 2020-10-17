@@ -271,6 +271,26 @@ class GriddedPerm(CombinatorialObject):
                     (self._pos[i] for i in subidx),
                 )
 
+    def extend(self, c: int, r: int) -> Iterator["GriddedPerm"]:
+        """Add n+1 to all possible positions in perm and all allowed positions given that
+        placement."""
+        n = len(self)
+        if n == 0:
+            yield from (
+                GriddedPerm((0,), ((x, y),)) for x in range(c) for y in range(r)
+            )
+        else:
+            min_y = max(y for _, (_, y) in self)
+            yield from (
+                self.insert_specific_point((x, y), index, n)
+                for index in range(n + 1)
+                for x in range(
+                    self.pos[index - 1][0] if index > 0 else 0,
+                    self.pos[index][0] + 1 if index < n else c,
+                )
+                for y in range(min_y, r)
+            )
+
     def apply_map(self, cell_mapping: Callable[[Cell], Cell]) -> "GriddedPerm":
         """Map the coordinates to a new list of coordinates according to the
         cell_mapping given."""
