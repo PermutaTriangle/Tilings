@@ -706,48 +706,74 @@ class GriddedPerm(CombinatorialObject):
     def __iter__(self) -> Iterator[Tuple[int, Cell]]:
         return zip(self.patt, self.pos)
 
-    def slide(self) -> "GriddedPerm":
-        """Sliding lemma for gridded permutations within a boundary of 1x3."""
-        assert len(self) == 0 or (
-            max(x for _, (x, _) in self) < 3 and max(y for _, (_, y) in self) < 1
-        )
+    def slide(self, c1: int = 0, c2: int = -1) -> "GriddedPerm":
+        """Sliding for gridded permutations within a boundary of 1xn."""
+        if c2 < 0:
+            c2 = c1 + 1
+        assert c1 < c2 and min(c1, c2) >= 0 and all(y == 0 for _, (x, y) in self)
 
-        perms: Tuple[Deque[int], Deque[int], Deque[int], Deque[int]] = (
-            deque([]),
-            deque([]),
-            deque([]),
-            deque([]),
+        cols: Tuple[List[int], List[int], List[int]] = ([], [], [])
+
+        def _to_deque_index(x: int) -> int:
+            if x < c1:
+                cols[0].append(x)
+                return 0
+            if x == c1:
+                return 1
+            if x < c2:
+                cols[1].append(x)
+                return 2
+            if x == c2:
+                return 3
+            cols[2].append(x)
+            return 5
+
+        perms: Tuple[
+            Deque[int], Deque[int], Deque[int], Deque[int], Deque[int], Deque[int]
+        ] = (
+            deque([]),  # Pre c1
+            deque([]),  # C1
+            deque([]),  # Between
+            deque([]),  # C2
+            deque([]),  # C3
+            deque([]),  # Post C3
         )
 
         for val, (x, _) in self:
-            perms[x].append(val)
+            perms[_to_deque_index(x)].append(val)
 
-        if not perms[1]:
+        if not perms[3]:
             return type(self)(
-                self.patt, ((0, 0),) * len(perms[0]) + ((1, 0),) * len(perms[2])
-            )
-
-        if not perms[2]:
-            return type(self)(
-                self.patt, ((0, 0),) * len(perms[0]) + ((2, 0),) * len(perms[1])
+                chain(perms[0], perms[2], perms[1], perms[5]),
+                (
+                    (x, 0)
+                    for x in chain(cols[0], cols[1], (c2,) * len(perms[1]), cols[2])
+                ),
             )
 
         while perms[1]:
             val = perms[1].pop()
             r_val, idx = min(
-                ((r_val, i) for i, r_val in enumerate(perms[2]) if r_val > val),
+                ((r_val, i) for i, r_val in enumerate(perms[3]) if r_val > val),
                 default=(-1, -1),
             )
             if idx != -1:
-                perms[2][idx] = val
-                perms[3].appendleft(r_val)
+                perms[3][idx] = val
+                perms[4].appendleft(r_val)
             else:
-                perms[2].appendleft(val)
-                perms[3].appendleft(perms[2].pop())
+                perms[3].appendleft(val)
+                perms[4].appendleft(perms[3].pop())
 
         return type(self)(
-            Perm(chain(perms[0], perms[2], perms[3])),
-            ((0, 0),) * len(perms[0])
-            + ((1, 0),) * len(perms[2])
-            + ((2, 0),) * len(perms[3]),
+            Perm(chain(perms[0], perms[3], perms[2], perms[4], perms[5])),
+            (
+                (x, 0)
+                for x in chain(
+                    cols[0],
+                    (c1,) * len(perms[3]),
+                    cols[1],
+                    (c2,) * len(perms[4]),
+                    cols[2],
+                )
+            ),
         )

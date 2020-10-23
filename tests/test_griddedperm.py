@@ -592,9 +592,15 @@ def test_slide():
         .reverse()
     )
     up_to = 7
-    mapped_gps_from_t1 = {gp.slide() for gp in t1.gridded_perms(up_to)}
-    gps_from_t2 = set(t2.gridded_perms(up_to))
-    assert mapped_gps_from_t1 == gps_from_t2
+    visited = set()
+    expected = set(t2.gridded_perms(up_to))
+    for gp in t1.gridded_perms(up_to):
+        sl = gp.slide(1, 2)
+        assert sl not in visited
+        visited.add(sl)
+        assert sl in expected
+        expected.remove(sl)
+    assert len(expected) == 0
 
 
 def test_extend():
