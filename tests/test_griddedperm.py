@@ -595,3 +595,13 @@ def test_slide():
     mapped_gps_from_t1 = {gp.slide() for gp in t1.gridded_perms(up_to)}
     gps_from_t2 = set(t2.gridded_perms(up_to))
     assert mapped_gps_from_t1 == gps_from_t2
+
+
+def test_extend():
+    gp = GriddedPerm((1, 0), ((0, 1), (1, 0)))
+    assert set(gp.extend(2, 2)) == {
+        GriddedPerm((2, 1, 0), ((0, 1), (0, 1), (1, 0))),
+        GriddedPerm((1, 2, 0), ((0, 1), (0, 1), (1, 0))),
+        GriddedPerm((1, 2, 0), ((0, 1), (1, 1), (1, 0))),
+        GriddedPerm((1, 0, 2), ((0, 1), (1, 0), (1, 1))),
+    }
