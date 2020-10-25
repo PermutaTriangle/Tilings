@@ -494,7 +494,7 @@ class GriddedPerm(CombinatorialObject):
         Tuple[List[int], List[int], List[int]],
     ]:
         assert c1 < c2 and min(c1, c2) >= 0 and all(y == 0 for _, (x, y) in self)
-        # Columns of those not affected
+        # Columns not affected
         cols: Tuple[List[int], List[int], List[int]] = ([], [], [])
 
         def _to_deque_index(x: int) -> int:
