@@ -628,6 +628,30 @@ def test_slide():
             (1, 3),
             6,
         ),
+        (
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                    GriddedPerm((1, 2, 3, 0), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                    GriddedPerm((1, 2, 3, 0), ((0, 0), (1, 0), (2, 0), (2, 0))),
+                ),
+                requirements=(((GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (2, 0))),),)),
+            ),
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                    GriddedPerm((1, 2, 3, 0), ((1, 0), (1, 0), (2, 0), (2, 0))),
+                    GriddedPerm((1, 2, 3, 0), ((0, 0), (1, 0), (2, 0), (2, 0))),
+                ),
+                requirements=(((GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (2, 0))),),)),
+            ),
+            (),  # default
+            7,
+        ),
     ]
 
     for t1, t2, cols, up_to in t_cases:
@@ -635,6 +659,16 @@ def test_slide():
         expected = set(t2.gridded_perms(up_to))
         for gp in t1.gridded_perms(up_to):
             sl = gp.slide(*cols)
+            assert sl not in visited
+            visited.add(sl)
+            assert sl in expected
+            expected.remove(sl)
+        assert len(expected) == 0
+
+        visited = set()
+        expected = set(t1.gridded_perms(up_to))
+        for gp in t2.gridded_perms(up_to):
+            sl = gp.slide_inverse(*cols)
             assert sl not in visited
             visited.add(sl)
             assert sl in expected
