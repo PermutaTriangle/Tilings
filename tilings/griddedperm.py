@@ -494,7 +494,7 @@ class GriddedPerm(CombinatorialObject):
         Tuple[List[int], List[int], List[int]],
     ]:
         assert c1 < c2 and min(c1, c2) >= 0 and all(y == 0 for _, (x, y) in self)
-
+        # Columns of those not affected
         cols: Tuple[List[int], List[int], List[int]] = ([], [], [])
 
         def _to_deque_index(x: int) -> int:
@@ -514,12 +514,12 @@ class GriddedPerm(CombinatorialObject):
         perms: Tuple[
             Deque[int], Deque[int], Deque[int], Deque[int], Deque[int], Deque[int]
         ] = (
-            deque([]),  # Pre c1
-            deque([]),  # C1
-            deque([]),  # Between
-            deque([]),  # C2
-            deque([]),  # C3
-            deque([]),  # Post C3
+            deque([]),  # Columns before
+            deque([]),  # Column c1
+            deque([]),  # Columns between
+            deque([]),  # Column c2
+            deque([]),  # 'New' column
+            deque([]),  # Columns after
         )
 
         for val, (x, _) in self:
