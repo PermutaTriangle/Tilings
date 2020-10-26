@@ -71,6 +71,15 @@ class BasicVerificationStrategy(AtomStrategy):
             return 1
         return 0
 
+    @staticmethod
+    def generate_objects_of_size(
+        comb_class: CombinatorialClass, n: int, **parameters: int
+    ) -> int:
+        """
+        Verification strategies must contain a method to count the objects.
+        """
+        yield from comb_class.objects_of_size(n, **parameters)
+
     def get_genf(
         self,
         comb_class: CombinatorialClass,

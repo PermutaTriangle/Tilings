@@ -66,9 +66,9 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
         tiling: Tiling,
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         """This method will enable us to generate objects, and sample. """
-        return self.inverse_gp_transform(tiling, cast(GriddedPerm, gps[0]))
+        yield self.inverse_gp_transform(tiling, cast(GriddedPerm, gps[0]))
 
     def forward_map(
         self,

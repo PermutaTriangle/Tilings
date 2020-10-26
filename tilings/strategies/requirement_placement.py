@@ -174,17 +174,18 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         tiling: Tiling,
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         if children is None:
             children = self.decomposition_function(tiling)
         idx = DisjointUnionStrategy.backward_map_index(gps)
         gp: GriddedPerm = children[idx].backward_map(cast(GriddedPerm, gps[idx]))
         if self.include_empty:
             if idx == 0:
-                return gp
+                yield gp
+                return
             idx -= 1
         placed_cell = self._placed_cell(idx)
-        return GriddedPerm(
+        yield GriddedPerm(
             gp.patt, [self.backward_cell_map(placed_cell, cell) for cell in gp.pos]
         )
 

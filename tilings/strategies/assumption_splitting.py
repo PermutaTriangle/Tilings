@@ -296,7 +296,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         """
         The forward direction of the underlying bijection used for object
         generation and sampling.

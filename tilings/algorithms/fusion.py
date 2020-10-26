@@ -82,7 +82,7 @@ class Fusion:
             fused_pos.append((x, y))
         return gp.__class__(gp.patt, fused_pos)
 
-    def _unfuse_gridded_perm(self, gp):
+    def _unfuse_gridded_perm(self, gp, left_points: Optional[int] = None):
         """
         Generator of all the possible ways to unfuse a gridded permutations.
         """
@@ -105,13 +105,20 @@ class Fusion:
                 i for i, p in enumerate(gp.pos) if p[0] == self._col_idx
             ]
             editable_pos_idx.sort()
+
         pos = list(map(stretch, gp.pos))
-        yield gp.__class__(gp.patt, pos)
+        if left_points is None or left_points == 0:
+            yield gp.__class__(gp.patt, pos)
+        if left_points == 0:
+            return
         row_shift = int(self._fuse_row)
         col_shift = 1 - int(self._fuse_row)
-        for i in editable_pos_idx:
+        for left_points_so_far, i in enumerate(editable_pos_idx):
             pos[i] = (pos[i][0] - col_shift, pos[i][1] - row_shift)
-            yield gp.__class__(gp.patt, pos)
+            if left_points is None or left_points_so_far + 1 == left_points:
+                yield gp.__class__(gp.patt, pos)
+            if left_points_so_far + 1 == left_points:
+                break
 
     def _fuse_counter(self, gridded_perms):
         """

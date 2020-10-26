@@ -132,13 +132,13 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         """
         The forward direction of the underlying bijection used for object
         generation and sampling.
         """
         assert isinstance(objs[0], GriddedPerm)
-        return objs[0]
+        yield objs[0]
 
     @staticmethod
     def forward_map(
