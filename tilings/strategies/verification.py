@@ -80,6 +80,15 @@ class BasicVerificationStrategy(AtomStrategy):
         """
         yield from comb_class.objects_of_size(n, **parameters)
 
+    def random_sample_object_of_size(
+        self, comb_class: CombinatorialClass, n: int, **parameters: int
+    ) -> GriddedPerm:
+        """
+        Verification strategies must contain a method to generate the objects.
+        """
+        if self.count_objects_of_size(comb_class, n, **parameters) == 1:
+            return next(comb_class.objects_of_size(n, **parameters))
+
     def get_genf(
         self,
         comb_class: CombinatorialClass,

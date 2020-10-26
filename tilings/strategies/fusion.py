@@ -16,6 +16,7 @@ and right hand sides accordingly.
 from collections import defaultdict
 from functools import reduce
 from operator import mul
+from random import randint
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from sympy import Eq, Expr, Function, Number, var
@@ -480,17 +481,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int
     ) -> Iterator[Tuple[GriddedPerm, ...]]:
-        subgen = subgens[0]
-        left_right_points = self._determine_number_of_points_in_fuse_region(
-            n, **parameters
+        raise NotImplementedError(
+            "This is implemented on the FusionRule class directly"
         )
-
-        for left_points, right_points in left_right_points:
-            new_params = self._update_subparams(left_points, right_points, **parameters)
-            if new_params is not None:
-                assert new_params[self.fuse_parameter] == left_points + right_points
-                for gp in subgen(n, **new_params):
-                    yield (gp,)
 
     def random_sample_sub_objects(
         self,
@@ -500,7 +493,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         n: int,
         **parameters: int,
     ):
-        raise NotImplementedError
+        raise NotImplementedError(
+            "This is implemented on the FusionRule class directly"
+        )
 
 
 class FusionRule(Rule[Tiling, GriddedPerm]):
@@ -552,6 +547,37 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
                     yield mappedgp
                     res.append(mappedgp)
         self.obj_cache[key] = res
+
+    def random_sample_object_of_size(self, n: int, **parameters: int) -> GriddedPerm:
+        """Return a random objects of the give size."""
+        subrec = self.subrecs[0]
+        subsampler = self.subsamplers[0]
+        parent_count = self.count_objects_of_size(n, **parameters)
+        random_choice = randint(1, parent_count)
+        total = 0
+        left_right_points = self.constructor._determine_number_of_points_in_fuse_region(
+            n, **parameters
+        )
+        for left_points, right_points in left_right_points:
+            new_params = self.constructor._update_subparams(
+                left_points, right_points, **parameters
+            )
+            if new_params is not None:
+                assert (
+                    new_params[self.constructor.fuse_parameter]
+                    == left_points + right_points
+                )
+                total += subrec(n, **new_params)
+                if random_choice <= total:
+                    gp = subsampler(n, **new_params)
+                    try:
+                        return next(
+                            self.strategy.backward_map(
+                                self.comb_class, (gp,), self.children, left_points
+                            )
+                        )
+                    except StopIteration:
+                        assert 0, "something went wrong"
 
 
 class FusionStrategy(Strategy[Tiling, GriddedPerm]):
