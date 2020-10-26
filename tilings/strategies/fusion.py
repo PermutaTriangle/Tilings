@@ -17,7 +17,7 @@ from collections import defaultdict
 from functools import reduce
 from operator import mul
 from random import randint
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 from sympy import Eq, Expr, Function, Number, var
 
@@ -228,17 +228,17 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         """
         subrec = subrecs[0]
         res = 0
-        left_right_points = self._determine_number_of_points_in_fuse_region(
+        left_right_points = self.determine_number_of_points_in_fuse_region(
             n, **parameters
         )
         for left_points, right_points in left_right_points:
-            new_params = self._update_subparams(left_points, right_points, **parameters)
+            new_params = self.update_subparams(left_points, right_points, **parameters)
             if new_params is not None:
                 assert new_params[self.fuse_parameter] == left_points + right_points
                 res += subrec(n, **new_params)
         return res
 
-    def _determine_number_of_points_in_fuse_region(
+    def determine_number_of_points_in_fuse_region(
         self, n: int, **parameters: int
     ) -> Iterator[Tuple[int, int]]:
         """
@@ -436,7 +436,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             return parameters[p1] - parameters[p2], None
         raise ValueError("Overlapping parameters overlap same region")
 
-    def _update_subparams(
+    def update_subparams(
         self, number_of_left_points: int, number_of_right_points: int, **parameters: int
     ) -> Optional[Dict[str, int]]:
         """
@@ -502,6 +502,36 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
     """Overwritten the generate objects of size method, as this relies on
     knowing the number of left and right points of the parent tiling."""
 
+    def __init__(
+        self,
+        strategy: "FusionStrategy",
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ):
+        super().__init__(strategy, comb_class, children)
+        self._constructor: Optional[FusionConstructor] = None
+
+    @property
+    def strategy(self) -> "FusionStrategy":
+        return cast(
+            FusionStrategy,
+            super().strategy,
+        )
+
+    @property
+    def constructor(self) -> FusionConstructor:
+        """
+        Return the constructor, that contains all the information about how to
+        count/generate objects from the rule.
+        """
+        if self._constructor is None:
+            self._constructor = self.strategy.constructor(
+                self.comb_class, self.children
+            )
+            if self._constructor is None:
+                raise StrategyDoesNotApply("{} does not apply".format(self.strategy))
+        return cast(FusionConstructor, self._constructor)
+
     def generate_objects_of_size(
         self, n: int, **parameters: int
     ) -> Iterator[GriddedPerm]:
@@ -509,8 +539,6 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
         Generate the objects by using the underlying bijection between the
         parent and children.
         """
-        from tilings import GriddedPerm
-
         key = (n,) + tuple(sorted(parameters.items()))
         res = self.obj_cache.get(key)
         if res is not None:
@@ -522,12 +550,12 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
         res = []
 
         subgen = self.subgenerators[0]
-        left_right_points = self.constructor._determine_number_of_points_in_fuse_region(
+        left_right_points = self.constructor.determine_number_of_points_in_fuse_region(
             n, **parameters
         )
 
         for left_points, right_points in left_right_points:
-            new_params = self.constructor._update_subparams(
+            new_params = self.constructor.update_subparams(
                 left_points, right_points, **parameters
             )
             if new_params is not None:
@@ -550,16 +578,19 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
 
     def random_sample_object_of_size(self, n: int, **parameters: int) -> GriddedPerm:
         """Return a random objects of the give size."""
+        assert (
+            self.subrecs is not None and self.subsamplers is not None
+        ), "you must call the set_subrecs function first"
         subrec = self.subrecs[0]
         subsampler = self.subsamplers[0]
         parent_count = self.count_objects_of_size(n, **parameters)
         random_choice = randint(1, parent_count)
         total = 0
-        left_right_points = self.constructor._determine_number_of_points_in_fuse_region(
+        left_right_points = self.constructor.determine_number_of_points_in_fuse_region(
             n, **parameters
         )
         for left_points, right_points in left_right_points:
-            new_params = self.constructor._update_subparams(
+            new_params = self.constructor.update_subparams(
                 left_points, right_points, **parameters
             )
             if new_params is not None:
@@ -707,8 +738,10 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         """
         if children is None:
             children = self.decomposition_function(comb_class)
-        gp = children[0].backward_map(gps[0])
-        yield from self.fusion_algorithm(comb_class)._unfuse_gridded_perm(
+        gp = gps[0]
+        assert gp is not None
+        gp = children[0].backward_map(gp)
+        yield from self.fusion_algorithm(comb_class).unfuse_gridded_perm(
             gp, left_points
         )
 
@@ -724,8 +757,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         """
         if children is None:
             children = self.decomposition_function(comb_class)
-        fused_gp = self.fusion_algorithm(comb_class)._fuse_gridded_perm(gp)
-        return children[0].forward_map(fused_gp)
+        fused_gp = self.fusion_algorithm(comb_class).fuse_gridded_perm(gp)
+        return (children[0].forward_map(fused_gp),)
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
@@ -774,6 +807,7 @@ class ComponentFusionStrategy(FusionStrategy):
         comb_class: Tiling,
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
+        left_points: Optional[int] = None,
     ) -> Iterator[GriddedPerm]:
         """
         The backward direction of the underlying bijection used for object

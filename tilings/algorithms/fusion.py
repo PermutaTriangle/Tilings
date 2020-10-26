@@ -69,7 +69,7 @@ class Fusion:
         ], "The only valid isolation levels are None, 'noninteracting', and 'isolated'."
         self._fused_tiling: Optional["Tiling"] = None
 
-    def _fuse_gridded_perm(self, gp):
+    def fuse_gridded_perm(self, gp):
         """
         Fuse the gridded permutation `gp`.
         """
@@ -82,7 +82,7 @@ class Fusion:
             fused_pos.append((x, y))
         return gp.__class__(gp.patt, fused_pos)
 
-    def _unfuse_gridded_perm(self, gp, left_points: Optional[int] = None):
+    def unfuse_gridded_perm(self, gp, left_points: Optional[int] = None):
         """
         Generator of all the possible ways to unfuse a gridded permutations.
         """
@@ -129,7 +129,7 @@ class Fusion:
         """
         fuse_counter = Counter()
         for gp in gridded_perms:
-            fused_perm = self._fuse_gridded_perm(gp)
+            fused_perm = self.fuse_gridded_perm(gp)
             fuse_counter[fused_perm] += 1
         return fuse_counter
 
@@ -546,7 +546,7 @@ class ComponentFusion(Fusion):
         obstructions between first cell and second cell are not processed.
         """
         return chain.from_iterable(
-            self._unfuse_gridded_perm(ob) for ob in self.obstruction_fuse_counter
+            self.unfuse_gridded_perm(ob) for ob in self.obstruction_fuse_counter
         )
 
     def _can_fuse_assumption(self, assumption, fuse_counter):

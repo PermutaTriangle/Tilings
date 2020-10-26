@@ -108,10 +108,10 @@ class TestFusion:
             Fusion(small_tiling, row_idx=0, col_idx=1)
 
     def test_fuse_gridded_perm(self, row_fusion, col_fusion, gp1):
-        assert row_fusion._fuse_gridded_perm(gp1) == GriddedPerm(
+        assert row_fusion.fuse_gridded_perm(gp1) == GriddedPerm(
             (0, 1, 2), ((0, 0), (1, 0), (1, 0))
         )
-        assert col_fusion._fuse_gridded_perm(gp1) == GriddedPerm(
+        assert col_fusion.fuse_gridded_perm(gp1) == GriddedPerm(
             (0, 1, 2), ((0, 0), (0, 0), (0, 1))
         )
 
@@ -120,38 +120,38 @@ class TestFusion:
         rf1 = Fusion(Tiling(), row_idx=1)
         cf0 = Fusion(Tiling(), col_idx=0)
         ob1 = GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 1), (0, 1), (0, 2)))
-        assert list(rf1._unfuse_gridded_perm(ob1)) == [
+        assert list(rf1.unfuse_gridded_perm(ob1)) == [
             GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 2), (0, 2), (0, 3))),
             GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 1), (0, 2), (0, 3))),
             GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 1), (0, 1), (0, 3))),
         ]
         ob2 = GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 1), (0, 1), (0, 2)))
-        assert list(rf1._unfuse_gridded_perm(ob2)) == [
+        assert list(rf1.unfuse_gridded_perm(ob2)) == [
             GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 2), (0, 2), (0, 3))),
             GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 2), (0, 1), (0, 3))),
             GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 1), (0, 1), (0, 3))),
         ]
         ob3 = GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 1), (0, 1), (0, 2), (0, 1)))
-        assert list(rf1._unfuse_gridded_perm(ob3)) == [
+        assert list(rf1.unfuse_gridded_perm(ob3)) == [
             GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 2), (0, 2), (0, 3), (0, 2))),
             GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 2), (0, 1), (0, 3), (0, 2))),
             GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 1), (0, 1), (0, 3), (0, 2))),
             GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 1), (0, 1), (0, 3), (0, 1))),
         ]
         ob4 = GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 1), (1, 1), (1, 0)))
-        assert list(rf0._unfuse_gridded_perm(ob4)) == [
+        assert list(rf0.unfuse_gridded_perm(ob4)) == [
             GriddedPerm((0, 2, 3, 1), ((0, 1), (0, 2), (1, 2), (1, 1))),
             GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 2), (1, 2), (1, 1))),
             GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 2), (1, 2), (1, 0))),
         ]
-        assert list(cf0._unfuse_gridded_perm(ob4)) == [
+        assert list(cf0.unfuse_gridded_perm(ob4)) == [
             GriddedPerm((0, 2, 3, 1), ((1, 0), (1, 1), (2, 1), (2, 0))),
             GriddedPerm((0, 2, 3, 1), ((0, 0), (1, 1), (2, 1), (2, 0))),
             GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 1), (2, 1), (2, 0))),
         ]
         # Unfuse column
         ob5 = GriddedPerm((2, 0, 1), ((0, 0), (0, 0), (0, 0)))
-        assert list(cf0._unfuse_gridded_perm(ob5)) == [
+        assert list(cf0.unfuse_gridded_perm(ob5)) == [
             GriddedPerm((2, 0, 1), ((1, 0), (1, 0), (1, 0))),
             GriddedPerm((2, 0, 1), ((0, 0), (1, 0), (1, 0))),
             GriddedPerm((2, 0, 1), ((0, 0), (0, 0), (1, 0))),
@@ -159,11 +159,11 @@ class TestFusion:
         ]
         # Unfuse pattern with no point in the fuse region
         ob6 = GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0)))
-        assert list(cf0._unfuse_gridded_perm(ob6)) == [
+        assert list(cf0.unfuse_gridded_perm(ob6)) == [
             GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
         ]
         ob6 = GriddedPerm((1, 0, 2), ((0, 0), (0, 0), (1, 0)))
-        assert list(cf0._unfuse_gridded_perm(ob6)) == [
+        assert list(cf0.unfuse_gridded_perm(ob6)) == [
             GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (2, 0))),
             GriddedPerm((1, 0, 2), ((0, 0), (1, 0), (2, 0))),
             GriddedPerm((1, 0, 2), ((0, 0), (0, 0), (2, 0))),

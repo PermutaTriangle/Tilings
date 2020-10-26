@@ -74,9 +74,9 @@ class BasicVerificationStrategy(AtomStrategy):
     @staticmethod
     def generate_objects_of_size(
         comb_class: CombinatorialClass, n: int, **parameters: int
-    ) -> int:
+    ) -> Iterator[GriddedPerm]:
         """
-        Verification strategies must contain a method to count the objects.
+        Verification strategies must contain a method to generate the objects.
         """
         yield from comb_class.objects_of_size(n, **parameters)
 
@@ -84,10 +84,10 @@ class BasicVerificationStrategy(AtomStrategy):
         self, comb_class: CombinatorialClass, n: int, **parameters: int
     ) -> GriddedPerm:
         """
-        Verification strategies must contain a method to generate the objects.
+        Verification strategies must contain a method to sample the objects.
         """
         if self.count_objects_of_size(comb_class, n, **parameters) == 1:
-            return next(comb_class.objects_of_size(n, **parameters))
+            return cast(GriddedPerm, next(comb_class.objects_of_size(n, **parameters)))
 
     def get_genf(
         self,
