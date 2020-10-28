@@ -381,8 +381,7 @@ class GriddedPerm(CombinatorialObject):
         return type(self)(flipped, map(transf, pos))
 
     def antidiagonal(self, transf: Callable[[Cell], Cell]) -> "GriddedPerm":
-        """ \\
-        Flip over the diagonal"""
+        """Flip over the anti-diagonal"""
         flipped = self._patt.flip_antidiagonal()
         pos = self._patt.rotate(-1).apply(self._pos)
         return type(self)(flipped, map(transf, pos))
