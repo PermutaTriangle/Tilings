@@ -4,6 +4,7 @@ import os
 import pytest
 
 from comb_spec_searcher import CombinatorialSpecification
+from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor
 from tilings.assumptions import TrackingAssumption
@@ -135,6 +136,12 @@ def test_123_fusion():
         477638700,
         1767263190,
     ]
+    av = Av([Perm((0, 1, 2))])
+    for i in range(10):
+        assert set(av.of_length(i)) == set(
+            gp.patt for gp in spec.generate_objects_of_size(i)
+        )
+        assert spec.random_sample_object_of_size(i).patt in av
 
 
 @pytest.mark.timeout(60)
@@ -169,6 +176,12 @@ def test_123_positive_fusions():
         477638700,
         1767263190,
     ]
+    av = Av([Perm((0, 1, 2))])
+    for i in range(10):
+        assert set(av.of_length(i)) == set(
+            gp.patt for gp in spec.generate_objects_of_size(i)
+        )
+        assert spec.random_sample_object_of_size(i).patt in av
 
 
 @pytest.mark.timeout(60)
@@ -229,3 +242,9 @@ def test_1234_fusion():
         167078577,
         1148208090,
     ]
+    av = Av([Perm((0, 1, 2, 3))])
+    for i in range(10):
+        assert set(av.of_length(i)) == set(
+            gp.patt for gp in spec.generate_objects_of_size(i)
+        )
+        assert spec.random_sample_object_of_size(i).patt in av

@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2.4.1] - 2020-10-28
 ### Added
 - `to_tex` for gridded perms.
 - `to_tikz` for gridded perms.
@@ -16,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
    `permute_columns`, `permute_rows`, `apply_perm_map_to_cell`.
 - `guess_from_gridded_perms` to guess tiling T from gridded perms in Grid(T).
 - `enmerate_gp_up_to` counts gridded perms of length 0, 1, 2, ... up to a max length.
+- Can sample and generate objects from fusion specifications.
 
 ### Fixed
 - Anti-diagonal symmetry backward map was fixed.

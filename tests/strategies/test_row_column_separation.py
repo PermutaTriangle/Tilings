@@ -245,7 +245,7 @@ def test_backmap():
     strategy = RowColumnSeparationStrategy()
     rule = strategy(tiling)
     gps = (GriddedPerm((0,), ((1, 2),)),)
-    assert rule.backward_map(gps) == GriddedPerm((0,), ((0, 1),))
+    assert next(rule.backward_map(gps)) == GriddedPerm((0,), ((0, 1),))
 
 
 def test_maps():
@@ -306,7 +306,7 @@ def test_maps():
     for cell, image in zip(cell_post_sep, cell_pre_sep):
         gps = [GriddedPerm((0,), (cell,))]
         print(f"{cell} -> {image}")
-        assert rule.backward_map(gps) == GriddedPerm((0,), (image,))
+        assert next(rule.backward_map(gps)) == GriddedPerm((0,), (image,))
 
 
 def test_mapping_assumptions():

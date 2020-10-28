@@ -6,7 +6,7 @@ from comb_spec_searcher.rule_db import LimitedStrategyRuleDB
 from comb_spec_searcher.strategies import EmptyStrategy
 from comb_spec_searcher.strategies.rule import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
-from permuta import Perm
+from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 from tilings import strategies as strat
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
@@ -45,6 +45,12 @@ def test_132_genf():
     searcher = TileScope([Perm((0, 2, 1))], point_placements)
     spec = searcher.auto_search(smallest=True)
     spec.expand_verified()
+    av = Av([Perm((0, 2, 1))])
+    for i in range(10):
+        assert set(av.of_length(i)) == set(
+            gp.patt for gp in spec.generate_objects_of_size(i)
+        )
+        assert spec.random_sample_object_of_size(i).patt in av
     gf = spec.get_genf()
     gf = sympy.series(spec.get_genf(), n=15)
     x = sympy.Symbol("x")
@@ -168,6 +174,13 @@ def test_reverse_equiv():
         print(gp)
         assert gp.patt.avoids(*basis)
 
+    av = Av(basis)
+    for i in range(10):
+        assert set(av.of_length(i)) == set(
+            gp.patt for gp in spec.generate_objects_of_size(i)
+        )
+        assert spec.random_sample_object_of_size(i).patt in av
+
 
 @pytest.mark.timeout(20)
 def test_1324():
@@ -197,6 +210,11 @@ def test_321_1324():
         gp = spec.random_sample_object_of_size(i)
         assert all(cell == (0, 0) for cell in gp.pos)
         assert gp.patt.avoids(Perm((2, 1, 0)), Perm((0, 2, 1, 3)))
+    av = Av([Perm((2, 1, 0)), Perm((0, 2, 1, 3))])
+    for i in range(10):
+        assert set(av.of_length(i)) == set(
+            gp.patt for gp in spec.generate_objects_of_size(i)
+        )
     assert [spec.count_objects_of_size(i) for i in range(50)] == [
         1,
         1,
