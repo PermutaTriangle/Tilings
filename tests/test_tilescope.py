@@ -170,7 +170,7 @@ def test_reverse_equiv():
     assert len(len8_perms) == 5275
     assert len(set(len8_perms)) == 5275
     for _ in range(10):
-        gp = spec.random_sample_object_of_size(50)
+        gp = spec.random_sample_object_of_size(10)
         print(gp)
         assert gp.patt.avoids(*basis)
 
