@@ -956,8 +956,7 @@ class Tiling(CombinatorialClass):
         return self._transform(inverse_cell, lambda gp: gp.inverse(inverse_cell))
 
     def antidiagonal(self) -> "Tiling":
-        """ \\
-        Flip over the anti-diagonal"""
+        """Flip over the anti-diagonal"""
 
         def antidiagonal_cell(cell: Cell) -> Cell:
             return (self.dimensions[1] - cell[1] - 1, self.dimensions[0] - cell[0] - 1)
