@@ -34,12 +34,14 @@ class TileScope(CombinatorialSpecificationSearcher):
             if start_class.dimensions == (1, 1):
                 basis = Basis(*[o.patt for o in start_class.obstructions])
             start_tiling = start_class
-        elif isinstance(start_class, collections.abc.Iterable):
-            basis = Basis(*start_class)
+        # elif isinstance(start_class, collections.abc.Iterable):
         else:
-            raise ValueError(
-                "start class must be a string, an iterable of Perm or a tiling"
-            )
+            try:
+                basis = Basis(*start_class)
+            except TypeError as e:
+                raise ValueError(
+                    "start class must be a string, an iterable of Perm or a tiling"
+                ) from e
 
         if not isinstance(start_class, Tiling):
             start_tiling = Tiling(
