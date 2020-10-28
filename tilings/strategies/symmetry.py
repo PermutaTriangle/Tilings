@@ -66,9 +66,9 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
         tiling: Tiling,
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         """This method will enable us to generate objects, and sample. """
-        return self.inverse_gp_transform(tiling, cast(GriddedPerm, gps[0]))
+        yield self.inverse_gp_transform(tiling, cast(GriddedPerm, gps[0]))
 
     def forward_map(
         self,
@@ -168,7 +168,13 @@ class TilingAntidiagonal(TilingSymmetryStrategy):
         return gp.antidiagonal(antidiagonal_cell)
 
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
-        return self.gp_transform(tiling, gp)
+        def antidiagonal_cell(cell):
+            return (
+                tiling.dimensions[0] - cell[1] - 1,
+                tiling.dimensions[1] - cell[0] - 1,
+            )
+
+        return gp.antidiagonal(antidiagonal_cell)
 
     @staticmethod
     def formal_step() -> str:

@@ -71,6 +71,28 @@ class BasicVerificationStrategy(AtomStrategy):
             return 1
         return 0
 
+    @staticmethod
+    def generate_objects_of_size(
+        comb_class: CombinatorialClass, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        """
+        Verification strategies must contain a method to generate the objects.
+        """
+        yield from comb_class.objects_of_size(n, **parameters)
+
+    @staticmethod
+    def random_sample_object_of_size(
+        comb_class: CombinatorialClass, n: int, **parameters: int
+    ) -> GriddedPerm:
+        """
+        Verification strategies must contain a method to sample the objects.
+        """
+        if (
+            BasicVerificationStrategy.count_objects_of_size(comb_class, n, **parameters)
+            == 1
+        ):
+            return cast(GriddedPerm, next(comb_class.objects_of_size(n, **parameters)))
+
     def get_genf(
         self,
         comb_class: CombinatorialClass,
@@ -107,14 +129,14 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         super().__init__(ignore_parent=ignore_parent)
 
     def change_basis(
-        self, basis: Iterable[Perm], symmetry: bool = False
+        self, basis: Iterable[Perm], symmetry: bool
     ) -> "OneByOneVerificationStrategy":
         """
         Return a new version of the verfication strategy with the given basis instead of
         the current one.
         """
         basis = tuple(basis)
-        return self.__class__(basis, self._symmetry, self.ignore_parent)
+        return self.__class__(basis, symmetry, self.ignore_parent)
 
     @property
     def basis(self) -> Tuple[Perm, ...]:
@@ -152,7 +174,7 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
         if not tiling.requirements or (
             len(tiling.requirements) == 1
             and len(tiling.requirements[0]) == 1
-            and len(tiling.requirements[0][0]) == 1
+            and len(tiling.requirements[0][0]) <= 2
         ):
             if basis in ([Perm((0, 1, 2))], [Perm((2, 1, 0))]):
                 # Av(123) or Av(321) - use fusion!

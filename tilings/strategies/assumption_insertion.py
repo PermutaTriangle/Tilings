@@ -1,4 +1,5 @@
 from itertools import chain, product
+from random import randint
 from typing import Dict, Iterable, Iterator, Optional, Tuple
 
 from sympy import Eq, Expr, Function, Number, Symbol, var
@@ -62,8 +63,14 @@ class AddAssumptionsConstructor(Constructor):
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int
-    ) -> Iterator[Tuple[CombinatorialObject, ...]]:
-        raise NotImplementedError
+    ) -> Iterator[Tuple[Optional[CombinatorialObject], ...]]:
+        subgen = subgens[0]
+        new_params = {self.extra_parameters[k]: val for k, val in parameters.items()}
+        for values in product(*[range(n + 1) for _ in self.new_parameters]):
+            for k, val in zip(self.new_parameters, values):
+                new_params[k] = val
+            for gp in subgen(n, **new_params):
+                yield (gp,)
 
     def random_sample_sub_objects(
         self,
@@ -73,7 +80,17 @@ class AddAssumptionsConstructor(Constructor):
         n: int,
         **parameters: int,
     ):
-        raise NotImplementedError
+        subrec = subrecs[0]
+        subsampler = subsamplers[0]
+        random_choice = randint(1, parent_count)
+        new_params = {self.extra_parameters[k]: val for k, val in parameters.items()}
+        res = 0
+        for values in product(*[range(n + 1) for _ in self.new_parameters]):
+            for k, val in zip(self.new_parameters, values):
+                new_params[k] = val
+            res += subrec(n, **new_params)
+            if random_choice <= res:
+                return (subsampler(n, **new_params),)
 
 
 class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
@@ -133,15 +150,15 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         """
-        The forward direction of the underlying bijection used for object
+        The backward direction of the underlying bijection used for object
         generation and sampling.
         """
         if children is None:
             children = self.decomposition_function(comb_class)
         assert len(objs) == 1 and objs[0] is not None
-        return objs[0]
+        yield objs[0]
 
     def forward_map(
         self,
@@ -150,7 +167,7 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[Optional[GriddedPerm], ...]:
         """
-        The backward direction of the underlying bijection used for object
+        The forward direction of the underlying bijection used for object
         generation and sampling.
         """
         if children is None:

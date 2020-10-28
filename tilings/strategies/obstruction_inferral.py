@@ -60,10 +60,10 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         tiling: Tiling,
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         if children is None:
             children = self.decomposition_function(tiling)
-        return children[0].backward_map(cast(GriddedPerm, gps[0]))
+        yield children[0].backward_map(cast(GriddedPerm, gps[0]))
 
     def forward_map(
         self,

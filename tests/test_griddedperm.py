@@ -39,9 +39,18 @@ def test_from_iterable():
     assert GriddedPerm((0, 1, 2), pos) == gp
     assert GriddedPerm([0, 1, 2], pos) == gp
     assert GriddedPerm(range(3), pos) == gp
+    assert GriddedPerm((i for i in range(3)), pos) == gp
     assert GriddedPerm.single_cell((0, 1), (0, 0)) == GriddedPerm(
         Perm((0, 1)), ((0, 0), (0, 0))
     )
+    assert GriddedPerm(
+        (0, 2, 1, 3, 4), ((0, 0), (0, 1), (1, 0), (1, 1), (1, 1))
+    )._cells == {
+        (0, 0),
+        (0, 1),
+        (1, 0),
+        (1, 1),
+    }
 
 
 def test_single_cell():
@@ -58,6 +67,8 @@ def test_empty_perm():
     gp = GriddedPerm.empty_perm()
     assert gp.patt == Perm(())
     assert gp.pos == ()
+    assert len(gp._cells) == 0
+    assert GriddedPerm() == gp == GriddedPerm((), ())
 
 
 def test_contradictory(simpleob, singlecellob, everycellob):
@@ -67,6 +78,8 @@ def test_contradictory(simpleob, singlecellob, everycellob):
     gp = GriddedPerm((0, 1), [(0, 1), (1, 0)])
     assert gp.contradictory()
     gp = GriddedPerm((0, 1), [(1, 0), (0, 0)])
+    assert gp.contradictory()
+    gp = GriddedPerm((1, 0), [(0, 0), (1, 1)])
     assert gp.contradictory()
 
 
@@ -105,10 +118,44 @@ def test_occurrences_in(simpleob):
     assert ob in ob
 
 
-def test_remove_cells(simpleob):
+def test_avoids():
+    gp = GriddedPerm(
+        Perm((0, 5, 1, 4, 2, 3, 6)),
+        ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+    )
+    assert gp.avoids(GriddedPerm((0, 2, 1), ((0, 0),) * 3))
+    assert gp.avoids(
+        GriddedPerm((0, 2, 1), ((0, 0),) * 3),
+        GriddedPerm((0, 2, 1), ((1, 1), (1, 1), (2, 2))),
+    )
+
+
+def test_contains():
+    gp = GriddedPerm(
+        Perm((0, 5, 1, 4, 2, 3, 6)),
+        ((0, 0), (0, 1), (0, 0), (1, 1), (1, 1), (1, 1), (2, 2)),
+    )
+    assert gp.contains(GriddedPerm())
+    assert all(gp.contains(GriddedPerm((0,), (pos,))) for pos in gp._cells)
+    assert gp.contains(GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 2))))
+    assert gp.contains(GriddedPerm((2, 0, 1), ((1, 1),) * 3))
+    assert gp.contains(
+        GriddedPerm((0, 2, 1), ((0, 0),) * 3),
+        GriddedPerm((0, 2, 1), ((1, 1), (1, 1), (2, 2))),
+        GriddedPerm((1, 0, 2), ((1, 1), (1, 1), (2, 2))),
+    )
+    assert GriddedPerm().contains(GriddedPerm())
+
+
+def test_remove_cells(simpleob, everycellob):
     assert simpleob.remove_cells([(0, 0)]) == GriddedPerm((1, 0), ((2, 2), (2, 1)))
     assert simpleob.remove_cells([(0, 0), (2, 2)]) == GriddedPerm((0,), ((2, 1),))
     assert simpleob.remove_cells([(0, 1), (1, 2)]) == simpleob
+    gen = (cell for cell in ((0, 1), (1, 0)))
+    assert everycellob.remove_cells(gen) == GriddedPerm(
+        Perm((0, 4, 2, 5, 1, 3, 6)),
+        ((0, 0), (0, 2), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)),
+    )
 
 
 def test_points_in_cell(simpleob):
@@ -361,3 +408,157 @@ def test_compression(simpleob, singlecellob, everycellob, typicalob, isolatedob)
     assert everycellob == GriddedPerm.decompress(everycellob.compress())
     assert typicalob == GriddedPerm.decompress(typicalob.compress())
     assert isolatedob == GriddedPerm.decompress(isolatedob.compress())
+
+
+def test_plot_helper():
+    gp = GriddedPerm(
+        Perm((0, 3, 6, 1, 4, 7, 2, 5, 8)),
+        ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)),
+    )
+    pos, dim = gp._get_plot_pos()
+    assert dim == (3, 3)
+    assert pos[0] == (0.25, 0.25)
+    assert pos[3] == (0.5, 1.25)
+    assert pos[6] == (0.75, 2.25)
+    assert pos[1] == (1.25, 0.5)
+    assert pos[4] == (1.5, 1.5)
+    assert pos[7] == (1.75, 2.5)
+    assert pos[2] == (2.25, 0.75)
+    assert pos[5] == (2.5, 1.75)
+    assert pos[8] == (2.75, 2.75)
+
+
+def test_permute_columns():
+    gp1 = GriddedPerm(
+        (5, 1, 4, 2, 7, 3, 6, 0),
+        ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2), (2, 1), (3, 2), (3, 0)),
+    )
+    perm1 = (3, 2, 0, 1)
+    expected1 = GriddedPerm(
+        (6, 0, 3, 5, 1, 4, 2, 7),
+        ((0, 2), (0, 0), (1, 1), (2, 1), (2, 0), (3, 1), (3, 0), (3, 2)),
+    )
+
+    gp2 = GriddedPerm(
+        (0,),
+        ((0, 0),),
+    )
+    perm2 = (1, 2, 0)
+    expected2 = GriddedPerm(
+        (0,),
+        ((2, 0),),
+    )
+
+    assert gp1.permute_columns(perm1) == expected1
+    assert gp2.permute_columns(perm2) == expected2
+
+
+def test_column_reverse():
+    assert GriddedPerm(
+        (4, 1, 3, 0, 5, 2), ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2), (2, 1))
+    ).column_reverse(1) == GriddedPerm(
+        (4, 1, 5, 0, 3, 2), ((0, 1), (0, 0), (1, 2), (1, 0), (1, 1), (2, 1))
+    )
+
+
+def test_row_complement():
+    assert GriddedPerm(
+        (2, 0, 4, 5, 8, 1, 7, 6, 3),
+        ((0, 1), (0, 0), (0, 1), (0, 1), (0, 2), (1, 0), (1, 2), (1, 1), (1, 1)),
+    ).row_complement(1) == GriddedPerm(
+        (6, 0, 4, 3, 8, 1, 7, 2, 5),
+        ((0, 1), (0, 0), (0, 1), (0, 1), (0, 2), (1, 0), (1, 2), (1, 1), (1, 1)),
+    )
+
+    for gp in (
+        GriddedPerm((1, 0), ((2, 2), (2, 1))),
+        GriddedPerm(
+            (5, 1, 4, 2, 7, 3, 6, 0),
+            ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2), (2, 1), (3, 2), (3, 0)),
+        ),
+    ):
+        for i in range(3):
+            assert gp.rotate90(lambda z: (z[1], 3 - z[0] - 1)).column_reverse(
+                i
+            ).rotate270(lambda z: (3 - z[1] - 1, z[0])) == gp.row_complement(i)
+
+
+def test_permute_rows():
+    assert GriddedPerm(
+        Perm((0, 2, 1, 4, 3)), ((0, 0), (0, 1), (0, 0), (1, 2), (2, 1))
+    ).permute_rows((2, 0, 1)) == GriddedPerm(
+        Perm((1, 3, 2, 0, 4)), ((0, 1), (0, 2), (0, 1), (1, 0), (2, 2))
+    )
+
+    assert GriddedPerm((0,), ((0, 0),),).permute_rows((1, 2, 0)) == GriddedPerm(
+        (0,),
+        ((0, 2),),
+    )
+
+
+def test_to_jsonable():
+    assert GriddedPerm(
+        (5, 1, 4, 2, 7, 3, 6, 0),
+        ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2), (2, 1), (3, 2), (3, 0)),
+    ).to_jsonable() == {
+        "patt": Perm((5, 1, 4, 2, 7, 3, 6, 0)),
+        "pos": ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2), (2, 1), (3, 2), (3, 0)),
+    }
+    assert GriddedPerm((), ()).to_jsonable() == {"patt": Perm(()), "pos": ()}
+
+
+def test_apply_perm_map_to_cell():
+    def do_nothing_for_empty_perm(perm):
+        assert perm == ()
+        return perm
+
+    gp = GriddedPerm((1, 0, 2, 4, 3), ((1, 2), (1, 2), (2, 2), (2, 3), (2, 3)))
+    assert gp.apply_perm_map_to_cell(do_nothing_for_empty_perm, (0, 0)) == gp
+
+    assert (
+        GriddedPerm().apply_perm_map_to_cell(do_nothing_for_empty_perm, (0, 0))
+        == GriddedPerm()
+    )
+
+    pos = [(0, 0), (0, 1), (0, 0), (0, 1), (0, 1), (0, 2), (1, 1)]
+    gp = GriddedPerm((0, 4, 1, 2, 3, 6, 5), pos)
+
+    assert gp.apply_perm_map_to_cell(lambda p: p.complement(), (0, 1)) == GriddedPerm(
+        (0, 2, 1, 4, 3, 6, 5), pos
+    )
+    assert gp.apply_perm_map_to_cell(lambda p: p.inverse(), (0, 1)) == GriddedPerm(
+        (0, 3, 1, 4, 2, 6, 5), pos
+    )
+    assert gp.apply_perm_map_to_cell(lambda p: p.reverse(), (0, 1)) == GriddedPerm(
+        (0, 3, 1, 2, 4, 6, 5), pos
+    )
+
+
+def test_is_interleaving():
+    assert GriddedPerm(
+        (5, 1, 4, 2, 7, 3, 6, 0),
+        ((0, 1), (0, 0), (1, 1), (1, 0), (1, 2), (2, 1), (3, 2), (3, 0)),
+    ).is_interleaving()
+    assert not GriddedPerm(
+        Perm((0, 1, 2, 3, 4, 5)), ((i, i) for i in range(6))
+    ).is_interleaving()
+    assert not GriddedPerm().is_interleaving()
+    assert not GriddedPerm((0,), ((0, 0),)).is_interleaving()
+    assert GriddedPerm(
+        Perm((0, 6, 1, 2, 3, 4, 5)),
+        [(0, 0), (0, 20), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5)],
+    ).is_interleaving()
+    assert GriddedPerm(
+        Perm((0, 2, 3, 4, 5, 6, 1)),
+        [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 0)],
+    ).is_interleaving()
+
+
+def test_extend():
+    gp = GriddedPerm((1, 0), ((0, 1), (1, 0)))
+    assert set(gp.extend(2, 2)) == {
+        GriddedPerm((2, 1, 0), ((0, 1), (0, 1), (1, 0))),
+        GriddedPerm((1, 2, 0), ((0, 1), (0, 1), (1, 0))),
+        GriddedPerm((1, 2, 0), ((0, 1), (1, 1), (1, 0))),
+        GriddedPerm((1, 0, 2), ((0, 1), (1, 0), (1, 1))),
+    }

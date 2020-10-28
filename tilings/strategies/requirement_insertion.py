@@ -53,11 +53,11 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         tiling: Tiling,
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         if children is None:
             children = self.decomposition_function(tiling)
         idx = DisjointUnionStrategy.backward_map_index(gps)
-        return children[idx].backward_map(cast(GriddedPerm, gps[idx]))
+        yield children[idx].backward_map(cast(GriddedPerm, gps[idx]))
 
     def forward_map(
         self,

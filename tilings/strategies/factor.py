@@ -85,7 +85,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         tiling: Tiling,
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         if children is None:
             children = self.decomposition_function(tiling)
         gps_to_combine = tuple(
@@ -100,7 +100,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         temp.sort()
         new_pos = [(idx[0], val[0]) for idx, val in temp]
         new_patt = Perm.to_standard(val for _, val in temp)
-        return GriddedPerm(new_patt, new_pos)
+        yield GriddedPerm(new_patt, new_pos)
 
     def forward_map(
         self,
@@ -305,7 +305,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         tiling: Tiling,
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         raise NotImplementedError
 
     def forward_map(
