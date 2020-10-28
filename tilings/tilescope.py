@@ -1,4 +1,3 @@
-import collections
 from collections import defaultdict
 from typing import Iterable, Optional, Union
 
