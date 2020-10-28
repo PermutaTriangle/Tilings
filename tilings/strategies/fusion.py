@@ -502,15 +502,6 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
     """Overwritten the generate objects of size method, as this relies on
     knowing the number of left and right points of the parent tiling."""
 
-    def __init__(
-        self,
-        strategy: "FusionStrategy",
-        comb_class: Tiling,
-        children: Optional[Tuple[Tiling, ...]] = None,
-    ):
-        super().__init__(strategy, comb_class, children)
-        self._constructor: Optional[FusionConstructor] = None
-
     @property
     def strategy(self) -> "FusionStrategy":
         return cast(
@@ -520,17 +511,7 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
 
     @property
     def constructor(self) -> FusionConstructor:
-        """
-        Return the constructor, that contains all the information about how to
-        count/generate objects from the rule.
-        """
-        if self._constructor is None:
-            self._constructor = self.strategy.constructor(
-                self.comb_class, self.children
-            )
-            if self._constructor is None:
-                raise StrategyDoesNotApply("{} does not apply".format(self.strategy))
-        return cast(FusionConstructor, self._constructor)
+        return cast(FusionConstructor, super().constructor)
 
     def generate_objects_of_size(
         self, n: int, **parameters: int

@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
    `permute_columns`, `permute_rows`, `apply_perm_map_to_cell`.
 - `guess_from_gridded_perms` to guess tiling T from gridded perms in Grid(T).
 - `enmerate_gp_up_to` counts gridded perms of length 0, 1, 2, ... up to a max length.
-- Can sample from fusion specifications.
+- Can sample and generate objects from fusion specifications.
 
 ## [2.3.1] - 2020-09-11
 ### Fixed

@@ -5,7 +5,7 @@ The implementation of the fusion algorithm
 """
 from collections import Counter
 from itertools import chain
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Iterator, Optional
 
 from tilings.assumptions import (
     ComponentAssumption,
@@ -69,7 +69,7 @@ class Fusion:
         ], "The only valid isolation levels are None, 'noninteracting', and 'isolated'."
         self._fused_tiling: Optional["Tiling"] = None
 
-    def fuse_gridded_perm(self, gp):
+    def fuse_gridded_perm(self, gp: GriddedPerm) -> GriddedPerm:
         """
         Fuse the gridded permutation `gp`.
         """
@@ -82,9 +82,14 @@ class Fusion:
             fused_pos.append((x, y))
         return gp.__class__(gp.patt, fused_pos)
 
-    def unfuse_gridded_perm(self, gp, left_points: Optional[int] = None):
+    def unfuse_gridded_perm(
+        self, gp: GriddedPerm, left_points: Optional[int] = None
+    ) -> Iterator[GriddedPerm]:
         """
         Generator of all the possible ways to unfuse a gridded permutations.
+
+        If left_points is given, the iterator contains only one gridded
+        permutations with said number of left points.
         """
 
         def stretch_above(p):
