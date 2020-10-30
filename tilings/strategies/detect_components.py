@@ -46,19 +46,19 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-        # TODO: can this be removed?
-        new_params: Dict[str, int] = {}
-        for k, val in parameters.items():
-            val -= self.components.get(k, 0)
-            if val < 0:
-                return 0
-            mapped_k = self.extra_parameters[k]
-            if mapped_k is not None:
-                if mapped_k in new_params and new_params[mapped_k] != val:
-                    return 0
-                new_params[mapped_k] = val
-        return subrecs[0](n, **new_params)
+    # def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
+    #     # TODO: this can be removed
+    #     new_params: Dict[str, int] = {}
+    #     for k, val in parameters.items():
+    #         val -= self.components.get(k, 0)
+    #         if val < 0:
+    #             return 0
+    #         mapped_k = self.extra_parameters[k]
+    #         if mapped_k is not None:
+    #             if mapped_k in new_params and new_params[mapped_k] != val:
+    #                 return 0
+    #             new_params[mapped_k] = val
+    #     return subrecs[0](n, **new_params)
 
     def get_terms(self, subterms: SubTerms, n: int) -> Terms:
         raise NotImplementedError

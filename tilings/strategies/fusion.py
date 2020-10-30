@@ -225,24 +225,24 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-        """
-        Let k be the fuse_parameter, then we should get
-            (k + 1) * subrec(n, **parameters)
-        where extra_parameters are updated according to extra_parameters.
-        """
-        # TODO: can this be removed?
-        subrec = subrecs[0]
-        res = 0
-        left_right_points = self.determine_number_of_points_in_fuse_region(
-            n, **parameters
-        )
-        for left_points, right_points in left_right_points:
-            new_params = self.update_subparams(left_points, right_points, **parameters)
-            if new_params is not None:
-                assert new_params[self.fuse_parameter] == left_points + right_points
-                res += subrec(n, **new_params)
-        return res
+    # def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
+    #     """
+    #     Let k be the fuse_parameter, then we should get
+    #         (k + 1) * subrec(n, **parameters)
+    #     where extra_parameters are updated according to extra_parameters.
+    #     """
+    #     # TODO: this can be removed
+    #     subrec = subrecs[0]
+    #     res = 0
+    #     left_right_points = self.determine_number_of_points_in_fuse_region(
+    #         n, **parameters
+    #     )
+    #     for left_points, right_points in left_right_points:
+    #         new_params = self.update_subparams(left_points, right_points, **parameters)
+    #         if new_params is not None:
+    #             assert new_params[self.fuse_parameter] == left_points + right_points
+    #             res += subrec(n, **new_params)
+    #     return res
 
     def get_terms(self, subterms: SubTerms, n: int) -> Terms:
         raise NotImplementedError

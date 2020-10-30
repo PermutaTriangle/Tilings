@@ -53,16 +53,16 @@ class AddAssumptionsConstructor(Constructor):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-        # TODO: can this be removed?
-        subrec = subrecs[0]
-        new_params = {self.extra_parameters[k]: val for k, val in parameters.items()}
-        res = 0
-        for values in product(*[range(n + 1) for _ in self.new_parameters]):
-            for k, val in zip(self.new_parameters, values):
-                new_params[k] = val
-            res += subrec(n, **new_params)
-        return res
+    # def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
+    #     # TODO: this can be removed
+    #     subrec = subrecs[0]
+    #     new_params = {self.extra_parameters[k]: val for k, val in parameters.items()}
+    #     res = 0
+    #     for values in product(*[range(n + 1) for _ in self.new_parameters]):
+    #         for k, val in zip(self.new_parameters, values):
+    #             new_params[k] = val
+    #         res += subrec(n, **new_params)
+    #     return res
 
     def get_terms(self, subterms: SubTerms, n: int) -> Terms:
         raise NotImplementedError

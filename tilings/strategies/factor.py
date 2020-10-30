@@ -229,18 +229,18 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
     def get_equation(lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         raise NotImplementedError
 
-    def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-        # TODO: can this be removed?
-        # multinomial counts the number of ways to interleave the values k1, ..., kn.
-        multiplier = reduce(
-            mul,
-            [
-                multinomial([parameters[k] for k in int_parameters])
-                for int_parameters in self.interleaving_parameters
-            ],
-            1,
-        )
-        return multiplier * super().get_recurrence(subrecs, n, **parameters)
+    # def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
+    #     # TODO: this can be removed
+    #     # multinomial counts the number of ways to interleave the values k1, ..., kn.
+    #     multiplier = reduce(
+    #         mul,
+    #         [
+    #             multinomial([parameters[k] for k in int_parameters])
+    #             for int_parameters in self.interleaving_parameters
+    #         ],
+    #         1,
+    #     )
+    #     return multiplier * super().get_recurrence(subrecs, n, **parameters)
 
     def get_terms(self, subterms: SubTerms, n: int) -> Terms:
         raise NotImplementedError
