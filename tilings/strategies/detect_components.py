@@ -11,6 +11,8 @@ from comb_spec_searcher.strategies.constructor import (
     SubGens,
     SubRecs,
     SubSamplers,
+    SubTerms,
+    Terms,
 )
 from tilings import GriddedPerm, Tiling
 
@@ -45,6 +47,7 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
         raise NotImplementedError
 
     def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
+        # TODO: can this be removed?
         new_params: Dict[str, int] = {}
         for k, val in parameters.items():
             val -= self.components.get(k, 0)
@@ -56,6 +59,9 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
                     return 0
                 new_params[mapped_k] = val
         return subrecs[0](n, **new_params)
+
+    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+        raise NotImplementedError
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int

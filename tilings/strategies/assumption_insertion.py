@@ -17,6 +17,8 @@ from comb_spec_searcher.strategies.constructor import (
     SubGens,
     SubRecs,
     SubSamplers,
+    SubTerms,
+    Terms,
 )
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import FactorWithInterleaving
@@ -52,6 +54,7 @@ class AddAssumptionsConstructor(Constructor):
         raise NotImplementedError
 
     def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
+        # TODO: can this be removed?
         subrec = subrecs[0]
         new_params = {self.extra_parameters[k]: val for k, val in parameters.items()}
         res = 0
@@ -60,6 +63,9 @@ class AddAssumptionsConstructor(Constructor):
                 new_params[k] = val
             res += subrec(n, **new_params)
         return res
+
+    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+        raise NotImplementedError
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int

@@ -13,6 +13,8 @@ from comb_spec_searcher.strategies.constructor import (
     SubGens,
     SubRecs,
     SubSamplers,
+    SubTerms,
+    Terms,
 )
 from comb_spec_searcher.utils import compositions
 from tilings import GriddedPerm, Tiling
@@ -67,11 +69,15 @@ class Split(Constructor):
 
         # TODO: this should take into consideration the reliance profile.
         """
+        # TODO: can this be removed?
         rec = subrecs[0]
         res = 0
         for sub_params in self._valid_compositions(**parameters):
             res += rec(n, **sub_params)
         return res
+
+    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+        raise NotImplementedError
 
     def _valid_compositions(self, **parameters: int) -> Iterator[Dict[str, int]]:
         """

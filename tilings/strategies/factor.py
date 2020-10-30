@@ -12,7 +12,13 @@ from comb_spec_searcher import (
     StrategyFactory,
 )
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.strategies.constructor import SubGens, SubRecs, SubSamplers
+from comb_spec_searcher.strategies.constructor import (
+    SubGens,
+    SubRecs,
+    SubSamplers,
+    SubTerms,
+    Terms,
+)
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
@@ -224,6 +230,7 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
         raise NotImplementedError
 
     def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
+        # TODO: can this be removed?
         # multinomial counts the number of ways to interleave the values k1, ..., kn.
         multiplier = reduce(
             mul,
@@ -234,6 +241,9 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
             1,
         )
         return multiplier * super().get_recurrence(subrecs, n, **parameters)
+
+    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+        raise NotImplementedError
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int

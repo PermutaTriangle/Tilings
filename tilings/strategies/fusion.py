@@ -24,7 +24,12 @@ from sympy import Eq, Expr, Function, Number, var
 from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
-from comb_spec_searcher.strategies.constructor import RelianceProfile, SubRecs
+from comb_spec_searcher.strategies.constructor import (
+    RelianceProfile,
+    SubRecs,
+    SubTerms,
+    Terms,
+)
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import ComponentFusion, Fusion
 
@@ -226,6 +231,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             (k + 1) * subrec(n, **parameters)
         where extra_parameters are updated according to extra_parameters.
         """
+        # TODO: can this be removed?
         subrec = subrecs[0]
         res = 0
         left_right_points = self.determine_number_of_points_in_fuse_region(
@@ -237,6 +243,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 assert new_params[self.fuse_parameter] == left_points + right_points
                 res += subrec(n, **new_params)
         return res
+
+    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+        raise NotImplementedError
 
     def determine_number_of_points_in_fuse_region(
         self, n: int, **parameters: int
