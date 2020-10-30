@@ -13,7 +13,7 @@ rows or columns.
 We will assume we are always fusing two adjacent columns, and discuss the left
 and right hand sides accordingly.
 """
-from collections import defaultdict
+from collections import Counter, defaultdict
 from functools import reduce
 from operator import mul
 from random import randint
@@ -25,6 +25,8 @@ from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.strategies.constructor import (
+    Parameters,
+    ParametersMap,
     RelianceProfile,
     SubRecs,
     SubTerms,
@@ -109,6 +111,29 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             if child_var != self.fuse_parameter and len(parent_vars) >= 2
         ]
         self.min_points = min_left, min_right
+
+        self.left_parameter_indices = tuple(
+            i
+            for i, k in enumerate(sorted(self.extra_parameters.keys()))
+            if k in self.left_sided_parameters
+        )
+        self.right_parameter_indices = tuple(
+            i
+            for i, k in enumerate(sorted(self.extra_parameters.keys()))
+            if k in self.right_sided_parameters
+        )
+        self.fuse_parameter_index = sorted(self.extra_parameters.keys()).index(
+            self.fuse_parameter
+        )
+        parent_parameters = tuple(sorted(self.extra_parameters.keys()))
+        child_parameters_set = set(self.reversed_extra_parameters.keys())
+        child_parameters_set.add(self.fuse_parameter)
+        child_parameters = tuple(sorted(child_parameters_set))
+        self._children_param_map = self._build_child_param_map(
+            parent_parameters,
+            child_parameters,
+            self.extra_parameters,
+        )
 
     def _init_checked(self):
         """
@@ -245,7 +270,82 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     #     return res
 
     def get_terms(self, subterms: SubTerms, n: int) -> Terms:
-        raise NotImplementedError
+        return self._fusion_push(
+            n,
+            subterms,
+            self._children_param_map,
+            self.left_parameter_indices,
+            self.right_parameter_indices,
+            self.fuse_parameter_index,
+        )
+
+    @staticmethod
+    def _build_param_map(
+        child_pos_to_parent_pos: Tuple[int, ...], num_parent_params: int
+    ) -> ParametersMap:
+        """
+        Build the ParametersMap that will map according to the given child pos to parent
+        pos map given.
+        """
+
+        def param_map(param: Parameters) -> Parameters:
+            new_params = [None for _ in range(num_parent_params)]
+            for pos, value in enumerate(param):
+                parent_pos = child_pos_to_parent_pos[pos]
+                assert new_params[parent_pos] is None or value == new_params[parent_pos]
+                new_params[parent_pos] = value
+            assert all(x is not None for x in new_params)
+            return tuple(new_params)
+
+        return param_map
+
+    @staticmethod
+    def _build_child_param_map(
+        parent_parameters: Tuple[str, ...],
+        child_parameters: Tuple[str, ...],
+        child_param_to_parent_param: Dict[str, str],
+    ) -> ParametersMap:
+        num_parent_params = len(parent_parameters)
+        parent_param_to_pos = {
+            param: pos for pos, param in enumerate(sorted(parent_parameters))
+        }
+        child_pos_to_parent_pos = tuple(
+            parent_param_to_pos[child_param_to_parent_param[child_param]]
+            for child_param in child_parameters
+            if child_parameters in child_param_to_parent_param
+        )
+        return build_param_map(child_pos_to_parent_pos, num_parent_params)
+
+    @staticmethod
+    def _fusion_push(
+        n: int,
+        children_terms: SubTerms,
+        children_param_maps: ParametersMap,
+        left_indices: Tuple[int, ...],
+        right_indices: Tuple[int, ...],
+        fuse_index: int,
+    ) -> Terms:
+        """
+        Uses the `children_terms` functions to and the `children_param_maps` to compute
+        the terms of size `n`.
+        """
+        assert len(children_terms) == len(children_param_maps) == 1
+        new_terms: Terms = Counter()
+        child_terms = children_terms[0]
+        param_map = children_param_maps
+        for param, value in child_terms(n).items():
+            fuse_region_points = param[fuse_index]
+            new_params = list(param_map(param))
+            for idx in left_indices:
+                new_params[idx] -= fuse_region_points
+            new_terms[tuple(new_params)] += value
+            for _ in range(fuse_region_points):
+                for idx in left_indices:
+                    new_params[idx] += 1
+                for idx in right_indices:
+                    new_params[idx] -= 1
+                new_terms[tuple(new_params)] += value
+        return new_terms
 
     def determine_number_of_points_in_fuse_region(
         self, n: int, **parameters: int
