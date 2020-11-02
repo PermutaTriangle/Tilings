@@ -40,7 +40,9 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
     ):
         self.components = components
         self.extra_parameters = extra_parameters
-        self.disjoint_constructor = DisjointUnion(parent, (child,), (extra_parameters,))
+        self.disjoint_constructor: DisjointUnion = DisjointUnion(
+            parent, (child,), (extra_parameters,)
+        )
         self.indices_to_add_to = {
             parent.extra_parameters.index(k): val for k, val in components.items()
         }

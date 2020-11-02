@@ -115,10 +115,10 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         self.min_points = min_left, min_right
 
         index_mapping = {
-            child.extra_parameters.index(child_parameter): tuple(
-                parent.extra_parameters.index(k) for k in parent_parameters
+            child.extra_parameters.index(child_param): tuple(
+                map(parent.extra_parameters.index, parent_params)
             )
-            for child_parameter, parent_parameters in self.reversed_extra_parameters.items()
+            for child_param, parent_params in self.reversed_extra_parameters.items()
         }
         self.left_parameter_indices = tuple(
             i
@@ -275,20 +275,20 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         """
 
         def param_map(param: Parameters) -> Parameters:
-            new_params = [None for _ in range(num_parent_params)]
+            new_params: List[Optional[int]] = [None for _ in range(num_parent_params)]
             for pos, value in enumerate(param):
                 for parent_pos in child_pos_to_parent_pos[pos]:
                     assert new_params[parent_pos] is None
                     new_params[parent_pos] = value
             assert all(x is not None for x in new_params)
-            return tuple(new_params)
+            return tuple(cast(List[int], new_params))
 
         return param_map
 
     @staticmethod
     def _fusion_push(
         n: int,
-        child_terms: Terms,
+        child_terms: Callable[[int], Terms],
         param_map: ParametersMap,
         left_indices: Tuple[int, ...],
         right_indices: Tuple[int, ...],
@@ -303,7 +303,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         new_terms: Terms = Counter()
 
         def add_new_term(
-            params: Parameters, value: int, left_points: int, fuse_region_points: int
+            params: List[int], value: int, left_points: int, fuse_region_points: int
         ) -> None:
             """Update new terms if there is enough points on the left and right."""
             if (

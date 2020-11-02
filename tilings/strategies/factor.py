@@ -238,7 +238,7 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
         non_interleaved_terms = super().get_terms(subterms, n)
         interleaved_terms: Terms = Counter()
         for parameters, value in non_interleaved_terms.items():
-            # multinomial counts the number of ways to interleave the values k1, ..., kn.
+            # multinomial counts the number of ways to interleave the values k1, ...,kn.
             multiplier = reduce(
                 mul,
                 [
