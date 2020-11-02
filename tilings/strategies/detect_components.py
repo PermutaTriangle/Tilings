@@ -1,3 +1,4 @@
+from collections import Counter
 from functools import reduce
 from operator import mul
 from typing import Dict, Iterator, Optional, Tuple
@@ -7,6 +8,7 @@ from sympy import Eq, Function, var
 from comb_spec_searcher import Constructor, Strategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies.constructor import (
+    DisjointUnion,
     RelianceProfile,
     SubGens,
     SubRecs,
@@ -29,9 +31,19 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
     parameter will not be a key in extra_parameters.
     """
 
-    def __init__(self, components: Dict[str, int], extra_parameters: Dict[str, str]):
+    def __init__(
+        self,
+        parent: Tiling,
+        child: Tiling,
+        components: Dict[str, int],
+        extra_parameters: Dict[str, str],
+    ):
         self.components = components
         self.extra_parameters = extra_parameters
+        self.disjoint_constructor = DisjointUnion(parent, (child,), (extra_parameters,))
+        self.indices_to_add_to = {
+            parent.extra_parameters.index(k): val for k, val in components.items()
+        }
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         rhs_func = rhs_funcs[0].subs(
@@ -46,22 +58,15 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    # def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-    #     # TODO: this can be removed
-    #     new_params: Dict[str, int] = {}
-    #     for k, val in parameters.items():
-    #         val -= self.components.get(k, 0)
-    #         if val < 0:
-    #             return 0
-    #         mapped_k = self.extra_parameters[k]
-    #         if mapped_k is not None:
-    #             if mapped_k in new_params and new_params[mapped_k] != val:
-    #                 return 0
-    #             new_params[mapped_k] = val
-    #     return subrecs[0](n, **new_params)
-
     def get_terms(self, subterms: SubTerms, n: int) -> Terms:
-        raise NotImplementedError
+        terms = self.disjoint_constructor.get_terms(subterms, n)
+        accounted_for: Terms = Counter()
+        for params, value in terms.items():
+            new_params = list(params)
+            for idx, extra_components in self.indices_to_add_to.items():
+                new_params[idx] += extra_components
+            accounted_for[tuple(new_params)] += value
+        return accounted_for
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int
@@ -109,7 +114,10 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
                 k = comb_class.get_parameter(ass)
                 removed_components[k] = value
         return CountComponent(
-            removed_components, self.extra_parameters(comb_class, children)[0]
+            comb_class,
+            children[0],
+            removed_components,
+            self.extra_parameters(comb_class, children)[0],
         )
 
     def extra_parameters(
