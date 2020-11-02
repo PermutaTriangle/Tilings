@@ -66,6 +66,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
 
     def __init__(
         self,
+        parent: Tiling,
+        child: Tiling,
         fuse_parameter: str,
         extra_parameters: Dict[str, str],
         left_sided_parameters: Iterable[str],
@@ -112,27 +114,28 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         ]
         self.min_points = min_left, min_right
 
+        index_mapping = {
+            child.extra_parameters.index(child_parameter): tuple(
+                parent.extra_parameters.index(j) for j in parent_parameters
+            )
+            for child_parameter, parent_parameters in self.reversed_extra_parameters.values()
+        }
         self.left_parameter_indices = tuple(
             i
-            for i, k in enumerate(sorted(self.extra_parameters.keys()))
+            for i, k in enumerate(parent.extra_parameters)
             if k in self.left_sided_parameters
         )
         self.right_parameter_indices = tuple(
             i
-            for i, k in enumerate(sorted(self.extra_parameters.keys()))
+            for i, k in enumerate(parent.extra_parameters)
             if k in self.right_sided_parameters
         )
-        self.fuse_parameter_index = sorted(self.extra_parameters.keys()).index(
-            self.fuse_parameter
+        self.fuse_parameter_index = child.extra_parameters.index(self.fuse_parameter)
+        child_pos_to_parent_pos = tuple(
+            index_mapping[idx] for idx in range(len(child.extra_parameters))
         )
-        parent_parameters = tuple(sorted(self.extra_parameters.keys()))
-        child_parameters_set = set(self.reversed_extra_parameters.keys())
-        child_parameters_set.add(self.fuse_parameter)
-        child_parameters = tuple(sorted(child_parameters_set))
-        self._children_param_map = self._build_child_param_map(
-            parent_parameters,
-            child_parameters,
-            self.extra_parameters,
+        self._children_param_map = self._build_param_map(
+            child_pos_to_parent_pos, len(child_pos_to_parent_pos)
         )
 
     def _init_checked(self):
@@ -281,7 +284,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
 
     @staticmethod
     def _build_param_map(
-        child_pos_to_parent_pos: Tuple[int, ...], num_parent_params: int
+        child_pos_to_parent_pos: Tuple[Tuple[int, ...], ...], num_parent_params: int
     ) -> ParametersMap:
         """
         Build the ParametersMap that will map according to the given child pos to parent
@@ -291,30 +294,13 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         def param_map(param: Parameters) -> Parameters:
             new_params = [None for _ in range(num_parent_params)]
             for pos, value in enumerate(param):
-                parent_pos = child_pos_to_parent_pos[pos]
-                assert new_params[parent_pos] is None or value == new_params[parent_pos]
-                new_params[parent_pos] = value
+                for parent_pos in child_pos_to_parent_pos[pos]:
+                    assert new_params[parent_pos] is None
+                    new_params[parent_pos] = value
             assert all(x is not None for x in new_params)
             return tuple(new_params)
 
         return param_map
-
-    @staticmethod
-    def _build_child_param_map(
-        parent_parameters: Tuple[str, ...],
-        child_parameters: Tuple[str, ...],
-        child_param_to_parent_param: Dict[str, str],
-    ) -> ParametersMap:
-        num_parent_params = len(parent_parameters)
-        parent_param_to_pos = {
-            param: pos for pos, param in enumerate(sorted(parent_parameters))
-        }
-        child_pos_to_parent_pos = tuple(
-            parent_param_to_pos[child_param_to_parent_param[child_param]]
-            for child_param in child_parameters
-            if child_parameters in child_param_to_parent_param
-        )
-        return build_param_map(child_pos_to_parent_pos, num_parent_params)
 
     @staticmethod
     def _fusion_push(
@@ -752,6 +738,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         assert children is None or children == (child,)
         min_left, min_right = algo.min_left_right_points()
         return FusionConstructor(
+            comb_class,
+            child,
             self._fuse_parameter(comb_class),
             self.extra_parameters(comb_class, children)[0],
             *self.left_right_both_sided_parameters(comb_class),
