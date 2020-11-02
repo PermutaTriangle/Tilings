@@ -1,6 +1,7 @@
+from collections import Counter
 from itertools import chain, product
 from random import randint
-from typing import Dict, Iterable, Iterator, Optional, Tuple
+from typing import Callable, Dict, Iterable, Iterator, Optional, Tuple
 
 from sympy import Eq, Expr, Function, Number, Symbol, var
 
@@ -13,6 +14,8 @@ from comb_spec_searcher import (
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.strategies.constructor import (
+    Parameters,
+    ParametersMap,
     RelianceProfile,
     SubGens,
     SubRecs,
@@ -35,11 +38,18 @@ class AddAssumptionsConstructor(Constructor):
     The constructor used to count when a new variable is added.
     """
 
-    def __init__(self, new_parameters: Iterable[str], extra_parameters: Dict[str, str]):
+    def __init__(
+        self,
+        parent: Tiling,
+        child: Tiling,
+        new_parameters: Iterable[str],
+        extra_parameters: Dict[str, str],
+    ):
         #  parent parameter -> child parameter mapping
         self.extra_parameters = extra_parameters
         #  the paramater that was added, to count we must sum over all possible values
         self.new_parameters = tuple(new_parameters)
+        self._child_param_map = self._build_child_param_map(parent, child)
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         rhs_func = rhs_funcs[0]
@@ -65,7 +75,43 @@ class AddAssumptionsConstructor(Constructor):
     #     return res
 
     def get_terms(self, subterms: SubTerms, n: int) -> Terms:
-        raise NotImplementedError
+        assert len(subterms) == 1
+        return self._push_add_assumption(n, subterms[0], self._child_param_map)
+
+    @staticmethod
+    def _push_add_assumption(
+        n: int,
+        child_terms: Callable[[int], Terms],
+        child_param_map: ParametersMap,
+    ) -> Terms:
+        new_terms: Terms = Counter()
+        for param, value in child_terms(n).items():
+            new_terms[child_param_map(param)] += value
+        return new_terms
+
+    def _build_child_param_map(self, parent: Tiling, child: Tiling) -> ParametersMap:
+        parent_param_to_pos = {
+            param: pos for pos, param in enumerate(parent.extra_parameters)
+        }
+        child_param_to_parent_param = {v: k for k, v in self.extra_parameters.items()}
+        child_pos_to_parent_pos: Tuple[Optional[int], ...] = tuple(
+            None
+            if param in self.new_parameters
+            else parent_param_to_pos[child_param_to_parent_param[param]]
+            for param in child.extra_parameters
+        )
+        num_parent_params = len(parent.extra_parameters)
+
+        def param_map(param: Parameters) -> Parameters:
+            new_params = [0 for _ in range(num_parent_params)]
+            for pos, value in enumerate(param):
+                parent_pos = child_pos_to_parent_pos[pos]
+                if parent_pos is not None:
+                    assert new_params[parent_pos] == 0
+                    new_params[parent_pos] = value
+            return tuple(new_params)
+
+        return param_map
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int
@@ -127,7 +173,10 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Can't split the tracking assumption")
         new_parameters = [children[0].get_parameter(ass) for ass in self.assumptions]
         return AddAssumptionsConstructor(
-            new_parameters, self.extra_parameters(comb_class, children)[0]
+            comb_class,
+            children[0],
+            new_parameters,
+            self.extra_parameters(comb_class, children)[0],
         )
 
     def extra_parameters(
