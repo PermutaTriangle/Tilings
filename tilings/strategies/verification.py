@@ -83,7 +83,7 @@ class BasicVerificationStrategy(AtomStrategy):
         """
         Verification strategies must contain a method to sample the objects.
         """
-        key = tuple(y for _, y in sorted(parameters.keys()))
+        key = tuple(y for _, y in sorted(parameters.items()))
         if BasicVerificationStrategy.get_terms(comb_class, n).get(key):
             return cast(GriddedPerm, next(comb_class.objects_of_size(n, **parameters)))
 

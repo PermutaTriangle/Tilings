@@ -116,9 +116,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
 
         index_mapping = {
             child.extra_parameters.index(child_parameter): tuple(
-                parent.extra_parameters.index(j) for j in parent_parameters
+                parent.extra_parameters.index(k) for k in parent_parameters
             )
-            for child_parameter, parent_parameters in self.reversed_extra_parameters.values()
+            for child_parameter, parent_parameters in self.reversed_extra_parameters.items()
         }
         self.left_parameter_indices = tuple(
             i
@@ -253,29 +253,10 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    # def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-    #     """
-    #     Let k be the fuse_parameter, then we should get
-    #         (k + 1) * subrec(n, **parameters)
-    #     where extra_parameters are updated according to extra_parameters.
-    #     """
-    #     # TODO: this can be removed
-    #     subrec = subrecs[0]
-    #     res = 0
-    #     left_right_points = self.determine_number_of_points_in_fuse_region(
-    #         n, **parameters
-    #     )
-    #     for left_points, right_points in left_right_points:
-    #         new_params = self.update_subparams(left_points, right_points, **parameters)
-    #         if new_params is not None:
-    #             assert new_params[self.fuse_parameter] == left_points + right_points
-    #             res += subrec(n, **new_params)
-    #     return res
-
     def get_terms(self, subterms: SubTerms, n: int) -> Terms:
         return self._fusion_push(
             n,
-            subterms,
+            subterms[0],
             self._children_param_map,
             self.left_parameter_indices,
             self.right_parameter_indices,
@@ -305,8 +286,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     @staticmethod
     def _fusion_push(
         n: int,
-        children_terms: SubTerms,
-        children_param_maps: ParametersMap,
+        child_terms: Terms,
+        param_map: ParametersMap,
         left_indices: Tuple[int, ...],
         right_indices: Tuple[int, ...],
         fuse_index: int,
@@ -315,10 +296,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         Uses the `children_terms` functions to and the `children_param_maps` to compute
         the terms of size `n`.
         """
-        assert len(children_terms) == len(children_param_maps) == 1
         new_terms: Terms = Counter()
-        child_terms = children_terms[0]
-        param_map = children_param_maps
         for param, value in child_terms(n).items():
             fuse_region_points = param[fuse_index]
             new_params = list(param_map(param))
