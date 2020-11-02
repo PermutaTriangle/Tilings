@@ -135,7 +135,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             index_mapping[idx] for idx in range(len(child.extra_parameters))
         )
         self._children_param_map = self._build_param_map(
-            child_pos_to_parent_pos, len(child_pos_to_parent_pos)
+            child_pos_to_parent_pos, len(parent.extra_parameters)
         )
 
     def _init_checked(self):
