@@ -4,6 +4,7 @@ from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
 from tilings.strategies.fusion import FusionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
+from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 
 
 @pytest.fixture
@@ -149,3 +150,72 @@ def test_sanity_check_rules(rules_to_check):
         for n in range(6):
             for parameters in rule.comb_class.possible_parameters(n):
                 assert rule.sanity_check(n, **parameters)
+
+
+@pytest.mark.xfail("Waiting on the transition for object generation")
+def test_sanity_check_big_row_placement():
+    rule = RequirementPlacementStrategy(
+        gps=(
+            GriddedPerm((0,), ((0, 0),)),
+            GriddedPerm((0,), ((3, 0),)),
+            GriddedPerm((0,), ((1, 0),)),
+            GriddedPerm((0,), ((2, 0),)),
+        ),
+        indices=(0, 0, 0, 0),
+        direction=1,
+        own_col=True,
+        own_row=True,
+        ignore_parent=False,
+        include_empty=True,
+    )(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((0, 0), (3, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (3, 0))),
+                GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (2, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2, 3), ((1, 0), (1, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2, 3), ((1, 0), (2, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2, 3), ((1, 0), (2, 0), (2, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((2, 0), (2, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2, 3), ((2, 0), (2, 0), (2, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 2), ((1, 0), (2, 0), (2, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 2), ((2, 0), (2, 0), (2, 0), (3, 0))),
+                GriddedPerm((0, 2, 3, 1), ((1, 0), (2, 0), (2, 0), (3, 0))),
+                GriddedPerm((0, 2, 3, 1), ((2, 0), (2, 0), (2, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3, 4), ((1, 0), (2, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3, 4), ((1, 0), (3, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3, 4), ((2, 0), (2, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3, 4), ((2, 0), (3, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3, 4), ((3, 0), (3, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 4, 3), ((1, 0), (2, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 4, 3), ((1, 0), (3, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 4, 3), ((2, 0), (2, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 4, 3), ((2, 0), (3, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 4, 3), ((3, 0), (3, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 4, 2), ((1, 0), (2, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 4, 2), ((1, 0), (3, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 4, 2), ((2, 0), (2, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 4, 2), ((2, 0), (3, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 4, 2), ((3, 0), (3, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 2, 3, 4, 1), ((1, 0), (2, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 2, 3, 4, 1), ((1, 0), (3, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 2, 3, 4, 1), ((2, 0), (2, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 2, 3, 4, 1), ((2, 0), (3, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 2, 3, 4, 1), ((3, 0), (3, 0), (3, 0), (3, 0), (3, 0))),
+            ),
+            requirements=(),
+            assumptions=(
+                TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),
+                TrackingAssumption(
+                    (GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),)))
+                ),
+                TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),
+            ),
+        )
+    )
+    rule.sanity_check(2)
