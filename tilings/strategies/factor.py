@@ -1,3 +1,4 @@
+from collections import Counter
 from functools import reduce
 from itertools import chain
 from operator import mul
@@ -220,6 +221,10 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
     ):
         super().__init__(parent, children, extra_parameters)
         self.interleaving_parameters = tuple(interleaving_parameters)
+        self.interleaving_indices = tuple(
+            tuple(parent.extra_parameters.index(k) for k in parameters)
+            for parameters in interleaving_parameters
+        )
 
     @staticmethod
     def is_equivalence() -> bool:
@@ -229,21 +234,21 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
     def get_equation(lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         raise NotImplementedError
 
-    # def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-    #     # TODO: this can be removed
-    #     # multinomial counts the number of ways to interleave the values k1, ..., kn.
-    #     multiplier = reduce(
-    #         mul,
-    #         [
-    #             multinomial([parameters[k] for k in int_parameters])
-    #             for int_parameters in self.interleaving_parameters
-    #         ],
-    #         1,
-    #     )
-    #     return multiplier * super().get_recurrence(subrecs, n, **parameters)
-
     def get_terms(self, subterms: SubTerms, n: int) -> Terms:
-        raise NotImplementedError
+        non_interleaved_terms = super().get_terms(subterms, n)
+        interleaved_terms: Terms = Counter()
+        for parameters, value in non_interleaved_terms.items():
+            # multinomial counts the number of ways to interleave the values k1, ..., kn.
+            multiplier = reduce(
+                mul,
+                [
+                    multinomial([parameters[k] for k in int_parameters])
+                    for int_parameters in self.interleaving_indices
+                ],
+                1,
+            )
+            interleaved_terms[parameters] += multiplier * value
+        return interleaved_terms
 
     def get_sub_objects(
         self, subgens: SubGens, n: int, **parameters: int

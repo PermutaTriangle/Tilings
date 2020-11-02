@@ -261,6 +261,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             self.left_parameter_indices,
             self.right_parameter_indices,
             self.fuse_parameter_index,
+            self.min_points[0],
+            self.min_points[1],
         )
 
     @staticmethod
@@ -291,24 +293,38 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         left_indices: Tuple[int, ...],
         right_indices: Tuple[int, ...],
         fuse_index: int,
+        min_left: int,
+        min_right: int,
     ) -> Terms:
         """
         Uses the `children_terms` functions to and the `children_param_maps` to compute
         the terms of size `n`.
         """
         new_terms: Terms = Counter()
+
+        def add_new_term(
+            params: Parameters, value: int, left_points: int, fuse_region_points: int
+        ) -> None:
+            """Update new terms if there is enough points on the left and right."""
+            if (
+                min_left <= left_points
+                and min_right <= fuse_region_points - left_points
+            ):
+                new_terms[tuple(params)] += value
+
         for param, value in child_terms(n).items():
             fuse_region_points = param[fuse_index]
             new_params = list(param_map(param))
             for idx in left_indices:
                 new_params[idx] -= fuse_region_points
-            new_terms[tuple(new_params)] += value
-            for _ in range(fuse_region_points):
+            add_new_term(new_params, value, 0, fuse_region_points)
+            for left_points in range(fuse_region_points):
                 for idx in left_indices:
                     new_params[idx] += 1
                 for idx in right_indices:
                     new_params[idx] -= 1
-                new_terms[tuple(new_params)] += value
+
+                add_new_term(new_params, value, left_points + 1, fuse_region_points)
         return new_terms
 
     def determine_number_of_points_in_fuse_region(
