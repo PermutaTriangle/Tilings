@@ -1,7 +1,7 @@
 from collections import Counter
 from functools import reduce
 from operator import mul
-from typing import Dict, Iterator, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 from sympy import Eq, Function, var
 
@@ -9,8 +9,9 @@ from comb_spec_searcher import Constructor, Strategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies.constructor import (
     DisjointUnion,
+    Parameters,
     RelianceProfile,
-    SubGens,
+    SubObjects,
     SubRecs,
     SubSamplers,
     SubTerms,
@@ -71,8 +72,8 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
         return accounted_for
 
     def get_sub_objects(
-        self, subgens: SubGens, n: int, **parameters: int
-    ) -> Iterator[Tuple[GriddedPerm, ...]]:
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
         raise NotImplementedError
 
     def random_sample_sub_objects(

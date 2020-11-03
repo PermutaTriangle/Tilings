@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import reduce
 from itertools import chain
 from operator import mul
@@ -13,7 +13,7 @@ from comb_spec_searcher import (
     VerificationStrategy,
 )
 from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
-from comb_spec_searcher.strategies.strategy import Terms
+from comb_spec_searcher.strategies.strategy import Objects, Terms
 from permuta import Perm
 from permuta.permutils import (
     is_insertion_encodable_maximum,
@@ -58,7 +58,6 @@ class BasicVerificationStrategy(AtomStrategy):
     def get_terms(comb_class: CombinatorialClass, n: int) -> Terms:
         if not isinstance(comb_class, Tiling):
             raise NotImplementedError
-        cast(Tiling, comb_class)
         gp = next(comb_class.minimal_gridded_perms())
         if n == len(gp):
             parameters = tuple(
@@ -66,6 +65,19 @@ class BasicVerificationStrategy(AtomStrategy):
             )
             return Counter([parameters])
         return Counter()
+
+    @staticmethod
+    def get_objects(comb_class: CombinatorialClass, n: int) -> Objects:
+        if not isinstance(comb_class, Tiling):
+            raise NotImplementedError
+        res: Objects = defaultdict(list)
+        gp = next(comb_class.minimal_gridded_perms())
+        if n == len(gp):
+            parameters = tuple(
+                assumption.get_value(gp) for assumption in comb_class.assumptions
+            )
+            res[parameters].append(gp)
+        return res
 
     @staticmethod
     def generate_objects_of_size(

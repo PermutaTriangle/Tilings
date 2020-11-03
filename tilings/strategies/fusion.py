@@ -25,9 +25,11 @@ from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.strategies.constructor import (
+    Objects,
     Parameters,
     ParametersMap,
     RelianceProfile,
+    SubObjects,
     SubRecs,
     SubTerms,
     Terms,
@@ -134,7 +136,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         child_pos_to_parent_pos = tuple(
             index_mapping[idx] for idx in range(len(child.extra_parameters))
         )
-        self._children_param_map = self._build_param_map(
+        self.children_param_map = self._build_param_map(
             child_pos_to_parent_pos, len(parent.extra_parameters)
         )
 
@@ -257,7 +259,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         return self._fusion_push(
             n,
             subterms[0],
-            self._children_param_map,
+            self.children_param_map,
             self.left_parameter_indices,
             self.right_parameter_indices,
             self.fuse_parameter_index,
@@ -568,8 +570,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         return res
 
     def get_sub_objects(
-        self, subgens: SubGens, n: int, **parameters: int
-    ) -> Iterator[Tuple[GriddedPerm, ...]]:
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
         raise NotImplementedError(
             "This is implemented on the FusionRule class directly"
         )
@@ -602,49 +604,54 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
     def constructor(self) -> FusionConstructor:
         return cast(FusionConstructor, super().constructor)
 
-    def generate_objects_of_size(
-        self, n: int, **parameters: int
-    ) -> Iterator[GriddedPerm]:
-        """
-        Generate the objects by using the underlying bijection between the
-        parent and children.
-        """
-        key = (n,) + tuple(sorted(parameters.items()))
-        res = self.obj_cache.get(key)
-        if res is not None:
-            yield from res
-            return
-        assert (
-            self.subgenerators is not None
-        ), "you must call the set_subrecs function first"
-        res = []
+    def _ensure_level_objects(self, n: int) -> None:
 
-        subgen = self.subgenerators[0]
-        left_right_points = self.constructor.determine_number_of_points_in_fuse_region(
-            n, **parameters
-        )
+        if self.subobjects is None:
+            raise RuntimeError("set_subrecs must be set first")
+        while n >= len(self.objects_cache):
+            fuse_index = self.constructor.fuse_parameter_index
+            param_map = self.constructor.children_param_map
+            res: Objects = defaultdict(list)
+            subobjects = self.subobjects[0](len(self.objects_cache))
+            min_left, min_right = self.constructor.min_points
+            left_indices = self.constructor.left_parameter_indices
+            right_indices = self.constructor.right_parameter_indices
 
-        for left_points, right_points in left_right_points:
-            new_params = self.constructor.update_subparams(
-                left_points, right_points, **parameters
-            )
-            if new_params is not None:
-                assert (
-                    new_params[self.constructor.fuse_parameter]
-                    == left_points + right_points
-                )
-                for gp in subgen(n, **new_params):
-                    try:
-                        mappedgp = next(
-                            self.strategy.backward_map(
-                                self.comb_class, (gp,), self.children, left_points
-                            )
+            def add_new_gp(
+                params: List[int],
+                left_points: int,
+                fuse_region_points: int,
+                unfused_gps: Iterator[GriddedPerm],
+            ) -> None:
+                """Update new terms if there is enough points on the left and right."""
+                gp = next(unfused_gps)
+                if (
+                    min_left <= left_points
+                    and min_right <= fuse_region_points - left_points
+                ):
+                    res[tuple(params)].append(gp)
+
+            for param, objects in subobjects.items():
+                fuse_region_points = param[fuse_index]
+                for gp in objects:
+                    new_params = list(param_map(param))
+                    unfused_gps = self.strategy.backward_map(
+                        self.comb_class, (gp,), self.children
+                    )  # iterates over unfused gridded perms in order
+                    # with 0, 1, .., and finally fuse_region_points on the left
+                    for idx in left_indices:
+                        new_params[idx] -= fuse_region_points
+                    add_new_gp(new_params, 0, fuse_region_points, unfused_gps)
+                    for left_points in range(fuse_region_points):
+                        for idx in left_indices:
+                            new_params[idx] += 1
+                        for idx in right_indices:
+                            new_params[idx] -= 1
+                        add_new_gp(
+                            new_params, left_points + 1, fuse_region_points, unfused_gps
                         )
-                    except StopIteration:
-                        assert 0, "something went wrong"
-                    yield mappedgp
-                    res.append(mappedgp)
-        self.obj_cache[key] = res
+
+            self.objects_cache.append(res)
 
     def random_sample_object_of_size(self, n: int, **parameters: int) -> GriddedPerm:
         """Return a random objects of the give size."""

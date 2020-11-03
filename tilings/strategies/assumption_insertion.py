@@ -1,12 +1,11 @@
 from collections import Counter
 from itertools import chain, product
 from random import randint
-from typing import Callable, Dict, Iterable, Iterator, Optional, Tuple
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
 from sympy import Eq, Expr, Function, Number, Symbol, var
 
 from comb_spec_searcher import (
-    CombinatorialObject,
     Constructor,
     Strategy,
     StrategyFactory,
@@ -17,7 +16,7 @@ from comb_spec_searcher.strategies.constructor import (
     Parameters,
     ParametersMap,
     RelianceProfile,
-    SubGens,
+    SubObjects,
     SubRecs,
     SubSamplers,
     SubTerms,
@@ -103,15 +102,10 @@ class AddAssumptionsConstructor(Constructor):
         return param_map
 
     def get_sub_objects(
-        self, subgens: SubGens, n: int, **parameters: int
-    ) -> Iterator[Tuple[Optional[CombinatorialObject], ...]]:
-        subgen = subgens[0]
-        new_params = {self.extra_parameters[k]: val for k, val in parameters.items()}
-        for values in product(*[range(n + 1) for _ in self.new_parameters]):
-            for k, val in zip(self.new_parameters, values):
-                new_params[k] = val
-            for gp in subgen(n, **new_params):
-                yield (gp,)
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
+        for param, gps in subobjs[0](n).items():
+            yield self._child_param_map(param), (gps,)
 
     def random_sample_sub_objects(
         self,

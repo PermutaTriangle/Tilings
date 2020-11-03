@@ -14,8 +14,9 @@ from comb_spec_searcher import (
 )
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies.constructor import (
-    SubGens,
+    Parameters,
     SubRecs,
+    SubObjects,
     SubSamplers,
     SubTerms,
     Terms,
@@ -251,8 +252,8 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
         return interleaved_terms
 
     def get_sub_objects(
-        self, subgens: SubGens, n: int, **parameters: int
-    ) -> Iterator[Tuple[GriddedPerm, ...]]:
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
         raise NotImplementedError
 
     def random_sample_sub_objects(

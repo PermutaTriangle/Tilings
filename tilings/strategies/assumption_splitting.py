@@ -6,11 +6,12 @@ from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from sympy import Eq, Function, var
 
-from comb_spec_searcher import CombinatorialObject, Constructor, Strategy
+from comb_spec_searcher import Constructor, Strategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies.constructor import (
+    Parameters,
     RelianceProfile,
-    SubGens,
+    SubObjects,
     SubRecs,
     SubSamplers,
     SubTerms,
@@ -117,8 +118,8 @@ class Split(Constructor):
                 yield new_params
 
     def get_sub_objects(
-        self, subgens: SubGens, n: int, **parameters: int
-    ) -> Iterator[Tuple[CombinatorialObject, ...]]:
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
         raise NotImplementedError
 
     def random_sample_sub_objects(
