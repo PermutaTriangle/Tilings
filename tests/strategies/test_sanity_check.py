@@ -148,11 +148,10 @@ def test_sanity_check_rules(rules_to_check):
     for rule in rules_to_check:
         print(rule)
         for n in range(6):
-            for parameters in rule.comb_class.possible_parameters(n):
-                assert rule.sanity_check(n, **parameters)
+            assert rule.sanity_check(n)
 
 
-@pytest.mark.xfail("Waiting on the transition for object generation")
+# @pytest.mark.xfail("Waiting on the transition for object generation")
 def test_sanity_check_big_row_placement():
     rule = RequirementPlacementStrategy(
         gps=(
