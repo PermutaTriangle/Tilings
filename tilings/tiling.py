@@ -1397,6 +1397,9 @@ class Tiling(CombinatorialClass):
     def extra_parameters(self) -> Tuple[str, ...]:
         return tuple("k_{}".format(i) for i in range(len(self._assumptions)))
 
+    def get_parameters(self, obj: GriddedPerm) -> Tuple[int, ...]:
+        return tuple(ass.get_value(obj) for ass in self.assumptions)
+
     def possible_parameters(self, n: int) -> Iterator[Dict[str, int]]:
         if any(
             len(gp) > 1
@@ -1411,6 +1414,11 @@ class Tiling(CombinatorialClass):
             yield dict(zip(parameters, values))
 
     def get_parameter(self, assumption: TrackingAssumption) -> str:
+        """
+        Return the variable associated with the given assumption.
+
+        Raise ValueError if the assumptions is not on the tiling.
+        """
         try:
             idx = self._assumptions.index(assumption)
         except ValueError as e:
