@@ -91,7 +91,12 @@ class Split(Constructor):
         """
 
         def compositions_dict(value: int, parameters: Tuple[str, ...]):
-            for comp in compositions(value, len(parameters)):
+            for comp in compositions(
+                value,
+                len(parameters),
+                (0,) * len(parameters),
+                (None,) * len(parameters),
+            ):
                 yield dict(zip(parameters, comp))
 
         def union_params(
