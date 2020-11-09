@@ -17,20 +17,21 @@ from collections import Counter, defaultdict
 from functools import reduce
 from operator import mul
 from random import randint
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 from sympy import Eq, Expr, Function, Number, var
 
 from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
-from comb_spec_searcher.strategies.constructor import (
+from comb_spec_searcher.typing import (
     Objects,
     Parameters,
     ParametersMap,
     RelianceProfile,
     SubObjects,
     SubRecs,
+    SubSamplers,
     SubTerms,
     Terms,
 )
@@ -38,10 +39,6 @@ from tilings import GriddedPerm, Tiling
 from tilings.algorithms import ComponentFusion, Fusion
 
 __all__ = ["FusionStrategy", "ComponentFusionStrategy"]
-
-SubGens = Tuple[Callable[..., Iterator[GriddedPerm]], ...]
-SubRec = Callable[..., int]
-SubSamplers = Tuple[Callable[..., GriddedPerm], ...]
 
 
 class FusionConstructor(Constructor[Tiling, GriddedPerm]):

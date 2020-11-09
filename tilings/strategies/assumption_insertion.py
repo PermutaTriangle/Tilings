@@ -8,7 +8,7 @@ from sympy import Eq, Expr, Function, Number, Symbol, var
 from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
-from comb_spec_searcher.strategies.constructor import (
+from comb_spec_searcher.typing import (
     Parameters,
     ParametersMap,
     RelianceProfile,

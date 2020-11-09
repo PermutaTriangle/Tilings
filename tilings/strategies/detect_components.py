@@ -7,8 +7,8 @@ from sympy import Eq, Function, var
 
 from comb_spec_searcher import Constructor, Strategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.strategies.constructor import (
-    DisjointUnion,
+from comb_spec_searcher.strategies.constructor import DisjointUnion
+from comb_spec_searcher.typing import (
     Parameters,
     RelianceProfile,
     SubObjects,
