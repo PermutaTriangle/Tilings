@@ -66,6 +66,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                                 fully the entire region that is being fused
     """
 
+    # pylint: disable=too-many-instance-attributes
+    # This pylint warning is ignored due to adding in a new algorithm for
+    # computing terms that does not apply to sampling. Therefore, this class
+    # has two fundamentally different approaches to counting and we would
+    # need to refactor the old one to pass this test.
     def __init__(
         self,
         parent: Tiling,
@@ -256,16 +261,38 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         raise NotImplementedError
 
     def get_terms(self, subterms: SubTerms, n: int) -> Terms:
-        return self._fusion_push(
-            n,
-            subterms[0],
-            self.children_param_map,
-            self.left_parameter_indices,
-            self.right_parameter_indices,
-            self.fuse_parameter_index,
-            self.min_points[0],
-            self.min_points[1],
-        )
+        """
+        Uses the `subterms` functions to and the `children_param_maps` to compute
+        the terms of size `n`.
+        """
+        new_terms: Terms = Counter()
+
+        min_left, min_right = self.min_points
+
+        def add_new_term(
+            params: List[int], value: int, left_points: int, fuse_region_points: int
+        ) -> None:
+            """Update new terms if there is enough points on the left and right."""
+            if (
+                min_left <= left_points
+                and min_right <= fuse_region_points - left_points
+            ):
+                new_terms[tuple(params)] += value
+
+        for param, value in subterms[0](n).items():
+            fuse_region_points = param[self.fuse_parameter_index]
+            new_params = list(self.children_param_map(param))
+            for idx in self.left_parameter_indices:
+                new_params[idx] -= fuse_region_points
+            add_new_term(new_params, value, 0, fuse_region_points)
+            for left_points in range(fuse_region_points):
+                for idx in self.left_parameter_indices:
+                    new_params[idx] += 1
+                for idx in self.right_parameter_indices:
+                    new_params[idx] -= 1
+
+                add_new_term(new_params, value, left_points + 1, fuse_region_points)
+        return new_terms
 
     @staticmethod
     def _build_param_map(
@@ -286,48 +313,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             return tuple(cast(List[int], new_params))
 
         return param_map
-
-    @staticmethod
-    def _fusion_push(
-        n: int,
-        child_terms: Callable[[int], Terms],
-        param_map: ParametersMap,
-        left_indices: Tuple[int, ...],
-        right_indices: Tuple[int, ...],
-        fuse_index: int,
-        min_left: int,
-        min_right: int,
-    ) -> Terms:
-        """
-        Uses the `children_terms` functions to and the `children_param_maps` to compute
-        the terms of size `n`.
-        """
-        new_terms: Terms = Counter()
-
-        def add_new_term(
-            params: List[int], value: int, left_points: int, fuse_region_points: int
-        ) -> None:
-            """Update new terms if there is enough points on the left and right."""
-            if (
-                min_left <= left_points
-                and min_right <= fuse_region_points - left_points
-            ):
-                new_terms[tuple(params)] += value
-
-        for param, value in child_terms(n).items():
-            fuse_region_points = param[fuse_index]
-            new_params = list(param_map(param))
-            for idx in left_indices:
-                new_params[idx] -= fuse_region_points
-            add_new_term(new_params, value, 0, fuse_region_points)
-            for left_points in range(fuse_region_points):
-                for idx in left_indices:
-                    new_params[idx] += 1
-                for idx in right_indices:
-                    new_params[idx] -= 1
-
-                add_new_term(new_params, value, left_points + 1, fuse_region_points)
-        return new_terms
 
     def determine_number_of_points_in_fuse_region(
         self, n: int, **parameters: int
@@ -609,13 +594,8 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
         if self.subobjects is None:
             raise RuntimeError("set_subrecs must be set first")
         while n >= len(self.objects_cache):
-            fuse_index = self.constructor.fuse_parameter_index
-            param_map = self.constructor.children_param_map
             res: Objects = defaultdict(list)
-            subobjects = self.subobjects[0](len(self.objects_cache))
             min_left, min_right = self.constructor.min_points
-            left_indices = self.constructor.left_parameter_indices
-            right_indices = self.constructor.right_parameter_indices
 
             def add_new_gp(
                 params: List[int],
@@ -631,21 +611,21 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
                 ):
                     res[tuple(params)].append(gp)
 
-            for param, objects in subobjects.items():
-                fuse_region_points = param[fuse_index]
+            for param, objects in self.subobjects[0](len(self.objects_cache)).items():
+                fuse_region_points = param[self.constructor.fuse_parameter_index]
                 for gp in objects:
-                    new_params = list(param_map(param))
+                    new_params = list(self.constructor.children_param_map(param))
                     unfused_gps = self.strategy.backward_map(
                         self.comb_class, (gp,), self.children
                     )  # iterates over unfused gridded perms in order
                     # with 0, 1, .., and finally fuse_region_points on the left
-                    for idx in left_indices:
+                    for idx in self.constructor.left_parameter_indices:
                         new_params[idx] -= fuse_region_points
                     add_new_gp(new_params, 0, fuse_region_points, unfused_gps)
                     for left_points in range(fuse_region_points):
-                        for idx in left_indices:
+                        for idx in self.constructor.left_parameter_indices:
                             new_params[idx] += 1
-                        for idx in right_indices:
+                        for idx in self.constructor.right_parameter_indices:
                             new_params[idx] -= 1
                         add_new_gp(
                             new_params, left_points + 1, fuse_region_points, unfused_gps
