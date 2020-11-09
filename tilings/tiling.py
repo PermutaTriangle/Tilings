@@ -1409,11 +1409,11 @@ class Tiling(CombinatorialClass):
                 "possible parameters only implemented for assumptions with "
                 "size one gridded perms"
             )
-        parameters = [self.get_parameter(ass) for ass in self.assumptions]
+        parameters = [self.get_assumption_parameter(ass) for ass in self.assumptions]
         for values in product(*[range(n + 1) for _ in parameters]):
             yield dict(zip(parameters, values))
 
-    def get_parameter(self, assumption: TrackingAssumption) -> str:
+    def get_assumption_parameter(self, assumption: TrackingAssumption) -> str:
         """
         Return the variable associated with the given assumption.
 

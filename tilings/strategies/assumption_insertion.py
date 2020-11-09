@@ -150,7 +150,9 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
             children = self.decomposition_function(comb_class)
             if children is None:
                 raise StrategyDoesNotApply("Can't split the tracking assumption")
-        new_parameters = [children[0].get_parameter(ass) for ass in self.assumptions]
+        new_parameters = [
+            children[0].get_assumption_parameter(ass) for ass in self.assumptions
+        ]
         return AddAssumptionsConstructor(
             comb_class,
             children[0],
@@ -168,7 +170,9 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
         child = children[0]
         return (
             {
-                comb_class.get_parameter(ass): child.get_parameter(ass)
+                comb_class.get_assumption_parameter(
+                    ass
+                ): child.get_assumption_parameter(ass)
                 for ass in comb_class.assumptions
             },
         )

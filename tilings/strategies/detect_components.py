@@ -114,7 +114,7 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
         for ass in comb_class.assumptions:
             value = len(ass.get_components(comb_class))
             if value:
-                k = comb_class.get_parameter(ass)
+                k = comb_class.get_assumption_parameter(ass)
                 removed_components[k] = value
         return CountComponent(
             comb_class,
@@ -136,8 +136,8 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
             mapped_assumption = assumption.remove_components(comb_class)
             if mapped_assumption.gps:
                 extra_parameters[
-                    comb_class.get_parameter(assumption)
-                ] = child.get_parameter(mapped_assumption)
+                    comb_class.get_assumption_parameter(assumption)
+                ] = child.get_assumption_parameter(mapped_assumption)
         return (extra_parameters,)
 
     @staticmethod

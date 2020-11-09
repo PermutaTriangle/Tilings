@@ -73,7 +73,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
                 # TODO: consider skew/sum
                 new_assumption = child.forward_map_assumption(assumption)
                 if new_assumption.gps:
-                    child_var = child.get_parameter(new_assumption)
+                    child_var = child.get_assumption_parameter(new_assumption)
                     extra_parameters[idx][parent_var] = child_var
         return extra_parameters
 
@@ -302,7 +302,11 @@ class FactorWithInterleavingStrategy(FactorStrategy):
                 for cells in self.partition
             ]
             res.append(
-                tuple(comb_class.get_parameter(ass) for ass in assumptions if ass.gps)
+                tuple(
+                    comb_class.get_assumption_parameter(ass)
+                    for ass in assumptions
+                    if ass.gps
+                )
             )
         for y in rows:
             assumptions = [
@@ -312,7 +316,11 @@ class FactorWithInterleavingStrategy(FactorStrategy):
                 for cells in self.partition
             ]
             res.append(
-                tuple(comb_class.get_parameter(ass) for ass in assumptions if ass.gps)
+                tuple(
+                    comb_class.get_assumption_parameter(ass)
+                    for ass in assumptions
+                    if ass.gps
+                )
             )
         return res
 

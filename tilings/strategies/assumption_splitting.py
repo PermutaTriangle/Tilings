@@ -52,31 +52,6 @@ class Split(Constructor):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    # def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-    #     """
-    #     The split_parameters tells you what each variable is split into,
-
-    #     If there is k: (k_0, k_1) then we need to sum over all ways that
-    #     k = k_0 + k_1.
-
-    #     Side note: notice the similarity between this function and cartesian
-    #     product - if we were to instead track the size of the root using a
-    #     tracking assumption, then all of the complicated logic of the cartesian
-    #     product could become local to the Split constructor, and the recurrence
-    #     would just be a multiplication. This is because our Factor strategy,
-    #     and cartesian product strategy is implicitly using the fact that we can
-    #     always split the assumption covering the whole tiling with respect to
-    #     the factors.
-
-    #     # TODO: this should take into consideration the reliance profile.
-    #     """
-    #     # TODO: this can be removed
-    #     rec = subrecs[0]
-    #     res = 0
-    #     for sub_params in self._valid_compositions(**parameters):
-    #         res += rec(n, **sub_params)
-    #     return res
-
     def get_terms(self, subterms: SubTerms, n: int) -> Terms:
         raise NotImplementedError
 

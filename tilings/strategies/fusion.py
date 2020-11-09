@@ -743,7 +743,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         ]
         return (
             {
-                k: child.get_parameter(ass)
+                k: child.get_assumption_parameter(ass)
                 for k, ass in zip(comb_class.extra_parameters, mapped_assumptions)
                 if ass.gps
             },
@@ -757,7 +757,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         both_sided_params: Set[str] = set()
         algo = self.fusion_algorithm(comb_class)
         for assumption in comb_class.assumptions:
-            parent_var = comb_class.get_parameter(assumption)
+            parent_var = comb_class.get_assumption_parameter(assumption)
             left_sided = algo.is_left_sided_assumption(assumption)
             right_sided = algo.is_right_sided_assumption(assumption)
             if left_sided and not right_sided:
@@ -777,7 +777,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         child = algo.fused_tiling()
         ass = algo.new_assumption()
         fuse_assumption = ass.__class__(child.forward_map(gp) for gp in ass.gps)
-        return child.get_parameter(fuse_assumption)
+        return child.get_assumption_parameter(fuse_assumption)
 
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"
