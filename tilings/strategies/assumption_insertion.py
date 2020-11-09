@@ -5,11 +5,7 @@ from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
 from sympy import Eq, Expr, Function, Number, Symbol, var
 
-from comb_spec_searcher import (
-    Constructor,
-    Strategy,
-    StrategyFactory,
-)
+from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.strategies.constructor import (

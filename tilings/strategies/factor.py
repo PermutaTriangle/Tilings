@@ -15,8 +15,8 @@ from comb_spec_searcher import (
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies.constructor import (
     Parameters,
-    SubRecs,
     SubObjects,
+    SubRecs,
     SubSamplers,
     SubTerms,
     Terms,
