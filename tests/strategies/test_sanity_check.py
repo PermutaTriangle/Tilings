@@ -151,7 +151,6 @@ def test_sanity_check_rules(rules_to_check):
             assert rule.sanity_check(n)
 
 
-# @pytest.mark.xfail("Waiting on the transition for object generation")
 def test_sanity_check_big_row_placement():
     rule = RequirementPlacementStrategy(
         gps=(
