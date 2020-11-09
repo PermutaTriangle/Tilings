@@ -13,7 +13,7 @@ from comb_spec_searcher import (
     VerificationStrategy,
 )
 from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
-from comb_spec_searcher.strategies.strategy import Objects, Terms
+from comb_spec_searcher.typing import Objects, Terms
 from permuta import Perm
 from permuta.permutils import (
     is_insertion_encodable_maximum,

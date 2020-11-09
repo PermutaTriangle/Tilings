@@ -22,6 +22,7 @@ from typing_extensions import TypedDict
 
 from comb_spec_searcher import CombinatorialClass, VerificationStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
+from comb_spec_searcher.typing import Parameters
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_WEST
 
@@ -1397,7 +1398,7 @@ class Tiling(CombinatorialClass):
     def extra_parameters(self) -> Tuple[str, ...]:
         return tuple("k_{}".format(i) for i in range(len(self._assumptions)))
 
-    def get_parameters(self, obj: GriddedPerm) -> Tuple[int, ...]:
+    def get_parameters(self, obj: GriddedPerm) -> Parameters:
         return tuple(ass.get_value(obj) for ass in self.assumptions)
 
     def possible_parameters(self, n: int) -> Iterator[Dict[str, int]]:

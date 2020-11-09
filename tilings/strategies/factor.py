@@ -13,7 +13,7 @@ from comb_spec_searcher import (
     StrategyFactory,
 )
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.strategies.constructor import (
+from comb_spec_searcher.typing import (
     Parameters,
     SubObjects,
     SubRecs,
