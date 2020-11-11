@@ -1,3 +1,4 @@
+from collections import Counter, defaultdict
 from functools import reduce
 from itertools import chain
 from operator import mul
@@ -12,6 +13,7 @@ from comb_spec_searcher import (
     VerificationStrategy,
 )
 from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
+from comb_spec_searcher.typing import Objects, Terms
 from permuta import Perm
 from permuta.permutils import (
     is_insertion_encodable_maximum,
@@ -53,23 +55,29 @@ class BasicVerificationStrategy(AtomStrategy):
     """
 
     @staticmethod
-    def count_objects_of_size(
-        comb_class: CombinatorialClass, n: int, **parameters: int
-    ) -> int:
-        """
-        Verification strategies must contain a method to count the objects.
-        """
+    def get_terms(comb_class: CombinatorialClass, n: int) -> Terms:
         if not isinstance(comb_class, Tiling):
             raise NotImplementedError
-        cast(Tiling, comb_class)
         gp = next(comb_class.minimal_gridded_perms())
-        expected = {"n": len(gp)}
-        for assumption in comb_class.assumptions:
-            expected[comb_class.get_parameter(assumption)] = assumption.get_value(gp)
-        actual = {"n": n, **parameters}
-        if expected == actual:
-            return 1
-        return 0
+        if n == len(gp):
+            parameters = tuple(
+                assumption.get_value(gp) for assumption in comb_class.assumptions
+            )
+            return Counter([parameters])
+        return Counter()
+
+    @staticmethod
+    def get_objects(comb_class: CombinatorialClass, n: int) -> Objects:
+        if not isinstance(comb_class, Tiling):
+            raise NotImplementedError
+        res: Objects = defaultdict(list)
+        gp = next(comb_class.minimal_gridded_perms())
+        if n == len(gp):
+            parameters = tuple(
+                assumption.get_value(gp) for assumption in comb_class.assumptions
+            )
+            res[parameters].append(gp)
+        return res
 
     @staticmethod
     def generate_objects_of_size(
@@ -87,10 +95,8 @@ class BasicVerificationStrategy(AtomStrategy):
         """
         Verification strategies must contain a method to sample the objects.
         """
-        if (
-            BasicVerificationStrategy.count_objects_of_size(comb_class, n, **parameters)
-            == 1
-        ):
+        key = tuple(y for _, y in sorted(parameters.items()))
+        if BasicVerificationStrategy.get_terms(comb_class, n).get(key):
             return cast(GriddedPerm, next(comb_class.objects_of_size(n, **parameters)))
 
     def get_genf(
@@ -106,7 +112,9 @@ class BasicVerificationStrategy(AtomStrategy):
         gp = next(comb_class.minimal_gridded_perms())
         expected = {"x": len(gp)}
         for assumption in comb_class.assumptions:
-            expected[comb_class.get_parameter(assumption)] = assumption.get_value(gp)
+            expected[
+                comb_class.get_assumption_parameter(assumption)
+            ] = assumption.get_value(gp)
         return reduce(mul, [var(k) ** n for k, n in expected.items()], 1)
 
 
@@ -219,9 +227,8 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
     def formal_step() -> str:
         return "tiling is a subclass of the original tiling"
 
-    def count_objects_of_size(
-        self, comb_class: Tiling, n: int, **parameters: int
-    ) -> int:
+    @staticmethod
+    def get_terms(comb_class: Tiling, n: int) -> Terms:
         raise NotImplementedError(
             "Not implemented method to count objects for one by one verified tilings"
         )
@@ -296,9 +303,8 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
             raise StrategyDoesNotApply("tiling is not in the database")
         return DatabaseEnumeration(tiling).get_genf()
 
-    def count_objects_of_size(
-        self, comb_class: Tiling, n: int, **parameters: int
-    ) -> int:
+    @staticmethod
+    def get_terms(comb_class: Tiling, n: int) -> Terms:
         raise NotImplementedError(
             "Not implemented method to count objects for database verified tilings"
         )
@@ -492,9 +498,8 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         except InvalidOperationError:
             return LocalEnumeration(tiling).get_genf(funcs=funcs)
 
-    def count_objects_of_size(
-        self, comb_class: Tiling, n: int, **parameters: int
-    ) -> int:
+    @staticmethod
+    def get_terms(comb_class: Tiling, n: int) -> Terms:
         raise NotImplementedError(
             "Not implemented method to count objects for locally verified tilings"
         )
@@ -566,9 +571,8 @@ class InsertionEncodingVerificationStrategy(TileScopeVerificationStrategy):
     def from_dict(cls, d: dict) -> "InsertionEncodingVerificationStrategy":
         return cls(**d)
 
-    def count_objects_of_size(
-        self, comb_class: Tiling, n: int, **parameters: int
-    ) -> int:
+    @staticmethod
+    def get_terms(comb_class: Tiling, n: int) -> Terms:
         raise NotImplementedError(
             "Not implemented method to count objects for insertion encoding "
             "verified tilings"
@@ -651,9 +655,8 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
         except InvalidOperationError:
             return MonotoneTreeEnumeration(tiling).get_genf(funcs=funcs)
 
-    def count_objects_of_size(
-        self, comb_class: Tiling, n: int, **parameters: int
-    ) -> int:
+    @staticmethod
+    def get_terms(comb_class: Tiling, n: int) -> Terms:
         raise NotImplementedError(
             "Not implemented method to count objects for monotone tree "
             "verified tilings"
