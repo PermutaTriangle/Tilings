@@ -1345,7 +1345,6 @@ def test_reverse_rule_non_empty_children():
         reverse_rule.sanity_check(i)
 
 
-@pytest.mark.xfail(reason="needs updated sanity checker on multivariables")
 def test_multiple_parent_parameters_to_same_child_parameter():
     tiling = Tiling(
         obstructions=(

@@ -13,26 +13,32 @@ rows or columns.
 We will assume we are always fusing two adjacent columns, and discuss the left
 and right hand sides accordingly.
 """
-from collections import defaultdict
+from collections import Counter, defaultdict
 from functools import reduce
 from operator import mul
 from random import randint
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 from sympy import Eq, Expr, Function, Number, var
 
 from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
-from comb_spec_searcher.strategies.constructor import RelianceProfile, SubRecs
+from comb_spec_searcher.typing import (
+    Objects,
+    Parameters,
+    ParametersMap,
+    RelianceProfile,
+    SubObjects,
+    SubRecs,
+    SubSamplers,
+    SubTerms,
+    Terms,
+)
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import ComponentFusion, Fusion
 
 __all__ = ["FusionStrategy", "ComponentFusionStrategy"]
-
-SubGens = Tuple[Callable[..., Iterator[GriddedPerm]], ...]
-SubRec = Callable[..., int]
-SubSamplers = Tuple[Callable[..., GriddedPerm], ...]
 
 
 class FusionConstructor(Constructor[Tiling, GriddedPerm]):
@@ -57,8 +63,15 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                                 fully the entire region that is being fused
     """
 
+    # pylint: disable=too-many-instance-attributes
+    # This pylint warning is ignored due to adding in a new algorithm for
+    # computing terms that does not apply to sampling. Therefore, this class
+    # has two fundamentally different approaches to counting and we would
+    # need to refactor the old one to pass this test.
     def __init__(
         self,
+        parent: Tiling,
+        child: Tiling,
         fuse_parameter: str,
         extra_parameters: Dict[str, str],
         left_sided_parameters: Iterable[str],
@@ -104,6 +117,30 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             if child_var != self.fuse_parameter and len(parent_vars) >= 2
         ]
         self.min_points = min_left, min_right
+
+        index_mapping = {
+            child.extra_parameters.index(child_param): tuple(
+                map(parent.extra_parameters.index, parent_params)
+            )
+            for child_param, parent_params in self.reversed_extra_parameters.items()
+        }
+        self.left_parameter_indices = tuple(
+            i
+            for i, k in enumerate(parent.extra_parameters)
+            if k in self.left_sided_parameters
+        )
+        self.right_parameter_indices = tuple(
+            i
+            for i, k in enumerate(parent.extra_parameters)
+            if k in self.right_sided_parameters
+        )
+        self.fuse_parameter_index = child.extra_parameters.index(self.fuse_parameter)
+        child_pos_to_parent_pos = tuple(
+            index_mapping[idx] for idx in range(len(child.extra_parameters))
+        )
+        self.children_param_map = self._build_param_map(
+            child_pos_to_parent_pos, len(parent.extra_parameters)
+        )
 
     def _init_checked(self):
         """
@@ -220,23 +257,59 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
+    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
         """
-        Let k be the fuse_parameter, then we should get
-            (k + 1) * subrec(n, **parameters)
-        where extra_parameters are updated according to extra_parameters.
+        Uses the `subterms` functions to and the `children_param_maps` to compute
+        the terms of size `n`.
         """
-        subrec = subrecs[0]
-        res = 0
-        left_right_points = self.determine_number_of_points_in_fuse_region(
-            n, **parameters
-        )
-        for left_points, right_points in left_right_points:
-            new_params = self.update_subparams(left_points, right_points, **parameters)
-            if new_params is not None:
-                assert new_params[self.fuse_parameter] == left_points + right_points
-                res += subrec(n, **new_params)
-        return res
+        new_terms: Terms = Counter()
+
+        min_left, min_right = self.min_points
+
+        def add_new_term(
+            params: List[int], value: int, left_points: int, fuse_region_points: int
+        ) -> None:
+            """Update new terms if there is enough points on the left and right."""
+            if (
+                min_left <= left_points
+                and min_right <= fuse_region_points - left_points
+            ):
+                new_terms[tuple(params)] += value
+
+        for param, value in subterms[0](n).items():
+            fuse_region_points = param[self.fuse_parameter_index]
+            new_params = list(self.children_param_map(param))
+            for idx in self.left_parameter_indices:
+                new_params[idx] -= fuse_region_points
+            add_new_term(new_params, value, 0, fuse_region_points)
+            for left_points in range(1, fuse_region_points + 1):
+                for idx in self.left_parameter_indices:
+                    new_params[idx] += 1
+                for idx in self.right_parameter_indices:
+                    new_params[idx] -= 1
+
+                add_new_term(new_params, value, left_points, fuse_region_points)
+        return new_terms
+
+    @staticmethod
+    def _build_param_map(
+        child_pos_to_parent_pos: Tuple[Tuple[int, ...], ...], num_parent_params: int
+    ) -> ParametersMap:
+        """
+        Build the ParametersMap that will map according to the given child pos to parent
+        pos map given.
+        """
+
+        def param_map(param: Parameters) -> Parameters:
+            new_params: List[Optional[int]] = [None for _ in range(num_parent_params)]
+            for pos, value in enumerate(param):
+                for parent_pos in child_pos_to_parent_pos[pos]:
+                    assert new_params[parent_pos] is None
+                    new_params[parent_pos] = value
+            assert all(x is not None for x in new_params)
+            return tuple(cast(List[int], new_params))
+
+        return param_map
 
     def determine_number_of_points_in_fuse_region(
         self, n: int, **parameters: int
@@ -479,8 +552,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         return res
 
     def get_sub_objects(
-        self, subgens: SubGens, n: int, **parameters: int
-    ) -> Iterator[Tuple[GriddedPerm, ...]]:
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
         raise NotImplementedError(
             "This is implemented on the FusionRule class directly"
         )
@@ -513,49 +586,49 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
     def constructor(self) -> FusionConstructor:
         return cast(FusionConstructor, super().constructor)
 
-    def generate_objects_of_size(
-        self, n: int, **parameters: int
-    ) -> Iterator[GriddedPerm]:
-        """
-        Generate the objects by using the underlying bijection between the
-        parent and children.
-        """
-        key = (n,) + tuple(sorted(parameters.items()))
-        res = self.obj_cache.get(key)
-        if res is not None:
-            yield from res
-            return
-        assert (
-            self.subgenerators is not None
-        ), "you must call the set_subrecs function first"
-        res = []
+    def _ensure_level_objects(self, n: int) -> None:
 
-        subgen = self.subgenerators[0]
-        left_right_points = self.constructor.determine_number_of_points_in_fuse_region(
-            n, **parameters
-        )
+        if self.subobjects is None:
+            raise RuntimeError("set_subrecs must be set first")
+        while n >= len(self.objects_cache):
+            res: Objects = defaultdict(list)
+            min_left, min_right = self.constructor.min_points
 
-        for left_points, right_points in left_right_points:
-            new_params = self.constructor.update_subparams(
-                left_points, right_points, **parameters
-            )
-            if new_params is not None:
-                assert (
-                    new_params[self.constructor.fuse_parameter]
-                    == left_points + right_points
-                )
-                for gp in subgen(n, **new_params):
-                    try:
-                        mappedgp = next(
-                            self.strategy.backward_map(
-                                self.comb_class, (gp,), self.children, left_points
-                            )
+            def add_new_gp(
+                params: List[int],
+                left_points: int,
+                fuse_region_points: int,
+                unfused_gps: Iterator[GriddedPerm],
+            ) -> None:
+                """Update new terms if there is enough points on the left and right."""
+                gp = next(unfused_gps)
+                if (
+                    min_left <= left_points
+                    and min_right <= fuse_region_points - left_points
+                ):
+                    res[tuple(params)].append(gp)
+
+            for param, objects in self.subobjects[0](len(self.objects_cache)).items():
+                fuse_region_points = param[self.constructor.fuse_parameter_index]
+                for gp in objects:
+                    new_params = list(self.constructor.children_param_map(param))
+                    unfused_gps = self.strategy.backward_map(
+                        self.comb_class, (gp,), self.children
+                    )  # iterates over unfused gridded perms in order
+                    # with 0, 1, .., and finally fuse_region_points on the left
+                    for idx in self.constructor.left_parameter_indices:
+                        new_params[idx] -= fuse_region_points
+                    add_new_gp(new_params, 0, fuse_region_points, unfused_gps)
+                    for left_points in range(1, fuse_region_points + 1):
+                        for idx in self.constructor.left_parameter_indices:
+                            new_params[idx] += 1
+                        for idx in self.constructor.right_parameter_indices:
+                            new_params[idx] -= 1
+                        add_new_gp(
+                            new_params, left_points, fuse_region_points, unfused_gps
                         )
-                    except StopIteration:
-                        assert 0, "something went wrong"
-                    yield mappedgp
-                    res.append(mappedgp)
-        self.obj_cache[key] = res
+
+            self.objects_cache.append(res)
 
     def random_sample_object_of_size(self, n: int, **parameters: int) -> GriddedPerm:
         """Return a random objects of the give size."""
@@ -643,6 +716,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         assert children is None or children == (child,)
         min_left, min_right = algo.min_left_right_points()
         return FusionConstructor(
+            comb_class,
+            child,
             self._fuse_parameter(comb_class),
             self.extra_parameters(comb_class, children)[0],
             *self.left_right_both_sided_parameters(comb_class),
@@ -665,7 +740,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         ]
         return (
             {
-                k: child.get_parameter(ass)
+                k: child.get_assumption_parameter(ass)
                 for k, ass in zip(comb_class.extra_parameters, mapped_assumptions)
                 if ass.gps
             },
@@ -679,7 +754,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         both_sided_params: Set[str] = set()
         algo = self.fusion_algorithm(comb_class)
         for assumption in comb_class.assumptions:
-            parent_var = comb_class.get_parameter(assumption)
+            parent_var = comb_class.get_assumption_parameter(assumption)
             left_sided = algo.is_left_sided_assumption(assumption)
             right_sided = algo.is_right_sided_assumption(assumption)
             if left_sided and not right_sided:
@@ -699,7 +774,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         child = algo.fused_tiling()
         ass = algo.new_assumption()
         fuse_assumption = ass.__class__(child.forward_map(gp) for gp in ass.gps)
-        return child.get_parameter(fuse_assumption)
+        return child.get_assumption_parameter(fuse_assumption)
 
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"

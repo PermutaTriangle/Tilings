@@ -22,6 +22,7 @@ from typing_extensions import TypedDict
 
 from comb_spec_searcher import CombinatorialClass, VerificationStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
+from comb_spec_searcher.typing import Parameters
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_WEST
 
@@ -1397,6 +1398,9 @@ class Tiling(CombinatorialClass):
     def extra_parameters(self) -> Tuple[str, ...]:
         return tuple("k_{}".format(i) for i in range(len(self._assumptions)))
 
+    def get_parameters(self, obj: GriddedPerm) -> Parameters:
+        return tuple(ass.get_value(obj) for ass in self.assumptions)
+
     def possible_parameters(self, n: int) -> Iterator[Dict[str, int]]:
         if any(
             len(gp) > 1
@@ -1406,11 +1410,16 @@ class Tiling(CombinatorialClass):
                 "possible parameters only implemented for assumptions with "
                 "size one gridded perms"
             )
-        parameters = [self.get_parameter(ass) for ass in self.assumptions]
+        parameters = [self.get_assumption_parameter(ass) for ass in self.assumptions]
         for values in product(*[range(n + 1) for _ in parameters]):
             yield dict(zip(parameters, values))
 
-    def get_parameter(self, assumption: TrackingAssumption) -> str:
+    def get_assumption_parameter(self, assumption: TrackingAssumption) -> str:
+        """
+        Return the variable associated with the given assumption.
+
+        Raise ValueError if the assumptions is not on the tiling.
+        """
         try:
             idx = self._assumptions.index(assumption)
         except ValueError as e:

@@ -52,9 +52,9 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
         )
         return (
             {
-                comb_class.get_parameter(assumption): child.get_parameter(
-                    mapped_assumption
-                )
+                comb_class.get_assumption_parameter(
+                    assumption
+                ): child.get_assumption_parameter(mapped_assumption)
                 for assumption, mapped_assumption in zip(
                     comb_class.assumptions, mapped_assumptions
                 )
