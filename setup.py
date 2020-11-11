@@ -10,7 +10,7 @@ def read(fname):
 
 setup(
     name="tilings",
-    version="2.4.1",
+    version="2.5.0",
     author="Permuta Triangle",
     author_email="permutatriangle@gmail.com",
     description="A Python library for gridded permutations and tilings.",
