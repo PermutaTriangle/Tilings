@@ -282,13 +282,13 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             for idx in self.left_parameter_indices:
                 new_params[idx] -= fuse_region_points
             add_new_term(new_params, value, 0, fuse_region_points)
-            for left_points in range(fuse_region_points):
+            for left_points in range(1, fuse_region_points + 1):
                 for idx in self.left_parameter_indices:
                     new_params[idx] += 1
                 for idx in self.right_parameter_indices:
                     new_params[idx] -= 1
 
-                add_new_term(new_params, value, left_points + 1, fuse_region_points)
+                add_new_term(new_params, value, left_points, fuse_region_points)
         return new_terms
 
     @staticmethod
@@ -619,13 +619,13 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
                     for idx in self.constructor.left_parameter_indices:
                         new_params[idx] -= fuse_region_points
                     add_new_gp(new_params, 0, fuse_region_points, unfused_gps)
-                    for left_points in range(fuse_region_points):
+                    for left_points in range(1, fuse_region_points + 1):
                         for idx in self.constructor.left_parameter_indices:
                             new_params[idx] += 1
                         for idx in self.constructor.right_parameter_indices:
                             new_params[idx] -= 1
                         add_new_gp(
-                            new_params, left_points + 1, fuse_region_points, unfused_gps
+                            new_params, left_points, fuse_region_points, unfused_gps
                         )
 
             self.objects_cache.append(res)
