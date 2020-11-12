@@ -552,3 +552,13 @@ def test_is_interleaving():
         Perm((0, 2, 3, 4, 5, 6, 1)),
         [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 0)],
     ).is_interleaving()
+
+
+def test_extend():
+    gp = GriddedPerm((1, 0), ((0, 1), (1, 0)))
+    assert set(gp.extend(2, 2)) == {
+        GriddedPerm((2, 1, 0), ((0, 1), (0, 1), (1, 0))),
+        GriddedPerm((1, 2, 0), ((0, 1), (0, 1), (1, 0))),
+        GriddedPerm((1, 2, 0), ((0, 1), (1, 1), (1, 0))),
+        GriddedPerm((1, 0, 2), ((0, 1), (1, 0), (1, 1))),
+    }

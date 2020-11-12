@@ -6,13 +6,16 @@ from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from sympy import Eq, Function, var
 
-from comb_spec_searcher import CombinatorialObject, Constructor, Strategy
+from comb_spec_searcher import Constructor, Strategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.strategies.constructor import (
+from comb_spec_searcher.typing import (
+    Parameters,
     RelianceProfile,
-    SubGens,
+    SubObjects,
     SubRecs,
     SubSamplers,
+    SubTerms,
+    Terms,
 )
 from comb_spec_searcher.utils import compositions
 from tilings import GriddedPerm, Tiling
@@ -49,29 +52,8 @@ class Split(Constructor):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-        """
-        The split_parameters tells you what each variable is split into,
-
-        If there is k: (k_0, k_1) then we need to sum over all ways that
-        k = k_0 + k_1.
-
-        Side note: notice the similarity between this function and cartesian
-        product - if we were to instead track the size of the root using a
-        tracking assumption, then all of the complicated logic of the cartesian
-        product could become local to the Split constructor, and the recurrence
-        would just be a multiplication. This is because our Factor strategy,
-        and cartesian product strategy is implicitly using the fact that we can
-        always split the assumption covering the whole tiling with respect to
-        the factors.
-
-        # TODO: this should take into consideration the reliance profile.
-        """
-        rec = subrecs[0]
-        res = 0
-        for sub_params in self._valid_compositions(**parameters):
-            res += rec(n, **sub_params)
-        return res
+    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+        raise NotImplementedError
 
     def _valid_compositions(self, **parameters: int) -> Iterator[Dict[str, int]]:
         """
@@ -84,7 +66,12 @@ class Split(Constructor):
         """
 
         def compositions_dict(value: int, parameters: Tuple[str, ...]):
-            for comp in compositions(value, len(parameters)):
+            for comp in compositions(
+                value,
+                len(parameters),
+                (0,) * len(parameters),
+                (None,) * len(parameters),
+            ):
                 yield dict(zip(parameters, comp))
 
         def union_params(
@@ -111,8 +98,8 @@ class Split(Constructor):
                 yield new_params
 
     def get_sub_objects(
-        self, subgens: SubGens, n: int, **parameters: int
-    ) -> Iterator[Tuple[CombinatorialObject, ...]]:
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
         raise NotImplementedError
 
     def random_sample_sub_objects(
@@ -296,7 +283,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         """
         The forward direction of the underlying bijection used for object
         generation and sampling.

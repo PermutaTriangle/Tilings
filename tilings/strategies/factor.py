@@ -1,3 +1,4 @@
+from collections import Counter
 from functools import reduce
 from itertools import chain
 from operator import mul
@@ -12,7 +13,14 @@ from comb_spec_searcher import (
     StrategyFactory,
 )
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.strategies.constructor import SubGens, SubRecs, SubSamplers
+from comb_spec_searcher.typing import (
+    Parameters,
+    SubObjects,
+    SubRecs,
+    SubSamplers,
+    SubTerms,
+    Terms,
+)
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
@@ -65,7 +73,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
                 # TODO: consider skew/sum
                 new_assumption = child.forward_map_assumption(assumption)
                 if new_assumption.gps:
-                    child_var = child.get_parameter(new_assumption)
+                    child_var = child.get_assumption_parameter(new_assumption)
                     extra_parameters[idx][parent_var] = child_var
         return extra_parameters
 
@@ -85,7 +93,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         tiling: Tiling,
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         if children is None:
             children = self.decomposition_function(tiling)
         gps_to_combine = tuple(
@@ -100,7 +108,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         temp.sort()
         new_pos = [(idx[0], val[0]) for idx, val in temp]
         new_patt = Perm.to_standard(val for _, val in temp)
-        return GriddedPerm(new_patt, new_pos)
+        yield GriddedPerm(new_patt, new_pos)
 
     def forward_map(
         self,
@@ -214,6 +222,10 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
     ):
         super().__init__(parent, children, extra_parameters)
         self.interleaving_parameters = tuple(interleaving_parameters)
+        self.interleaving_indices = tuple(
+            tuple(parent.extra_parameters.index(k) for k in parameters)
+            for parameters in interleaving_parameters
+        )
 
     @staticmethod
     def is_equivalence() -> bool:
@@ -223,21 +235,25 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
     def get_equation(lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         raise NotImplementedError
 
-    def get_recurrence(self, subrecs: SubRecs, n: int, **parameters: int) -> int:
-        # multinomial counts the number of ways to interleave the values k1, ..., kn.
-        multiplier = reduce(
-            mul,
-            [
-                multinomial([parameters[k] for k in int_parameters])
-                for int_parameters in self.interleaving_parameters
-            ],
-            1,
-        )
-        return multiplier * super().get_recurrence(subrecs, n, **parameters)
+    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+        non_interleaved_terms = super().get_terms(subterms, n)
+        interleaved_terms: Terms = Counter()
+        for parameters, value in non_interleaved_terms.items():
+            # multinomial counts the number of ways to interleave the values k1, ...,kn.
+            multiplier = reduce(
+                mul,
+                [
+                    multinomial([parameters[k] for k in int_parameters])
+                    for int_parameters in self.interleaving_indices
+                ],
+                1,
+            )
+            interleaved_terms[parameters] += multiplier * value
+        return interleaved_terms
 
     def get_sub_objects(
-        self, subgens: SubGens, n: int, **parameters: int
-    ) -> Iterator[Tuple[GriddedPerm, ...]]:
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
         raise NotImplementedError
 
     def random_sample_sub_objects(
@@ -286,7 +302,11 @@ class FactorWithInterleavingStrategy(FactorStrategy):
                 for cells in self.partition
             ]
             res.append(
-                tuple(comb_class.get_parameter(ass) for ass in assumptions if ass.gps)
+                tuple(
+                    comb_class.get_assumption_parameter(ass)
+                    for ass in assumptions
+                    if ass.gps
+                )
             )
         for y in rows:
             assumptions = [
@@ -296,7 +316,11 @@ class FactorWithInterleavingStrategy(FactorStrategy):
                 for cells in self.partition
             ]
             res.append(
-                tuple(comb_class.get_parameter(ass) for ass in assumptions if ass.gps)
+                tuple(
+                    comb_class.get_assumption_parameter(ass)
+                    for ass in assumptions
+                    if ass.gps
+                )
             )
         return res
 
@@ -305,7 +329,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         tiling: Tiling,
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         raise NotImplementedError
 
     def forward_map(
