@@ -28,6 +28,7 @@ from .requirement_placement import (
     RowAndColumnPlacementFactory,
 )
 from .row_and_col_separation import RowColumnSeparationStrategy
+from .sliding import SliddingFactory, SliddingStrategy
 from .symmetry import SymmetriesFactory
 from .verification import (
     BasicVerificationStrategy,
@@ -41,6 +42,8 @@ from .verification import (
 )
 
 __all__ = [
+    "SliddingStrategy",
+    "SliddingFactory",
     # Assumptions
     "AddAssumptionFactory",
     "AddInterleavingAssumptionFactory",

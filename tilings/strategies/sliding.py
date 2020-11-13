@@ -8,7 +8,7 @@ from tilings import GriddedPerm, Tiling
 from tilings.algorithms import get_col_info, slidable_pairs, slide_column
 
 
-class SliddingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
+class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     """
     A class for a specific slidding strategy. The init probably gets the index of both
     column you slidding.
@@ -40,11 +40,11 @@ class SliddingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         raise NotImplementedError()
 
     @classmethod
-    def from_dict(cls, d: dict) -> "SliddingStrategy":
+    def from_dict(cls, d: dict) -> "SlidingStrategy":
         raise NotImplementedError()
 
 
-class SliddingFactory(StrategyFactory[Tiling]):
+class SlidingFactory(StrategyFactory[Tiling]):
     """
     A strategy factory is producing all the valid strategies of a given type that can
     apply to the given tiling.
@@ -53,9 +53,22 @@ class SliddingFactory(StrategyFactory[Tiling]):
     given tiling.
     """
 
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[SliddingStrategy]:
+    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[SlidingStrategy]:
         col_info = get_col_info(comb_class)
         return (
-            SliddingStrategy(*pair, col_info)
+            SlidingStrategy(*pair, col_info)
             for pair in slidable_pairs(comb_class, col_info)
         )
+
+    def __rep__(self) -> str:
+        return "--SlideFactoryPlaceholderRepr--"
+
+    def __str__(self) -> str:
+        return "--SlideFactoryPlaceholderStr--"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "SlidingFactory":
+        """
+        Return the strategy from the json representation.
+        """
+        raise NotImplementedError()
