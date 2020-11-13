@@ -11,7 +11,7 @@ from typing import (
     Tuple,
 )
 
-from tilings import GriddedPerm
+from tilings import GriddedPerm, TrackingAssumption
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
@@ -70,14 +70,38 @@ def slide_column(
     )
     obstructions = {obs for obs in tiling.obstructions if obs not in to_change}
     obstructions.update(_slide_obstructions(n, to_change, av_12, av_123, col_info))
+
     return type(tiling)(
         requirements=tiling.requirements,
         obstructions=obstructions,
-        assumptions=tiling.assumptions,
+        assumptions=_swap_assumptions(tiling.assumptions, av_12, av_123),
     )
 
 
 # Private helpers
+
+
+def _swap_assumptions(
+    assumptions: Iterable[TrackingAssumption], c1: int, c2: int
+) -> Iterable[TrackingAssumption]:
+    for assumption in assumptions:
+        assert all(len(gp) == 1 for gp in assumption.gps)
+        yield TrackingAssumption(
+            (
+                GriddedPerm(
+                    gp.patt,
+                    (
+                        (
+                            c2
+                            if gp.pos[0][0] == c1
+                            else (c1 if gp.pos[0][0] == c2 else gp.pos[0][0]),
+                            0,
+                        ),
+                    ),
+                )
+                for gp in assumption.gps
+            )
+        )
 
 
 def _slide_obstructions(
