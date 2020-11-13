@@ -20,6 +20,7 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         av_123_column: int,
         col_info: DefaultDict[int, DefaultDict[int, Dict[GriddedPerm, List[int]]]],
     ):
+        super().__init__(possibly_empty=True)
         self.av_12 = av_12_column
         self.av_123 = av_123_column
         self.col_info = col_info
