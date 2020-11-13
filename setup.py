@@ -28,7 +28,7 @@ setup(
     install_requires=[
         "comb-spec-searcher==2.4.0",
         "permuta==2.0.2",
-        "requests==2.24.0",
+        "requests==2.25.0",
     ],
     python_requires=">=3.6",
     classifiers=[
