@@ -78,6 +78,26 @@ def slide_column(
     )
 
 
+def slide_assumption(assumption: TrackingAssumption, c1: int, c2: int):
+    """Swap (c1,c2) if column is either one."""
+    return TrackingAssumption(
+        (
+            GriddedPerm(
+                gp.patt,
+                (
+                    (
+                        c2
+                        if gp.pos[0][0] == c1
+                        else (c1 if gp.pos[0][0] == c2 else gp.pos[0][0]),
+                        0,
+                    ),
+                ),
+            )
+            for gp in assumption.gps
+        )
+    )
+
+
 # Private helpers
 
 
@@ -86,22 +106,7 @@ def _swap_assumptions(
 ) -> Iterable[TrackingAssumption]:
     for assumption in assumptions:
         assert all(len(gp) == 1 for gp in assumption.gps)
-        yield TrackingAssumption(
-            (
-                GriddedPerm(
-                    gp.patt,
-                    (
-                        (
-                            c2
-                            if gp.pos[0][0] == c1
-                            else (c1 if gp.pos[0][0] == c2 else gp.pos[0][0]),
-                            0,
-                        ),
-                    ),
-                )
-                for gp in assumption.gps
-            )
-        )
+        yield slide_assumption(assumption, c1, c2)
 
 
 def _slide_obstructions(

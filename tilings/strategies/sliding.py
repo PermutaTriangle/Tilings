@@ -5,7 +5,12 @@ from comb_spec_searcher.strategies.strategy import (
     StrategyFactory,
 )
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import get_col_info, slidable_pairs, slide_column
+from tilings.algorithms import (
+    get_col_info,
+    slidable_pairs,
+    slide_assumption,
+    slide_column,
+)
 
 
 class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
@@ -43,6 +48,25 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     @classmethod
     def from_dict(cls, d: dict) -> "SlidingStrategy":
         raise NotImplementedError()
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[str, str], ...]:
+        if not comb_class.extra_parameters:
+            return super().extra_parameters(comb_class, children)
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        child = children[0]
+        return (
+            {
+                comb_class.get_assumption_parameter(
+                    ass
+                ): child.get_assumption_parameter(
+                    slide_assumption(ass, self.av_12, self.av_123)
+                )
+                for ass in comb_class.assumptions
+            },
+        )
 
 
 class SlidingFactory(StrategyFactory[Tiling]):
