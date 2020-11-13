@@ -20,6 +20,66 @@ if TYPE_CHECKING:
 COL_INFO = DefaultDict[int, DefaultDict[int, Dict[GriddedPerm, List[int]]]]
 
 
+def slidable_pairs(tiling: "Tiling", col_info: COL_INFO) -> Iterable[Tuple[int, int]]:
+    """Yield the column pairs possible to slide."""
+    for av_12, av_123 in product(*_fast_filter(tiling, col_info)):
+        if _slide_check_for_pair(tiling, av_12, av_123, col_info):
+            yield av_12, av_123
+
+
+def get_col_info(tiling: "Tiling") -> COL_INFO:
+    """Gather data about columns needed for sliding."""
+    # {
+    #    column: {
+    #        points_in_column_or_0_for_local: {
+    #            gridded_perm: [indices in column],
+    #        },
+    #    },
+    # }
+    col_info: COL_INFO = defaultdict(lambda: defaultdict(dict))
+    for obstruction in tiling.obstructions:
+        lst, indices = obstruction.pos[0][0], []
+        for i, (_, (x, _)) in enumerate(obstruction):
+            if x == lst:
+                indices.append(i)
+            else:
+                col_info[lst][len(indices)][obstruction] = indices
+                indices = [i]
+            lst = x
+        cnt = 0 if len(indices) == len(obstruction) else len(indices)
+        col_info[lst][cnt][obstruction] = indices
+    return col_info
+
+
+def slide_column(
+    tiling: "Tiling", av_12: int, av_123: int, col_info: COL_INFO
+) -> "Tiling":
+    """Slide the columns av_12 and av_123 and return the resulting tiling. This
+    assumes all checks have been performed and we are allowed to slide these columns.
+    """
+    n = len(next(iter(col_info[av_123][0])))
+    to_change = set(
+        chain(
+            col_info[av_12][0],
+            col_info[av_12][1],
+            col_info[av_123][0],
+            col_info[av_123][1],
+            col_info[av_123][2],
+            col_info[av_123][n - 1],
+        )
+    )
+    obstructions = {obs for obs in tiling.obstructions if obs not in to_change}
+    obstructions.update(_slide_obstructions(n, to_change, av_12, av_123, col_info))
+    return type(tiling)(
+        requirements=tiling.requirements,
+        obstructions=obstructions,
+        assumptions=tiling.assumptions,
+    )
+
+
+# Private helpers
+
+
 def _slide_obstructions(
     n: int, to_change: Set[GriddedPerm], av_12: int, av_123: int, col_info: COL_INFO
 ) -> Iterable[GriddedPerm]:
@@ -63,32 +123,6 @@ def _slide_obstructions(
         else:
             # The other ones (one point each, one point av_12, one_point av_123) remain
             yield gp
-
-
-def _slide_column(
-    tiling: "Tiling", av_12: int, av_123: int, col_info: COL_INFO
-) -> "Tiling":
-    """Slide the columns av_12 and av_123 and return the resulting tiling. This
-    assumes all checks have been performed and we are allowed to slide these columns.
-    """
-    n = len(next(iter(col_info[av_123][0])))
-    to_change = set(
-        chain(
-            col_info[av_12][0],
-            col_info[av_12][1],
-            col_info[av_123][0],
-            col_info[av_123][1],
-            col_info[av_123][2],
-            col_info[av_123][n - 1],
-        )
-    )
-    obstructions = {obs for obs in tiling.obstructions if obs not in to_change}
-    obstructions.update(_slide_obstructions(n, to_change, av_12, av_123, col_info))
-    return type(tiling)(
-        requirements=tiling.requirements,
-        obstructions=obstructions,
-        assumptions=tiling.assumptions,
-    )
 
 
 def _av12_one_point(
@@ -263,42 +297,3 @@ def _fast_filter(tiling: "Tiling", col_info: COL_INFO) -> Tuple[Set[int], Set[in
     _fast_check_all_columns(c, av_12, av_123, col_info)
     reqs = {x for req in chain(*tiling.requirements) for x, _ in req.pos}
     return av_12 - reqs, av_123 - reqs
-
-
-def _slidable_pairs(tiling: "Tiling", col_info: COL_INFO) -> Iterable[Tuple[int, int]]:
-    """Yield the column pairs possible to slide."""
-    for av_12, av_123 in product(*_fast_filter(tiling, col_info)):
-        if _slide_check_for_pair(tiling, av_12, av_123, col_info):
-            yield av_12, av_123
-
-
-def _get_col_info(tiling: "Tiling") -> COL_INFO:
-    """
-    {
-        column: {
-            points_in_column_or_0_for_local: {
-                gridded_perm: [indices in column],
-            },
-        },
-    }
-    """
-    col_info: COL_INFO = defaultdict(lambda: defaultdict(dict))
-    for obstruction in tiling.obstructions:
-        lst, indices = obstruction.pos[0][0], []
-        for i, (_, (x, _)) in enumerate(obstruction):
-            if x == lst:
-                indices.append(i)
-            else:
-                col_info[lst][len(indices)][obstruction] = indices
-                indices = [i]
-            lst = x
-        cnt = 0 if len(indices) == len(obstruction) else len(indices)
-        col_info[lst][cnt][obstruction] = indices
-    return col_info
-
-
-def generate_all_slided_tilings(tiling: "Tiling") -> Iterable["Tiling"]:
-    """Given a tiling, yields all possible tilings by sliding slidable column pairs."""
-    col_info = _get_col_info(tiling)
-    for av_12, av_123 in _slidable_pairs(tiling, col_info):
-        yield _slide_column(tiling, av_12, av_123, col_info)

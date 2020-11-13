@@ -1,6 +1,13 @@
 # pylint: disable=no-name-in-module
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import generate_all_slided_tilings
+from tilings.algorithms import get_col_info, slidable_pairs, slide_column
+
+
+def generate_all_slided_tilings(tiling):
+    col_info = get_col_info(tiling)
+    for av_12, av_123 in slidable_pairs(tiling, col_info):
+        yield slide_column(tiling, av_12, av_123, col_info)
+
 
 t_cases = [
     (
