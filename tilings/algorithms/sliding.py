@@ -1,8 +1,9 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 from itertools import chain, product
 from typing import (
     TYPE_CHECKING,
     DefaultDict,
+    Deque,
     Dict,
     Iterable,
     List,
@@ -95,6 +96,86 @@ def slide_assumption(assumption: TrackingAssumption, c1: int, c2: int):
             )
             for gp in assumption.gps
         )
+    )
+
+
+def gp_slide(gp: GriddedPerm, c1: int = 0, c2: int = -1) -> "GriddedPerm":
+    """Sliding for gridded permutations within a boundary of 1xn."""
+    if c2 < 0:
+        c2 = c1 + 1
+    perms, cols = _gp_slide_split(gp, c1, c2)
+
+    if not perms[3]:
+        return type(gp)(
+            chain(perms[0], perms[2], perms[1], perms[5]),
+            ((x, 0) for x in chain(cols[0], cols[1], (c2,) * len(perms[1]), cols[2])),
+        )
+
+    while perms[1]:
+        val = perms[1].pop()
+        r_val, idx = min(
+            ((r_val, i) for i, r_val in enumerate(perms[3]) if r_val > val),
+            default=(-1, -1),
+        )
+        if idx != -1:
+            perms[3][idx] = val
+            perms[4].appendleft(r_val)
+        else:
+            perms[3].appendleft(val)
+            perms[4].appendleft(perms[3].pop())
+
+    return type(gp)(
+        chain(perms[0], perms[3], perms[2], perms[4], perms[5]),
+        (
+            (x, 0)
+            for x in chain(
+                cols[0],
+                (c1,) * len(perms[3]),
+                cols[1],
+                (c2,) * len(perms[4]),
+                cols[2],
+            )
+        ),
+    )
+
+
+def gp_slide_inverse(gp: GriddedPerm, c1: int = 0, c2: int = -1) -> "GriddedPerm":
+    """Inverse of sliding for gridded permutations within a boundary of 1xn."""
+    if c2 < 0:
+        c2 = c1 + 1
+    perms, cols = _gp_slide_split(gp, c1, c2)
+
+    if not perms[1]:
+        return type(gp)(
+            chain(perms[0], perms[3], perms[2], perms[5]),
+            ((x, 0) for x in chain(cols[0], (c1,) * len(perms[3]), cols[1], cols[2])),
+        )
+
+    while perms[3]:
+        val = perms[3].popleft()
+        l_val, idx = max(
+            ((l_val, i) for i, l_val in enumerate(perms[1]) if l_val < val),
+            default=(-1, -1),
+        )
+        if idx != -1:
+            perms[1][idx] = val
+            perms[4].append(l_val)
+        else:
+            perms[1].append(val)
+            perms[4].append(perms[1].popleft())
+
+    return type(gp)(
+        chain(perms[0], perms[4], perms[2], perms[1], perms[5]),
+        (
+            (x, 0)
+            for x in chain(
+                cols[0],
+                (c1,) * len(perms[4]),
+                cols[1],
+                (c2,) * len(perms[1]),
+                cols[2],
+            )
+        ),
     )
 
 
@@ -326,3 +407,44 @@ def _fast_filter(tiling: "Tiling", col_info: COL_INFO) -> Tuple[Set[int], Set[in
     _fast_check_all_columns(c, av_12, av_123, col_info)
     reqs = {x for req in chain(*tiling.requirements) for x, _ in req.pos}
     return av_12 - reqs, av_123 - reqs
+
+
+def _gp_slide_split(
+    gp: GriddedPerm, c1: int, c2: int
+) -> Tuple[
+    Tuple[Deque[int], Deque[int], Deque[int], Deque[int], Deque[int], Deque[int]],
+    Tuple[List[int], List[int], List[int]],
+]:
+    assert c1 < c2 and min(c1, c2) >= 0 and all(y == 0 for _, (x, y) in gp)
+    # Columns not affected
+    cols: Tuple[List[int], List[int], List[int]] = ([], [], [])
+
+    def _to_deque_index(x: int) -> int:
+        if x < c1:
+            cols[0].append(x)
+            return 0
+        if x == c1:
+            return 1
+        if x < c2:
+            cols[1].append(x)
+            return 2
+        if x == c2:
+            return 3
+        cols[2].append(x)
+        return 5
+
+    perms: Tuple[
+        Deque[int], Deque[int], Deque[int], Deque[int], Deque[int], Deque[int]
+    ] = (
+        deque([]),  # Columns before
+        deque([]),  # Column c1
+        deque([]),  # Columns between
+        deque([]),  # Column c2
+        deque([]),  # 'New' column
+        deque([]),  # Columns after
+    )
+
+    for val, (x, _) in gp:
+        perms[_to_deque_index(x)].append(val)
+
+    return perms, cols

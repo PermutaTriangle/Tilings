@@ -13,7 +13,14 @@ from .obstruction_inferral import (
 from .obstruction_transitivity import ObstructionTransitivity
 from .requirement_placement import RequirementPlacement
 from .row_col_separation import RowColSeparation
-from .sliding import get_col_info, slidable_pairs, slide_assumption, slide_column
+from .sliding import (
+    get_col_info,
+    gp_slide,
+    gp_slide_inverse,
+    slidable_pairs,
+    slide_assumption,
+    slide_column,
+)
 from .subclass_verification import SubclassVerificationAlgorithm
 
 __all__ = [
@@ -40,4 +47,6 @@ __all__ = [
     "slide_column",
     "slidable_pairs",
     "slide_assumption",
+    "gp_slide",
+    "gp_slide_inverse",
 ]
