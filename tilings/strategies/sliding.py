@@ -56,10 +56,9 @@ class SlidingFactory(StrategyFactory[Tiling]):
 
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[SlidingStrategy]:
         col_info = get_col_info(comb_class)
-        return (
-            SlidingStrategy(*pair, col_info)
-            for pair in slidable_pairs(comb_class, col_info)
-        )
+        for pair in slidable_pairs(comb_class, col_info):
+            print(comb_class, flush=True)
+            yield SlidingStrategy(*pair, col_info)
 
     def __repr__(self) -> str:
         return "--SlideFactoryPlaceholderRepr--"
