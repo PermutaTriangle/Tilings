@@ -1,4 +1,4 @@
-from typing import Iterator, Optional, Tuple
+from typing import DefaultDict, Dict, Iterator, List, Optional, Tuple
 
 from comb_spec_searcher.strategies.strategy import (
     DisjointUnionStrategy,
@@ -14,7 +14,12 @@ class SliddingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     column you slidding.
     """
 
-    def __init__(self, av_12_column: int, av_123_column: int, col_info):
+    def __init__(
+        self,
+        av_12_column: int,
+        av_123_column: int,
+        col_info: DefaultDict[int, DefaultDict[int, Dict[GriddedPerm, List[int]]]],
+    ):
         self.av_12 = av_12_column
         self.av_123 = av_123_column
         self.col_info = col_info
