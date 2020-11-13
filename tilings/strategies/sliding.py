@@ -60,7 +60,7 @@ class SlidingFactory(StrategyFactory[Tiling]):
             for pair in slidable_pairs(comb_class, col_info)
         )
 
-    def __rep__(self) -> str:
+    def __repr__(self) -> str:
         return "--SlideFactoryPlaceholderRepr--"
 
     def __str__(self) -> str:
