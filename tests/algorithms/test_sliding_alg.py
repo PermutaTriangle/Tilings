@@ -1,6 +1,14 @@
 # pylint: disable=no-name-in-module
+import pytest
+
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import get_col_info, slidable_pairs, slide_column
+from tilings.algorithms import (
+    get_col_info,
+    gp_slide,
+    gp_slide_inverse,
+    slidable_pairs,
+    slide_column,
+)
 
 
 def generate_all_slided_tilings(tiling):
@@ -377,3 +385,126 @@ def test_algorithms_sliding():
         if len(s) == len_before:
             break
     assert s == set(lis)
+
+
+@pytest.mark.slow
+def test_slide():
+    tcases = [
+        (
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1), ((2, 0), (2, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
+                    GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+                    GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (2, 0))),
+                ),
+                requirements=(),
+                assumptions=(),
+            ),
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 0))),
+                    GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
+                    GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+                ),
+                requirements=(),
+                assumptions=(),
+            ),
+            (1, 2),
+            7,
+        ),
+        (
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1, 2, 3, 4), ((1, 0),) * 5),
+                    GriddedPerm((0, 1), ((3, 0), (3, 0))),
+                    GriddedPerm((0, 1, 2, 3, 4), ((1, 0),) * 4 + ((3, 0),)),
+                    GriddedPerm((4, 3, 2, 1), ((0, 0),) * 4),
+                    GriddedPerm((2, 3, 1, 0), ((2, 0),) * 4),
+                    GriddedPerm((0, 2, 1), ((4, 0),) * 3),
+                    GriddedPerm((1, 2, 0), ((1, 0), (2, 0), (4, 0))),
+                    GriddedPerm((2, 1, 0), ((2, 0), (3, 0), (4, 0))),
+                    GriddedPerm(
+                        (4, 1, 2, 3, 0), ((0, 0), (0, 0), (1, 0), (1, 0), (4, 0))
+                    ),
+                    GriddedPerm(
+                        (4, 1, 2, 3, 0), ((0, 0), (0, 0), (1, 0), (3, 0), (4, 0))
+                    ),
+                )
+            ),
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1, 2, 3, 4), ((3, 0),) * 5),
+                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                    GriddedPerm((0, 1, 2, 3, 4), ((1, 0),) + ((3, 0),) * 4),
+                    GriddedPerm((4, 3, 2, 1), ((0, 0),) * 4),
+                    GriddedPerm((2, 3, 1, 0), ((2, 0),) * 4),
+                    GriddedPerm((0, 2, 1), ((4, 0),) * 3),
+                    GriddedPerm((1, 2, 0), ((1, 0), (2, 0), (4, 0))),
+                    GriddedPerm((2, 1, 0), ((2, 0), (3, 0), (4, 0))),
+                    GriddedPerm(
+                        (4, 1, 2, 3, 0), ((0, 0), (0, 0), (3, 0), (3, 0), (4, 0))
+                    ),
+                    GriddedPerm(
+                        (4, 1, 2, 3, 0), ((0, 0), (0, 0), (1, 0), (3, 0), (4, 0))
+                    ),
+                )
+            ),
+            (1, 3),
+            6,
+        ),
+        (
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                    GriddedPerm((1, 2, 3, 0), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                    GriddedPerm((1, 2, 3, 0), ((0, 0), (1, 0), (2, 0), (2, 0))),
+                ),
+                requirements=(((GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (2, 0))),),)),
+            ),
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                    GriddedPerm((1, 2, 3, 0), ((1, 0), (1, 0), (2, 0), (2, 0))),
+                    GriddedPerm((1, 2, 3, 0), ((0, 0), (1, 0), (2, 0), (2, 0))),
+                ),
+                requirements=(((GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (2, 0))),),)),
+            ),
+            (),  # default
+            7,
+        ),
+    ]
+
+    for t1, t2, cols, up_to in tcases:
+        visited = set()
+        expected = set(t2.gridded_perms(up_to))
+        for gp in t1.gridded_perms(up_to):
+            sl = gp_slide(gp, *cols)
+            assert sl not in visited
+            visited.add(sl)
+            assert sl in expected
+            expected.remove(sl)
+        assert len(expected) == 0
+
+        visited = set()
+        expected = set(t1.gridded_perms(up_to))
+        for gp in t2.gridded_perms(up_to):
+            sl = gp_slide_inverse(gp, *cols)
+            assert sl not in visited
+            visited.add(sl)
+            assert sl in expected
+            expected.remove(sl)
+        assert len(expected) == 0

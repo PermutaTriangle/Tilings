@@ -4,7 +4,6 @@ from comb_spec_searcher.strategies.strategy import (
     DisjointUnionStrategy,
     StrategyFactory,
 )
-from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
     get_col_info,
@@ -46,7 +45,6 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
-        # TODO: generalize gp_slide to disregard order
         if self.av_12 < self.av_123:
             yield from (
                 gp_slide_inverse(gp, self.av_12, self.av_123)
@@ -54,16 +52,9 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 if gp is not None
             )
         else:
-            for gp in gps:
-                if gp is None:
-                    continue
-                p = list(range(len(gp)))
-                p[self.av_123] = self.av_12
-                p[self.av_12] = self.av_123
-                perm = Perm(p)
-                yield gp_slide_inverse(
-                    gp.permute_columns(perm), self.av_123, self.av_12
-                ).permute_columns(perm.inverse())
+            yield from (
+                gp_slide(gp, self.av_123, self.av_12) for gp in gps if gp is not None
+            )
 
     def forward_map(
         self,
@@ -71,15 +62,9 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         gp: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm]:
-        # TODO: generalize gp_slide_inv to disregard order
         if self.av_123 < self.av_12:
             return (gp_slide(gp, self.av_123, self.av_12),)
-        p = list(range(len(gp)))
-        p[self.av_123] = self.av_12
-        p[self.av_12] = self.av_123
-        perm = Perm(p)
-        gp.permute_columns(perm)
-        return (gp_slide(gp, self.av_12, self.av_123).permute_columns(perm.inverse()),)
+        return (gp_slide_inverse(gp, self.av_12, self.av_123),)
 
     @classmethod
     def from_dict(cls, d: dict) -> "SlidingStrategy":
@@ -121,10 +106,10 @@ class SlidingFactory(StrategyFactory[Tiling]):
             yield SlidingStrategy(*pair, col_info)
 
     def __repr__(self) -> str:
-        return "--SlideFactoryPlaceholderRepr--"
+        return str(self)
 
     def __str__(self) -> str:
-        return "--SlideFactoryPlaceholderStr--"
+        return "Sliding"
 
     @classmethod
     def from_dict(cls, d: dict) -> "SlidingFactory":
