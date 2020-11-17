@@ -123,8 +123,8 @@ class _AdditionalMaps:
         return _AdditionalMaps(
             _tiling_rotate90_and_reverse,
             _tiling_rotate90_and_reverse_inverse,
-            _gp_rotate90_and_reverse,
-            _gp_rotate90_and_reverse_inverse,
+            _gp_rotate90_and_reverse(r),
+            _gp_rotate90_and_reverse_inverse(r),
         )
 
 
