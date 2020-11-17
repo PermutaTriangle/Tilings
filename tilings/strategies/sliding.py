@@ -247,7 +247,7 @@ class SlidingFactory(StrategyFactory[Tiling]):
     def _symmetries(comb_class: Tiling) -> Iterator[SlidingStrategy]:
         c, r = comb_class.dimensions
         if r == 1 and c > 1:
-            tiling = comb_class.rotate180().reverse()
+            tiling = comb_class.reverse()
             col_info = get_col_info(tiling)
             for pair in slidable_pairs(tiling, col_info):
                 yield SlidingStrategy(*pair, col_info, _AdditionalMaps.reverse(c))
@@ -256,7 +256,7 @@ class SlidingFactory(StrategyFactory[Tiling]):
             col_info = get_col_info(tiling)
             for pair in slidable_pairs(tiling, col_info):
                 yield SlidingStrategy(*pair, col_info, _AdditionalMaps.rotate90(r))
-            tiling = tiling.rotate180.reverse()
+            tiling = tiling.reverse()
             col_info = get_col_info(tiling)
             for pair in slidable_pairs(tiling, col_info):
                 yield SlidingStrategy(
