@@ -238,7 +238,6 @@ class SlidingFactory(StrategyFactory[Tiling]):
         if comb_class.dimensions[0] > 1 and comb_class.dimensions[1] == 1:
             col_info = get_col_info(comb_class)
             for pair in slidable_pairs(comb_class, col_info):
-                print(comb_class, flush=True)
                 yield SlidingStrategy(*pair, col_info)
         if self.use_symmetries:
             yield from SlidingFactory._symmetries(comb_class)
