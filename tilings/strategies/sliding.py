@@ -19,31 +19,6 @@ def _tiling_identity_map(tiling: Tiling) -> Tiling:
     return tiling
 
 
-def _tiling_reverse(tiling: Tiling) -> Tiling:
-    t: Tiling = tiling.reverse()
-    return t
-
-
-def _tiling_rotate90(tiling: Tiling) -> Tiling:
-    t: Tiling = tiling.rotate90()
-    return t
-
-
-def _tiling_rotate90_inverse(tiling: Tiling) -> Tiling:
-    t: Tiling = tiling.rotate270()
-    return t
-
-
-def _tiling_rotate90_and_reverse(tiling: Tiling) -> Tiling:
-    t: Tiling = tiling.rotate90().reverse()
-    return t
-
-
-def _tiling_rotate90_and_reverse_inverse(tiling: Tiling) -> Tiling:
-    t: Tiling = tiling.reverse().rotate270()
-    return t
-
-
 def _gp_identity_map(gp: GriddedPerm) -> GriddedPerm:
     return gp
 
@@ -103,8 +78,8 @@ class _AdditionalMaps:
     @classmethod
     def reverse(cls, c: int) -> "_AdditionalMaps":
         return _AdditionalMaps(
-            _tiling_reverse,
-            _tiling_reverse,
+            Tiling.reverse,
+            Tiling.reverse,
             _gp_reverse(c),
             _gp_reverse(c),
         )
@@ -112,8 +87,8 @@ class _AdditionalMaps:
     @classmethod
     def rotate90(cls, r: int) -> "_AdditionalMaps":
         return _AdditionalMaps(
-            _tiling_rotate90,
-            _tiling_rotate90_inverse,
+            Tiling.rotate90,
+            Tiling.rotate270,
             _gp_rotate90(r),
             _gp_rotate90_inverse(r),
         )
@@ -121,8 +96,8 @@ class _AdditionalMaps:
     @classmethod
     def rotate90_and_reverse(cls, r: int) -> "_AdditionalMaps":
         return _AdditionalMaps(
-            _tiling_rotate90_and_reverse,
-            _tiling_rotate90_and_reverse_inverse,
+            Tiling.antidiagonal,
+            Tiling.antidiagonal,
             _gp_rotate90_and_reverse(r),
             _gp_rotate90_and_reverse_inverse(r),
         )
@@ -130,7 +105,7 @@ class _AdditionalMaps:
 
 class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     """
-    A class for a specific slidding strategy. The init probably gets the index of both
+    A class for a specific slidding strategy. The init gets the index of both
     column you slidding.
     """
 
@@ -222,13 +197,7 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
 
 class SlidingFactory(StrategyFactory[Tiling]):
-    """
-    A strategy factory is producing all the valid strategies of a given type that can
-    apply to the given tiling.
-
-    Here you want the call the method to return all the valid sliding strategy for the
-    given tiling.
-    """
+    """A strategy factory that produces all valid slides for a tiling."""
 
     def __init__(self, use_symmetries: bool = False):
         super().__init__()
