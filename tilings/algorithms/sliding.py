@@ -26,6 +26,11 @@ class Sliding:
         self.tiling = tiling
         self.col_info: COL_INFO = Sliding._get_col_info(self.tiling)
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        return self.tiling == other.tiling
+
     def slidable_pairs(self) -> Iterable[Tuple[int, int]]:
         """Yield the column pairs possible to slide."""
         for av_12, av_123 in product(*self._fast_filter()):

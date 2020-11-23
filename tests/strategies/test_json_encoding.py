@@ -1,3 +1,4 @@
+# pylint: disable=no-name-in-module, import-error
 import json
 from itertools import product
 
@@ -6,7 +7,8 @@ import pytest
 from comb_spec_searcher import Strategy
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
-from tilings import GriddedPerm
+from tilings import GriddedPerm, Tiling
+from tilings.algorithms import Sliding
 from tilings.strategies import (
     AllPlacementsFactory,
     BasicVerificationStrategy,
@@ -49,7 +51,7 @@ from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
-from tilings.strategies.sliding import SlidingStrategy
+from tilings.strategies.sliding import SlidingStrategy, _AdditionalMaps
 
 
 def assert_same_strategy(s1, s2):
@@ -290,15 +292,32 @@ def use_symmetries(strategy):
 
 
 def sliding_strategy_arguments(strategy):
-    return [
+    t = Tiling(
+        obstructions=(
+            GriddedPerm((0, 1), ((1, 0), (1, 0))),
+            GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+            GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 0))),
+            GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
+            GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 0))),
+            GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
+            GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+        ),
+        requirements=(),
+        assumptions=(),
+    )
+    lis = [
         strategy(
             av_12_column=av_12_column,
             av_123_column=av_123_column,
-            col_info=col_info,
+            sliding=sliding,
             maps=maps,
         )
-        for (av_12_column, av_123_column), col_info, maps in product(...)
+        for av_12_column, av_123_column, sliding, maps in product(
+            (1,), (0, 2), (Sliding(t),), (_AdditionalMaps(),)
+        )
     ]
+    return lis
 
 
 strategy_objects = (
@@ -370,6 +389,8 @@ strategy_objects = (
 )
 
 # TODO add tests for: ComponentFusionStrategy, FusionStrategy
+
+lis = strategy_objects[300:]
 
 
 @pytest.mark.parametrize("strategy", strategy_objects)

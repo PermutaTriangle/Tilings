@@ -58,10 +58,14 @@ def _gp_rotate90_and_reverse_inverse(r: int) -> Callable[[GriddedPerm], GriddedP
 class _AdditionalMaps:
     def __init__(
         self,
+        identifier: int = 0,
+        param: int = 0,
         t_inv: Callable[[Tiling], Tiling] = _tiling_identity_map,
         g_map: Callable[[GriddedPerm], GriddedPerm] = _gp_identity_map,
         g_inv: Callable[[GriddedPerm], GriddedPerm] = _gp_identity_map,
     ) -> None:
+        self.identifier = identifier
+        self.param = param
         self.t_inv = t_inv
         self.g_map = g_map
         self.g_inv = g_inv
@@ -69,6 +73,8 @@ class _AdditionalMaps:
     @classmethod
     def reverse(cls, c: int) -> "_AdditionalMaps":
         return _AdditionalMaps(
+            1,
+            c,
             Tiling.reverse,
             _gp_reverse(c),
             _gp_reverse(c),
@@ -77,6 +83,8 @@ class _AdditionalMaps:
     @classmethod
     def rotate90(cls, r: int) -> "_AdditionalMaps":
         return _AdditionalMaps(
+            2,
+            r,
             Tiling.rotate270,
             _gp_rotate90(r),
             _gp_rotate90_inverse(r),
@@ -85,10 +93,33 @@ class _AdditionalMaps:
     @classmethod
     def rotate90_and_reverse(cls, r: int) -> "_AdditionalMaps":
         return _AdditionalMaps(
+            3,
+            r,
             Tiling.antidiagonal,
             _gp_rotate90_and_reverse(r),
             _gp_rotate90_and_reverse_inverse(r),
         )
+
+    def to_jsonable(self) -> dict:
+        """Return a dictionary form of the strategy."""
+        return {"identifier": self.identifier, "param": self.param}
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "_AdditionalMaps":
+        """Create instance from dictionary."""
+        _id = d["identifier"]
+        if _id == 0:
+            return cls()
+        if _id == 1:
+            return cls.reverse(d["param"])
+        if _id == 2:
+            return cls.rotate90(d["param"])
+        return cls.rotate90_and_reverse(d["param"])
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        return self.identifier == other.identifier
 
 
 class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
@@ -161,10 +192,6 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             ),
         )
 
-    @classmethod
-    def from_dict(cls, d: dict) -> "SlidingStrategy":
-        raise NotImplementedError()
-
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
@@ -182,6 +209,26 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 )
                 for ass in comb_class.assumptions
             },
+        )
+
+    def to_jsonable(self) -> dict:
+        """Return a dictionary form of the strategy."""
+        return {
+            "class_module": "tilings.strategies.sliding",
+            "strategy_class": "SlidingStrategy",
+            "av_12_column": self.av_12,
+            "av_123_column": self.av_123,
+            "tiling": self.sliding.tiling.to_jsonable(),
+            "maps": self.maps.to_jsonable(),
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "SlidingStrategy":
+        return cls(
+            d["av_12_column"],
+            d["av_123_column"],
+            Sliding(Tiling.from_dict(d["tiling"])),
+            _AdditionalMaps.from_dict(d["maps"]),
         )
 
 
@@ -226,9 +273,14 @@ class SlidingFactory(StrategyFactory[Tiling]):
     def __str__(self) -> str:
         return "Sliding"
 
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["use_symmetries"] = self.use_symmetries
+        return d
+
     @classmethod
     def from_dict(cls, d: dict) -> "SlidingFactory":
         """
         Return the strategy from the json representation.
         """
-        raise NotImplementedError()
+        return cls(**d)

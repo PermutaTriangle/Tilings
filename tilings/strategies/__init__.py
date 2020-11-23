@@ -61,7 +61,7 @@ __all__ = [
     "FactorFactory",
     # Equivalence
     "PatternPlacementFactory",
-    "SlidingStrategy",
+    "SlidingFactory",
     # Fusion
     "ComponentFusionFactory",
     "FusionFactory",
