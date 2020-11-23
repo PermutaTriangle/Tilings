@@ -6,8 +6,8 @@ import pytest
 from permuta import Perm
 from permuta.misc import DIRS
 from tilings import strategies as strat
-from tilings.strategy_pack import TileScopePack
 from tilings.strategies import SlidingFactory
+from tilings.strategy_pack import TileScopePack
 
 
 def assert_same_pack(sp1, sp2):
