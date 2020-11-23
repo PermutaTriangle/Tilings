@@ -33,6 +33,7 @@ from tilings.strategies import (
     RowAndColumnPlacementFactory,
     RowColumnSeparationStrategy,
     ShortObstructionVerificationStrategy,
+    SlidingFactory,
     SplittingStrategy,
     SubclassVerificationFactory,
     SubobstructionInferralFactory,
@@ -48,6 +49,7 @@ from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
+from tilings.strategies.sliding import SlidingStrategy
 
 
 def assert_same_strategy(s1, s2):
@@ -283,6 +285,22 @@ def row_col_partial_ignoreparent_direction(strategy):
     ]
 
 
+def use_symmetries(strategy):
+    return [strategy(use_symmetries=False), strategy(use_symmetries=True)]
+
+
+def sliding_strategy_arguments(strategy):
+    return [
+        strategy(
+            av_12_column=av_12_column,
+            av_123_column=av_123_column,
+            col_info=col_info,
+            maps=maps,
+        )
+        for (av_12_column, av_123_column), col_info, maps in product(...)
+    ]
+
+
 strategy_objects = (
     maxreqlen_extrabasis_ignoreparent_one_cell_only(CellInsertionFactory)
     + ignoreparent(FactorInsertionFactory)
@@ -331,6 +349,8 @@ strategy_objects = (
     )
     + maxreqlen_extrabasis_ignoreparent_maxnumreq(RootInsertionFactory)
     + row_col_partial_ignoreparent_direction(RowAndColumnPlacementFactory)
+    + use_symmetries(SlidingFactory)
+    + sliding_strategy_arguments(SlidingStrategy)
     + [RowColumnSeparationStrategy(), SubobstructionInferralFactory()]
     + [FusionStrategy(row_idx=1)]
     + [FusionStrategy(col_idx=3)]
