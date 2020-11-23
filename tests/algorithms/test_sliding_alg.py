@@ -2,19 +2,13 @@
 import pytest
 
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import (
-    get_col_info,
-    gp_slide,
-    gp_slide_inverse,
-    slidable_pairs,
-    slide_column,
-)
+from tilings.algorithms import Sliding
 
 
 def generate_all_slided_tilings(tiling):
-    col_info = get_col_info(tiling)
-    for av_12, av_123 in slidable_pairs(tiling, col_info):
-        yield slide_column(tiling, av_12, av_123, col_info)
+    sliding = Sliding(tiling)
+    for av_12, av_123 in sliding.slidable_pairs():
+        yield sliding.slide_column(av_12, av_123)
 
 
 t_cases = [
@@ -492,7 +486,7 @@ def test_slide():
         visited = set()
         expected = set(t2.gridded_perms(up_to))
         for gp in t1.gridded_perms(up_to):
-            sl = gp_slide(gp, *cols)
+            sl = Sliding.slide_gp(gp, *cols)
             assert sl not in visited
             visited.add(sl)
             assert sl in expected
@@ -502,7 +496,7 @@ def test_slide():
         visited = set()
         expected = set(t1.gridded_perms(up_to))
         for gp in t2.gridded_perms(up_to):
-            sl = gp_slide_inverse(gp, *cols)
+            sl = Sliding.slide_gp_inverse(gp, *cols)
             assert sl not in visited
             visited.add(sl)
             assert sl in expected
