@@ -97,6 +97,10 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
         return False
 
     @staticmethod
+    def is_two_way(comb_class: Tiling):
+        return False
+
+    @staticmethod
     def decomposition_function(tiling: Tiling) -> Optional[Tuple[Tiling]]:
         if not tiling.assumptions:
             return None

@@ -702,6 +702,17 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def can_be_equivalent() -> bool:
         return False
 
+    def is_two_way(self, comb_class: Tiling):
+        algo = self.fusion_algorithm(comb_class)
+        new_ass = algo.new_assumption()
+        fused_assumptions = (
+            ass.__class__(gps)
+            for ass, gps in zip(
+                algo._tiling.assumptions, algo.assumptions_fuse_counters
+            )
+        )
+        return new_ass in fused_assumptions
+
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> FusionConstructor:

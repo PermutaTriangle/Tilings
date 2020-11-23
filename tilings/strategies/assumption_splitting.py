@@ -153,6 +153,10 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     def can_be_equivalent() -> bool:
         return False
 
+    @staticmethod
+    def is_two_way(comb_class: Tiling):
+        return False
+
     def decomposition_function(self, tiling: Tiling) -> Optional[Tuple[Tiling]]:
         if not tiling.assumptions:
             return None
