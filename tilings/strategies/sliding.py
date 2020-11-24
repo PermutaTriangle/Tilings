@@ -1,6 +1,5 @@
 from typing import Callable, Dict, Iterator, Optional, Tuple
 
-from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.strategies.strategy import (
     DisjointUnionStrategy,
@@ -135,18 +134,6 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self.av_12 = av_12
         self.av_123 = av_123
         self.symmetry_type = symmetry_type
-
-    def __call__(
-        self,
-        comb_class: Tiling,
-        children: Tuple[Tiling, ...] = None,
-        **kwargs,
-    ) -> Rule[Tiling, GriddedPerm]:
-        if children is None:
-            children = self.decomposition_function(comb_class)
-            if children is None:
-                raise StrategyDoesNotApply("Strategy does not apply")
-        return Rule(self, comb_class, children=children)
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
         """Return the slidded tiling if it slides, otherwise None."""
