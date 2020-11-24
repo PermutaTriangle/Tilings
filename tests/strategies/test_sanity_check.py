@@ -1,5 +1,6 @@
 import pytest
 
+from comb_spec_searcher.strategies.constructor import DisjointUnion
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
 from tilings.strategies.fusion import FusionStrategy
@@ -56,7 +57,7 @@ def rules_to_check():
             )
         )
         .to_equivalence_rule()
-        .to_reverse_rule(),
+        .to_reverse_rule(0),
         FusionStrategy(col_idx=1, tracked=True)(
             Tiling(
                 obstructions=(
@@ -140,7 +141,7 @@ def rules_to_check():
             )
         )
         .to_equivalence_rule()
-        .to_reverse_rule(),
+        .to_reverse_rule(0),
     ]
 
 
@@ -149,6 +150,13 @@ def test_sanity_check_rules(rules_to_check):
         print(rule)
         for n in range(6):
             assert rule.sanity_check(n)
+
+        if isinstance(rule.constructor, DisjointUnion):
+            for idx in range(len(rule.children)):
+                reversed_rule = rule.to_reverse_rule(idx)
+                print(reversed_rule)
+                for n in range(6):
+                    assert reversed_rule.sanity_check(n)
 
 
 def test_sanity_check_big_row_placement():
