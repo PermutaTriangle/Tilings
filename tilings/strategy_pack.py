@@ -401,6 +401,9 @@ class TileScopePack(StrategyPack):
         rowcol_strat = strat.RowAndColumnPlacementFactory(
             place_row=place_row, place_col=place_col, partial=partial
         )
+        expansion_strats = [[rowcol_strat]]
+        if partial:
+            expansion_strats.append([strat.PatternPlacementFactory(point_only=True)])
         return TileScopePack(
             initial_strats=[strat.FactorFactory()],
             ver_strats=[
@@ -413,7 +416,7 @@ class TileScopePack(StrategyPack):
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityFactory(),
             ],
-            expansion_strats=[[rowcol_strat]],
+            expansion_strats=expansion_strats,
             name=name,
         )
 
