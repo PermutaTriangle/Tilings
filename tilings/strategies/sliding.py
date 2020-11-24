@@ -1,11 +1,15 @@
 from typing import Callable, Dict, Iterator, Optional, Tuple
 
+from comb_spec_searcher.exception import StrategyDoesNotApply
+from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.strategies.strategy import (
     DisjointUnionStrategy,
     StrategyFactory,
 )
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Sliding
+
+_NO_SYMMETRY, _ROTATE, _REVERSE, _ROTATE_AND_REVERSE = range(4)
 
 
 def _tiling_identity_map(tiling: Tiling) -> Tiling:
@@ -58,14 +62,12 @@ def _gp_rotate90_and_reverse_inverse(r: int) -> Callable[[GriddedPerm], GriddedP
 class _AdditionalMaps:
     def __init__(
         self,
-        identifier: int = 0,
-        param: int = 0,
+        t_map: Callable[[Tiling], Tiling] = _tiling_identity_map,
         t_inv: Callable[[Tiling], Tiling] = _tiling_identity_map,
         g_map: Callable[[GriddedPerm], GriddedPerm] = _gp_identity_map,
         g_inv: Callable[[GriddedPerm], GriddedPerm] = _gp_identity_map,
     ) -> None:
-        self.identifier = identifier
-        self.param = param
+        self.t_map = t_map
         self.t_inv = t_inv
         self.g_map = g_map
         self.g_inv = g_inv
@@ -73,8 +75,7 @@ class _AdditionalMaps:
     @classmethod
     def reverse(cls, c: int) -> "_AdditionalMaps":
         return _AdditionalMaps(
-            1,
-            c,
+            Tiling.reverse,
             Tiling.reverse,
             _gp_reverse(c),
             _gp_reverse(c),
@@ -83,8 +84,7 @@ class _AdditionalMaps:
     @classmethod
     def rotate90(cls, r: int) -> "_AdditionalMaps":
         return _AdditionalMaps(
-            2,
-            r,
+            Tiling.rotate90,
             Tiling.rotate270,
             _gp_rotate90(r),
             _gp_rotate90_inverse(r),
@@ -93,42 +93,35 @@ class _AdditionalMaps:
     @classmethod
     def rotate90_and_reverse(cls, r: int) -> "_AdditionalMaps":
         return _AdditionalMaps(
-            3,
-            r,
+            Tiling.antidiagonal,
             Tiling.antidiagonal,
             _gp_rotate90_and_reverse(r),
             _gp_rotate90_and_reverse_inverse(r),
         )
 
-    def to_jsonable(self) -> dict:
-        """Return a dictionary form of the strategy."""
-        return {"identifier": self.identifier, "param": self.param}
-
     @classmethod
-    def from_dict(cls, d: dict) -> "_AdditionalMaps":
-        """Create instance from dictionary."""
-        _id = d["identifier"]
-        if _id == 0:
+    def enum_to_map(cls, symmetry_type: int, tiling_size: int) -> "_AdditionalMaps":
+        if symmetry_type == _NO_SYMMETRY:
             return cls()
-        if _id == 1:
-            return cls.reverse(d["param"])
-        if _id == 2:
-            return cls.rotate90(d["param"])
-        return cls.rotate90_and_reverse(d["param"])
+        if symmetry_type == _REVERSE:
+            return cls.reverse(tiling_size)
+        if symmetry_type == _ROTATE:
+            return cls.rotate90(tiling_size)
+        if symmetry_type == _ROTATE_AND_REVERSE:
+            return cls.rotate90_and_reverse(tiling_size)
+        raise ValueError("Unknown symmetry type")
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, type(self)):
-            return False
-        return self.identifier == other.identifier
-
-    def __str__(self) -> str:
-        if self.identifier == 0:
-            return "symmetries: []"
-        if self.identifier == 1:
-            return "symmetries: [reverse]"
-        if self.identifier == 2:
-            return "symmetries: [rotate90]"
-        return "symmetries: [rotate90, reverse]"
+    @staticmethod
+    def enum_to_str(symmetry_type: int) -> str:
+        if symmetry_type == _NO_SYMMETRY:
+            return "no symmetry"
+        if symmetry_type == _REVERSE:
+            return "reverse"
+        if symmetry_type == _ROTATE:
+            return "rotate"
+        if symmetry_type == _ROTATE_AND_REVERSE:
+            return "antidiagonal"
+        raise ValueError("Unknown symmetry type")
 
 
 class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
@@ -137,26 +130,33 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     column you slidding.
     """
 
-    def __init__(
-        self,
-        av_12_column: int,
-        av_123_column: int,
-        sliding: Sliding,
-        maps: _AdditionalMaps = _AdditionalMaps(),
-    ):
+    def __init__(self, av_12: int, av_123: int, symmetry_type: int):
         super().__init__(possibly_empty=False)
-        self.av_12 = av_12_column
-        self.av_123 = av_123_column
-        self.sliding = sliding
-        self.maps = maps
+        self.av_12 = av_12
+        self.av_123 = av_123
+        self.symmetry_type = symmetry_type
 
-    def decomposition_function(self, _tiling: Tiling) -> Tuple[Tiling]:
+    def __call__(
+        self,
+        comb_class: Tiling,
+        children: Tuple[Tiling, ...] = None,
+        **kwargs,
+    ) -> Rule[Tiling, GriddedPerm]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        return Rule(self, comb_class, children=children)
+
+    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
         """Return the slidded tiling if it slides, otherwise None."""
-
-        return (self.maps.t_inv(self.sliding.slide_column(self.av_12, self.av_123)),)
+        maps = _AdditionalMaps.enum_to_map(self.symmetry_type, max(tiling.dimensions))
+        sliding = Sliding(maps.t_map(tiling))
+        return (maps.t_inv(sliding.slide_column(self.av_12, self.av_123)),)
 
     def formal_step(self) -> str:
-        return f"slide {self.av_123} through {self.av_12}"
+        sym = _AdditionalMaps.enum_to_str(self.symmetry_type)
+        return f"slide {self.av_123} through {self.av_12} after applying {sym}"
 
     def backward_map(
         self,
@@ -164,21 +164,18 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
+        maps = _AdditionalMaps.enum_to_map(self.symmetry_type, max(tiling.dimensions))
         if self.av_12 < self.av_123:
             yield from (
-                self.maps.g_inv(
-                    Sliding.slide_gp_inverse(
-                        self.maps.g_map(gp), self.av_12, self.av_123
-                    )
+                maps.g_inv(
+                    Sliding.slide_gp_inverse(maps.g_map(gp), self.av_12, self.av_123)
                 )
                 for gp in gps
                 if gp is not None
             )
         else:
             yield from (
-                self.maps.g_inv(
-                    Sliding.slide_gp(self.maps.g_map(gp), self.av_123, self.av_12)
-                )
+                maps.g_inv(Sliding.slide_gp(maps.g_map(gp), self.av_123, self.av_12))
                 for gp in gps
                 if gp is not None
             )
@@ -189,15 +186,14 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         gp: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm]:
+        maps = _AdditionalMaps.enum_to_map(self.symmetry_type, max(tiling.dimensions))
         if self.av_123 < self.av_12:
             return (
-                self.maps.g_inv(
-                    Sliding.slide_gp(self.maps.g_map(gp), self.av_123, self.av_12)
-                ),
+                maps.g_inv(Sliding.slide_gp(maps.g_map(gp), self.av_123, self.av_12)),
             )
         return (
-            self.maps.g_inv(
-                Sliding.slide_gp_inverse(self.maps.g_map(gp), self.av_12, self.av_123)
+            maps.g_inv(
+                Sliding.slide_gp_inverse(maps.g_map(gp), self.av_12, self.av_123)
             ),
         )
 
@@ -209,12 +205,17 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(comb_class)
         child = children[0]
+        maps = _AdditionalMaps.enum_to_map(
+            self.symmetry_type, max(comb_class.dimensions)
+        )
         return (
             {
                 comb_class.get_assumption_parameter(
                     ass
                 ): child.get_assumption_parameter(
-                    Sliding.slide_assumption(ass, self.av_12, self.av_123)
+                    Sliding.slide_assumption(
+                        ass, self.av_12, self.av_123, maps.g_map, maps.g_inv
+                    )
                 )
                 for ass in comb_class.assumptions
             },
@@ -225,23 +226,38 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return {
             "class_module": "tilings.strategies.sliding",
             "strategy_class": "SlidingStrategy",
-            "av_12_column": self.av_12,
-            "av_123_column": self.av_123,
-            "tiling": self.sliding.tiling.to_jsonable(),
-            "maps": self.maps.to_jsonable(),
+            "av_12": self.av_12,
+            "av_123": self.av_123,
+            "symmetry_type": self.symmetry_type,
         }
 
     @classmethod
     def from_dict(cls, d: dict) -> "SlidingStrategy":
         return cls(
-            d["av_12_column"],
-            d["av_123_column"],
-            Sliding(Tiling.from_dict(d["tiling"])),
-            _AdditionalMaps.from_dict(d["maps"]),
+            d["av_12"],
+            d["av_123"],
+            d["symmetry_type"],
         )
 
     def __str__(self) -> str:
-        return f"sliding {self.av_123} through {self.av_12} after applying {self.maps}"
+        return self.formal_step()
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(av_12={self.av_12}, av_123={self.av_123}, "
+            f"symmetry_type={self.symmetry_type})"
+        )
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        return all(
+            (
+                self.av_12 == other.av_12,
+                self.av_123 == other.av_123,
+                self.symmetry_type == other.symmetry_type,
+            )
+        )
 
 
 class SlidingFactory(StrategyFactory[Tiling]):
@@ -251,33 +267,38 @@ class SlidingFactory(StrategyFactory[Tiling]):
         super().__init__()
         self.use_symmetries = use_symmetries
 
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[SlidingStrategy]:
+    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         if comb_class.dimensions[0] > 1 and comb_class.dimensions[1] == 1:
             sliding = Sliding(comb_class)
             for pair in sliding.slidable_pairs():
-                yield SlidingStrategy(*pair, sliding)
+                child = (sliding.slide_column(*pair),)
+                yield SlidingStrategy(*pair, _NO_SYMMETRY)(comb_class, child)
         if self.use_symmetries:
             yield from SlidingFactory._symmetries(comb_class)
 
     @staticmethod
-    def _symmetries(comb_class: Tiling) -> Iterator[SlidingStrategy]:
+    def _symmetries(comb_class: Tiling) -> Iterator[Rule]:
         c, r = comb_class.dimensions
         if r == 1 and c > 1:
             tiling = comb_class.reverse()
             sliding = Sliding(tiling)
             for pair in sliding.slidable_pairs():
-                yield SlidingStrategy(*pair, sliding, _AdditionalMaps.reverse(c))
+                maps = _AdditionalMaps.enum_to_map(_REVERSE, c)
+                child = (maps.t_inv(sliding.slide_column(*pair)),)
+                yield SlidingStrategy(*pair, _REVERSE)(comb_class, child)
         elif r > 1 and c == 1:
             tiling = comb_class.rotate90()
             sliding = Sliding(tiling)
             for pair in sliding.slidable_pairs():
-                yield SlidingStrategy(*pair, sliding, _AdditionalMaps.rotate90(r))
+                maps = _AdditionalMaps.enum_to_map(_ROTATE, r)
+                child = (maps.t_inv(sliding.slide_column(*pair)),)
+                yield SlidingStrategy(*pair, _ROTATE)(comb_class, child)
             tiling = tiling.reverse()
             sliding = Sliding(tiling)
             for pair in sliding.slidable_pairs():
-                yield SlidingStrategy(
-                    *pair, sliding, _AdditionalMaps.rotate90_and_reverse(r)
-                )
+                maps = _AdditionalMaps.enum_to_map(_ROTATE_AND_REVERSE, r)
+                child = (maps.t_inv(sliding.slide_column(*pair)),)
+                yield SlidingStrategy(*pair, _ROTATE_AND_REVERSE)(comb_class, child)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(use_symmetries={self.use_symmetries})"

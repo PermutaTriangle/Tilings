@@ -6,8 +6,7 @@ import pytest
 from comb_spec_searcher import Strategy
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
-from tilings import GriddedPerm, Tiling
-from tilings.algorithms import Sliding
+from tilings import GriddedPerm
 from tilings.strategies import (
     AllPlacementsFactory,
     BasicVerificationStrategy,
@@ -50,7 +49,7 @@ from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
-from tilings.strategies.sliding import SlidingStrategy, _AdditionalMaps
+from tilings.strategies.sliding import SlidingStrategy
 
 
 def assert_same_strategy(s1, s2):
@@ -291,30 +290,9 @@ def use_symmetries(strategy):
 
 
 def sliding_strategy_arguments(strategy):
-    t = Tiling(
-        obstructions=(
-            GriddedPerm((0, 1), ((1, 0), (1, 0))),
-            GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
-            GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
-            GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 0))),
-            GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
-            GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 0))),
-            GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
-            GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
-        ),
-        requirements=(),
-        assumptions=(),
-    )
     lis = [
-        strategy(
-            av_12_column=av_12_column,
-            av_123_column=av_123_column,
-            sliding=sliding,
-            maps=maps,
-        )
-        for av_12_column, av_123_column, sliding, maps in product(
-            (1,), (0, 2), (Sliding(t),), (_AdditionalMaps(),)
-        )
+        strategy(av_12=av_12, av_123=av_123, symmetry_type=symmetry_type)
+        for av_12, av_123, symmetry_type in product((0, 2, 4), (1, 3, 5), (0, 1, 2, 3))
     ]
     return lis
 

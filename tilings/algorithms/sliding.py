@@ -2,6 +2,7 @@ from collections import defaultdict, deque
 from itertools import chain, product
 from typing import (
     TYPE_CHECKING,
+    Callable,
     DefaultDict,
     Deque,
     Dict,
@@ -63,22 +64,47 @@ class Sliding:
         )
 
     @staticmethod
-    def slide_assumption(assumption: TrackingAssumption, c1: int, c2: int):
+    def slide_assumption(
+        assumption: TrackingAssumption,
+        c1: int,
+        c2: int,
+        g_map: Optional[Callable[[GriddedPerm], GriddedPerm]] = None,
+        g_inv: Optional[Callable[[GriddedPerm], GriddedPerm]] = None,
+    ):
         """Swap (c1,c2) if column is either one."""
+        if g_map is None or g_inv is None:
+            return TrackingAssumption(
+                (
+                    GriddedPerm(
+                        gp.patt,
+                        (
+                            (
+                                c2
+                                if gp.pos[0][0] == c1
+                                else (c1 if gp.pos[0][0] == c2 else gp.pos[0][0]),
+                                0,
+                            ),
+                        ),
+                    )
+                    for gp in assumption.gps
+                )
+            )
         return TrackingAssumption(
             (
-                GriddedPerm(
-                    gp.patt,
-                    (
+                g_inv(
+                    GriddedPerm(
+                        gp.patt,
                         (
-                            c2
-                            if gp.pos[0][0] == c1
-                            else (c1 if gp.pos[0][0] == c2 else gp.pos[0][0]),
-                            0,
+                            (
+                                c2
+                                if gp.pos[0][0] == c1
+                                else (c1 if gp.pos[0][0] == c2 else gp.pos[0][0]),
+                                0,
+                            ),
                         ),
-                    ),
+                    )
                 )
-                for gp in assumption.gps
+                for gp in (g_map(_gp) for _gp in assumption.gps)
             )
         )
 
