@@ -171,13 +171,6 @@ class Sliding:
     @staticmethod
     def _get_col_info(tiling: "Tiling") -> COL_INFO:
         """Gather data about columns needed for sliding."""
-        # {
-        #    column: {
-        #        points_in_column_or_0_for_local: {
-        #            gridded_perm: [indices in column],
-        #        },
-        #    },
-        # }
         col_info: COL_INFO = defaultdict(lambda: defaultdict(dict))
         for obstruction in tiling.obstructions:
             lst, indices = obstruction.pos[0][0], []

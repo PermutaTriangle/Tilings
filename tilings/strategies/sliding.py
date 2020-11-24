@@ -121,6 +121,15 @@ class _AdditionalMaps:
             return False
         return self.identifier == other.identifier
 
+    def __str__(self) -> str:
+        if self.identifier == 0:
+            return "symmetries: []"
+        if self.identifier == 1:
+            return "symmetries: [reverse]"
+        if self.identifier == 2:
+            return "symmetries: [rotate90]"
+        return "symmetries: [rotate90, reverse]"
+
 
 class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     """
@@ -231,6 +240,9 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             _AdditionalMaps.from_dict(d["maps"]),
         )
 
+    def __str__(self) -> str:
+        return f"sliding {self.av_123} through {self.av_12} after applying {self.maps}"
+
 
 class SlidingFactory(StrategyFactory[Tiling]):
     """A strategy factory that produces all valid slides for a tiling."""
@@ -268,10 +280,10 @@ class SlidingFactory(StrategyFactory[Tiling]):
                 )
 
     def __repr__(self) -> str:
-        return str(self)
+        return f"{self.__class__.__name__}(use_symmetries={self.use_symmetries})"
 
     def __str__(self) -> str:
-        return "Sliding"
+        return f"Sliding{' (with symmetries)' if self.use_symmetries else ''}"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()

@@ -389,8 +389,6 @@ strategy_objects = (
 
 # TODO add tests for: ComponentFusionStrategy, FusionStrategy
 
-lis = strategy_objects[300:]
-
 
 @pytest.mark.parametrize("strategy", strategy_objects)
 def test_json_encoding(strategy):
