@@ -238,7 +238,10 @@ class Sliding:
             # If there are more than 4 types of gps number of points within column
             if (
                 len(loc_patt) == 1
-                or not loc_patt.patt.is_increasing()
+                or (
+                    not loc_patt.patt.is_increasing()
+                    and not loc_patt.patt.is_decreasing()
+                )
                 or len(col_perms) > 4
             ):
                 continue
@@ -262,7 +265,8 @@ class Sliding:
                 # * there are multipe crossing gp of length n-1 (exception if n=3)
                 # * There are no increasing patterns of length n-1
                 if (n != 3 and len(largest_crossings) > 1) or all(
-                    not p.patt.is_increasing() for p in largest_crossings
+                    (not p.patt.is_increasing() and not p.patt.is_decreasing())
+                    for p in largest_crossings
                 ):
                     continue
                 av_123.add(col)

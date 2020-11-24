@@ -74,19 +74,13 @@ class _AdditionalMaps:
     @classmethod
     def reverse(cls, c: int) -> "_AdditionalMaps":
         return _AdditionalMaps(
-            Tiling.reverse,
-            Tiling.reverse,
-            _gp_reverse(c),
-            _gp_reverse(c),
+            Tiling.reverse, Tiling.reverse, _gp_reverse(c), _gp_reverse(c),
         )
 
     @classmethod
     def rotate90(cls, r: int) -> "_AdditionalMaps":
         return _AdditionalMaps(
-            Tiling.rotate90,
-            Tiling.rotate270,
-            _gp_rotate90(r),
-            _gp_rotate90_inverse(r),
+            Tiling.rotate90, Tiling.rotate270, _gp_rotate90(r), _gp_rotate90_inverse(r),
         )
 
     @classmethod
@@ -220,11 +214,7 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "SlidingStrategy":
-        return cls(
-            d["av_12"],
-            d["av_123"],
-            d["symmetry_type"],
-        )
+        return cls(d["av_12"], d["av_123"], d["symmetry_type"],)
 
     def __str__(self) -> str:
         return self.formal_step()
@@ -259,6 +249,7 @@ class SlidingFactory(StrategyFactory[Tiling]):
             sliding = Sliding(comb_class)
             for pair in sliding.slidable_pairs():
                 child = (sliding.slide_column(*pair),)
+                print("sliding {} in\n{}\n".format(pair, comb_class))
                 yield SlidingStrategy(*pair, _NO_SYMMETRY)(comb_class, child)
         if self.use_symmetries:
             yield from SlidingFactory._symmetries(comb_class)
@@ -272,6 +263,7 @@ class SlidingFactory(StrategyFactory[Tiling]):
             for pair in sliding.slidable_pairs():
                 maps = _AdditionalMaps.enum_to_map(_REVERSE, c)
                 child = (maps.t_inv(sliding.slide_column(*pair)),)
+                print("sliding {} in\n{}\n".format(pair, tiling))
                 yield SlidingStrategy(*pair, _REVERSE)(comb_class, child)
         elif r > 1 and c == 1:
             tiling = comb_class.rotate90()
@@ -279,12 +271,14 @@ class SlidingFactory(StrategyFactory[Tiling]):
             for pair in sliding.slidable_pairs():
                 maps = _AdditionalMaps.enum_to_map(_ROTATE, r)
                 child = (maps.t_inv(sliding.slide_column(*pair)),)
+                print("sliding {} in\n{}\n".format(pair, tiling))
                 yield SlidingStrategy(*pair, _ROTATE)(comb_class, child)
             tiling = tiling.reverse()
             sliding = Sliding(tiling)
             for pair in sliding.slidable_pairs():
                 maps = _AdditionalMaps.enum_to_map(_ROTATE_AND_REVERSE, r)
                 child = (maps.t_inv(sliding.slide_column(*pair)),)
+                print("sliding {} in\n{}\n".format(pair, tiling))
                 yield SlidingStrategy(*pair, _ROTATE_AND_REVERSE)(comb_class, child)
 
     def __repr__(self) -> str:
