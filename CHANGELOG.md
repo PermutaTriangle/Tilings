@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ## [2.5.0] - 2020-11-11
+### Added
+- Added sliding strategy
+
 ### Changed
 - Updated comb_spec_searcher version for faster counting
 
