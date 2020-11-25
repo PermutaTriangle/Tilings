@@ -1,8 +1,9 @@
 import pytest
 
-from comb_spec_searcher.strategies.constructor import DisjointUnion
+from comb_spec_searcher.strategies.constructor import CartesianProduct, DisjointUnion
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
+from tilings.strategies.factor import FactorStrategy
 from tilings.strategies.fusion import FusionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
@@ -142,6 +143,28 @@ def rules_to_check():
         )
         .to_equivalence_rule()
         .to_reverse_rule(0),
+        FactorStrategy([[(0, 0)], [(1, 1)]])(
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                    GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                )
+            )
+        ),
+        FactorStrategy([[(0, 0)], [(1, 1)], [(2, 2)]])(
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                    GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                    GriddedPerm((0, 1), ((2, 2), (2, 2))),
+                    GriddedPerm((1, 0), ((2, 2), (2, 2))),
+                ),
+                requirements=(
+                    (GriddedPerm((0,), ((0, 0),)),),
+                    (GriddedPerm((0,), ((2, 2),)),),
+                ),
+            )
+        ),
     ]
 
 
@@ -151,7 +174,7 @@ def test_sanity_check_rules(rules_to_check):
         for n in range(6):
             assert rule.sanity_check(n)
 
-        if isinstance(rule.constructor, DisjointUnion):
+        if isinstance(rule.constructor, (CartesianProduct, DisjointUnion)):
             for idx in range(len(rule.children)):
                 reversed_rule = rule.to_reverse_rule(idx)
                 print(reversed_rule)
