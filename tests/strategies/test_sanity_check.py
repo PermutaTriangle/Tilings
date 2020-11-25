@@ -148,7 +148,7 @@ def rules_to_check():
                 obstructions=(
                     GriddedPerm((0, 1), ((0, 0), (0, 0))),
                     GriddedPerm((1, 0), ((1, 1), (1, 1))),
-                )
+                ),
             )
         ),
         FactorStrategy([[(0, 0)], [(1, 1)], [(2, 2)]])(
@@ -164,6 +164,53 @@ def rules_to_check():
                     (GriddedPerm((0,), ((2, 2),)),),
                 ),
             )
+        ),
+        FactorStrategy([[(0, 0)], [(1, 1)]])(
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                    GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                ),
+                assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+            )
+        ),
+        FactorStrategy([[(0, 0)], [(1, 1)], [(2, 2)]])(
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                    GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                    GriddedPerm((0, 1), ((2, 2), (2, 2))),
+                    GriddedPerm((1, 0), ((2, 2), (2, 2))),
+                ),
+                requirements=(
+                    (GriddedPerm((0,), ((0, 0),)),),
+                    (GriddedPerm((0,), ((2, 2),)),),
+                ),
+                assumptions=(
+                    TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),
+                    TrackingAssumption(
+                        (GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((2, 2),))),
+                    ),
+                ),
+            ),
+        ),
+        FactorStrategy([[(0, 0)], [(1, 1)], [(2, 2)]])(
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                    GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                    GriddedPerm((0, 1), ((2, 2), (2, 2))),
+                    GriddedPerm((1, 0), ((2, 2), (2, 2))),
+                ),
+                requirements=(
+                    (GriddedPerm((0,), ((0, 0),)),),
+                    (GriddedPerm((0,), ((2, 2),)),),
+                ),
+                assumptions=(
+                    TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),
+                    TrackingAssumption((GriddedPerm((0,), ((2, 2),)),)),
+                ),
+            ),
         ),
     ]
 
