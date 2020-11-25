@@ -17,7 +17,7 @@ from collections import Counter, defaultdict
 from functools import reduce
 from operator import mul
 from random import randint
-from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 from sympy import Eq, Expr, Function, Number, var
 
@@ -257,7 +257,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
         """
         Uses the `subterms` functions to and the `children_param_maps` to compute
         the terms of size `n`.

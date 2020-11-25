@@ -58,7 +58,9 @@ class AddAssumptionsConstructor(Constructor):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
         assert len(subterms) == 1
         return self._push_add_assumption(n, subterms[0], self._child_param_map)
 

@@ -2,7 +2,7 @@ from collections import defaultdict
 from functools import reduce
 from itertools import product
 from operator import mul
-from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from sympy import Eq, Function, var
 
@@ -52,7 +52,9 @@ class Split(Constructor):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
         raise NotImplementedError
 
     def _valid_compositions(self, **parameters: int) -> Iterator[Dict[str, int]]:

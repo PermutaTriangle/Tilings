@@ -1,7 +1,7 @@
 from collections import Counter
 from functools import reduce
 from operator import mul
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 from sympy import Eq, Function, var
 
@@ -61,8 +61,10 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
-        terms = self.disjoint_constructor.get_terms(subterms, n)
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
+        terms = self.disjoint_constructor.get_terms(parent_terms, subterms, n)
         accounted_for: Terms = Counter()
         for params, value in terms.items():
             new_params = list(params)
