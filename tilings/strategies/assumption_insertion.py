@@ -164,6 +164,14 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
             self.extra_parameters(comb_class, children)[0],
         )
 
+    def reverse_constructor(
+        self,
+        idx: int,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        raise NotImplementedError
+
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str]]:

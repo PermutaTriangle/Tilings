@@ -736,6 +736,14 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             min_right,
         )
 
+    def reverse_constructor(
+        self,
+        idx: int,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        raise NotImplementedError
+
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str]]:
