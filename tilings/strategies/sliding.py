@@ -21,7 +21,9 @@ def _gp_identity_map(gp: GriddedPerm) -> GriddedPerm:
 
 def _gp_reverse(c: int) -> Callable[[GriddedPerm], GriddedPerm]:
     def _tmp_func(gp: GriddedPerm) -> GriddedPerm:
-        return GriddedPerm(gp.patt.reverse(), ((c - x - 1, 0) for x, _ in gp.pos))
+        return GriddedPerm(
+            gp.patt.reverse(), ((c - x - 1, 0) for x, _ in reversed(gp.pos))
+        )
 
     return _tmp_func
 
