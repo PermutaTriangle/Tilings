@@ -158,8 +158,10 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
 
     def __repr__(self):
         return (
-            self.__class__.__name__
-            + f"(assumptions={repr(self.assumptions)}, workable={self.workable})"
+            f"{self.__class__.__name__}"
+            f"(assumption={self.assumption!r}, "
+            f"sub_assumption={self.assumption!r}, "
+            f"workable={self.workable})"
         )
 
 
