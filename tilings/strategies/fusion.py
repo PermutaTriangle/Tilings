@@ -37,6 +37,7 @@ from comb_spec_searcher.typing import (
 )
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import ComponentFusion, Fusion
+from tilings.strategies.rearrange_assumption import DummyConstructor
 
 __all__ = ["FusionStrategy", "ComponentFusionStrategy"]
 
@@ -744,7 +745,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
-        raise NotImplementedError
+        return DummyConstructor()
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None

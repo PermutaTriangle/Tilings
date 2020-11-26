@@ -76,7 +76,7 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
-        raise NotImplementedError
+        return DummyConstructor()
 
     @staticmethod
     def can_be_equivalent() -> bool:
