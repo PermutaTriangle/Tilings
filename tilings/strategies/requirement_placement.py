@@ -81,8 +81,8 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                     child.obstructions
                 )
                 if mapped_assumption.gps:
-                    parent_var = comb_class.get_parameter(assumption)
-                    child_var = child.get_parameter(mapped_assumption)
+                    parent_var = comb_class.get_assumption_parameter(assumption)
+                    child_var = child.get_assumption_parameter(mapped_assumption)
                     extra_parameters[0][parent_var] = child_var
         for idx, (cell, child) in enumerate(
             zip(self._placed_cells, children[1:] if self.include_empty else children)
@@ -95,8 +95,8 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 comb_class.assumptions, mapped_assumptions
             ):
                 if mapped_assumption.gps:
-                    parent_var = comb_class.get_parameter(assumption)
-                    child_var = child.get_parameter(mapped_assumption)
+                    parent_var = comb_class.get_assumption_parameter(assumption)
+                    child_var = child.get_assumption_parameter(mapped_assumption)
                     extra_parameters[idx + 1 if self.include_empty else idx][
                         parent_var
                     ] = child_var
@@ -174,17 +174,18 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         tiling: Tiling,
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> GriddedPerm:
+    ) -> Iterator[GriddedPerm]:
         if children is None:
             children = self.decomposition_function(tiling)
         idx = DisjointUnionStrategy.backward_map_index(gps)
         gp: GriddedPerm = children[idx].backward_map(cast(GriddedPerm, gps[idx]))
         if self.include_empty:
             if idx == 0:
-                return gp
+                yield gp
+                return
             idx -= 1
         placed_cell = self._placed_cell(idx)
-        return GriddedPerm(
+        yield GriddedPerm(
             gp.patt, [self.backward_cell_map(placed_cell, cell) for cell in gp.pos]
         )
 

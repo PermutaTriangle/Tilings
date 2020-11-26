@@ -34,10 +34,9 @@ jobs:
           - python: 3.9
             toxenv: py39
             os: ubuntu-latest
-          # still in alpha, include when more stable
-          #- python: 3.10-dev
-          #  toxenv: py310
-          #  os: ubuntu-latest
+          - python: 3.10-dev
+            toxenv: py310
+            os: ubuntu-latest
           - python: pypy3
             toxenv: pypy36
             os: ubuntu-latest
@@ -60,4 +59,6 @@ jobs:
       - name: run
         env:
           TOXENV: ${{ matrix.toxenv }}
-        run: tox
+        run: tox        
+      - name: setup
+        run: python setup.py install

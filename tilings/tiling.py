@@ -22,6 +22,7 @@ from typing_extensions import TypedDict
 
 from comb_spec_searcher import CombinatorialClass, VerificationStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
+from comb_spec_searcher.typing import Parameters
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_WEST
 
@@ -41,6 +42,7 @@ from .algorithms import (
     RowColSeparation,
     SubclassVerificationAlgorithm,
     SubobstructionInferral,
+    guess_obstructions,
 )
 from .assumptions import (
     SkewComponentAssumption,
@@ -49,7 +51,7 @@ from .assumptions import (
 )
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
-from .gui_luncher import run_gui
+from .gui_launcher import run_gui
 from .misc import intersection_reduce, map_cell, union_reduce
 
 __all__ = ["Tiling"]
@@ -135,7 +137,7 @@ class Tiling(CombinatorialClass):
 
             # Remove gridded perms that avoid obstructions from assumptions
             if simplify:
-                self._clean_assumptions()
+                self.clean_assumptions()
 
             # Fill empty
             if derive_empty:
@@ -331,7 +333,7 @@ class Tiling(CombinatorialClass):
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
         return (col_mapping, row_mapping, False)
 
-    def _clean_assumptions(self) -> None:
+    def clean_assumptions(self) -> None:
         """
         Clean assumptions with respect to the known obstructions.
 
@@ -344,6 +346,72 @@ class Tiling(CombinatorialClass):
             if ass.gps:
                 res.append(ass)
         self._assumptions = tuple(sorted(set(res)))
+
+    @classmethod
+    def guess_from_gridded_perms(
+        cls, gps: Iterable[GriddedPerm], max_len: int = -1
+    ) -> "Tiling":
+        """Given a collection of gridded permutations, attempt to find the Tilings T
+        such that the collection of gridded permutations belong to Grid(T). The method
+        only looks for obstructions.
+
+        Raises:
+        ValueError: If the collection does not contain a pattern that is not avoided
+        by all.
+        """
+        return cls(
+            obstructions=guess_obstructions(gps, max_len),
+            requirements=(),
+            assumptions=(),
+        )
+
+    def generate_known_equinumerous_tilings(self) -> Set["Tiling"]:
+        """Generate all tilings from known equinumerous mappings."""
+        stack, visited = [self], {self}
+        while stack:
+            for neighbor in Tiling._equinumerous_transpositions(stack.pop()):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    stack.append(neighbor)
+        return visited
+
+    @staticmethod
+    def _equinumerous_transpositions(tiling: "Tiling") -> Iterator["Tiling"]:
+        columns, rows = tiling.dimensions
+        yield from tiling.all_symmetries()
+        yield from (tiling.column_reverse(c) for c in range(columns))
+        yield from (tiling.permute_columns(perm) for perm in Perm.of_length(columns))
+        for cell in (
+            (c, r)
+            for c in range(columns)
+            for r in range(rows)
+            if tiling.contains_all_patterns_locally_for_crossing((c, r))
+            and (
+                rows == 1
+                or all(
+                    tiling.is_empty_cell((c, _r))
+                    for _r in chain(range(0, r - 1), range(r + 1, rows))
+                )
+            )
+        ):
+            yield from Tiling._apply_all_symmetries_to_cell(tiling, cell)
+        # Add other pre-existing here:
+
+    @staticmethod
+    def _apply_all_symmetries_to_cell(
+        tiling: "Tiling", cell: Cell
+    ) -> Iterator["Tiling"]:
+        yield from (
+            tiling.apply_perm_map_to_cell(mapping, cell)
+            for mapping in (
+                lambda perm: perm.rotate(),
+                lambda perm: perm.rotate().inverse(),
+                lambda perm: perm.rotate(2),
+                lambda perm: perm.rotate(2).inverse(),
+                lambda perm: perm.rotate(3),
+                lambda perm: perm.rotate(3).inverse(),
+            )
+        )
 
     # -------------------------------------------------------------
     # Compression
@@ -581,11 +649,17 @@ class Tiling(CombinatorialClass):
 
     def add_assumptions(self, assumptions: Iterable[TrackingAssumption]) -> "Tiling":
         """Returns a new tiling with the added assumptions."""
-        return Tiling(
+        tiling = Tiling(
             self._obstructions,
             self._requirements,
             self._assumptions + tuple(assumptions),
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
         )
+        tiling.clean_assumptions()
+        return tiling
 
     def remove_assumption(self, assumption: TrackingAssumption):
         """Returns a new tiling with assumption removed."""
@@ -595,11 +669,17 @@ class Tiling(CombinatorialClass):
             raise ValueError(
                 f"following assumption not on tiling: '{assumption}'"
             ) from e
-        return Tiling(
+        tiling = Tiling(
             self._obstructions,
             self._requirements,
             self._assumptions[:idx] + self._assumptions[idx + 1 :],
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
         )
+        tiling.clean_assumptions()
+        return tiling
 
     def remove_assumptions(self):
         """
@@ -622,11 +702,17 @@ class Tiling(CombinatorialClass):
         if not self.assumptions:
             return self
         assumptions = [ass.remove_components(self) for ass in self.assumptions]
-        return self.__class__(
+        tiling = self.__class__(
             self._obstructions,
             self._requirements,
             [ass for ass in assumptions if ass.gps],
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
         )
+        tiling.clean_assumptions()
+        return tiling
 
     def fully_isolated(self) -> bool:
         """Check if all cells are isolated on their rows and columns."""
@@ -889,8 +975,7 @@ class Tiling(CombinatorialClass):
         return self._transform(inverse_cell, lambda gp: gp.inverse(inverse_cell))
 
     def antidiagonal(self) -> "Tiling":
-        """ \\
-        Flip over the anti-diagonal"""
+        """Flip over the anti-diagonal"""
 
         def antidiagonal_cell(cell: Cell) -> Cell:
             return (self.dimensions[1] - cell[1] - 1, self.dimensions[0] - cell[0] - 1)
@@ -936,6 +1021,40 @@ class Tiling(CombinatorialClass):
             if t in symmetries:
                 break
         return symmetries
+
+    def column_reverse(self, column: int) -> "Tiling":
+        """Reverse a given column in the tiling."""
+        return self._transform(lambda _c: _c, lambda gp: gp.column_reverse(column))
+
+    def row_complement(self, row: int) -> "Tiling":
+        """Changes a row to its complement."""
+        return self._transform(lambda _c: _c, lambda gp: gp.row_complement(row))
+
+    def permute_columns(self, perm: Iterable[int]) -> "Tiling":
+        """Given an initial state of columns 12...n, permute them using the provided
+        permutation.."""
+        if not isinstance(perm, Perm):
+            perm = Perm(perm)
+        assert len(perm) == self.dimensions[0]
+        return self._transform(lambda _c: _c, lambda gp: gp.permute_columns(perm))
+
+    def permute_rows(self, perm: Iterable[int]) -> "Tiling":
+        """Given an initial state of rows 12...n, permute them using the provided
+        permutation.."""
+        if not isinstance(perm, Perm):
+            perm = Perm(perm)
+        assert len(perm) == self.dimensions[1]
+        return self._transform(lambda _c: _c, lambda gp: gp.permute_rows(perm))
+
+    def apply_perm_map_to_cell(
+        self,
+        perm_mapping: Callable[[Perm], Perm],
+        cell: Cell,
+    ) -> "Tiling":
+        """Apply a permutation mapping on anything within a cell."""
+        return self._transform(
+            lambda _c: _c, lambda gp: gp.apply_perm_map_to_cell(perm_mapping, cell)
+        )
 
     # -------------------------------------------------------------
     # Algorithms
@@ -1297,6 +1416,9 @@ class Tiling(CombinatorialClass):
     def extra_parameters(self) -> Tuple[str, ...]:
         return tuple("k_{}".format(i) for i in range(len(self._assumptions)))
 
+    def get_parameters(self, obj: GriddedPerm) -> Parameters:
+        return tuple(ass.get_value(obj) for ass in self.assumptions)
+
     def possible_parameters(self, n: int) -> Iterator[Dict[str, int]]:
         if any(
             len(gp) > 1
@@ -1306,11 +1428,16 @@ class Tiling(CombinatorialClass):
                 "possible parameters only implemented for assumptions with "
                 "size one gridded perms"
             )
-        parameters = [self.get_parameter(ass) for ass in self.assumptions]
+        parameters = [self.get_assumption_parameter(ass) for ass in self.assumptions]
         for values in product(*[range(n + 1) for _ in parameters]):
             yield dict(zip(parameters, values))
 
-    def get_parameter(self, assumption: TrackingAssumption) -> str:
+    def get_assumption_parameter(self, assumption: TrackingAssumption) -> str:
+        """
+        Return the variable associated with the given assumption.
+
+        Raise ValueError if the assumptions is not on the tiling.
+        """
         try:
             idx = self._assumptions.index(assumption)
         except ValueError as e:
@@ -1409,6 +1536,11 @@ class Tiling(CombinatorialClass):
         )
         yield from GriddedPermsOnTiling(self).gridded_perms(maxlen)
 
+    def enmerate_gp_up_to(self, max_length: int) -> List[int]:
+        """Count gridded perms of each length up to a max length."""
+        cnt = Counter(len(gp) for gp in self.gridded_perms(max_length))
+        return [cnt[i] for i in range(max_length + 1)]
+
     def merge(self) -> "Tiling":
         """Return an equivalent tiling with a single requirement list.
         # TODO: this doesn't work due to minimization on initialising"""
@@ -1479,6 +1611,50 @@ class Tiling(CombinatorialClass):
         """
         local_obs = self.cell_basis()[cell][0]
         return any(ob in [Perm((0,)), Perm((0, 1)), Perm((1, 0))] for ob in local_obs)
+
+    def contains_all_patterns_locally_for_crossing(self, cell: Cell) -> bool:
+        """Check if for all crossing obstructions and requirements through a given cell,
+        the tiling contains the same crossing obstructions and requirements but with all
+        permutations of its subpattern within the cell.
+        """
+        return all(
+            Tiling._contains_all_subpatterns_in_cell(gp_set, cell)
+            for gp_set in chain(
+                (
+                    {
+                        req
+                        for req in req_list
+                        if not req.is_localized() and req.occupies(cell)
+                    }
+                    for req_list in self.requirements
+                ),
+                (
+                    {
+                        obs
+                        for obs in self.obstructions
+                        if not obs.is_localized() and obs.occupies(cell)
+                    },
+                ),
+            )
+        )
+
+    @staticmethod
+    def _contains_all_subpatterns_in_cell(gps: Set[GriddedPerm], cell: Cell) -> bool:
+        while gps:
+            gp = next(iter(gps))
+            perm = tuple(gp.patt[i] for i in gp.points_in_cell(cell))
+            back_map = dict(zip(Perm.to_standard(perm), perm))
+            for patt in Perm.of_length(len(perm)):
+                it = iter(patt)
+                gp = GriddedPerm(
+                    (back_map[next(it)] if c == cell else val for val, c in gp),
+                    gp.pos,
+                )
+                try:
+                    gps.remove(gp)
+                except KeyError:
+                    return False
+        return True
 
     @property
     def point_cells(self) -> CellFrozenSet:

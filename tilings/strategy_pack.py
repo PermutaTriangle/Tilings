@@ -25,6 +25,7 @@ class TileScopePack(StrategyPack):
 
     def fix_one_by_one(self, basis: Iterable[Perm]) -> "TileScopePack":
         basis = tuple(basis)
+        symmetry = bool(self.symmetries)
 
         def replace_list(strats):
             """Return a new list with the replaced 1x1 strat."""
@@ -33,7 +34,7 @@ class TileScopePack(StrategyPack):
                 if isinstance(strategy, strat.OneByOneVerificationStrategy):
                     if strategy.basis:
                         logger.warning("Basis changed in OneByOneVerificationStrategy")
-                    res.append(strategy.change_basis(basis))
+                    res.append(strategy.change_basis(basis, symmetry))
                 else:
                     res.append(strategy)
             return res
@@ -400,6 +401,9 @@ class TileScopePack(StrategyPack):
         rowcol_strat = strat.RowAndColumnPlacementFactory(
             place_row=place_row, place_col=place_col, partial=partial
         )
+        expansion_strats: List[List[CSSstrategy]] = [[rowcol_strat]]
+        if partial:
+            expansion_strats.append([strat.PatternPlacementFactory(point_only=True)])
         return TileScopePack(
             initial_strats=[strat.FactorFactory()],
             ver_strats=[
@@ -412,7 +416,7 @@ class TileScopePack(StrategyPack):
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityFactory(),
             ],
-            expansion_strats=[[rowcol_strat]],
+            expansion_strats=expansion_strats,
             name=name,
         )
 

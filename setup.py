@@ -31,10 +31,10 @@ setup(
         "Source": "https://github.com/PermutaTriangle/Tilings",
         "Tracker": "https://github.com/PermutaTriangle/Tilings/issues",
     },
-    packages=find_packages(),
+    packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     long_description=read("README.rst"),
     install_requires=[
-        "comb-spec-searcher==2.2.1",
+        "comb-spec-searcher==2.4.0",
         "permuta==2.0.2",
         "requests==2.24.0",
     ],

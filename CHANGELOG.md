@@ -5,13 +5,31 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2.5.0] - 2020-11-11
+### Added
+- Added sliding strategy
+
+### Changed
+- Updated comb_spec_searcher version for faster counting
+- Added a point placement strategy to partial row and col placement packs.
+
+## [2.4.1] - 2020-10-28
 ### Added
 - `to_tex` for gridded perms.
 - `to_tikz` for gridded perms.
 - `to_svg` for gridded perms.
 - `to_gui` for tilings.
-- Mappings for gridded perms: `column_reverse`, `row_complement`, 
+- Mappings for gridded perms: `column_reverse`, `row_complement`,
    `permute_columns`, `permute_rows` and `apply_perm_map_to_cell`.
+- Mappings for tilings: `column_reverse`, `row_complement`,
+   `permute_columns`, `permute_rows`, `apply_perm_map_to_cell`.
+- `guess_from_gridded_perms` to guess tiling T from gridded perms in Grid(T).
+- `enmerate_gp_up_to` counts gridded perms of length 0, 1, 2, ... up to a max length.
+- Can sample and generate objects from fusion specifications.
+
+### Fixed
+- Anti-diagonal symmetry backward map was fixed.
 
 ## [2.3.1] - 2020-09-11
 ### Fixed
