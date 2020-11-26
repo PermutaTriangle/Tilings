@@ -142,6 +142,39 @@ def rules_to_check():
         )
         .to_equivalence_rule()
         .to_reverse_rule(),
+        list(
+            SlidingFactory(use_symmetries=True)(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((1, 0), ((2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (3, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (2, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (3, 0), (3, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(
+                        TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
+                        TrackingAssumption(
+                            (GriddedPerm((0,), ((2, 0),)), GriddedPerm((0,), ((3, 0),)))
+                        ),
+                        TrackingAssumption((GriddedPerm((0,), ((3, 0),)),)),
+                    ),
+                )
+            )
+        )[1],
     ]
 
 
@@ -218,39 +251,3 @@ def test_sanity_check_big_row_placement():
         )
     )
     rule.sanity_check(2)
-
-
-def test_sanity_check_sliding():
-    assert list(
-        SlidingFactory(use_symmetries=True)(
-            Tiling(
-                obstructions=(
-                    GriddedPerm((1, 0), ((2, 0), (2, 0))),
-                    GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
-                    GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (2, 0))),
-                    GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (3, 0))),
-                    GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (3, 0))),
-                    GriddedPerm((2, 1, 0), ((1, 0), (3, 0), (3, 0))),
-                    GriddedPerm((2, 1, 0), ((2, 0), (3, 0), (3, 0))),
-                    GriddedPerm((2, 1, 0), ((3, 0), (3, 0), (3, 0))),
-                    GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
-                    GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
-                    GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (2, 0))),
-                    GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (3, 0))),
-                    GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (1, 0))),
-                    GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (2, 0))),
-                    GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (3, 0))),
-                    GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (2, 0), (3, 0))),
-                    GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (3, 0), (3, 0))),
-                ),
-                requirements=(),
-                assumptions=(
-                    TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
-                    TrackingAssumption(
-                        (GriddedPerm((0,), ((2, 0),)), GriddedPerm((0,), ((3, 0),)))
-                    ),
-                    TrackingAssumption((GriddedPerm((0,), ((3, 0),)),)),
-                ),
-            )
-        )
-    )[1].sanity_check(5)
