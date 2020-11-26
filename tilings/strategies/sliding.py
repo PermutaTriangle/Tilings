@@ -156,15 +156,15 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         maps = _AdditionalMaps.enum_to_map(self.symmetry_type, max(tiling.dimensions))
         if self.av_12 < self.av_123:
             yield from (
-                maps.g_inv(
-                    Sliding.slide_gp_inverse(maps.g_map(gp), self.av_12, self.av_123)
-                )
+                maps.g_inv(Sliding.slide_gp(maps.g_map(gp), self.av_12, self.av_123))
                 for gp in gps
                 if gp is not None
             )
         else:
             yield from (
-                maps.g_inv(Sliding.slide_gp(maps.g_map(gp), self.av_123, self.av_12))
+                maps.g_inv(
+                    Sliding.slide_gp_inverse(maps.g_map(gp), self.av_123, self.av_12)
+                )
                 for gp in gps
                 if gp is not None
             )

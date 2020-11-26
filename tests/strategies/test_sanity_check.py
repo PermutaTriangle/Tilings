@@ -253,4 +253,4 @@ def test_sanity_check_sliding():
                 ),
             )
         )
-    )[1].sanity_check(2)
+    )[1].sanity_check(5)
