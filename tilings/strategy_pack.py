@@ -109,12 +109,28 @@ class TileScopePack(StrategyPack):
             iterative=self.iterative,
         )
 
-    def make_tracked(self, interleaving: str = "none"):
-        """Add assumption tracking strategies."""
-        pack = self
-        if strat.AddAssumptionFactory() not in self:
-            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
-        return pack
+    def make_tracked(self):
+        """Make a fusion pack tracked."""
+
+        def replace_list(strats):
+            """Return a new list with the replaced fusion strat."""
+            res = []
+            for strategy in strats:
+                if isinstance(strategy, strat.FusionFactory):
+                    res.append(strategy.make_tracked())
+                else:
+                    res.append(strategy)
+            return res
+
+        return self.__class__(
+            ver_strats=replace_list(self.ver_strats),
+            inferral_strats=replace_list(self.inferral_strats),
+            initial_strats=replace_list(self.initial_strats),
+            expansion_strats=list(map(replace_list, self.expansion_strats)),
+            name=self.name,
+            symmetries=self.symmetries,
+            iterative=self.iterative,
+        ).add_initial(strat.AddAssumptionFactory(), apply_first=True)
 
     def make_fusion(
         self,
@@ -132,7 +148,7 @@ class TileScopePack(StrategyPack):
         """
         pack = self
         if tracked:
-            pack = pack.make_tracked()
+            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
             if component:
                 pack = pack.add_initial(
                     strat.DetectComponentsStrategy(ignore_parent=True), apply_first=True
@@ -196,7 +212,7 @@ class TileScopePack(StrategyPack):
             pack = pack.add_initial(
                 strat.AddInterleavingAssumptionFactory(unions=unions), apply_first=True
             )
-            pack = pack.make_tracked(interleaving="all")
+            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
 
         return pack
 
