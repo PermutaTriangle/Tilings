@@ -877,6 +877,12 @@ class FusionFactory(StrategyFactory[Tiling]):
         self.tracked = tracked
         self.isolation_level = isolation_level
 
+    def make_tracked(self) -> "FusionFactory":
+        """Return a new version of the strategy that is tracked."""
+        if self.tracked:
+            raise ValueError("FusionFactory already tracked")
+        return self.__class__(tracked=True, isolation_level=self.isolation_level)
+
     def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
