@@ -3,7 +3,8 @@ from pathlib import Path
 
 from comb_spec_searcher import CombinatorialSpecification
 
-data = Path(__file__).parent.joinpath('resources', 'specs')
+data = Path(__file__).parent.joinpath("resources", "specs")
+
 
 def test_bijections():
     for char in "abc":
