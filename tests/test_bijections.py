@@ -7,7 +7,7 @@ data = Path(__file__).parent.joinpath("resources", "specs")
 
 
 def test_bijections():
-    for char in "abc":
+    for char in "abce":
         spec = CombinatorialSpecification.from_dict(
             json.loads(data.joinpath(f"{char}1.json").read_text())
         )
