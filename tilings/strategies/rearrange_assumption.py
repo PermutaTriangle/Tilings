@@ -1,5 +1,5 @@
 from collections import Counter
-from itertools import chain, product, combinations
+from itertools import chain, combinations, product
 from random import randint
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
@@ -111,9 +111,39 @@ class RearrangeConstructor(Constructor):
         children: Tuple[Tiling],
         assumption: TrackingAssumption,
         sub_assumption: TrackingAssumption,
+        extra_parameters: Dict[str, str],
     ):
+        """extra_parameters maps parent to child."""
         self.variable_idx = parent.assumptions.index(assumption)
         self.sub_variable_idx = parent.assumptions.index(sub_assumption)
+
+    def _build_child_param_map(
+        self,
+        parent: Tiling,
+        child: Tiling,
+        extra_parameters: Dict[str, str],
+        ass_var: str,
+        subass_var: str,
+    ) -> ParametersMap:
+        reversed_extra_param = {v: k for v, k in extra_parameters.items()}
+        parent_param_to_pos = {
+            param: pos for pos, param in enumerate(parent.extra_parameters)
+        }
+        child_pos_to_parent_pos = tuple(
+            parent_param_to_pos.get(reversed_extra_param.get(param, None), None)
+            for pos, param in enumerate(child.extra_parameters)
+        )
+        ass_idx = parent.extra_parameters.index(ass_var)
+        subass_idx = parent.extra_parameters.index(subass_var)
+        assert sum(1 for v in child_pos_to_parent_pos if v is None) == 1
+
+        def param_map(param: Parameters) -> Parameters:
+            return tuple(
+                param[pos] if pos is not None else param[ass_idx] - param[subass_idx]
+                for pos in child_pos_to_parent_pos
+            )
+
+        return param_map
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         raise NotImplementedError
@@ -192,7 +222,11 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
             if children is None:
                 raise StrategyDoesNotApply("Can't split the tracking assumption")
         return RearrangeConstructor(
-            comb_class, children, self.assumption, self.sub_assumption
+            comb_class,
+            children,
+            self.assumption,
+            self.sub_assumption,
+            self.extra_parameters(comb_class, children)[0],
         )
 
     def extra_parameters(
@@ -202,7 +236,19 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
             children = self.decomposition_function(comb_class)
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
-        raise NotImplementedError
+        res: Dict[str, str] = {}
+        child = children[0]
+        for parent_ass, parent_param in zip(
+            comb_class.assumptions, comb_class.extra_parameters
+        ):
+            try:
+                child_param = child.extra_parameters[
+                    child.assumptions.index(parent_ass)
+                ]
+            except ValueError:
+                continue
+            res[parent_param] = child_param
+        return (res,)
 
     def formal_step(self) -> str:
         return f"rearranging the assumption"
