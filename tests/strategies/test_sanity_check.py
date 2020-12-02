@@ -7,6 +7,7 @@ from tilings.strategies.factor import FactorStrategy
 from tilings.strategies.fusion import FusionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
+from tilings.strategies.sliding import SlidingFactory
 
 
 @pytest.fixture
@@ -56,9 +57,7 @@ def rules_to_check():
                 ),
                 assumptions=(TrackingAssumption((GriddedPerm((0,), ((3, 0),)),)),),
             )
-        )
-        .to_equivalence_rule()
-        .to_reverse_rule(0),
+        ).to_equivalence_rule(),
         FusionStrategy(col_idx=1, tracked=True)(
             Tiling(
                 obstructions=(
@@ -140,9 +139,7 @@ def rules_to_check():
                 requirements=((GriddedPerm((0,), ((0, 1),)),),),
                 assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 2),)),)),),
             )
-        )
-        .to_equivalence_rule()
-        .to_reverse_rule(0),
+        ).to_equivalence_rule(),
         FactorStrategy([[(0, 0)], [(1, 1)]])(
             Tiling(
                 obstructions=(
@@ -212,6 +209,39 @@ def rules_to_check():
                 ),
             ),
         ),
+        list(
+            SlidingFactory(use_symmetries=True)(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((1, 0), ((2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (3, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (2, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (3, 0), (3, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(
+                        TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
+                        TrackingAssumption(
+                            (GriddedPerm((0,), ((2, 0),)), GriddedPerm((0,), ((3, 0),)))
+                        ),
+                        TrackingAssumption((GriddedPerm((0,), ((3, 0),)),)),
+                    ),
+                )
+            )
+        )[1],
     ]
 
 
