@@ -40,8 +40,97 @@ class DummyConstructor(Constructor):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
         raise NotImplementedError
+
+    def get_sub_objects(
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
+        raise NotImplementedError
+
+    def random_sample_sub_objects(
+        self,
+        parent_count: int,
+        subsamplers: SubSamplers,
+        subrecs: SubRecs,
+        n: int,
+        **parameters: int,
+    ):
+        raise NotImplementedError
+
+
+class ReverseRearrangeConstructor(Constructor):
+    def __init__(
+        self,
+        parent: Tiling,
+        children: Tuple[Tiling],
+        assumption: TrackingAssumption,
+        sub_assumption: TrackingAssumption,
+    ):
+        self.variable_idx = parent.assumptions.index(assumption)
+        self.sub_variable_idx = parent.assumptions.index(sub_assumption)
+
+    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
+        raise NotImplementedError
+
+    def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
+        raise NotImplementedError
+
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
+        terms: Terms = Counter()
+        for param, value in subterms[0](n).items():
+            new_param = list(param)
+            new_param[self.variable_idx] -= param[self.sub_variable_idx]
+            terms[tuple(new_param)] += value
+        return terms
+
+    def get_sub_objects(
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
+        raise NotImplementedError
+
+    def random_sample_sub_objects(
+        self,
+        parent_count: int,
+        subsamplers: SubSamplers,
+        subrecs: SubRecs,
+        n: int,
+        **parameters: int,
+    ):
+        raise NotImplementedError
+
+
+class RearrangeConstructor(Constructor):
+    def __init__(
+        self,
+        parent: Tiling,
+        children: Tuple[Tiling],
+        assumption: TrackingAssumption,
+        sub_assumption: TrackingAssumption,
+    ):
+        self.variable_idx = parent.assumptions.index(assumption)
+        self.sub_variable_idx = parent.assumptions.index(sub_assumption)
+
+    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
+        raise NotImplementedError
+
+    def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
+        raise NotImplementedError
+
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
+        terms: Terms = Counter()
+        for param, value in subterms[0](n).items():
+            print(param, value)
+            new_param = list(param)
+            new_param[self.variable_idx] += param[self.sub_variable_idx]
+            terms[tuple(new_param)] += value
+        return terms
 
     def get_sub_objects(
         self, subobjs: SubObjects, n: int
@@ -76,7 +165,13 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
-        return DummyConstructor()
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Can't split the tracking assumption")
+        return ReverseRearrangeConstructor(
+            comb_class, children, self.assumption, self.sub_assumption
+        )
 
     @staticmethod
     def can_be_equivalent() -> bool:
@@ -96,7 +191,9 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
             children = self.decomposition_function(comb_class)
             if children is None:
                 raise StrategyDoesNotApply("Can't split the tracking assumption")
-        return DummyConstructor()
+        return RearrangeConstructor(
+            comb_class, children, self.assumption, self.sub_assumption
+        )
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
