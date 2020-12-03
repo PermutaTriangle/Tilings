@@ -169,10 +169,7 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
             requirements=[[GriddedPerm((0,), ((0, 1),))]],
             assumptions=[
                 TrackingAssumption(
-                    [
-                        GriddedPerm((0,), ((0, 1),)),
-                        GriddedPerm((0,), ((1, 0),)),
-                    ]
+                    [GriddedPerm((0,), ((0, 1),)), GriddedPerm((0,), ((1, 0),)),]
                 ),
                 TrackingAssumption([GriddedPerm((0,), ((1, 0),))]),
             ],
@@ -314,10 +311,7 @@ class TestLocalVerificationStrategy(CommonTest):
             ),
             assumptions=(
                 TrackingAssumption(
-                    (
-                        GriddedPerm((0,), ((0, 1),)),
-                        GriddedPerm((0,), ((1, 0),)),
-                    )
+                    (GriddedPerm((0,), ((0, 1),)), GriddedPerm((0,), ((1, 0),)),)
                 ),
                 TrackingAssumption(
                     (
@@ -509,10 +503,7 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
                 GriddedPerm((0, 1), ((1, 0), (1, 0))),
             ],
             requirements=[
-                [
-                    GriddedPerm((0,), ((0, 0),)),
-                    GriddedPerm((0,), ((1, 0),)),
-                ]
+                [GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),)),]
             ],
         )
         return t
@@ -1010,7 +1001,7 @@ class TestShortObstructionVerificationStrategy(CommonTest):
 
     @pytest.fixture
     def formal_step(self):
-        return "tiling has short crossing obstructions"
+        return "tiling has short (length <= 3) crossing obstructions"
 
     @pytest.fixture
     def enum_verified(self):
