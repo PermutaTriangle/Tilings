@@ -186,6 +186,10 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         self.sub_assumption = sub_assumption
         super().__init__()
 
+    @staticmethod
+    def can_be_equivalent() -> bool:
+        return False
+
     def is_two_way(self, comb_class: Tiling) -> bool:
         return True
 
@@ -202,10 +206,6 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         return ReverseRearrangeConstructor(
             comb_class, children, self.assumption, self.sub_assumption
         )
-
-    @staticmethod
-    def can_be_equivalent() -> bool:
-        return True
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
         tiling = tiling.remove_assumption(self.assumption)
