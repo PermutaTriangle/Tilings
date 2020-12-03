@@ -9,6 +9,7 @@ from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.typing import (
+    Objects,
     Parameters,
     ParametersMap,
     RelianceProfile,
@@ -104,7 +105,7 @@ class ReverseRearrangeConstructor(Constructor):
         raise NotImplementedError
 
 
-class RearrangeConstructor(Constructor):
+class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
     def __init__(
         self,
         parent: Tiling,
@@ -128,13 +129,22 @@ class RearrangeConstructor(Constructor):
         self.subass_child_idx = child.extra_parameters.index(
             child.get_assumption_parameter(sub_assumption)
         )
-        self.param_map = self._build_child_param_map(
+        self.child_to_parent_param_map = self._build_child_param_map(
             parent,
             child,
             extra_parameters,
             assumption,
             sub_assumption,
         )
+        self.parent_to_child_param_map = self._build_parent_param_map(
+            parent,
+            child,
+            extra_parameters,
+            assumption,
+            sub_assumption,
+        )
+        self.parent_dict_to_param = self._build_map_dict_to_param(parent)
+        self.child_param_to_dict = self._build_map_param_to_dict(child)
 
     def _build_child_param_map(
         self,
@@ -162,6 +172,61 @@ class RearrangeConstructor(Constructor):
             tuple(child_pos_to_parent_pos), len(parent.extra_parameters)
         )
 
+    def _build_parent_param_map(
+        self,
+        parent: Tiling,
+        child: Tiling,
+        extra_parameters: Dict[str, str],
+        assumptions: TrackingAssumption,
+        sub_assumption: TrackingAssumption,
+    ) -> ParametersMap:
+        num_child_param = len(child.extra_parameters)
+        # Each pair in the tuple indicate the parent param -> child param
+        parent_pos_to_child_pos: Tuple[Tuple[int, int], ...] = tuple(
+            (
+                parent.extra_parameters.index(pparam),
+                child.extra_parameters.index(cparam),
+            )
+            for pparam, cparam in extra_parameters.items()
+        )
+
+        def param_map(param: Parameters) -> Parameters:
+            new_param = [-1 for _ in range(num_child_param)]
+            for ppos, cpos in parent_pos_to_child_pos:
+                new_param[cpos] = param[ppos]
+            new_ass_value = param[self.ass_parent_idx] - param[self.subass_parent_idx]
+            assert new_param[self.new_ass_child_idx] in (-1, new_ass_value)
+            new_param[self.new_ass_child_idx] = new_ass_value
+            assert all(v >= 0 for v in new_param)
+            return tuple(new_param)
+
+        return param_map
+
+    def _build_map_dict_to_param(
+        self,
+        tiling: Tiling,
+    ) -> Callable[[Dict[str, int]], Parameters]:
+        """
+        Returns a map the return the param tuple  from the param dictionary for
+        the given tilings.
+        Should probably live somewhere else.
+        """
+
+        tiling_params_order = tiling.extra_parameters
+        return lambda d: tuple(d[p] for p in tiling_params_order)
+
+    def _build_map_param_to_dict(
+        self,
+        tiling: Tiling,
+    ) -> Callable[[Parameters], Dict[str, int]]:
+        """
+        Returns a map the return the param dictionary  from the param tuple for the
+        given tilings.
+        Should probably live somewhere else.
+        """
+        tiling_params_order = tiling.extra_parameters
+        return lambda p: dict(zip(tiling_params_order, p))
+
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         raise NotImplementedError
 
@@ -173,14 +238,18 @@ class RearrangeConstructor(Constructor):
     ) -> Terms:
         terms: Terms = Counter()
         for param, value in subterms[0](n).items():
-            new_param = self.param_map(param)
+            new_param = self.child_to_parent_param_map(param)
             terms[new_param] += value
         return terms
 
     def get_sub_objects(
         self, subobjs: SubObjects, n: int
-    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
-        raise NotImplementedError
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]]]]]:
+        assert len(subobjs) == 1
+        for param, objs in subobjs[0](n).items():
+            new_param = self.child_to_parent_param_map(param)
+            for obj in objs:
+                yield new_param, ([obj],)
 
     def random_sample_sub_objects(
         self,
@@ -189,8 +258,12 @@ class RearrangeConstructor(Constructor):
         subrecs: SubRecs,
         n: int,
         **parameters: int,
-    ):
-        raise NotImplementedError
+    ) -> Tuple[GriddedPerm]:
+        assert len(subsamplers) == 1
+        parent_param_tuple = self.parent_dict_to_param(parameters)
+        child_param_tuple = self.parent_to_child_param_map(parent_param_tuple)
+        child_param_dict = self.child_param_to_dict(child_param_tuple)
+        return (subsamplers[0](n, **child_param_dict),)
 
 
 class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):

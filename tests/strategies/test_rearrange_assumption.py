@@ -52,21 +52,31 @@ def test_extra_param(rule1, rule2):
 def test_param_map1(rule1):
     print(rule1)
     constructor = rule1.constructor
-    pmap = constructor.param_map
+    pmap = constructor.child_to_parent_param_map
     assert pmap((0, 0)) == (0, 0)
     assert pmap((0, 1)) == (0, 1)
     assert pmap((1, 0)) == (1, 1)
     assert pmap((1, 1)) == (1, 2)
+    reverse_pmap = constructor.parent_to_child_param_map
+    assert reverse_pmap((0, 0)) == (0, 0)
+    assert reverse_pmap((0, 1)) == (0, 1)
+    assert reverse_pmap((1, 1)) == (1, 0)
+    assert reverse_pmap((1, 2)) == (1, 1)
 
 
 def test_param_map2(rule2):
     print(rule2)
     constructor = rule2.constructor
-    pmap = constructor.param_map
+    pmap = constructor.child_to_parent_param_map
     assert pmap((0, 0)) == (0, 0, 0)
     assert pmap((0, 1)) == (0, 1, 1)
     assert pmap((1, 0)) == (1, 1, 0)
     assert pmap((1, 1)) == (1, 2, 1)
+    reverse_pmap = constructor.parent_to_child_param_map
+    assert reverse_pmap((0, 0, 0)) == (0, 0)
+    assert reverse_pmap((0, 1, 1)) == (0, 1)
+    assert reverse_pmap((1, 1, 0)) == (1, 0)
+    assert reverse_pmap((1, 2, 1)) == (1, 1)
 
 
 def test_rearrange1(rule1):
