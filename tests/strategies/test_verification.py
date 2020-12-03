@@ -311,7 +311,7 @@ class TestLocalVerificationStrategy(CommonTest):
             ),
             assumptions=(
                 TrackingAssumption(
-                    (GriddedPerm((0,), ((0, 1),)), GriddedPerm((0,), ((1, 0),)),)
+                    (GriddedPerm((0,), ((0, 1),)), GriddedPerm((0,), ((1, 0),)))
                 ),
                 TrackingAssumption(
                     (
