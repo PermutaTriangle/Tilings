@@ -114,36 +114,53 @@ class RearrangeConstructor(Constructor):
         extra_parameters: Dict[str, str],
     ):
         """extra_parameters maps parent to child."""
-        self.variable_idx = parent.assumptions.index(assumption)
-        self.sub_variable_idx = parent.assumptions.index(sub_assumption)
+        new_ass = TrackingAssumption(set(assumption.gps) - set(sub_assumption.gps))
+        child = children[0]
+        self.new_ass_child_idx = child.extra_parameters.index(
+            child.get_assumption_parameter(new_ass)
+        )
+        self.ass_parent_idx = parent.extra_parameters.index(
+            parent.get_assumption_parameter(assumption)
+        )
+        self.subass_parent_idx = parent.extra_parameters.index(
+            parent.get_assumption_parameter(sub_assumption)
+        )
+        self.subass_child_idx = child.extra_parameters.index(
+            child.get_assumption_parameter(sub_assumption)
+        )
+        self.param_map = self._build_child_param_map(
+            parent,
+            child,
+            extra_parameters,
+            assumption,
+            sub_assumption,
+        )
 
     def _build_child_param_map(
         self,
         parent: Tiling,
         child: Tiling,
         extra_parameters: Dict[str, str],
-        ass_var: str,
-        subass_var: str,
+        assumptions: TrackingAssumption,
+        sub_assumption: TrackingAssumption,
     ) -> ParametersMap:
-        reversed_extra_param = {v: k for v, k in extra_parameters.items()}
+        reversed_extra_param = {v: k for k, v in extra_parameters.items()}
         parent_param_to_pos = {
             param: pos for pos, param in enumerate(parent.extra_parameters)
         }
-        child_pos_to_parent_pos = tuple(
-            parent_param_to_pos.get(reversed_extra_param.get(param, None), None)
-            for pos, param in enumerate(child.extra_parameters)
+        child_pos_to_parent_pos: List[Tuple[int, ...]] = []
+        for pos, param in enumerate(child.extra_parameters):
+            to_add: List[int] = []
+            if pos == self.subass_child_idx:
+                to_add.append(self.ass_parent_idx)
+            elif pos == self.new_ass_child_idx:
+                to_add.append(self.ass_parent_idx)
+            if param in reversed_extra_param:
+                to_add.append(parent_param_to_pos[reversed_extra_param[param]])
+            child_pos_to_parent_pos.append(tuple(to_add))
+        return self._build_param_map(
+            tuple(child_pos_to_parent_pos), len(parent.extra_parameters)
         )
-        ass_idx = parent.extra_parameters.index(ass_var)
-        subass_idx = parent.extra_parameters.index(subass_var)
-        assert sum(1 for v in child_pos_to_parent_pos if v is None) == 1
-
-        def param_map(param: Parameters) -> Parameters:
-            return tuple(
-                param[pos] if pos is not None else param[ass_idx] - param[subass_idx]
-                for pos in child_pos_to_parent_pos
-            )
-
-        return param_map
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         raise NotImplementedError
@@ -156,10 +173,8 @@ class RearrangeConstructor(Constructor):
     ) -> Terms:
         terms: Terms = Counter()
         for param, value in subterms[0](n).items():
-            print(param, value)
-            new_param = list(param)
-            new_param[self.variable_idx] += param[self.sub_variable_idx]
-            terms[tuple(new_param)] += value
+            new_param = self.param_map(param)
+            terms[new_param] += value
         return terms
 
     def get_sub_objects(
@@ -241,12 +256,9 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         for parent_ass, parent_param in zip(
             comb_class.assumptions, comb_class.extra_parameters
         ):
-            try:
-                child_param = child.extra_parameters[
-                    child.assumptions.index(parent_ass)
-                ]
-            except ValueError:
+            if parent_ass == self.assumption:
                 continue
+            child_param = child.extra_parameters[child.assumptions.index(parent_ass)]
             res[parent_param] = child_param
         return (res,)
 
