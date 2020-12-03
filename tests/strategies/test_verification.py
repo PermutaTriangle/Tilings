@@ -169,7 +169,7 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
             requirements=[[GriddedPerm((0,), ((0, 1),))]],
             assumptions=[
                 TrackingAssumption(
-                    [GriddedPerm((0,), ((0, 1),)), GriddedPerm((0,), ((1, 0),)),]
+                    [GriddedPerm((0,), ((0, 1),)), GriddedPerm((0,), ((1, 0),))]
                 ),
                 TrackingAssumption([GriddedPerm((0,), ((1, 0),))]),
             ],
@@ -502,9 +502,7 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
                 GriddedPerm((0, 1), ((0, 0), (0, 0))),
                 GriddedPerm((0, 1), ((1, 0), (1, 0))),
             ],
-            requirements=[
-                [GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),)),]
-            ],
+            requirements=[[GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),))]],
         )
         return t
 
