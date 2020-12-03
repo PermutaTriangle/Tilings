@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [2.5.0] - 2020-11-11
 ### Added
 - Added sliding strategy
+- Creates a new `LimitedAssumptionTileScope` that allows you to set a maximum number
+    of assumptions allowable on any tiling
 
 ### Changed
 - Updated comb_spec_searcher version for faster counting
