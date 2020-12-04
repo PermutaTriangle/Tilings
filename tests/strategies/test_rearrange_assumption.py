@@ -88,6 +88,9 @@ def test_equation1(rule1):
     assert rule1.get_equation(
         lambda t: F0 if t == rule1.comb_class else F1
     ) == sympy.Eq(F0, F1.subs(k0, k0 * k1))
+    assert rule1.to_reverse_rule(0).get_equation(
+        lambda t: F0 if t == rule1.comb_class else F1
+    ) == sympy.Eq(F0, F1.subs(k0, k0 * k1))
 
 
 def test_equation2(rule2):
@@ -96,6 +99,9 @@ def test_equation2(rule2):
     F1 = sympy.Function("F_1")(x, k0, k1)
     print(rule2)
     assert rule2.get_equation(
+        lambda t: F0 if t == rule2.comb_class else F1
+    ) == sympy.Eq(F0, F1.subs({k0: k0 * k1, k1: k1 * k2}, simultaneous=True))
+    assert rule2.to_reverse_rule(0).get_equation(
         lambda t: F0 if t == rule2.comb_class else F1
     ) == sympy.Eq(F0, F1.subs({k0: k0 * k1, k1: k1 * k2}, simultaneous=True))
 

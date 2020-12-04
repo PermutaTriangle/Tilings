@@ -270,6 +270,11 @@ class ReverseRearrangeConstructor(RearrangeConstructor):
         self.parent_dict_to_param = self._build_map_dict_to_param(child)
         self.child_param_to_dict = self._build_map_param_to_dict(parent)
 
+    def get_equation(
+        self, lhs_func: sympy.Function, rhs_funcs: Tuple[sympy.Function, ...]
+    ) -> sympy.Eq:
+        return super().get_equation(rhs_funcs[0], (lhs_func,))
+
 
 class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
     def __init__(
