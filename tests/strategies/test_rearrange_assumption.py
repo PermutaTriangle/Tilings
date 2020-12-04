@@ -104,9 +104,13 @@ def test_rearrange1(rule1):
     print(rule1)
     for i in range(5):
         rule1.sanity_check(i)
+    for i in range(5):
+        rule1.to_reverse_rule(0).sanity_check(i)
 
 
 def test_rearrange2(rule2):
     print(rule2)
     for i in range(5):
         rule2.sanity_check(i)
+    for i in range(5):
+        rule2.to_reverse_rule(0).sanity_check(i)

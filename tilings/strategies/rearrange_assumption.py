@@ -57,49 +57,6 @@ class DummyConstructor(Constructor):
         raise NotImplementedError
 
 
-class ReverseRearrangeConstructor(Constructor):
-    def __init__(
-        self,
-        parent: Tiling,
-        children: Tuple[Tiling],
-        assumption: TrackingAssumption,
-        sub_assumption: TrackingAssumption,
-    ):
-        self.variable_idx = parent.assumptions.index(assumption)
-        self.sub_variable_idx = parent.assumptions.index(sub_assumption)
-
-    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
-        raise NotImplementedError
-
-    def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
-        raise NotImplementedError
-
-    def get_terms(
-        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
-    ) -> Terms:
-        terms: Terms = Counter()
-        for param, value in subterms[0](n).items():
-            new_param = list(param)
-            new_param[self.variable_idx] -= param[self.sub_variable_idx]
-            terms[tuple(new_param)] += value
-        return terms
-
-    def get_sub_objects(
-        self, subobjs: SubObjects, n: int
-    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
-        raise NotImplementedError
-
-    def random_sample_sub_objects(
-        self,
-        parent_count: int,
-        subsamplers: SubSamplers,
-        subrecs: SubRecs,
-        n: int,
-        **parameters: int,
-    ):
-        raise NotImplementedError
-
-
 class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
     def __init__(
         self,
@@ -294,6 +251,24 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         child_param_tuple = self.parent_to_child_param_map(parent_param_tuple)
         child_param_dict = self.child_param_to_dict(child_param_tuple)
         return (subsamplers[0](n, **child_param_dict),)
+
+
+class ReverseRearrangeConstructor(RearrangeConstructor):
+    def __init__(
+        self,
+        parent: Tiling,
+        child: Tiling,
+        assumption: TrackingAssumption,
+        sub_assumption: TrackingAssumption,
+        extra_parameters: Dict[str, str],
+    ):
+        super().__init__(parent, child, assumption, sub_assumption, extra_parameters)
+        self.child_to_parent_param_map, self.parent_to_child_param_map = (
+            self.parent_to_child_param_map,
+            self.child_to_parent_param_map,
+        )
+        self.parent_dict_to_param = self._build_map_dict_to_param(child)
+        self.child_param_to_dict = self._build_map_param_to_dict(parent)
 
 
 class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
