@@ -1,4 +1,5 @@
 import pytest
+import sympy
 
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
@@ -77,6 +78,26 @@ def test_param_map2(rule2):
     assert reverse_pmap((0, 1, 1)) == (0, 1)
     assert reverse_pmap((1, 1, 0)) == (1, 0)
     assert reverse_pmap((1, 2, 1)) == (1, 1)
+
+
+def test_equation1(rule1):
+    x, k0, k1 = sympy.var("x, k_0, k_1")
+    F0 = sympy.Function("F_0")(x, k0, k1)
+    F1 = sympy.Function("F_1")(x, k0, k1)
+    print(rule1)
+    assert rule1.get_equation(
+        lambda t: F0 if t == rule1.comb_class else F1
+    ) == sympy.Eq(F0, F1.subs(k0, k0 * k1))
+
+
+def test_equation2(rule2):
+    x, k0, k1, k2 = sympy.var("x, k_0, k_1, k_2")
+    F0 = sympy.Function("F_0")(x, k0, k1, k2)
+    F1 = sympy.Function("F_1")(x, k0, k1)
+    print(rule2)
+    assert rule2.get_equation(
+        lambda t: F0 if t == rule2.comb_class else F1
+    ) == sympy.Eq(F0, F1.subs({k0: k0 * k1, k1: k1 * k2}, simultaneous=True))
 
 
 def test_rearrange1(rule1):

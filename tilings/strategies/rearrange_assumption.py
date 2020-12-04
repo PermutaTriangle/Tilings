@@ -1,15 +1,12 @@
 from collections import Counter
-from itertools import chain, combinations, product
-from random import randint
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple
+from itertools import combinations
+from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
-from sympy import Eq, Expr, Function, Number, Symbol, var
+import sympy
 
 from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.typing import (
-    Objects,
     Parameters,
     ParametersMap,
     RelianceProfile,
@@ -20,11 +17,7 @@ from comb_spec_searcher.typing import (
     Terms,
 )
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import FactorWithInterleaving
 from tilings.assumptions import TrackingAssumption
-from tilings.misc import partitions_iterator
-
-from .factor import assumptions_to_add, interleaving_rows_and_cols
 
 Cell = Tuple[int, int]
 
@@ -35,7 +28,9 @@ class DummyConstructor(Constructor):
     ):
         pass
 
-    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
+    def get_equation(
+        self, lhs_func: sympy.Function, rhs_funcs: Tuple[sympy.Function, ...]
+    ) -> sympy.Eq:
         raise NotImplementedError
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
@@ -109,14 +104,19 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
     def __init__(
         self,
         parent: Tiling,
-        children: Tuple[Tiling],
+        child: Tiling,
         assumption: TrackingAssumption,
         sub_assumption: TrackingAssumption,
         extra_parameters: Dict[str, str],
     ):
-        """extra_parameters maps parent to child."""
+        """
+        Constructor for the rearrange strategy.
+
+        The extra_parameters should a dict mapping variable on the parent to the
+        associated variable on the child. The variable for `assumption` should not
+        appear in the dict since it does not match directly to a variable on the child.
+        """
         new_ass = TrackingAssumption(set(assumption.gps) - set(sub_assumption.gps))
-        child = children[0]
         self.new_ass_child_idx = child.extra_parameters.index(
             child.get_assumption_parameter(new_ass)
         )
@@ -129,14 +129,14 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         self.subass_child_idx = child.extra_parameters.index(
             child.get_assumption_parameter(sub_assumption)
         )
-        self.child_to_parent_param_map = self._build_child_param_map(
+        self.child_to_parent_param_map = self._build_child_to_parent_param_map(
             parent,
             child,
             extra_parameters,
             assumption,
             sub_assumption,
         )
-        self.parent_to_child_param_map = self._build_parent_param_map(
+        self.parent_to_child_param_map = self._build_parent_to_child_param_map(
             parent,
             child,
             extra_parameters,
@@ -145,8 +145,9 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         )
         self.parent_dict_to_param = self._build_map_dict_to_param(parent)
         self.child_param_to_dict = self._build_map_param_to_dict(child)
+        self.eq_subs = self._build_eq_subs(parent, child, extra_parameters)
 
-    def _build_child_param_map(
+    def _build_child_to_parent_param_map(
         self,
         parent: Tiling,
         child: Tiling,
@@ -154,6 +155,10 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         assumptions: TrackingAssumption,
         sub_assumption: TrackingAssumption,
     ) -> ParametersMap:
+        """
+        Build a maps that maps parameters on the child to the corresponding parameters
+        on the parent.
+        """
         reversed_extra_param = {v: k for k, v in extra_parameters.items()}
         parent_param_to_pos = {
             param: pos for pos, param in enumerate(parent.extra_parameters)
@@ -172,7 +177,7 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
             tuple(child_pos_to_parent_pos), len(parent.extra_parameters)
         )
 
-    def _build_parent_param_map(
+    def _build_parent_to_child_param_map(
         self,
         parent: Tiling,
         child: Tiling,
@@ -180,6 +185,10 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         assumptions: TrackingAssumption,
         sub_assumption: TrackingAssumption,
     ) -> ParametersMap:
+        """
+        Build a maps that maps parameters on the parent to the corresponding parameters
+        on the child.
+        """
         num_child_param = len(child.extra_parameters)
         # Each pair in the tuple indicate the parent param -> child param
         parent_pos_to_child_pos: Tuple[Tuple[int, int], ...] = tuple(
@@ -227,8 +236,29 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         tiling_params_order = tiling.extra_parameters
         return lambda p: dict(zip(tiling_params_order, p))
 
-    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
-        raise NotImplementedError
+    def _build_eq_subs(
+        self, parent: Tiling, child: Tiling, extra_parameters: Dict[str, str]
+    ) -> dict:
+        """
+        Build the substitution dict needed to compute the equation.
+        """
+        subs = {
+            sympy.var(child): sympy.var(parent)
+            for parent, child in extra_parameters.items()
+        }
+        new_ass_var_child = sympy.var(child.extra_parameters[self.new_ass_child_idx])
+        ass_var_parent = sympy.var(parent.extra_parameters[self.ass_parent_idx])
+        subass_var_child = sympy.var(child.extra_parameters[self.subass_child_idx])
+        print(subs)
+        subs[new_ass_var_child] = subs.get(new_ass_var_child, 1) * ass_var_parent
+        subs[subass_var_child] *= ass_var_parent
+        return subs
+
+    def get_equation(
+        self, lhs_func: sympy.Function, rhs_funcs: Tuple[sympy.Function, ...]
+    ) -> sympy.Eq:
+        rhs = rhs_funcs[0].subs(self.eq_subs, simultaneous=True)
+        return sympy.Eq(lhs_func, rhs)
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
@@ -286,13 +316,17 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         idx: int,
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Constructor:
+    ) -> ReverseRearrangeConstructor:
         if children is None:
             children = self.decomposition_function(comb_class)
             if children is None:
                 raise StrategyDoesNotApply("Can't split the tracking assumption")
         return ReverseRearrangeConstructor(
-            comb_class, children, self.assumption, self.sub_assumption
+            comb_class,
+            children[0],
+            self.assumption,
+            self.sub_assumption,
+            self.extra_parameters(comb_class, children)[0],
         )
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
@@ -304,14 +338,14 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
-    ) -> DummyConstructor:
+    ) -> RearrangeConstructor:
         if children is None:
             children = self.decomposition_function(comb_class)
             if children is None:
                 raise StrategyDoesNotApply("Can't split the tracking assumption")
         return RearrangeConstructor(
             comb_class,
-            children,
+            children[0],
             self.assumption,
             self.sub_assumption,
             self.extra_parameters(comb_class, children)[0],
@@ -336,7 +370,7 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         return (res,)
 
     def formal_step(self) -> str:
-        return f"rearranging the assumption"
+        return f"rearranging the assumption {self.assumption} and {self.sub_assumption}"
 
     def backward_map(
         self,
@@ -372,13 +406,16 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         d.pop("ignore_parent")
         d.pop("inferrable")
         d.pop("possibly_empty")
-        d["assumptions"] = [ass.to_jsonable() for ass in self.assumptions]
+        d["assumption"] = self.assumption.to_jsonable()
+        d["sub_assumption"] = self.sub_assumption.to_jsonable()
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "RearrangeAssumptionStrategy":
-        assumptions = [TrackingAssumption.from_dict(ass) for ass in d["assumptions"]]
-        return cls(assumptions)
+        assumption = TrackingAssumption.from_dict(d.pop("assumption"))
+        sub_assumption = TrackingAssumption.from_dict(d.pop("sub_assumption"))
+        assert not d
+        return cls(assumption, sub_assumption)
 
     @staticmethod
     def get_eq_symbol() -> str:
