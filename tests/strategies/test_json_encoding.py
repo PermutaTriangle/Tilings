@@ -297,6 +297,16 @@ def sliding_strategy_arguments(strategy):
     return lis
 
 
+def short_length_arguments(strategy):
+    return [
+        ShortObstructionVerificationStrategy(
+            short_length=short_length, ignore_parent=ignore_parent
+        )
+        for short_length in range(4)
+        for ignore_parent in (True, False)
+    ]
+
+
 strategy_objects = (
     maxreqlen_extrabasis_ignoreparent_one_cell_only(CellInsertionFactory)
     + ignoreparent(FactorInsertionFactory)
@@ -347,6 +357,7 @@ strategy_objects = (
     + row_col_partial_ignoreparent_direction(RowAndColumnPlacementFactory)
     + use_symmetries(SlidingFactory)
     + sliding_strategy_arguments(SlidingStrategy)
+    + short_length_arguments(ShortObstructionVerificationStrategy)
     + [RowColumnSeparationStrategy(), SubobstructionInferralFactory()]
     + [FusionStrategy(row_idx=1)]
     + [FusionStrategy(col_idx=3)]
@@ -362,7 +373,6 @@ strategy_objects = (
         SplittingStrategy("monotone"),
         SplittingStrategy("all"),
     ]
-    + [ShortObstructionVerificationStrategy()]
 )
 
 # TODO add tests for: ComponentFusionStrategy, FusionStrategy

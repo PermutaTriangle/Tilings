@@ -158,16 +158,18 @@ class TileScopePack(StrategyPack):
                 strat.ComponentFusionFactory(
                     tracked=tracked, isolation_level=isolation_level
                 ),
-                "component_fusion{}".format(
-                    "" if isolation_level is None else "_" + isolation_level
+                "{}_component_fusion{}".format(
+                    "tracked" if tracked else "untracked",
+                    "" if isolation_level is None else "_" + isolation_level,
                 ),
                 apply_first=apply_first,
             )
         else:
             pack = pack.add_initial(
                 strat.FusionFactory(tracked=tracked, isolation_level=isolation_level),
-                "fusion{}".format(
-                    "" if isolation_level is None else "_" + isolation_level
+                "{}_fusion{}".format(
+                    "tracked" if tracked else "untracked",
+                    "" if isolation_level is None else "_" + isolation_level,
                 ),
                 apply_first=apply_first,
             )
@@ -203,7 +205,13 @@ class TileScopePack(StrategyPack):
             inferral_strats=replace_list(self.inferral_strats),
             initial_strats=replace_list(self.initial_strats),
             expansion_strats=list(map(replace_list, self.expansion_strats)),
-            name=self.name + "_interleaving",
+            name=(
+                self.name
+                + "_{}_interleaving{}".format(
+                    "tracked" if tracked else "untracked",
+                    "_unions" if unions else "",
+                )
+            ),
             symmetries=self.symmetries,
             iterative=self.iterative,
         )

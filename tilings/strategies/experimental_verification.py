@@ -26,18 +26,30 @@ class ShortObstructionVerificationStrategy(TileScopeVerificationStrategy):
     size at most 3. Tilings with dimensions 1x1 are ignored.
     """
 
-    @staticmethod
-    def verified(tiling: Tiling):
+    def __init__(self, short_length: int = 3, ignore_parent: bool = True):
+        self.short_length = short_length
+        super().__init__(ignore_parent=ignore_parent)
+
+    def verified(self, tiling: Tiling):
         return tiling.dimensions != (1, 1) and all(
-            ob.is_single_cell() or len(ob) <= 3 for ob in tiling.obstructions
+            ob.is_single_cell() or len(ob) <= self.short_length
+            for ob in tiling.obstructions
         )
 
-    @staticmethod
-    def formal_step() -> str:
-        return "tiling has short crossing obstructions"
+    def formal_step(self) -> str:
+        return "tiling has short (length <= {}) crossing obstructions".format(
+            self.short_length
+        )
 
     def __str__(self) -> str:
-        return "short crossing obstruction verification"
+        return "short (length <= {}) crossing obstruction verification".format(
+            self.short_length
+        )
+
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["short_length"] = self.short_length
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "ShortObstructionVerificationStrategy":

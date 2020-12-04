@@ -12,12 +12,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - 'GuidedSearcher' class which will search for specification with a specific set of 
   underlying tilings. Includes methods 'from_spec' and 'from_uri' which creates a 
   'GuidedSearcher' instance.
+- Creates a new `LimitedAssumptionTileScope` that allows you to set a maximum number
+    of assumptions allowable on any tiling
 
 ### Changed
 - Updated comb_spec_searcher version for faster counting
 - Added a point placement strategy to partial row and col placement packs.
 - `TileScopePack.make_tracked` return a new pack with tracked fusion instead of
   only adding the `AddAssumptionFactory` to the pack
+- `make_fusion` and `make_interleaving` make the pack name a little more descriptive
+- Updated short obstruction verification to take a length argument
 
 ## [2.4.1] - 2020-10-28
 ### Added

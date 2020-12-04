@@ -9,12 +9,12 @@ from comb_spec_searcher import (
     CombinatorialSpecificationSearcher,
 )
 from comb_spec_searcher.strategies import StrategyFactory
-from comb_spec_searcher.typing import CSSstrategy
+from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.strategy_pack import TileScopePack
 
-__all__ = ("TileScope", "TileScopePack", "GuidedSearcher")
+__all__ = ("TileScope", "TileScopePack", "LimitedAssumptionTileScope", "GuidedSearcher")
 
 
 class TileScope(CombinatorialSpecificationSearcher):
@@ -86,6 +86,49 @@ class TileScope(CombinatorialSpecificationSearcher):
                 d[StrategyFactory.from_dict(k)] = v
             values.append(v)
         return defaultdict(int, d)
+
+
+class LimitedAssumptionTileScope(TileScope):
+    """
+    A subclass of Tilescope that allows a limit to be set on the maximum number of
+    assumptions that appear on any tiling in the universe.
+    """
+
+    def __init__(
+        self,
+        start_class: Union[str, Iterable[Perm], Tiling],
+        strategy_pack: TileScopePack,
+        max_assumptions: int,
+        logger_kwargs: Optional[dict] = None,
+        **kwargs
+    ) -> None:
+        super().__init__(start_class, strategy_pack, logger_kwargs, **kwargs)
+        self.max_assumptions = max_assumptions
+
+    def _expand(
+        self,
+        comb_class: CombinatorialClassType,
+        label: int,
+        strategies: Tuple[CSSstrategy, ...],
+        inferral: bool,
+    ) -> None:
+        """
+        Will expand the combinatorial class with given label using the given
+        strategies, but only add rules whose children all satisfy the max_assumptions
+        requirement.
+        """
+        if inferral:
+            self._inferral_expand(comb_class, label, strategies)
+        else:
+            for strategy_generator in strategies:
+                for start_label, end_labels, rule in self._expand_class_with_strategy(
+                    comb_class, strategy_generator, label
+                ):
+                    if all(
+                        len(child.assumptions) <= self.max_assumptions
+                        for child in rule.children
+                    ):
+                        self._add_rule(start_label, end_labels, rule)
 
 
 class GuidedSearcher(TileScope):
