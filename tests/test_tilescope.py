@@ -11,7 +11,7 @@ from tilings import GriddedPerm, Tiling
 from tilings import strategies as strat
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategy_pack import TileScopePack
-from tilings.tilescope import TileScope
+from tilings.tilescope import GuidedSearcher, TileScope
 
 point_placements = TileScopePack.point_placements()
 all_the_strategies_verify_database = TileScopePack.all_the_strategies().make_database()
@@ -351,4 +351,31 @@ def test_domino():
         42975796,
         243035536,
         1390594458,
+    ]
+
+
+def test_guided_searcher():
+    tilescope = TileScope(
+        "123", TileScopePack.point_placements().make_fusion(tracked=False)
+    )
+    spec = tilescope.auto_search()
+    searcher = GuidedSearcher.from_spec(
+        spec, TileScopePack.point_placements().make_fusion(tracked=True)
+    )
+    tracked_spec = searcher.auto_search()
+    tracked_spec.expand_verified()
+    assert [tracked_spec.count_objects_of_size(i) for i in range(13)] == [
+        1,
+        1,
+        2,
+        5,
+        14,
+        42,
+        132,
+        429,
+        1430,
+        4862,
+        16796,
+        58786,
+        208012,
     ]
