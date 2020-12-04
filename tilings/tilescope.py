@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import Iterable, Optional, Tuple, Union
 
 import requests
-
 from logzero import logger
 
 from comb_spec_searcher import (
@@ -14,7 +13,6 @@ from comb_spec_searcher.typing import CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.strategy_pack import TileScopePack
-
 
 __all__ = ("TileScope", "TileScopePack", "GuidedSearcher")
 
