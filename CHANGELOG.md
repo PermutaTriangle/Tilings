@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added a point placement strategy to partial row and col placement packs.
 - `TileScopePack.make_tracked` return a new pack with tracked fusion instead of
   only adding the `AddAssumptionFactory` to the pack
+- Updated short obstruction verification to take a length argument
 
 ## [2.4.1] - 2020-10-28
 ### Added
