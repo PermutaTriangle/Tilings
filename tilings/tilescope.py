@@ -1,16 +1,20 @@
 from collections import defaultdict
 from typing import Iterable, Optional, Tuple, Union
 
+import requests
 from logzero import logger
 
-from comb_spec_searcher import CombinatorialSpecificationSearcher
+from comb_spec_searcher import (
+    CombinatorialSpecification,
+    CombinatorialSpecificationSearcher,
+)
 from comb_spec_searcher.strategies import StrategyFactory
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.strategy_pack import TileScopePack
 
-__all__ = ("LimitedAssumptionTileScope", "TileScope", "TileScopePack")
+__all__ = ("TileScope", "TileScopePack", "LimitedAssumptionTileScope", "GuidedSearcher")
 
 
 class TileScope(CombinatorialSpecificationSearcher):
@@ -125,3 +129,44 @@ class LimitedAssumptionTileScope(TileScope):
                         for child in rule.children
                     ):
                         self._add_rule(start_label, end_labels, rule)
+
+
+class GuidedSearcher(TileScope):
+    def __init__(
+        self,
+        tilings: Iterable[Tiling],
+        basis: Tiling,
+        pack: TileScopePack,
+        *args,
+        **kwargs
+    ):
+        self.tilings = frozenset(tilings)
+        super().__init__(basis, pack, *args, **kwargs)
+        for t in self.tilings:
+            self._add_to_queue(self.classdb.get_label(t))
+
+    def _expand(
+        self,
+        comb_class: Tiling,
+        label: int,
+        strategies: Tuple[CSSstrategy, ...],
+        inferral: bool,
+    ) -> None:
+        if comb_class.remove_assumptions() not in self.tilings:
+            return
+        return super()._expand(comb_class, label, strategies, inferral)
+
+    @classmethod
+    def from_spec(
+        cls, specification: CombinatorialSpecification, pack: TileScopePack
+    ) -> "GuidedSearcher":
+        tilings = specification.comb_classes()
+        root = specification.root
+        return cls(tilings, root, pack)
+
+    @classmethod
+    def from_uri(cls, URI: str) -> "GuidedSearcher":
+        response = requests.get(URI)
+        spec = CombinatorialSpecification.from_dict(response.json()["specification"])
+        pack = TileScopePack.from_dict(response.json()["pack"]).make_tracked()
+        return cls.from_spec(spec, pack)
