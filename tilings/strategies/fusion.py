@@ -37,7 +37,6 @@ from comb_spec_searcher.typing import (
 )
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import ComponentFusion, Fusion
-from tilings.strategies.rearrange_assumption import DummyConstructor
 
 __all__ = ["FusionStrategy", "ComponentFusionStrategy"]
 
@@ -574,6 +573,39 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         )
 
 
+class ReverseFusionConstructor(Constructor):
+    def __init__(
+        self,
+    ):
+        pass
+
+    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
+        raise NotImplementedError
+
+    def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
+        raise NotImplementedError
+
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
+        raise NotImplementedError
+
+    def get_sub_objects(
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
+        raise NotImplementedError
+
+    def random_sample_sub_objects(
+        self,
+        parent_count: int,
+        subsamplers: SubSamplers,
+        subrecs: SubRecs,
+        n: int,
+        **parameters: int,
+    ):
+        raise NotImplementedError
+
+
 class FusionRule(Rule[Tiling, GriddedPerm]):
     """Overwritten the generate objects of size method, as this relies on
     knowing the number of left and right points of the parent tiling."""
@@ -745,7 +777,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
-        return DummyConstructor()
+        return ReverseFusionConstructor()
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
