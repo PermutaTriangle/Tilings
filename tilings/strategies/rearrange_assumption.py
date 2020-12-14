@@ -130,7 +130,7 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
             if param in reversed_extra_param:
                 to_add.append(parent_param_to_pos[reversed_extra_param[param]])
             child_pos_to_parent_pos.append(tuple(to_add))
-        return self._build_param_map(
+        return self.build_param_map(
             tuple(child_pos_to_parent_pos), len(parent.extra_parameters)
         )
 
