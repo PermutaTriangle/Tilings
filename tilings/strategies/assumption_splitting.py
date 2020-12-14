@@ -280,6 +280,14 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             split_parameters["k_{}".format(idx)] = child_vars
         return Split(split_parameters)
 
+    def reverse_constructor(
+        self,
+        idx: int,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        raise NotImplementedError
+
     @staticmethod
     def formal_step() -> str:
         return "splitting the assumptions"
