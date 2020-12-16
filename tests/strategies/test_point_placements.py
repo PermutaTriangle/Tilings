@@ -1227,7 +1227,7 @@ def test_reverse_rule():
     rule = strategy(tiling)
     for i in range(6):
         rule.sanity_check(i)
-    reverse_rule = rule.to_reverse_rule()
+    reverse_rule = rule.to_reverse_rule(0)
     for i in range(6):
         reverse_rule.sanity_check(i)
 
@@ -1340,7 +1340,7 @@ def test_reverse_rule_non_empty_children():
     )
     rule = strategy(tiling)
     eqv_rule = rule.to_equivalence_rule()
-    reverse_rule = eqv_rule.to_reverse_rule()
+    reverse_rule = eqv_rule.to_reverse_rule(0)
     for i in range(6):
         reverse_rule.sanity_check(i)
 
