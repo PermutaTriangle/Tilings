@@ -589,6 +589,9 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
     def constructor(self) -> FusionConstructor:
         return cast(FusionConstructor, super().constructor)
 
+    def is_equivalence(self) -> bool:
+        return False
+
     def _ensure_level_objects(self, n: int) -> None:
 
         if self.subobjects is None:
