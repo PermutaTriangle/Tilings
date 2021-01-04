@@ -168,8 +168,8 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
 
         return param_map
 
+    @staticmethod
     def _build_map_dict_to_param(
-        self,
         tiling: Tiling,
     ) -> Callable[[Dict[str, int]], Parameters]:
         """
@@ -181,8 +181,8 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         tiling_params_order = tiling.extra_parameters
         return lambda d: tuple(d[p] for p in tiling_params_order)
 
+    @staticmethod
     def _build_map_param_to_dict(
-        self,
         tiling: Tiling,
     ) -> Callable[[Parameters], Dict[str, int]]:
         """
@@ -288,7 +288,8 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
     def can_be_equivalent() -> bool:
         return False
 
-    def is_two_way(self, comb_class: Tiling) -> bool:
+    @staticmethod
+    def is_two_way(comb_class: Tiling) -> bool:
         return True
 
     def reverse_constructor(
