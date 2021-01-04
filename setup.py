@@ -26,7 +26,7 @@ setup(
     packages=find_packages(),
     long_description=read("README.rst"),
     install_requires=[
-        "comb-spec-searcher==2.4.0",
+        "comb-spec-searcher==3.0.0",
         "permuta==2.0.2",
         "requests==2.25.1",
     ],
