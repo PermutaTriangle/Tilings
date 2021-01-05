@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- Rearrange assumption strategy
+
+### Changed
+- Updated to use comb_spec_searcher 3.0.0
+
 ## [2.5.0] - 2020-11-11
 ### Added
 - Added sliding strategy
