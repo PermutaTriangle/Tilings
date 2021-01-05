@@ -8,7 +8,7 @@ from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.typing import Objects
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
-from tilings.strategies.rearrange_assumption import DummyConstructor
+from tilings.strategies.dummy_constructor import DummyConstructor
 
 from .constructor import FusionConstructor
 
