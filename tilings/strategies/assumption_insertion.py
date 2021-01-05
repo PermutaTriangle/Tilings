@@ -86,7 +86,7 @@ class AddAssumptionsConstructor(Constructor):
             else (parent_param_to_pos[child_param_to_parent_param[param]],)
             for param in child.extra_parameters
         )
-        return self._build_param_map(
+        return self.build_param_map(
             child_pos_to_parent_pos, len(parent.extra_parameters)
         )
 

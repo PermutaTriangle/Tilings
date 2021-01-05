@@ -16,14 +16,13 @@ and right hand sides accordingly.
 from collections import Counter, defaultdict
 from functools import reduce
 from operator import mul
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple, cast
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
 from sympy import Eq, Expr, Function, Number, var
 
 from comb_spec_searcher import Constructor
 from comb_spec_searcher.typing import (
     Parameters,
-    ParametersMap,
     RelianceProfile,
     SubObjects,
     SubRecs,
@@ -133,7 +132,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         child_pos_to_parent_pos = tuple(
             index_mapping[idx] for idx in range(len(child.extra_parameters))
         )
-        self.children_param_map = self._build_param_map(
+        self.children_param_map = self.build_param_map(
             child_pos_to_parent_pos, len(parent.extra_parameters)
         )
 
