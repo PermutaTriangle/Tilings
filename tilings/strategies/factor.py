@@ -2,7 +2,7 @@ from collections import Counter
 from functools import reduce
 from itertools import chain
 from operator import mul
-from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 from sympy import Eq, Function
 
@@ -235,8 +235,10 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
     def get_equation(lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         raise NotImplementedError
 
-    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
-        non_interleaved_terms = super().get_terms(subterms, n)
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
+        non_interleaved_terms = super().get_terms(parent_terms, subterms, n)
         interleaved_terms: Terms = Counter()
         for parameters, value in non_interleaved_terms.items():
             # multinomial counts the number of ways to interleave the values k1, ...,kn.

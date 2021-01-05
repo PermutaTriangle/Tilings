@@ -58,7 +58,9 @@ class AddAssumptionsConstructor(Constructor):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
         assert len(subterms) == 1
         return self._push_add_assumption(n, subterms[0], self._child_param_map)
 
@@ -129,6 +131,10 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
     def can_be_equivalent() -> bool:
         return False
 
+    @staticmethod
+    def is_two_way(comb_class: Tiling):
+        return False
+
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
         if any(assumption in tiling.assumptions for assumption in self.assumptions):
             raise StrategyDoesNotApply("The assumption is already on the tiling.")
@@ -150,6 +156,14 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
             new_parameters,
             self.extra_parameters(comb_class, children)[0],
         )
+
+    def reverse_constructor(
+        self,
+        idx: int,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        raise NotImplementedError
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
