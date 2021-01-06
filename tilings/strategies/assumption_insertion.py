@@ -80,24 +80,15 @@ class AddAssumptionsConstructor(Constructor):
             param: pos for pos, param in enumerate(parent.extra_parameters)
         }
         child_param_to_parent_param = {v: k for k, v in self.extra_parameters.items()}
-        child_pos_to_parent_pos: Tuple[Optional[int], ...] = tuple(
-            None
+        child_pos_to_parent_pos: Tuple[Tuple[int, ...], ...] = tuple(
+            tuple()
             if param in self.new_parameters
-            else parent_param_to_pos[child_param_to_parent_param[param]]
+            else (parent_param_to_pos[child_param_to_parent_param[param]],)
             for param in child.extra_parameters
         )
-        num_parent_params = len(parent.extra_parameters)
-
-        def param_map(param: Parameters) -> Parameters:
-            new_params = [0 for _ in range(num_parent_params)]
-            for pos, value in enumerate(param):
-                parent_pos = child_pos_to_parent_pos[pos]
-                if parent_pos is not None:
-                    assert new_params[parent_pos] == 0
-                    new_params[parent_pos] = value
-            return tuple(new_params)
-
-        return param_map
+        return self.build_param_map(
+            child_pos_to_parent_pos, len(parent.extra_parameters)
+        )
 
     def get_sub_objects(
         self, subobjs: SubObjects, n: int

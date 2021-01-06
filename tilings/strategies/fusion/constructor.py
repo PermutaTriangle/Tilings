@@ -16,14 +16,13 @@ and right hand sides accordingly.
 from collections import Counter, defaultdict
 from functools import reduce
 from operator import mul
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple, cast
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
 from sympy import Eq, Expr, Function, Number, var
 
 from comb_spec_searcher import Constructor
 from comb_spec_searcher.typing import (
     Parameters,
-    ParametersMap,
     RelianceProfile,
     SubObjects,
     SubRecs,
@@ -133,7 +132,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         child_pos_to_parent_pos = tuple(
             index_mapping[idx] for idx in range(len(child.extra_parameters))
         )
-        self.children_param_map = self._build_param_map(
+        self.children_param_map = self.build_param_map(
             child_pos_to_parent_pos, len(parent.extra_parameters)
         )
 
@@ -287,26 +286,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
 
                 add_new_term(new_params, value, left_points, fuse_region_points)
         return new_terms
-
-    @staticmethod
-    def _build_param_map(
-        child_pos_to_parent_pos: Tuple[Tuple[int, ...], ...], num_parent_params: int
-    ) -> ParametersMap:
-        """
-        Build the ParametersMap that will map according to the given child pos to parent
-        pos map given.
-        """
-
-        def param_map(param: Parameters) -> Parameters:
-            new_params: List[Optional[int]] = [None for _ in range(num_parent_params)]
-            for pos, value in enumerate(param):
-                for parent_pos in child_pos_to_parent_pos[pos]:
-                    assert new_params[parent_pos] is None
-                    new_params[parent_pos] = value
-            assert all(x is not None for x in new_params)
-            return tuple(cast(List[int], new_params))
-
-        return param_map
 
     def determine_number_of_points_in_fuse_region(
         self, n: int, **parameters: int
