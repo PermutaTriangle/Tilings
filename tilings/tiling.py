@@ -137,7 +137,7 @@ class Tiling(CombinatorialClass):
 
             # Remove gridded perms that avoid obstructions from assumptions
             if simplify:
-                self._clean_assumptions()
+                self.clean_assumptions()
 
             # Fill empty
             if derive_empty:
@@ -333,7 +333,7 @@ class Tiling(CombinatorialClass):
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
         return (col_mapping, row_mapping, False)
 
-    def _clean_assumptions(self) -> None:
+    def clean_assumptions(self) -> None:
         """
         Clean assumptions with respect to the known obstructions.
 
@@ -649,11 +649,17 @@ class Tiling(CombinatorialClass):
 
     def add_assumptions(self, assumptions: Iterable[TrackingAssumption]) -> "Tiling":
         """Returns a new tiling with the added assumptions."""
-        return Tiling(
+        tiling = Tiling(
             self._obstructions,
             self._requirements,
             self._assumptions + tuple(assumptions),
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
         )
+        tiling.clean_assumptions()
+        return tiling
 
     def remove_assumption(self, assumption: TrackingAssumption):
         """Returns a new tiling with assumption removed."""
@@ -663,11 +669,17 @@ class Tiling(CombinatorialClass):
             raise ValueError(
                 f"following assumption not on tiling: '{assumption}'"
             ) from e
-        return Tiling(
+        tiling = Tiling(
             self._obstructions,
             self._requirements,
             self._assumptions[:idx] + self._assumptions[idx + 1 :],
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
         )
+        tiling.clean_assumptions()
+        return tiling
 
     def remove_assumptions(self):
         """
@@ -690,11 +702,17 @@ class Tiling(CombinatorialClass):
         if not self.assumptions:
             return self
         assumptions = [ass.remove_components(self) for ass in self.assumptions]
-        return self.__class__(
+        tiling = self.__class__(
             self._obstructions,
             self._requirements,
             [ass for ass in assumptions if ass.gps],
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
         )
+        tiling.clean_assumptions()
+        return tiling
 
     def fully_isolated(self) -> bool:
         """Check if all cells are isolated on their rows and columns."""

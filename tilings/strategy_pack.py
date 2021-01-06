@@ -109,12 +109,28 @@ class TileScopePack(StrategyPack):
             iterative=self.iterative,
         )
 
-    def make_tracked(self, interleaving: str = "none"):
-        """Add assumption tracking strategies."""
-        pack = self
-        if strat.AddAssumptionFactory() not in self:
-            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
-        return pack
+    def make_tracked(self):
+        """Make a fusion pack tracked."""
+
+        def replace_list(strats):
+            """Return a new list with the replaced fusion strat."""
+            res = []
+            for strategy in strats:
+                if isinstance(strategy, strat.FusionFactory):
+                    res.append(strategy.make_tracked())
+                else:
+                    res.append(strategy)
+            return res
+
+        return self.__class__(
+            ver_strats=replace_list(self.ver_strats),
+            inferral_strats=replace_list(self.inferral_strats),
+            initial_strats=replace_list(self.initial_strats),
+            expansion_strats=list(map(replace_list, self.expansion_strats)),
+            name=self.name,
+            symmetries=self.symmetries,
+            iterative=self.iterative,
+        ).add_initial(strat.AddAssumptionFactory(), apply_first=True)
 
     def make_fusion(
         self,
@@ -132,7 +148,7 @@ class TileScopePack(StrategyPack):
         """
         pack = self
         if tracked:
-            pack = pack.make_tracked()
+            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
             if component:
                 pack = pack.add_initial(
                     strat.DetectComponentsStrategy(ignore_parent=True), apply_first=True
@@ -142,16 +158,18 @@ class TileScopePack(StrategyPack):
                 strat.ComponentFusionFactory(
                     tracked=tracked, isolation_level=isolation_level
                 ),
-                "component_fusion{}".format(
-                    "" if isolation_level is None else "_" + isolation_level
+                "{}_component_fusion{}".format(
+                    "tracked" if tracked else "untracked",
+                    "" if isolation_level is None else "_" + isolation_level,
                 ),
                 apply_first=apply_first,
             )
         else:
             pack = pack.add_initial(
                 strat.FusionFactory(tracked=tracked, isolation_level=isolation_level),
-                "fusion{}".format(
-                    "" if isolation_level is None else "_" + isolation_level
+                "{}_fusion{}".format(
+                    "tracked" if tracked else "untracked",
+                    "" if isolation_level is None else "_" + isolation_level,
                 ),
                 apply_first=apply_first,
             )
@@ -187,7 +205,13 @@ class TileScopePack(StrategyPack):
             inferral_strats=replace_list(self.inferral_strats),
             initial_strats=replace_list(self.initial_strats),
             expansion_strats=list(map(replace_list, self.expansion_strats)),
-            name=self.name + "_interleaving",
+            name=(
+                self.name
+                + "_{}_interleaving{}".format(
+                    "tracked" if tracked else "untracked",
+                    "_unions" if unions else "",
+                )
+            ),
             symmetries=self.symmetries,
             iterative=self.iterative,
         )
@@ -196,7 +220,7 @@ class TileScopePack(StrategyPack):
             pack = pack.add_initial(
                 strat.AddInterleavingAssumptionFactory(unions=unions), apply_first=True
             )
-            pack = pack.make_tracked(interleaving="all")
+            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
 
         return pack
 
@@ -401,6 +425,9 @@ class TileScopePack(StrategyPack):
         rowcol_strat = strat.RowAndColumnPlacementFactory(
             place_row=place_row, place_col=place_col, partial=partial
         )
+        expansion_strats: List[List[CSSstrategy]] = [[rowcol_strat]]
+        if partial:
+            expansion_strats.append([strat.PatternPlacementFactory(point_only=True)])
         return TileScopePack(
             initial_strats=[strat.FactorFactory()],
             ver_strats=[
@@ -413,7 +440,7 @@ class TileScopePack(StrategyPack):
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityFactory(),
             ],
-            expansion_strats=[[rowcol_strat]],
+            expansion_strats=expansion_strats,
             name=name,
         )
 

@@ -2,7 +2,7 @@ from collections import defaultdict
 from functools import reduce
 from itertools import product
 from operator import mul
-from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from sympy import Eq, Function, var
 
@@ -52,7 +52,9 @@ class Split(Constructor):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
         raise NotImplementedError
 
     def _valid_compositions(self, **parameters: int) -> Iterator[Dict[str, int]]:
@@ -151,6 +153,10 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
 
     @staticmethod
     def can_be_equivalent() -> bool:
+        return False
+
+    @staticmethod
+    def is_two_way(comb_class: Tiling):
         return False
 
     def decomposition_function(self, tiling: Tiling) -> Optional[Tuple[Tiling]]:
@@ -273,6 +279,14 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             )
             split_parameters["k_{}".format(idx)] = child_vars
         return Split(split_parameters)
+
+    def reverse_constructor(
+        self,
+        idx: int,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        raise NotImplementedError
 
     @staticmethod
     def formal_step() -> str:

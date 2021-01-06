@@ -6,6 +6,7 @@ import pytest
 from permuta import Perm
 from permuta.misc import DIRS
 from tilings import strategies as strat
+from tilings.strategies import SlidingFactory
 from tilings.strategy_pack import TileScopePack
 
 
@@ -94,7 +95,9 @@ packs.extend(
     + [pack.make_interleaving() for pack in packs]
     + [pack.make_database().add_all_symmetry() for pack in packs]
     + [pack.make_fusion().add_all_symmetry() for pack in packs]
-    + [pack.make_interleaving().make_tracked() for pack in packs]
+    + [pack.make_interleaving() for pack in packs]
+    + [pack.add_initial(SlidingFactory()) for pack in packs]
+    + [pack.add_initial(SlidingFactory(use_symmetries=True)) for pack in packs]
 )
 
 

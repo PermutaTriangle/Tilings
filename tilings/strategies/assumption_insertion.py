@@ -58,7 +58,9 @@ class AddAssumptionsConstructor(Constructor):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
         assert len(subterms) == 1
         return self._push_add_assumption(n, subterms[0], self._child_param_map)
 
@@ -78,24 +80,15 @@ class AddAssumptionsConstructor(Constructor):
             param: pos for pos, param in enumerate(parent.extra_parameters)
         }
         child_param_to_parent_param = {v: k for k, v in self.extra_parameters.items()}
-        child_pos_to_parent_pos: Tuple[Optional[int], ...] = tuple(
-            None
+        child_pos_to_parent_pos: Tuple[Tuple[int, ...], ...] = tuple(
+            tuple()
             if param in self.new_parameters
-            else parent_param_to_pos[child_param_to_parent_param[param]]
+            else (parent_param_to_pos[child_param_to_parent_param[param]],)
             for param in child.extra_parameters
         )
-        num_parent_params = len(parent.extra_parameters)
-
-        def param_map(param: Parameters) -> Parameters:
-            new_params = [0 for _ in range(num_parent_params)]
-            for pos, value in enumerate(param):
-                parent_pos = child_pos_to_parent_pos[pos]
-                if parent_pos is not None:
-                    assert new_params[parent_pos] == 0
-                    new_params[parent_pos] = value
-            return tuple(new_params)
-
-        return param_map
+        return self.build_param_map(
+            child_pos_to_parent_pos, len(parent.extra_parameters)
+        )
 
     def get_sub_objects(
         self, subobjs: SubObjects, n: int
@@ -138,6 +131,10 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
     def can_be_equivalent() -> bool:
         return False
 
+    @staticmethod
+    def is_two_way(comb_class: Tiling):
+        return False
+
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
         if any(assumption in tiling.assumptions for assumption in self.assumptions):
             raise StrategyDoesNotApply("The assumption is already on the tiling.")
@@ -159,6 +156,14 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
             new_parameters,
             self.extra_parameters(comb_class, children)[0],
         )
+
+    def reverse_constructor(
+        self,
+        idx: int,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        raise NotImplementedError
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
