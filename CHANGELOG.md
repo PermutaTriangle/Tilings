@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Rearrange assumption strategy
+- `TrackingAssumption.from_cell` method
 
 ### Changed
 - Updated to use comb_spec_searcher 3.0.0
@@ -15,8 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [2.5.0] - 2020-11-11
 ### Added
 - Added sliding strategy
-- 'GuidedSearcher' class which will search for specification with a specific set of 
-  underlying tilings. Includes methods 'from_spec' and 'from_uri' which creates a 
+- 'GuidedSearcher' class which will search for specification with a specific set of
+  underlying tilings. Includes methods 'from_spec' and 'from_uri' which creates a
   'GuidedSearcher' instance.
 - Creates a new `LimitedAssumptionTileScope` that allows you to set a maximum number
     of assumptions allowable on any tiling

@@ -131,6 +131,19 @@ def test_order():
     assert xor(point_ass < skew_ass, skew_ass < point_ass)
 
 
+def test_from_cell():
+    assert TrackingAssumption.from_cells([]) == TrackingAssumption([])
+    assert TrackingAssumption.from_cells([(0, 1)]) == TrackingAssumption(
+        [GriddedPerm((0,), [(0, 1)])]
+    )
+    assert TrackingAssumption.from_cells([(0, 1), (2, 3)]) == TrackingAssumption(
+        [
+            GriddedPerm((0,), [(0, 1)]),
+            GriddedPerm((0,), [(2, 3)]),
+        ]
+    )
+
+
 @pytest.mark.timeout(90)
 def test_123_fusion():
     pack = TileScopePack.row_and_col_placements(row_only=True).make_fusion(tracked=True)

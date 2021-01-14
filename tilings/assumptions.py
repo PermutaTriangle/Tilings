@@ -22,6 +22,11 @@ class TrackingAssumption:
     def __init__(self, gps: Iterable[GriddedPerm]):
         self.gps = tuple(sorted(set(gps)))
 
+    @classmethod
+    def from_cells(cls, cells: Iterable[Cell]) -> "TrackingAssumption":
+        gps = [GriddedPerm.single_cell((0,), cell) for cell in cells]
+        return TrackingAssumption(gps)
+
     def avoiding(
         self,
         obstructions: Iterable[GriddedPerm],
