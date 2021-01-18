@@ -66,7 +66,24 @@ def reverse_fusion_rules():
     yield FusionStrategy(row_idx=1, tracked=True)(t3.rotate270()).to_reverse_rule(0)
 
 
+@pytest.fixture
+def both_reverse_fusion_rule():
+    rule = list(reverse_fusion_rules())[4]
+    assert len(rule.comb_class.assumptions) == 3
+    assert len(rule.children[0].assumptions) == 4
+    return rule
+
+
+def test_forward_map(both_reverse_fusion_rule):
+    constructor = both_reverse_fusion_rule.constructor
+    assert constructor.forward_map((0, 0, 0, 0)) == (0, 0, 0)
+    assert constructor.forward_map((1, 0, 0, 0)) == (1, 0, 0)
+    assert constructor.forward_map((1, 1, 0, 0)) == (1, 1, 1)
+    assert constructor.forward_map((0, 0, 1, 1)) == (1, 1, 1)
+    assert constructor.forward_map((0, 0, 0, 1)) == (0, 0, 1)
+
+
 @pytest.mark.parametrize("rule", reverse_fusion_rules())
 def test_sanity_check(rule):
     for length in range(6):
-        rule.sanity_check(length)
+        assert rule.sanity_check(length)
