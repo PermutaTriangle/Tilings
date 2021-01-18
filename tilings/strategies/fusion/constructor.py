@@ -614,8 +614,8 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
         )
         self.num_fuse_param = len(t_fuse.extra_parameters)
 
+    @staticmethod
     def build_unfuse_pos_to_fuse_pos(
-        self,
         t_unfuse: Tiling,
         t_fuse: Tiling,
         extra_parameters: Dict[str, str],
@@ -628,7 +628,7 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
         Return the contribution of the unfuse assumption to the fused assumptions.
 
         The i-th tuple gives the position of all the assumptions of the fused tiling
-        the the i-th assumption of the unfused tiling contributes to.
+        the i-th assumption of the unfused tiling contributes to.
         """
         assert left_fuse_param_idx is not None or right_fuse_param_idx is not None
         res: Tuple[Set[int], ...] = tuple(set() for _ in t_unfuse.extra_parameters)
@@ -637,29 +637,33 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
             u_param_idx = t_unfuse.extra_parameters.index(u_param)
             f_param_idx = t_fuse.extra_parameters.index(f_param)
             res[u_param_idx].add(f_param_idx)
-        # The left side of the fuse region contributes to the righ-sided assumption
+        # The left side of the fuse region contributes to the right-sided assumption
         if left_fuse_param_idx is not None:
-            for rs_param in right_sided_parameters:
-                rs_param_idx_on_fuse = t_fuse.extra_parameters.index(
-                    extra_parameters[rs_param]
+            for param in right_sided_parameters:
+                param_idx_on_fuse = t_fuse.extra_parameters.index(
+                    extra_parameters[param]
                 )
-                res[left_fuse_param_idx].add(rs_param_idx_on_fuse)
+                res[left_fuse_param_idx].add(param_idx_on_fuse)
         # The right side of the fuse region contributes to the left-sided assumption
         if right_fuse_param_idx is not None:
-            for ls_param in left_sided_parameters:
-                ls_param_idx_on_fuse = t_fuse.extra_parameters.index(
-                    extra_parameters[ls_param]
+            for param in left_sided_parameters:
+                param_idx_on_fuse = t_fuse.extra_parameters.index(
+                    extra_parameters[param]
                 )
-                res[right_fuse_param_idx].add(ls_param_idx_on_fuse)
+                res[right_fuse_param_idx].add(param_idx_on_fuse)
         return tuple(map(tuple, res))
 
+    @staticmethod
     def get_left_fuse_index(
-        self,
         left_sided_parameters: Tuple[str, ...],
         fuse_parameter: str,
         extra_parameters: Dict[str, str],
         t_unfuse: Tiling,
     ) -> Optional[int]:
+        """
+        Return the param index of the left sided param that fuses to the fuse param on
+        the fused tiling.
+        """
         for parent_param, child_param in extra_parameters.items():
             if child_param == fuse_parameter and parent_param in left_sided_parameters:
                 return t_unfuse.extra_parameters.index(parent_param)
@@ -681,7 +685,7 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
         if self.type == ReverseFusionConstructor.Type.BOTH:
             # In the case where both is track we don't subtract anything
             return tuple(-1 for _ in param)
-        elif self.type == ReverseFusionConstructor.Type.LEFT_ONLY:
+        if self.type == ReverseFusionConstructor.Type.LEFT_ONLY:
             add = self.left_sided_index
             substract = self.right_sided_index
         else:

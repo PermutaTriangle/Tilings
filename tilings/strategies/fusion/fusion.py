@@ -8,7 +8,6 @@ from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.typing import Objects
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
-from tilings.strategies.dummy_constructor import DummyConstructor
 
 from .constructor import FusionConstructor, ReverseFusionConstructor
 
@@ -205,8 +204,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             child,
             self._fuse_parameter(comb_class),
             self.extra_parameters(comb_class, children)[0],
-            left_sided_params,
-            right_sided_params,
+            tuple(left_sided_params),
+            tuple(right_sided_params),
         )
 
     def extra_parameters(
