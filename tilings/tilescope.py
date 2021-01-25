@@ -143,7 +143,11 @@ class GuidedSearcher(TileScope):
         self.tilings = frozenset(tilings)
         super().__init__(basis, pack, *args, **kwargs)
         for t in self.tilings:
-            self._add_to_queue(self.classdb.get_label(t))
+            class_label = self.classdb.get_label(t)
+            is_empty = t.is_empty()
+            self.classdb.set_empty(class_label, is_empty)
+            if not is_empty:
+                self._add_to_queue(class_label)
 
     def _expand(
         self,
