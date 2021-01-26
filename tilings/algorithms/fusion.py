@@ -1,7 +1,5 @@
 """
 The implementation of the fusion algorithm
-
-# TODO: this file needs to be type checked!
 """
 import collections
 from itertools import chain
