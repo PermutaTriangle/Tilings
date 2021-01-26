@@ -144,8 +144,7 @@ class GuidedSearcher(TileScope):
         super().__init__(basis, pack, *args, **kwargs)
         for t in self.tilings:
             class_label = self.classdb.get_label(t)
-            is_empty = t.is_empty()
-            self.classdb.set_empty(class_label, is_empty)
+            is_empty = self.classdb.is_empty(t, class_label)
             if not is_empty:
                 self._add_to_queue(class_label)
 
