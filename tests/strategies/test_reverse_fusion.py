@@ -87,3 +87,20 @@ def test_forward_map(both_reverse_fusion_rule):
 def test_sanity_check(rule):
     for length in range(6):
         assert rule.sanity_check(length)
+
+
+def test_test_positive_reverse_fusion():
+    t = Tiling(
+        obstructions=[
+            GriddedPerm((0, 1), [(0, 0), (0, 0)]),
+            GriddedPerm((0, 1), [(0, 0), (1, 0)]),
+            GriddedPerm((0, 1), [(1, 0), (1, 0)]),
+        ],
+        requirements=[[GriddedPerm((0,), [(0, 0)])]],
+        assumptions=[TrackingAssumption([GriddedPerm((0,), [(0, 0)])])],
+    )
+    rule = FusionStrategy(col_idx=0, tracked=True)(t)
+    assert rule.is_two_way()
+    reverse_rule = rule.to_reverse_rule(0)
+    with pytest.raises(NotImplementedError):
+        reverse_rule.sanity_check(4)

@@ -192,6 +192,10 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         if not algo.fusable():
             raise StrategyDoesNotApply("Strategy does not apply")
+        if algo.min_left_right_points() != (0, 0):
+            raise NotImplementedError(
+                "Reverse positive fusion counting not implemented"
+            )
         child = algo.fused_tiling()
         assert children is None or children == (child,)
         (
