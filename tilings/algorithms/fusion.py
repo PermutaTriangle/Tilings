@@ -1,11 +1,9 @@
 """
 The implementation of the fusion algorithm
-
-# TODO: this file needs to be type checked!
 """
-from collections import Counter
+import collections
 from itertools import chain
-from typing import TYPE_CHECKING, Iterator, Optional
+from typing import TYPE_CHECKING, Counter, Iterable, Iterator, List, Optional, Tuple
 
 from tilings.assumptions import (
     ComponentAssumption,
@@ -17,6 +15,8 @@ from tilings.griddedperm import GriddedPerm
 
 if TYPE_CHECKING:
     from tilings import Tiling
+
+Cell = Tuple[int, int]
 
 
 class Fusion:
@@ -40,16 +40,16 @@ class Fusion:
 
     def __init__(
         self,
-        tiling,
-        row_idx=None,
-        col_idx=None,
+        tiling: "Tiling",
+        row_idx: Optional[int] = None,
+        col_idx: Optional[int] = None,
         tracked: bool = False,
         isolation_level: Optional[str] = None,
     ):
         self._tiling: "Tiling" = tiling
-        self._assumptions_fuse_counters = None
-        self._obstruction_fuse_counter = None
-        self._requirements_fuse_counters = None
+        self._assumptions_fuse_counters: Optional[List[Counter[GriddedPerm]]] = None
+        self._obstruction_fuse_counter: Optional[Counter[GriddedPerm]] = None
+        self._requirements_fuse_counters: Optional[List[Counter[GriddedPerm]]] = None
         self._tracked = tracked  # add a TrackingAssumption to the region being tracked.
         self._positive_left = False
         self._positive_right = False
@@ -125,21 +125,23 @@ class Fusion:
             if left_points_so_far + 1 == left_points:
                 break
 
-    def _fuse_counter(self, gridded_perms):
+    def _fuse_counter(
+        self, gridded_perms: Iterable[GriddedPerm]
+    ) -> Counter[GriddedPerm]:
         """
         Count the multiplicities of a set of gridded permutations after the
         fusion.
 
         Return a Counter of gridded permutations with their multiplicities.
         """
-        fuse_counter = Counter()
+        fuse_counter: Counter[GriddedPerm] = collections.Counter()
         for gp in gridded_perms:
             fused_perm = self.fuse_gridded_perm(gp)
             fuse_counter[fused_perm] += 1
         return fuse_counter
 
     @property
-    def obstruction_fuse_counter(self):
+    def obstruction_fuse_counter(self) -> Counter[GriddedPerm]:
         """
         Counter of multiplicities of fused obstructions.
         """
@@ -150,7 +152,9 @@ class Fusion:
         return self._obstruction_fuse_counter
 
     @property
-    def positive_left_right_requirements(self):
+    def positive_left_right_requirements(
+        self,
+    ) -> Tuple[Tuple[GriddedPerm, ...], Tuple[GriddedPerm, ...]]:
         """
         Return the pair of requirements that ensures the left contains at least
         one point, and the right contains at least one point.
@@ -165,7 +169,7 @@ class Fusion:
                 right.append(GriddedPerm.single_cell((0,), (x + 1, y)))
         return tuple(sorted(left)), tuple(sorted(right))
 
-    def new_positive_requirement(self):
+    def new_positive_requirement(self) -> List[GriddedPerm]:
         cells = [
             (x, y)
             for (x, y) in self._tiling.active_cells
@@ -187,7 +191,9 @@ class Fusion:
             return sorted(GriddedPerm.single_cell((0,), cell) for cell in cells)
         raise ValueError("no positive left right requirement")
 
-    def is_positive_left_or_right_requirement(self, requirement):
+    def is_positive_left_or_right_requirement(
+        self, requirement: Tuple[GriddedPerm, ...]
+    ) -> bool:
         """
         Return True if the requirement is a positive right or left requirement,
         but also set this to True on the algorithm, as these will be skipped
@@ -202,11 +208,11 @@ class Fusion:
             return True
         return False
 
-    def min_left_right_points(self):
+    def min_left_right_points(self) -> Tuple[int, int]:
         return int(self._positive_left), int(self._positive_right)
 
     @property
-    def requirements_fuse_counters(self):
+    def requirements_fuse_counters(self) -> List[Counter[GriddedPerm]]:
         """
         List of fuse counters for each of the requirements list of the tiling.
         """
@@ -221,7 +227,7 @@ class Fusion:
         return self._requirements_fuse_counters
 
     @property
-    def assumptions_fuse_counters(self):
+    def assumptions_fuse_counters(self) -> List[Counter[GriddedPerm]]:
         """
         List of fuse counters for each of the TrackedAssumptions of the tiling.
         """
@@ -234,7 +240,9 @@ class Fusion:
         self._assumptions_fuse_counters = counters
         return self._assumptions_fuse_counters
 
-    def _can_fuse_set_of_gridded_perms(self, fuse_counter):
+    def _can_fuse_set_of_gridded_perms(
+        self, fuse_counter: Counter[GriddedPerm]
+    ) -> bool:
         """
         Check if a set of gridded permutations can be fused.
         """
@@ -242,14 +250,14 @@ class Fusion:
             self._is_valid_count(count, gp) for gp, count in fuse_counter.items()
         )
 
-    def _is_valid_count(self, count, gp):
+    def _is_valid_count(self, count: int, gp: GriddedPerm) -> bool:
         """
         Check if the fuse count `count` for a given gridded permutation `gp` is
         valid.
         """
         return self._point_in_fuse_region(gp) + 1 == count
 
-    def _point_in_fuse_region(self, fused_gp):
+    def _point_in_fuse_region(self, fused_gp: GriddedPerm) -> int:
         """
         Return the number of point of the gridded permutation `fused_gp` in the
         fused row or column.
@@ -258,7 +266,9 @@ class Fusion:
             return sum(1 for cell in fused_gp.pos if cell[1] == self._row_idx)
         return sum(1 for cell in fused_gp.pos if cell[0] == self._col_idx)
 
-    def _can_fuse_assumption(self, assumption, fuse_counter):
+    def _can_fuse_assumption(
+        self, assumption: TrackingAssumption, fuse_counter: Counter[GriddedPerm]
+    ) -> bool:
         """
         Return True if an assumption can be fused. That is, prefusion, the gps
         are all contained entirely on the left of the fusion region, entirely
@@ -273,7 +283,7 @@ class Fusion:
             and self._is_one_sided_assumption(assumption)
         )
 
-    def _is_one_sided_assumption(self, assumption):
+    def _is_one_sided_assumption(self, assumption: TrackingAssumption) -> bool:
         """
         Return True if all of the assumption is contained either entirely on
         the left, or entirely on the right.
@@ -286,19 +296,19 @@ class Fusion:
             x != self._col_idx for gp in assumption.gps for x, _ in gp.pos
         ) or all(x != self._col_idx + 1 for gp in assumption.gps for x, _ in gp.pos)
 
-    def is_left_sided_assumption(self, assumption):
+    def is_left_sided_assumption(self, assumption: TrackingAssumption) -> bool:
         if self._fuse_row:
             return all(
                 y != self._row_idx + 1 for gp in assumption.gps for _, y in gp.pos
             )
         return all(x != self._col_idx + 1 for gp in assumption.gps for x, _ in gp.pos)
 
-    def is_right_sided_assumption(self, assumption):
+    def is_right_sided_assumption(self, assumption: TrackingAssumption) -> bool:
         if self._fuse_row:
             return all(y != self._row_idx for gp in assumption.gps for _, y in gp.pos)
         return all(x != self._col_idx for gp in assumption.gps for x, _ in gp.pos)
 
-    def new_assumption(self):
+    def new_assumption(self) -> TrackingAssumption:
         """
         Return the assumption that needs to counted in order to enumerate.
         """
@@ -309,7 +319,7 @@ class Fusion:
             or (not self._fuse_row and cell[0] == self._col_idx)
         )
 
-    def _num_fusing_assumptions(self):
+    def _num_fusing_assumptions(self) -> int:
         if self._fuse_row:
             fusing_cells = [
                 (i, self._row_idx) for i in range(self._tiling.dimensions[0])
@@ -326,7 +336,7 @@ class Fusion:
             ]
         )
 
-    def _check_isolation_level(self):
+    def _check_isolation_level(self) -> bool:
         """
         Checks whether the requirements for self.isolation_level are met.
         """
@@ -342,9 +352,9 @@ class Fusion:
                 and self._num_fusing_assumptions() == 1
             )
 
-        assert False, "{} is an invalid isolation_level".format(self.isolation_level)
+        raise RuntimeError(f"{self.isolation_level} is an invalid isolation_level")
 
-    def fusable(self):
+    def fusable(self) -> bool:
         """
         Check if the fusion is possible.
         """
@@ -382,7 +392,7 @@ class Fusion:
             ]
             if self._tracked:
                 assumptions.append(self.new_assumption())
-            requirements = self.requirements_fuse_counters
+            requirements = list(list(fc) for fc in self.requirements_fuse_counters)
             if self._positive_left or self._positive_right:
                 new_positive_requirement = self.new_positive_requirement()
                 requirements = requirements + [new_positive_requirement]
@@ -411,12 +421,12 @@ class ComponentFusion(Fusion):
 
     def __init__(
         self,
-        tiling,
+        tiling: "Tiling",
         *,
-        row_idx=None,
-        col_idx=None,
+        row_idx: Optional[int] = None,
+        col_idx: Optional[int] = None,
         tracked: bool = False,
-        isolation_level: Optional[str] = None
+        isolation_level: Optional[str] = None,
     ):
         if tiling.requirements:
             raise NotImplementedError(
@@ -429,10 +439,10 @@ class ComponentFusion(Fusion):
             tracked=tracked,
             isolation_level=isolation_level,
         )
-        self._first_cell = None
-        self._second_cell = None
+        self._first_cell: Optional[Cell] = None
+        self._second_cell: Optional[Cell] = None
 
-    def _pre_check(self):
+    def _pre_check(self) -> bool:
         """
         Make a preliminary check before testing if the actual fusion is
         possible.
@@ -472,7 +482,7 @@ class ComponentFusion(Fusion):
         return True
 
     @property
-    def first_cell(self):
+    def first_cell(self) -> Cell:
         """
         The first cell of the fusion. This cell is in the bottommost row or the
         leftmost column of the fusion.
@@ -483,10 +493,11 @@ class ComponentFusion(Fusion):
             raise RuntimeError(
                 "Pre-check failed. No component fusion " "possible and no first cell"
             )
+        assert self._first_cell is not None
         return self._first_cell
 
     @property
-    def second_cell(self):
+    def second_cell(self) -> Cell:
         """
         The second cell of the fusion. This cell is in the topmost row or the
         rightmost column of the fusion.
@@ -497,9 +508,10 @@ class ComponentFusion(Fusion):
             raise RuntimeError(
                 "Pre-check failed. No component fusion " "possible and no second cell"
             )
+        assert self._second_cell is not None
         return self._second_cell
 
-    def has_crossing_len2_ob(self):
+    def has_crossing_len2_ob(self) -> bool:
         """
         Return True if the tiling contains a crossing length 2 obstruction
         between `self.first_cell` and `self.second_cell`.
@@ -518,7 +530,7 @@ class ComponentFusion(Fusion):
             ]
         return any(ob in possible_obs for ob in self._tiling.obstructions)
 
-    def is_crossing_len2(self, gp):
+    def is_crossing_len2(self, gp: GriddedPerm) -> bool:
         """
         Return True if the gridded permutation `gp` is a length 2 obstruction
         crossing between the first and second cell.
@@ -530,7 +542,7 @@ class ComponentFusion(Fusion):
         )
 
     @property
-    def obstruction_fuse_counter(self):
+    def obstruction_fuse_counter(self) -> Counter[GriddedPerm]:
         """
         Counter of multiplicities of fused obstructions.
 
@@ -544,7 +556,7 @@ class ComponentFusion(Fusion):
         self._obstruction_fuse_counter = fuse_counter
         return self._obstruction_fuse_counter
 
-    def obstructions_to_add(self):
+    def obstructions_to_add(self) -> Iterator[GriddedPerm]:
         """
         Iterator over all the obstructions obtained by fusing obstructions of
         the tiling and then unfusing it in all possible ways. Crossing length 2
@@ -554,7 +566,9 @@ class ComponentFusion(Fusion):
             self.unfuse_gridded_perm(ob) for ob in self.obstruction_fuse_counter
         )
 
-    def _can_fuse_assumption(self, assumption, fuse_counter):
+    def _can_fuse_assumption(
+        self, assumption: TrackingAssumption, fuse_counter: Counter[GriddedPerm]
+    ) -> bool:
         """
         Return True if an assumption can be fused. That is, prefusion, the gps
         are all contained entirely on the left of the fusion region, entirely
@@ -569,13 +583,15 @@ class ComponentFusion(Fusion):
             and self._is_one_sided_assumption(assumption)
         )
 
-    def _can_fuse_set_of_gridded_perms(self, fuse_counter):
+    def _can_fuse_set_of_gridded_perms(
+        self, fuse_counter: Counter[GriddedPerm]
+    ) -> bool:
         raise NotImplementedError
 
-    def _is_valid_count(self, count, gp):
+    def _is_valid_count(self, count: int, gp: GriddedPerm) -> bool:
         raise NotImplementedError
 
-    def fusable(self):
+    def fusable(self) -> bool:
         """
         Return True if adjacent rows can be viewed as one row where you draw a
         horizontal line through the components.
@@ -586,7 +602,7 @@ class ComponentFusion(Fusion):
 
         return self._tiling == new_tiling and self._check_isolation_level()
 
-    def new_assumption(self):
+    def new_assumption(self) -> ComponentAssumption:
         """
         Return the assumption that needs to be counted in order to enumerate.
         """
@@ -601,7 +617,7 @@ class ComponentFusion(Fusion):
             return SumComponentAssumption(gps)
         return SkewComponentAssumption(gps)
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = "ComponentFusion Algorithm for:\n"
         s += str(self._tiling)
         return s

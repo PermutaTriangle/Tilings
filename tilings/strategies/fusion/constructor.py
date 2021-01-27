@@ -13,12 +13,13 @@ rows or columns.
 We will assume we are always fusing two adjacent columns, and discuss the left
 and right hand sides accordingly.
 """
+import enum
 from collections import Counter, defaultdict
 from functools import reduce
 from operator import mul
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
-from sympy import Eq, Expr, Function, Number, var
+import sympy
 
 from comb_spec_searcher import Constructor
 from comb_spec_searcher.typing import (
@@ -179,21 +180,23 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             if len(parent_vars) == 2
         )
 
-    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
+    def get_equation(
+        self, lhs_func: sympy.Function, rhs_funcs: Tuple[sympy.Function, ...]
+    ) -> sympy.Eq:
         if max(self.min_points) > 1:
             raise NotImplementedError(
                 "not implemented equation in the case of "
                 "left or right containing more than one point"
             )
         rhs_func = rhs_funcs[0]
-        subs: Dict[str, Expr] = {
-            child: reduce(mul, [var(k) for k in parent_vars], 1)
+        subs: Dict[str, sympy.Expr] = {
+            child: reduce(mul, [sympy.var(k) for k in parent_vars], 1)
             for child, parent_vars in self.reversed_extra_parameters.items()
         }
         left_vars = reduce(
             mul,
             [
-                var(k)
+                sympy.var(k)
                 for k in self.left_sided_parameters
                 if k not in self.parent_fusion_parameters
             ],
@@ -202,20 +205,20 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         right_vars = reduce(
             mul,
             [
-                var(k)
+                sympy.var(k)
                 for k in self.right_sided_parameters
                 if k not in self.parent_fusion_parameters
             ],
             1,
         )
-        p, q = Number(1), Number(1)
+        p, q = sympy.Number(1), sympy.Number(1)
         for parent_fuse_parameter, fuse_type in zip(
             self.parent_fusion_parameters, self.fusion_types
         ):
             if fuse_type in ("left", "both"):
-                p *= var(parent_fuse_parameter)
+                p *= sympy.var(parent_fuse_parameter)
             if fuse_type in ("right", "both"):
-                q *= var(parent_fuse_parameter)
+                q *= sympy.var(parent_fuse_parameter)
         if left_vars == 1 and right_vars == 1 and p == q:
             raise NotImplementedError(
                 "Not handled case with no left and right vars, and new fuse "
@@ -238,7 +241,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             # right side is positive, so thr left can't be empty
             to_subtract += left_right_empty[0]
 
-        return Eq(
+        return sympy.Eq(
             lhs_func,
             (
                 (q * right_vars * rhs_func.subs(subs1, simultaneous=True))
@@ -545,3 +548,188 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         raise NotImplementedError(
             "This is implemented on the FusionRule class directly"
         )
+
+
+class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
+    """
+    The reverse fusion constructor
+
+    - fuse_parameter:           parameter corresponding to the region of the
+                                tiling of the child where a line must be drawn.
+    - extra_parameters:         a dictionary where the keys are each of the
+                                parent parameters pointing to the child
+                                parameter it was mapped to. Note, if [ A | A ]
+                                fuses to [ A ] then we assume any one sided
+                                variable maps to the [ A ] on the child.
+    - left_sided_parameters:    all of the parent parameters which overlap
+                                fully the left side of the region that is
+                                being fused.
+    - right_sided_parameters:   all of the parent parameters which overlap
+                                fully the right side of the region that is
+                                being fused.
+    """
+
+    class Type(enum.Enum):
+        LEFT_ONLY = enum.auto()
+        RIGHT_ONLY = enum.auto()
+        BOTH = enum.auto()
+
+    def __init__(
+        self,
+        t_unfuse: Tiling,
+        t_fuse: Tiling,
+        fuse_parameter: str,
+        extra_parameters: Dict[str, str],
+        left_sided_parameters: Tuple[str, ...],
+        right_sided_parameters: Tuple[str, ...],
+    ):
+        left_fuse_index = self.get_left_fuse_index(
+            left_sided_parameters, fuse_parameter, extra_parameters, t_unfuse
+        )
+        right_fuse_index = self.get_left_fuse_index(
+            right_sided_parameters, fuse_parameter, extra_parameters, t_unfuse
+        )
+        if left_fuse_index is not None:
+            if right_fuse_index is not None:
+                self.type = ReverseFusionConstructor.Type.BOTH
+            else:
+                self.type = ReverseFusionConstructor.Type.LEFT_ONLY
+        else:
+            assert right_fuse_index is not None
+            self.type = ReverseFusionConstructor.Type.RIGHT_ONLY
+        self.unfuse_pos_to_fuse_pos = self.build_unfuse_pos_to_fuse_pos(
+            t_unfuse,
+            t_fuse,
+            extra_parameters,
+            left_fuse_index,
+            left_sided_parameters,
+            right_fuse_index,
+            right_sided_parameters,
+        )
+        self.left_sided_index = tuple(
+            map(t_unfuse.extra_parameters.index, left_sided_parameters)
+        )
+        self.right_sided_index = tuple(
+            map(t_unfuse.extra_parameters.index, right_sided_parameters)
+        )
+        self.num_fuse_param = len(t_fuse.extra_parameters)
+
+    @staticmethod
+    def build_unfuse_pos_to_fuse_pos(
+        t_unfuse: Tiling,
+        t_fuse: Tiling,
+        extra_parameters: Dict[str, str],
+        left_fuse_param_idx: Optional[int],
+        left_sided_parameters: Tuple[str, ...],
+        right_fuse_param_idx: Optional[int],
+        right_sided_parameters: Tuple[str, ...],
+    ) -> Tuple[Tuple[int, ...], ...]:
+        """
+        Return the contribution of the unfuse assumption to the fused assumptions.
+
+        The i-th tuple gives the position of all the assumptions of the fused tiling
+        the i-th assumption of the unfused tiling contributes to.
+        """
+        assert left_fuse_param_idx is not None or right_fuse_param_idx is not None
+        res: Tuple[Set[int], ...] = tuple(set() for _ in t_unfuse.extra_parameters)
+        # Adding the assumption contribution to there fused version
+        for u_param, f_param in extra_parameters.items():
+            u_param_idx = t_unfuse.extra_parameters.index(u_param)
+            f_param_idx = t_fuse.extra_parameters.index(f_param)
+            res[u_param_idx].add(f_param_idx)
+        # The left side of the fuse region contributes to the right-sided assumption
+        if left_fuse_param_idx is not None:
+            for param in right_sided_parameters:
+                param_idx_on_fuse = t_fuse.extra_parameters.index(
+                    extra_parameters[param]
+                )
+                res[left_fuse_param_idx].add(param_idx_on_fuse)
+        # The right side of the fuse region contributes to the left-sided assumption
+        if right_fuse_param_idx is not None:
+            for param in left_sided_parameters:
+                param_idx_on_fuse = t_fuse.extra_parameters.index(
+                    extra_parameters[param]
+                )
+                res[right_fuse_param_idx].add(param_idx_on_fuse)
+        return tuple(map(tuple, res))
+
+    @staticmethod
+    def get_left_fuse_index(
+        left_sided_parameters: Tuple[str, ...],
+        fuse_parameter: str,
+        extra_parameters: Dict[str, str],
+        t_unfuse: Tiling,
+    ) -> Optional[int]:
+        """
+        Return the param index of the left sided param that fuses to the fuse param on
+        the fused tiling.
+        """
+        for parent_param, child_param in extra_parameters.items():
+            if child_param == fuse_parameter and parent_param in left_sided_parameters:
+                return t_unfuse.extra_parameters.index(parent_param)
+        return None
+
+    def forward_map(self, param: Parameters) -> Parameters:
+        """
+        Maps a set of parameters on the fuse tiling to a set of parameters on
+        the unfused tiling.
+        """
+        new_param = [0 for _ in range(self.num_fuse_param)]
+        assert len(param) == len(self.unfuse_pos_to_fuse_pos)
+        for pvalue, fuse_idxs in zip(param, self.unfuse_pos_to_fuse_pos):
+            for fuse_idx in fuse_idxs:
+                new_param[fuse_idx] += pvalue
+        return tuple(new_param)
+
+    def a_map(self, param: Parameters) -> Parameters:
+        if self.type == ReverseFusionConstructor.Type.BOTH:
+            # In the case where both is track we don't subtract anything
+            return tuple(-1 for _ in param)
+        if self.type == ReverseFusionConstructor.Type.LEFT_ONLY:
+            add = self.left_sided_index
+            substract = self.right_sided_index
+        else:
+            assert self.type == ReverseFusionConstructor.Type.RIGHT_ONLY
+            add = self.right_sided_index
+            substract = self.left_sided_index
+        new_param = list(param)
+        for idx in add:
+            new_param[idx] += 1
+        for idx in substract:
+            new_param[idx] -= 1
+        return tuple(new_param)
+
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
+        terms: Terms = Counter()
+        child_terms = subterms[0](n)
+        for param, value in child_terms.items():
+            new_param = self.forward_map(param)
+            new_value = value - child_terms[self.a_map(param)]
+            assert new_param not in terms or new_value == terms[new_param]
+            terms[new_param] = new_value
+        return terms
+
+    def get_equation(
+        self, lhs_func: sympy.Function, rhs_funcs: Tuple[sympy.Function, ...]
+    ) -> sympy.Eq:
+        raise NotImplementedError
+
+    def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
+        raise NotImplementedError
+
+    def get_sub_objects(
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
+        raise NotImplementedError
+
+    def random_sample_sub_objects(
+        self,
+        parent_count: int,
+        subsamplers: SubSamplers,
+        subrecs: SubRecs,
+        n: int,
+        **parameters: int,
+    ):
+        raise NotImplementedError

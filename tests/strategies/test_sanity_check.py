@@ -1,6 +1,7 @@
+import itertools
+
 import pytest
 
-from comb_spec_searcher.strategies.constructor import CartesianProduct, DisjointUnion
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
 from tilings.strategies.factor import FactorStrategy
@@ -268,9 +269,7 @@ rules_to_check = [
             ),
             assumptions=(TrackingAssumption((GriddedPerm((0,), ((3, 0),)),)),),
         )
-    )
-    .to_equivalence_rule()
-    .to_reverse_rule(0),
+    ).to_equivalence_rule(),
     RequirementInsertionStrategy(
         gps=frozenset({GriddedPerm((0,), ((0, 2),))}), ignore_parent=True
     )(
@@ -293,23 +292,19 @@ rules_to_check = [
             requirements=((GriddedPerm((0,), ((0, 1),)),),),
             assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 2),)),)),),
         )
-    )
-    .to_equivalence_rule()
-    .to_reverse_rule(0),
+    ).to_equivalence_rule(),
 ]
 
 
 @pytest.mark.parametrize("rule", rules_to_check)
 def test_sanity_check_rules(rule):
-    for n in range(6):
-        assert rule.sanity_check(n)
-
-        if isinstance(rule.constructor, (CartesianProduct, DisjointUnion)):
-            for idx in range(len(rule.children)):
-                reversed_rule = rule.to_reverse_rule(idx)
-                print(reversed_rule)
-                for n in range(6):
-                    assert reversed_rule.sanity_check(n)
+    rules_to_check = [rule]
+    if rule.is_two_way():
+        rules_to_check.extend(
+            rule.to_reverse_rule(i) for i in range(len(rule.children))
+        )
+    for rule, length in itertools.product(rules_to_check, range(6)):
+        assert rule.sanity_check(length)
 
 
 def test_sanity_check_big_row_placement():

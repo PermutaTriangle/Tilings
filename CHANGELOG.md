@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Rearrange assumption strategy
 - `TrackingAssumption.from_cell` method
+- Counting for reverse fusion
 
 ### Changed
 - Updated to use comb_spec_searcher 3.0.0
