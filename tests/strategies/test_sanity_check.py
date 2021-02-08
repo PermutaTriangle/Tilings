@@ -293,6 +293,33 @@ rules_to_check = [
             assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 2),)),)),),
         )
     ).to_equivalence_rule(),
+    FusionStrategy(row_idx=2, tracked=True)(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 2), (0, 2))),
+                GriddedPerm((0, 1), ((0, 2), (0, 3))),
+                GriddedPerm((0, 1), ((0, 3), (0, 3))),
+                GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 1))),
+                GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 2))),
+                GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 3))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (0, 1))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (0, 2))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (0, 3))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 1), (0, 1))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 1), (0, 2))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 1), (0, 3))),
+            ),
+            requirements=(),
+            assumptions=(
+                TrackingAssumption((GriddedPerm((0,), ((0, 1),)),)),
+                TrackingAssumption(
+                    (GriddedPerm((0,), ((0, 1),)), GriddedPerm((0,), ((0, 2),)))
+                ),
+                TrackingAssumption((GriddedPerm((0,), ((0, 3),)),)),
+            ),
+        )
+    ),
 ]
 
 

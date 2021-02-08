@@ -707,8 +707,10 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
         for param, value in child_terms.items():
             new_param = self.forward_map(param)
             new_value = value - child_terms[self.a_map(param)]
+            assert new_value >= 0
             assert new_param not in terms or new_value == terms[new_param]
-            terms[new_param] = new_value
+            if new_value > 0:
+                terms[new_param] = new_value
         return terms
 
     def get_equation(
