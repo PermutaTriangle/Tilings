@@ -631,26 +631,36 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
         the i-th assumption of the unfused tiling contributes to.
         """
         assert left_fuse_param_idx is not None or right_fuse_param_idx is not None
-        res: Tuple[Set[int], ...] = tuple(set() for _ in t_unfuse.extra_parameters)
-        # Adding the assumption contribution to there fused version
+        reversed_extra_params: Dict[str, Set[str]] = defaultdict(set)
         for u_param, f_param in extra_parameters.items():
-            u_param_idx = t_unfuse.extra_parameters.index(u_param)
+            reversed_extra_params[f_param].add(u_param)
+        res: Tuple[Set[int], ...] = tuple(set() for _ in t_unfuse.extra_parameters)
+        one_sided_parameters = set(left_sided_parameters + right_sided_parameters)
+        for f_param, u_params in reversed_extra_params.items():
             f_param_idx = t_fuse.extra_parameters.index(f_param)
-            res[u_param_idx].add(f_param_idx)
-        # The left side of the fuse region contributes to the right-sided assumption
-        if left_fuse_param_idx is not None:
-            for param in right_sided_parameters:
-                param_idx_on_fuse = t_fuse.extra_parameters.index(
-                    extra_parameters[param]
-                )
-                res[left_fuse_param_idx].add(param_idx_on_fuse)
-        # The right side of the fuse region contributes to the left-sided assumption
-        if right_fuse_param_idx is not None:
-            for param in left_sided_parameters:
-                param_idx_on_fuse = t_fuse.extra_parameters.index(
-                    extra_parameters[param]
-                )
-                res[right_fuse_param_idx].add(param_idx_on_fuse)
+            for u_param in u_params:
+                u_param_idx = t_unfuse.extra_parameters.index(u_param)
+                if u_param not in one_sided_parameters:
+                    res[u_param_idx].add(f_param_idx)
+                    break
+                if (
+                    u_param in left_sided_parameters
+                    and right_fuse_param_idx is not None
+                ):
+                    res[u_param_idx].add(f_param_idx)
+                    res[right_fuse_param_idx].add(f_param_idx)
+                    break
+                if (
+                    u_param in right_sided_parameters
+                    and left_fuse_param_idx is not None
+                ):
+                    res[u_param_idx].add(f_param_idx)
+                    res[left_fuse_param_idx].add(f_param_idx)
+                    break
+            else:
+                for u_param in u_params:
+                    u_param_idx = t_unfuse.extra_parameters.index(u_param)
+                    res[u_param_idx].add(f_param_idx)
         return tuple(map(tuple, res))
 
     @staticmethod
@@ -708,8 +718,8 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
             new_param = self.forward_map(param)
             new_value = value - child_terms[self.a_map(param)]
             assert new_value >= 0
-            assert new_param not in terms or new_value == terms[new_param]
             if new_value > 0:
+                assert new_param not in terms or new_value == terms[new_param]
                 terms[new_param] = new_value
         return terms
 
