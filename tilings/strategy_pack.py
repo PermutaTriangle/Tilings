@@ -147,12 +147,6 @@ class TileScopePack(StrategyPack):
         If apply_first, it will add fusion to the front of the initial strategies.
         """
         pack = self
-        if tracked:
-            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
-            if component:
-                pack = pack.add_initial(
-                    strat.DetectComponentsStrategy(ignore_parent=True), apply_first=True
-                )
         if component:
             pack = pack.add_initial(
                 strat.ComponentFusionFactory(
@@ -172,6 +166,15 @@ class TileScopePack(StrategyPack):
                     "" if isolation_level is None else "_" + isolation_level,
                 ),
                 apply_first=apply_first,
+            )
+        if tracked:
+            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
+            if component:
+                pack = pack.add_initial(
+                    strat.DetectComponentsStrategy(ignore_parent=True), apply_first=True
+                )
+            pack = pack.add_initial(
+                strat.RearrangeAssumptionFactory(), apply_first=True
             )
         return pack
 
