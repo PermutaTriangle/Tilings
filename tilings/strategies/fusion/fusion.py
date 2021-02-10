@@ -6,7 +6,7 @@ from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.typing import Objects
-from tilings import GriddedPerm, Tiling
+from tilings import GriddedPerm, Tiling, TrackingAssumption
 from tilings.algorithms import Fusion
 
 from .constructor import FusionConstructor, ReverseFusionConstructor
@@ -147,12 +147,21 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def can_be_equivalent() -> bool:
         return False
 
-    def is_two_way(self, comb_class: Tiling):
+    def is_both_ass(self, ass: TrackingAssumption) -> bool:
+        assert all(len(gp) == 1 for gp in ass.gps)
+        cols = set(gp.pos[0][0] for gp in ass.gps)
+        rows = set(gp.pos[0][1] for gp in ass.gps)
+        return (
+            self.row_idx is not None and rows == {self.row_idx, self.row_idx + 1}
+        ) or (self.col_idx is not None and cols == {self.col_idx, self.col_idx + 1})
+
+    def is_two_way(self, comb_class: Tiling) -> bool:
         algo = self.fusion_algorithm(comb_class)
         new_ass = algo.new_assumption()
         fused_assumptions = (
             ass.__class__(gps)
             for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
+            if not self.is_both_ass(ass)
         )
         return new_ass in fused_assumptions
 
