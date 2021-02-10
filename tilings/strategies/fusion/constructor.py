@@ -594,9 +594,11 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
                 self.type = ReverseFusionConstructor.Type.BOTH
             else:
                 self.type = ReverseFusionConstructor.Type.LEFT_ONLY
-        else:
-            assert right_fuse_index is not None
+        elif right_fuse_index is not None:
             self.type = ReverseFusionConstructor.Type.RIGHT_ONLY
+        else:
+            # This case can probably be implemented if you have a both parameter
+            raise NotImplementedError("Need a left or right param")
         self.unfuse_pos_to_fuse_pos = self.build_unfuse_pos_to_fuse_pos(
             t_unfuse,
             t_fuse,
