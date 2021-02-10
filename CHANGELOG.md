@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Updated to use comb_spec_searcher 3.0.0
+- Using `strategy_pack.make_fusion` or `strategy_pack.make_tracked` now automatically
+  adds `RearrangeAssumptionFactory` with `apply_first=True` if `tracked=True`
 
 ## [2.5.0] - 2020-11-11
 ### Added
