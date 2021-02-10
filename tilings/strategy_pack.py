@@ -122,15 +122,19 @@ class TileScopePack(StrategyPack):
                     res.append(strategy)
             return res
 
-        return self.__class__(
-            ver_strats=replace_list(self.ver_strats),
-            inferral_strats=replace_list(self.inferral_strats),
-            initial_strats=replace_list(self.initial_strats),
-            expansion_strats=list(map(replace_list, self.expansion_strats)),
-            name=self.name,
-            symmetries=self.symmetries,
-            iterative=self.iterative,
-        ).add_initial(strat.AddAssumptionFactory(), apply_first=True)
+        return (
+            self.__class__(
+                ver_strats=replace_list(self.ver_strats),
+                inferral_strats=replace_list(self.inferral_strats),
+                initial_strats=replace_list(self.initial_strats),
+                expansion_strats=list(map(replace_list, self.expansion_strats)),
+                name=self.name,
+                symmetries=self.symmetries,
+                iterative=self.iterative,
+            )
+            .add_initial(strat.AddAssumptionFactory(), apply_first=True)
+            .add_initial(strat.RearrangeAssumptionFactory(), apply_first=True)
+        )
 
     def make_fusion(
         self,
