@@ -352,6 +352,7 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         d.pop("ignore_parent")
         d.pop("inferrable")
         d.pop("possibly_empty")
+        d.pop("workable")
         d["assumption"] = self.assumption.to_jsonable()
         d["sub_assumption"] = self.sub_assumption.to_jsonable()
         return d
