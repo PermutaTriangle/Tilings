@@ -139,27 +139,14 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
 
     def _init_checked(self):
         """
-        The lists in reversed_extra_parameters can have size at most two (in
-        which case one of the two variables is a subset of the other), unless,
-        they are contained entirely within the fused region, in which case it
-        can have up to 3, namely left, right and both. This is checked in the
-        first assertion.
+        The lists in reversed_extra_parameters can have size at most three.
+        This is checked in the first assertion.
 
         Moreover, if two parent assumptions map to the same assumption, then one
         of them is one sided, and the other covers both sides, OR they are all
         contained fully in fuse region. This is checked in the second assertion.
         """
-        assert all(
-            len(val) <= 2
-            or (
-                len(val) == 3
-                and all(
-                    self.extra_parameters[parent_var] == self.fuse_parameter
-                    for parent_var in val
-                )
-            )
-            for val in self.reversed_extra_parameters.values()
-        )
+        assert all(len(val) <= 3 for val in self.reversed_extra_parameters.values())
         assert all(
             (
                 any(
