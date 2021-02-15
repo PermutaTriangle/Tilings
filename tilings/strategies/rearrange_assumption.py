@@ -171,7 +171,6 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         new_ass_var_child = sympy.var(child.extra_parameters[self.new_ass_child_idx])
         ass_var_parent = sympy.var(parent.extra_parameters[self.ass_parent_idx])
         subass_var_child = sympy.var(child.extra_parameters[self.subass_child_idx])
-        print(subs)
         subs[new_ass_var_child] = subs.get(new_ass_var_child, 1) * ass_var_parent
         subs[subass_var_child] *= ass_var_parent
         return subs
