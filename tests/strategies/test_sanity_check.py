@@ -368,6 +368,37 @@ rules_to_check = [
             ),
         )
     ),
+    FusionStrategy(row_idx=1, col_idx=None, tracked=True)(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (0, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (0, 2))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 2), (0, 2))),
+                GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 1))),
+                GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 2))),
+                GriddedPerm((0, 1, 2), ((0, 1), (0, 2), (0, 2))),
+                GriddedPerm((0, 1, 2), ((0, 2), (0, 2), (0, 2))),
+            ),
+            assumptions=(
+                TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),
+                TrackingAssumption(
+                    (GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((0, 1),)))
+                ),
+                TrackingAssumption(
+                    (
+                        GriddedPerm((0,), ((0, 0),)),
+                        GriddedPerm((0,), ((0, 1),)),
+                        GriddedPerm((0,), ((0, 2),)),
+                    )
+                ),
+                TrackingAssumption(
+                    (GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((0, 2),)))
+                ),
+                TrackingAssumption((GriddedPerm((0,), ((0, 2),)),)),
+            ),
+        )
+    ),
 ]
 
 
