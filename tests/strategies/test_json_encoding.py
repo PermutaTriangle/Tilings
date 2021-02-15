@@ -6,7 +6,7 @@ import pytest
 from comb_spec_searcher import Strategy
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
-from tilings import GriddedPerm
+from tilings import GriddedPerm, TrackingAssumption
 from tilings.strategies import (
     AllPlacementsFactory,
     BasicVerificationStrategy,
@@ -25,6 +25,7 @@ from tilings.strategies import (
     ObstructionTransitivityFactory,
     OneByOneVerificationStrategy,
     PatternPlacementFactory,
+    RearrangeAssumptionFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
     RequirementInsertionFactory,
@@ -47,6 +48,7 @@ from tilings.strategies.factor import (
 )
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
+from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 from tilings.strategies.sliding import SlidingStrategy
@@ -373,9 +375,16 @@ strategy_objects = (
         SplittingStrategy("monotone"),
         SplittingStrategy("all"),
     ]
+    + [RearrangeAssumptionFactory()]
+    + [
+        RearrangeAssumptionStrategy(
+            TrackingAssumption(
+                [GriddedPerm((0,), [(0, 0)]), GriddedPerm((0,), [(1, 0)])]
+            ),
+            TrackingAssumption([GriddedPerm((0,), [(0, 0)])]),
+        )
+    ]
 )
-
-# TODO add tests for: ComponentFusionStrategy, FusionStrategy
 
 
 @pytest.mark.parametrize("strategy", strategy_objects)
