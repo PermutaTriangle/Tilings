@@ -116,6 +116,12 @@ class AddAssumptionsConstructor(Constructor):
             if random_choice <= res:
                 return (subsampler(n, **new_params),)
 
+    def __eq__(self, obj: object) -> bool:
+        raise NotImplementedError("Required for bijections")
+
+    def __hash__(self) -> int:
+        raise NotImplementedError("Required for bijection search")
+
 
 class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
     def __init__(self, assumptions: Iterable[TrackingAssumption], workable=False):

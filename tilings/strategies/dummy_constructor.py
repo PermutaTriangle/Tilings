@@ -48,3 +48,9 @@ class DummyConstructor(Constructor):
         **parameters: int,
     ):
         raise NotImplementedError
+
+    def __eq__(self, obj: object) -> bool:
+        raise NotImplementedError("Required for bijections")
+
+    def __hash__(self) -> int:
+        raise NotImplementedError("Required for bijection search")

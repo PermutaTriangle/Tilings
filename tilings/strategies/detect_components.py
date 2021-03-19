@@ -92,6 +92,12 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
     def get_eq_symbol() -> str:
         return "↣"
 
+    def __eq__(self, obj: object) -> bool:
+        raise NotImplementedError("Required for bijections")
+
+    def __hash__(self) -> int:
+        raise NotImplementedError("Required for bijection search")
+
 
 class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
     @staticmethod

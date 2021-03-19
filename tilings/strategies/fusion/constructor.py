@@ -536,6 +536,12 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             "This is implemented on the FusionRule class directly"
         )
 
+    def __eq__(self, obj: object) -> bool:
+        raise NotImplementedError("Required for bijections")
+
+    def __hash__(self) -> int:
+        raise NotImplementedError("Required for bijection search")
+
 
 class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
     """
@@ -732,3 +738,9 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
         **parameters: int,
     ):
         raise NotImplementedError
+
+    def __eq__(self, obj: object) -> bool:
+        raise NotImplementedError("Required for bijections")
+
+    def __hash__(self) -> int:
+        raise NotImplementedError("Required for bijection search")
