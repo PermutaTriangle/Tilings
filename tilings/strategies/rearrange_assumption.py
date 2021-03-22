@@ -216,6 +216,12 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         child_param_dict = self.child_param_to_dict(child_param_tuple)
         return (subsamplers[0](n, **child_param_dict),)
 
+    def __eq__(self, obj: object) -> bool:
+        raise NotImplementedError("Required for bijections")
+
+    def __hash__(self) -> int:
+        raise NotImplementedError("Required for bijection search")
+
 
 class ReverseRearrangeConstructor(RearrangeConstructor):
     def __init__(
