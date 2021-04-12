@@ -1,4 +1,5 @@
 import itertools
+import pickle
 
 import pytest
 
@@ -411,6 +412,14 @@ def test_sanity_check_rules(rule):
         )
     for rule, length in itertools.product(rules_to_check, range(6)):
         assert rule.sanity_check(length)
+
+
+@pytest.mark.parametrize("rule", rules_to_check)
+def test_pickle_rule(rule):
+    print(rule)
+    s = pickle.dumps(rule)
+    new_rule = pickle.loads(s)
+    assert rule == new_rule
 
 
 def test_sanity_check_big_row_placement():
