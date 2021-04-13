@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Updated to use comb_spec_searcher 3.0.0
 - Using `strategy_pack.make_fusion` or `strategy_pack.make_tracked` now automatically
   adds `RearrangeAssumptionFactory` with `apply_first=True` if `tracked=True`
+- Fixed isolated fusion bug
 
 ### Deprecated
 - Python 3.6 is no longer supported

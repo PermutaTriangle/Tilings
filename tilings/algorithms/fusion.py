@@ -332,7 +332,7 @@ class Fusion:
             [
                 assumption
                 for assumption in self._tiling.assumptions
-                if any(cell in gp.pos for gp in assumption.gps for cell in fusing_cells)
+                if all(cell in gp.pos for gp in assumption.gps for cell in fusing_cells)
             ]
         )
 
