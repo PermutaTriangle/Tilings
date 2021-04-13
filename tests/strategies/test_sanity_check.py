@@ -5,8 +5,10 @@ import pytest
 
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
+from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
 from tilings.strategies.factor import FactorStrategy
 from tilings.strategies.fusion import FusionStrategy
+from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 from tilings.strategies.sliding import SlidingFactory
@@ -400,6 +402,45 @@ rules_to_check = [
             ),
         )
     ),
+    RearrangeAssumptionStrategy(
+        assumption=TrackingAssumption(
+            (GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),)))
+        ),
+        sub_assumption=TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),
+    )(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1), ((2, 0), (2, 0))),
+            ),
+            requirements=(),
+            assumptions=(
+                TrackingAssumption(
+                    (GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),)))
+                ),
+                TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),
+            ),
+        )
+    ),
+    AddAssumptionsStrategy(
+        assumptions=(
+            TrackingAssumption(
+                (GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),)))
+            ),
+        ),
+        workable=False,
+    )(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1), ((2, 0), (2, 0))),
+            ),
+            requirements=(),
+            assumptions=(),
+        )
+    ),
 ]
 
 
@@ -417,6 +458,7 @@ def test_sanity_check_rules(rule):
 @pytest.mark.parametrize("rule", rules_to_check)
 def test_pickle_rule(rule):
     print(rule)
+    rule.constructor
     s = pickle.dumps(rule)
     new_rule = pickle.loads(s)
     assert rule == new_rule
