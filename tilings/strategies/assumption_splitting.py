@@ -114,11 +114,8 @@ class Split(Constructor):
     ):
         raise NotImplementedError
 
-    def __eq__(self, obj: object) -> bool:
+    def equiv(self, other: "Constructor") -> Tuple[bool, Optional[object]]:
         raise NotImplementedError("Required for bijections")
-
-    def __hash__(self) -> int:
-        raise NotImplementedError("Required for bijection search")
 
 
 class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
