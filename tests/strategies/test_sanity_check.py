@@ -399,6 +399,21 @@ rules_to_check = [
             ),
         )
     ),
+    RequirementPlacementStrategy(
+        gps=(GriddedPerm((0,), ((0, 0),)),),
+        indices=(0,),
+        direction=3,
+        own_col=True,
+        own_row=True,
+        ignore_parent=False,
+        include_empty=True,
+    )(
+        Tiling(
+            obstructions=(GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),),
+            requirements=(),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+        )
+    ),
 ]
 
 
