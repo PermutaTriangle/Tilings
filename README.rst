@@ -330,7 +330,7 @@ done here for sake of brevity in this readme!
        3 -> (0,)
        tiling is locally factorable
        +-+-+-+            +-+
-       | |●| |         =  |1|
+       | |●| |         ↝  |1|
        +-+-+-+            +-+
        | | |1|            1: Av(120)
        +-+-+-+
