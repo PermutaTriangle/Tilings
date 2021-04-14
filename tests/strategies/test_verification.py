@@ -231,22 +231,6 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
         assert not strategy._locally_factorable_obstructions(enum_not_verified[0])
         assert strategy._locally_factorable_obstructions(enum_verified[0])
 
-    @pytest.fixture
-    def enum_with_tautology(self):
-        return Tiling(
-            obstructions=[
-                GriddedPerm((0, 1, 2), ((0, 0),) * 3),
-                GriddedPerm((0, 1, 2), ((1, 1),) * 3),
-                GriddedPerm((0, 1), ((0, 0), (1, 1))),
-            ]
-        )
-
-    @pytest.mark.xfail(reason="Cannot think of a tautology")
-    def test_possible_tautology(self, strategy, enum_verified, enum_with_tautology):
-        for tiling in enum_verified:
-            assert not strategy._possible_tautology(tiling)
-        assert strategy._possible_tautology(enum_with_tautology)
-
 
 class TestLocalVerificationStrategy(CommonTest):
     @pytest.fixture
