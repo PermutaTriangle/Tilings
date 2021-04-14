@@ -326,13 +326,13 @@ done here for sake of brevity in this readme!
                           10: (0, 0), (2, 0)         ●: point
                           Requirement 0:             Requirement 0:
                           0: (1, 1)                  0: (1, 2)
-       -------
-       3 -> ()
+       ---------
+       3 -> (0,)
        tiling is locally factorable
-       +-+-+-+
-       | |●| |
-       +-+-+-+
-       | | |1|
+       +-+-+-+            +-+
+       | |●| |         =  |1|
+       +-+-+-+            +-+
+       | | |1|            1: Av(120)
        +-+-+-+
        |1| | |
        +-+-+-+

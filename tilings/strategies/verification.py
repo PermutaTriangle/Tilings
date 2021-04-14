@@ -2,7 +2,18 @@ from collections import Counter, defaultdict
 from functools import reduce
 from itertools import chain
 from operator import mul
-from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Type, TypeVar, cast
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 
 from sympy import Expr, Function, var
 
@@ -344,7 +355,7 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
         return cls(**d)
 
 
-class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
+class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
     """
     Verification strategy for a locally factorable tiling.
 
@@ -399,13 +410,21 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
             and self._locally_factorable_requirements(tiling)
         )
 
+    def decomposition_function(
+        self, comb_class: Tiling
+    ) -> Optional[Tuple[Tiling, ...]]:
+        if self.verified(comb_class):
+            children: Set[Tiling] = set()
+            for obs, _ in comb_class.cell_basis().values():
+                obs_set = frozenset(obs)
+                if obs_set in self.symmetries:
+                    children.add(Tiling.from_perms(obs))
+            return tuple(children)
+        return None
+
     @staticmethod
     def formal_step() -> str:
         return "tiling is locally factorable"
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "LocallyFactorableVerificationStrategy":
-        return cls(**d)
 
     def __str__(self) -> str:
         return "locally factorable verification"
