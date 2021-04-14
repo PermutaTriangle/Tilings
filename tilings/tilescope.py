@@ -54,8 +54,10 @@ class TileScope(CombinatorialSpecificationSearcher):
 
         if start_tiling.dimensions == (1, 1):
             procname = kwargs.get("logger_kwargs", {"processname": "runner"})
-            logger.debug("Fixing basis in OneByOneVerificationStrategy", extra=procname)
-            strategy_pack = strategy_pack.fix_one_by_one(basis)
+            logger.debug(
+                "Fixing basis in basis aware verification strategies.", extra=procname
+            )
+            strategy_pack = strategy_pack.inject_basis(basis)
         strategy_pack = strategy_pack.setup_subclass_verification(start_tiling)
 
         super().__init__(
