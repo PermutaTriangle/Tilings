@@ -445,6 +445,27 @@ rules_to_check = [
             assumptions=(),
         )
     ),
+    RequirementPlacementStrategy(
+        gps=(GriddedPerm((0,), ((0, 0),)),),
+        indices=(0,),
+        direction=1,
+        own_col=True,
+        own_row=True,
+        ignore_parent=False,
+        include_empty=True,
+    )(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 2), (0, 2))),
+                GriddedPerm((0, 1), ((1, 1), (1, 1))),
+                GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm((1, 2, 0), ((0, 0), (0, 2), (0, 0))),
+            ),
+            requirements=((GriddedPerm((0,), ((1, 1),)),),),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+        )
+    ),
 ]
 
 
@@ -456,6 +477,7 @@ def test_sanity_check_rules(rule):
             rule.to_reverse_rule(i) for i in range(len(rule.children))
         )
     for rule, length in itertools.product(rules_to_check, range(6)):
+        print(rule)
         assert rule.sanity_check(length)
 
 
