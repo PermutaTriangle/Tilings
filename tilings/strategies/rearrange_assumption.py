@@ -217,7 +217,8 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         return (subsamplers[0](n, **child_param_dict),)
 
     def equiv(self, other: "Constructor") -> Tuple[bool, Optional[object]]:
-        raise NotImplementedError("Required for bijections")
+        # raise NotImplementedError("Required for bijections")
+        return isinstance(other, type(self)), None
 
 
 class ReverseRearrangeConstructor(RearrangeConstructor):
