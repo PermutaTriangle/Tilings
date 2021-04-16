@@ -5,7 +5,7 @@ from typing import Dict, Iterator, List, Optional, Set, Tuple, cast
 
 from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.strategies import Rule
+from comb_spec_searcher.strategies import NonBijectiveRule, Rule
 from comb_spec_searcher.typing import Objects
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
@@ -13,7 +13,7 @@ from tilings.algorithms import Fusion
 from .constructor import FusionConstructor, ReverseFusionConstructor
 
 
-class FusionRule(Rule[Tiling, GriddedPerm]):
+class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
     """Overwritten the generate objects of size method, as this relies on
     knowing the number of left and right points of the parent tiling."""
 
@@ -126,7 +126,7 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
     ) -> GriddedPerm:
         if data:
             return tuple(self.backward_map(objs))[-idx - 1]
-        return next(islice(self.backward_map(objs), idx))
+        return next(islice(self.backward_map(objs), idx, None))
 
 
 class FusionStrategy(Strategy[Tiling, GriddedPerm]):

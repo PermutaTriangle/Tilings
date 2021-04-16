@@ -554,7 +554,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 ) and (len(bijection) == n or _backtrack(rev))
                 bijection.pop()
                 in_use.remove(x)
-                return result
+                if result:
+                    return True
             return False
 
         if _backtrack(False):
@@ -597,7 +598,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             ) or (self.extra_parameters[p1[i]] == self.fuse_parameter) != (
                 other.extra_parameters[p2[j]] == other.fuse_parameter
             ):
-                return False, None
+                return False
             if p1[i] in self.left_sided_parameters:
                 grp_left.add(p2[j])
             if p1[i] in self.right_sided_parameters:

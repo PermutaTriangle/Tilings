@@ -450,8 +450,3 @@ def test_bijection_14():
             ),
             max_size=n,
         )
-
-
-# 1234
-# 1243
-# 1432 sliding
