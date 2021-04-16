@@ -10,12 +10,14 @@ from comb_spec_searcher import (
     find_bijection_between,
 )
 from comb_spec_searcher.isomorphism import Bijection
+from comb_spec_searcher.specification import CombinatorialSpecification
 from tilings import GriddedPerm, Tiling
 from tilings import strategies as strat
 from tilings.strategies import BasicVerificationStrategy
 from tilings.tilescope import TileScope, TileScopePack
 
 _BIJECTION_JSON_ROOT = pathlib.Path(__file__).parent.joinpath("resources", "bijections")
+_SPEC_JSON_ROOT = pathlib.Path(__file__).parent.joinpath("resources", "specs")
 
 
 def _b2rc(basis: str) -> CombinatorialSpecificationSearcher:
@@ -117,7 +119,7 @@ def test_bijection_7():
     )
 
 
-def test_bijection_8():
+def test_bijection_8_cross_domain():
     _import_css_example()
     # 231_321 after row placement and factoring
     t = Tiling(
@@ -147,7 +149,7 @@ def test_bijection_8():
     _bijection_asserter(find_bijection_between(searcher2, searcher1))
 
 
-def test_bijection_9():
+def test_bijection_9_cross_domain():
     _import_css_example()
     # 231_312_321 after a single row placement + factoring
     t = Tiling(
@@ -450,3 +452,19 @@ def test_bijection_14():
             ),
             max_size=n,
         )
+
+
+def test_bijection_15_fusion():
+    s1234 = CombinatorialSpecification.from_dict(
+        json.loads(_SPEC_JSON_ROOT.joinpath("1234_spec.json").read_text())
+    )
+    s1243 = CombinatorialSpecification.from_dict(
+        json.loads(_SPEC_JSON_ROOT.joinpath("1243_spec.json").read_text())
+    )
+    s1432 = CombinatorialSpecification.from_dict(
+        json.loads(_SPEC_JSON_ROOT.joinpath("1432_spec.json").read_text())
+    )
+
+    _bijection_asserter(Bijection.construct(s1234, s1243), max_size=6)
+    _bijection_asserter(Bijection.construct(s1234, s1432), max_size=6)
+    _bijection_asserter(Bijection.construct(s1243, s1432), max_size=6)
