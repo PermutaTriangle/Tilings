@@ -59,10 +59,10 @@ jobs:
         run: |
           if [ "$RUNNER_OS" == "macOS" ]; then
             brew install gnu-sed
-            gsed -i -E 's/comb-spec-searcher==[0-9]+.[0-9]+.[0-9]+/comb-spec-searcher@git+https:\/\/github.com\/PermutaTriangle\/comb_spec_searcher"\n        "@develop/g' setup.py
+            gsed -i -E 's/comb-spec-searcher==[0-9]+.[0-9]+.[0-9]+/comb_spec_searcher@git+https:\/\/github.com\/PermutaTriangle\/comb_spec_searcher"\n        "@develop/g' setup.py
             gsed -i -E 's/permuta==[0-9]+.[0-9]+.[0-9]+/permuta@git+https:\/\/github.com\/PermutaTriangle\/Permuta@develop/g' setup.py
           else
-            sed -i -E 's/comb-spec-searcher==[0-9]+.[0-9]+.[0-9]+/comb-spec-searcher@git+https:\/\/github.com\/PermutaTriangle\/comb_spec_searcher"\n        "@develop/g' setup.py
+            sed -i -E 's/comb-spec-searcher==[0-9]+.[0-9]+.[0-9]+/comb_spec_searcher@git+https:\/\/github.com\/PermutaTriangle\/comb_spec_searcher"\n        "@develop/g' setup.py
             sed -i -E 's/permuta==[0-9]+.[0-9]+.[0-9]+/permuta@git+https:\/\/github.com\/PermutaTriangle\/Permuta@develop/g' setup.py
           fi
       - name: install dependencies
