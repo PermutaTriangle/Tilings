@@ -52,7 +52,7 @@ jobs:
         shell: pwsh
         if: github.ref != 'refs/heads/master' && runner.os == 'Windows' && !(github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master')
         run: |
-          (Get-Content setup.py) -replace 'comb-spec-searcher==\d+.\d+.\d+', $('comb-spec-searcher@git+https://github.com/PermutaTriangle/comb_spec_searcher"' + $([environment]::newline) + '        "@develop') | Out-File -encoding UTF8 setup.py
+          (Get-Content setup.py) -replace 'comb-spec-searcher==\d+.\d+.\d+', $('comb_spec_searcher@git+https://github.com/PermutaTriangle/comb_spec_searcher"' + $([environment]::newline) + '        "@develop') | Out-File -encoding UTF8 setup.py
           (Get-Content setup.py) -replace 'permuta==\d+.\d+.\d+', 'permuta@git+https://github.com/PermutaTriangle/Permuta@develop' | Out-File -encoding UTF8 setup.py
       - name: replace css and permuta dependency (unix)
         if: github.ref != 'refs/heads/master' && runner.os != 'Windows' && !(github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master')
