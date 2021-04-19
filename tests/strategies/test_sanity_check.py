@@ -3,6 +3,7 @@ import pickle
 
 import pytest
 
+from comb_spec_searcher.strategies.rule import EquivalencePathRule
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
 from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
@@ -58,7 +59,7 @@ rules_to_check = [
             ),
             assumptions=(TrackingAssumption((GriddedPerm((0,), ((3, 0),)),)),),
         )
-    ).to_equivalence_rule(),
+    ),
     FusionStrategy(col_idx=1, tracked=True)(
         Tiling(
             obstructions=(
@@ -140,7 +141,7 @@ rules_to_check = [
             requirements=((GriddedPerm((0,), ((0, 1),)),),),
             assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 2),)),)),),
         )
-    ).to_equivalence_rule(),
+    ),
     FactorStrategy([[(0, 0)], [(1, 1)]])(
         Tiling(
             obstructions=(
@@ -272,7 +273,7 @@ rules_to_check = [
             ),
             assumptions=(TrackingAssumption((GriddedPerm((0,), ((3, 0),)),)),),
         )
-    ).to_equivalence_rule(),
+    ),
     RequirementInsertionStrategy(
         gps=frozenset({GriddedPerm((0,), ((0, 2),))}), ignore_parent=True
     )(
@@ -295,7 +296,7 @@ rules_to_check = [
             requirements=((GriddedPerm((0,), ((0, 1),)),),),
             assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 2),)),)),),
         )
-    ).to_equivalence_rule(),
+    ),
     FusionStrategy(row_idx=2, tracked=True)(
         Tiling(
             obstructions=(
@@ -441,7 +442,102 @@ rules_to_check = [
             assumptions=(),
         )
     ),
+    RequirementPlacementStrategy(
+        gps=(GriddedPerm((0,), ((0, 0),)),),
+        indices=(0,),
+        direction=3,
+        own_col=True,
+        own_row=True,
+        ignore_parent=False,
+        include_empty=True,
+    )(
+        Tiling(
+            obstructions=(GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),),
+            requirements=(),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+        )
+    ),
+    RequirementInsertionStrategy(
+        gps=frozenset({GriddedPerm((0,), ((1, 1),))}), ignore_parent=False
+    )(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((1, 1), (1, 1))),
+                GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 1))),
+                GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 1))),
+                GriddedPerm((0, 2, 1), ((0, 0), (1, 1), (1, 0))),
+                GriddedPerm((1, 0, 2), ((0, 0), (0, 0), (1, 1))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 1, 2, 3), ((1, 0), (1, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (1, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 1, 3, 2), ((1, 0), (1, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 2, 1, 3), ((0, 0), (1, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 2, 1, 3), ((1, 0), (1, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 2, 3, 1), ((0, 0), (1, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 2, 3, 1), ((1, 0), (1, 0), (1, 0), (1, 0))),
+                GriddedPerm((1, 0, 2, 3), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                GriddedPerm((1, 0, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0))),
+                GriddedPerm((1, 0, 2, 3), ((1, 0), (1, 0), (1, 0), (1, 0))),
+                GriddedPerm((2, 0, 1, 3), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                GriddedPerm((2, 0, 1, 3), ((0, 0), (1, 0), (1, 0), (1, 0))),
+                GriddedPerm((2, 0, 1, 3), ((1, 0), (1, 0), (1, 0), (1, 0))),
+            ),
+            requirements=((GriddedPerm((0,), ((0, 0),)),),),
+            assumptions=(),
+        )
+    ),
+    RequirementPlacementStrategy(
+        gps=(GriddedPerm((0,), ((0, 0),)),),
+        indices=(0,),
+        direction=1,
+        own_col=True,
+        own_row=True,
+        ignore_parent=False,
+        include_empty=True,
+    )(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 2), (0, 2))),
+                GriddedPerm((0, 1), ((1, 1), (1, 1))),
+                GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm((1, 2, 0), ((0, 0), (0, 2), (0, 0))),
+            ),
+            requirements=((GriddedPerm((0,), ((1, 1),)),),),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+        )
+    ),
+    RequirementPlacementStrategy(
+        gps=(GriddedPerm((0,), ((0, 0),)),),
+        indices=(0,),
+        direction=3,
+        own_col=True,
+        own_row=True,
+        ignore_parent=False,
+        include_empty=True,
+    )(
+        Tiling(
+            obstructions=(GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),),
+            requirements=((GriddedPerm((0,), ((0, 0),)),),),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+        )
+    ),
+    RequirementInsertionStrategy(gps=(GriddedPerm((0,), ((1, 0),)),),)(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                GriddedPerm((1, 0), ((0, 0), (1, 0))),
+            ),
+            requirements=((GriddedPerm((0,), ((0, 0),)),),),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),),
+        )
+    ),
 ]
+equiv_rule_to_check = [r for r in rules_to_check if r.is_equivalence()]
 
 
 @pytest.mark.parametrize("rule", rules_to_check)
@@ -452,7 +548,58 @@ def test_sanity_check_rules(rule):
             rule.to_reverse_rule(i) for i in range(len(rule.children))
         )
     for rule, length in itertools.product(rules_to_check, range(6)):
+        print(rule)
         assert rule.sanity_check(length)
+
+
+@pytest.mark.parametrize("rule", equiv_rule_to_check)
+def test_sanity_check_eqv(rule):
+    new_rule = rule.to_equivalence_rule()
+    for length in range(6):
+        new_rule.sanity_check(length)
+
+
+@pytest.mark.parametrize("rule", equiv_rule_to_check)
+def test_sanity_check_eqv_then_reverse(rule):
+    new_rule = rule.to_equivalence_rule().to_reverse_rule(0)
+    for length in range(6):
+        new_rule.sanity_check(length)
+
+
+@pytest.mark.parametrize("rule", equiv_rule_to_check)
+def test_sanity_check_reverse_then_equiv(rule):
+    is_not_empty = [not c.is_empty() for c in rule.children]
+    assert sum(is_not_empty) == 1
+    non_empty_idx = is_not_empty.index(True)
+    new_rule = rule.to_reverse_rule(non_empty_idx).to_equivalence_rule()
+    for length in range(6):
+        new_rule.sanity_check(length)
+
+
+@pytest.mark.parametrize("rule", equiv_rule_to_check)
+def test_sanity_check_eqv_then_path(rule):
+    new_rule = EquivalencePathRule([rule.to_equivalence_rule()])
+    for length in range(6):
+        new_rule.sanity_check(length)
+
+
+@pytest.mark.parametrize("rule", equiv_rule_to_check)
+def test_sanity_check_eqv_then_reverse_then_path(rule):
+    new_rule = EquivalencePathRule([rule.to_equivalence_rule().to_reverse_rule(0)])
+    for length in range(6):
+        new_rule.sanity_check(length)
+
+
+@pytest.mark.parametrize("rule", equiv_rule_to_check)
+def test_sanity_check_reverse_then_equiv_then_path(rule):
+    is_not_empty = [not c.is_empty() for c in rule.children]
+    assert sum(is_not_empty) == 1
+    non_empty_idx = is_not_empty.index(True)
+    new_rule = EquivalencePathRule(
+        [rule.to_reverse_rule(non_empty_idx).to_equivalence_rule()]
+    )
+    for length in range(6):
+        new_rule.sanity_check(length)
 
 
 @pytest.mark.parametrize("rule", rules_to_check)

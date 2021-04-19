@@ -140,7 +140,7 @@ class GuidedSearcher(TileScope):
         *args,
         **kwargs
     ):
-        self.tilings = frozenset(tilings)
+        self.tilings = frozenset(t.remove_assumptions() for t in tilings)
         super().__init__(basis, pack, *args, **kwargs)
         for t in self.tilings:
             class_label = self.classdb.get_label(t)
