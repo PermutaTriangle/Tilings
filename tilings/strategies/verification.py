@@ -97,6 +97,21 @@ class BasisAwareVerificationStrategy(TileScopeVerificationStrategy):
         basis = tuple(basis)
         return self.__class__(basis, symmetry, self.ignore_parent)
 
+    def decomposition_function(
+        self, comb_class: Tiling
+    ) -> Optional[Tuple[Tiling, ...]]:
+        """
+        The rule as the root as children if one of the cell of the tiling is the root.
+        """
+        if self.verified(comb_class):
+            children: Set[Tiling] = set()
+            for obs, _ in comb_class.cell_basis().values():
+                obs_set = frozenset(obs)
+                if obs_set in self.symmetries:
+                    children.add(Tiling.from_perms(obs))
+            return tuple(children)
+        return None
+
     @property
     def basis(self) -> Tuple[Perm, ...]:
         return self._basis
@@ -409,18 +424,6 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
             and self._locally_factorable_obstructions(tiling)
             and self._locally_factorable_requirements(tiling)
         )
-
-    def decomposition_function(
-        self, comb_class: Tiling
-    ) -> Optional[Tuple[Tiling, ...]]:
-        if self.verified(comb_class):
-            children: Set[Tiling] = set()
-            for obs, _ in comb_class.cell_basis().values():
-                obs_set = frozenset(obs)
-                if obs_set in self.symmetries:
-                    children.add(Tiling.from_perms(obs))
-            return tuple(children)
-        return None
 
     @staticmethod
     def formal_step() -> str:
