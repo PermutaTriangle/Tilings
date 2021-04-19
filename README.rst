@@ -573,7 +573,7 @@ You can make any pack use the fusion strategy by using the method
        >>> print(pack)
        Looking for recursive combinatorial specification with the strategies:
        Inferral: row and column separation, obstruction transitivity
-       Initial: add assumptions, factor, tracked fusion
+       Initial: rearrange assumptions, add assumptions, factor, tracked fusion
        Verification: verify atoms, insertion encoding verified, one by one verification, locally factorable verification
        Set 1: row placement
 

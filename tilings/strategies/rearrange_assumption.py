@@ -1,4 +1,5 @@
 from collections import Counter
+from functools import partial
 from itertools import combinations
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
@@ -99,6 +100,21 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
             tuple(child_pos_to_parent_pos), len(parent.extra_parameters)
         )
 
+    def param_map_for_rearrange(
+        self,
+        parent_pos_to_child_pos: Tuple[Tuple[int, int], ...],
+        num_child_param: int,
+        param: Parameters,
+    ) -> Parameters:
+        new_param = [-1 for _ in range(num_child_param)]
+        for ppos, cpos in parent_pos_to_child_pos:
+            new_param[cpos] = param[ppos]
+        new_ass_value = param[self.ass_parent_idx] - param[self.subass_parent_idx]
+        assert new_param[self.new_ass_child_idx] in (-1, new_ass_value)
+        new_param[self.new_ass_child_idx] = new_ass_value
+        assert all(v >= 0 for v in new_param)
+        return tuple(new_param)
+
     def _build_parent_to_child_param_map(
         self,
         parent: Tiling,
@@ -121,17 +137,16 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
             for pparam, cparam in extra_parameters.items()
         )
 
-        def param_map(param: Parameters) -> Parameters:
-            new_param = [-1 for _ in range(num_child_param)]
-            for ppos, cpos in parent_pos_to_child_pos:
-                new_param[cpos] = param[ppos]
-            new_ass_value = param[self.ass_parent_idx] - param[self.subass_parent_idx]
-            assert new_param[self.new_ass_child_idx] in (-1, new_ass_value)
-            new_param[self.new_ass_child_idx] = new_ass_value
-            assert all(v >= 0 for v in new_param)
-            return tuple(new_param)
+        return partial(
+            self.param_map_for_rearrange, parent_pos_to_child_pos, num_child_param
+        )
 
-        return param_map
+    @staticmethod
+    def _dict_to_param_helper(tiling_params_order, d):
+        """
+        this is required to be a standalone function to be pickleable
+        """
+        return tuple(d[p] for p in tiling_params_order)
 
     @staticmethod
     def _build_map_dict_to_param(
@@ -144,7 +159,14 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         """
 
         tiling_params_order = tiling.extra_parameters
-        return lambda d: tuple(d[p] for p in tiling_params_order)
+        return partial(RearrangeConstructor._dict_to_param_helper, tiling_params_order)
+
+    @staticmethod
+    def _param_to_dict_helper(tiling_params_order, p):
+        """
+        this is required to be a standalone function to be pickleable
+        """
+        return dict(zip(tiling_params_order, p))
 
     @staticmethod
     def _build_map_param_to_dict(
@@ -156,7 +178,7 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         Should probably live somewhere else.
         """
         tiling_params_order = tiling.extra_parameters
-        return lambda p: dict(zip(tiling_params_order, p))
+        return partial(RearrangeConstructor._param_to_dict_helper, tiling_params_order)
 
     def _build_eq_subs(
         self, parent: Tiling, child: Tiling, extra_parameters: Dict[str, str]
@@ -171,7 +193,6 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         new_ass_var_child = sympy.var(child.extra_parameters[self.new_ass_child_idx])
         ass_var_parent = sympy.var(parent.extra_parameters[self.ass_parent_idx])
         subass_var_child = sympy.var(child.extra_parameters[self.subass_child_idx])
-        print(subs)
         subs[new_ass_var_child] = subs.get(new_ass_var_child, 1) * ass_var_parent
         subs[subass_var_child] *= ass_var_parent
         return subs
@@ -216,6 +237,12 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         child_param_tuple = self.parent_to_child_param_map(parent_param_tuple)
         child_param_dict = self.child_param_to_dict(child_param_tuple)
         return (subsamplers[0](n, **child_param_dict),)
+
+    def __eq__(self, obj: object) -> bool:
+        raise NotImplementedError("Required for bijections")
+
+    def __hash__(self) -> int:
+        raise NotImplementedError("Required for bijection search")
 
 
 class ReverseRearrangeConstructor(RearrangeConstructor):
@@ -352,6 +379,7 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         d.pop("ignore_parent")
         d.pop("inferrable")
         d.pop("possibly_empty")
+        d.pop("workable")
         d["assumption"] = self.assumption.to_jsonable()
         d["sub_assumption"] = self.sub_assumption.to_jsonable()
         return d
