@@ -165,16 +165,18 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     def is_two_way(comb_class: Tiling):
         return False
 
-    def decomposition_function(self, tiling: Tiling) -> Optional[Tuple[Tiling]]:
-        if not tiling.assumptions:
+    def decomposition_function(self, comb_class: Tiling) -> Optional[Tuple[Tiling]]:
+        if not comb_class.assumptions:
             return None
-        components = self.factor_class(tiling.remove_assumptions()).get_components()
+        components = self.factor_class(comb_class.remove_assumptions()).get_components()
         if len(components) == 1:
             return None
         new_assumptions: List[TrackingAssumption] = []
-        for ass in tiling.assumptions:
+        for ass in comb_class.assumptions:
             new_assumptions.extend(self._split_assumption(ass, components))
-        return (Tiling(tiling.obstructions, tiling.requirements, new_assumptions),)
+        return (
+            Tiling(comb_class.obstructions, comb_class.requirements, new_assumptions),
+        )
 
     def _split_assumption(
         self, assumption: TrackingAssumption, components: Tuple[Set[Cell], ...]

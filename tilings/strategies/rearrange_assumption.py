@@ -302,8 +302,8 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
             self.extra_parameters(comb_class, children)[0],
         )
 
-    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
-        tiling = tiling.remove_assumption(self.assumption)
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
+        tiling = comb_class.remove_assumption(self.assumption)
         new_ass1 = TrackingAssumption(
             set(self.assumption.gps) - set(self.sub_assumption.gps)
         )

@@ -106,7 +106,7 @@ class GriddedPermReduction:
             return tuple(unchanged)
 
         return GriddedPermReduction._minimize(changed) + tuple(
-            [gp for gp in unchanged if gp.avoids(*changed)]
+            gp for gp in unchanged if gp.avoids(*changed)
         )
 
     def minimal_reqs(
