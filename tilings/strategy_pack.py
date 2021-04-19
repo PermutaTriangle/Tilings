@@ -38,7 +38,7 @@ class TileScopePack(StrategyPack):
             for strategy in strats:
                 if isinstance(strategy, BasisAwareVerificationStrategy):
                     if strategy.basis:
-                        logger.warning(f"Basis changed in {strategy}")
+                        logger.warning("Basis changed in %s", strategy)
                     res.append(strategy.change_basis(basis, symmetry))
                 else:
                     res.append(strategy)

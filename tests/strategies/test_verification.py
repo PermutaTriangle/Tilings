@@ -264,7 +264,7 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
         assert strat(t3).children == tuple()
         with pytest.raises(StrategyDoesNotApply):
             strat(t4).children
-        assert strat.decomposition_function(t4) == None
+        assert strat.decomposition_function(t4) is None
         assert strat(t1.add_single_cell_requirement(Perm((0,)), (0, 0))).children == (
             Tiling.from_string("0132"),
         )
