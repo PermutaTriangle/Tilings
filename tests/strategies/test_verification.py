@@ -776,6 +776,24 @@ class TestElementaryVerificationStrategy(CommonTest):
         )
         return [t, enum_onebyone, enum_with_interleaving]
 
+    def test_change_basis(self, strategy):
+        new_strat = strategy.change_basis([Perm((0, 1, 2, 3))], False)
+        assert new_strat.basis == (Perm((0, 1, 2, 3)),)
+        assert strategy.basis == tuple()
+
+    def test_decompostion_function(self, strategy):
+        new_strat = strategy.change_basis([Perm((0, 1, 2, 3))], False)
+        t = Tiling(
+            obstructions=(
+                GriddedPerm((0, 1, 2, 3), ((0, 0),) * 4),
+                GriddedPerm((0, 1, 2), ((1, 1),) * 3),
+            ),
+            requirements=(),
+            assumptions=(),
+        )
+        rule = new_strat(t)
+        assert rule.children == (t.from_string("1234"),)
+
     def test_pack(self, strategy, enum_verified):
         for tiling in enum_verified:
             pack = strategy.pack(tiling)
