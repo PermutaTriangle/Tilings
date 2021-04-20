@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Moved several local function in `RearrangeConstructor` outward to make it pickleable
 - Fixed isolated fusion bug
 
+### Fixed 
+- Removed a redundant `Tiling.is_empty` check in the fusion algorithm. 
+
 ### Deprecated
 - Python 3.6 is no longer supported
 
