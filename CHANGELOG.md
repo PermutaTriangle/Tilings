@@ -211,6 +211,7 @@ list.
 ### Fixed
 - Infinite recursion issue in get_genf.
 - Close mongo when finished.
+- Removed a redundant `Tiling.is_empty` check in the fusion algorithm. 
 
 ## [0.0.1] - 2019-06-02
 ### Added

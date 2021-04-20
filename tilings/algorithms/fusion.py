@@ -374,9 +374,6 @@ class Fusion:
             and req_fusable
             and ass_fusable
             and self._check_isolation_level()
-            and not self.fused_tiling()
-            .add_list_requirement(list(self.new_assumption().gps))
-            .is_empty()
         )
 
     def fused_tiling(self) -> "Tiling":
