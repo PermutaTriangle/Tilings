@@ -209,6 +209,9 @@ class Fusion:
         return False
 
     def min_left_right_points(self) -> Tuple[int, int]:
+        # Make sure that the req fuse counter has been computed so that
+        # positive left and right or fine
+        self.requirements_fuse_counters
         return int(self._positive_left), int(self._positive_right)
 
     @property
