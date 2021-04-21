@@ -909,13 +909,13 @@ class TestOneByOneVerificationStrategy(CommonTest):
         ) == TileScopePack.regular_insertion_encoding(2)
         assert strategy.pack(
             enum_verified[4]
-        ) == TileScopePack.row_and_col_placements().inject_basis(
+        ) == TileScopePack.row_and_col_placements().add_basis(
             [Perm((0, 1, 2)), Perm((2, 3, 0, 1))]
         )
 
         assert strategy.pack(enum_verified[5]) == TileScopePack.row_and_col_placements(
             row_only=True
-        ).make_fusion(tracked=True).inject_basis([Perm((0, 1, 2))])
+        ).make_fusion(tracked=True).add_basis([Perm((0, 1, 2))])
         with pytest.raises(InvalidOperationError):
             strategy.pack(enum_verified[6])
 

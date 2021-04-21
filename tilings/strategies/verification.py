@@ -242,14 +242,14 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
                 return (
                     TileScopePack.row_and_col_placements(row_only=True)
                     .make_fusion(tracked=True)
-                    .inject_basis(basis)
+                    .add_basis(basis)
                 )
             if (Perm((0, 1, 2)) in basis or Perm((2, 1, 0)) in basis) and all(
                 len(p) <= 4 for p in basis
             ):
                 # is a subclass of Av(123) avoiding patterns of length <= 4
                 # experimentally showed that such clsses always terminates
-                return TileScopePack.row_and_col_placements().inject_basis(basis)
+                return TileScopePack.row_and_col_placements().add_basis(basis)
         raise InvalidOperationError(
             "Cannot get a specification for one by one verification for "
             f"subclass Av({basis})"

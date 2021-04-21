@@ -24,7 +24,7 @@ class TileScopePack(StrategyPack):
     # Method to add power to a pack
     # Pack are immutable, these methods return a new pack.
 
-    def inject_basis(self, basis: Iterable[Perm]) -> "TileScopePack":
+    def add_basis(self, basis: Iterable[Perm]) -> "TileScopePack":
         """
         Update the pack to add the basis being run to the verifications strategy
         that needs to be aware of it.

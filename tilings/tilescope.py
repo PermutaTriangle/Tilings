@@ -57,7 +57,7 @@ class TileScope(CombinatorialSpecificationSearcher):
             logger.debug(
                 "Fixing basis in basis aware verification strategies.", extra=procname
             )
-            strategy_pack = strategy_pack.inject_basis(basis)
+            strategy_pack = strategy_pack.add_basis(basis)
         strategy_pack = strategy_pack.setup_subclass_verification(start_tiling)
 
         super().__init__(

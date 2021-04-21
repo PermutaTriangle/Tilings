@@ -110,7 +110,7 @@ def test_json_encoding(strategy_pack):
 def test_inject_basis():
     pack = TileScopePack.point_placements()
     assert not pack.ver_strats[2].basis
-    fixed_pack = pack.inject_basis([Perm((0, 1, 2, 3))])
+    fixed_pack = pack.add_basis([Perm((0, 1, 2, 3))])
     assert isinstance(pack.ver_strats[2], strat.OneByOneVerificationStrategy)
     assert not pack.ver_strats[2].basis
     assert isinstance(fixed_pack, TileScopePack)
