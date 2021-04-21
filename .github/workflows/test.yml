@@ -48,6 +48,23 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{  matrix.python }}
+      - name: replace css and permuta dependency (win)
+        shell: pwsh
+        if: github.ref != 'refs/heads/master' && runner.os == 'Windows' && !(github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master')
+        run: |
+          (Get-Content setup.py) -replace 'comb-spec-searcher==\d+.\d+.\d+', $('comb_spec_searcher@git+https://github.com/PermutaTriangle/comb_spec_searcher"' + $([environment]::newline) + '        "@develop') | Out-File -encoding UTF8 setup.py
+          (Get-Content setup.py) -replace 'permuta==\d+.\d+.\d+', 'permuta@git+https://github.com/PermutaTriangle/Permuta@develop' | Out-File -encoding UTF8 setup.py
+      - name: replace css and permuta dependency (unix)
+        if: github.ref != 'refs/heads/master' && runner.os != 'Windows' && !(github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master')
+        run: |
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            brew install gnu-sed
+            gsed -i -E 's/comb-spec-searcher==[0-9]+.[0-9]+.[0-9]+/comb_spec_searcher@git+https:\/\/github.com\/PermutaTriangle\/comb_spec_searcher"\n        "@develop/g' setup.py
+            gsed -i -E 's/permuta==[0-9]+.[0-9]+.[0-9]+/permuta@git+https:\/\/github.com\/PermutaTriangle\/Permuta@develop/g' setup.py
+          else
+            sed -i -E 's/comb-spec-searcher==[0-9]+.[0-9]+.[0-9]+/comb_spec_searcher@git+https:\/\/github.com\/PermutaTriangle\/comb_spec_searcher"\n        "@develop/g' setup.py
+            sed -i -E 's/permuta==[0-9]+.[0-9]+.[0-9]+/permuta@git+https:\/\/github.com\/PermutaTriangle\/Permuta@develop/g' setup.py
+          fi
       - name: install dependencies
         run: python -m pip install --upgrade pip tox
       - name: run

@@ -332,7 +332,7 @@ class Fusion:
             [
                 assumption
                 for assumption in self._tiling.assumptions
-                if any(cell in gp.pos for gp in assumption.gps for cell in fusing_cells)
+                if all(cell in fusing_cells for gp in assumption.gps for cell in gp.pos)
             ]
         )
 
@@ -374,9 +374,6 @@ class Fusion:
             and req_fusable
             and ass_fusable
             and self._check_isolation_level()
-            and not self.fused_tiling()
-            .add_list_requirement(list(self.new_assumption().gps))
-            .is_empty()
         )
 
     def fused_tiling(self) -> "Tiling":
