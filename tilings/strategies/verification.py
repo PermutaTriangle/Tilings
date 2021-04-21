@@ -2,7 +2,18 @@ from collections import Counter, defaultdict
 from functools import reduce
 from itertools import chain
 from operator import mul
-from typing import Dict, Iterable, Iterator, List, Optional, Tuple, cast
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+)
 
 from sympy import Expr, Function, var
 
@@ -36,6 +47,7 @@ from tilings.strategies import (
 x = var("x")
 
 __all__ = [
+    "BasisAwareVerificationStrategy",
     "BasicVerificationStrategy",
     "OneByOneVerificationStrategy",
     "DatabaseVerificationStrategy",
@@ -47,6 +59,78 @@ __all__ = [
 
 
 TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
+BasisAwareVerificationStrategyType = TypeVar(
+    "BasisAwareVerificationStrategyType", bound="BasisAwareVerificationStrategy"
+)
+
+
+class BasisAwareVerificationStrategy(TileScopeVerificationStrategy):
+    """
+    A base class for a verification strategy that needs to know the basis the
+    Tilescope is currently running.
+    """
+
+    def __init__(
+        self,
+        basis: Optional[Iterable[Perm]] = None,
+        symmetry: bool = False,
+        ignore_parent: bool = True,
+    ):
+        self._basis = tuple(basis) if basis is not None else tuple()
+        self._symmetry = symmetry
+        assert all(
+            isinstance(p, Perm) for p in self._basis
+        ), "Element of the basis must be Perm"
+        if symmetry:
+            self.symmetries = set(frozenset(b) for b in all_symmetry_sets(self._basis))
+        else:
+            self.symmetries = set([frozenset(self._basis)])
+        super().__init__(ignore_parent=ignore_parent)
+
+    def change_basis(
+        self: BasisAwareVerificationStrategyType, basis: Iterable[Perm], symmetry: bool
+    ) -> BasisAwareVerificationStrategyType:
+        """
+        Return a new version of the verification strategy with the given basis instead
+        of the current one.
+        """
+        basis = tuple(basis)
+        return self.__class__(basis, symmetry, self.ignore_parent)
+
+    def decomposition_function(
+        self, comb_class: Tiling
+    ) -> Optional[Tuple[Tiling, ...]]:
+        """
+        The rule as the root as children if one of the cell of the tiling is the root.
+        """
+        if self.verified(comb_class):
+            children: Set[Tiling] = set()
+            for obs, _ in comb_class.cell_basis().values():
+                obs_set = frozenset(obs)
+                if obs_set in self.symmetries:
+                    children.add(Tiling.from_perms(obs))
+            return tuple(children)
+        return None
+
+    @property
+    def basis(self) -> Tuple[Perm, ...]:
+        return self._basis
+
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["basis"] = self._basis
+        d["symmetry"] = self._symmetry
+        return d
+
+    @classmethod
+    def from_dict(
+        cls: Type[BasisAwareVerificationStrategyType], d: dict
+    ) -> BasisAwareVerificationStrategyType:
+        if d["basis"] is not None:
+            basis: Optional[List[Perm]] = [Perm(p) for p in d.pop("basis")]
+        else:
+            basis = d.pop("basis")
+        return cls(basis=basis, **d)
 
 
 class BasicVerificationStrategy(AtomStrategy):
@@ -118,38 +202,7 @@ class BasicVerificationStrategy(AtomStrategy):
         return reduce(mul, [var(k) ** n for k, n in expected.items()], 1)
 
 
-class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
-    def __init__(
-        self,
-        basis: Optional[Iterable[Perm]] = None,
-        symmetry: bool = False,
-        ignore_parent: bool = True,
-    ):
-        self._basis = tuple(basis) if basis is not None else tuple()
-        self._symmetry = symmetry
-        assert all(
-            isinstance(p, Perm) for p in self._basis
-        ), "Element of the basis must be Perm"
-        if symmetry:
-            self.symmetries = set(frozenset(b) for b in all_symmetry_sets(self._basis))
-        else:
-            self.symmetries = set([frozenset(self._basis)])
-        super().__init__(ignore_parent=ignore_parent)
-
-    def change_basis(
-        self, basis: Iterable[Perm], symmetry: bool
-    ) -> "OneByOneVerificationStrategy":
-        """
-        Return a new version of the verfication strategy with the given basis instead of
-        the current one.
-        """
-        basis = tuple(basis)
-        return self.__class__(basis, symmetry, self.ignore_parent)
-
-    @property
-    def basis(self) -> Tuple[Perm, ...]:
-        return self._basis
-
+class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
     @staticmethod
     def pack(comb_class: Tiling) -> StrategyPack:
         if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
@@ -189,14 +242,14 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
                 return (
                     TileScopePack.row_and_col_placements(row_only=True)
                     .make_fusion(tracked=True)
-                    .fix_one_by_one(basis)
+                    .add_basis(basis)
                 )
             if (Perm((0, 1, 2)) in basis or Perm((2, 1, 0)) in basis) and all(
                 len(p) <= 4 for p in basis
             ):
                 # is a subclass of Av(123) avoiding patterns of length <= 4
                 # experimentally showed that such clsses always terminates
-                return TileScopePack.row_and_col_placements().fix_one_by_one(basis)
+                return TileScopePack.row_and_col_placements().add_basis(basis)
         raise InvalidOperationError(
             "Cannot get a specification for one by one verification for "
             f"subclass Av({basis})"
@@ -260,20 +313,6 @@ class OneByOneVerificationStrategy(TileScopeVerificationStrategy):
     def __str__(self) -> str:
         return "one by one verification"
 
-    def to_jsonable(self) -> dict:
-        d: dict = super().to_jsonable()
-        d["basis"] = self._basis
-        d["symmetry"] = self._symmetry
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "OneByOneVerificationStrategy":
-        if d["basis"] is not None:
-            basis: Optional[List[Perm]] = [Perm(p) for p in d.pop("basis")]
-        else:
-            basis = d.pop("basis")
-        return cls(basis=basis, **d)
-
 
 class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
     """
@@ -333,7 +372,7 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
         return cls(**d)
 
 
-class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
+class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
     """
     Verification strategy for a locally factorable tiling.
 
@@ -391,10 +430,6 @@ class LocallyFactorableVerificationStrategy(TileScopeVerificationStrategy):
     @staticmethod
     def formal_step() -> str:
         return "tiling is locally factorable"
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "LocallyFactorableVerificationStrategy":
-        return cls(**d)
 
     def __str__(self) -> str:
         return "locally factorable verification"

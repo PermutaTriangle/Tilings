@@ -326,13 +326,13 @@ done here for sake of brevity in this readme!
                           10: (0, 0), (2, 0)         ●: point
                           Requirement 0:             Requirement 0:
                           0: (1, 1)                  0: (1, 2)
-       -------
-       3 -> ()
+       ---------
+       3 -> (0,)
        tiling is locally factorable
-       +-+-+-+
-       | |●| |
-       +-+-+-+
-       | | |1|
+       +-+-+-+            +-+
+       | |●| |         ↝  |1|
+       +-+-+-+            +-+
+       | | |1|            1: Av(120)
        +-+-+-+
        |1| | |
        +-+-+-+
@@ -341,8 +341,9 @@ done here for sake of brevity in this readme!
        Requirement 0:
        0: (1, 2)
 
-The locally factorable tiling in the rule `3 -> ()` could be further expanded
-down to atoms. This can be done using the `expand_verified` method.
+The locally factorable tiling in the rule `3 -> (0,)` could be further expanded
+down to atoms and the root tiling.
+This can be done using the `expand_verified` method.
 
 .. code:: python
 

@@ -231,21 +231,49 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
         assert not strategy._locally_factorable_obstructions(enum_not_verified[0])
         assert strategy._locally_factorable_obstructions(enum_verified[0])
 
-    @pytest.fixture
-    def enum_with_tautology(self):
-        return Tiling(
+    def test_children(self):
+        t1 = Tiling(
             obstructions=[
-                GriddedPerm((0, 1, 2), ((0, 0),) * 3),
-                GriddedPerm((0, 1, 2), ((1, 1),) * 3),
-                GriddedPerm((0, 1), ((0, 0), (1, 1))),
+                GriddedPerm.single_cell((0, 1, 3, 2), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((1, 1))),
             ]
         )
+        t2 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 1, 3, 2), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((1, 1))),
+                GriddedPerm((0, 2, 1), ((0, 0), (1, 1), (1, 1))),
+            ]
+        )
+        t3 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 2, 1), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((1, 1))),
+            ]
+        )
+        t4 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 1, 3, 2), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((0, 1))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (0, 1))),
+            ]
+        )
+        strat = LocallyFactorableVerificationStrategy(basis=[Perm((0, 1, 3, 2))])
+        assert strat(t1).children == (Tiling.from_string("0132"),)
+        assert strat(t2).children == (Tiling.from_string("0132"),)
+        assert strat(t3).children == tuple()
+        with pytest.raises(StrategyDoesNotApply):
+            strat(t4).children
+        assert strat.decomposition_function(t4) is None
+        assert strat(t1.add_single_cell_requirement(Perm((0,)), (0, 0))).children == (
+            Tiling.from_string("0132"),
+        )
 
-    @pytest.mark.xfail(reason="Cannot think of a tautology")
-    def test_possible_tautology(self, strategy, enum_verified, enum_with_tautology):
-        for tiling in enum_verified:
-            assert not strategy._possible_tautology(tiling)
-        assert strategy._possible_tautology(enum_with_tautology)
+        strat_with_sym = LocallyFactorableVerificationStrategy(
+            basis=[Perm((0, 1, 3, 2))], symmetry=True
+        )
+        assert strat_with_sym(t1).children == (Tiling.from_string("0132"),)
+        assert strat_with_sym(t1.rotate90()).children == (Tiling.from_string("4312"),)
 
 
 class TestLocalVerificationStrategy(CommonTest):
@@ -748,6 +776,24 @@ class TestElementaryVerificationStrategy(CommonTest):
         )
         return [t, enum_onebyone, enum_with_interleaving]
 
+    def test_change_basis(self, strategy):
+        new_strat = strategy.change_basis([Perm((0, 1, 2, 3))], False)
+        assert new_strat.basis == (Perm((0, 1, 2, 3)),)
+        assert strategy.basis == tuple()
+
+    def test_decompostion_function(self, strategy):
+        new_strat = strategy.change_basis([Perm((0, 1, 2, 3))], False)
+        t = Tiling(
+            obstructions=(
+                GriddedPerm((0, 1, 2, 3), ((0, 0),) * 4),
+                GriddedPerm((0, 1, 2), ((1, 1),) * 3),
+            ),
+            requirements=(),
+            assumptions=(),
+        )
+        rule = new_strat(t)
+        assert rule.children == (t.from_string("1234"),)
+
     def test_pack(self, strategy, enum_verified):
         for tiling in enum_verified:
             pack = strategy.pack(tiling)
@@ -863,13 +909,13 @@ class TestOneByOneVerificationStrategy(CommonTest):
         ) == TileScopePack.regular_insertion_encoding(2)
         assert strategy.pack(
             enum_verified[4]
-        ) == TileScopePack.row_and_col_placements().fix_one_by_one(
+        ) == TileScopePack.row_and_col_placements().add_basis(
             [Perm((0, 1, 2)), Perm((2, 3, 0, 1))]
         )
 
         assert strategy.pack(enum_verified[5]) == TileScopePack.row_and_col_placements(
             row_only=True
-        ).make_fusion(tracked=True).fix_one_by_one([Perm((0, 1, 2))])
+        ).make_fusion(tracked=True).add_basis([Perm((0, 1, 2))])
         with pytest.raises(InvalidOperationError):
             strategy.pack(enum_verified[6])
 
