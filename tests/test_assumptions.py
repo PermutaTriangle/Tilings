@@ -1,5 +1,6 @@
 import json
 import os
+import pickle
 from operator import xor
 
 import pytest
@@ -285,3 +286,19 @@ def test_1234_fusion():
             gp.patt for gp in spec.generate_objects_of_size(i)
         )
         assert spec.random_sample_object_of_size(i).patt in av
+
+
+def test_1234_pickle():
+    """
+    Test that the specification can be pickled.
+    """
+    __location__ = os.path.realpath(
+        os.path.join(os.getcwd(), os.path.dirname(__file__))
+    )
+    with open(os.path.join(__location__, "spec-1234.json")) as f:
+        d = json.loads(f.read())
+    spec = CombinatorialSpecification.from_dict(d)
+    spec.count_objects_of_size(10)
+    s = pickle.dumps(spec)
+    new_spec = pickle.loads(s)
+    assert new_spec == spec

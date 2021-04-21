@@ -22,7 +22,7 @@ class ComponentFusionStrategy(FusionStrategy):
     def backward_map(
         self,
         comb_class: Tiling,
-        gps: Tuple[Optional[GriddedPerm], ...],
+        objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
         left_points: Optional[int] = None,
     ) -> Iterator[GriddedPerm]:

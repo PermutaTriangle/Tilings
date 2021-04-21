@@ -9,9 +9,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Rearrange assumption strategy
 - `TrackingAssumption.from_cell` method
+- Counting for reverse fusion
 
 ### Changed
 - Updated to use comb_spec_searcher 3.0.0
+- Using `strategy_pack.make_fusion` or `strategy_pack.make_tracked` now automatically
+  adds `RearrangeAssumptionFactory` with `apply_first=True` if `tracked=True`
+- Moved several local function in `RearrangeConstructor` outward to make it pickleable
+- Fixed isolated fusion bug
+
+### Fixed 
+- Removed a redundant `Tiling.is_empty` check in the fusion algorithm. 
+
+### Deprecated
+- Python 3.6 is no longer supported
 
 ## [2.5.0] - 2020-11-11
 ### Added

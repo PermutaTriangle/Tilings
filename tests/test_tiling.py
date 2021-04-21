@@ -7,6 +7,7 @@ import sympy
 
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
+from tilings.algorithms import Fusion as FusionAlg
 from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
 
@@ -1446,6 +1447,29 @@ def test_fusion():
             GriddedPerm((0, 1), ((1, 0), (1, 0))),
         ]
     )
+
+    t2 = Tiling(
+        obstructions=[
+            GriddedPerm.single_cell(Perm((2, 0, 1)), (0, 2)),
+            GriddedPerm.single_cell(Perm((0, 1)), (0, 1)),
+            GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (0, 1)]),
+            GriddedPerm(Perm((2, 0, 1)), [(0, 2), (0, 0), (0, 2)]),
+            GriddedPerm(Perm((2, 0, 1)), [(0, 2), (0, 1), (0, 2)]),
+        ],
+        assumptions=[
+            TrackingAssumption(
+                [
+                    GriddedPerm.single_cell((0,), (0, 1)),
+                    GriddedPerm.single_cell((0,), (0, 2)),
+                ]
+            )
+        ],
+    )
+    assert FusionAlg(t2, row_idx=0, tracked=True, isolation_level=None).fusable()
+    assert not FusionAlg(
+        t2, row_idx=0, tracked=True, isolation_level="isolated"
+    ).fusable()
 
 
 def test_component_fusion():

@@ -8,9 +8,8 @@ from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.typing import Objects
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
-from tilings.strategies.dummy_constructor import DummyConstructor
 
-from .constructor import FusionConstructor
+from .constructor import FusionConstructor, ReverseFusionConstructor
 
 
 class FusionRule(Rule[Tiling, GriddedPerm]):
@@ -186,7 +185,32 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
-        return DummyConstructor()
+        if not self.tracked:
+            # constructor only enumerates when tracked.
+            raise NotImplementedError("The fusion strategy was not tracked.")
+        # Need to recompute some info to count, so ignoring passed in children
+        algo = self.fusion_algorithm(comb_class)
+        if not algo.fusable():
+            raise StrategyDoesNotApply("Strategy does not apply")
+        if algo.min_left_right_points() != (0, 0):
+            raise NotImplementedError(
+                "Reverse positive fusion counting not implemented"
+            )
+        child = algo.fused_tiling()
+        assert children is None or children == (child,)
+        (
+            left_sided_params,
+            right_sided_params,
+            _,
+        ) = self.left_right_both_sided_parameters(comb_class)
+        return ReverseFusionConstructor(
+            comb_class,
+            child,
+            self._fuse_parameter(comb_class),
+            self.extra_parameters(comb_class, children)[0],
+            tuple(left_sided_params),
+            tuple(right_sided_params),
+        )
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -244,10 +268,11 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         idx = self.row_idx if self.row_idx is not None else self.col_idx
         return "fuse {} {} and {}".format(fusing, idx, idx + 1)
 
+    # pylint: disable=arguments-differ
     def backward_map(
         self,
         comb_class: Tiling,
-        gps: Tuple[Optional[GriddedPerm], ...],
+        objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
         left_points: int = None,
     ) -> Iterator[GriddedPerm]:
@@ -257,7 +282,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         """
         if children is None:
             children = self.decomposition_function(comb_class)
-        gp = gps[0]
+        gp = objs[0]
         assert gp is not None
         gp = children[0].backward_map(gp)
         yield from self.fusion_algorithm(comb_class).unfuse_gridded_perm(
@@ -267,7 +292,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def forward_map(
         self,
         comb_class: Tiling,
-        gp: GriddedPerm,
+        obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[Optional[GriddedPerm], ...]:
         """
@@ -276,7 +301,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         """
         if children is None:
             children = self.decomposition_function(comb_class)
-        fused_gp = self.fusion_algorithm(comb_class).fuse_gridded_perm(gp)
+        fused_gp = self.fusion_algorithm(comb_class).fuse_gridded_perm(obj)
         return (children[0].forward_map(fused_gp),)
 
     def to_jsonable(self) -> dict:

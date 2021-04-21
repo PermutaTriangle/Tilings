@@ -13,6 +13,7 @@ from .obstruction_inferral import (
     ObstructionTransitivityFactory,
     SubobstructionInferralFactory,
 )
+from .rearrange_assumption import RearrangeAssumptionFactory
 from .requirement_insertion import (
     CellInsertionFactory,
     FactorInsertionFactory,
@@ -46,6 +47,7 @@ __all__ = [
     "AddAssumptionFactory",
     "AddInterleavingAssumptionFactory",
     "DetectComponentsStrategy",
+    "RearrangeAssumptionFactory",
     "SplittingStrategy",
     # Batch
     "CellInsertionFactory",

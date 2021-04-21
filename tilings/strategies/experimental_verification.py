@@ -30,10 +30,10 @@ class ShortObstructionVerificationStrategy(TileScopeVerificationStrategy):
         self.short_length = short_length
         super().__init__(ignore_parent=ignore_parent)
 
-    def verified(self, tiling: Tiling):
-        return tiling.dimensions != (1, 1) and all(
+    def verified(self, comb_class: Tiling):
+        return comb_class.dimensions != (1, 1) and all(
             ob.is_single_cell() or len(ob) <= self.short_length
-            for ob in tiling.obstructions
+            for ob in comb_class.obstructions
         )
 
     def formal_step(self) -> str:
@@ -65,8 +65,8 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
         self.subclass_basis = tuple(sorted(subclass_basis))
         super().__init__(ignore_parent=ignore_parent)
 
-    def verified(self, tiling: Tiling) -> bool:
-        algo = SubclassVerificationAlgorithm(tiling, set(self.subclass_basis))
+    def verified(self, comb_class: Tiling) -> bool:
+        algo = SubclassVerificationAlgorithm(comb_class, set(self.subclass_basis))
         return algo.subclasses == self.subclass_basis
 
     def formal_step(self) -> str:
