@@ -46,6 +46,15 @@ class ShortObstructionVerificationStrategy(TileScopeVerificationStrategy):
             self.short_length
         )
 
+    def __repr__(self) -> str:
+        args = ", ".join(
+            [
+                f"short_length={self.short_length}",
+                f"ignore_parent={self.ignore_parent}",
+            ]
+        )
+        return f"{self.__class__.__name__}({args})"
+
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
         d["short_length"] = self.short_length
@@ -76,9 +85,13 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
         return "subclass verification strategy"
 
     def __repr__(self):
-        return self.__class__.__name__ + "(subclass_basis={})".format(
-            self.subclass_basis
+        args = ", ".join(
+            [
+                f"subclass_basis={self.subclass_basis}",
+                f"ignore_parent={self.ignore_parent}",
+            ]
         )
+        return f"{self.__class__.__name__}({args})"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
