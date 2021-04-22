@@ -126,10 +126,10 @@ class BasisAwareVerificationStrategy(TileScopeVerificationStrategy):
     def from_dict(
         cls: Type[BasisAwareVerificationStrategyType], d: dict
     ) -> BasisAwareVerificationStrategyType:
-        if d["basis"] is not None:
+        if "basis" in d and d["basis"] is not None:
             basis: Optional[List[Perm]] = [Perm(p) for p in d.pop("basis")]
         else:
-            basis = d.pop("basis")
+            basis = d.pop("basis", None)
         return cls(basis=basis, **d)
 
 
