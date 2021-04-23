@@ -266,6 +266,17 @@ class CellInsertionFactory(RequirementInsertionWithRestrictionFactory):
             )
         return "cell insertion up to length {}".format(self.maxreqlen)
 
+    def __repr__(self) -> str:
+        args = ", ".join(
+            [
+                f"maxreqlen={self.maxreqlen}",
+                f"extra_basis={self.extra_basis!r}",
+                f"ignore_parent={self.ignore_parent}",
+                f"one_cell_only={self.one_cell_only}",
+            ]
+        )
+        return f"{self.__class__.__name__}({args})"
+
 
 class RootInsertionFactory(CellInsertionFactory):
     """
@@ -426,6 +437,17 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
                 perm_class, self.maxreqlen
             )
         return "requirement insertion up to " "length {}".format(self.maxreqlen)
+
+    def __repr__(self) -> str:
+        args = ", ".join(
+            [
+                f"maxreqlen={self.maxreqlen}",
+                f"extra_basis={self.extra_basis!r}",
+                f"limited_insertion={self.limited_insertion}",
+                f"ignore_parent={self.ignore_parent}",
+            ]
+        )
+        return f"{self.__class__.__name__}({args})"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()

@@ -127,9 +127,14 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         return "factor"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "(partition={}, workable={})".format(
-            self.partition, self.workable
+        args = ", ".join(
+            [
+                f"partition={self.partition}",
+                f"ignore_parent={self.ignore_parent}",
+                f"workable={self.workable}",
+            ]
         )
+        return f"{self.__class__.__name__}({args})"
 
     # JSON methods
 
@@ -350,12 +355,6 @@ class FactorWithInterleavingStrategy(FactorStrategy):
     def get_op_symbol() -> str:
         return "*"
 
-    def __repr__(self) -> str:
-        return (
-            self.__class__.__name__
-            + f"(partition={self.partition}, workable={self.workable})"
-        )
-
 
 class MonotoneInterleaving(Interleaving):
     pass
@@ -473,10 +472,16 @@ class FactorFactory(StrategyFactory[Tiling]):
             interleaving = "all"
         elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
             interleaving = "monotone"
-        return (
-            f"AllFactorStrategy(interleaving={interleaving}, unions={self.unions},"
-            f" ignore_parent={self.ignore_parent}, workable={self.workable})"
+        args = ", ".join(
+            [
+                f"interleaving={interleaving!r}",
+                f"unions={self.unions}",
+                f"ignore_parent={self.ignore_parent}",
+                f"workable={self.workable}",
+                f"tracked={self.tracked}",
+            ]
         )
+        return f"{self.__class__.__name__}({args})"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()

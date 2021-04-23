@@ -157,6 +157,9 @@ class EmptyCellInferralFactory(ObstructionInferralFactory):
     def from_dict(cls, d):
         return cls(**d)
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
+
 
 class SubobstructionInferralFactory(ObstructionInferralFactory):
     def __init__(self):

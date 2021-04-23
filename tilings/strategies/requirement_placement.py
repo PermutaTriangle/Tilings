@@ -20,6 +20,20 @@ __all__ = [
 
 Cell = Tuple[int, int]
 
+DIR_REPR = {
+    DIR_NORTH: "DIR_NORTH",
+    DIR_SOUTH: "DIR_SOUTH",
+    DIR_WEST: "DIR_WEST",
+    DIR_EAST: "DIR_EAST",
+}
+
+DIR_STR = {
+    DIR_NORTH: "north",
+    DIR_SOUTH: "south",
+    DIR_EAST: "east",
+    DIR_WEST: "west",
+}
+
 
 class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def __init__(
@@ -385,39 +399,26 @@ class PatternPlacementFactory(AbstractRequirementPlacementFactory):
         s += "point" if self.point_only else "requirement"
         s += " placement"
         if len(self.dirs) < 4:
-            dir_str = {
-                DIR_NORTH: "north",
-                DIR_SOUTH: "south",
-                DIR_EAST: "east",
-                DIR_WEST: "west",
-            }
             if len(self.dirs) == 1:
-                s += " in direction {}".format(dir_str[self.dirs[0]])
+                s += " in direction {}".format(DIR_STR[self.dirs[0]])
             else:
                 s += " in directions ".format()
-                s += ", ".join(dir_str[d] for d in self.dirs[:-1])
-                s += " and {}".format(dir_str[self.dirs[-1]])
+                s += ", ".join(DIR_STR[d] for d in self.dirs[:-1])
+                s += " and {}".format(DIR_STR[self.dirs[-1]])
         if self.ignore_parent:
             s += " (ignore parent)"
         return s
 
     def __repr__(self) -> str:
-        dir_repr = {
-            DIR_NORTH: "DIR_NORTH",
-            DIR_SOUTH: "DIR_SOUTH",
-            DIR_WEST: "DIR_WEST",
-            DIR_EAST: "DIR_EAST",
-        }
-        if len(self.dirs) < 4:
-            dir_arg = ", dirs=({},)".format(", ".join(dir_repr[d] for d in self.dirs))
-        else:
-            dir_arg = ""
-        return (
-            "PatternPlacementStrategy(point_only={}, partial={},"
-            " ignore_parent={}{})".format(
-                self.point_only, self.partial, self.ignore_parent, dir_arg
-            )
+        args = ", ".join(
+            [
+                f"point_only={self.point_only}",
+                f"partial={self.partial}",
+                f"ignore_parent={self.ignore_parent}",
+                f"dirs=({', '.join(map(DIR_REPR.__getitem__, self.dirs))},)",
+            ]
         )
+        return f"{self.__class__.__name__}({args})"
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
@@ -516,18 +517,12 @@ class RequirementPlacementFactory(AbstractRequirementPlacementFactory):
         s = "partial " if self.partial else ""
         s += "requirement placement"
         if len(self.dirs) < 4:
-            dir_str = {
-                DIR_NORTH: "north",
-                DIR_SOUTH: "south",
-                DIR_EAST: "east",
-                DIR_WEST: "west",
-            }
             if len(self.dirs) == 1:
-                s += " in direction {}".format(dir_str[self.dirs[0]])
+                s += " in direction {}".format(DIR_STR[self.dirs[0]])
             else:
                 s += " in directions ".format()
-                s += ", ".join(dir_str[d] for d in self.dirs[:-1])
-                s += " and {}".format(dir_str[self.dirs[-1]])
+                s += ", ".join(DIR_STR[d] for d in self.dirs[:-1])
+                s += " and {}".format(DIR_STR[self.dirs[-1]])
         if self.ignore_parent:
             s += " (ignore parent)"
         if self.max_rules_per_req:
@@ -535,26 +530,16 @@ class RequirementPlacementFactory(AbstractRequirementPlacementFactory):
         return s
 
     def __repr__(self) -> str:
-        dir_repr = {
-            DIR_NORTH: "DIR_NORTH",
-            DIR_SOUTH: "DIR_SOUTH",
-            DIR_WEST: "DIR_WEST",
-            DIR_EAST: "DIR_EAST",
-        }
-        if len(self.dirs) < 4:
-            dir_arg = ", dirs=({},)".format(", ".join(dir_repr[d] for d in self.dirs))
-        else:
-            dir_arg = ""
-        return (
-            "AllRequirementPlacementStrategy(subreqs={},partial={},"
-            " ignore_parent={}{}, max_rules_per_req={})".format(
-                self.subreqs,
-                self.partial,
-                self.ignore_parent,
-                dir_arg,
-                self.max_rules_per_req,
-            )
+        args = ", ".join(
+            [
+                f"subreqs={self.subreqs!r}",
+                f"partial={self.partial}",
+                f"ignore_parent={self.ignore_parent}",
+                f"dirs=({', '.join(map(DIR_REPR.__getitem__, self.dirs))},)",
+                f"max_rules_per_req={self.max_rules_per_req}",
+            ]
         )
+        return f"{self.__class__.__name__}({args})"
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
@@ -621,16 +606,16 @@ class RowAndColumnPlacementFactory(AbstractRequirementPlacementFactory):
         return s
 
     def __repr__(self) -> str:
-        return (
-            "RowAndColumnPlacementStrategy(place_row={}, "
-            "place_col={}, partial={}, ignore_parent={}, dirs={})".format(
-                self.place_row,
-                self.place_col,
-                self.partial,
-                self.ignore_parent,
-                self.dirs,
-            )
+        args = ", ".join(
+            [
+                f"place_row={self.place_row}",
+                f"place_col={self.place_col}",
+                f"partial={self.partial}",
+                f"ignore_parent={self.ignore_parent}",
+                f"dirs=({', '.join(map(DIR_REPR.__getitem__, self.dirs))},)",
+            ]
         )
+        return f"{self.__class__.__name__}({args})"
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
@@ -684,7 +669,7 @@ class AllPlacementsFactory(AbstractRequirementPlacementFactory):
         return "all placements"
 
     def __repr__(self) -> str:
-        return "AllPlacementsStrategy(ignore_parent={})".format(self.ignore_parent)
+        return f"{self.__class__.__name__}(ignore_parent={self.ignore_parent})"
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
