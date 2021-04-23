@@ -106,10 +106,10 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
         return False
 
     @staticmethod
-    def decomposition_function(tiling: Tiling) -> Optional[Tuple[Tiling]]:
-        if not tiling.assumptions:
+    def decomposition_function(comb_class: Tiling) -> Optional[Tuple[Tiling]]:
+        if not comb_class.assumptions:
             return None
-        return (tiling.remove_components_from_assumptions(),)
+        return (comb_class.remove_components_from_assumptions(),)
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None

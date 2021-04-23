@@ -1,4 +1,5 @@
 import json
+import os
 from itertools import product
 
 import pytest
@@ -386,9 +387,18 @@ strategy_objects = (
     ]
 )
 
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+with open(os.path.join(__location__, "old_rule_json.jsonl")) as fp:
+    strategy_dicts = list(map(json.loads, fp.readlines()))
+
 
 @pytest.mark.parametrize("strategy", strategy_objects)
 def test_json_encoding(strategy):
     strategy_new = json_encode_decode(strategy)
     print(strategy)
     assert_same_strategy(strategy, strategy_new)
+
+
+@pytest.mark.parametrize("strat_dict", strategy_dicts)
+def test_old_json_compatibility(strat_dict):
+    Strategy.from_dict(strat_dict)
