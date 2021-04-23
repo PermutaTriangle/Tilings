@@ -291,7 +291,7 @@ class TileScopePack(StrategyPack):
                     strat.AllPlacementsFactory(),
                 ],
             ],
-            name="all_the_strategies",
+            name=f"all_the_strategies_{length}",
         )
 
     @classmethod
