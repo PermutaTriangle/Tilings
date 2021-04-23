@@ -30,6 +30,7 @@ setup(
         "permuta==2.0.2",
     ],
     python_requires=">=3.6",
+    include_package_data=True,
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Education",
