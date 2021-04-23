@@ -287,10 +287,11 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         idx = self.row_idx if self.row_idx is not None else self.col_idx
         return "fuse {} {} and {}".format(fusing, idx, idx + 1)
 
+    # pylint: disable=arguments-differ
     def backward_map(
         self,
         comb_class: Tiling,
-        gps: Tuple[Optional[GriddedPerm], ...],
+        objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
         left_points: int = None,
     ) -> Iterator[GriddedPerm]:
@@ -300,7 +301,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         """
         if children is None:
             children = self.decomposition_function(comb_class)
-        gp = gps[0]
+        gp = objs[0]
         assert gp is not None
         gp = children[0].backward_map(gp)
         yield from self.fusion_algorithm(comb_class).unfuse_gridded_perm(
@@ -310,7 +311,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def forward_map(
         self,
         comb_class: Tiling,
-        gp: GriddedPerm,
+        obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[Optional[GriddedPerm], ...]:
         """
@@ -319,7 +320,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         """
         if children is None:
             children = self.decomposition_function(comb_class)
-        fused_gp = self.fusion_algorithm(comb_class).fuse_gridded_perm(gp)
+        fused_gp = self.fusion_algorithm(comb_class).fuse_gridded_perm(obj)
         return (children[0].forward_map(fused_gp),)
 
     def to_jsonable(self) -> dict:

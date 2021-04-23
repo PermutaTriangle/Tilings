@@ -54,8 +54,10 @@ class TileScope(CombinatorialSpecificationSearcher):
 
         if start_tiling.dimensions == (1, 1):
             procname = kwargs.get("logger_kwargs", {"processname": "runner"})
-            logger.debug("Fixing basis in OneByOneVerificationStrategy", extra=procname)
-            strategy_pack = strategy_pack.fix_one_by_one(basis)
+            logger.debug(
+                "Fixing basis in basis aware verification strategies.", extra=procname
+            )
+            strategy_pack = strategy_pack.add_basis(basis)
         strategy_pack = strategy_pack.setup_subclass_verification(start_tiling)
 
         super().__init__(
@@ -140,7 +142,7 @@ class GuidedSearcher(TileScope):
         *args,
         **kwargs
     ):
-        self.tilings = frozenset(tilings)
+        self.tilings = frozenset(t.remove_assumptions() for t in tilings)
         super().__init__(basis, pack, *args, **kwargs)
         for t in self.tilings:
             class_label = self.classdb.get_label(t)

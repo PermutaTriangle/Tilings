@@ -209,6 +209,10 @@ class Fusion:
         return False
 
     def min_left_right_points(self) -> Tuple[int, int]:
+        # Make sure that the req fuse counter has been computed so that
+        # positive left and right or fine
+        # pylint: disable=pointless-statement
+        self.requirements_fuse_counters
         return int(self._positive_left), int(self._positive_right)
 
     @property
@@ -332,7 +336,7 @@ class Fusion:
             [
                 assumption
                 for assumption in self._tiling.assumptions
-                if any(cell in gp.pos for gp in assumption.gps for cell in fusing_cells)
+                if all(cell in fusing_cells for gp in assumption.gps for cell in gp.pos)
             ]
         )
 
@@ -374,9 +378,6 @@ class Fusion:
             and req_fusable
             and ass_fusable
             and self._check_isolation_level()
-            and not self.fused_tiling()
-            .add_list_requirement(list(self.new_assumption().gps))
-            .is_empty()
         )
 
     def fused_tiling(self) -> "Tiling":

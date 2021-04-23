@@ -12,6 +12,7 @@ from comb_spec_searcher.strategies import (
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import strategies as strat
+from tilings.strategies.verification import BasisAwareVerificationStrategy
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -23,7 +24,11 @@ class TileScopePack(StrategyPack):
     # Method to add power to a pack
     # Pack are immutable, these methods return a new pack.
 
-    def fix_one_by_one(self, basis: Iterable[Perm]) -> "TileScopePack":
+    def add_basis(self, basis: Iterable[Perm]) -> "TileScopePack":
+        """
+        Update the pack to add the basis being run to the verifications strategy
+        that needs to be aware of it.
+        """
         basis = tuple(basis)
         symmetry = bool(self.symmetries)
 
@@ -31,9 +36,9 @@ class TileScopePack(StrategyPack):
             """Return a new list with the replaced 1x1 strat."""
             res = []
             for strategy in strats:
-                if isinstance(strategy, strat.OneByOneVerificationStrategy):
+                if isinstance(strategy, BasisAwareVerificationStrategy):
                     if strategy.basis:
-                        logger.warning("Basis changed in OneByOneVerificationStrategy")
+                        logger.warning("Basis changed in %s", strategy)
                     res.append(strategy.change_basis(basis, symmetry))
                 else:
                     res.append(strategy)
