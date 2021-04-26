@@ -156,7 +156,7 @@ def typical_redundant_obstructions():
 
 @pytest.fixture
 def typical_redundant_requirements():
-    """Returns a very typical list of requirements of a tiling.  """
+    """Returns a very typical list of requirements of a tiling."""
     return [
         [
             GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 3))),
