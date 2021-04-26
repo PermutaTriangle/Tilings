@@ -28,7 +28,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return (tiling.add_obstructions(self.gps),)
 
     def formal_step(self) -> str:
-        """ Return a string describing the operation performed. """
+        """Return a string describing the operation performed."""
         if all(len(gp) == 1 for gp in self.gps):
             empty_cells_str = ", ".join(map(str, (gp.pos[0] for gp in self.gps)))
             return "the cells {{{}}} are empty".format(empty_cells_str)
