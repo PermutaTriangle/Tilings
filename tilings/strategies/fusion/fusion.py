@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import islice
 from random import randint
 from typing import Dict, Iterator, List, Optional, Set, Tuple, cast
 
@@ -108,6 +109,24 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
                         )
                     except StopIteration:
                         assert 0, "something went wrong"
+
+    def _forward_order(
+        self,
+        obj: GriddedPerm,
+        image: Tuple[Optional[GriddedPerm], ...],
+        data: Optional[object] = None,
+    ) -> int:
+        return next(i for i, gp in enumerate(self.backward_map(image)) if gp == obj)
+
+    def _backward_order_item(
+        self,
+        idx: int,
+        objs: Tuple[Optional[GriddedPerm], ...],
+        data: Optional[object] = None,
+    ) -> GriddedPerm:
+        if data:
+            return tuple(self.backward_map(objs))[-idx - 1]
+        return next(islice(self.backward_map(objs), idx))
 
 
 class FusionStrategy(Strategy[Tiling, GriddedPerm]):
