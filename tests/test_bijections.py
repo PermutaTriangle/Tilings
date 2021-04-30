@@ -14,10 +14,8 @@ from comb_spec_searcher.specification import CombinatorialSpecification
 from tilings import GriddedPerm, Tiling
 from tilings import strategies as strat
 from tilings.strategies import BasicVerificationStrategy
+from tilings.strategies.sliding import SlidingFactory
 from tilings.tilescope import TileScope, TileScopePack
-
-_BIJECTION_JSON_ROOT = pathlib.Path(__file__).parent.joinpath("resources", "bijections")
-_SPEC_JSON_ROOT = pathlib.Path(__file__).parent.joinpath("resources", "specs")
 
 
 def _b2rc(basis: str) -> CombinatorialSpecificationSearcher:
@@ -28,7 +26,7 @@ def _b2rc(basis: str) -> CombinatorialSpecificationSearcher:
     return searcher
 
 
-def _bijection_asserter(bi, max_size=9):
+def _bijection_asserter(bi, max_size=7):
     assert bi is not None
     for i in range(max_size + 1):
         assert {bi.map(gp) for gp in bi.domain.generate_objects_of_size(i)} == set(
@@ -41,7 +39,7 @@ def _bijection_asserter(bi, max_size=9):
             assert bi.inverse_map(bi.map(gp)) == gp
 
 
-def _tester(basis1: str, basis2: str, max_size=9):
+def _tester(basis1: str, basis2: str, max_size=7):
     _bijection_asserter(
         find_bijection_between(_b2rc(basis1), _b2rc(basis2)),
         max_size,
@@ -72,7 +70,7 @@ def test_bijection_2():
 
 
 def test_bijection_3():
-    _tester("132", "231")
+    _tester("132", "231", max_size=6)
 
 
 def test_bijection_4():
@@ -443,28 +441,25 @@ def test_bijection_13():
 
 
 def test_bijection_14():
-    for i, n in enumerate([8, 8, 5, 8]):
-        _bijection_asserter(
-            Bijection.from_dict(
-                json.loads(
-                    _BIJECTION_JSON_ROOT.joinpath(f"bijection{i}.json").read_text()
-                )
-            ),
-            max_size=n,
-        )
+    bi = find_bijection_between(
+        _b2rc("0213_0231_0312_0321_1302_2301_3120"),
+        _b2rc("0213_0231_0312_0321_1320_2301_3120"),
+    )
+    assert bi is not None
+    _bijection_asserter(Bijection.from_dict(json.loads(json.dumps(bi.to_jsonable()))))
 
 
 def test_bijection_15_fusion():
-    s1234 = CombinatorialSpecification.from_dict(
-        json.loads(_SPEC_JSON_ROOT.joinpath("1234_spec.json").read_text())
+    pack = TileScopePack.row_and_col_placements(row_only=True).make_fusion(tracked=True)
+    pack = pack.add_verification(BasicVerificationStrategy(), replace=True)
+    pack2 = TileScopePack.row_and_col_placements(row_only=True).make_fusion(
+        tracked=True
     )
-    s1243 = CombinatorialSpecification.from_dict(
-        json.loads(_SPEC_JSON_ROOT.joinpath("1243_spec.json").read_text())
-    )
-    s1432 = CombinatorialSpecification.from_dict(
-        json.loads(_SPEC_JSON_ROOT.joinpath("1432_spec.json").read_text())
-    )
-
-    _bijection_asserter(Bijection.construct(s1234, s1243), max_size=6)
-    _bijection_asserter(Bijection.construct(s1234, s1432), max_size=6)
-    _bijection_asserter(Bijection.construct(s1243, s1432), max_size=6)
+    pack2 = pack2.add_initial(SlidingFactory(True))
+    pack2 = pack2.add_verification(BasicVerificationStrategy(), replace=True)
+    t1 = TileScope("1234", pack)
+    t2 = TileScope("1243", pack)
+    t3 = TileScope("1432", pack2)
+    _bijection_asserter(find_bijection_between(t1, t2), max_size=6)
+    _bijection_asserter(find_bijection_between(t1, t3), max_size=6)
+    _bijection_asserter(find_bijection_between(t2, t3), max_size=6)
