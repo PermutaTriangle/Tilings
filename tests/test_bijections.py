@@ -440,11 +440,28 @@ def test_bijection_13():
     _bijection_asserter(find_bijection_between(searcher1, searcher2))
 
 
-def test_bijection_14():
+def test_bijection_14_json():
+    # JSON with no assumption/fusion
     bi = find_bijection_between(
         _b2rc("0213_0231_0312_0321_1302_2301_3120"),
         _b2rc("0213_0231_0312_0321_1320_2301_3120"),
     )
+    assert bi is not None
+    _bijection_asserter(Bijection.from_dict(json.loads(json.dumps(bi.to_jsonable()))))
+    # JSON with fusion+assumption
+    pack = TileScopePack(
+        initial_strats=[strat.FactorFactory()],
+        ver_strats=[
+            strat.BasicVerificationStrategy(),
+        ],
+        inferral_strats=[
+            strat.ObstructionTransitivityFactory(),
+        ],
+        expansion_strats=[[strat.RowAndColumnPlacementFactory()]],
+        name="custom",
+    ).make_fusion()
+    pack = pack.add_verification(BasicVerificationStrategy(), replace=True)
+    bi = find_bijection_between(TileScope("132", pack), TileScope("123", pack))
     assert bi is not None
     _bijection_asserter(Bijection.from_dict(json.loads(json.dumps(bi.to_jsonable()))))
 
