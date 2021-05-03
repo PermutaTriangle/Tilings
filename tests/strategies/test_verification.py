@@ -275,6 +275,43 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
         assert strat_with_sym(t1).children == (Tiling.from_string("0132"),)
         assert strat_with_sym(t1.rotate90()).children == (Tiling.from_string("4312"),)
 
+    def test_shifts(self):
+        t1 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 1, 3, 2), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((1, 1))),
+            ]
+        )
+        t2 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 1, 3, 2), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((1, 1))),
+                GriddedPerm((0, 2, 1), ((0, 0), (1, 1), (1, 1))),
+            ],
+            requirements=[
+                [
+                    GriddedPerm.single_cell((0, 1), ((1, 1))),
+                ]
+            ],
+        )
+        t3 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 2, 1), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((1, 1))),
+            ]
+        )
+        t4 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 1, 3, 2), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((0, 1))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (0, 1))),
+            ]
+        )
+        strat = LocallyFactorableVerificationStrategy(basis=[Perm((0, 1, 3, 2))])
+        assert strat(t1).shifts() == (0,)
+        assert strat(t2).shifts() == (2,)
+        assert strat(t3).shifts() == ()
+
 
 class TestLocalVerificationStrategy(CommonTest):
     @pytest.fixture

@@ -37,6 +37,7 @@ from tilings.algorithms.enumeration import (
     LocalEnumeration,
     MonotoneTreeEnumeration,
 )
+from tilings.algorithms.locally_factorable_shift import LocallyFactorableShift
 from tilings.assumptions import ComponentAssumption
 from tilings.strategies import (
     FactorFactory,
@@ -432,6 +433,18 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
             and self._locally_factorable_obstructions(comb_class)
             and self._locally_factorable_requirements(comb_class)
         )
+
+    def shifts(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply
+        if not children:
+            return ()
+        rule = self(comb_class, children)
+        return (LocallyFactorableShift(rule, self.basis).shift(),)
 
     @staticmethod
     def formal_step() -> str:
