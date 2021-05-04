@@ -106,6 +106,19 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
         return False
 
     @staticmethod
+    def is_reversible(comb_class: Tiling):
+        return False
+
+    def shifts(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]]
+    ) -> Tuple[int, ...]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply
+        return (0,)
+
+    @staticmethod
     def decomposition_function(comb_class: Tiling) -> Optional[Tuple[Tiling]]:
         if not comb_class.assumptions:
             return None
