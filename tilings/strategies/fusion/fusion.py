@@ -144,7 +144,6 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         self,
         comb_class: Tiling,
         children: Tuple[Tiling, ...] = None,
-        **kwargs,
     ) -> FusionRule:
         if children is None:
             children = self.decomposition_function(comb_class)
@@ -365,7 +364,7 @@ class FusionFactory(StrategyFactory[Tiling]):
             raise ValueError("FusionFactory already tracked")
         return self.__class__(tracked=True, isolation_level=self.isolation_level)
 
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
             algo = Fusion(

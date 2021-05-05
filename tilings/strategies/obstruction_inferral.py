@@ -119,9 +119,7 @@ class ObstructionInferralFactory(StrategyFactory[Tiling]):
         """
         return AllObstructionInferral(tiling, self.maxlen).new_obs()
 
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[ObstructionInferralStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[ObstructionInferralStrategy]:
         gps = self.new_obs(comb_class)
         if gps:
             yield ObstructionInferralStrategy(gps)

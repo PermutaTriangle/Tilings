@@ -304,7 +304,7 @@ class AbstractRequirementPlacementFactory(StrategyFactory[Tiling]):
             req_placements = (RequirementPlacement(tiling),)
         return req_placements
 
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
         for req_placement, (gps, indices, direction) in product(
             self.req_placements(comb_class),
             self.req_indices_and_directions_to_place(comb_class),
