@@ -73,7 +73,7 @@ def small_tiling():
 
 @pytest.fixture
 def big_tiling():
-    """ The original tiling from Jay's idea """
+    """The original tiling from Jay's idea"""
     t = Tiling(
         obstructions=(
             GriddedPerm((0,), ((0, 1),)),
@@ -483,3 +483,44 @@ def test_fusion_gfs():
 
     # TODO: Add tests for the versions where there is a list requirement with a point
     # in each cell. Equations for this are not currently implemented.
+
+
+def test_fusion_constructor_equiv():
+    _tilings = [
+        Tiling(
+            obstructions=(
+                GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                GriddedPerm((1, 0), ((1, 0), (2, 0))),
+                GriddedPerm((1, 0), ((2, 0), (2, 0))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (1, 0))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (2, 0))),
+            ),
+            requirements=(),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),),
+        ),
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+            ),
+            requirements=(),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+        ),
+    ]
+    constr1 = FusionStrategy(None, 1, True)(_tilings[0]).constructor
+    constr2 = FusionStrategy(None, 0, True)(_tilings[1]).constructor
+
+    are_equiv, reverse = constr1.equiv(constr2)
+    assert are_equiv
+    assert reverse
+    are_equiv, reverse = constr1.equiv(constr1)
+    assert are_equiv
+    assert not reverse
+    are_equiv, reverse = constr2.equiv(constr2)
+    assert are_equiv
+    assert not reverse

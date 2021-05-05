@@ -536,11 +536,79 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             "This is implemented on the FusionRule class directly"
         )
 
-    def __eq__(self, obj: object) -> bool:
-        raise NotImplementedError("Required for bijections")
+    def equiv(self, other: "Constructor") -> Tuple[bool, Optional[object]]:
+        init = self._equiv_base_cases(other)
+        if init is None:
+            return False, None
+        p1, p2, n, bijection, in_use = init
 
-    def __hash__(self) -> int:
-        raise NotImplementedError("Required for bijection search")
+        def _backtrack(rev: bool):
+            assert isinstance(other, type(self))
+            for x in range(n):
+                if x in in_use:
+                    continue
+                bijection.append(x)
+                in_use.add(x)
+                result = self._equiv_backtrack_consistent(
+                    bijection, rev, other, p1, p2
+                ) and (len(bijection) == n or _backtrack(rev))
+                bijection.pop()
+                in_use.remove(x)
+                return result
+            return False
+
+        if _backtrack(False):
+            return True, None
+        assert len(in_use) == 0
+        if _backtrack(True):
+            return True, True
+
+        # TODO: min left and right?
+        return False, None
+
+    def _equiv_base_cases(
+        self,
+        other: "Constructor",
+    ) -> Optional[Tuple[List[str], List[str], int, List[int], Set[int]]]:
+        if not isinstance(other, type(self)):
+            return None
+        p1 = list(self.extra_parameters.keys())
+        p2 = list(other.extra_parameters.keys())
+        if len(p1) != len(p2):
+            return None
+        if len(set(self.extra_parameters.values()).union({self.fuse_parameter})) != len(
+            set(other.extra_parameters.values()).union({other.fuse_parameter})
+        ):
+            return None
+        return p1, p2, len(p1), [], set()
+
+    def _equiv_backtrack_consistent(
+        self,
+        bi: List[int],
+        rev: bool,
+        other: "FusionConstructor",
+        p1: List[str],
+        p2: List[str],
+    ):
+        grp_left, grp_right = set(), set()
+        for i, j in enumerate(bi):
+            if (p1[i] in self.both_sided_parameters) != (
+                p2[j] in other.both_sided_parameters
+            ) or (self.extra_parameters[p1[i]] == self.fuse_parameter) != (
+                other.extra_parameters[p2[j]] == other.fuse_parameter
+            ):
+                return False, None
+            if p1[i] in self.left_sided_parameters:
+                grp_left.add(p2[j])
+            if p1[i] in self.right_sided_parameters:
+                grp_right.add(p2[j])
+        if rev:
+            return grp_right.issubset(
+                other.left_sided_parameters
+            ) and grp_left.issubset(other.right_sided_parameters)
+        return grp_left.issubset(other.left_sided_parameters) and grp_right.issubset(
+            other.right_sided_parameters
+        )
 
 
 class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
@@ -739,8 +807,5 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
     ):
         raise NotImplementedError
 
-    def __eq__(self, obj: object) -> bool:
+    def equiv(self, other: "Constructor") -> Tuple[bool, Optional[object]]:
         raise NotImplementedError("Required for bijections")
-
-    def __hash__(self) -> int:
-        raise NotImplementedError("Required for bijection search")

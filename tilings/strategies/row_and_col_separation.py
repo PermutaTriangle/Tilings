@@ -98,7 +98,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
-        """This method will enable us to generate objects, and sample. """
+        """This method will enable us to generate objects, and sample."""
         if children is None:
             children = self.decomposition_function(tiling)
         gp = gps[0]
