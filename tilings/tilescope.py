@@ -8,6 +8,7 @@ from comb_spec_searcher import (
     CombinatorialSpecification,
     CombinatorialSpecificationSearcher,
 )
+from comb_spec_searcher.rule_db import RuleDB
 from comb_spec_searcher.strategies import StrategyFactory
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
@@ -27,8 +28,9 @@ class TileScope(CombinatorialSpecificationSearcher):
         self,
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
-        logger_kwargs: Optional[dict] = None,
-        **kwargs
+        ruledb: Optional[Union[str, RuleDB]] = None,
+        expand_verified: bool = False,
+        debug: bool = False,
     ) -> None:
 
         """Initialise TileScope."""
@@ -38,7 +40,6 @@ class TileScope(CombinatorialSpecificationSearcher):
             if start_class.dimensions == (1, 1):
                 basis = Basis(*[o.patt for o in start_class.obstructions])
             start_tiling = start_class
-        # elif isinstance(start_class, collections.abc.Iterable):
         else:
             try:
                 basis = Basis(*start_class)
@@ -53,16 +54,11 @@ class TileScope(CombinatorialSpecificationSearcher):
             )
 
         if start_tiling.dimensions == (1, 1):
-            procname = kwargs.get("logger_kwargs", {"processname": "runner"})
-            logger.debug(
-                "Fixing basis in basis aware verification strategies.", extra=procname
-            )
+            logger.debug("Fixing basis in basis aware verification strategies.")
             strategy_pack = strategy_pack.add_basis(basis)
         strategy_pack = strategy_pack.setup_subclass_verification(start_tiling)
 
-        super().__init__(
-            start_tiling, strategy_pack, logger_kwargs=logger_kwargs, **kwargs
-        )
+        super().__init__(start_tiling, strategy_pack, ruledb, expand_verified, debug)
 
     @staticmethod
     def _strat_dict_to_jsonable(dict_):
@@ -101,10 +97,9 @@ class LimitedAssumptionTileScope(TileScope):
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
         max_assumptions: int,
-        logger_kwargs: Optional[dict] = None,
         **kwargs
     ) -> None:
-        super().__init__(start_class, strategy_pack, logger_kwargs, **kwargs)
+        super().__init__(start_class, strategy_pack, **kwargs)
         self.max_assumptions = max_assumptions
 
     def _expand(
@@ -148,7 +143,7 @@ class GuidedSearcher(TileScope):
             class_label = self.classdb.get_label(t)
             is_empty = self.classdb.is_empty(t, class_label)
             if not is_empty:
-                self._add_to_queue(class_label)
+                self.classqueue.add(class_label)
 
     def _expand(
         self,
