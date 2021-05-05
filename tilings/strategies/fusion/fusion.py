@@ -166,7 +166,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def can_be_equivalent() -> bool:
         return False
 
-    def is_two_way(self, comb_class: Tiling):
+    @staticmethod
+    def is_two_way(comb_class: Tiling):
         return False
 
     def constructor(
