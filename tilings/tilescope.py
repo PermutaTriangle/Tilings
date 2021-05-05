@@ -1,4 +1,3 @@
-from collections import defaultdict
 from typing import Iterable, Optional, Tuple, Union
 
 import requests
@@ -9,7 +8,6 @@ from comb_spec_searcher import (
     CombinatorialSpecificationSearcher,
 )
 from comb_spec_searcher.rule_db import RuleDB
-from comb_spec_searcher.strategies import StrategyFactory
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
@@ -58,7 +56,13 @@ class TileScope(CombinatorialSpecificationSearcher):
             strategy_pack = strategy_pack.add_basis(basis)
         strategy_pack = strategy_pack.setup_subclass_verification(start_tiling)
 
-        super().__init__(start_tiling, strategy_pack, ruledb, expand_verified, debug)
+        super().__init__(
+            start_class=start_tiling,
+            strategy_pack=strategy_pack,
+            ruledb=ruledb,
+            expand_verified=expand_verified,
+            debug=debug,
+        )
 
 
 class LimitedAssumptionTileScope(TileScope):
