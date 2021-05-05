@@ -60,31 +60,6 @@ class TileScope(CombinatorialSpecificationSearcher):
 
         super().__init__(start_tiling, strategy_pack, ruledb, expand_verified, debug)
 
-    @staticmethod
-    def _strat_dict_to_jsonable(dict_):
-        keys = []
-        values = []
-        for k, v in dict_.items():
-            if k == "is empty":
-                keys.append(k)
-            else:
-                keys.append(k.to_jsonable())
-            values.append(v)
-        return {"keys": keys, "values": values}
-
-    @staticmethod
-    def _strat_dict_from_jsonable(dict_):
-        keys = dict_["keys"]
-        values = dict_["values"]
-        d = {}
-        for k, v in zip(keys, values):
-            if k == "is empty":
-                d[k] = v
-            else:
-                d[StrategyFactory.from_dict(k)] = v
-            values.append(v)
-        return defaultdict(int, d)
-
 
 class LimitedAssumptionTileScope(TileScope):
     """
