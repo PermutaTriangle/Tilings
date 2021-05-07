@@ -403,9 +403,7 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
 
 
 class RearrangeAssumptionFactory(StrategyFactory[Tiling]):
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[RearrangeAssumptionStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[RearrangeAssumptionStrategy]:
         assumptions = comb_class.assumptions
         for ass1, ass2 in combinations(assumptions, 2):
             if set(ass1.gps).issubset(set(ass2.gps)):

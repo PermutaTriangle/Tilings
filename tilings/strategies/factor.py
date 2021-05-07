@@ -418,7 +418,7 @@ class FactorFactory(StrategyFactory[Tiling]):
             FactorWithMonotoneInterleaving,
         )
 
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Strategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Strategy]:
         factor_algo = self.factor_algo(comb_class)
         if factor_algo.factorable():
             min_comp = tuple(tuple(part) for part in factor_algo.get_components())

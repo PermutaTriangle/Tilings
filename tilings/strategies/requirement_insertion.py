@@ -136,9 +136,7 @@ class AbstractRequirementInsertionFactory(StrategyFactory[Tiling]):
         rules.
         """
 
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[RequirementInsertionStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[RequirementInsertionStrategy]:
         """
         Iterator over all the requirement insertion rules.
         """
@@ -293,9 +291,7 @@ class RootInsertionFactory(CellInsertionFactory):
         super().__init__(maxreqlen, extra_basis, ignore_parent)
         self.max_num_req = max_num_req
 
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[RequirementInsertionStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[RequirementInsertionStrategy]:
         if comb_class.dimensions != (1, 1):
             return
         for strategy in super().__call__(comb_class):
@@ -421,12 +417,10 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
                 ):
                     yield (GriddedPerm(gp.patt, gp.pos),)
 
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[RequirementInsertionStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[RequirementInsertionStrategy]:
         if self.limited_insertion and comb_class.requirements:
             return
-        yield from super().__call__(comb_class, **kwargs)
+        yield from super().__call__(comb_class)
 
     def __str__(self) -> str:
         if self.maxreqlen == 1:

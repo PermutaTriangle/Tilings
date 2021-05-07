@@ -245,7 +245,7 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
 
 
 class AddAssumptionFactory(StrategyFactory[Tiling]):
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
         for assumption in comb_class.assumptions:
             without = comb_class.remove_assumption(assumption)
             strategy = AddAssumptionsStrategy((assumption,))
@@ -290,7 +290,7 @@ class AddInterleavingAssumptionFactory(StrategyFactory[Tiling]):
             yield strategy(comb_class)
 
     # TODO: monotone?
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
         factor_algo = FactorWithInterleaving(comb_class)
         if factor_algo.factorable():
             min_comp = tuple(tuple(part) for part in factor_algo.get_components())
