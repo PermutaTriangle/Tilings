@@ -73,7 +73,7 @@ def small_tiling():
 
 @pytest.fixture
 def big_tiling():
-    """ The original tiling from Jay's idea """
+    """The original tiling from Jay's idea"""
     t = Tiling(
         obstructions=(
             GriddedPerm((0,), ((0, 1),)),

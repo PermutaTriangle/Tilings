@@ -334,6 +334,24 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         )
         return d
 
+    def __repr__(self) -> str:
+        if self.factor_class is factor.Factor:
+            interleaving = "none"
+        elif self.factor_class is factor.FactorWithInterleaving:
+            interleaving = "all"
+        elif self.factor_class is factor.FactorWithMonotoneInterleaving:
+            interleaving = "monotone"
+        args = ", ".join(
+            [
+                f"interleaving={interleaving!r}",
+                f"ignore_parent={self.ignore_parent}",
+                f"inferrable={self.inferrable}",
+                f"possibly_empty={self.possibly_empty}",
+                f"workable={self.workable}",
+            ]
+        )
+        return f"{self.__class__.__name__}({args})"
+
     @classmethod
     def from_dict(cls, d: dict) -> "SplittingStrategy":
         return cls(**d)

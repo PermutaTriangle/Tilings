@@ -136,9 +136,7 @@ class AbstractRequirementInsertionFactory(StrategyFactory[Tiling]):
         rules.
         """
 
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[RequirementInsertionStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[RequirementInsertionStrategy]:
         """
         Iterator over all the requirement insertion rules.
         """
@@ -266,6 +264,17 @@ class CellInsertionFactory(RequirementInsertionWithRestrictionFactory):
             )
         return "cell insertion up to length {}".format(self.maxreqlen)
 
+    def __repr__(self) -> str:
+        args = ", ".join(
+            [
+                f"maxreqlen={self.maxreqlen}",
+                f"extra_basis={self.extra_basis!r}",
+                f"ignore_parent={self.ignore_parent}",
+                f"one_cell_only={self.one_cell_only}",
+            ]
+        )
+        return f"{self.__class__.__name__}({args})"
+
 
 class RootInsertionFactory(CellInsertionFactory):
     """
@@ -282,9 +291,7 @@ class RootInsertionFactory(CellInsertionFactory):
         super().__init__(maxreqlen, extra_basis, ignore_parent)
         self.max_num_req = max_num_req
 
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[RequirementInsertionStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[RequirementInsertionStrategy]:
         if comb_class.dimensions != (1, 1):
             return
         for strategy in super().__call__(comb_class):
@@ -410,12 +417,10 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
                 ):
                     yield (GriddedPerm(gp.patt, gp.pos),)
 
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[RequirementInsertionStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[RequirementInsertionStrategy]:
         if self.limited_insertion and comb_class.requirements:
             return
-        yield from super().__call__(comb_class, **kwargs)
+        yield from super().__call__(comb_class)
 
     def __str__(self) -> str:
         if self.maxreqlen == 1:
@@ -426,6 +431,17 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
                 perm_class, self.maxreqlen
             )
         return "requirement insertion up to " "length {}".format(self.maxreqlen)
+
+    def __repr__(self) -> str:
+        args = ", ".join(
+            [
+                f"maxreqlen={self.maxreqlen}",
+                f"extra_basis={self.extra_basis!r}",
+                f"limited_insertion={self.limited_insertion}",
+                f"ignore_parent={self.ignore_parent}",
+            ]
+        )
+        return f"{self.__class__.__name__}({args})"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()

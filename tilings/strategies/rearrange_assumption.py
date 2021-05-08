@@ -382,6 +382,15 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         d["sub_assumption"] = self.sub_assumption.to_jsonable()
         return d
 
+    def __repr__(self) -> str:
+        args = ", ".join(
+            [
+                f"assumption={self.assumption!r}",
+                f"sub_assumption={self.sub_assumption!r}",
+            ]
+        )
+        return f"{self.__class__.__name__}({args})"
+
     @classmethod
     def from_dict(cls, d: dict) -> "RearrangeAssumptionStrategy":
         assumption = TrackingAssumption.from_dict(d.pop("assumption"))
@@ -393,19 +402,9 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
     def get_eq_symbol() -> str:
         return "↣"
 
-    def __repr__(self):
-        return (
-            f"{self.__class__.__name__}"
-            f"(assumption={self.assumption!r}, "
-            f"sub_assumption={self.assumption!r}, "
-            f"workable={self.workable})"
-        )
-
 
 class RearrangeAssumptionFactory(StrategyFactory[Tiling]):
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[RearrangeAssumptionStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[RearrangeAssumptionStrategy]:
         assumptions = comb_class.assumptions
         for ass1, ass2 in combinations(assumptions, 2):
             if set(ass1.gps).issubset(set(ass2.gps)):

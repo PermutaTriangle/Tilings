@@ -144,7 +144,6 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         self,
         comb_class: Tiling,
         children: Tuple[Tiling, ...] = None,
-        **kwargs,
     ) -> FusionRule:
         if children is None:
             children = self.decomposition_function(comb_class)
@@ -166,14 +165,9 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def can_be_equivalent() -> bool:
         return False
 
-    def is_two_way(self, comb_class: Tiling):
-        algo = self.fusion_algorithm(comb_class)
-        new_ass = algo.new_assumption()
-        fused_assumptions = (
-            ass.__class__(gps)
-            for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
-        )
-        return new_ass in fused_assumptions
+    @staticmethod
+    def is_two_way(comb_class: Tiling):
+        return False
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -365,7 +359,7 @@ class FusionFactory(StrategyFactory[Tiling]):
             raise ValueError("FusionFactory already tracked")
         return self.__class__(tracked=True, isolation_level=self.isolation_level)
 
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
             algo = Fusion(

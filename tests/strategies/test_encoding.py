@@ -84,6 +84,25 @@ def json_encode_decode(s):
     return s_new
 
 
+def repr_encode_decode(strategy):
+    """Take a strategy, encode it as repr and build it back as a strategy."""
+    __tracebackhide__ = True
+
+    repr_str = repr(strategy)
+    if not isinstance(repr_str, str):
+        pytest.fail(f"repr does not return a string.\nReturned: {repr_str}")
+    try:
+        new_strategy = eval(repr_str)
+    except Exception as e:
+        pytest.fail(
+            "The repr method returns a string that can not be loaded back\n"
+            f"Got error: {e}\n"
+            f"The repr is: {repr_str}\n"
+            f"The class is: {strategy.__class__}"
+        )
+    return new_strategy
+
+
 def maxreqlen_extrabasis_ignoreparent(strategy):
     return [
         strategy(
@@ -396,6 +415,15 @@ with open(os.path.join(__location__, "old_rule_json.jsonl")) as fp:
 def test_json_encoding(strategy):
     strategy_new = json_encode_decode(strategy)
     print(strategy)
+    assert_same_strategy(strategy, strategy_new)
+
+
+@pytest.mark.parametrize("strategy", strategy_objects)
+def test_repr_encoding(strategy):
+    strategy_new = repr_encode_decode(strategy)
+    print(strategy)
+    print(repr(strategy))
+    print(strategy.to_jsonable())
     assert_same_strategy(strategy, strategy_new)
 
 

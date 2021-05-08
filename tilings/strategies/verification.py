@@ -132,6 +132,16 @@ class BasisAwareVerificationStrategy(TileScopeVerificationStrategy):
             basis = d.pop("basis", None)
         return cls(basis=basis, **d)
 
+    def __repr__(self) -> str:
+        args = ", ".join(
+            [
+                f"basis={self._basis}",
+                f"symmetry={self._symmetry}",
+                f"ignore_parent={self.ignore_parent}",
+            ]
+        )
+        return f"{self.__class__.__name__}({args})"
+
 
 class BasicVerificationStrategy(AtomStrategy):
     """
@@ -200,6 +210,9 @@ class BasicVerificationStrategy(AtomStrategy):
                 comb_class.get_assumption_parameter(assumption)
             ] = assumption.get_value(gp)
         return reduce(mul, [var(k) ** n for k, n in expected.items()], 1)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
 
 
 class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
@@ -302,13 +315,6 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
         raise NotImplementedError(
             "Not implemented random sample for one by one verified tilings"
         )
-
-    def __repr__(self) -> str:
-        if self.symmetries:
-            return self.__class__.__name__ + (
-                "(basis={}, symmetry={}, " "ignore_parent={})"
-            ).format(list(self._basis), True, self.ignore_parent)
-        return self.__class__.__name__ + "()"
 
     def __str__(self) -> str:
         return "one by one verification"

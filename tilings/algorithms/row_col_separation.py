@@ -385,7 +385,7 @@ class _RowColSeparationSingleApplication:
 
     @staticmethod
     def _maximal_order(graph):
-        """ Returns a order that maximise separation. """
+        """Returns a order that maximise separation."""
         return next(_RowColSeparationSingleApplication._all_order(graph))
 
     def _separates_tiling(self, row_order, col_order):
