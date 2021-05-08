@@ -28,7 +28,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return (tiling.add_obstructions(self.gps),)
 
     def formal_step(self) -> str:
-        """ Return a string describing the operation performed. """
+        """Return a string describing the operation performed."""
         if all(len(gp) == 1 for gp in self.gps):
             empty_cells_str = ", ".join(map(str, (gp.pos[0] for gp in self.gps)))
             return "the cells {{{}}} are empty".format(empty_cells_str)
@@ -119,9 +119,7 @@ class ObstructionInferralFactory(StrategyFactory[Tiling]):
         """
         return AllObstructionInferral(tiling, self.maxlen).new_obs()
 
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[ObstructionInferralStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[ObstructionInferralStrategy]:
         gps = self.new_obs(comb_class)
         if gps:
             yield ObstructionInferralStrategy(gps)
@@ -156,6 +154,9 @@ class EmptyCellInferralFactory(ObstructionInferralFactory):
     @classmethod
     def from_dict(cls, d):
         return cls(**d)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
 
 
 class SubobstructionInferralFactory(ObstructionInferralFactory):

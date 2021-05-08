@@ -45,7 +45,7 @@ class TestFusion:
 
     @pytest.fixture
     def big_tiling(self):
-        """ The original tiling from Jay's idea """
+        """The original tiling from Jay's idea"""
         t = Tiling(
             obstructions=(
                 GriddedPerm((0,), ((0, 1),)),

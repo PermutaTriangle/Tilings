@@ -67,7 +67,7 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
         gps: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
-        """This method will enable us to generate objects, and sample. """
+        """This method will enable us to generate objects, and sample."""
         yield self.inverse_gp_transform(tiling, cast(GriddedPerm, gps[0]))
 
     def forward_map(
@@ -264,9 +264,7 @@ class SymmetriesFactory(StrategyFactory[Tiling]):
     Yield all symmetry strategies for a tiling.
     """
 
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[TilingSymmetryStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[TilingSymmetryStrategy]:
         def strategy(rotations: int, inverse: bool) -> TilingSymmetryStrategy:
             # pylint: disable=too-many-return-statements
             if rotations == 0:
