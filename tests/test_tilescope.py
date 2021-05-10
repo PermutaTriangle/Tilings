@@ -2,7 +2,6 @@ import pytest
 import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
-from comb_spec_searcher.rule_db import LimitedStrategyRuleDB
 from comb_spec_searcher.strategies import EmptyStrategy
 from comb_spec_searcher.strategies.rule import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
@@ -304,18 +303,6 @@ def test_expansion():
                     EmptyStrategy,
                 ),
             )
-
-
-@pytest.mark.timeout(10)
-def test_single_fusion_db():
-    ruledb = LimitedStrategyRuleDB(
-        strategies_to_limit=set([FusionStrategy]), limit=1, mark_verified=False
-    )
-    searcher = TileScope("0123_0132", row_placements_fusion, ruledb=ruledb)
-    spec = searcher.auto_search()
-    assert isinstance(spec, CombinatorialSpecification)
-    expected_enum = [1, 1, 2, 6, 22, 90, 394, 1806, 8558, 41586, 206098]
-    assert [spec.count_objects_of_size(n) for n in range(11)] == expected_enum
 
 
 @pytest.mark.timeout(30)
