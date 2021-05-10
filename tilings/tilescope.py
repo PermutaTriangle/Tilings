@@ -7,7 +7,7 @@ from comb_spec_searcher import (
     CombinatorialSpecification,
     CombinatorialSpecificationSearcher,
 )
-from comb_spec_searcher.rule_db import RuleDB
+from comb_spec_searcher.rule_db.abstract import RuleDBAbstract
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
@@ -26,7 +26,7 @@ class TileScope(CombinatorialSpecificationSearcher):
         self,
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
-        ruledb: Optional[Union[str, RuleDB]] = None,
+        ruledb: Optional[RuleDBAbstract] = None,
         expand_verified: bool = False,
         debug: bool = False,
     ) -> None:
