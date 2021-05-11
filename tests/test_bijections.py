@@ -1,5 +1,5 @@
 import json
-import pathlib
+from collections import deque
 
 import requests
 
@@ -11,10 +11,15 @@ from comb_spec_searcher import (
 )
 from comb_spec_searcher.isomorphism import Bijection
 from comb_spec_searcher.specification import CombinatorialSpecification
-from tilings import GriddedPerm, Tiling
+from tilings import GriddedPerm, Tiling, TrackingAssumption
 from tilings import strategies as strat
+from tilings.bijections import _AssumptionPathTracker
 from tilings.strategies import BasicVerificationStrategy
-from tilings.strategies.sliding import SlidingFactory
+from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
+from tilings.strategies.factor import FactorStrategy
+from tilings.strategies.fusion import FusionStrategy
+from tilings.strategies.requirement_placement import RequirementPlacementStrategy
+from tilings.strategies.sliding import SlidingFactory, SlidingStrategy
 from tilings.tilescope import TileScope, TileScopePack
 
 
@@ -480,3 +485,1305 @@ def test_bijection_15_fusion():
     _bijection_asserter(find_bijection_between(t1, t2), max_size=6)
     _bijection_asserter(find_bijection_between(t1, t3), max_size=6)
     _bijection_asserter(find_bijection_between(t2, t3), max_size=6)
+
+
+def test_atom_assumption_path_mismatch():
+    path1 = [
+        (
+            RequirementPlacementStrategy(
+                gps=(GriddedPerm((0,), ((0, 0),)),),
+                indices=(0,),
+                direction=3,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(),
+                )
+            ),
+            1,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 1), (2, 1)), ((1, 0),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((0, 2, 1), ((2, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (0, 1), (2, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (2, 1), (2, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((1, 0),)),),),
+                    assumptions=(),
+                )
+            ),
+            0,
+        ),
+        (
+            RequirementPlacementStrategy(
+                gps=(GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),))),
+                indices=(0, 0),
+                direction=3,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(),
+                )
+            ),
+            1,
+        ),
+        (
+            AddAssumptionsStrategy(
+                assumptions=(TrackingAssumption((GriddedPerm((0,), ((3, 1),)),)),),
+                workable=False,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((0, 2, 1), ((2, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 2, 1), ((2, 1), (2, 1), (3, 1))),
+                        GriddedPerm((0, 2, 1), ((2, 1), (3, 1), (3, 1))),
+                        GriddedPerm((0, 2, 1), ((3, 1), (3, 1), (3, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (0, 1), (2, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (0, 1), (3, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (2, 1), (3, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (3, 1), (3, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((1, 0),)),),),
+                    assumptions=(),
+                )
+            ),
+            0,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 1), (2, 1), (3, 1)), ((1, 0),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((0, 2, 1), ((2, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 2, 1), ((2, 1), (2, 1), (3, 1))),
+                        GriddedPerm((0, 2, 1), ((2, 1), (3, 1), (3, 1))),
+                        GriddedPerm((0, 2, 1), ((3, 1), (3, 1), (3, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (0, 1), (2, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (0, 1), (3, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (2, 1), (3, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (3, 1), (3, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((1, 0),)),),),
+                    assumptions=(TrackingAssumption((GriddedPerm((0,), ((3, 1),)),)),),
+                )
+            ),
+            0,
+        ),
+        (
+            AddAssumptionsStrategy(
+                assumptions=(TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),),
+                workable=False,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 2, 1), ((1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),),
+                )
+            ),
+            0,
+        ),
+        (
+            RequirementPlacementStrategy(
+                gps=(
+                    GriddedPerm((0,), ((0, 0),)),
+                    GriddedPerm((0,), ((2, 0),)),
+                    GriddedPerm((0,), ((1, 0),)),
+                ),
+                indices=(0, 0, 0),
+                direction=3,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 2, 1), ((1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(
+                        TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),
+                        TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
+                    ),
+                )
+            ),
+            3,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 1), (1, 1), (2, 1), (4, 1)), ((3, 0),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((3, 0), (3, 0))),
+                        GriddedPerm((1, 0), ((3, 0), (3, 0))),
+                        GriddedPerm((1, 0), ((4, 1), (4, 1))),
+                        GriddedPerm((0, 2, 1), ((1, 1), (1, 1), (1, 1))),
+                        GriddedPerm((0, 2, 1), ((1, 1), (1, 1), (2, 1))),
+                        GriddedPerm((0, 2, 1), ((1, 1), (1, 1), (4, 1))),
+                        GriddedPerm((0, 2, 1), ((1, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 2, 1), ((1, 1), (2, 1), (4, 1))),
+                        GriddedPerm((0, 2, 1), ((2, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 2, 1), ((2, 1), (2, 1), (4, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (0, 1), (1, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (0, 1), (2, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (0, 1), (4, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (1, 1), (1, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (1, 1), (2, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (1, 1), (4, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (2, 1), (4, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((3, 0),)),),),
+                    assumptions=(
+                        TrackingAssumption((GriddedPerm((0,), ((1, 1),)),)),
+                        TrackingAssumption(
+                            (
+                                GriddedPerm((0,), ((2, 1),)),
+                                GriddedPerm((0,), ((3, 0),)),
+                                GriddedPerm((0,), ((4, 1),)),
+                            )
+                        ),
+                    ),
+                )
+            ),
+            1,
+        ),
+    ]
+    path2 = [
+        (
+            RequirementPlacementStrategy(
+                gps=(GriddedPerm((0,), ((0, 0),)),),
+                indices=(0,),
+                direction=3,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(),
+                )
+            ),
+            1,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 1), (2, 1)), ((1, 0),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (2, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((1, 0),)),),),
+                    assumptions=(),
+                )
+            ),
+            0,
+        ),
+        (
+            RequirementPlacementStrategy(
+                gps=(GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),))),
+                indices=(0, 0),
+                direction=3,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(),
+                )
+            ),
+            1,
+        ),
+        (
+            AddAssumptionsStrategy(
+                assumptions=(TrackingAssumption((GriddedPerm((0,), ((3, 1),)),)),),
+                workable=False,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (2, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (3, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((3, 1), (3, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (3, 1), (3, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((1, 0),)),),),
+                    assumptions=(),
+                )
+            ),
+            0,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 1), (2, 1), (3, 1)), ((1, 0),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (2, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (3, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((3, 1), (3, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (3, 1), (3, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((1, 0),)),),),
+                    assumptions=(TrackingAssumption((GriddedPerm((0,), ((3, 1),)),)),),
+                )
+            ),
+            0,
+        ),
+        (
+            AddAssumptionsStrategy(
+                assumptions=(TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),),
+                workable=False,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),),
+                )
+            ),
+            0,
+        ),
+        (
+            RequirementPlacementStrategy(
+                gps=(
+                    GriddedPerm((0,), ((0, 0),)),
+                    GriddedPerm((0,), ((2, 0),)),
+                    GriddedPerm((0,), ((1, 0),)),
+                ),
+                indices=(0, 0, 0),
+                direction=3,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(
+                        TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),
+                        TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
+                    ),
+                )
+            ),
+            2,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 1), (1, 1), (3, 1), (4, 1)), ((2, 0),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((2, 0), (2, 0))),
+                        GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                        GriddedPerm((1, 0), ((2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 1), (3, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((1, 1), (3, 1), (4, 1))),
+                        GriddedPerm((2, 1, 0), ((1, 1), (4, 1), (4, 1))),
+                        GriddedPerm((2, 1, 0), ((3, 1), (3, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((3, 1), (3, 1), (4, 1))),
+                        GriddedPerm((2, 1, 0), ((3, 1), (4, 1), (4, 1))),
+                        GriddedPerm((2, 1, 0), ((4, 1), (4, 1), (4, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (1, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (4, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (1, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (1, 1), (4, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (3, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (3, 1), (4, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (4, 1), (4, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((2, 0),)),),),
+                    assumptions=(
+                        TrackingAssumption(
+                            (
+                                GriddedPerm((0,), ((1, 1),)),
+                                GriddedPerm((0,), ((2, 0),)),
+                                GriddedPerm((0,), ((3, 1),)),
+                            )
+                        ),
+                        TrackingAssumption((GriddedPerm((0,), ((4, 1),)),)),
+                    ),
+                )
+            ),
+            1,
+        ),
+    ]
+    assert not _AssumptionPathTracker(
+        deque(path1), deque(path2)
+    ).assumptions_match_down_to_atom()
+
+
+def test_atom_assumption_path_match():
+    path1 = [
+        (
+            RequirementPlacementStrategy(
+                gps=(GriddedPerm((0,), ((0, 0),)),),
+                indices=(0,),
+                direction=1,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(),
+                )
+            ),
+            1,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 0), (2, 0)), ((1, 1),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((1, 1), (1, 1))),
+                        GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (2, 0), (2, 0), (2, 0))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((1, 1),)),),),
+                    assumptions=(),
+                )
+            ),
+            0,
+        ),
+        (
+            RequirementPlacementStrategy(
+                gps=(GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),))),
+                indices=(0, 0),
+                direction=1,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (1, 0), (1, 0), (1, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(),
+                )
+            ),
+            2,
+        ),
+        (
+            AddAssumptionsStrategy(
+                assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+                workable=False,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((2, 1), (2, 1))),
+                        GriddedPerm((1, 0), ((2, 1), (2, 1))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (1, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((2, 1),)),),),
+                    assumptions=(),
+                )
+            ),
+            0,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 0), (1, 0), (3, 0)), ((2, 1),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((2, 1), (2, 1))),
+                        GriddedPerm((1, 0), ((2, 1), (2, 1))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (1, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((2, 1),)),),),
+                    assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+                )
+            ),
+            0,
+        ),
+        (
+            FusionStrategy(row_idx=None, col_idx=0, tracked=True)(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (2, 0), (2, 0), (2, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+                )
+            ),
+            0,
+        ),
+        (
+            RequirementPlacementStrategy(
+                gps=(GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),))),
+                indices=(0, 0),
+                direction=1,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (1, 0), (1, 0), (1, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+                )
+            ),
+            1,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 0), (2, 0), (3, 0)), ((1, 1),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                        GriddedPerm((0, 1), ((1, 1), (1, 1))),
+                        GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((1, 1),)),),),
+                    assumptions=(
+                        TrackingAssumption(
+                            (
+                                GriddedPerm((0,), ((0, 0),)),
+                                GriddedPerm((0,), ((1, 1),)),
+                                GriddedPerm((0,), ((2, 0),)),
+                            )
+                        ),
+                    ),
+                )
+            ),
+            0,
+        ),
+        (
+            RequirementPlacementStrategy(
+                gps=(
+                    GriddedPerm((0,), ((0, 0),)),
+                    GriddedPerm((0,), ((2, 0),)),
+                    GriddedPerm((0,), ((1, 0),)),
+                ),
+                indices=(0, 0, 0),
+                direction=1,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (2, 0), (2, 0), (2, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(
+                        TrackingAssumption(
+                            (GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),)))
+                        ),
+                    ),
+                )
+            ),
+            3,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 0), (1, 0), (2, 0), (4, 0)), ((3, 1),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                        GriddedPerm((0, 1), ((3, 1), (3, 1))),
+                        GriddedPerm((1, 0), ((3, 1), (3, 1))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (4, 0), (4, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (2, 0), (4, 0), (4, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (4, 0), (4, 0), (4, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (1, 0), (4, 0), (4, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (2, 0), (4, 0), (4, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (4, 0), (4, 0), (4, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (2, 0), (4, 0), (4, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (4, 0), (4, 0), (4, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((4, 0), (4, 0), (4, 0), (4, 0))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((3, 1),)),),),
+                    assumptions=(
+                        TrackingAssumption(
+                            (GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),)))
+                        ),
+                    ),
+                )
+            ),
+            0,
+        ),
+        (
+            AddAssumptionsStrategy(
+                assumptions=(TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),),
+                workable=False,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (1, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(
+                        TrackingAssumption(
+                            (GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),)))
+                        ),
+                    ),
+                )
+            ),
+            0,
+        ),
+        (
+            FusionStrategy(row_idx=None, col_idx=1, tracked=True)(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (1, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(
+                        TrackingAssumption(
+                            (GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),)))
+                        ),
+                        TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
+                    ),
+                )
+            ),
+            0,
+        ),
+        (
+            RequirementPlacementStrategy(
+                gps=(
+                    GriddedPerm((0,), ((0, 0),)),
+                    GriddedPerm((0,), ((2, 0),)),
+                    GriddedPerm((0,), ((1, 0),)),
+                ),
+                indices=(0, 0, 0),
+                direction=1,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                        GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((0, 0), (2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (2, 0), (2, 0), (2, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(
+                        TrackingAssumption(
+                            (GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),)))
+                        ),
+                        TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),
+                    ),
+                )
+            ),
+            1,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 1),), ((1, 0), (2, 0), (3, 0))),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((0, 1), (0, 1))),
+                        GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((0, 1), (0, 1))),
+                        GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((1, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((2, 0), (3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 1, 2, 3), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((0, 1),)),),),
+                    assumptions=(
+                        TrackingAssumption(
+                            (
+                                GriddedPerm((0,), ((0, 1),)),
+                                GriddedPerm((0,), ((1, 0),)),
+                                GriddedPerm((0,), ((2, 0),)),
+                            )
+                        ),
+                        TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
+                    ),
+                )
+            ),
+            0,
+        ),
+    ]
+    path2 = [
+        (
+            RequirementPlacementStrategy(
+                gps=(GriddedPerm((0,), ((0, 0),)),),
+                indices=(0,),
+                direction=3,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(),
+                )
+            ),
+            1,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 1), (2, 1)), ((1, 0),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (2, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((1, 0),)),),),
+                    assumptions=(),
+                )
+            ),
+            0,
+        ),
+        (
+            RequirementPlacementStrategy(
+                gps=(GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),))),
+                indices=(0, 0),
+                direction=3,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(),
+                )
+            ),
+            1,
+        ),
+        (
+            AddAssumptionsStrategy(
+                assumptions=(TrackingAssumption((GriddedPerm((0,), ((3, 1),)),)),),
+                workable=False,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (2, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (3, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((3, 1), (3, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (3, 1), (3, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((1, 0),)),),),
+                    assumptions=(),
+                )
+            ),
+            0,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 1), (2, 1), (3, 1)), ((1, 0),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (2, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (3, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((3, 1), (3, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (3, 1), (3, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((1, 0),)),),),
+                    assumptions=(TrackingAssumption((GriddedPerm((0,), ((3, 1),)),)),),
+                )
+            ),
+            0,
+        ),
+        (
+            FusionStrategy(row_idx=None, col_idx=1, tracked=True)(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),),
+                )
+            ),
+            0,
+        ),
+        (
+            RequirementPlacementStrategy(
+                gps=(GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),))),
+                indices=(0, 0),
+                direction=3,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),),
+                )
+            ),
+            2,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 1), (1, 1), (3, 1)), ((2, 0),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((2, 0), (2, 0))),
+                        GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                        GriddedPerm((1, 0), ((2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 1), (3, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((3, 1), (3, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (1, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (1, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (3, 1), (3, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((2, 0),)),),),
+                    assumptions=(
+                        TrackingAssumption(
+                            (
+                                GriddedPerm((0,), ((1, 1),)),
+                                GriddedPerm((0,), ((2, 0),)),
+                                GriddedPerm((0,), ((3, 1),)),
+                            )
+                        ),
+                    ),
+                )
+            ),
+            0,
+        ),
+        (
+            RequirementPlacementStrategy(
+                gps=(
+                    GriddedPerm((0,), ((0, 0),)),
+                    GriddedPerm((0,), ((2, 0),)),
+                    GriddedPerm((0,), ((1, 0),)),
+                ),
+                indices=(0, 0, 0),
+                direction=3,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(
+                        TrackingAssumption(
+                            (GriddedPerm((0,), ((1, 0),)), GriddedPerm((0,), ((2, 0),)))
+                        ),
+                    ),
+                )
+            ),
+            1,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 1), (2, 1), (3, 1), (4, 1)), ((1, 0),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((3, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (2, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (4, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (3, 1), (4, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (4, 1), (4, 1))),
+                        GriddedPerm((2, 1, 0), ((3, 1), (4, 1), (4, 1))),
+                        GriddedPerm((2, 1, 0), ((4, 1), (4, 1), (4, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (4, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (4, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (3, 1), (4, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (4, 1), (4, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((1, 0),)),),),
+                    assumptions=(
+                        TrackingAssumption(
+                            (GriddedPerm((0,), ((3, 1),)), GriddedPerm((0,), ((4, 1),)))
+                        ),
+                    ),
+                )
+            ),
+            0,
+        ),
+        (
+            SlidingStrategy(av_12=1, av_123=2, symmetry_type=2)(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((1, 0), ((2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (3, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (2, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (3, 0), (3, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(
+                        TrackingAssumption(
+                            (GriddedPerm((0,), ((2, 0),)), GriddedPerm((0,), ((3, 0),)))
+                        ),
+                    ),
+                )
+            ),
+            0,
+        ),
+        (
+            AddAssumptionsStrategy(
+                assumptions=(TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),),
+                workable=False,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (3, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (2, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (3, 0), (3, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(
+                        TrackingAssumption(
+                            (GriddedPerm((0,), ((1, 0),)), GriddedPerm((0,), ((3, 0),)))
+                        ),
+                    ),
+                )
+            ),
+            0,
+        ),
+        (
+            FusionStrategy(row_idx=None, col_idx=2, tracked=True)(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (3, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (3, 0), (3, 0))),
+                        GriddedPerm((2, 1, 0), ((3, 0), (3, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (2, 0), (3, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (3, 0), (3, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(
+                        TrackingAssumption(
+                            (GriddedPerm((0,), ((1, 0),)), GriddedPerm((0,), ((3, 0),)))
+                        ),
+                        TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
+                    ),
+                )
+            ),
+            0,
+        ),
+        (
+            RequirementPlacementStrategy(
+                gps=(
+                    GriddedPerm((0,), ((0, 0),)),
+                    GriddedPerm((0,), ((2, 0),)),
+                    GriddedPerm((0,), ((1, 0),)),
+                ),
+                indices=(0, 0, 0),
+                direction=3,
+                own_col=True,
+                own_row=True,
+                ignore_parent=False,
+                include_empty=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (2, 0))),
+                        GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                    ),
+                    requirements=(),
+                    assumptions=(
+                        TrackingAssumption(
+                            (GriddedPerm((0,), ((1, 0),)), GriddedPerm((0,), ((2, 0),)))
+                        ),
+                        TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
+                    ),
+                )
+            ),
+            2,
+        ),
+        (
+            FactorStrategy(
+                partition=(((0, 1), (2, 1), (3, 1)), ((1, 0),)),
+                ignore_parent=True,
+                workable=True,
+            )(
+                Tiling(
+                    obstructions=(
+                        GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                        GriddedPerm((1, 0), ((2, 1), (2, 1))),
+                        GriddedPerm((2, 1, 0), ((2, 1), (3, 1), (3, 1))),
+                        GriddedPerm((2, 1, 0), ((3, 1), (3, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (2, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (3, 1))),
+                        GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (3, 1), (3, 1))),
+                    ),
+                    requirements=((GriddedPerm((0,), ((1, 0),)),),),
+                    assumptions=(
+                        TrackingAssumption(
+                            (
+                                GriddedPerm((0,), ((1, 0),)),
+                                GriddedPerm((0,), ((2, 1),)),
+                                GriddedPerm((0,), ((3, 1),)),
+                            )
+                        ),
+                        TrackingAssumption((GriddedPerm((0,), ((3, 1),)),)),
+                    ),
+                )
+            ),
+            1,
+        ),
+    ]
+    assert _AssumptionPathTracker(
+        deque(path1), deque(path2)
+    ).assumptions_match_down_to_atom()
