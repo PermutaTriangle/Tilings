@@ -256,7 +256,7 @@ class SlidingFactory(StrategyFactory[Tiling]):
         super().__init__()
         self.use_symmetries = use_symmetries
 
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
         if comb_class.dimensions[0] > 1 and comb_class.dimensions[1] == 1:
             sliding = Sliding(comb_class)
             for pair in sliding.slidable_pairs():

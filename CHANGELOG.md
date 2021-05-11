@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   adds `RearrangeAssumptionFactory` with `apply_first=True` if `tracked=True`
 - Moved several local function in `RearrangeConstructor` outward to make it pickleable
 - Fixed isolated fusion bug
+- Fusion is now a one-way strategy.
 - Added length to name for `all_the_strategies` pack
 
 ### Fixed

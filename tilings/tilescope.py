@@ -1,4 +1,3 @@
-from collections import defaultdict
 from typing import Iterable, Optional, Tuple, Union
 
 import requests
@@ -8,7 +7,7 @@ from comb_spec_searcher import (
     CombinatorialSpecification,
     CombinatorialSpecificationSearcher,
 )
-from comb_spec_searcher.strategies import StrategyFactory
+from comb_spec_searcher.rule_db.abstract import RuleDBAbstract
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
@@ -27,8 +26,9 @@ class TileScope(CombinatorialSpecificationSearcher):
         self,
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
-        logger_kwargs: Optional[dict] = None,
-        **kwargs
+        ruledb: Optional[RuleDBAbstract] = None,
+        expand_verified: bool = False,
+        debug: bool = False,
     ) -> None:
 
         """Initialise TileScope."""
@@ -38,7 +38,6 @@ class TileScope(CombinatorialSpecificationSearcher):
             if start_class.dimensions == (1, 1):
                 basis = Basis(*[o.patt for o in start_class.obstructions])
             start_tiling = start_class
-        # elif isinstance(start_class, collections.abc.Iterable):
         else:
             try:
                 basis = Basis(*start_class)
@@ -53,41 +52,17 @@ class TileScope(CombinatorialSpecificationSearcher):
             )
 
         if start_tiling.dimensions == (1, 1):
-            procname = kwargs.get("logger_kwargs", {"processname": "runner"})
-            logger.debug(
-                "Fixing basis in basis aware verification strategies.", extra=procname
-            )
+            logger.debug("Fixing basis in basis aware verification strategies.")
             strategy_pack = strategy_pack.add_basis(basis)
         strategy_pack = strategy_pack.setup_subclass_verification(start_tiling)
 
         super().__init__(
-            start_tiling, strategy_pack, logger_kwargs=logger_kwargs, **kwargs
+            start_class=start_tiling,
+            strategy_pack=strategy_pack,
+            ruledb=ruledb,
+            expand_verified=expand_verified,
+            debug=debug,
         )
-
-    @staticmethod
-    def _strat_dict_to_jsonable(dict_):
-        keys = []
-        values = []
-        for k, v in dict_.items():
-            if k == "is empty":
-                keys.append(k)
-            else:
-                keys.append(k.to_jsonable())
-            values.append(v)
-        return {"keys": keys, "values": values}
-
-    @staticmethod
-    def _strat_dict_from_jsonable(dict_):
-        keys = dict_["keys"]
-        values = dict_["values"]
-        d = {}
-        for k, v in zip(keys, values):
-            if k == "is empty":
-                d[k] = v
-            else:
-                d[StrategyFactory.from_dict(k)] = v
-            values.append(v)
-        return defaultdict(int, d)
 
 
 class LimitedAssumptionTileScope(TileScope):
@@ -101,10 +76,9 @@ class LimitedAssumptionTileScope(TileScope):
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
         max_assumptions: int,
-        logger_kwargs: Optional[dict] = None,
         **kwargs
     ) -> None:
-        super().__init__(start_class, strategy_pack, logger_kwargs, **kwargs)
+        super().__init__(start_class, strategy_pack, **kwargs)
         self.max_assumptions = max_assumptions
 
     def _expand(
@@ -148,7 +122,7 @@ class GuidedSearcher(TileScope):
             class_label = self.classdb.get_label(t)
             is_empty = self.classdb.is_empty(t, class_label)
             if not is_empty:
-                self._add_to_queue(class_label)
+                self.classqueue.add(class_label)
 
     def _expand(
         self,
