@@ -36,13 +36,16 @@ def test_fusion_constructor_equiv():
 
     are_equiv, reverse = constr1.equiv(constr2)
     assert are_equiv
-    assert reverse
+    assert len(reverse) == 1
+    assert reverse[0]
     are_equiv, reverse = constr1.equiv(constr1)
     assert are_equiv
-    assert not reverse
+    assert len(reverse) == 1
+    assert not reverse[0]
     are_equiv, reverse = constr2.equiv(constr2)
     assert are_equiv
-    assert not reverse
+    assert len(reverse) == 1
+    assert not reverse[0]
 
     _tilings = [
         Tiling(
@@ -83,13 +86,16 @@ def test_fusion_constructor_equiv():
 
     are_equiv, reverse = constr1.equiv(constr2)
     assert are_equiv
-    assert reverse
+    assert len(reverse) == 1
+    assert reverse[0]
     are_equiv, reverse = constr1.equiv(constr1)
     assert are_equiv
-    assert not reverse
+    assert len(reverse) == 1
+    assert not reverse[0]
     are_equiv, reverse = constr2.equiv(constr2)
     assert are_equiv
-    assert not reverse
+    assert len(reverse) == 1
+    assert not reverse[0]
 
     _tilings = [
         Tiling(
@@ -200,28 +206,101 @@ def test_fusion_constructor_equiv():
 
     are_equiv, reverse = constr1.equiv(constr2)
     assert are_equiv
-    assert reverse
+    assert len(reverse) == 1
+    assert reverse[0]
     are_equiv, reverse = constr1.equiv(constr1)
     assert are_equiv
-    assert not reverse
+    assert len(reverse) == 1
+    assert not reverse[0]
     are_equiv, reverse = constr2.equiv(constr2)
     assert are_equiv
-    assert not reverse
+    assert len(reverse) == 1
+    assert not reverse[0]
 
     are_equiv, reverse = constr3.equiv(constr4)
     assert are_equiv
-    assert reverse
+    assert len(reverse) == 1
+    assert reverse[0]
     are_equiv, reverse = constr3.equiv(constr3)
     assert are_equiv
-    assert not reverse
+    assert len(reverse) == 1
+    assert not reverse[0]
     are_equiv, reverse = constr4.equiv(constr4)
     assert are_equiv
-    assert not reverse
+    assert len(reverse) == 1
+    assert not reverse[0]
 
     assert not constr1.equiv(constr3)[0]
     assert not constr1.equiv(constr4)[0]
     assert not constr2.equiv(constr3)[0]
     assert not constr2.equiv(constr3)[0]
+
+    are_equiv, reverse = FusionStrategy(row_idx=None, col_idx=0, tracked=True)(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (2, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((1, 0), (1, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((1, 0), (2, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((1, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((2, 0), (2, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((2, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((3, 0), (3, 0), (3, 0), (3, 0))),
+            ),
+            requirements=(),
+            assumptions=(
+                TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),
+                TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),
+            ),
+        )
+    ).constructor.equiv(
+        FusionStrategy(row_idx=None, col_idx=2, tracked=True)(
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (1, 0))),
+                    GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (2, 0))),
+                    GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (3, 0))),
+                    GriddedPerm((0, 2, 1), ((1, 0), (2, 0), (2, 0))),
+                    GriddedPerm((0, 2, 1), ((1, 0), (2, 0), (3, 0))),
+                    GriddedPerm((0, 2, 1), ((1, 0), (3, 0), (3, 0))),
+                    GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (2, 0))),
+                    GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (3, 0))),
+                    GriddedPerm((0, 2, 1), ((2, 0), (3, 0), (3, 0))),
+                    GriddedPerm((0, 2, 1), ((3, 0), (3, 0), (3, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (3, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (3, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (2, 0), (3, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (3, 0), (3, 0))),
+                ),
+                requirements=(),
+                assumptions=(
+                    TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
+                    TrackingAssumption((GriddedPerm((0,), ((3, 0),)),)),
+                ),
+            )
+        ).constructor
+    )
+    assert are_equiv
+    assert len(reverse) == 2
+    assert True in reverse and False in reverse
 
 
 def test_factor_equiv_with_assumptions():

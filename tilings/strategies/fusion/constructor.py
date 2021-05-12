@@ -558,14 +558,13 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                     return True
             return False
 
+        lis: List[bool] = []
         if _backtrack(False):
-            return True, None
+            lis.append(False)
         assert len(in_use) == 0
         if _backtrack(True):
-            return True, True
-
-        # TODO: min left and right?
-        return False, None
+            lis.append(True)
+        return len(lis) > 0, lis
 
     def _equiv_base_cases(
         self,

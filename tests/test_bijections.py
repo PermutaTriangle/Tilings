@@ -1,16 +1,17 @@
 import json
 from collections import deque
+from typing import Optional
 
+import pytest
 import requests
 
 from comb_spec_searcher import (
     AtomStrategy,
     CombinatorialSpecificationSearcher,
     StrategyPack,
-    find_bijection_between,
 )
+from comb_spec_searcher.bijection import ParallelSpecFinder
 from comb_spec_searcher.isomorphism import Bijection
-from comb_spec_searcher.specification import CombinatorialSpecification
 from tilings import GriddedPerm, Tiling, TrackingAssumption
 from tilings import strategies as strat
 from tilings.bijections import _AssumptionPathTracker
@@ -21,6 +22,16 @@ from tilings.strategies.fusion import FusionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 from tilings.strategies.sliding import SlidingFactory, SlidingStrategy
 from tilings.tilescope import TileScope, TileScopePack
+
+
+def find_bijection_between(
+    searcher1: CombinatorialSpecificationSearcher,
+    searcher2: CombinatorialSpecificationSearcher,
+) -> Optional[Bijection]:
+    specs = ParallelSpecFinder(searcher1, searcher2).find()
+    if specs is not None:
+        s1, s2 = specs
+        return Bijection.construct(s1, s2)
 
 
 def _b2rc(basis: str) -> CombinatorialSpecificationSearcher:
@@ -95,6 +106,7 @@ def test_bijection_6():
     _tester("231_321", "132_312")
 
 
+@pytest.mark.slow
 def test_bijection_7():
     _tester(
         "0132_0231_0312_0321_1032_1302_1320_2031_2301_3021_3120",
@@ -208,6 +220,7 @@ def test_bijection_10():
     _bijection_asserter(find_bijection_between(searcher1, searcher2))
 
 
+@pytest.mark.slow
 def test_bijection_11():
     pairs = [
         (

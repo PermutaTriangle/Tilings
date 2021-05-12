@@ -1,12 +1,26 @@
-from typing import Deque, Dict, Set, Tuple
+from collections import deque
+from itertools import chain
+from typing import Deque, Dict, Optional, Set, Tuple
 
-from comb_spec_searcher.bijection import EqPathParallelSpecFinder, SpecMap
+from comb_spec_searcher.bijection import (
+    EqPathParallelSpecFinder,
+    ParallelSpecFinder,
+    SpecMap,
+)
 from comb_spec_searcher.comb_spec_searcher import CombinatorialSpecificationSearcher
+from comb_spec_searcher.isomorphism import Bijection, Isomorphism
+from comb_spec_searcher.specification import CombinatorialSpecification
 from comb_spec_searcher.specification_extrator import RulePathToAtomExtractor
 from comb_spec_searcher.strategies.rule import AbstractRule, ReverseRule, Rule
+from comb_spec_searcher.strategies.strategy_pack import StrategyPack
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
 from tilings.strategies import BasicVerificationStrategy
+from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
+from tilings.strategies.fusion import FusionStrategy
+from tilings.strategies.fusion.constructor import FusionConstructor
+from tilings.strategies.fusion.fusion import FusionRule
+from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.tilescope import TileScope
 
 AssumptionLabels = Dict[int, Set[TrackingAssumption]]
@@ -175,3 +189,129 @@ class FusionParallelSpecFinder(
             [(label, idx) for _, label, _, idx in reversed(self._path)],
         ).rule_path()
         return path1, path2
+
+
+class FusionIsomorphism(Isomorphism[Tiling, GriddedPerm, Tiling, GriddedPerm]):
+    def _atom_match(
+        self,
+        atom1: Tiling,
+        atom2: Tiling,
+        rule1: AbstractRule[Tiling, GriddedPerm],
+        rule2: AbstractRule[Tiling, GriddedPerm],
+    ) -> bool:
+        """Returns true if atoms match, false otherwise."""
+        # pylint: disable=no-self-use
+        # Super, replace
+        sz1 = next(atom1.objects_of_size(atom1.minimum_size_of_object())).size()
+        sz2 = next(atom2.objects_of_size(atom2.minimum_size_of_object())).size()
+        return sz1 == sz2 and rule1.get_terms(sz1) == rule2.get_terms(sz2)
+
+    def _constructor_match(
+        self,
+        rule1: Rule[Tiling, GriddedPerm],
+        rule2: Rule[Tiling, GriddedPerm],
+        curr1: Tiling,
+        curr2: Tiling,
+    ) -> bool:
+        # Super, replace
+        if not (
+            isinstance(rule1, FusionConstructor)
+            and isinstance(rule2, FusionConstructor)
+        ):
+            return super()._constructor_match(rule1, rule2, curr1, curr2)
+        are_eq, data = rule1.constructor.equiv(rule2.constructor)
+        if not are_eq:
+            return False
+        assert isinstance(data, list) and 0 < len(data) < 3
+        if len(data) == 1:
+            if data[0]:
+                self._index_data[(curr1, curr2)] = True
+        else:
+            if self._fusion_reverse_match(rule1, rule2):
+                self._index_data[(curr1, curr2)] = True
+        return True
+
+    def _fusion_reverse_match(self, rule1: FusionRule, rule2: FusionRule) -> bool:
+        parent_param1 = FusionIsomorphism._assumption_bfs_to_parent(rule1, self._rules1)
+        parent_param2 = FusionIsomorphism._assumption_bfs_to_parent(rule2, self._rules2)
+        if parent_param1 is None or parent_param2 is None:
+            return False
+        return (
+            parent_param1 in rule1.constructor.left_sided_parameters
+            and parent_param2 in rule2.constructor.right_sided_parameters
+        ) or (
+            parent_param1 in rule1.constructor.right_sided_parameters
+            and parent_param2 in rule2.constructor.left_sided_parameters
+        )
+
+    @staticmethod
+    def _get_par_maps(_rule: Rule[Tiling, GriddedPerm]) -> Tuple[Dict[str, str], ...]:
+        if not isinstance(_rule, ReverseRule):
+            return _rule.strategy.extra_parameters(_rule.comb_class, _rule.children)
+        assert len(_rule.children) == 1  # We currently only have 1-1 rev rules
+        return _rule.strategy.extra_parameters(_rule.children[0], (_rule.comb_class,))
+
+    @staticmethod
+    def _assumption_bfs_to_parent(
+        fusion_rule: FusionRule,
+        rules: Dict[Tiling, AbstractRule[Tiling, GriddedPerm]],
+    ) -> Optional[str]:
+        mem: Set[Tiling] = {fusion_rule.children[0]}
+        queue: Deque[Tuple[Tiling, str]] = deque(
+            [(fusion_rule.children[0], fusion_rule.constructor.fuse_parameter)]
+        )
+        while queue:
+            curr, par = queue.popleft()
+            if curr == fusion_rule.comb_class:
+                return par
+            rule = rules[curr]
+            assert isinstance(rule, Rule)
+            for i, pmap in enumerate(FusionIsomorphism._get_par_maps(rule)):
+                child = rule.children[i]
+                if not child.is_atom() and par in pmap and child not in mem:
+                    queue.append((child, pmap[par]))
+                    mem.add(child)
+
+
+class FusionBijection(Bijection[Tiling, GriddedPerm, Tiling, GriddedPerm]):
+    @classmethod
+    def construct(
+        cls,
+        spec: CombinatorialSpecification[Tiling, GriddedPerm],
+        other: CombinatorialSpecification[Tiling, GriddedPerm],
+    ) -> Optional["FusionBijection"]:
+        iso = FusionIsomorphism(spec, other)
+        if not iso.are_isomorphic():
+            return None
+        return cls(spec, other, iso.get_order(), iso.get_order_data())
+
+
+class TilingBijectionFinder:
+    @staticmethod
+    def is_fusion_pack(pack: StrategyPack) -> bool:
+        return any(
+            isinstance(
+                strat,
+                (FusionStrategy, AddAssumptionsStrategy, RearrangeAssumptionStrategy),
+            )
+            for strat in chain(
+                pack.initial_strats, pack.inferral_strats, pack.inferral_strats
+            )
+        )
+
+    @staticmethod
+    def find_bijection_between(
+        searcher1: TileScope, searcher2: TileScope
+    ) -> Optional[Bijection]:
+        if TilingBijectionFinder.is_fusion_pack(
+            searcher1.strategy_pack
+        ) or TilingBijectionFinder.is_fusion_pack(searcher2.strategy_pack):
+            specs = FusionParallelSpecFinder(searcher1, searcher2).find()
+            if specs:
+                return FusionBijection.construct(*specs)
+            return None
+        specs = ParallelSpecFinder[Tiling, GriddedPerm, Tiling, GriddedPerm](
+            searcher1, searcher2
+        ).find()
+        if specs:
+            return Bijection.construct(*specs)
