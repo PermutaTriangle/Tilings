@@ -233,10 +233,7 @@ class FusionIsomorphism(Isomorphism[Tiling, GriddedPerm, Tiling, GriddedPerm]):
         curr1: Tiling,
         curr2: Tiling,
     ) -> bool:
-        if not (
-            isinstance(rule1, FusionConstructor)
-            and isinstance(rule2, FusionConstructor)
-        ):
+        if not (isinstance(rule1, FusionRule) and isinstance(rule2, FusionRule)):
             return super()._constructor_match(rule1, rule2, curr1, curr2)
         are_eq, data = rule1.constructor.equiv(rule2.constructor)
         if not are_eq:
