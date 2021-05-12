@@ -3,7 +3,7 @@ from typing import Deque, Dict, Set, Tuple
 from comb_spec_searcher.bijection import EqPathParallelSpecFinder, SpecMap
 from comb_spec_searcher.comb_spec_searcher import CombinatorialSpecificationSearcher
 from comb_spec_searcher.specification_extrator import RulePathToAtomExtractor
-from comb_spec_searcher.strategies.rule import AbstractRule, Rule
+from comb_spec_searcher.strategies.rule import AbstractRule, ReverseRule, Rule
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
 from tilings.strategies import BasicVerificationStrategy
@@ -48,13 +48,20 @@ class _AssumptionPathTracker:
         return r, idx
 
     @staticmethod
+    def _get_par_map(rule: Rule[Tiling, GriddedPerm], idx: int) -> Dict[str, str]:
+        if not isinstance(rule, ReverseRule):
+            return rule.strategy.extra_parameters(rule.comb_class, rule.children)[idx]
+        assert len(rule.children) == 1  # We currently only have 1-1 rev rules
+        return rule.strategy.extra_parameters(rule.children[0], (rule.comb_class,))[idx]
+
+    @staticmethod
     def _forward_all_labels(
         assumptions: AssumptionLabels,
         rule: Rule[Tiling, GriddedPerm],
         idx: int,
     ) -> AssumptionLabels:
         d: AssumptionLabels = {}
-        parmap = rule.strategy.extra_parameters(rule.comb_class, rule.children)[idx]
+        parmap = _AssumptionPathTracker._get_par_map(rule, idx)
         for i, s in assumptions.items():
             new_set = set()
             for assumption in s:
@@ -145,26 +152,26 @@ class FusionParallelSpecFinder(
         )
 
     def _atom_path_match(self, id1: int, id2: int, sp1: SpecMap, sp2: SpecMap) -> bool:
-        path1, path2 = self._get_paths(id1, id2, sp1, sp2)
+        path1, path2 = self._get_paths(sp1, sp2)
         return _AssumptionPathTracker(path1, path2).assumptions_match_down_to_atom()
 
     def _get_paths(
-        self, id1: int, id2: int, sp1: SpecMap, sp2: SpecMap
+        self, sp1: SpecMap, sp2: SpecMap
     ) -> Tuple[Deque[Tuple[AbstractRule, int]], Deque[Tuple[AbstractRule, int]]]:
         path1 = RulePathToAtomExtractor(
+            self._pi1.searcher.start_label,
             self._pi1.root_eq_label,
             FusionParallelSpecFinder._create_tree(sp1, self._pi1.root_eq_label),
-            self._pi1.searcher.ruledb,
+            self._pi1.ruledb,
             self._pi1.searcher.classdb,
-            ((label, idx) for label, _, idx, _ in self._path),
-            id1,
+            [(label, idx) for label, _, idx, _ in reversed(self._path)],
         ).rule_path()
         path2 = RulePathToAtomExtractor(
+            self._pi2.searcher.start_label,
             self._pi2.root_eq_label,
             FusionParallelSpecFinder._create_tree(sp2, self._pi2.root_eq_label),
-            self._pi2.searcher.ruledb,
+            self._pi2.ruledb,
             self._pi2.searcher.classdb,
-            ((label, idx) for _, label, _, idx in self._path),
-            id2,
+            [(label, idx) for _, label, _, idx in reversed(self._path)],
         ).rule_path()
         return path1, path2
