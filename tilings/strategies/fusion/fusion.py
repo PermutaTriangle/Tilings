@@ -178,8 +178,9 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         )
         return new_ass in fused_assumptions
 
+    @staticmethod
     def shifts(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[int, ...]:
         return (0,)
 

@@ -138,11 +138,13 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
     def is_two_way(comb_class: Tiling):
         return False
 
-    def is_reversible(self, comb_class: Tiling) -> bool:
+    @staticmethod
+    def is_reversible(comb_class: Tiling) -> bool:
         return False
 
+    @staticmethod
     def shifts(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[int, ...]:
         return (0,)
 
