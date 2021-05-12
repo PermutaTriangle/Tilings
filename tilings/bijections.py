@@ -29,8 +29,8 @@ AssumptionLabels = Dict[int, Set[TrackingAssumption]]
 class _AssumptionPathTracker:
     def __init__(
         self,
-        path1: Deque[Tuple[AbstractRule, int]],
-        path2: Deque[Tuple[AbstractRule, int]],
+        path1: Deque[Tuple[AbstractRule[Tiling, GriddedPerm], int]],
+        path2: Deque[Tuple[AbstractRule[Tiling, GriddedPerm], int]],
     ) -> None:
         assert sum(1 for r, _ in path1 if not r.is_equivalence()) == sum(
             1 for r, _ in path2 if not r.is_equivalence()
@@ -201,10 +201,30 @@ class FusionIsomorphism(Isomorphism[Tiling, GriddedPerm, Tiling, GriddedPerm]):
     ) -> bool:
         """Returns true if atoms match, false otherwise."""
         # pylint: disable=no-self-use
-        # Super, replace
-        sz1 = next(atom1.objects_of_size(atom1.minimum_size_of_object())).size()
-        sz2 = next(atom2.objects_of_size(atom2.minimum_size_of_object())).size()
-        return sz1 == sz2 and rule1.get_terms(sz1) == rule2.get_terms(sz2)
+        if not super()._atom_match(atom1, atom2, rule1, rule2):
+            return False
+        return self._assumption_match_down_to_atom()
+
+    def _assumption_match_down_to_atom(self) -> bool:
+        path1: Deque[Tuple[AbstractRule[Tiling, GriddedPerm], int]] = deque([])
+        path2: Deque[Tuple[AbstractRule[Tiling, GriddedPerm], int]] = deque([])
+        curr1, curr2 = self.root1, self.root2
+        for step1, step2 in self._path_tracker:
+            for idx in step1:
+                rule = self._rules1[curr1]
+                i = tuple(j for j, c in enumerate(rule.children) if not c.is_empty())[
+                    idx
+                ]
+                path1.append((rule, i))
+                curr1 = rule.children[i]
+            for idx in step2:
+                rule = self._rules2[curr2]
+                i = tuple(j for j, c in enumerate(rule.children) if not c.is_empty())[
+                    idx
+                ]
+                path2.append((rule, i))
+                curr2 = rule.children[i]
+        return _AssumptionPathTracker(path1, path2).assumptions_match_down_to_atom()
 
     def _constructor_match(
         self,
@@ -213,7 +233,6 @@ class FusionIsomorphism(Isomorphism[Tiling, GriddedPerm, Tiling, GriddedPerm]):
         curr1: Tiling,
         curr2: Tiling,
     ) -> bool:
-        # Super, replace
         if not (
             isinstance(rule1, FusionConstructor)
             and isinstance(rule2, FusionConstructor)
@@ -223,12 +242,10 @@ class FusionIsomorphism(Isomorphism[Tiling, GriddedPerm, Tiling, GriddedPerm]):
         if not are_eq:
             return False
         assert isinstance(data, list) and 0 < len(data) < 3
-        if len(data) == 1:
-            if data[0]:
-                self._index_data[(curr1, curr2)] = True
-        else:
-            if self._fusion_reverse_match(rule1, rule2):
-                self._index_data[(curr1, curr2)] = True
+        if (len(data) == 1 and data[0]) or (
+            len(data) == 2 and self._fusion_reverse_match(rule1, rule2)
+        ):
+            self._index_data[(curr1, curr2)] = True
         return True
 
     def _fusion_reverse_match(self, rule1: FusionRule, rule2: FusionRule) -> bool:
