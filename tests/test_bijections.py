@@ -12,9 +12,14 @@ from comb_spec_searcher import (
 )
 from comb_spec_searcher.bijection import ParallelSpecFinder
 from comb_spec_searcher.isomorphism import Bijection
+from permuta import Perm
 from tilings import GriddedPerm, Tiling, TrackingAssumption
 from tilings import strategies as strat
-from tilings.bijections import _AssumptionPathTracker
+from tilings.bijections import (
+    FusionBijection,
+    FusionParallelSpecFinder,
+    _AssumptionPathTracker,
+)
 from tilings.strategies import BasicVerificationStrategy
 from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
 from tilings.strategies.factor import FactorStrategy
@@ -34,6 +39,15 @@ def find_bijection_between(
         return Bijection.construct(s1, s2)
 
 
+def find_bijection_between_fusion(
+    searcher1: TileScope, searcher2: TileScope
+) -> Optional[Bijection]:
+    specs = FusionParallelSpecFinder(searcher1, searcher2).find()
+    if specs is not None:
+        s1, s2 = specs
+        return FusionBijection.construct(s1, s2)
+
+
 def _b2rc(basis: str) -> CombinatorialSpecificationSearcher:
     pack = TileScopePack.row_and_col_placements(row_only=True)
     pack = pack.add_verification(BasicVerificationStrategy(), replace=True)
@@ -42,8 +56,9 @@ def _b2rc(basis: str) -> CombinatorialSpecificationSearcher:
     return searcher
 
 
-def _bijection_asserter(bi, max_size=7):
+def _bijection_asserter(bi, max_size=7, key_vals: Optional[dict] = None):
     assert bi is not None
+    assert key_vals is None or all(bi.map(k) == v for k, v in key_vals.items())
     for i in range(max_size + 1):
         assert {bi.map(gp) for gp in bi.domain.generate_objects_of_size(i)} == set(
             bi.codomain.generate_objects_of_size(i)
@@ -484,6 +499,7 @@ def test_bijection_14_json():
     _bijection_asserter(Bijection.from_dict(json.loads(json.dumps(bi.to_jsonable()))))
 
 
+@pytest.mark.slow
 def test_bijection_15_fusion():
     pack = TileScopePack.row_and_col_placements(row_only=True).make_fusion(tracked=True)
     pack = pack.add_verification(BasicVerificationStrategy(), replace=True)
@@ -492,12 +508,336 @@ def test_bijection_15_fusion():
     )
     pack2 = pack2.add_initial(SlidingFactory(True))
     pack2 = pack2.add_verification(BasicVerificationStrategy(), replace=True)
-    t1 = TileScope("1234", pack)
-    t2 = TileScope("1243", pack)
-    t3 = TileScope("1432", pack2)
-    _bijection_asserter(find_bijection_between(t1, t2), max_size=6)
-    _bijection_asserter(find_bijection_between(t1, t3), max_size=6)
-    _bijection_asserter(find_bijection_between(t2, t3), max_size=6)
+    long_1234 = Perm(
+        (
+            47,
+            42,
+            48,
+            39,
+            46,
+            37,
+            49,
+            26,
+            41,
+            45,
+            44,
+            43,
+            38,
+            36,
+            31,
+            40,
+            35,
+            34,
+            33,
+            30,
+            29,
+            27,
+            17,
+            15,
+            32,
+            25,
+            28,
+            23,
+            24,
+            21,
+            20,
+            5,
+            22,
+            13,
+            19,
+            18,
+            9,
+            16,
+            14,
+            12,
+            0,
+            11,
+            8,
+            10,
+            1,
+            7,
+            6,
+            4,
+            3,
+            2,
+        )
+    )
+    long_1243 = Perm(
+        (
+            47,
+            41,
+            40,
+            48,
+            42,
+            39,
+            38,
+            43,
+            27,
+            44,
+            35,
+            34,
+            36,
+            37,
+            45,
+            46,
+            31,
+            32,
+            30,
+            19,
+            28,
+            26,
+            24,
+            14,
+            12,
+            22,
+            23,
+            21,
+            25,
+            15,
+            9,
+            16,
+            17,
+            8,
+            7,
+            18,
+            0,
+            11,
+            10,
+            5,
+            4,
+            3,
+            2,
+            6,
+            13,
+            1,
+            20,
+            29,
+            33,
+            49,
+        )
+    )
+    expected_1234_to_1243 = Perm(
+        (
+            47,
+            46,
+            45,
+            43,
+            42,
+            48,
+            39,
+            41,
+            38,
+            44,
+            37,
+            35,
+            33,
+            40,
+            31,
+            30,
+            36,
+            27,
+            49,
+            29,
+            28,
+            25,
+            26,
+            21,
+            24,
+            17,
+            32,
+            34,
+            22,
+            20,
+            19,
+            16,
+            15,
+            14,
+            9,
+            18,
+            13,
+            11,
+            6,
+            5,
+            4,
+            8,
+            10,
+            0,
+            12,
+            3,
+            7,
+            1,
+            2,
+            23,
+        )
+    )
+    expected_1234_to_1432 = Perm(
+        (
+            47,
+            46,
+            45,
+            43,
+            42,
+            49,
+            39,
+            44,
+            38,
+            40,
+            37,
+            35,
+            33,
+            34,
+            31,
+            30,
+            48,
+            27,
+            32,
+            36,
+            28,
+            25,
+            29,
+            21,
+            23,
+            17,
+            22,
+            18,
+            19,
+            20,
+            26,
+            16,
+            15,
+            14,
+            9,
+            12,
+            41,
+            10,
+            6,
+            5,
+            4,
+            7,
+            11,
+            0,
+            2,
+            13,
+            1,
+            24,
+            3,
+            8,
+        )
+    )
+    expected_1243_to_1432 = Perm(
+        (
+            47,
+            41,
+            40,
+            43,
+            44,
+            39,
+            38,
+            45,
+            27,
+            29,
+            32,
+            28,
+            33,
+            30,
+            31,
+            36,
+            37,
+            42,
+            46,
+            19,
+            20,
+            23,
+            21,
+            14,
+            12,
+            13,
+            16,
+            17,
+            18,
+            25,
+            9,
+            15,
+            22,
+            8,
+            7,
+            34,
+            0,
+            6,
+            10,
+            11,
+            24,
+            1,
+            35,
+            49,
+            2,
+            3,
+            4,
+            5,
+            26,
+            48,
+        )
+    )
+    _bijection_asserter(
+        find_bijection_between_fusion(TileScope("1234", pack), TileScope("1243", pack)),
+        max_size=6,
+        key_vals={
+            GriddedPerm.single_cell(long_1234, (0, 0)): GriddedPerm.single_cell(
+                expected_1234_to_1243, (0, 0)
+            )
+        },
+    )
+    _bijection_asserter(
+        find_bijection_between_fusion(
+            TileScope("1234", pack), TileScope("1432", pack2)
+        ),
+        max_size=6,
+        key_vals={
+            GriddedPerm.single_cell(long_1234, (0, 0)): GriddedPerm.single_cell(
+                expected_1234_to_1432, (0, 0)
+            )
+        },
+    )
+    _bijection_asserter(
+        find_bijection_between_fusion(
+            TileScope("1243", pack), TileScope("1432", pack2)
+        ),
+        max_size=6,
+        key_vals={
+            GriddedPerm.single_cell(long_1243, (0, 0)): GriddedPerm.single_cell(
+                expected_1243_to_1432, (0, 0)
+            )
+        },
+    )
+
+
+def test_bijection_16_fusion_json():
+    pack = TileScopePack(
+        initial_strats=[strat.FactorFactory()],
+        ver_strats=[
+            strat.BasicVerificationStrategy(),
+        ],
+        inferral_strats=[
+            strat.ObstructionTransitivityFactory(),
+        ],
+        expansion_strats=[
+            [
+                strat.RowAndColumnPlacementFactory(place_row=True, place_col=False),
+            ]
+        ],
+        name="mypack",
+    ).make_fusion()
+    t1 = TileScope("123", pack)
+    t2 = TileScope("132", pack)
+    bi = find_bijection_between_fusion(t1, t2)
+    idx_data = bi._index_data
+    order = bi._get_order
+    assert len(idx_data) > 0
+    assert len(order) > 0
+    bi_from_dict = Bijection.from_dict(bi.to_jsonable())
+    assert idx_data == bi_from_dict._index_data
+    assert order == bi_from_dict._get_order
+    _bijection_asserter(bi_from_dict)
 
 
 def test_atom_assumption_path_mismatch():
