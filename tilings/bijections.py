@@ -18,7 +18,6 @@ from tilings.assumptions import TrackingAssumption
 from tilings.strategies import BasicVerificationStrategy
 from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
 from tilings.strategies.fusion import FusionStrategy
-from tilings.strategies.fusion.constructor import FusionConstructor
 from tilings.strategies.fusion.fusion import FusionRule
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.tilescope import TileScope

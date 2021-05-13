@@ -150,6 +150,7 @@ def test_bijection_7():
 
 
 def test_bijection_8_cross_domain():
+    # flake8: noqa
     _import_css_example()
     # 231_321 after row placement and factoring
     t = Tiling(
@@ -180,6 +181,7 @@ def test_bijection_8_cross_domain():
 
 
 def test_bijection_9_cross_domain():
+    # flake8: noqa
     _import_css_example()
     # 231_312_321 after a single row placement + factoring
     t = Tiling(
