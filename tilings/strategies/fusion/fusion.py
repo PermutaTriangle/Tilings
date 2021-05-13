@@ -116,6 +116,7 @@ class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
         image: Tuple[Optional[GriddedPerm], ...],
         data: Optional[object] = None,
     ) -> int:
+        # The position of the original object in the backward map of the child object
         return next(i for i, gp in enumerate(self.backward_map(image)) if gp == obj)
 
     def _backward_order_item(
@@ -124,7 +125,7 @@ class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
         objs: Tuple[Optional[GriddedPerm], ...],
         data: Optional[object] = None,
     ) -> GriddedPerm:
-        if data:
+        if data:  # reverse order
             return tuple(self.backward_map(objs))[-idx - 1]
         return next(islice(self.backward_map(objs), idx, None))
 
