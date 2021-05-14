@@ -1,16 +1,28 @@
-from collections import deque
-from typing import Deque, Dict, Optional, Set, Tuple
+from collections import defaultdict, deque
+from itertools import chain
+from typing import DefaultDict, Deque, Dict, Iterable, List, Optional, Set, Tuple, Union
 
-from comb_spec_searcher.bijection import EqPathParallelSpecFinder, SpecMap
+from comb_spec_searcher.bijection import (
+    EqPathParallelSpecFinder,
+    ParallelSpecFinder,
+    SpecMap,
+)
 from comb_spec_searcher.comb_spec_searcher import CombinatorialSpecificationSearcher
 from comb_spec_searcher.isomorphism import Bijection, Isomorphism
 from comb_spec_searcher.specification import CombinatorialSpecification
 from comb_spec_searcher.specification_extrator import RulePathToAtomExtractor
+from comb_spec_searcher.strategies import StrategyPack
 from comb_spec_searcher.strategies.rule import AbstractRule, ReverseRule, Rule
+from permuta import Av
+from permuta.misc import UnionFind
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
 from tilings.strategies import BasicVerificationStrategy
-from tilings.strategies.fusion.fusion import FusionRule
+from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
+from tilings.strategies.fusion.fusion import FusionRule, FusionStrategy
+from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
+from tilings.strategy_pack import TileScopePack
+from tilings.tilescope import TileScope
 
 AssumptionLabels = Dict[int, Set[TrackingAssumption]]
 
@@ -338,3 +350,117 @@ class FusionBijection(Bijection[Tiling, GriddedPerm, Tiling, GriddedPerm]):
         if not iso.are_isomorphic():
             return None
         return cls(spec, other, iso.get_order(), iso.get_order_data())
+
+
+class TilingBijectionFinder:
+    def __init__(
+        self,
+        bases: Iterable[str],
+        packs: Union[Iterable[TileScopePack], Dict[str, List[TileScopePack]]],
+        validate_up_to: int = -1,
+    ) -> None:
+        self.bases = tuple(bases)
+        self.class_count = len(self.bases)
+        if self.class_count < 2:
+            raise ValueError("At least two classes are required!")
+        TilingBijectionFinder._validate_classes(self.bases, validate_up_to)
+        self.uf = UnionFind(self.class_count)
+        self.basis_to_int = {basis: i for i, basis in enumerate(self.bases)}
+        self.packs = self._determine_packs_for_classes(packs)
+        self.bijections: Dict[Tuple[str, str], Bijection] = {}
+
+    def all_connected(self) -> bool:
+        return self.uf.size(0) == self.class_count
+
+    def connections(self) -> str:
+        d: DefaultDict[int, List[str]] = defaultdict(list)
+        for b in self.bases:
+            d[self._uf_root(b)].append(b)
+        return "\n\n".join("\n".join(v) for v in d.values())
+
+    def add_pack(self, pack: TileScopePack, basis: Optional[str] = None):
+        if basis is None:
+            for lis in self.packs.values():
+                lis.append(pack)
+        else:
+            if basis not in self.basis_to_int:
+                raise ValueError("Basis not a part of session.")
+            self.packs[basis].append(pack)
+
+    def search_for_bijections(self) -> None:
+        for b1, b2 in zip(self.bases, self.bases[1:]):
+            if self.all_connected():
+                break
+            if self._are_connected(b1, b2):
+                continue
+            bijection = self._find_bijection_for(b1, b2)
+            if bijection is not None:
+                self._connect(b1, b2, bijection)
+
+    def _find_bijection_for(self, b1: str, b2: str) -> Optional[Bijection]:
+        for p1 in self.packs[b1]:
+            for p2 in self.packs[b2]:
+                bijection = TilingBijectionFinder.find_bijection_between(
+                    TileScope(b1, p1), TileScope(b2, p2)
+                )
+                if bijection is not None:
+                    return bijection
+        return None
+
+    def _determine_packs_for_classes(
+        self, packs: Union[Iterable[TileScopePack], Dict[str, List[TileScopePack]]]
+    ) -> Dict[str, List[TileScopePack]]:
+        if isinstance(packs, dict):
+            return packs
+        return {basis: list(packs) for basis in self.bases}
+
+    def _are_connected(self, basis1: str, basis2: str) -> bool:
+        return self.uf.find(self.basis_to_int[basis1]) == self.uf.find(
+            self.basis_to_int[basis2]
+        )
+
+    def _connect(self, basis1: str, basis2: str, bijection: Bijection) -> None:
+        self.uf.unite(self.basis_to_int[basis1], self.basis_to_int[basis2])
+        self.bijections[(basis1, basis2)] = bijection
+
+    def _uf_root(self, basis: str) -> int:
+        return self.uf.find(self.basis_to_int[basis])
+
+    @staticmethod
+    def _validate_classes(bases: Tuple[str, ...], validate_up_to: int) -> None:
+        avs = [Av.from_string(basis) for basis in bases]
+        for n in range(validate_up_to + 1):
+            for i, (cls1, cls2) in enumerate(zip(avs, avs[1:])):
+                if cls1.count(n) != cls2.count(n):
+                    raise ValueError(
+                        f"{bases[i]} and {bases[i+1]} are not equinumerous"
+                    )
+
+    @staticmethod
+    def is_fusion_pack(pack: StrategyPack) -> bool:
+        return any(
+            isinstance(
+                strat,
+                (FusionStrategy, AddAssumptionsStrategy, RearrangeAssumptionStrategy),
+            )
+            for strat in chain(
+                pack.initial_strats, pack.inferral_strats, pack.inferral_strats
+            )
+        )
+
+    @staticmethod
+    def find_bijection_between(
+        searcher1: TileScope, searcher2: TileScope
+    ) -> Optional[Bijection]:
+        if TilingBijectionFinder.is_fusion_pack(
+            searcher1.strategy_pack
+        ) or TilingBijectionFinder.is_fusion_pack(searcher2.strategy_pack):
+            specs = FusionParallelSpecFinder(searcher1, searcher2).find()
+            if specs:
+                return FusionBijection.construct(*specs)
+            return None
+        specs = ParallelSpecFinder[Tiling, GriddedPerm, Tiling, GriddedPerm](
+            searcher1, searcher2
+        ).find()
+        if specs:
+            return Bijection.construct(*specs)
