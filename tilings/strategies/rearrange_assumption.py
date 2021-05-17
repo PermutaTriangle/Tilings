@@ -282,6 +282,16 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
     def is_two_way(comb_class: Tiling) -> bool:
         return True
 
+    @staticmethod
+    def is_reversible(comb_class: Tiling) -> bool:
+        return True
+
+    @staticmethod
+    def shifts(
+        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        return (0,)
+
     def reverse_constructor(
         self,
         idx: int,

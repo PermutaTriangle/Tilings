@@ -170,6 +170,21 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def is_two_way(comb_class: Tiling):
         return False
 
+    def is_reversible(self, comb_class: Tiling) -> bool:
+        algo = self.fusion_algorithm(comb_class)
+        new_ass = algo.new_assumption()
+        fused_assumptions = (
+            ass.__class__(gps)
+            for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
+        )
+        return new_ass in fused_assumptions
+
+    @staticmethod
+    def shifts(
+        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        return (0,)
+
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> FusionConstructor:

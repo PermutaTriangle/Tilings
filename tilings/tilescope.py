@@ -104,7 +104,7 @@ class LimitedAssumptionTileScope(TileScope):
                         len(child.assumptions) <= self.max_assumptions
                         for child in rule.children
                     ):
-                        self._add_rule(start_label, end_labels, rule)
+                        self.add_rule(start_label, end_labels, rule)
 
 
 class GuidedSearcher(TileScope):

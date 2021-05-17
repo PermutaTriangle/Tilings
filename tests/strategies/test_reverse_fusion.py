@@ -74,7 +74,6 @@ def both_reverse_fusion_rule():
     return rule
 
 
-@pytest.mark.xfail(reason="problem with reverse fusion")
 def test_forward_map(both_reverse_fusion_rule):
     constructor = both_reverse_fusion_rule.constructor
     assert constructor.forward_map((0, 0, 0, 0)) == (0, 0, 0)
@@ -84,14 +83,12 @@ def test_forward_map(both_reverse_fusion_rule):
     assert constructor.forward_map((0, 0, 0, 1)) == (0, 0, 1)
 
 
-@pytest.mark.skip(reason="problem with reverse fusion")
-# @pytest.mark.parametrize("rule", reverse_fusion_rules())
+@pytest.mark.parametrize("rule", reverse_fusion_rules())
 def test_sanity_check(rule):
     for length in range(6):
         assert rule.sanity_check(length)
 
 
-@pytest.mark.xfail(reason="problem with reverse fusion")
 def test_test_positive_reverse_fusion():
     t = Tiling(
         obstructions=[
