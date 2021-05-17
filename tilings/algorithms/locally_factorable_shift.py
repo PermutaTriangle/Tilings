@@ -14,7 +14,7 @@ from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
 
 
-class TmpLoggingLevel(object):
+class TmpLoggingLevel:
     def __init__(self, level):
         self.tmp_level = level
         self.curent_level = logger.level
