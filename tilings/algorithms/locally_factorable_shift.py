@@ -22,7 +22,7 @@ class TmpLoggingLevel(object):
     def __enter__(self):
         logger.setLevel(self.tmp_level)
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback):
         logger.setLevel(self.curent_level)
 
 
@@ -39,10 +39,9 @@ class LocallyFactorableShift:
     def spec(self) -> CombinatorialSpecification:
         if self._spec is None:
             pack = self.rule.pack()
-            logger.setLevel(logging.WARN)
-            css = CombinatorialSpecificationSearcher(self.rule.comb_class, pack)
-            spec = css.auto_search()
-            logger.setLevel(logging.INFO)
+            with TmpLoggingLevel(logging.WARN):
+                css = CombinatorialSpecificationSearcher(self.rule.comb_class, pack)
+                spec = css.auto_search()
             self._spec = spec
         return self._spec
 
