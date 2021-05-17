@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - Removed a redundant `Tiling.is_empty` check in the fusion algorithm.
+- Ensure `is_atom` returns False for the empty tiling
 
 ### Deprecated
 - Python 3.6 is no longer supported
