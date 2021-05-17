@@ -2,9 +2,9 @@ import pytest
 import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
+from comb_spec_searcher.rule_db import RuleDBForest
 from comb_spec_searcher.strategies import EmptyStrategy
 from comb_spec_searcher.strategies.rule import VerificationRule
-from comb_spec_searcher.rule_db import RuleDBForest
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
