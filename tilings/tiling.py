@@ -1580,7 +1580,11 @@ class Tiling(CombinatorialClass):
 
     def is_atom(self) -> bool:
         """Return True if tiling is a single gridded permutation."""
-        return (self.active_cells == self.point_cells) and self.fully_isolated()
+        return (
+            (self.active_cells == self.point_cells)
+            and self.fully_isolated()
+            and not any(ob.is_empty() for ob in self.obstructions)
+        )
 
     def minimum_size_of_object(self) -> int:
         """Return the size of the smallest gridded perm contained on the tiling."""

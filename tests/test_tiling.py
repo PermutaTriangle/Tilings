@@ -2311,6 +2311,30 @@ def test_point_obstruction():
     assert t.obstructions == (GriddedPerm((0,), ((0, 0),)),)
 
 
+def test_is_atom():
+    perm123 = Tiling(
+        obstructions=(
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1), ((1, 1), (1, 1))),
+            GriddedPerm((0, 1), ((2, 2), (2, 2))),
+            GriddedPerm((1, 0), ((0, 0), (0, 0))),
+            GriddedPerm((1, 0), ((1, 1), (1, 1))),
+            GriddedPerm((1, 0), ((2, 2), (2, 2))),
+        ),
+        requirements=(
+            (GriddedPerm((0,), ((0, 0),)),),
+            (GriddedPerm((0,), ((1, 1),)),),
+            (GriddedPerm((0,), ((2, 2),)),),
+        ),
+        assumptions=(),
+    )
+    empty_perm = Tiling()
+    empty_set = Tiling((GriddedPerm.empty_perm(),))
+    assert perm123.is_atom()
+    assert empty_perm.is_atom()
+    assert not empty_set.is_atom()
+
+
 class TestGetGenf:
     """
     Group all the test regarding getting the generating function for a tiling.
