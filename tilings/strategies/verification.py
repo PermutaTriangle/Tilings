@@ -105,6 +105,7 @@ class BasisAwareVerificationStrategy(TileScopeVerificationStrategy):
         The rule as the root as children if one of the cell of the tiling is the root.
         """
         if self.verified(comb_class):
+            comb_class = comb_class.subobstruction_inferral()
             children: Set[Tiling] = set()
             for obs, _ in comb_class.cell_basis().values():
                 obs_set = frozenset(obs)

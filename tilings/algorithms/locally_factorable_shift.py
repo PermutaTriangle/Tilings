@@ -14,22 +14,37 @@ from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
 
 
+class TmpLoggingLevel(object):
+    def __init__(self, level):
+        self.tmp_level = level
+        self.curent_level = logger.level
+
+    def __enter__(self):
+        logger.setLevel(self.tmp_level)
+
+    def __exit__(self, type, value, traceback):
+        logger.setLevel(self.curent_level)
+
+
 class LocallyFactorableShift:
     def __init__(
         self, rule: VerificationRule[Tiling, GriddedPerm], basis: Tuple[Perm, ...]
     ) -> None:
         self.rule = rule
         self.basis = Basis(*basis)
-        self.spec = self._get_spec()
+        self._spec: Optional[CombinatorialSpecification] = None
         self.traverse_cache: Dict[Tiling, Optional[int]] = {}
 
-    def _get_spec(self) -> CombinatorialSpecification[Tiling, GriddedPerm]:
-        pack = self.rule.pack()
-        logger.setLevel(logging.WARN)
-        css = CombinatorialSpecificationSearcher(self.rule.comb_class, pack)
-        spec = css.auto_search()
-        logger.setLevel(logging.INFO)
-        return spec
+    @property
+    def spec(self) -> CombinatorialSpecification:
+        if self._spec is None:
+            pack = self.rule.pack()
+            logger.setLevel(logging.WARN)
+            css = CombinatorialSpecificationSearcher(self.rule.comb_class, pack)
+            spec = css.auto_search()
+            logger.setLevel(logging.INFO)
+            self._spec = spec
+        return self._spec
 
     @staticmethod
     def cell_basis(t: Tiling) -> Set[Basis]:
@@ -74,7 +89,8 @@ class LocallyFactorableShift:
 
     def shift_from_spec(self) -> int:
         res = self._reliance(self.rule.comb_class)
-        assert res is not None
+        if res is None:
+            raise RuntimeError(f"No reliance on child:\n{self.rule}")
         return res
 
     def shift_from_theory(self) -> int:
