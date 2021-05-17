@@ -138,6 +138,16 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
     def is_two_way(comb_class: Tiling):
         return False
 
+    @staticmethod
+    def is_reversible(comb_class: Tiling) -> bool:
+        return False
+
+    @staticmethod
+    def shifts(
+        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        return (0,)
+
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
         if any(assumption in comb_class.assumptions for assumption in self.assumptions):
             raise StrategyDoesNotApply("The assumption is already on the tiling.")
