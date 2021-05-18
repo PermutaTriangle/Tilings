@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Rearrange assumption strategy
 - `TrackingAssumption.from_cell` method
 - Counting for reverse fusion
+- a `insertion_point_row_and_col_placements` pack in `TileScopePack`
 
 ### Changed
 - Updated to use comb_spec_searcher 3.0.0

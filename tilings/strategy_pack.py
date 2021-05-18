@@ -470,6 +470,19 @@ class TileScopePack(StrategyPack):
         return pack
 
     @classmethod
+    def insertion_point_row_and_col_placements(
+        cls, row_only: bool = False, col_only: bool = False, partial: bool = False
+    ) -> "TileScopePack":
+        pack = cls.insertion_row_and_col_placements(row_only, col_only, partial)
+        if not partial:
+            # if partial, then already added pattern placements
+            pack.name = pack.name.replace("insertion", "insertion_point")
+            pack.expansion_strats = pack.expansion_strats + (
+                (strat.PatternPlacementFactory(partial=False),),
+            )
+        return pack
+
+    @classmethod
     def only_root_placements(
         cls,
         length: int = 3,
