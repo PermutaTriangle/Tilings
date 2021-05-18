@@ -74,6 +74,7 @@ packs = (
     length(TileScopePack.all_the_strategies)
     + partial(TileScopePack.insertion_point_placements)
     + row_col_partial(TileScopePack.insertion_row_and_col_placements)
+    + row_col_partial(TileScopePack.insertion_point_row_and_col_placements)
     + length_maxnumreq_partial(TileScopePack.only_root_placements)
     + [
         TileScopePack.only_root_placements(

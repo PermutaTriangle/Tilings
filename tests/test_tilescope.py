@@ -342,7 +342,7 @@ def test_domino():
     ]
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(15)
 def test_parallel_forest():
     expected_count = [1, 1, 2, 6, 22, 90, 394, 1806, 8558, 41586]
     pack = TileScopePack.only_root_placements(2, 1)
