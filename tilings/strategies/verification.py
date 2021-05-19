@@ -72,9 +72,11 @@ class BasisAwareVerificationStrategy(TileScopeVerificationStrategy):
             isinstance(p, Perm) for p in self._basis
         ), "Element of the basis must be Perm"
         if symmetry:
-            self.symmetries = set(frozenset(b) for b in all_symmetry_sets(self._basis))
+            self.symmetries = frozenset(
+                frozenset(b) for b in all_symmetry_sets(self._basis)
+            )
         else:
-            self.symmetries = set([frozenset(self._basis)])
+            self.symmetries = frozenset([frozenset(self._basis)])
         super().__init__(ignore_parent=ignore_parent)
 
     def change_basis(
@@ -417,7 +419,9 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
         if self.verified(comb_class):
             if not self.basis:
                 return ()
-            sfs = locally_factorable_shift.shift_from_spec(comb_class, self, self.basis)
+            sfs = locally_factorable_shift.shift_from_spec(
+                comb_class, self, self.symmetries
+            )
             if sfs is not None:
                 return (Tiling.from_perms(self.basis),)
             return ()
@@ -432,7 +436,9 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
                 raise StrategyDoesNotApply
         if not children:
             return ()
-        shift = locally_factorable_shift.shift_from_spec(comb_class, self, self.basis)
+        shift = locally_factorable_shift.shift_from_spec(
+            comb_class, self, self.symmetries
+        )
         assert shift is not None
         return (shift,)
 

@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Optional, Tuple
+from typing import Dict, FrozenSet, Optional
 
 from logzero import logger
 
@@ -11,7 +11,7 @@ from comb_spec_searcher.strategies.constructor import CartesianProduct, Disjoint
 from comb_spec_searcher.strategies.rule import Rule, VerificationRule
 from comb_spec_searcher.strategies.strategy import VerificationStrategy
 from comb_spec_searcher.typing import CSSstrategy
-from permuta import Av, Basis, Perm
+from permuta import Perm
 from tilings import GriddedPerm, Tiling
 
 __all__ = ["shift_from_spec"]
@@ -30,16 +30,16 @@ class TmpLoggingLevel:
 
 
 class NoBasisVerification(VerificationStrategy[Tiling, GriddedPerm]):
-    def __init__(self, basis: Tuple[Perm, ...]) -> None:
-        self.basis = Basis(*basis)
+    def __init__(self, symmetries: FrozenSet[FrozenSet[Perm]]) -> None:
+        self.symmetries = symmetries
         super().__init__()
 
     def formal_step(self) -> str:
-        return f"No cell is {Av(self.basis)}"
+        return "No cell is the basis"
 
     def verified(self, comb_class: Tiling) -> bool:
-        cell_bases = (Basis(*obs) for obs, _ in comb_class.cell_basis().values())
-        return self.basis not in cell_bases
+        cell_bases = (frozenset(obs) for obs, _ in comb_class.cell_basis().values())
+        return not bool(self.symmetries.intersection(cell_bases))
 
     @classmethod
     def from_dict(cls, d: dict) -> CSSstrategy:
@@ -50,14 +50,18 @@ class NoBasisVerification(VerificationStrategy[Tiling, GriddedPerm]):
 
 
 def expanded_spec(
-    tiling: Tiling, strat: VerificationStrategy, basis: Tuple[Perm, ...]
+    tiling: Tiling, strat: VerificationStrategy, symmetries: FrozenSet[FrozenSet[Perm]]
 ) -> CombinatorialSpecification:
     """
     Return a spec where any tiling that does not have the basis in one cell is
     verified.
     """
+    print(symmetries)
+    print(tiling)
+    print(repr(strat))
+    print(strat.__dict__)
     pack = strat.pack(tiling).add_verification(
-        NoBasisVerification(basis), apply_first=True
+        NoBasisVerification(symmetries), apply_first=True
     )
     with TmpLoggingLevel(logging.WARN):
         css = CombinatorialSpecificationSearcher(tiling, pack)
@@ -66,11 +70,13 @@ def expanded_spec(
 
 
 def shift_from_spec(
-    tiling: Tiling, strat: VerificationStrategy, basis: Tuple[Perm, ...]
+    tiling: Tiling,
+    strat: VerificationStrategy,
+    symmetries: FrozenSet[FrozenSet[Perm]],
 ) -> Optional[int]:
-    assert basis
+    assert all(symmetries)
     traverse_cache: Dict[Tiling, Optional[int]] = {}
-    spec = expanded_spec(tiling, strat, basis)
+    spec = expanded_spec(tiling, strat, symmetries)
 
     def traverse(t: Tiling) -> Optional[int]:
         rule = spec.rules_dict[t]
@@ -82,7 +88,7 @@ def shift_from_spec(
         elif t.dimensions == (1, 1):
             res = 0
         elif isinstance(rule, VerificationRule):
-            res = shift_from_spec(tiling, rule.strategy, basis)
+            res = shift_from_spec(tiling, rule.strategy, symmetries)
         elif isinstance(rule, Rule) and isinstance(rule.constructor, DisjointUnion):
             children_reliance = [traverse(c) for c in rule.children]
             res = min([r for r in children_reliance if r is not None], default=None)

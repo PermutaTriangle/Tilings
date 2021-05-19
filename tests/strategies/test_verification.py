@@ -273,7 +273,7 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
             basis=[Perm((0, 1, 3, 2))], symmetry=True
         )
         assert strat_with_sym(t1).children == (Tiling.from_string("0132"),)
-        assert strat_with_sym(t1.rotate90()).children == (Tiling.from_string("4312"),)
+        assert strat_with_sym(t1.rotate90()).children == (Tiling.from_string("0132"),)
 
     def test_shifts(self):
         t1 = Tiling(
