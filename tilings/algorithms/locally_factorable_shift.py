@@ -59,10 +59,6 @@ def expanded_spec(
     Return a spec where any tiling that does not have the basis in one cell is
     verified.
     """
-    print(symmetries)
-    print(tiling)
-    print(repr(strat))
-    print(strat.__dict__)
     pack = strat.pack(tiling).add_verification(
         NoBasisVerification(symmetries), apply_first=True
     )
