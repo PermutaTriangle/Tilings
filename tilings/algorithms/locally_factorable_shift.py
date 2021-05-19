@@ -11,7 +11,7 @@ from comb_spec_searcher.strategies.constructor import CartesianProduct, Disjoint
 from comb_spec_searcher.strategies.rule import Rule, VerificationRule
 from comb_spec_searcher.strategies.strategy import VerificationStrategy
 from comb_spec_searcher.typing import CSSstrategy
-from permuta import Perm
+from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 
 __all__ = ["shift_from_spec"]
@@ -35,7 +35,10 @@ class NoBasisVerification(VerificationStrategy[Tiling, GriddedPerm]):
         super().__init__()
 
     def formal_step(self) -> str:
-        return "No cell is the basis"
+        cls = Av(min(self.symmetries))
+        if len(self.symmetries) == 1:
+            return f"No cell is {cls}"
+        return f"No cell is a symmetry of {cls}"
 
     def verified(self, comb_class: Tiling) -> bool:
         cell_bases = (frozenset(obs) for obs, _ in comb_class.cell_basis().values())
