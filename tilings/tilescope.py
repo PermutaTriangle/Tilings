@@ -1,16 +1,7 @@
-from collections import deque
-from typing import (
-    Any,
-    Deque,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-)
+from collections import Counter, deque
+from typing import Any
+from typing import Counter as CounterType
+from typing import Deque, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
 
 import requests
 import tabulate
@@ -22,8 +13,7 @@ from comb_spec_searcher import (
     StrategyPack,
 )
 from comb_spec_searcher.class_db import ClassDB
-from comb_spec_searcher.class_queue import CSSQueue
-from comb_spec_searcher.exception import NoMoreClassesToExpandError
+from comb_spec_searcher.class_queue import DefaultQueue
 from comb_spec_searcher.rule_db.abstract import RuleDBAbstract
 
 # from comb_spec_searcher.strategies import AbstractStrategy
@@ -32,9 +22,8 @@ from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy, WorkP
 from comb_spec_searcher.utils import cssmethodtimer
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
-
-# from tilings.strategies import AddAssumptionFactory, RearrangeAssumptionFactory
-# from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
+from tilings.strategies import AddAssumptionFactory, RearrangeAssumptionFactory
+from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
 from tilings.strategy_pack import TileScopePack
 
 __all__ = ("TileScope", "TileScopePack", "LimitedAssumptionTileScope", "GuidedSearcher")
@@ -261,7 +250,7 @@ class TrackedSearcher(LimitedAssumptionTileScope):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.classqueue = TrackedQueue(self.classdb, self.strategy_pack)
+        self.classqueue = TrackedQueue(self.strategy_pack, self.classdb)
         self.classqueue.add(self.start_label, self.start_class)
 
     @cssmethodtimer("add rule")
@@ -295,80 +284,48 @@ class TrackedSearcher(LimitedAssumptionTileScope):
         self.ruledb.add(start_label, end_labels, rule)
 
 
-class TrackedQueue(CSSQueue):
-    def __init__(self, classdb: ClassDB, pack: StrategyPack):
-        self.inferral_strategies = tuple(pack.inferral_strats)
-        self.initial_strategies = tuple(pack.initial_strats)
-        self.expansion_strats = tuple(tuple(x) for x in pack.expansion_strats)
+class TrackedQueue(DefaultQueue):
+    """
+    A queue that puts tracked tilings on the queue at the level the
+    underlying tiling was first seen.
+    """
 
-        self.class_db = classdb
+    def __init__(self, pack: StrategyPack, classdb: ClassDB):
+        super().__init__(pack)
+        self.get_label = classdb.get_label
         self.working: Deque[int] = deque()
-        self.next: Set[int] = set()
-        self.queues: List[Deque[int]] = list()
-        self.levels: Dict[int, int] = dict()
+        self.next_level: CounterType[int] = Counter()
+        self.curr_levels: List[Tuple[Deque[int], ...]] = []
         self._inferral_expanded: Set[int] = set()
         self._initial_expanded: Set[int] = set()
-        self._expansion_expanded: Tuple[Set[int], ...] = tuple(
-            set() for _ in self.expansion_strats
-        )
         self.ignore: Set[int] = set()
         self.queue_sizes: List[int] = []
         self.staging: Deque[WorkPacket] = deque([])
+        self.levels: Dict[int, int] = dict()
+        self.added_already: List[Set[int]] = []
+
+    def _new_curr_level(self) -> Tuple[Deque[int], ...]:
+        # One extra deque to be able to set ignore
+        return tuple(deque() for _ in range(len(self.expansion_strats) + 1))
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, CSSQueue):
+        if not isinstance(other, TrackedQueue):
             return NotImplemented
         return self.__class__ == other.__class__ and self.__dict__ == other.__dict__
 
     def get_underlying_label(self, label: int, tiling: Tiling):
         if not tiling.assumptions:
             return label
-        return self.class_db.get_label(tiling.remove_assumptions())
+        return self.get_label(tiling.remove_assumptions())
 
     def add(self, label: int, tiling: Tiling) -> None:
-        if label not in self.ignore:
-            underlying_label = self.get_underlying_label(label, tiling)
-            level = self.levels.get(underlying_label, len(self.queues))
-            if level == len(self.queues):
-                self.next.add(label)
-                self.levels[underlying_label] = len(self.queues)
-            else:
-                self.queues[level].append(label)
-            if self.can_do_inferral(label) or self.can_do_initial(label):
-                self.working.append(label)
-
-    def set_verified(self, label) -> None:
-        self.set_stop_yielding(label)
-
-    def set_not_inferrable(self, label: int) -> None:
-        """Mark the label such that it's not expanded with inferral anymore"""
-        if label not in self.ignore:
-            self._inferral_expanded.add(label)
-
-    def set_not_initial(self, label: int) -> None:
-        """Mark the label such that it's not expanded with initial anymore"""
-        if label not in self.ignore:
-            self._initial_expanded.add(label)
-
-    def set_stop_yielding(self, label: int) -> None:
-        self.ignore.add(label)
-        # can remove it elsewhere to keep sets "small"
-        self._inferral_expanded.discard(label)
-        self._initial_expanded.discard(label)
-        for S in self._expansion_expanded:
-            S.discard(label)
-
-    def can_do_inferral(self, label: int) -> bool:
-        """Return true if inferral strategies can be applied."""
-        return bool(self.inferral_strategies) and label not in self._inferral_expanded
-
-    def can_do_initial(self, label: int) -> bool:
-        """Return true if initial strategies can be applied."""
-        return bool(self.initial_strategies) and label not in self._initial_expanded
-
-    def can_do_expansion(self, label: int, idx: int) -> bool:
-        """Return true if expansion strategies can be applied."""
-        return label not in self.ignore and label not in self._expansion_expanded[idx]
+        self.levels[label] = self.levels.get(
+            self.get_underlying_label(label, tiling), len(self.curr_levels)
+        )
+        if self.can_do_inferral(label) or self.can_do_initial(label):
+            self.working.append(label)
+        elif label not in self.ignore:
+            self.next_level.update((label,))
 
     def _populate_staging(self) -> None:
         """
@@ -377,7 +334,7 @@ class TrackedQueue(CSSQueue):
         while not self.staging and self.working:
             self.staging.extend(self._iter_helper_working())
         while not self.staging:
-            if not any(self.queues):
+            if not any(any(curr_level) for curr_level in self.curr_levels):
                 self._change_level()
             self.staging.extend(self._iter_helper_curr())
 
@@ -385,27 +342,42 @@ class TrackedQueue(CSSQueue):
         print("changing level")
         assert not self.staging, "Can't change level is staging is not empty"
         assert not self.working, "Can't change level is working is not empty"
-        assert not any(self.queues), "Can't change level if a queue is not empty"
-        if not self.next:
+        assert not any(
+            any(curr_level) for curr_level in self.curr_levels
+        ), "Can't change level is curr_level is not empty"
+        new_level = self._new_curr_level()
+        new_level[0].extend(
+            label for label, _ in sorted(self.next_level.items(), key=lambda x: -x[1])
+        )
+        added_already = set(self.next_level.keys())
+        if not any(new_level):
             raise StopIteration
-        self.queues.append(deque(self.next))
-        self.queue_sizes.append(len(self.next))
-        self.next = set()
+        self.queue_sizes.append(len(new_level[0]))
+        self.curr_levels.append(new_level)
+        self.added_already.append(added_already)
+        self.next_level = Counter()
 
     def _iter_helper_curr(self) -> Iterator[WorkPacket]:
-        assert any(self.queues)
-        # pylint: disable=stop-iteration-return
-        for queue in self.queues:
-            while len(queue):
-                label = queue.popleft()
-                for idx, strats in enumerate(self.expansion_strats):
-                    if self.can_do_expansion(label, idx):
-                        for strat in strats:
-                            yield WorkPacket(label, (strat,), False)
-                        self._expansion_expanded[idx].add(label)
-                        break
-                else:
+        assert any(
+            any(curr_level) for curr_level in self.curr_levels
+        ), "The current queue is empty"
+
+        for curr_level in self.curr_levels:
+            if any(curr_level):
+                # pylint: disable=stop-iteration-return
+                idx, label = next(
+                    (
+                        (idx, queue.popleft())
+                        for idx, queue in enumerate(curr_level)
+                        if queue
+                    )
+                )
+                if idx == len(self.expansion_strats):
                     self.set_stop_yielding(label)
+                    return
+                for strat in self.expansion_strats[idx]:
+                    yield WorkPacket(label, (strat,), False)
+                curr_level[idx + 1].append(label)
 
     def _iter_helper_working(self) -> Iterator[WorkPacket]:
         label = self.working.popleft()
@@ -416,39 +388,25 @@ class TrackedQueue(CSSQueue):
             for strat in self.initial_strategies:
                 yield WorkPacket(label, (strat,), False)
             self.set_not_initial(label)
-
-    def __next__(self) -> WorkPacket:
-        while True:
-            while self.staging:
-                wp = self.staging.popleft()
-                if wp.label not in self.ignore:
-                    return wp
-            self._populate_staging()
-
-    @property
-    def levels_completed(self) -> int:
-        return len(self.queues)
-
-    def do_level(self) -> Iterator[WorkPacket]:
-        """
-        An iterator of all combinatorial classes in the current queue.
-
-        Will swap next queue to current after iteration.
-        """
-        curr_level = self.levels_completed
-        while curr_level == self.levels_completed:
-            try:
-                yield next(self)
-            except StopIteration as e:
-                if curr_level == self.levels_completed:
-                    raise NoMoreClassesToExpandError from e
-                return
+        level = self.levels[label]
+        if level == len(self.curr_levels):
+            self.next_level.update((label,))
+        else:
+            # TODO: don't add to the queue twice
+            if label not in self.added_already[level]:
+                self.curr_levels[level][0].append(label)
+                self.added_already[level].add(label)
 
     def status(self) -> str:
         status = f"Queue status (currently on level {self.levels_completed}):\n"
         table: List[Tuple[str, str]] = []
         table.append(("working", f"{len(self.working):,d}"))
-        table.append(("next", f"{len(self.next):,d}"))
+        for level, curr_level in enumerate(self.curr_levels):
+            for idx, queue in enumerate(curr_level[:-1]):
+                table.append(
+                    (f"level {level} current (set {idx+1})", f"{len(queue):,d}")
+                )
+        table.append(("next", f"{len(self.next_level):,d}"))
         status += "    "
         headers = ("Queue", "Size")
         colalign = ("left", "right")
@@ -458,10 +416,7 @@ class TrackedQueue(CSSQueue):
             )
             + "\n"
         )
-        status += "\tThe size of the current queues at each level: {}\n".format(
-            ", ".join(str(len(q)) for q in self.queues)
-        )
-        status += "\tThe size of the next queue at each change level: {}".format(
+        status += "\tThe size of the current queues at each level: {}".format(
             ", ".join(str(i) for i in self.queue_sizes)
         )
         return status
