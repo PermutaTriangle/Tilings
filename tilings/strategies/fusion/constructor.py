@@ -536,14 +536,16 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             "This is implemented on the FusionRule class directly"
         )
 
-    def equiv(self, other: "Constructor") -> Tuple[bool, Optional[object]]:
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
         # Base cases (instance and count checks)
-        init = self._equiv_base_cases(other)
+        init = self._equiv_base_cases(other, data)
         if init is None:
             return False, None
 
         # p1 and p2 are parent parameters and n their length, rest is empty
-        p1, p2, n, bijection, in_use = init
+        p1, p2, n, bijection, in_use, term_list, term_funcs = init
 
         # Find a bijection between p1 and p2 that is consistent
         def _backtrack(rev: bool):
@@ -555,10 +557,19 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 bijection.append(x)
                 in_use.add(x)
 
+                last = len(bijection) == n
+
                 # If consistent and either done or recursively successful
                 result = self._equiv_backtrack_consistent(
                     bijection, rev, other, p1, p2
-                ) and (len(bijection) == n or _backtrack(rev))
+                ) and (last or _backtrack(rev))
+
+                if result and last:
+                    if not term_list:
+                        for i in range(term_funcs[2]):
+                            term_list.append((term_funcs[0](i), term_funcs[1](i)))
+                    if not FusionConstructor._term_consistent(bijection, term_list):
+                        result = False
 
                 bijection.pop()
                 in_use.remove(x)
@@ -583,7 +594,18 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     def _equiv_base_cases(
         self,
         other: "Constructor",
-    ) -> Optional[Tuple[List[str], List[str], int, List[int], Set[int]]]:
+        data: Optional[object],
+    ) -> Optional[
+        Tuple[
+            List[str],
+            List[str],
+            int,
+            List[int],
+            Set[int],
+            List[Tuple[Terms, Terms]],
+            Tuple[Callable[[int], Terms], Callable[[int], Terms], int],
+        ]
+    ]:
         if not isinstance(other, type(self)):
             return None
         p1 = list(self.extra_parameters.keys())
@@ -594,7 +616,14 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             set(other.extra_parameters.values()).union({other.fuse_parameter})
         ):
             return None
-        return p1, p2, len(p1), [], set()
+        if data is None:
+            raise ValueError("Terms are needed to compare fusion constructors")
+        assert isinstance(data, tuple) and len(data) == 3
+        f1: Callable[[int], Terms] = data[0]
+        f2: Callable[[int], Terms] = data[1]
+        max_check: int = data[2]
+        term_lis: List[Tuple[Terms, Terms]] = []
+        return p1, p2, len(p1), [], set(), term_lis, (f1, f2, max_check)
 
     def _equiv_backtrack_consistent(
         self,
@@ -628,6 +657,17 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         return grp_left.issubset(other.left_sided_parameters) and grp_right.issubset(
             other.right_sided_parameters
         )
+
+    @staticmethod
+    def _term_consistent(
+        bijection: List[int], terms: List[Tuple[Terms, Terms]]
+    ) -> bool:
+        for t1, t2 in terms:
+            for k, v in t1.items():
+                k2 = tuple(k[i] for i in bijection)
+                if k2 not in t2 or t2[k2] != v:
+                    return False
+        return True
 
 
 class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
@@ -826,5 +866,7 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
     ):
         raise NotImplementedError
 
-    def equiv(self, other: "Constructor") -> Tuple[bool, Optional[object]]:
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
         raise NotImplementedError("Required for bijections")

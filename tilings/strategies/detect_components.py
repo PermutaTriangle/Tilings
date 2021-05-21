@@ -92,7 +92,9 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
     def get_eq_symbol() -> str:
         return "↣"
 
-    def equiv(self, other: "Constructor") -> Tuple[bool, Optional[object]]:
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
         raise NotImplementedError("Required for bijections")
 
 

@@ -116,7 +116,9 @@ class AddAssumptionsConstructor(Constructor):
             if random_choice <= res:
                 return (subsampler(n, **new_params),)
 
-    def equiv(self, other: "Constructor") -> Tuple[bool, Optional[object]]:
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
         return (
             isinstance(other, type(self))
             and len(other.new_parameters) == len(self.new_parameters)

@@ -1,5 +1,6 @@
-from collections import deque
-from typing import Deque, Dict, Optional, Set, Tuple
+from collections import defaultdict, deque
+from functools import partial
+from typing import Callable, DefaultDict, Deque, Dict, Optional, Set, Tuple
 
 from comb_spec_searcher.bijection import EqPathParallelSpecFinder, SpecMap
 from comb_spec_searcher.comb_spec_searcher import CombinatorialSpecificationSearcher
@@ -7,12 +8,45 @@ from comb_spec_searcher.isomorphism import Bijection, Isomorphism
 from comb_spec_searcher.specification import CombinatorialSpecification
 from comb_spec_searcher.specification_extrator import RulePathToAtomExtractor
 from comb_spec_searcher.strategies.rule import AbstractRule, ReverseRule, Rule
+from comb_spec_searcher.typing import Terms
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
 from tilings.strategies import BasicVerificationStrategy
 from tilings.strategies.fusion.fusion import FusionRule
+from tilings.tilescope import TileScope
 
 AssumptionLabels = Dict[int, Set[TrackingAssumption]]
+
+
+class _TermCacher:
+    """A cache wrapper for getting terms."""
+
+    MAX_TERMS_LEN = 5
+
+    def __init__(self) -> None:
+        self._cache: DefaultDict[Tiling, Dict[int, Terms]] = defaultdict(dict)
+
+    def get_term_function_from_tiling(self, tiling: Tiling) -> Callable[[int], Terms]:
+        """Return a cached version of `get_terms` given a tiling."""
+        return partial(self._tiling_f, tiling)
+
+    def get_term_function_from_rule(self, rule: FusionRule) -> Callable[[int], Terms]:
+        """Return a cached version of `get_terms` given a fusion rule."""
+        return partial(self._rule_f, rule)
+
+    def _tiling_f(self, tiling: Tiling, n: int) -> Terms:
+        return self._f(tiling, tiling.get_terms, n)
+
+    def _rule_f(self, rule: FusionRule, n: int) -> Terms:
+        return self._f(rule.comb_class, rule.get_terms, n)
+
+    def _f(self, cache_key: Tiling, func: Callable[[int], Terms], n: int) -> Terms:
+        cached = self._cache[cache_key]
+        retval = cached.get(n, None)
+        if retval is None:
+            retval = func(n)
+            cached[n] = retval
+        return retval
 
 
 class _AssumptionPathTracker:
@@ -180,6 +214,10 @@ class FusionParallelSpecFinder(
 ):
     """A specialized parallel specification finder for fusion."""
 
+    def __init__(self, searcher1: TileScope, searcher2: TileScope):
+        super().__init__(searcher1, searcher2)
+        self._term_cacher = _TermCacher()
+
     def _pre_expand(
         self,
         searcher1: CombinatorialSpecificationSearcher[Tiling],
@@ -196,6 +234,25 @@ class FusionParallelSpecFinder(
     def _atom_path_match(self, id1: int, id2: int, sp1: SpecMap, sp2: SpecMap) -> bool:
         path1, path2 = self._get_paths(sp1, sp2)
         return _AssumptionPathTracker(path1, path2).assumptions_match_down_to_atom()
+
+    def _rule_match(
+        self,
+        rule1: AbstractRule[Tiling, GriddedPerm],
+        rule2: AbstractRule[Tiling, GriddedPerm],
+    ) -> bool:
+        # pylint: disable=no-self-use
+        if not isinstance(rule1, Rule):
+            return not isinstance(rule2, Rule)
+        if not isinstance(rule2, Rule):
+            return False
+        if isinstance(rule1, FusionRule) and isinstance(rule2, FusionRule):
+            terms = (
+                self._term_cacher.get_term_function_from_tiling(rule1.comb_class),
+                self._term_cacher.get_term_function_from_tiling(rule2.comb_class),
+                _TermCacher.MAX_TERMS_LEN,
+            )
+            return rule1.constructor.equiv(rule2.constructor, terms)[0]
+        return rule1.constructor.equiv(rule2.constructor)[0]
 
     def _get_paths(
         self, sp1: SpecMap, sp2: SpecMap
@@ -221,6 +278,15 @@ class FusionParallelSpecFinder(
 
 class FusionIsomorphism(Isomorphism[Tiling, GriddedPerm, Tiling, GriddedPerm]):
     """Does additional checks for atoms and fusion constructors."""
+
+    def __init__(
+        self,
+        spec1: CombinatorialSpecification[Tiling, GriddedPerm],
+        spec2: CombinatorialSpecification[Tiling, GriddedPerm],
+        term_cacher: Optional[_TermCacher] = None,
+    ) -> None:
+        self._term_cacher = term_cacher if term_cacher else _TermCacher()
+        super().__init__(spec1, spec2)
 
     def _atom_match(
         self,
@@ -268,7 +334,12 @@ class FusionIsomorphism(Isomorphism[Tiling, GriddedPerm, Tiling, GriddedPerm]):
     ) -> bool:
         if not (isinstance(rule1, FusionRule) and isinstance(rule2, FusionRule)):
             return super()._constructor_match(rule1, rule2, curr1, curr2)
-        are_eq, data = rule1.constructor.equiv(rule2.constructor)
+        terms = (
+            self._term_cacher.get_term_function_from_rule(rule1),
+            self._term_cacher.get_term_function_from_rule(rule2),
+            _TermCacher.MAX_TERMS_LEN,
+        )
+        are_eq, data = rule1.constructor.equiv(rule2.constructor, terms)
         if not are_eq:
             return False
         assert isinstance(data, list) and 0 < len(data) < 3
