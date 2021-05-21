@@ -1,10 +1,12 @@
 from tilings import GriddedPerm, Tiling, TrackingAssumption
+from tilings.bijections import _TermCacher
 from tilings.strategies.factor import FactorStrategy
 from tilings.strategies.fusion import FusionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 
 
 def test_fusion_constructor_equiv():
+    _term_cacher = _TermCacher()
     _tilings = [
         Tiling(
             obstructions=(
@@ -33,16 +35,18 @@ def test_fusion_constructor_equiv():
     ]
     constr1 = FusionStrategy(None, 1, True)(_tilings[0]).constructor
     constr2 = FusionStrategy(None, 0, True)(_tilings[1]).constructor
+    terms1 = _term_cacher.get_term_function_from_tiling(_tilings[0])
+    terms2 = _term_cacher.get_term_function_from_tiling(_tilings[1])
 
-    are_equiv, reverse = constr1.equiv(constr2)
+    are_equiv, reverse = constr1.equiv(constr2, (terms1, terms2, 5))
     assert are_equiv
     assert len(reverse) == 1
     assert reverse[0]
-    are_equiv, reverse = constr1.equiv(constr1)
+    are_equiv, reverse = constr1.equiv(constr1, (terms1, terms1, 5))
     assert are_equiv
     assert len(reverse) == 1
     assert not reverse[0]
-    are_equiv, reverse = constr2.equiv(constr2)
+    are_equiv, reverse = constr2.equiv(constr2, (terms2, terms2, 5))
     assert are_equiv
     assert len(reverse) == 1
     assert not reverse[0]
@@ -83,16 +87,18 @@ def test_fusion_constructor_equiv():
     ]
     constr1 = FusionStrategy(None, 0, True)(_tilings[0]).constructor
     constr2 = FusionStrategy(None, 1, True)(_tilings[1]).constructor
+    terms1 = _term_cacher.get_term_function_from_tiling(_tilings[0])
+    terms2 = _term_cacher.get_term_function_from_tiling(_tilings[1])
 
-    are_equiv, reverse = constr1.equiv(constr2)
+    are_equiv, reverse = constr1.equiv(constr2, (terms1, terms2, 5))
     assert are_equiv
     assert len(reverse) == 1
     assert reverse[0]
-    are_equiv, reverse = constr1.equiv(constr1)
+    are_equiv, reverse = constr1.equiv(constr1, (terms1, terms1, 5))
     assert are_equiv
     assert len(reverse) == 1
     assert not reverse[0]
-    are_equiv, reverse = constr2.equiv(constr2)
+    are_equiv, reverse = constr2.equiv(constr2, (terms2, terms2, 5))
     assert are_equiv
     assert len(reverse) == 1
     assert not reverse[0]
@@ -203,39 +209,42 @@ def test_fusion_constructor_equiv():
     constr2 = FusionStrategy(None, 2, True)(_tilings[1]).constructor
     constr3 = FusionStrategy(None, 1, True)(_tilings[2]).constructor
     constr4 = FusionStrategy(None, 1, True)(_tilings[3]).constructor
+    terms1 = _term_cacher.get_term_function_from_tiling(_tilings[0])
+    terms2 = _term_cacher.get_term_function_from_tiling(_tilings[1])
+    terms3 = _term_cacher.get_term_function_from_tiling(_tilings[2])
+    terms4 = _term_cacher.get_term_function_from_tiling(_tilings[3])
 
-    are_equiv, reverse = constr1.equiv(constr2)
+    are_equiv, reverse = constr1.equiv(constr2, (terms1, terms2, 5))
     assert are_equiv
     assert len(reverse) == 1
     assert reverse[0]
-    are_equiv, reverse = constr1.equiv(constr1)
+    are_equiv, reverse = constr1.equiv(constr1, (terms1, terms1, 5))
     assert are_equiv
     assert len(reverse) == 1
     assert not reverse[0]
-    are_equiv, reverse = constr2.equiv(constr2)
+    are_equiv, reverse = constr2.equiv(constr2, (terms2, terms2, 5))
     assert are_equiv
     assert len(reverse) == 1
     assert not reverse[0]
 
-    are_equiv, reverse = constr3.equiv(constr4)
+    are_equiv, reverse = constr3.equiv(constr4, (terms3, terms4, 5))
     assert are_equiv
     assert len(reverse) == 1
     assert reverse[0]
-    are_equiv, reverse = constr3.equiv(constr3)
+    are_equiv, reverse = constr3.equiv(constr3, (terms3, terms3, 5))
     assert are_equiv
     assert len(reverse) == 1
     assert not reverse[0]
-    are_equiv, reverse = constr4.equiv(constr4)
+    are_equiv, reverse = constr4.equiv(constr4, (terms4, terms4, 5))
     assert are_equiv
     assert len(reverse) == 1
     assert not reverse[0]
 
-    assert not constr1.equiv(constr3)[0]
-    assert not constr1.equiv(constr4)[0]
-    assert not constr2.equiv(constr3)[0]
-    assert not constr2.equiv(constr3)[0]
+    assert not constr1.equiv(constr3, (terms1, terms3, 5))[0]
+    assert not constr1.equiv(constr4, (terms1, terms4, 5))[0]
+    assert not constr2.equiv(constr3, (terms2, terms3, 5))[0]
 
-    are_equiv, reverse = FusionStrategy(row_idx=None, col_idx=0, tracked=True)(
+    _tilings = [
         Tiling(
             obstructions=(
                 GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
@@ -264,39 +273,44 @@ def test_fusion_constructor_equiv():
                 TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),
                 TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),
             ),
-        )
+        ),
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (2, 0))),
+                GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (3, 0))),
+                GriddedPerm((0, 2, 1), ((1, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 2, 1), ((1, 0), (2, 0), (3, 0))),
+                GriddedPerm((0, 2, 1), ((1, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (3, 0))),
+                GriddedPerm((0, 2, 1), ((2, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 2, 1), ((3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (2, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (3, 0), (3, 0))),
+            ),
+            requirements=(),
+            assumptions=(
+                TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
+                TrackingAssumption((GriddedPerm((0,), ((3, 0),)),)),
+            ),
+        ),
+    ]
+    terms1 = _term_cacher.get_term_function_from_tiling(_tilings[0])
+    terms2 = _term_cacher.get_term_function_from_tiling(_tilings[1])
+    are_equiv, reverse = FusionStrategy(row_idx=None, col_idx=0, tracked=True)(
+        _tilings[0]
     ).constructor.equiv(
-        FusionStrategy(row_idx=None, col_idx=2, tracked=True)(
-            Tiling(
-                obstructions=(
-                    GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (1, 0))),
-                    GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (2, 0))),
-                    GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (3, 0))),
-                    GriddedPerm((0, 2, 1), ((1, 0), (2, 0), (2, 0))),
-                    GriddedPerm((0, 2, 1), ((1, 0), (2, 0), (3, 0))),
-                    GriddedPerm((0, 2, 1), ((1, 0), (3, 0), (3, 0))),
-                    GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (2, 0))),
-                    GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (3, 0))),
-                    GriddedPerm((0, 2, 1), ((2, 0), (3, 0), (3, 0))),
-                    GriddedPerm((0, 2, 1), ((3, 0), (3, 0), (3, 0))),
-                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (0, 0))),
-                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (1, 0))),
-                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (2, 0))),
-                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (3, 0))),
-                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (1, 0))),
-                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (2, 0))),
-                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (3, 0))),
-                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (2, 0), (2, 0))),
-                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (2, 0), (3, 0))),
-                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (3, 0), (3, 0))),
-                ),
-                requirements=(),
-                assumptions=(
-                    TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
-                    TrackingAssumption((GriddedPerm((0,), ((3, 0),)),)),
-                ),
-            )
-        ).constructor
+        FusionStrategy(row_idx=None, col_idx=2, tracked=True)(_tilings[1]).constructor,
+        (terms1, terms2, 5),
     )
     assert are_equiv
     assert len(reverse) == 2
