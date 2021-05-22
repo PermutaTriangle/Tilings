@@ -316,6 +316,67 @@ def test_fusion_constructor_equiv():
     assert len(reverse) == 2
     assert True in reverse and False in reverse
 
+    _tilings = [
+        Tiling(
+            obstructions=(
+                GriddedPerm((1, 0), ((3, 0), (3, 0))),
+                GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (2, 0))),
+                GriddedPerm((0, 2, 1), ((1, 0), (1, 0), (3, 0))),
+                GriddedPerm((0, 2, 1), ((1, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 2, 1), ((1, 0), (2, 0), (3, 0))),
+                GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (1, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (2, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (2, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (1, 0), (3, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (2, 0), (3, 0))),
+            ),
+            requirements=(),
+            assumptions=(
+                TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),
+                TrackingAssumption((GriddedPerm((0,), ((3, 0),)),)),
+            ),
+        ),
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (2, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((0, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((1, 0), (2, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((1, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((2, 0), (2, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((2, 0), (3, 0), (3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2, 3), ((3, 0), (3, 0), (3, 0), (3, 0))),
+            ),
+            requirements=(),
+            assumptions=(
+                TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),
+                TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
+            ),
+        ),
+    ]
+    terms1 = _term_cacher.get_term_function_from_tiling(_tilings[0])
+    terms2 = _term_cacher.get_term_function_from_tiling(_tilings[1])
+    assert not FusionStrategy(row_idx=None, col_idx=1, tracked=True)(
+        _tilings[0]
+    ).constructor.equiv(
+        FusionStrategy(row_idx=None, col_idx=0, tracked=True)(_tilings[1]).constructor,
+        (terms1, terms2, 5),
+    )[
+        0
+    ]
+
 
 def test_factor_equiv_with_assumptions():
     assert FactorStrategy((((0, 0), (2, 0), (3, 0)), ((1, 1),)))(
