@@ -245,6 +245,7 @@ class FusionParallelSpecFinder(
             return not isinstance(rule2, Rule)
         if not isinstance(rule2, Rule):
             return False
+        # If comparing two fusion rules, terms are required
         if isinstance(rule1, FusionRule) and isinstance(rule2, FusionRule):
             terms = (
                 self._term_cacher.get_term_function_from_tiling(rule1.comb_class),

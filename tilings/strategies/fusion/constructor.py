@@ -564,6 +564,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                     bijection, rev, other, p1, p2
                 ) and (last or _backtrack(rev))
 
+                # Check if terms match
                 if result and last:
                     if not term_list:
                         for i in range(term_funcs[2]):
@@ -608,14 +609,21 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     ]:
         if not isinstance(other, type(self)):
             return None
+        # Early domain failure
         p1 = list(self.extra_parameters.keys())
         p2 = list(other.extra_parameters.keys())
         if len(p1) != len(p2):
             return None
-        if len(set(self.extra_parameters.values()).union({self.fuse_parameter})) != len(
-            set(other.extra_parameters.values()).union({other.fuse_parameter})
+        # Early codomain failure
+        vals1 = Counter(self.extra_parameters.values())
+        vals2 = Counter(other.extra_parameters.values())
+        if (
+            len(vals1) != len(vals2)
+            or sorted(vals1.values()) != sorted(vals2.values())
+            or (self.fuse_parameter in vals1) != (other.fuse_parameter in vals2)  # xor
         ):
             return None
+        # Extract typed data from optional object
         if data is None:
             raise ValueError("Terms are needed to compare fusion constructors")
         assert isinstance(data, tuple) and len(data) == 3
@@ -662,6 +670,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     def _term_consistent(
         bijection: List[int], terms: List[Tuple[Terms, Terms]]
     ) -> bool:
+        """Check if the bijection is valid with respect to terms."""
         for t1, t2 in terms:
             for k, v in t1.items():
                 k2 = tuple(k[i] for i in bijection)
