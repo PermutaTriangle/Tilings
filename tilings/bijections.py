@@ -109,7 +109,9 @@ class _AssumptionPathTracker:
         # If the rule is a reverse rule, we assume that it has only one children
         # as that is the only used reverse rule that have been implemented so far.
         assert len(rule.children) == 1
-        return rule.strategy.extra_parameters(rule.children[0], (rule.comb_class,))[idx]
+        pmap = rule.strategy.extra_parameters(rule.children[0], (rule.comb_class,))[idx]
+        assert len(pmap) == len(set(pmap.values()))  # invertible
+        return {v: k for k, v in pmap.items()}
 
     @staticmethod
     def _forward_all_labels(
