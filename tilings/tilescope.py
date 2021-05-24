@@ -3,7 +3,6 @@ from itertools import chain
 from typing import DefaultDict, Iterable, List, Optional, Set, Tuple, Union
 
 import requests
-import tabulate
 from logzero import logger
 
 from comb_spec_searcher import (
