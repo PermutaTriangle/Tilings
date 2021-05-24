@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Rearrange assumption strategy
 - `TrackingAssumption.from_cell` method
 - Counting for reverse fusion
+- `FusionParallelSpecFinder`, `FusionIsomorphism` and `FusionBijection` subclasses
+  to handle bijection involving fusion and assumption strategies.
 - a `insertion_point_row_and_col_placements` pack in `TileScopePack`
 
 ### Changed
