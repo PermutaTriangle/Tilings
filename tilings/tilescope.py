@@ -267,7 +267,7 @@ class ForgetTrackedSearcher(TrackedSearcher):
                 *strategy_pack.expansion_strats,
             )
         )
-        self._strat_indices: DefaultDict[int, List[int]] = defaultdict(list)
+        self._strat_indices: DefaultDict[int, int] = defaultdict(int)
         kwargs["ruledb"] = RuleDBForgetStrategy()
         super().__init__(start_class, strategy_pack, **kwargs)
 
@@ -275,7 +275,11 @@ class ForgetTrackedSearcher(TrackedSearcher):
         """We do nothing as instead we track in the _expand method."""
 
     def get_old_strategies(self, label: int) -> Tuple[CSSstrategy, ...]:
-        return tuple(self.strategies[idx] for idx in self._strat_indices[label])
+        return tuple(
+            self.strategies[idx]
+            for idx, bit in enumerate(reversed(bin(self._strat_indices[label])[2:]))
+            if bit
+        )
 
     def _expand(
         self,
@@ -290,7 +294,7 @@ class ForgetTrackedSearcher(TrackedSearcher):
             ):
                 try:
                     idx = self.strategies.index(strategy)
-                    self._strat_indices[label].append(idx)
+                    self._strat_indices[label] += 1 << idx
                 except ValueError:
                     pass
         super()._expand(comb_class, label, strategies, inferral)
