@@ -536,51 +536,102 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             "This is implemented on the FusionRule class directly"
         )
 
-    def equiv(self, other: "Constructor") -> Tuple[bool, Optional[object]]:
-        init = self._equiv_base_cases(other)
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
+        # Base cases (instance and count checks)
+        init = self._equiv_base_cases(other, data)
         if init is None:
             return False, None
-        p1, p2, n, bijection, in_use = init
 
+        # p1 and p2 are parent parameters and n their length, rest is empty
+        p1, p2, n, bijection, in_use, term_list, term_funcs = init
+
+        # Find a bijection between p1 and p2 that is consistent
         def _backtrack(rev: bool):
             assert isinstance(other, type(self))
             for x in range(n):
                 if x in in_use:
                     continue
+
                 bijection.append(x)
                 in_use.add(x)
+
+                last = len(bijection) == n
+
+                # If consistent and either done or recursively successful
                 result = self._equiv_backtrack_consistent(
                     bijection, rev, other, p1, p2
-                ) and (len(bijection) == n or _backtrack(rev))
+                ) and (last or _backtrack(rev))
+
+                # Check if terms match
+                if result and last:
+                    if not term_list:
+                        for i in range(term_funcs[2]):
+                            term_list.append((term_funcs[0](i), term_funcs[1](i)))
+                    if not FusionConstructor._term_consistent(bijection, term_list):
+                        result = False
+
                 bijection.pop()
                 in_use.remove(x)
-                return result
+
+                # Found
+                if result:
+                    return True
             return False
 
+        lis: List[bool] = []
+        # l-l and r-r match: Data appends False
         if _backtrack(False):
-            return True, None
+            lis.append(False)
         assert len(in_use) == 0
+        # l-r and r-l match: Data appends True
         if _backtrack(True):
-            return True, True
+            lis.append(True)
 
-        # TODO: min left and right?
-        return False, None
+        # Data will be [], [True], [False], [False, True]
+        return len(lis) > 0, lis
 
     def _equiv_base_cases(
         self,
         other: "Constructor",
-    ) -> Optional[Tuple[List[str], List[str], int, List[int], Set[int]]]:
+        data: Optional[object],
+    ) -> Optional[
+        Tuple[
+            List[str],
+            List[str],
+            int,
+            List[int],
+            Set[int],
+            List[Tuple[Terms, Terms]],
+            Tuple[Callable[[int], Terms], Callable[[int], Terms], int],
+        ]
+    ]:
         if not isinstance(other, type(self)):
             return None
+        # Early domain failure
         p1 = list(self.extra_parameters.keys())
         p2 = list(other.extra_parameters.keys())
         if len(p1) != len(p2):
             return None
-        if len(set(self.extra_parameters.values()).union({self.fuse_parameter})) != len(
-            set(other.extra_parameters.values()).union({other.fuse_parameter})
+        # Early codomain failure
+        vals1 = Counter(self.extra_parameters.values())
+        vals2 = Counter(other.extra_parameters.values())
+        if (
+            len(vals1) != len(vals2)
+            or sorted(vals1.values()) != sorted(vals2.values())
+            or (self.fuse_parameter in vals1) != (other.fuse_parameter in vals2)  # xor
         ):
             return None
-        return p1, p2, len(p1), [], set()
+        # Extract typed data from optional object
+        if data is None:
+            raise ValueError("Terms are needed to compare fusion constructors")
+        assert isinstance(data, tuple) and len(data) == 3
+        f1: Callable[[int], Terms] = data[0]
+        f2: Callable[[int], Terms] = data[1]
+        max_check: int = data[2]
+        term_lis: List[Tuple[Terms, Terms]] = []
+        return p1, p2, len(p1), [], set(), term_lis, (f1, f2, max_check)
 
     def _equiv_backtrack_consistent(
         self,
@@ -592,16 +643,21 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     ):
         grp_left, grp_right = set(), set()
         for i, j in enumerate(bi):
+            # If one, of matched parameters, is in both sides in one but not the other
+            # or if one maps to fuse parameter and the other does not.
             if (p1[i] in self.both_sided_parameters) != (
                 p2[j] in other.both_sided_parameters
             ) or (self.extra_parameters[p1[i]] == self.fuse_parameter) != (
                 other.extra_parameters[p2[j]] == other.fuse_parameter
             ):
-                return False, None
+                return False
+            # Gather those in p2 that corresponds to each side in p1
             if p1[i] in self.left_sided_parameters:
                 grp_left.add(p2[j])
             if p1[i] in self.right_sided_parameters:
                 grp_right.add(p2[j])
+        # If rev, corresponding parameters of those in one's left should be in other's
+        # right. If not rev, they should be on the same side (right-right, left-left).
         if rev:
             return grp_right.issubset(
                 other.left_sided_parameters
@@ -609,6 +665,18 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         return grp_left.issubset(other.left_sided_parameters) and grp_right.issubset(
             other.right_sided_parameters
         )
+
+    @staticmethod
+    def _term_consistent(
+        bijection: List[int], terms: List[Tuple[Terms, Terms]]
+    ) -> bool:
+        """Check if the bijection is valid with respect to terms."""
+        for t1, t2 in terms:
+            for k, v in t1.items():
+                k2 = tuple(k[i] for i in bijection)
+                if k2 not in t2 or t2[k2] != v:
+                    return False
+        return True
 
 
 class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
@@ -807,5 +875,7 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
     ):
         raise NotImplementedError
 
-    def equiv(self, other: "Constructor") -> Tuple[bool, Optional[object]]:
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
         raise NotImplementedError("Required for bijections")

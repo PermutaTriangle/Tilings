@@ -49,5 +49,7 @@ class DummyConstructor(Constructor):
     ):
         raise NotImplementedError
 
-    def equiv(self, other: "Constructor") -> Tuple[bool, Optional[object]]:
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
         raise NotImplementedError("Required for bijections")

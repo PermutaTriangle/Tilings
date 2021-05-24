@@ -116,8 +116,17 @@ class AddAssumptionsConstructor(Constructor):
             if random_choice <= res:
                 return (subsampler(n, **new_params),)
 
-    def equiv(self, other: "Constructor") -> Tuple[bool, Optional[object]]:
-        raise NotImplementedError("Required for bijections")
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
+        return (
+            isinstance(other, type(self))
+            and len(other.new_parameters) == len(self.new_parameters)
+            and AddAssumptionsConstructor.extra_params_equiv(
+                (self.extra_parameters,), (other.extra_parameters,)
+            ),
+            None,
+        )
 
 
 class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):

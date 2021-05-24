@@ -485,20 +485,8 @@ def test_fusion_gfs():
     # in each cell. Equations for this are not currently implemented.
 
 
-def test_fusion_constructor_equiv():
-    _tilings = [
-        Tiling(
-            obstructions=(
-                GriddedPerm((1, 0), ((1, 0), (1, 0))),
-                GriddedPerm((1, 0), ((1, 0), (2, 0))),
-                GriddedPerm((1, 0), ((2, 0), (2, 0))),
-                GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
-                GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (1, 0))),
-                GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (2, 0))),
-            ),
-            requirements=(),
-            assumptions=(TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),),
-        ),
+def test_indexed_forward_map():
+    assert FusionStrategy(col_idx=0, tracked=True)(
         Tiling(
             obstructions=(
                 GriddedPerm((0, 1), ((0, 0), (0, 0))),
@@ -510,17 +498,75 @@ def test_fusion_constructor_equiv():
             ),
             requirements=(),
             assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+        )
+    ).indexed_forward_map(
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (0, 0), (0, 0), (1, 0), (1, 0), (1, 0), (2, 0)),
+        )
+    ) == (
+        (
+            GriddedPerm(
+                (6, 5, 4, 3, 1, 0, 2),
+                ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (1, 0)),
+            ),
+        ),
+        3,
+    )
+
+
+def test_indexed_backward_map():
+    r = FusionStrategy(col_idx=0, tracked=True)(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+            ),
+            requirements=(),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+        )
+    )
+    order = [
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((1, 0), (1, 0), (1, 0), (1, 0), (1, 0), (1, 0), (2, 0)),
+        ),
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (1, 0), (1, 0), (1, 0), (1, 0), (1, 0), (2, 0)),
+        ),
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (0, 0), (1, 0), (1, 0), (1, 0), (1, 0), (2, 0)),
+        ),
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (0, 0), (0, 0), (1, 0), (1, 0), (1, 0), (2, 0)),
+        ),
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (0, 0), (0, 0), (0, 0), (1, 0), (1, 0), (2, 0)),
+        ),
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (1, 0), (2, 0)),
+        ),
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (2, 0)),
         ),
     ]
-    constr1 = FusionStrategy(None, 1, True)(_tilings[0]).constructor
-    constr2 = FusionStrategy(None, 0, True)(_tilings[1]).constructor
-
-    are_equiv, reverse = constr1.equiv(constr2)
-    assert are_equiv
-    assert reverse
-    are_equiv, reverse = constr1.equiv(constr1)
-    assert are_equiv
-    assert not reverse
-    are_equiv, reverse = constr2.equiv(constr2)
-    assert are_equiv
-    assert not reverse
+    gp = GriddedPerm(
+        (6, 5, 4, 3, 1, 0, 2), ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (1, 0))
+    )
+    assert all(
+        r.indexed_backward_map((gp,), i) == target for i, target in enumerate(order)
+    )
+    assert all(
+        r.indexed_backward_map((gp,), i, True) == target
+        for i, target in enumerate(reversed(order))
+    )
