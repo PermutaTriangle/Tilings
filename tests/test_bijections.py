@@ -483,22 +483,6 @@ def test_bijection_14_json():
     )
     assert bi is not None
     _bijection_asserter(Bijection.from_dict(json.loads(json.dumps(bi.to_jsonable()))))
-    # JSON with fusion+assumption
-    pack = TileScopePack(
-        initial_strats=[strat.FactorFactory()],
-        ver_strats=[
-            strat.BasicVerificationStrategy(),
-        ],
-        inferral_strats=[
-            strat.ObstructionTransitivityFactory(),
-        ],
-        expansion_strats=[[strat.RowAndColumnPlacementFactory()]],
-        name="custom",
-    ).make_fusion()
-    pack = pack.add_verification(BasicVerificationStrategy(), replace=True)
-    bi = find_bijection_between(TileScope("132", pack), TileScope("123", pack))
-    assert bi is not None
-    _bijection_asserter(Bijection.from_dict(json.loads(json.dumps(bi.to_jsonable()))))
 
 
 @pytest.mark.slow
