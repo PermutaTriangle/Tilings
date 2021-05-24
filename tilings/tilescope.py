@@ -211,7 +211,7 @@ class TrackedSearcher(LimitedAssumptionTileScope):
                 self.classqueue.add(underlying_label)
             if (
                 underlying_label != child_label
-                and not child_label in self.retroactively_expanded
+                and child_label not in self.retroactively_expanded
             ):
                 self.retroactively_expanded.add(child_label)
                 # apply all rules in ruledb to child_label
@@ -273,7 +273,6 @@ class ForgetTrackedSearcher(TrackedSearcher):
 
     def store_strategy(self, label: int, strategy: AbstractStrategy) -> None:
         """We do nothing as instead we track in the _expand method."""
-        pass
 
     def get_old_strategies(self, label: int) -> Tuple[CSSstrategy, ...]:
         return tuple(self.strategies[idx] for idx in self._strat_indices[label])
