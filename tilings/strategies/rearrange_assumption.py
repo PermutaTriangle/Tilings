@@ -241,7 +241,6 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
     def equiv(
         self, other: "Constructor", data: Optional[object] = None
     ) -> Tuple[bool, Optional[object]]:
-        # raise NotImplementedError("Required for bijections")
         return isinstance(other, type(self)), None
 
 
