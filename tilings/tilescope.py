@@ -278,7 +278,7 @@ class ForgetTrackedSearcher(TrackedSearcher):
         return tuple(
             self.strategies[idx]
             for idx, bit in enumerate(reversed(bin(self._strat_indices[label])[2:]))
-            if bit
+            if bit == "1"
         )
 
     def _expand(
