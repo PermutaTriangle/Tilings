@@ -1,6 +1,6 @@
 from collections import defaultdict
 from itertools import chain
-from typing import DefaultDict, Iterable, List, Optional, Set, Tuple, Union
+from typing import DefaultDict, Iterable, Iterator, List, Optional, Set, Tuple, Union
 
 import requests
 from logzero import logger
@@ -277,24 +277,26 @@ class ForgetTrackedSearcher(TrackedSearcher):
     def get_old_strategies(self, label: int) -> Tuple[CSSstrategy, ...]:
         return tuple(
             self.strategies[idx]
-            for idx, bit in enumerate(reversed(bin(self._strat_indices[label])[2:]))
+            for idx, bit in enumerate(bin(self._strat_indices[label])[-1:1:-1])
             if bit == "1"
         )
 
-    def _expand(
+    def _expand_class_with_strategy(
         self,
         comb_class: CombinatorialClassType,
-        label: int,
-        strategies: Tuple[CSSstrategy, ...],
-        inferral: bool,
-    ) -> None:
-        for strategy in strategies:
-            if not isinstance(
-                strategy, (AddAssumptionFactory, RearrangeAssumptionFactory)
-            ):
-                try:
-                    idx = self.strategies.index(strategy)
-                    self._strat_indices[label] += 1 << idx
-                except ValueError:
-                    pass
-        super()._expand(comb_class, label, strategies, inferral)
+        strategy_generator: CSSstrategy,
+        label: Optional[int] = None,
+        initial: bool = False,
+    ) -> Iterator[Tuple[int, Tuple[int, ...], AbstractRule]]:
+        if not isinstance(
+            strategy_generator, (AddAssumptionFactory, RearrangeAssumptionFactory)
+        ):
+            try:
+                idx = self.strategies.index(strategy_generator)
+                assert isinstance(label, int)
+                self._strat_indices[label] |= 1 << idx
+            except ValueError:
+                pass
+        yield from super()._expand_class_with_strategy(
+            comb_class, strategy_generator, label, initial
+        )
