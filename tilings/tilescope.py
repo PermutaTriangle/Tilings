@@ -268,7 +268,7 @@ class ForgetTrackedSearcher(TrackedSearcher):
             )
         )
         self._strat_indices: DefaultDict[int, int] = defaultdict(int)
-        kwargs["ruledb"] = RuleDBForgetStrategy()
+        kwargs["ruledb"] = kwargs.get("ruledb", RuleDBForgetStrategy())
         super().__init__(start_class, strategy_pack, **kwargs)
 
     def store_strategy(self, label: int, strategy: AbstractStrategy) -> None:
@@ -294,7 +294,12 @@ class ForgetTrackedSearcher(TrackedSearcher):
             try:
                 idx = self.strategies.index(strategy_generator)
                 assert isinstance(label, int)
+                if self._strat_indices[label] & (1 << idx):
+                    print(strategy_generator)
+                    print(label)
+                    print(self.classdb.get_class(label))
                 self._strat_indices[label] |= 1 << idx
+
             except ValueError:
                 pass
         yield from super()._expand_class_with_strategy(
