@@ -248,7 +248,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         Uses the `subterms` functions to and the `children_param_maps` to compute
         the terms of size `n`.
         """
-        new_terms: Terms = Counter()
+        new_terms: Terms = Terms()
 
         min_left, min_right = self.min_points
 
@@ -841,7 +841,7 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
     def get_terms(
         self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
     ) -> Terms:
-        terms: Terms = Counter()
+        terms: Terms = Terms()
         child_terms = subterms[0](n)
         for param, value in child_terms.items():
             new_param = self.forward_map(param)

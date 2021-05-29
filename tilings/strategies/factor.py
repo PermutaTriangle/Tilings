@@ -1,4 +1,3 @@
-from collections import Counter
 from functools import reduce
 from itertools import chain
 from operator import mul
@@ -244,7 +243,7 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
         self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
     ) -> Terms:
         non_interleaved_terms = super().get_terms(parent_terms, subterms, n)
-        interleaved_terms: Terms = Counter()
+        interleaved_terms: Terms = Terms()
         for parameters, value in non_interleaved_terms.items():
             # multinomial counts the number of ways to interleave the values k1, ...,kn.
             multiplier = reduce(

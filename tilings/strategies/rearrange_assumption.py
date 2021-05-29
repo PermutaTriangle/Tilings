@@ -1,4 +1,3 @@
-from collections import Counter
 from functools import partial
 from itertools import combinations
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
@@ -209,7 +208,7 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
     def get_terms(
         self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
     ) -> Terms:
-        terms: Terms = Counter()
+        terms: Terms = Terms()
         for param, value in subterms[0](n).items():
             new_param = self.child_to_parent_param_map(param)
             terms[new_param] += value

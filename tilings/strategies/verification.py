@@ -1,4 +1,4 @@
-from collections import Counter, defaultdict
+from collections import defaultdict
 from functools import reduce
 from itertools import chain
 from operator import mul
@@ -159,8 +159,8 @@ class BasicVerificationStrategy(AtomStrategy):
             parameters = tuple(
                 assumption.get_value(gp) for assumption in comb_class.assumptions
             )
-            return Counter([parameters])
-        return Counter()
+            return Terms([parameters])
+        return Terms()
 
     @staticmethod
     def get_objects(comb_class: CombinatorialClass, n: int) -> Objects:

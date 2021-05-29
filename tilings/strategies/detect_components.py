@@ -1,4 +1,3 @@
-from collections import Counter
 from functools import reduce
 from operator import mul
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
@@ -65,7 +64,7 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
         self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
     ) -> Terms:
         terms = self.disjoint_constructor.get_terms(parent_terms, subterms, n)
-        accounted_for: Terms = Counter()
+        accounted_for: Terms = Terms()
         for params, value in terms.items():
             new_params = list(params)
             for idx, extra_components in self.indices_to_add_to.items():

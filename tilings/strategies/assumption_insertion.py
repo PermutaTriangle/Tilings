@@ -1,4 +1,3 @@
-from collections import Counter
 from itertools import chain, product
 from random import randint
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple
@@ -70,7 +69,7 @@ class AddAssumptionsConstructor(Constructor):
         child_terms: Callable[[int], Terms],
         child_param_map: ParametersMap,
     ) -> Terms:
-        new_terms: Terms = Counter()
+        new_terms: Terms = Terms()
         for param, value in child_terms(n).items():
             new_terms[child_param_map(param)] += value
         return new_terms
