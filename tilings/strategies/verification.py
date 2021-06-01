@@ -2,18 +2,7 @@ from collections import Counter, defaultdict
 from functools import reduce
 from itertools import chain
 from operator import mul
-from typing import (
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    TypeVar,
-    cast,
-)
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Type, TypeVar, cast
 
 from sympy import Expr, Function, var
 
@@ -32,12 +21,12 @@ from permuta.permutils import (
 )
 from permuta.permutils.symmetry import all_symmetry_sets
 from tilings import GriddedPerm, Tiling
+from tilings.algorithms import locally_factorable_shift
 from tilings.algorithms.enumeration import (
     DatabaseEnumeration,
     LocalEnumeration,
     MonotoneTreeEnumeration,
 )
-from tilings.algorithms.locally_factorable_shift import LocallyFactorableShift
 from tilings.assumptions import ComponentAssumption
 from tilings.strategies import (
     FactorFactory,
@@ -83,9 +72,11 @@ class BasisAwareVerificationStrategy(TileScopeVerificationStrategy):
             isinstance(p, Perm) for p in self._basis
         ), "Element of the basis must be Perm"
         if symmetry:
-            self.symmetries = set(frozenset(b) for b in all_symmetry_sets(self._basis))
+            self.symmetries = frozenset(
+                frozenset(b) for b in all_symmetry_sets(self._basis)
+            )
         else:
-            self.symmetries = set([frozenset(self._basis)])
+            self.symmetries = frozenset([frozenset(self._basis)])
         super().__init__(ignore_parent=ignore_parent)
 
     def change_basis(
@@ -97,22 +88,6 @@ class BasisAwareVerificationStrategy(TileScopeVerificationStrategy):
         """
         basis = tuple(basis)
         return self.__class__(basis, symmetry, self.ignore_parent)
-
-    def decomposition_function(
-        self, comb_class: Tiling
-    ) -> Optional[Tuple[Tiling, ...]]:
-        """
-        The rule as the root as children if one of the cell of the tiling is the root.
-        """
-        if self.verified(comb_class):
-            comb_class = comb_class.subobstruction_inferral()
-            children: Set[Tiling] = set()
-            for obs, _ in comb_class.cell_basis().values():
-                obs_set = frozenset(obs)
-                if obs_set in self.symmetries:
-                    children.add(Tiling.from_perms(obs))
-            return tuple(children)
-        return None
 
     @property
     def basis(self) -> Tuple[Perm, ...]:
@@ -435,6 +410,23 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
             and self._locally_factorable_requirements(comb_class)
         )
 
+    def decomposition_function(
+        self, comb_class: Tiling
+    ) -> Optional[Tuple[Tiling, ...]]:
+        """
+        The rule as the root as children if one of the cell of the tiling is the root.
+        """
+        if self.verified(comb_class):
+            if not self.basis:
+                return ()
+            sfs = locally_factorable_shift.shift_from_spec(
+                comb_class, self, self.symmetries
+            )
+            if sfs is not None:
+                return (Tiling.from_perms(self.basis),)
+            return ()
+        return None
+
     def shifts(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[int, ...]:
@@ -444,8 +436,11 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
                 raise StrategyDoesNotApply
         if not children:
             return ()
-        rule = self(comb_class, children)
-        return (LocallyFactorableShift(rule, self.basis).shift(),)
+        shift = locally_factorable_shift.shift_from_spec(
+            comb_class, self, self.symmetries
+        )
+        assert shift is not None
+        return (shift,)
 
     @staticmethod
     def formal_step() -> str:
