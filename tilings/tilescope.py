@@ -173,8 +173,8 @@ class TrackedSearcher(LimitedAssumptionTileScope):
             AddAssumptionFactory(),
             RearrangeAssumptionFactory(),
         ]
-        self.tracked_expanded = set()
-        self.retroactively_expanded = set()
+        self.tracked_expanded: Set[int] = set()
+        self.retroactively_expanded: Set[int] = set()
         # TODO: keep self._strats on the ruledb, and avoid storing strats twice.
         self._strats: DefaultDict[int, List[AbstractStrategy]] = defaultdict(list)
 
