@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `FusionParallelSpecFinder`, `FusionIsomorphism` and `FusionBijection` subclasses
   to handle bijection involving fusion and assumption strategies.
 - a `insertion_point_row_and_col_placements` pack in `TileScopePack`
+- `TrackedSearcher` and `ForgetTrackedSearcher` that prioritise expanding classes
+  with assumptions when the underlying tiling was expanded
 
 ### Changed
 - Updated to use comb_spec_searcher 3.0.0
