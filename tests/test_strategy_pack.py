@@ -6,6 +6,7 @@ import pytest
 from permuta import Perm
 from permuta.misc import DIRS
 from tilings import strategies as strat
+from tilings.strategies import SlidingFactory
 from tilings.strategy_pack import TileScopePack
 
 
@@ -73,6 +74,7 @@ packs = (
     length(TileScopePack.all_the_strategies)
     + partial(TileScopePack.insertion_point_placements)
     + row_col_partial(TileScopePack.insertion_row_and_col_placements)
+    + row_col_partial(TileScopePack.insertion_point_row_and_col_placements)
     + length_maxnumreq_partial(TileScopePack.only_root_placements)
     + [
         TileScopePack.only_root_placements(
@@ -94,7 +96,9 @@ packs.extend(
     + [pack.make_interleaving() for pack in packs]
     + [pack.make_database().add_all_symmetry() for pack in packs]
     + [pack.make_fusion().add_all_symmetry() for pack in packs]
-    + [pack.make_interleaving().make_tracked() for pack in packs]
+    + [pack.make_interleaving() for pack in packs]
+    + [pack.add_initial(SlidingFactory()) for pack in packs]
+    + [pack.add_initial(SlidingFactory(use_symmetries=True)) for pack in packs]
 )
 
 
@@ -104,10 +108,10 @@ def test_json_encoding(strategy_pack):
     assert_same_pack(strategy_pack, strategy_pack_new)
 
 
-def test_fix_one_by_one():
+def test_inject_basis():
     pack = TileScopePack.point_placements()
     assert not pack.ver_strats[2].basis
-    fixed_pack = pack.fix_one_by_one([Perm((0, 1, 2, 3))])
+    fixed_pack = pack.add_basis([Perm((0, 1, 2, 3))])
     assert isinstance(pack.ver_strats[2], strat.OneByOneVerificationStrategy)
     assert not pack.ver_strats[2].basis
     assert isinstance(fixed_pack, TileScopePack)

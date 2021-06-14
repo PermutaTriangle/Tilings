@@ -2,14 +2,13 @@ from collections import Counter
 from functools import reduce
 from itertools import chain
 from operator import mul
-from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 from sympy import Eq, Function
 
 from comb_spec_searcher import (
     CartesianProduct,
     CartesianProductStrategy,
-    Strategy,
     StrategyFactory,
 )
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -127,9 +126,14 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         return "factor"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "(partition={}, workable={})".format(
-            self.partition, self.workable
+        args = ", ".join(
+            [
+                f"partition={self.partition}",
+                f"ignore_parent={self.ignore_parent}",
+                f"workable={self.workable}",
+            ]
         )
+        return f"{self.__class__.__name__}({args})"
 
     # JSON methods
 
@@ -235,8 +239,10 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
     def get_equation(lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         raise NotImplementedError
 
-    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
-        non_interleaved_terms = super().get_terms(subterms, n)
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
+        non_interleaved_terms = super().get_terms(parent_terms, subterms, n)
         interleaved_terms: Terms = Counter()
         for parameters, value in non_interleaved_terms.items():
             # multinomial counts the number of ways to interleave the values k1, ...,kn.
@@ -348,12 +354,6 @@ class FactorWithInterleavingStrategy(FactorStrategy):
     def get_op_symbol() -> str:
         return "*"
 
-    def __repr__(self) -> str:
-        return (
-            self.__class__.__name__
-            + f"(partition={self.partition}, workable={self.workable})"
-        )
-
 
 class MonotoneInterleaving(Interleaving):
     pass
@@ -417,7 +417,7 @@ class FactorFactory(StrategyFactory[Tiling]):
             FactorWithMonotoneInterleaving,
         )
 
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Strategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[FactorStrategy]:
         factor_algo = self.factor_algo(comb_class)
         if factor_algo.factorable():
             min_comp = tuple(tuple(part) for part in factor_algo.get_components())
@@ -471,10 +471,16 @@ class FactorFactory(StrategyFactory[Tiling]):
             interleaving = "all"
         elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
             interleaving = "monotone"
-        return (
-            f"AllFactorStrategy(interleaving={interleaving}, unions={self.unions},"
-            f" ignore_parent={self.ignore_parent}, workable={self.workable})"
+        args = ", ".join(
+            [
+                f"interleaving={interleaving!r}",
+                f"unions={self.unions}",
+                f"ignore_parent={self.ignore_parent}",
+                f"workable={self.workable}",
+                f"tracked={self.tracked}",
+            ]
         )
+        return f"{self.__class__.__name__}({args})"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()

@@ -13,6 +13,7 @@ from .obstruction_inferral import (
     ObstructionTransitivityFactory,
     SubobstructionInferralFactory,
 )
+from .rearrange_assumption import RearrangeAssumptionFactory
 from .requirement_insertion import (
     CellInsertionFactory,
     FactorInsertionFactory,
@@ -28,6 +29,7 @@ from .requirement_placement import (
     RowAndColumnPlacementFactory,
 )
 from .row_and_col_separation import RowColumnSeparationStrategy
+from .sliding import SlidingFactory
 from .symmetry import SymmetriesFactory
 from .verification import (
     BasicVerificationStrategy,
@@ -45,6 +47,7 @@ __all__ = [
     "AddAssumptionFactory",
     "AddInterleavingAssumptionFactory",
     "DetectComponentsStrategy",
+    "RearrangeAssumptionFactory",
     "SplittingStrategy",
     # Batch
     "CellInsertionFactory",
@@ -60,6 +63,7 @@ __all__ = [
     "FactorFactory",
     # Equivalence
     "PatternPlacementFactory",
+    "SlidingFactory",
     # Fusion
     "ComponentFusionFactory",
     "FusionFactory",

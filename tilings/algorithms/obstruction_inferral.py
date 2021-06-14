@@ -54,7 +54,7 @@ class ObstructionInferral(abc.ABC):
     # TODO: move to strategy class
 
     def formal_step(self):
-        """ Return a string describing the operation performed. """
+        """Return a string describing the operation performed."""
         return "Added the obstructions {}.".format(self.new_obs())
 
 

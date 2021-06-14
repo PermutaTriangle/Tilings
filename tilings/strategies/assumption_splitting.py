@@ -2,7 +2,7 @@ from collections import defaultdict
 from functools import reduce
 from itertools import product
 from operator import mul
-from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from sympy import Eq, Function, var
 
@@ -52,7 +52,9 @@ class Split(Constructor):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
         raise NotImplementedError
 
     def _valid_compositions(self, **parameters: int) -> Iterator[Dict[str, int]]:
@@ -112,6 +114,11 @@ class Split(Constructor):
     ):
         raise NotImplementedError
 
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
+        raise NotImplementedError("Required for bijections")
+
 
 class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     """
@@ -153,16 +160,35 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     def can_be_equivalent() -> bool:
         return False
 
-    def decomposition_function(self, tiling: Tiling) -> Optional[Tuple[Tiling]]:
-        if not tiling.assumptions:
+    @staticmethod
+    def is_two_way(comb_class: Tiling):
+        return False
+
+    @staticmethod
+    def is_reversible(comb_class: Tiling):
+        return False
+
+    def shifts(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]]
+    ) -> Tuple[int, ...]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply
+        return (0,)
+
+    def decomposition_function(self, comb_class: Tiling) -> Optional[Tuple[Tiling]]:
+        if not comb_class.assumptions:
             return None
-        components = self.factor_class(tiling.remove_assumptions()).get_components()
+        components = self.factor_class(comb_class.remove_assumptions()).get_components()
         if len(components) == 1:
             return None
         new_assumptions: List[TrackingAssumption] = []
-        for ass in tiling.assumptions:
+        for ass in comb_class.assumptions:
             new_assumptions.extend(self._split_assumption(ass, components))
-        return (Tiling(tiling.obstructions, tiling.requirements, new_assumptions),)
+        return (
+            Tiling(comb_class.obstructions, comb_class.requirements, new_assumptions),
+        )
 
     def _split_assumption(
         self, assumption: TrackingAssumption, components: Tuple[Set[Cell], ...]
@@ -274,6 +300,14 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             split_parameters["k_{}".format(idx)] = child_vars
         return Split(split_parameters)
 
+    def reverse_constructor(
+        self,
+        idx: int,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        raise NotImplementedError
+
     @staticmethod
     def formal_step() -> str:
         return "splitting the assumptions"
@@ -314,6 +348,24 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             if v == self.factor_class
         )
         return d
+
+    def __repr__(self) -> str:
+        if self.factor_class is factor.Factor:
+            interleaving = "none"
+        elif self.factor_class is factor.FactorWithInterleaving:
+            interleaving = "all"
+        elif self.factor_class is factor.FactorWithMonotoneInterleaving:
+            interleaving = "monotone"
+        args = ", ".join(
+            [
+                f"interleaving={interleaving!r}",
+                f"ignore_parent={self.ignore_parent}",
+                f"inferrable={self.inferrable}",
+                f"possibly_empty={self.possibly_empty}",
+                f"workable={self.workable}",
+            ]
+        )
+        return f"{self.__class__.__name__}({args})"
 
     @classmethod
     def from_dict(cls, d: dict) -> "SplittingStrategy":

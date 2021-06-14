@@ -26,18 +26,39 @@ class ShortObstructionVerificationStrategy(TileScopeVerificationStrategy):
     size at most 3. Tilings with dimensions 1x1 are ignored.
     """
 
-    @staticmethod
-    def verified(tiling: Tiling):
-        return tiling.dimensions != (1, 1) and all(
-            ob.is_single_cell() or len(ob) <= 3 for ob in tiling.obstructions
+    def __init__(self, short_length: int = 3, ignore_parent: bool = True):
+        self.short_length = short_length
+        super().__init__(ignore_parent=ignore_parent)
+
+    def verified(self, comb_class: Tiling):
+        return comb_class.dimensions != (1, 1) and all(
+            ob.is_single_cell() or len(ob) <= self.short_length
+            for ob in comb_class.obstructions
         )
 
-    @staticmethod
-    def formal_step() -> str:
-        return "tiling has short crossing obstructions"
+    def formal_step(self) -> str:
+        return "tiling has short (length <= {}) crossing obstructions".format(
+            self.short_length
+        )
 
     def __str__(self) -> str:
-        return "short crossing obstruction verification"
+        return "short (length <= {}) crossing obstruction verification".format(
+            self.short_length
+        )
+
+    def __repr__(self) -> str:
+        args = ", ".join(
+            [
+                f"short_length={self.short_length}",
+                f"ignore_parent={self.ignore_parent}",
+            ]
+        )
+        return f"{self.__class__.__name__}({args})"
+
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["short_length"] = self.short_length
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "ShortObstructionVerificationStrategy":
@@ -53,8 +74,8 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
         self.subclass_basis = tuple(sorted(subclass_basis))
         super().__init__(ignore_parent=ignore_parent)
 
-    def verified(self, tiling: Tiling) -> bool:
-        algo = SubclassVerificationAlgorithm(tiling, set(self.subclass_basis))
+    def verified(self, comb_class: Tiling) -> bool:
+        algo = SubclassVerificationAlgorithm(comb_class, set(self.subclass_basis))
         return algo.subclasses == self.subclass_basis
 
     def formal_step(self) -> str:
@@ -64,9 +85,13 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
         return "subclass verification strategy"
 
     def __repr__(self):
-        return self.__class__.__name__ + "(subclass_basis={})".format(
-            self.subclass_basis
+        args = ", ".join(
+            [
+                f"subclass_basis={self.subclass_basis}",
+                f"ignore_parent={self.ignore_parent}",
+            ]
         )
+        return f"{self.__class__.__name__}({args})"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
@@ -95,7 +120,7 @@ class SubclassVerificationFactory(StrategyFactory[Tiling]):
             self.perms_to_check = set(perms_to_check)
         super().__init__()
 
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[VerificationRule]:
+    def __call__(self, comb_class: Tiling) -> Iterator[VerificationRule]:
         assert self.perms_to_check is not None, "perms_to_check was never set"
 
         # It is a waste of time to check a factorable tiling, since we will check its

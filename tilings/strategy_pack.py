@@ -12,6 +12,7 @@ from comb_spec_searcher.strategies import (
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import strategies as strat
+from tilings.strategies.verification import BasisAwareVerificationStrategy
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -23,7 +24,11 @@ class TileScopePack(StrategyPack):
     # Method to add power to a pack
     # Pack are immutable, these methods return a new pack.
 
-    def fix_one_by_one(self, basis: Iterable[Perm]) -> "TileScopePack":
+    def add_basis(self, basis: Iterable[Perm]) -> "TileScopePack":
+        """
+        Update the pack to add the basis being run to the verifications strategy
+        that needs to be aware of it.
+        """
         basis = tuple(basis)
         symmetry = bool(self.symmetries)
 
@@ -31,9 +36,9 @@ class TileScopePack(StrategyPack):
             """Return a new list with the replaced 1x1 strat."""
             res = []
             for strategy in strats:
-                if isinstance(strategy, strat.OneByOneVerificationStrategy):
+                if isinstance(strategy, BasisAwareVerificationStrategy):
                     if strategy.basis:
-                        logger.warning("Basis changed in OneByOneVerificationStrategy")
+                        logger.warning("Basis changed in %s", strategy)
                     res.append(strategy.change_basis(basis, symmetry))
                 else:
                     res.append(strategy)
@@ -109,12 +114,32 @@ class TileScopePack(StrategyPack):
             iterative=self.iterative,
         )
 
-    def make_tracked(self, interleaving: str = "none"):
-        """Add assumption tracking strategies."""
-        pack = self
-        if strat.AddAssumptionFactory() not in self:
-            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
-        return pack
+    def make_tracked(self):
+        """Make a fusion pack tracked."""
+
+        def replace_list(strats):
+            """Return a new list with the replaced fusion strat."""
+            res = []
+            for strategy in strats:
+                if isinstance(strategy, strat.FusionFactory):
+                    res.append(strategy.make_tracked())
+                else:
+                    res.append(strategy)
+            return res
+
+        return (
+            self.__class__(
+                ver_strats=replace_list(self.ver_strats),
+                inferral_strats=replace_list(self.inferral_strats),
+                initial_strats=replace_list(self.initial_strats),
+                expansion_strats=list(map(replace_list, self.expansion_strats)),
+                name=self.name,
+                symmetries=self.symmetries,
+                iterative=self.iterative,
+            )
+            .add_initial(strat.AddAssumptionFactory(), apply_first=True)
+            .add_initial(strat.RearrangeAssumptionFactory(), apply_first=True)
+        )
 
     def make_fusion(
         self,
@@ -131,29 +156,34 @@ class TileScopePack(StrategyPack):
         If apply_first, it will add fusion to the front of the initial strategies.
         """
         pack = self
-        if tracked:
-            pack = pack.make_tracked()
-            if component:
-                pack = pack.add_initial(
-                    strat.DetectComponentsStrategy(ignore_parent=True), apply_first=True
-                )
         if component:
             pack = pack.add_initial(
                 strat.ComponentFusionFactory(
                     tracked=tracked, isolation_level=isolation_level
                 ),
-                "component_fusion{}".format(
-                    "" if isolation_level is None else "_" + isolation_level
+                "{}_component_fusion{}".format(
+                    "tracked" if tracked else "untracked",
+                    "" if isolation_level is None else "_" + isolation_level,
                 ),
                 apply_first=apply_first,
             )
         else:
             pack = pack.add_initial(
                 strat.FusionFactory(tracked=tracked, isolation_level=isolation_level),
-                "fusion{}".format(
-                    "" if isolation_level is None else "_" + isolation_level
+                "{}_fusion{}".format(
+                    "tracked" if tracked else "untracked",
+                    "" if isolation_level is None else "_" + isolation_level,
                 ),
                 apply_first=apply_first,
+            )
+        if tracked:
+            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
+            if component:
+                pack = pack.add_initial(
+                    strat.DetectComponentsStrategy(ignore_parent=True), apply_first=True
+                )
+            pack = pack.add_initial(
+                strat.RearrangeAssumptionFactory(), apply_first=True
             )
         return pack
 
@@ -187,7 +217,13 @@ class TileScopePack(StrategyPack):
             inferral_strats=replace_list(self.inferral_strats),
             initial_strats=replace_list(self.initial_strats),
             expansion_strats=list(map(replace_list, self.expansion_strats)),
-            name=self.name + "_interleaving",
+            name=(
+                self.name
+                + "_{}_interleaving{}".format(
+                    "tracked" if tracked else "untracked",
+                    "_unions" if unions else "",
+                )
+            ),
             symmetries=self.symmetries,
             iterative=self.iterative,
         )
@@ -196,7 +232,7 @@ class TileScopePack(StrategyPack):
             pack = pack.add_initial(
                 strat.AddInterleavingAssumptionFactory(unions=unions), apply_first=True
             )
-            pack = pack.make_tracked(interleaving="all")
+            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
 
         return pack
 
@@ -255,7 +291,7 @@ class TileScopePack(StrategyPack):
                     strat.AllPlacementsFactory(),
                 ],
             ],
-            name="all_the_strategies",
+            name=f"all_the_strategies_{length}",
         )
 
     @classmethod
@@ -401,6 +437,9 @@ class TileScopePack(StrategyPack):
         rowcol_strat = strat.RowAndColumnPlacementFactory(
             place_row=place_row, place_col=place_col, partial=partial
         )
+        expansion_strats: List[List[CSSstrategy]] = [[rowcol_strat]]
+        if partial:
+            expansion_strats.append([strat.PatternPlacementFactory(point_only=True)])
         return TileScopePack(
             initial_strats=[strat.FactorFactory()],
             ver_strats=[
@@ -413,7 +452,7 @@ class TileScopePack(StrategyPack):
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityFactory(),
             ],
-            expansion_strats=[[rowcol_strat]],
+            expansion_strats=expansion_strats,
             name=name,
         )
 
@@ -428,6 +467,19 @@ class TileScopePack(StrategyPack):
                 maxreqlen=1, ignore_parent=True, one_cell_only=True
             )
         )
+        return pack
+
+    @classmethod
+    def insertion_point_row_and_col_placements(
+        cls, row_only: bool = False, col_only: bool = False, partial: bool = False
+    ) -> "TileScopePack":
+        pack = cls.insertion_row_and_col_placements(row_only, col_only, partial)
+        if not partial:
+            # if partial, then already added pattern placements
+            pack.name = pack.name.replace("insertion", "insertion_point")
+            pack.expansion_strats = pack.expansion_strats + (
+                (strat.PatternPlacementFactory(partial=False),),
+            )
         return pack
 
     @classmethod

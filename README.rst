@@ -17,7 +17,8 @@ Tilings
 .. image:: https://requires.io/github/PermutaTriangle/Tilings/requirements.svg?branch=master
      :target: https://requires.io/github/PermutaTriangle/Tilings/requirements/?branch=master
      :alt: Requirements Status
-
+.. image:: https://zenodo.org/badge/121506164.svg
+   :target: https://zenodo.org/badge/latestdoi/121506164
 
 The ``tilings`` Python library contains code for working with gridded
 permutations and tilings, and in particular the ``TileScope`` algorithm, which
@@ -326,13 +327,13 @@ done here for sake of brevity in this readme!
                           10: (0, 0), (2, 0)         ●: point
                           Requirement 0:             Requirement 0:
                           0: (1, 1)                  0: (1, 2)
-       -------
-       3 -> ()
+       ---------
+       3 -> (0,)
        tiling is locally factorable
-       +-+-+-+
-       | |●| |
-       +-+-+-+
-       | | |1|
+       +-+-+-+            +-+
+       | |●| |         ↝  |1|
+       +-+-+-+            +-+
+       | | |1|            1: Av(120)
        +-+-+-+
        |1| | |
        +-+-+-+
@@ -341,8 +342,9 @@ done here for sake of brevity in this readme!
        Requirement 0:
        0: (1, 2)
 
-The locally factorable tiling in the rule `3 -> ()` could be further expanded
-down to atoms. This can be done using the `expand_verified` method.
+The locally factorable tiling in the rule `3 -> (0,)` could be further expanded
+down to atoms and the root tiling.
+This can be done using the `expand_verified` method.
 
 .. code:: python
 
@@ -505,21 +507,16 @@ free to send them to our `Discord server <https://discord.gg/ySJD6SV>`__.
 A specification can be saved and loaded later by converting it to
 `JSON <https://realpython.com/python-json/>`__, a data storage format
 that can be written to a file or copy-pasted elsewhere for safe keeping.
-This functionality is built into `TileScope`. To retrieve the JSON representation of
-a specification:
+This functionality is built into `TileScope`. We can retrieve the JSON 
+representation of a specification and load the specificiation from said
+JSON string by doing the following:
 
 .. code:: python
 
        >>> import json
-       >>> json.dumps(spec.to_jsonable())
-       '{"root": {"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}], "requirements": [], "assumptions": []}, "strategies": [[{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}], "requirements": [], "assumptions": []}, {"class_module": "tilings.strategies.requirement_insertion", "strategy_class": "RequirementInsertionStrategy", "ignore_parent": false, "gps": [{"patt": [0], "pos": [[0, 0]]}]}], [{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [0], "pos": [[0, 0]]}], "requirements": [], "assumptions": []}, {"class_module": "tilings.strategies.verification", "strategy_class": "BasicVerificationStrategy"}], [{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [0], "pos": [[0, 1]]}, {"patt": [0], "pos": [[0, 2]]}, {"patt": [0], "pos": [[1, 0]]}, {"patt": [0], "pos": [[1, 1]]}, {"patt": [0], "pos": [[2, 0]]}, {"patt": [0], "pos": [[2, 2]]}, {"patt": [0, 1], "pos": [[1, 2], [1, 2]]}, {"patt": [1, 0], "pos": [[1, 2], [1, 2]]}, {"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}, {"patt": [1, 2, 0], "pos": [[2, 1], [2, 1], [2, 1]]}], "requirements": [[{"patt": [0], "pos": [[1, 2]]}]], "assumptions": []}, {"class_module": "tilings.strategies.factor", "strategy_class": "FactorStrategy", "ignore_parent": true, "workable": true, "partition": [[[0, 0]], [[1, 2]], [[2, 1]]]}], [{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [0, 1], "pos": [[0, 0], [0, 0]]}, {"patt": [1, 0], "pos": [[0, 0], [0, 0]]}], "requirements": [[{"patt": [0], "pos": [[0, 0]]}]], "assumptions": []}, {"class_module": "tilings.strategies.verification", "strategy_class": "BasicVerificationStrategy"}], [{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}], "requirements": [[{"patt": [0], "pos": [[0, 0]]}]], "assumptions": []}, {"class_module": "tilings.strategies.requirement_placement", "strategy_class": "RequirementPlacementStrategy", "ignore_parent": false, "gps": [{"patt": [0], "pos": [[0, 0]]}], "indices": [0], "direction": 1, "own_col": true, "own_row": true, "include_empty": false}], [{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [0], "pos": [[0, 1]]}, {"patt": [0], "pos": [[1, 0]]}, {"patt": [0], "pos": [[2, 1]]}, {"patt": [0, 1], "pos": [[1, 1], [1, 1]]}, {"patt": [1, 0], "pos": [[0, 0], [2, 0]]}, {"patt": [1, 0], "pos": [[1, 1], [1, 1]]}, {"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}, {"patt": [1, 2, 0], "pos": [[2, 0], [2, 0], [2, 0]]}], "requirements": [[{"patt": [0], "pos": [[1, 1]]}]], "assumptions": []}, {"class_module": "tilings.strategies.row_and_col_separation", "strategy_class": "RowColumnSeparationStrategy", "ignore_parent": true, "inferrable": true, "possibly_empty": false, "workable": true}]], "eqv_paths": [[{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}], "requirements": [[{"patt": [0], "pos": [[0, 0]]}]], "assumptions": []}, {"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [0], "pos": [[0, 1]]}, {"patt": [0], "pos": [[1, 0]]}, {"patt": [0], "pos": [[2, 1]]}, {"patt": [0, 1], "pos": [[1, 1], [1, 1]]}, {"patt": [1, 0], "pos": [[0, 0], [2, 0]]}, {"patt": [1, 0], "pos": [[1, 1], [1, 1]]}, {"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}, {"patt": [1, 2, 0], "pos": [[2, 0], [2, 0], [2, 0]]}], "requirements": [[{"patt": [0], "pos": [[1, 1]]}]], "assumptions": []}, {"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [0], "pos": [[0, 1]]}, {"patt": [0], "pos": [[0, 2]]}, {"patt": [0], "pos": [[1, 0]]}, {"patt": [0], "pos": [[1, 1]]}, {"patt": [0], "pos": [[2, 0]]}, {"patt": [0], "pos": [[2, 2]]}, {"patt": [0, 1], "pos": [[1, 2], [1, 2]]}, {"patt": [1, 0], "pos": [[1, 2], [1, 2]]}, {"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}, {"patt": [1, 2, 0], "pos": [[2, 1], [2, 1], [2, 1]]}], "requirements": [[{"patt": [0], "pos": [[1, 2]]}]], "assumptions": []}]]}'
-
-To load a specification from a JSON string:
-
-.. code:: python
-
-       >>> json_string = '{"root": {"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}], "requirements": [], "assumptions": []}, "strategies": [[{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}], "requirements": [], "assumptions": []}, {"class_module": "tilings.strategies.requirement_insertion", "strategy_class": "RequirementInsertionStrategy", "ignore_parent": false, "gps": [{"patt": [0], "pos": [[0, 0]]}]}], [{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [0], "pos": [[0, 0]]}], "requirements": [], "assumptions": []}, {"class_module": "tilings.strategies.verification", "strategy_class": "BasicVerificationStrategy"}], [{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [0], "pos": [[0, 1]]}, {"patt": [0], "pos": [[0, 2]]}, {"patt": [0], "pos": [[1, 0]]}, {"patt": [0], "pos": [[1, 1]]}, {"patt": [0], "pos": [[2, 0]]}, {"patt": [0], "pos": [[2, 2]]}, {"patt": [0, 1], "pos": [[1, 2], [1, 2]]}, {"patt": [1, 0], "pos": [[1, 2], [1, 2]]}, {"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}, {"patt": [1, 2, 0], "pos": [[2, 1], [2, 1], [2, 1]]}], "requirements": [[{"patt": [0], "pos": [[1, 2]]}]], "assumptions": []}, {"class_module": "tilings.strategies.factor", "strategy_class": "FactorStrategy", "ignore_parent": true, "workable": true, "partition": [[[0, 0]], [[1, 2]], [[2, 1]]]}], [{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [0, 1], "pos": [[0, 0], [0, 0]]}, {"patt": [1, 0], "pos": [[0, 0], [0, 0]]}], "requirements": [[{"patt": [0], "pos": [[0, 0]]}]], "assumptions": []}, {"class_module": "tilings.strategies.verification", "strategy_class": "BasicVerificationStrategy"}], [{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}], "requirements": [[{"patt": [0], "pos": [[0, 0]]}]], "assumptions": []}, {"class_module": "tilings.strategies.requirement_placement", "strategy_class": "RequirementPlacementStrategy", "ignore_parent": false, "gps": [{"patt": [0], "pos": [[0, 0]]}], "indices": [0], "direction": 1, "own_col": true, "own_row": true, "include_empty": false}], [{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [0], "pos": [[0, 1]]}, {"patt": [0], "pos": [[1, 0]]}, {"patt": [0], "pos": [[2, 1]]}, {"patt": [0, 1], "pos": [[1, 1], [1, 1]]}, {"patt": [1, 0], "pos": [[0, 0], [2, 0]]}, {"patt": [1, 0], "pos": [[1, 1], [1, 1]]}, {"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}, {"patt": [1, 2, 0], "pos": [[2, 0], [2, 0], [2, 0]]}], "requirements": [[{"patt": [0], "pos": [[1, 1]]}]], "assumptions": []}, {"class_module": "tilings.strategies.row_and_col_separation", "strategy_class": "RowColumnSeparationStrategy", "ignore_parent": true, "inferrable": true, "possibly_empty": false, "workable": true}]], "eqv_paths": [[{"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}], "requirements": [[{"patt": [0], "pos": [[0, 0]]}]], "assumptions": []}, {"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [0], "pos": [[0, 1]]}, {"patt": [0], "pos": [[1, 0]]}, {"patt": [0], "pos": [[2, 1]]}, {"patt": [0, 1], "pos": [[1, 1], [1, 1]]}, {"patt": [1, 0], "pos": [[0, 0], [2, 0]]}, {"patt": [1, 0], "pos": [[1, 1], [1, 1]]}, {"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}, {"patt": [1, 2, 0], "pos": [[2, 0], [2, 0], [2, 0]]}], "requirements": [[{"patt": [0], "pos": [[1, 1]]}]], "assumptions": []}, {"class_module": "tilings.tiling", "comb_class": "Tiling", "obstructions": [{"patt": [0], "pos": [[0, 1]]}, {"patt": [0], "pos": [[0, 2]]}, {"patt": [0], "pos": [[1, 0]]}, {"patt": [0], "pos": [[1, 1]]}, {"patt": [0], "pos": [[2, 0]]}, {"patt": [0], "pos": [[2, 2]]}, {"patt": [0, 1], "pos": [[1, 2], [1, 2]]}, {"patt": [1, 0], "pos": [[1, 2], [1, 2]]}, {"patt": [1, 2, 0], "pos": [[0, 0], [0, 0], [0, 0]]}, {"patt": [1, 2, 0], "pos": [[2, 1], [2, 1], [2, 1]]}], "requirements": [[{"patt": [0], "pos": [[1, 2]]}]], "assumptions": []}]]}'
        >>> from comb_spec_searcher import CombinatorialSpecification
+
+       >>> json_string = json.dumps(spec.to_jsonable())
        >>> reloaded_spec = CombinatorialSpecification.from_dict(json.loads(json_string))
 
 
@@ -572,7 +569,7 @@ You can make any pack use the fusion strategy by using the method
        >>> print(pack)
        Looking for recursive combinatorial specification with the strategies:
        Inferral: row and column separation, obstruction transitivity
-       Initial: add assumptions, factor, tracked fusion
+       Initial: rearrange assumptions, add assumptions, factor, tracked fusion
        Verification: verify atoms, insertion encoding verified, one by one verification, locally factorable verification
        Set 1: row placement
 
@@ -1173,3 +1170,14 @@ Finally, we'd like to reiterate, if you need support, have a suggestion, or just
 want to be up to date with the latest developments please join us on our
 `Discord server <https://discord.gg/ySJD6SV>`__ where we'd be happy to hear
 from you!
+
+
+Citing
+######
+
+If you found this library helpful with your research and would like to cite us, 
+you can use the following `BibTeX`_ or go to `Zenodo`_ for alternative formats. 
+
+.. _BibTex: https://zenodo.org/record/4944108/export/hx#.YMcq7y2l30o
+
+.. _Zenodo: https://doi.org/10.5281/zenodo.4944107

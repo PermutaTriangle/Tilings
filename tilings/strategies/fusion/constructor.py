@@ -13,21 +13,17 @@ rows or columns.
 We will assume we are always fusing two adjacent columns, and discuss the left
 and right hand sides accordingly.
 """
+import enum
 from collections import Counter, defaultdict
 from functools import reduce
 from operator import mul
-from random import randint
-from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
-from sympy import Eq, Expr, Function, Number, var
+import sympy
 
-from comb_spec_searcher import Constructor, Strategy, StrategyFactory
-from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.strategies import Rule
+from comb_spec_searcher import Constructor
 from comb_spec_searcher.typing import (
-    Objects,
     Parameters,
-    ParametersMap,
     RelianceProfile,
     SubObjects,
     SubRecs,
@@ -36,9 +32,8 @@ from comb_spec_searcher.typing import (
     Terms,
 )
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import ComponentFusion, Fusion
 
-__all__ = ["FusionStrategy", "ComponentFusionStrategy"]
+__all__ = ["FusionConstructor"]
 
 
 class FusionConstructor(Constructor[Tiling, GriddedPerm]):
@@ -138,33 +133,20 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         child_pos_to_parent_pos = tuple(
             index_mapping[idx] for idx in range(len(child.extra_parameters))
         )
-        self.children_param_map = self._build_param_map(
+        self.children_param_map = self.build_param_map(
             child_pos_to_parent_pos, len(parent.extra_parameters)
         )
 
     def _init_checked(self):
         """
-        The lists in reversed_extra_parameters can have size at most two (in
-        which case one of the two variables is a subset of the other), unless,
-        they are contained entirely within the fused region, in which case it
-        can have up to 3, namely left, right and both. This is checked in the
-        first assertion.
+        The lists in reversed_extra_parameters can have size at most three.
+        This is checked in the first assertion.
 
         Moreover, if two parent assumptions map to the same assumption, then one
         of them is one sided, and the other covers both sides, OR they are all
         contained fully in fuse region. This is checked in the second assertion.
         """
-        assert all(
-            len(val) <= 2
-            or (
-                len(val) == 3
-                and all(
-                    self.extra_parameters[parent_var] == self.fuse_parameter
-                    for parent_var in val
-                )
-            )
-            for val in self.reversed_extra_parameters.values()
-        )
+        assert all(len(val) <= 3 for val in self.reversed_extra_parameters.values())
         assert all(
             (
                 any(
@@ -185,21 +167,23 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             if len(parent_vars) == 2
         )
 
-    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
+    def get_equation(
+        self, lhs_func: sympy.Function, rhs_funcs: Tuple[sympy.Function, ...]
+    ) -> sympy.Eq:
         if max(self.min_points) > 1:
             raise NotImplementedError(
                 "not implemented equation in the case of "
                 "left or right containing more than one point"
             )
         rhs_func = rhs_funcs[0]
-        subs: Dict[str, Expr] = {
-            child: reduce(mul, [var(k) for k in parent_vars], 1)
+        subs: Dict[str, sympy.Expr] = {
+            child: reduce(mul, [sympy.var(k) for k in parent_vars], 1)
             for child, parent_vars in self.reversed_extra_parameters.items()
         }
         left_vars = reduce(
             mul,
             [
-                var(k)
+                sympy.var(k)
                 for k in self.left_sided_parameters
                 if k not in self.parent_fusion_parameters
             ],
@@ -208,20 +192,20 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         right_vars = reduce(
             mul,
             [
-                var(k)
+                sympy.var(k)
                 for k in self.right_sided_parameters
                 if k not in self.parent_fusion_parameters
             ],
             1,
         )
-        p, q = Number(1), Number(1)
+        p, q = sympy.Number(1), sympy.Number(1)
         for parent_fuse_parameter, fuse_type in zip(
             self.parent_fusion_parameters, self.fusion_types
         ):
             if fuse_type in ("left", "both"):
-                p *= var(parent_fuse_parameter)
+                p *= sympy.var(parent_fuse_parameter)
             if fuse_type in ("right", "both"):
-                q *= var(parent_fuse_parameter)
+                q *= sympy.var(parent_fuse_parameter)
         if left_vars == 1 and right_vars == 1 and p == q:
             raise NotImplementedError(
                 "Not handled case with no left and right vars, and new fuse "
@@ -244,7 +228,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             # right side is positive, so thr left can't be empty
             to_subtract += left_right_empty[0]
 
-        return Eq(
+        return sympy.Eq(
             lhs_func,
             (
                 (q * right_vars * rhs_func.subs(subs1, simultaneous=True))
@@ -257,7 +241,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
-    def get_terms(self, subterms: SubTerms, n: int) -> Terms:
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
         """
         Uses the `subterms` functions to and the `children_param_maps` to compute
         the terms of size `n`.
@@ -290,26 +276,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
 
                 add_new_term(new_params, value, left_points, fuse_region_points)
         return new_terms
-
-    @staticmethod
-    def _build_param_map(
-        child_pos_to_parent_pos: Tuple[Tuple[int, ...], ...], num_parent_params: int
-    ) -> ParametersMap:
-        """
-        Build the ParametersMap that will map according to the given child pos to parent
-        pos map given.
-        """
-
-        def param_map(param: Parameters) -> Parameters:
-            new_params: List[Optional[int]] = [None for _ in range(num_parent_params)]
-            for pos, value in enumerate(param):
-                for parent_pos in child_pos_to_parent_pos[pos]:
-                    assert new_params[parent_pos] is None
-                    new_params[parent_pos] = value
-            assert all(x is not None for x in new_params)
-            return tuple(cast(List[int], new_params))
-
-        return param_map
 
     def determine_number_of_points_in_fuse_region(
         self, n: int, **parameters: int
@@ -570,407 +536,346 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             "This is implemented on the FusionRule class directly"
         )
 
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
+        # Base cases (instance and count checks)
+        init = self._equiv_base_cases(other, data)
+        if init is None:
+            return False, None
 
-class FusionRule(Rule[Tiling, GriddedPerm]):
-    """Overwritten the generate objects of size method, as this relies on
-    knowing the number of left and right points of the parent tiling."""
+        # p1 and p2 are parent parameters and n their length, rest is empty
+        p1, p2, n, bijection, in_use, term_list, term_funcs = init
 
-    @property
-    def strategy(self) -> "FusionStrategy":
-        return cast(
-            FusionStrategy,
-            super().strategy,
-        )
+        # Find a bijection between p1 and p2 that is consistent
+        def _backtrack(rev: bool):
+            assert isinstance(other, type(self))
+            for x in range(n):
+                if x in in_use:
+                    continue
 
-    @property
-    def constructor(self) -> FusionConstructor:
-        return cast(FusionConstructor, super().constructor)
+                bijection.append(x)
+                in_use.add(x)
 
-    def _ensure_level_objects(self, n: int) -> None:
+                last = len(bijection) == n
 
-        if self.subobjects is None:
-            raise RuntimeError("set_subrecs must be set first")
-        while n >= len(self.objects_cache):
-            res: Objects = defaultdict(list)
-            min_left, min_right = self.constructor.min_points
+                # If consistent and either done or recursively successful
+                result = self._equiv_backtrack_consistent(
+                    bijection, rev, other, p1, p2
+                ) and (last or _backtrack(rev))
 
-            def add_new_gp(
-                params: List[int],
-                left_points: int,
-                fuse_region_points: int,
-                unfused_gps: Iterator[GriddedPerm],
-            ) -> None:
-                """Update new terms if there is enough points on the left and right."""
-                gp = next(unfused_gps)
-                if (
-                    min_left <= left_points
-                    and min_right <= fuse_region_points - left_points
-                ):
-                    res[tuple(params)].append(gp)
+                # Check if terms match
+                if result and last:
+                    if not term_list:
+                        for i in range(term_funcs[2]):
+                            term_list.append((term_funcs[0](i), term_funcs[1](i)))
+                    if not FusionConstructor._term_consistent(bijection, term_list):
+                        result = False
 
-            for param, objects in self.subobjects[0](len(self.objects_cache)).items():
-                fuse_region_points = param[self.constructor.fuse_parameter_index]
-                for gp in objects:
-                    new_params = list(self.constructor.children_param_map(param))
-                    unfused_gps = self.strategy.backward_map(
-                        self.comb_class, (gp,), self.children
-                    )  # iterates over unfused gridded perms in order
-                    # with 0, 1, .., and finally fuse_region_points on the left
-                    for idx in self.constructor.left_parameter_indices:
-                        new_params[idx] -= fuse_region_points
-                    add_new_gp(new_params, 0, fuse_region_points, unfused_gps)
-                    for left_points in range(1, fuse_region_points + 1):
-                        for idx in self.constructor.left_parameter_indices:
-                            new_params[idx] += 1
-                        for idx in self.constructor.right_parameter_indices:
-                            new_params[idx] -= 1
-                        add_new_gp(
-                            new_params, left_points, fuse_region_points, unfused_gps
-                        )
+                bijection.pop()
+                in_use.remove(x)
 
-            self.objects_cache.append(res)
+                # Found
+                if result:
+                    return True
+            return False
 
-    def random_sample_object_of_size(self, n: int, **parameters: int) -> GriddedPerm:
-        """Return a random objects of the give size."""
-        assert (
-            self.subrecs is not None and self.subsamplers is not None
-        ), "you must call the set_subrecs function first"
-        subrec = self.subrecs[0]
-        subsampler = self.subsamplers[0]
-        parent_count = self.count_objects_of_size(n, **parameters)
-        random_choice = randint(1, parent_count)
-        total = 0
-        left_right_points = self.constructor.determine_number_of_points_in_fuse_region(
-            n, **parameters
-        )
-        for left_points, right_points in left_right_points:
-            new_params = self.constructor.update_subparams(
-                left_points, right_points, **parameters
-            )
-            if new_params is not None:
-                assert (
-                    new_params[self.constructor.fuse_parameter]
-                    == left_points + right_points
-                )
-                total += subrec(n, **new_params)
-                if random_choice <= total:
-                    gp = subsampler(n, **new_params)
-                    try:
-                        return next(
-                            self.strategy.backward_map(
-                                self.comb_class, (gp,), self.children, left_points
-                            )
-                        )
-                    except StopIteration:
-                        assert 0, "something went wrong"
+        lis: List[bool] = []
+        # l-l and r-r match: Data appends False
+        if _backtrack(False):
+            lis.append(False)
+        assert len(in_use) == 0
+        # l-r and r-l match: Data appends True
+        if _backtrack(True):
+            lis.append(True)
 
+        # Data will be [], [True], [False], [False, True]
+        return len(lis) > 0, lis
 
-class FusionStrategy(Strategy[Tiling, GriddedPerm]):
-    def __init__(self, row_idx=None, col_idx=None, tracked: bool = False):
-        self.col_idx = col_idx
-        self.row_idx = row_idx
-        self.tracked = tracked
-        if not sum(1 for x in (self.col_idx, self.row_idx) if x is not None) == 1:
-            raise RuntimeError("Cannot specify a row and a column")
-        super().__init__(
-            ignore_parent=False, inferrable=True, possibly_empty=False, workable=True
-        )
-
-    def __call__(
+    def _equiv_base_cases(
         self,
-        comb_class: Tiling,
-        children: Tuple[Tiling, ...] = None,
-        **kwargs,
-    ) -> FusionRule:
-        if children is None:
-            children = self.decomposition_function(comb_class)
-            if children is None:
-                raise StrategyDoesNotApply("Strategy does not apply")
-        return FusionRule(self, comb_class, children=children)
-
-    def fusion_algorithm(self, tiling: Tiling) -> Fusion:
-        return Fusion(
-            tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked
-        )
-
-    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
-        algo = self.fusion_algorithm(comb_class)
-        if algo.fusable():
-            return (algo.fused_tiling(),)
-
-    @staticmethod
-    def can_be_equivalent() -> bool:
-        return False
-
-    def constructor(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
-    ) -> FusionConstructor:
-        if not self.tracked:
-            # constructor only enumerates when tracked.
-            raise NotImplementedError("The fusion strategy was not tracked.")
-        # Need to recompute some info to count, so ignoring passed in children
-        algo = self.fusion_algorithm(comb_class)
-        if not algo.fusable():
-            raise StrategyDoesNotApply("Strategy does not apply")
-        child = algo.fused_tiling()
-        assert children is None or children == (child,)
-        min_left, min_right = algo.min_left_right_points()
-        return FusionConstructor(
-            comb_class,
-            child,
-            self._fuse_parameter(comb_class),
-            self.extra_parameters(comb_class, children)[0],
-            *self.left_right_both_sided_parameters(comb_class),
-            min_left,
-            min_right,
-        )
-
-    def extra_parameters(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
-    ) -> Tuple[Dict[str, str]]:
-        if children is None:
-            children = self.decomposition_function(comb_class)
-            if children is None:
-                raise StrategyDoesNotApply("Strategy does not apply")
-        algo = self.fusion_algorithm(comb_class)
-        child = children[0]
-        mapped_assumptions = [
-            child.forward_map_assumption(ass.__class__(gps))
-            for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
+        other: "Constructor",
+        data: Optional[object],
+    ) -> Optional[
+        Tuple[
+            List[str],
+            List[str],
+            int,
+            List[int],
+            Set[int],
+            List[Tuple[Terms, Terms]],
+            Tuple[Callable[[int], Terms], Callable[[int], Terms], int],
         ]
-        return (
-            {
-                k: child.get_assumption_parameter(ass)
-                for k, ass in zip(comb_class.extra_parameters, mapped_assumptions)
-                if ass.gps
-            },
-        )
+    ]:
+        if not isinstance(other, type(self)):
+            return None
+        # Early domain failure
+        p1 = list(self.extra_parameters.keys())
+        p2 = list(other.extra_parameters.keys())
+        if len(p1) != len(p2):
+            return None
+        # Early codomain failure
+        vals1 = Counter(self.extra_parameters.values())
+        vals2 = Counter(other.extra_parameters.values())
+        if (
+            len(vals1) != len(vals2)
+            or sorted(vals1.values()) != sorted(vals2.values())
+            or (self.fuse_parameter in vals1) != (other.fuse_parameter in vals2)  # xor
+        ):
+            return None
+        # Extract typed data from optional object
+        if data is None:
+            raise ValueError("Terms are needed to compare fusion constructors")
+        assert isinstance(data, tuple) and len(data) == 3
+        f1: Callable[[int], Terms] = data[0]
+        f2: Callable[[int], Terms] = data[1]
+        max_check: int = data[2]
+        term_lis: List[Tuple[Terms, Terms]] = []
+        return p1, p2, len(p1), [], set(), term_lis, (f1, f2, max_check)
 
-    def left_right_both_sided_parameters(
-        self, comb_class: Tiling
-    ) -> Tuple[Set[str], Set[str], Set[str]]:
-        left_sided_params: Set[str] = set()
-        right_sided_params: Set[str] = set()
-        both_sided_params: Set[str] = set()
-        algo = self.fusion_algorithm(comb_class)
-        for assumption in comb_class.assumptions:
-            parent_var = comb_class.get_assumption_parameter(assumption)
-            left_sided = algo.is_left_sided_assumption(assumption)
-            right_sided = algo.is_right_sided_assumption(assumption)
-            if left_sided and not right_sided:
-                left_sided_params.add(parent_var)
-            elif right_sided and not left_sided:
-                right_sided_params.add(parent_var)
-            elif not left_sided and not right_sided:
-                both_sided_params.add(parent_var)
-        return (
-            left_sided_params,
-            right_sided_params,
-            both_sided_params,
-        )
-
-    def _fuse_parameter(self, comb_class: Tiling) -> str:
-        algo = self.fusion_algorithm(comb_class)
-        child = algo.fused_tiling()
-        ass = algo.new_assumption()
-        fuse_assumption = ass.__class__(child.forward_map(gp) for gp in ass.gps)
-        return child.get_assumption_parameter(fuse_assumption)
-
-    def formal_step(self) -> str:
-        fusing = "rows" if self.row_idx is not None else "columns"
-        idx = self.row_idx if self.row_idx is not None else self.col_idx
-        return "fuse {} {} and {}".format(fusing, idx, idx + 1)
-
-    def backward_map(
+    def _equiv_backtrack_consistent(
         self,
-        comb_class: Tiling,
-        gps: Tuple[Optional[GriddedPerm], ...],
-        children: Optional[Tuple[Tiling, ...]] = None,
-        left_points: int = None,
-    ) -> Iterator[GriddedPerm]:
-        """
-        The backward direction of the underlying bijection used for object
-        generation and sampling.
-        """
-        if children is None:
-            children = self.decomposition_function(comb_class)
-        gp = gps[0]
-        assert gp is not None
-        gp = children[0].backward_map(gp)
-        yield from self.fusion_algorithm(comb_class).unfuse_gridded_perm(
-            gp, left_points
+        bi: List[int],
+        rev: bool,
+        other: "FusionConstructor",
+        p1: List[str],
+        p2: List[str],
+    ):
+        grp_left, grp_right = set(), set()
+        for i, j in enumerate(bi):
+            # If one, of matched parameters, is in both sides in one but not the other
+            # or if one maps to fuse parameter and the other does not.
+            if (p1[i] in self.both_sided_parameters) != (
+                p2[j] in other.both_sided_parameters
+            ) or (self.extra_parameters[p1[i]] == self.fuse_parameter) != (
+                other.extra_parameters[p2[j]] == other.fuse_parameter
+            ):
+                return False
+            # Gather those in p2 that corresponds to each side in p1
+            if p1[i] in self.left_sided_parameters:
+                grp_left.add(p2[j])
+            if p1[i] in self.right_sided_parameters:
+                grp_right.add(p2[j])
+        # If rev, corresponding parameters of those in one's left should be in other's
+        # right. If not rev, they should be on the same side (right-right, left-left).
+        if rev:
+            return grp_right.issubset(
+                other.left_sided_parameters
+            ) and grp_left.issubset(other.right_sided_parameters)
+        return grp_left.issubset(other.left_sided_parameters) and grp_right.issubset(
+            other.right_sided_parameters
         )
-
-    def forward_map(
-        self,
-        comb_class: Tiling,
-        gp: GriddedPerm,
-        children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Tuple[Optional[GriddedPerm], ...]:
-        """
-        The forward direction of the underlying bijection used for object
-        generation and sampling.
-        """
-        if children is None:
-            children = self.decomposition_function(comb_class)
-        fused_gp = self.fusion_algorithm(comb_class).fuse_gridded_perm(gp)
-        return (children[0].forward_map(fused_gp),)
-
-    def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
-        d.pop("ignore_parent")
-        d.pop("inferrable")
-        d.pop("possibly_empty")
-        d.pop("workable")
-        d["row_idx"] = self.row_idx
-        d["col_idx"] = self.col_idx
-        d["tracked"] = self.tracked
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "FusionStrategy":
-        return cls(**d)
 
     @staticmethod
-    def get_op_symbol() -> str:
-        return "⚮"
+    def _term_consistent(
+        bijection: List[int], terms: List[Tuple[Terms, Terms]]
+    ) -> bool:
+        """Check if the bijection is valid with respect to terms."""
+        for t1, t2 in terms:
+            for k, v in t1.items():
+                k2 = tuple(k[i] for i in bijection)
+                if k2 not in t2 or t2[k2] != v:
+                    return False
+        return True
+
+
+class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
+    """
+    The reverse fusion constructor
+
+    - fuse_parameter:           parameter corresponding to the region of the
+                                tiling of the child where a line must be drawn.
+    - extra_parameters:         a dictionary where the keys are each of the
+                                parent parameters pointing to the child
+                                parameter it was mapped to. Note, if [ A | A ]
+                                fuses to [ A ] then we assume any one sided
+                                variable maps to the [ A ] on the child.
+    - left_sided_parameters:    all of the parent parameters which overlap
+                                fully the left side of the region that is
+                                being fused.
+    - right_sided_parameters:   all of the parent parameters which overlap
+                                fully the right side of the region that is
+                                being fused.
+    """
+
+    class Type(enum.Enum):
+        LEFT_ONLY = enum.auto()
+        RIGHT_ONLY = enum.auto()
+        BOTH = enum.auto()
+
+    def __init__(
+        self,
+        t_unfuse: Tiling,
+        t_fuse: Tiling,
+        fuse_parameter: str,
+        extra_parameters: Dict[str, str],
+        left_sided_parameters: Tuple[str, ...],
+        right_sided_parameters: Tuple[str, ...],
+    ):
+        left_fuse_index = self.get_left_fuse_index(
+            left_sided_parameters, fuse_parameter, extra_parameters, t_unfuse
+        )
+        right_fuse_index = self.get_left_fuse_index(
+            right_sided_parameters, fuse_parameter, extra_parameters, t_unfuse
+        )
+        if left_fuse_index is not None:
+            if right_fuse_index is not None:
+                self.type = ReverseFusionConstructor.Type.BOTH
+            else:
+                self.type = ReverseFusionConstructor.Type.LEFT_ONLY
+        else:
+            assert right_fuse_index is not None
+            self.type = ReverseFusionConstructor.Type.RIGHT_ONLY
+        self.unfuse_pos_to_fuse_pos = self.build_unfuse_pos_to_fuse_pos(
+            t_unfuse,
+            t_fuse,
+            extra_parameters,
+            left_fuse_index,
+            left_sided_parameters,
+            right_fuse_index,
+            right_sided_parameters,
+        )
+        self.left_sided_index = tuple(
+            map(t_unfuse.extra_parameters.index, left_sided_parameters)
+        )
+        self.right_sided_index = tuple(
+            map(t_unfuse.extra_parameters.index, right_sided_parameters)
+        )
+        self.num_fuse_param = len(t_fuse.extra_parameters)
 
     @staticmethod
-    def get_eq_symbol() -> str:
-        return "↣"
-
-    def __repr__(self) -> str:
-        return (
-            self.__class__.__name__
-            + f"(row_idx={self.row_idx}, col_idx={self.col_idx}, "
-            f"tracked={self.tracked})"
-        )
-
-
-class ComponentFusionStrategy(FusionStrategy):
-    def fusion_algorithm(self, tiling: Tiling) -> Fusion:
-        return ComponentFusion(
-            tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked
-        )
-
-    def formal_step(self) -> str:
-        fusing = "rows" if self.row_idx is not None else "columns"
-        idx = self.row_idx if self.row_idx is not None else self.col_idx
-        return "component fuse {} {} and {}".format(fusing, idx, idx + 1)
-
-    def backward_map(
-        self,
-        comb_class: Tiling,
-        gps: Tuple[Optional[GriddedPerm], ...],
-        children: Optional[Tuple[Tiling, ...]] = None,
-        left_points: Optional[int] = None,
-    ) -> Iterator[GriddedPerm]:
+    def build_unfuse_pos_to_fuse_pos(
+        t_unfuse: Tiling,
+        t_fuse: Tiling,
+        extra_parameters: Dict[str, str],
+        left_fuse_param_idx: Optional[int],
+        left_sided_parameters: Tuple[str, ...],
+        right_fuse_param_idx: Optional[int],
+        right_sided_parameters: Tuple[str, ...],
+    ) -> Tuple[Tuple[int, ...], ...]:
         """
-        The backward direction of the underlying bijection used for object
-        generation and sampling.
+        Return the contribution of the unfuse assumption to the fused assumptions.
+
+        The i-th tuple gives the position of all the assumptions of the fused tiling
+        the i-th assumption of the unfused tiling contributes to.
         """
+        assert left_fuse_param_idx is not None or right_fuse_param_idx is not None
+        reversed_extra_params: Dict[str, Set[str]] = defaultdict(set)
+        for u_param, f_param in extra_parameters.items():
+            reversed_extra_params[f_param].add(u_param)
+        res: Tuple[Set[int], ...] = tuple(set() for _ in t_unfuse.extra_parameters)
+        one_sided_parameters = set(left_sided_parameters + right_sided_parameters)
+        for f_param, u_params in reversed_extra_params.items():
+            f_param_idx = t_fuse.extra_parameters.index(f_param)
+            for u_param in u_params:
+                u_param_idx = t_unfuse.extra_parameters.index(u_param)
+                if u_param not in one_sided_parameters:
+                    res[u_param_idx].add(f_param_idx)
+                    break
+                if (
+                    u_param in left_sided_parameters
+                    and right_fuse_param_idx is not None
+                ):
+                    res[u_param_idx].add(f_param_idx)
+                    res[right_fuse_param_idx].add(f_param_idx)
+                    break
+                if (
+                    u_param in right_sided_parameters
+                    and left_fuse_param_idx is not None
+                ):
+                    res[u_param_idx].add(f_param_idx)
+                    res[left_fuse_param_idx].add(f_param_idx)
+                    break
+            else:
+                for u_param in u_params:
+                    u_param_idx = t_unfuse.extra_parameters.index(u_param)
+                    res[u_param_idx].add(f_param_idx)
+        return tuple(map(tuple, res))
+
+    @staticmethod
+    def get_left_fuse_index(
+        left_sided_parameters: Tuple[str, ...],
+        fuse_parameter: str,
+        extra_parameters: Dict[str, str],
+        t_unfuse: Tiling,
+    ) -> Optional[int]:
+        """
+        Return the param index of the left sided param that fuses to the fuse param on
+        the fused tiling.
+        """
+        for parent_param, child_param in extra_parameters.items():
+            if child_param == fuse_parameter and parent_param in left_sided_parameters:
+                return t_unfuse.extra_parameters.index(parent_param)
+        return None
+
+    def forward_map(self, param: Parameters) -> Parameters:
+        """
+        Maps a set of parameters on the fuse tiling to a set of parameters on
+        the unfused tiling.
+        """
+        new_param = [0 for _ in range(self.num_fuse_param)]
+        assert len(param) == len(self.unfuse_pos_to_fuse_pos)
+        for pvalue, fuse_idxs in zip(param, self.unfuse_pos_to_fuse_pos):
+            for fuse_idx in fuse_idxs:
+                new_param[fuse_idx] += pvalue
+        return tuple(new_param)
+
+    def a_map(self, param: Parameters) -> Parameters:
+        if self.type == ReverseFusionConstructor.Type.BOTH:
+            # In the case where both is track we don't subtract anything
+            return tuple(-1 for _ in param)
+        if self.type == ReverseFusionConstructor.Type.LEFT_ONLY:
+            add = self.left_sided_index
+            substract = self.right_sided_index
+        else:
+            assert self.type == ReverseFusionConstructor.Type.RIGHT_ONLY
+            add = self.right_sided_index
+            substract = self.left_sided_index
+        new_param = list(param)
+        for idx in add:
+            new_param[idx] += 1
+        for idx in substract:
+            new_param[idx] -= 1
+        return tuple(new_param)
+
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
+        terms: Terms = Counter()
+        child_terms = subterms[0](n)
+        for param, value in child_terms.items():
+            new_param = self.forward_map(param)
+            new_value = value - child_terms[self.a_map(param)]
+            assert new_value >= 0
+            if new_value > 0:
+                assert new_param not in terms or new_value == terms[new_param]
+                terms[new_param] = new_value
+        return terms
+
+    def get_equation(
+        self, lhs_func: sympy.Function, rhs_funcs: Tuple[sympy.Function, ...]
+    ) -> sympy.Eq:
         raise NotImplementedError
 
+    def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
+        raise NotImplementedError
 
-class FusionFactory(StrategyFactory[Tiling]):
-    def __init__(self, tracked: bool = True, isolation_level: Optional[str] = None):
-        self.tracked = tracked
-        self.isolation_level = isolation_level
+    def get_sub_objects(
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
+        raise NotImplementedError
 
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
-        cols, rows = comb_class.dimensions
-        for row_idx in range(rows - 1):
-            algo = Fusion(
-                comb_class,
-                row_idx=row_idx,
-                tracked=self.tracked,
-                isolation_level=self.isolation_level,
-            )
-            if algo.fusable():
-                fused_tiling = algo.fused_tiling()
-                yield FusionStrategy(row_idx=row_idx, tracked=self.tracked)(
-                    comb_class, (fused_tiling,)
-                )
-        for col_idx in range(cols - 1):
-            algo = Fusion(
-                comb_class,
-                col_idx=col_idx,
-                tracked=self.tracked,
-                isolation_level=self.isolation_level,
-            )
-            if algo.fusable():
-                fused_tiling = algo.fused_tiling()
-                yield FusionStrategy(col_idx=col_idx, tracked=self.tracked)(
-                    comb_class, (fused_tiling,)
-                )
+    def random_sample_sub_objects(
+        self,
+        parent_count: int,
+        subsamplers: SubSamplers,
+        subrecs: SubRecs,
+        n: int,
+        **parameters: int,
+    ):
+        raise NotImplementedError
 
-    def __str__(self) -> str:
-        if self.tracked:
-            return "tracked fusion"
-        return "fusion"
-
-    def __repr__(self) -> str:
-        return self.__class__.__name__ + "(tracked={})".format(self.tracked)
-
-    def to_jsonable(self) -> dict:
-        d: dict = super().to_jsonable()
-        d["tracked"] = self.tracked
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "FusionFactory":
-        return cls(**d)
-
-
-class ComponentFusionFactory(StrategyFactory[Tiling]):
-    def __init__(self, tracked: bool = False, isolation_level: Optional[str] = None):
-        self.tracked = tracked
-        self.isolation_level = isolation_level
-
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
-        if comb_class.requirements:
-            return
-        cols, rows = comb_class.dimensions
-        for row_idx in range(rows - 1):
-            algo = ComponentFusion(
-                comb_class,
-                row_idx=row_idx,
-                tracked=self.tracked,
-                isolation_level=self.isolation_level,
-            )
-            if algo.fusable():
-                fused_tiling = algo.fused_tiling()
-                yield ComponentFusionStrategy(row_idx=row_idx, tracked=self.tracked)(
-                    comb_class, (fused_tiling,)
-                )
-        for col_idx in range(cols - 1):
-            algo = ComponentFusion(
-                comb_class,
-                col_idx=col_idx,
-                tracked=self.tracked,
-                isolation_level=self.isolation_level,
-            )
-            if algo.fusable():
-                fused_tiling = algo.fused_tiling()
-                yield ComponentFusionStrategy(col_idx=col_idx, tracked=self.tracked)(
-                    comb_class, (fused_tiling,)
-                )
-
-    def __str__(self) -> str:
-        return f"{'tracked ' if self.tracked else ''}component fusion"
-
-    def __repr__(self) -> str:
-        return (
-            self.__class__.__name__
-            + f"(tracked={self.tracked}, isolation_level={self.isolation_level})"
-        )
-
-    def to_jsonable(self) -> dict:
-        d: dict = super().to_jsonable()
-        d["tracked"] = self.tracked
-        d["isolation_level"] = self.isolation_level
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "ComponentFusionFactory":
-        return cls(**d)
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
+        raise NotImplementedError("Required for bijections")

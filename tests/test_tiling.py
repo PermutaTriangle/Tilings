@@ -7,6 +7,7 @@ import sympy
 
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
+from tilings.algorithms import Fusion as FusionAlg
 from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
 
@@ -155,7 +156,7 @@ def typical_redundant_obstructions():
 
 @pytest.fixture
 def typical_redundant_requirements():
-    """Returns a very typical list of requirements of a tiling.  """
+    """Returns a very typical list of requirements of a tiling."""
     return [
         [
             GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 3))),
@@ -1447,6 +1448,29 @@ def test_fusion():
         ]
     )
 
+    t2 = Tiling(
+        obstructions=[
+            GriddedPerm.single_cell(Perm((2, 0, 1)), (0, 2)),
+            GriddedPerm.single_cell(Perm((0, 1)), (0, 1)),
+            GriddedPerm.single_cell(Perm((0, 1)), (0, 0)),
+            GriddedPerm(Perm((0, 1)), [(0, 0), (0, 1)]),
+            GriddedPerm(Perm((2, 0, 1)), [(0, 2), (0, 0), (0, 2)]),
+            GriddedPerm(Perm((2, 0, 1)), [(0, 2), (0, 1), (0, 2)]),
+        ],
+        assumptions=[
+            TrackingAssumption(
+                [
+                    GriddedPerm.single_cell((0,), (0, 1)),
+                    GriddedPerm.single_cell((0,), (0, 2)),
+                ]
+            )
+        ],
+    )
+    assert FusionAlg(t2, row_idx=0, tracked=True, isolation_level=None).fusable()
+    assert not FusionAlg(
+        t2, row_idx=0, tracked=True, isolation_level="isolated"
+    ).fusable()
+
 
 def test_component_fusion():
     t = Tiling(
@@ -2285,6 +2309,30 @@ def test_point_obstruction():
     t = Tiling((GriddedPerm((0,), ((0, 0),)),))
     assert t.forward_cell_map == {}
     assert t.obstructions == (GriddedPerm((0,), ((0, 0),)),)
+
+
+def test_is_atom():
+    perm123 = Tiling(
+        obstructions=(
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1), ((1, 1), (1, 1))),
+            GriddedPerm((0, 1), ((2, 2), (2, 2))),
+            GriddedPerm((1, 0), ((0, 0), (0, 0))),
+            GriddedPerm((1, 0), ((1, 1), (1, 1))),
+            GriddedPerm((1, 0), ((2, 2), (2, 2))),
+        ),
+        requirements=(
+            (GriddedPerm((0,), ((0, 0),)),),
+            (GriddedPerm((0,), ((1, 1),)),),
+            (GriddedPerm((0,), ((2, 2),)),),
+        ),
+        assumptions=(),
+    )
+    empty_perm = Tiling()
+    empty_set = Tiling((GriddedPerm.empty_perm(),))
+    assert perm123.is_atom()
+    assert empty_perm.is_atom()
+    assert not empty_set.is_atom()
 
 
 class TestGetGenf:

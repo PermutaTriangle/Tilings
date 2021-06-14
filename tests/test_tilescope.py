@@ -2,7 +2,7 @@ import pytest
 import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
-from comb_spec_searcher.rule_db import LimitedStrategyRuleDB
+from comb_spec_searcher.rule_db import RuleDBForest
 from comb_spec_searcher.strategies import EmptyStrategy
 from comb_spec_searcher.strategies.rule import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
@@ -11,7 +11,7 @@ from tilings import GriddedPerm, Tiling
 from tilings import strategies as strat
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategy_pack import TileScopePack
-from tilings.tilescope import TileScope
+from tilings.tilescope import GuidedSearcher, TileScope
 
 point_placements = TileScopePack.point_placements()
 all_the_strategies_verify_database = TileScopePack.all_the_strategies().make_database()
@@ -306,18 +306,6 @@ def test_expansion():
             )
 
 
-@pytest.mark.timeout(10)
-def test_single_fusion_db():
-    ruledb = LimitedStrategyRuleDB(
-        strategies_to_limit=set([FusionStrategy]), limit=1, mark_verified=False
-    )
-    searcher = TileScope("0123_0132", row_placements_fusion, ruledb=ruledb)
-    spec = searcher.auto_search()
-    assert isinstance(spec, CombinatorialSpecification)
-    expected_enum = [1, 1, 2, 6, 22, 90, 394, 1806, 8558, 41586, 206098]
-    assert [spec.count_objects_of_size(n) for n in range(11)] == expected_enum
-
-
 @pytest.mark.timeout(30)
 def test_domino():
     domino = Tiling(
@@ -351,4 +339,44 @@ def test_domino():
         42975796,
         243035536,
         1390594458,
+    ]
+
+
+@pytest.mark.timeout(15)
+def test_parallel_forest():
+    expected_count = [1, 1, 2, 6, 22, 90, 394, 1806, 8558, 41586]
+    pack = TileScopePack.only_root_placements(2, 1)
+    bases = ["0231_2031", "0132_1032", "0231_0321"]
+    searchers = [TileScope(b, pack, ruledb=RuleDBForest()) for b in bases]
+    specs = [css.auto_search() for css in searchers]
+    for spec in specs:
+        spec.expand_verified()
+        count = [spec.count_objects_of_size(n) for n in range(10)]
+        assert count == expected_count
+
+
+def test_guided_searcher():
+    tilescope = TileScope(
+        "123", TileScopePack.point_placements().make_fusion(tracked=False)
+    )
+    spec = tilescope.auto_search()
+    searcher = GuidedSearcher.from_spec(
+        spec, TileScopePack.point_placements().make_fusion(tracked=True)
+    )
+    tracked_spec = searcher.auto_search()
+    tracked_spec.expand_verified()
+    assert [tracked_spec.count_objects_of_size(i) for i in range(13)] == [
+        1,
+        1,
+        2,
+        5,
+        14,
+        42,
+        132,
+        429,
+        1430,
+        4862,
+        16796,
+        58786,
+        208012,
     ]

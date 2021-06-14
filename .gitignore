@@ -96,4 +96,4 @@ devtest.py
 
 .pytest_cache
 .mypy_cache
-.vscode/settings.json
+.vscode/

@@ -5,7 +5,7 @@ from tilings import GriddedPerm, Tiling
 
 @pytest.fixture
 def no_point_tiling():
-    """Returns a simple tiling with length of all obs and reqs at least 2. """
+    """Returns a simple tiling with length of all obs and reqs at least 2."""
     return Tiling(
         obstructions=[
             GriddedPerm((1, 0), [(0, 1), (0, 1)]),

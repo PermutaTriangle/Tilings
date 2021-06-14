@@ -22,6 +22,11 @@ class TrackingAssumption:
     def __init__(self, gps: Iterable[GriddedPerm]):
         self.gps = tuple(sorted(set(gps)))
 
+    @classmethod
+    def from_cells(cls, cells: Iterable[Cell]) -> "TrackingAssumption":
+        gps = [GriddedPerm.single_cell((0,), cell) for cell in cells]
+        return TrackingAssumption(gps)
+
     def avoiding(
         self,
         obstructions: Iterable[GriddedPerm],
@@ -95,10 +100,9 @@ class TrackingAssumption:
 
     def __lt__(self, other) -> bool:
         if isinstance(other, TrackingAssumption):
-            return bool(
-                self.__class__.__name__ < other.__class__.__name__
-                or self.gps < other.gps
-            )
+            key_self = (self.__class__.__name__, self.gps)
+            key_other = (other.__class__.__name__, other.gps)
+            return key_self < key_other
         return NotImplemented
 
     def __hash__(self) -> int:

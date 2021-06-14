@@ -1,4 +1,5 @@
 import json
+import os
 from itertools import product
 
 import pytest
@@ -6,7 +7,7 @@ import pytest
 from comb_spec_searcher import Strategy
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
-from tilings import GriddedPerm
+from tilings import GriddedPerm, TrackingAssumption
 from tilings.strategies import (
     AllPlacementsFactory,
     BasicVerificationStrategy,
@@ -25,6 +26,7 @@ from tilings.strategies import (
     ObstructionTransitivityFactory,
     OneByOneVerificationStrategy,
     PatternPlacementFactory,
+    RearrangeAssumptionFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
     RequirementInsertionFactory,
@@ -33,6 +35,7 @@ from tilings.strategies import (
     RowAndColumnPlacementFactory,
     RowColumnSeparationStrategy,
     ShortObstructionVerificationStrategy,
+    SlidingFactory,
     SplittingStrategy,
     SubclassVerificationFactory,
     SubobstructionInferralFactory,
@@ -46,8 +49,10 @@ from tilings.strategies.factor import (
 )
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
+from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
+from tilings.strategies.sliding import SlidingStrategy
 
 
 def assert_same_strategy(s1, s2):
@@ -77,6 +82,25 @@ def json_encode_decode(s):
         )
     s_new = Strategy.from_dict(json.loads(json_str))
     return s_new
+
+
+def repr_encode_decode(strategy):
+    """Take a strategy, encode it as repr and build it back as a strategy."""
+    __tracebackhide__ = True
+
+    repr_str = repr(strategy)
+    if not isinstance(repr_str, str):
+        pytest.fail(f"repr does not return a string.\nReturned: {repr_str}")
+    try:
+        new_strategy = eval(repr_str)
+    except Exception as e:
+        pytest.fail(
+            "The repr method returns a string that can not be loaded back\n"
+            f"Got error: {e}\n"
+            f"The repr is: {repr_str}\n"
+            f"The class is: {strategy.__class__}"
+        )
+    return new_strategy
 
 
 def maxreqlen_extrabasis_ignoreparent(strategy):
@@ -283,6 +307,28 @@ def row_col_partial_ignoreparent_direction(strategy):
     ]
 
 
+def use_symmetries(strategy):
+    return [strategy(use_symmetries=False), strategy(use_symmetries=True)]
+
+
+def sliding_strategy_arguments(strategy):
+    lis = [
+        strategy(av_12=av_12, av_123=av_123, symmetry_type=symmetry_type)
+        for av_12, av_123, symmetry_type in product((0, 2, 4), (1, 3, 5), (0, 1, 2, 3))
+    ]
+    return lis
+
+
+def short_length_arguments(strategy):
+    return [
+        ShortObstructionVerificationStrategy(
+            short_length=short_length, ignore_parent=ignore_parent
+        )
+        for short_length in range(4)
+        for ignore_parent in (True, False)
+    ]
+
+
 strategy_objects = (
     maxreqlen_extrabasis_ignoreparent_one_cell_only(CellInsertionFactory)
     + ignoreparent(FactorInsertionFactory)
@@ -331,6 +377,9 @@ strategy_objects = (
     )
     + maxreqlen_extrabasis_ignoreparent_maxnumreq(RootInsertionFactory)
     + row_col_partial_ignoreparent_direction(RowAndColumnPlacementFactory)
+    + use_symmetries(SlidingFactory)
+    + sliding_strategy_arguments(SlidingStrategy)
+    + short_length_arguments(ShortObstructionVerificationStrategy)
     + [RowColumnSeparationStrategy(), SubobstructionInferralFactory()]
     + [FusionStrategy(row_idx=1)]
     + [FusionStrategy(col_idx=3)]
@@ -346,10 +395,20 @@ strategy_objects = (
         SplittingStrategy("monotone"),
         SplittingStrategy("all"),
     ]
-    + [ShortObstructionVerificationStrategy()]
+    + [RearrangeAssumptionFactory()]
+    + [
+        RearrangeAssumptionStrategy(
+            TrackingAssumption(
+                [GriddedPerm((0,), [(0, 0)]), GriddedPerm((0,), [(1, 0)])]
+            ),
+            TrackingAssumption([GriddedPerm((0,), [(0, 0)])]),
+        )
+    ]
 )
 
-# TODO add tests for: ComponentFusionStrategy, FusionStrategy
+__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+with open(os.path.join(__location__, "old_rule_json.jsonl")) as fp:
+    strategy_dicts = list(map(json.loads, fp.readlines()))
 
 
 @pytest.mark.parametrize("strategy", strategy_objects)
@@ -357,3 +416,17 @@ def test_json_encoding(strategy):
     strategy_new = json_encode_decode(strategy)
     print(strategy)
     assert_same_strategy(strategy, strategy_new)
+
+
+@pytest.mark.parametrize("strategy", strategy_objects)
+def test_repr_encoding(strategy):
+    strategy_new = repr_encode_decode(strategy)
+    print(strategy)
+    print(repr(strategy))
+    print(strategy.to_jsonable())
+    assert_same_strategy(strategy, strategy_new)
+
+
+@pytest.mark.parametrize("strat_dict", strategy_dicts)
+def test_old_json_compatibility(strat_dict):
+    Strategy.from_dict(strat_dict)
