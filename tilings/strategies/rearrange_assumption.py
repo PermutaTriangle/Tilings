@@ -238,11 +238,10 @@ class RearrangeConstructor(Constructor[Tiling, GriddedPerm]):
         child_param_dict = self.child_param_to_dict(child_param_tuple)
         return (subsamplers[0](n, **child_param_dict),)
 
-    def __eq__(self, obj: object) -> bool:
-        raise NotImplementedError("Required for bijections")
-
-    def __hash__(self) -> int:
-        raise NotImplementedError("Required for bijection search")
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
+        return isinstance(other, type(self)), None
 
 
 class ReverseRearrangeConstructor(RearrangeConstructor):
@@ -283,6 +282,16 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
     @staticmethod
     def is_two_way(comb_class: Tiling) -> bool:
         return True
+
+    @staticmethod
+    def is_reversible(comb_class: Tiling) -> bool:
+        return True
+
+    @staticmethod
+    def shifts(
+        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        return (0,)
 
     def reverse_constructor(
         self,
@@ -406,9 +415,7 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
 
 
 class RearrangeAssumptionFactory(StrategyFactory[Tiling]):
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[RearrangeAssumptionStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[RearrangeAssumptionStrategy]:
         assumptions = comb_class.assumptions
         for ass1, ass2 in combinations(assumptions, 2):
             if set(ass1.gps).issubset(set(ass2.gps)):

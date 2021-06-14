@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Rearrange assumption strategy
 - `TrackingAssumption.from_cell` method
 - Counting for reverse fusion
+- `FusionParallelSpecFinder`, `FusionIsomorphism` and `FusionBijection` subclasses
+  to handle bijection involving fusion and assumption strategies.
+- a `insertion_point_row_and_col_placements` pack in `TileScopePack`
+- `TrackedSearcher` and `ForgetTrackedSearcher` that prioritise expanding classes
+  with assumptions when the underlying tiling was expanded
 
 ### Changed
 - Updated to use comb_spec_searcher 4.0.0
@@ -17,10 +22,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   adds `RearrangeAssumptionFactory` with `apply_first=True` if `tracked=True`
 - Moved several local function in `RearrangeConstructor` outward to make it pickleable
 - Fixed isolated fusion bug
+- Fusion is now a one-way strategy.
 - Added length to name for `all_the_strategies` pack
 
 ### Fixed
 - Removed a redundant `Tiling.is_empty` check in the fusion algorithm.
+- Ensure `is_atom` returns False for the empty tiling
 
 ### Deprecated
 - Python 3.6 is no longer supported

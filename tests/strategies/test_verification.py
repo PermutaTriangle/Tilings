@@ -273,7 +273,72 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
             basis=[Perm((0, 1, 3, 2))], symmetry=True
         )
         assert strat_with_sym(t1).children == (Tiling.from_string("0132"),)
-        assert strat_with_sym(t1.rotate90()).children == (Tiling.from_string("4312"),)
+        assert strat_with_sym(t1.rotate90()).children == (Tiling.from_string("0132"),)
+
+    def test_shifts(self):
+        t1 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 1, 3, 2), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((1, 1))),
+            ]
+        )
+        t2 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 1, 3, 2), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((1, 1))),
+                GriddedPerm((0, 2, 1), ((0, 0), (1, 1), (1, 1))),
+            ],
+            requirements=[
+                [
+                    GriddedPerm.single_cell((0, 1), ((1, 1))),
+                ]
+            ],
+        )
+        t3 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 2, 1), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((1, 1))),
+            ]
+        )
+        strat = LocallyFactorableVerificationStrategy(basis=[Perm((0, 1, 3, 2))])
+        assert strat(t1).shifts() == (0,)
+        assert strat(t2).shifts() == (2,)
+        assert strat(t3).shifts() == ()
+
+    def test_obs_inf(self):
+        """
+        A tiling that have a 1234 cell that dispear with sub obs inferal.
+
+        The rule shouldn't have any child.
+        """
+        t = Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 2), (0, 2))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((1, 0), ((0, 2), (0, 2))),
+                GriddedPerm((1, 0), ((0, 2), (1, 0))),
+                GriddedPerm((1, 0), ((0, 2), (2, 1))),
+                GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1, 2), ((1, 0), (2, 1), (2, 1))),
+                GriddedPerm((0, 1, 2), ((2, 1), (2, 1), (2, 1))),
+                GriddedPerm((0, 1, 2, 3), ((0, 2), (3, 3), (3, 3), (3, 3))),
+                GriddedPerm((0, 1, 2, 3), ((1, 0), (2, 1), (3, 3), (3, 3))),
+                GriddedPerm((0, 1, 2, 3), ((1, 0), (3, 3), (3, 3), (3, 3))),
+                GriddedPerm((0, 1, 2, 3), ((2, 1), (2, 1), (3, 3), (3, 3))),
+                GriddedPerm((0, 1, 2, 3), ((2, 1), (3, 3), (3, 3), (3, 3))),
+                GriddedPerm((0, 1, 2, 3), ((3, 3), (3, 3), (3, 3), (3, 3))),
+            ),
+            requirements=(
+                (GriddedPerm((0,), ((0, 2),)), GriddedPerm((0,), ((1, 0),))),
+                (
+                    GriddedPerm((1, 0), ((2, 1), (2, 1))),
+                    GriddedPerm((1, 0), ((3, 3), (3, 3))),
+                ),
+            ),
+        )
+        rule = LocallyFactorableVerificationStrategy([Perm((0, 1, 2, 3))])(t)
+        assert not rule.children
+        assert rule.shifts() == ()
 
 
 class TestLocalVerificationStrategy(CommonTest):

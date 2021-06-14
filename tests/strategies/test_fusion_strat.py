@@ -483,3 +483,90 @@ def test_fusion_gfs():
 
     # TODO: Add tests for the versions where there is a list requirement with a point
     # in each cell. Equations for this are not currently implemented.
+
+
+def test_indexed_forward_map():
+    assert FusionStrategy(col_idx=0, tracked=True)(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+            ),
+            requirements=(),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+        )
+    ).indexed_forward_map(
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (0, 0), (0, 0), (1, 0), (1, 0), (1, 0), (2, 0)),
+        )
+    ) == (
+        (
+            GriddedPerm(
+                (6, 5, 4, 3, 1, 0, 2),
+                ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (1, 0)),
+            ),
+        ),
+        3,
+    )
+
+
+def test_indexed_backward_map():
+    r = FusionStrategy(col_idx=0, tracked=True)(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((1, 0), (2, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
+            ),
+            requirements=(),
+            assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
+        )
+    )
+    order = [
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((1, 0), (1, 0), (1, 0), (1, 0), (1, 0), (1, 0), (2, 0)),
+        ),
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (1, 0), (1, 0), (1, 0), (1, 0), (1, 0), (2, 0)),
+        ),
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (0, 0), (1, 0), (1, 0), (1, 0), (1, 0), (2, 0)),
+        ),
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (0, 0), (0, 0), (1, 0), (1, 0), (1, 0), (2, 0)),
+        ),
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (0, 0), (0, 0), (0, 0), (1, 0), (1, 0), (2, 0)),
+        ),
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (1, 0), (2, 0)),
+        ),
+        GriddedPerm(
+            (6, 5, 4, 3, 1, 0, 2),
+            ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (2, 0)),
+        ),
+    ]
+    gp = GriddedPerm(
+        (6, 5, 4, 3, 1, 0, 2), ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (1, 0))
+    )
+    assert all(
+        r.indexed_backward_map((gp,), i) == target for i, target in enumerate(order)
+    )
+    assert all(
+        r.indexed_backward_map((gp,), i, True) == target
+        for i, target in enumerate(reversed(order))
+    )

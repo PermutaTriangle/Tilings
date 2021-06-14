@@ -92,11 +92,10 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
     def get_eq_symbol() -> str:
         return "↣"
 
-    def __eq__(self, obj: object) -> bool:
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
         raise NotImplementedError("Required for bijections")
-
-    def __hash__(self) -> int:
-        raise NotImplementedError("Required for bijection search")
 
 
 class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
@@ -107,6 +106,19 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
     @staticmethod
     def is_two_way(comb_class: Tiling):
         return False
+
+    @staticmethod
+    def is_reversible(comb_class: Tiling):
+        return False
+
+    def shifts(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]]
+    ) -> Tuple[int, ...]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply
+        return (0,)
 
     @staticmethod
     def decomposition_function(comb_class: Tiling) -> Optional[Tuple[Tiling]]:

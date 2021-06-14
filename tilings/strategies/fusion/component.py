@@ -38,7 +38,7 @@ class ComponentFusionFactory(StrategyFactory[Tiling]):
         self.tracked = tracked
         self.isolation_level = isolation_level
 
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
         if comb_class.requirements:
             return
         cols, rows = comb_class.dimensions

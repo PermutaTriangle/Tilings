@@ -100,7 +100,7 @@ def test_test_positive_reverse_fusion():
         assumptions=[TrackingAssumption([GriddedPerm((0,), [(0, 0)])])],
     )
     rule = FusionStrategy(col_idx=0, tracked=True)(t)
-    assert rule.is_two_way()
+    assert rule.is_reversible()
     reverse_rule = rule.to_reverse_rule(0)
     with pytest.raises(NotImplementedError):
         reverse_rule.sanity_check(4)

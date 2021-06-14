@@ -49,8 +49,7 @@ class DummyConstructor(Constructor):
     ):
         raise NotImplementedError
 
-    def __eq__(self, obj: object) -> bool:
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
         raise NotImplementedError("Required for bijections")
-
-    def __hash__(self) -> int:
-        raise NotImplementedError("Required for bijection search")

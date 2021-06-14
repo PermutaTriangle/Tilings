@@ -1,10 +1,11 @@
 from collections import defaultdict
+from itertools import islice
 from random import randint
 from typing import Dict, Iterator, List, Optional, Set, Tuple, cast
 
 from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.strategies import Rule
+from comb_spec_searcher.strategies import NonBijectiveRule, Rule
 from comb_spec_searcher.typing import Objects
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
@@ -12,7 +13,7 @@ from tilings.algorithms import Fusion
 from .constructor import FusionConstructor, ReverseFusionConstructor
 
 
-class FusionRule(Rule[Tiling, GriddedPerm]):
+class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
     """Overwritten the generate objects of size method, as this relies on
     knowing the number of left and right points of the parent tiling."""
 
@@ -109,6 +110,25 @@ class FusionRule(Rule[Tiling, GriddedPerm]):
                     except StopIteration:
                         assert 0, "something went wrong"
 
+    def _forward_order(
+        self,
+        obj: GriddedPerm,
+        image: Tuple[Optional[GriddedPerm], ...],
+        data: Optional[object] = None,
+    ) -> int:
+        # The position of the original object in the backward map of the child object
+        return next(i for i, gp in enumerate(self.backward_map(image)) if gp == obj)
+
+    def _backward_order_item(
+        self,
+        idx: int,
+        objs: Tuple[Optional[GriddedPerm], ...],
+        data: Optional[object] = None,
+    ) -> GriddedPerm:
+        if data:  # reverse order
+            return tuple(self.backward_map(objs))[-idx - 1]
+        return next(islice(self.backward_map(objs), idx, None))
+
 
 class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def __init__(self, row_idx=None, col_idx=None, tracked: bool = False):
@@ -125,7 +145,6 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         self,
         comb_class: Tiling,
         children: Tuple[Tiling, ...] = None,
-        **kwargs,
     ) -> FusionRule:
         if children is None:
             children = self.decomposition_function(comb_class)
@@ -147,7 +166,11 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def can_be_equivalent() -> bool:
         return False
 
-    def is_two_way(self, comb_class: Tiling):
+    @staticmethod
+    def is_two_way(comb_class: Tiling):
+        return False
+
+    def is_reversible(self, comb_class: Tiling) -> bool:
         algo = self.fusion_algorithm(comb_class)
         new_ass = algo.new_assumption()
         fused_assumptions = (
@@ -155,6 +178,12 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
         )
         return new_ass in fused_assumptions
+
+    @staticmethod
+    def shifts(
+        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        return (0,)
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -346,7 +375,7 @@ class FusionFactory(StrategyFactory[Tiling]):
             raise ValueError("FusionFactory already tracked")
         return self.__class__(tracked=True, isolation_level=self.isolation_level)
 
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
             algo = Fusion(

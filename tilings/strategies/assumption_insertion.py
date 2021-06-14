@@ -116,11 +116,17 @@ class AddAssumptionsConstructor(Constructor):
             if random_choice <= res:
                 return (subsampler(n, **new_params),)
 
-    def __eq__(self, obj: object) -> bool:
-        raise NotImplementedError("Required for bijections")
-
-    def __hash__(self) -> int:
-        raise NotImplementedError("Required for bijection search")
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
+        return (
+            isinstance(other, type(self))
+            and len(other.new_parameters) == len(self.new_parameters)
+            and AddAssumptionsConstructor.extra_params_equiv(
+                (self.extra_parameters,), (other.extra_parameters,)
+            ),
+            None,
+        )
 
 
 class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
@@ -140,6 +146,16 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
     @staticmethod
     def is_two_way(comb_class: Tiling):
         return False
+
+    @staticmethod
+    def is_reversible(comb_class: Tiling) -> bool:
+        return False
+
+    @staticmethod
+    def shifts(
+        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        return (0,)
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
         if any(assumption in comb_class.assumptions for assumption in self.assumptions):
@@ -248,7 +264,7 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
 
 
 class AddAssumptionFactory(StrategyFactory[Tiling]):
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
         for assumption in comb_class.assumptions:
             without = comb_class.remove_assumption(assumption)
             strategy = AddAssumptionsStrategy((assumption,))
@@ -293,7 +309,7 @@ class AddInterleavingAssumptionFactory(StrategyFactory[Tiling]):
             yield strategy(comb_class)
 
     # TODO: monotone?
-    def __call__(self, comb_class: Tiling, **kwargs) -> Iterator[Rule]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
         factor_algo = FactorWithInterleaving(comb_class)
         if factor_algo.factorable():
             min_comp = tuple(tuple(part) for part in factor_algo.get_components())

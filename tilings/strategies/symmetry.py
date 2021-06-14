@@ -264,9 +264,7 @@ class SymmetriesFactory(StrategyFactory[Tiling]):
     Yield all symmetry strategies for a tiling.
     """
 
-    def __call__(
-        self, comb_class: Tiling, **kwargs
-    ) -> Iterator[TilingSymmetryStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[TilingSymmetryStrategy]:
         def strategy(rotations: int, inverse: bool) -> TilingSymmetryStrategy:
             # pylint: disable=too-many-return-statements
             if rotations == 0:
