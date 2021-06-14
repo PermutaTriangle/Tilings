@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [3.0.0] - 2021-06-14
 ### Added
 - Rearrange assumption strategy
 - `TrackingAssumption.from_cell` method
