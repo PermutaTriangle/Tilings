@@ -1186,6 +1186,25 @@ class TestShortObstructionVerificationStrategy(CommonTest):
     def test_get_genf(self, strategy, enum_verified):
         pass
 
+    def test_children(self):
+        t1 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 1, 3, 2), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((0, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
+            ]
+        )
+        t2 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 2, 1), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((0, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
+            ]
+        )
+        strategy = ShortObstructionVerificationStrategy(basis=[Perm((0, 1, 3, 2))])
+        assert strategy(t1).children == (Tiling.from_string("0132"),)
+        assert strategy(t2).children == ()
+
 
 class TestSubclassVerificationStrategy(CommonTest):
     @pytest.fixture

@@ -4,13 +4,16 @@ tilings for which we are not certain we can independently calculate their counti
 sequence or generating function.
 """
 
-from typing import Iterable, Iterator, Optional
+from typing import Iterable, Iterator, Optional, Tuple
 
 from comb_spec_searcher import StrategyFactory, VerificationStrategy
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import VerificationRule
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor, SubclassVerificationAlgorithm
+
+from .abstract import BasisAwareVerificationStrategy
 
 __all__ = [
     "ShortObstructionVerificationStrategy",
@@ -20,15 +23,21 @@ __all__ = [
 TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
 
 
-class ShortObstructionVerificationStrategy(TileScopeVerificationStrategy):
+class ShortObstructionVerificationStrategy(BasisAwareVerificationStrategy):
     """
     A strategy to mark as verified any tiling whose crossing obstructions all have
     size at most 3. Tilings with dimensions 1x1 are ignored.
     """
 
-    def __init__(self, short_length: int = 3, ignore_parent: bool = True):
+    def __init__(
+        self,
+        short_length: int = 3,
+        basis: Optional[Iterable[Perm]] = None,
+        symmetry: bool = False,
+        ignore_parent: bool = True,
+    ):
         self.short_length = short_length
-        super().__init__(ignore_parent=ignore_parent)
+        super().__init__(basis=basis, symmetry=symmetry, ignore_parent=ignore_parent)
 
     def verified(self, comb_class: Tiling):
         return comb_class.dimensions != (1, 1) and all(
@@ -40,6 +49,34 @@ class ShortObstructionVerificationStrategy(TileScopeVerificationStrategy):
         return "tiling has short (length <= {}) crossing obstructions".format(
             self.short_length
         )
+
+    def decomposition_function(
+        self, comb_class: Tiling
+    ) -> Optional[Tuple[Tiling, ...]]:
+        """
+        The rule as the root as children if one of the cell of the tiling is the root.
+        """
+        if self.verified(comb_class):
+            print("AA")
+            if not self.basis:
+                return ()
+            for obs, _ in comb_class.cell_basis().values():
+                print(obs)
+                if frozenset(obs) in self.symmetries:
+                    return (Tiling.from_perms(self.basis),)
+            return ()
+        return None
+
+    def shifts(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply
+        if children:
+            return (0,)
+        return ()
 
     def __str__(self) -> str:
         return "short (length <= {}) crossing obstruction verification".format(
