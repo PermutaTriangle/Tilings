@@ -45,6 +45,18 @@ class ShortObstructionVerificationStrategy(BasisAwareVerificationStrategy):
             for ob in comb_class.obstructions
         )
 
+    def change_basis(
+        self, basis: Iterable[Perm], symmetry: bool
+    ) -> "ShortObstructionVerificationStrategy":
+        """
+        Return a new version of the verification strategy with the given basis instead
+        of the current one.
+        """
+        basis = tuple(basis)
+        return ShortObstructionVerificationStrategy(
+            self.short_length, basis, symmetry, self.ignore_parent
+        )
+
     def formal_step(self) -> str:
         return "tiling has short (length <= {}) crossing obstructions".format(
             self.short_length

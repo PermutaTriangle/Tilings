@@ -1205,6 +1205,13 @@ class TestShortObstructionVerificationStrategy(CommonTest):
         assert strategy(t1).children == (Tiling.from_string("0132"),)
         assert strategy(t2).children == ()
 
+    def test_change_basis(self):
+        strategy1 = ShortObstructionVerificationStrategy(short_length=7)
+        strategy2 = ShortObstructionVerificationStrategy(short_length=3)
+        basis = [Perm((0, 1, 2, 3))]
+        assert strategy1.change_basis(basis, False).short_length == 7
+        assert strategy2.change_basis(basis, False).short_length == 3
+
 
 class TestSubclassVerificationStrategy(CommonTest):
     @pytest.fixture
