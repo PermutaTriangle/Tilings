@@ -98,6 +98,7 @@ class ShortObstructionVerificationStrategy(BasisAwareVerificationStrategy):
     def __repr__(self) -> str:
         args = ", ".join(
             [
+                f"basis={self._basis}",
                 f"short_length={self.short_length}",
                 f"ignore_parent={self.ignore_parent}",
             ]
@@ -111,7 +112,11 @@ class ShortObstructionVerificationStrategy(BasisAwareVerificationStrategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> "ShortObstructionVerificationStrategy":
-        return cls(**d)
+        if "basis" in d and d["basis"] is not None:
+            basis: Optional[Tuple[Perm, ...]] = tuple(Perm(p) for p in d.pop("basis"))
+        else:
+            basis = d.pop("basis", None)
+        return cls(basis=basis, **d)
 
 
 class SubclassVerificationStrategy(TileScopeVerificationStrategy):
