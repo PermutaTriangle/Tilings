@@ -69,11 +69,9 @@ class ShortObstructionVerificationStrategy(BasisAwareVerificationStrategy):
         The rule as the root as children if one of the cell of the tiling is the root.
         """
         if self.verified(comb_class):
-            print("AA")
             if not self.basis:
                 return ()
             for obs, _ in comb_class.cell_basis().values():
-                print(obs)
                 if frozenset(obs) in self.symmetries:
                     return (Tiling.from_perms(self.basis),)
             return ()
