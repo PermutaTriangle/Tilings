@@ -44,7 +44,7 @@ def test_132():
 def test_132_genf():
     searcher = TileScope([Perm((0, 2, 1))], point_placements)
     spec = searcher.auto_search(smallest=True)
-    spec.expand_verified()
+    spec = spec.expand_verified()
     av = Av([Perm((0, 2, 1))])
     for i in range(10):
         assert set(av.of_length(i)) == set(
@@ -76,7 +76,7 @@ def test_132_elementary():
     searcher = TileScope(Tiling.from_string("132"), point_placements.make_elementary())
     spec = searcher.auto_search()
     assert spec.number_of_rules() == 4
-    spec.expand_verified()
+    spec = spec.expand_verified()
     assert spec.number_of_rules() == 5
     assert isinstance(spec, CombinatorialSpecification)
 
@@ -292,7 +292,7 @@ def test_expansion():
     pack = TileScopePack.only_root_placements(3, 1)
     css = TileScope("132", pack)
     spec = css.auto_search(smallest=True)
-    spec.expand_verified()
+    spec = spec.expand_verified()
     for comb_class, rule in spec.rules_dict.items():
         if isinstance(rule, VerificationRule):
             assert isinstance(
@@ -350,7 +350,7 @@ def test_parallel_forest():
     searchers = [TileScope(b, pack, ruledb=RuleDBForest()) for b in bases]
     specs = [css.auto_search() for css in searchers]
     for spec in specs:
-        spec.expand_verified()
+        spec = spec.expand_verified()
         count = [spec.count_objects_of_size(n) for n in range(10)]
         assert count == expected_count
 
@@ -364,7 +364,7 @@ def test_guided_searcher():
         spec, TileScopePack.point_placements().make_fusion(tracked=True)
     )
     tracked_spec = searcher.auto_search()
-    tracked_spec.expand_verified()
+    tracked_spec = tracked_spec.expand_verified()
     assert [tracked_spec.count_objects_of_size(i) for i in range(13)] == [
         1,
         1,
