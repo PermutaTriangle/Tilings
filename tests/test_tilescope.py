@@ -2,9 +2,8 @@ import pytest
 import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
+from comb_spec_searcher.exception import SpecificationNotFound
 from comb_spec_searcher.rule_db import RuleDBForest
-from comb_spec_searcher.strategies import EmptyStrategy
-from comb_spec_searcher.strategies.rule import VerificationRule
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
@@ -287,23 +286,14 @@ def test_from_tiling():
 @pytest.mark.timeout(5)
 def test_expansion():
     """
-    For this pack only some basic verification are needed.
+    This cannot be expanded automatically since it requires the positive
+    root that is not in the specification.
     """
     pack = TileScopePack.only_root_placements(3, 1)
     css = TileScope("132", pack)
     spec = css.auto_search(smallest=True)
-    spec = spec.expand_verified()
-    for comb_class, rule in spec.rules_dict.items():
-        if isinstance(rule, VerificationRule):
-            assert isinstance(
-                rule.strategy,
-                (
-                    strat.OneByOneVerificationStrategy,
-                    strat.MonotoneTreeVerificationStrategy,
-                    strat.BasicVerificationStrategy,
-                    EmptyStrategy,
-                ),
-            )
+    with pytest.raises(SpecificationNotFound):
+        spec = spec.expand_verified()
 
 
 @pytest.mark.timeout(30)
