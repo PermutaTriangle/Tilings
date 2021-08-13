@@ -10,6 +10,7 @@ from comb_spec_searcher import (
 from comb_spec_searcher.strategies.constructor import CartesianProduct, DisjointUnion
 from comb_spec_searcher.strategies.rule import Rule, VerificationRule
 from comb_spec_searcher.strategies.strategy import VerificationStrategy
+from comb_spec_searcher.strategies.strategy_pack import StrategyPack
 from comb_spec_searcher.typing import CSSstrategy
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
@@ -53,15 +54,13 @@ class NoBasisVerification(VerificationStrategy[Tiling, GriddedPerm]):
 
 
 def expanded_spec(
-    tiling: Tiling, strat: VerificationStrategy, symmetries: FrozenSet[FrozenSet[Perm]]
+    tiling: Tiling, pack: StrategyPack, symmetries: FrozenSet[FrozenSet[Perm]]
 ) -> CombinatorialSpecification:
     """
     Return a spec where any tiling that does not have the basis in one cell is
     verified.
     """
-    pack = strat.pack(tiling).add_verification(
-        NoBasisVerification(symmetries), apply_first=True
-    )
+    pack = pack.add_verification(NoBasisVerification(symmetries), apply_first=True)
     with TmpLoggingLevel(logging.WARN):
         css = CombinatorialSpecificationSearcher(tiling, pack)
         spec = css.auto_search()
@@ -70,12 +69,12 @@ def expanded_spec(
 
 def shift_from_spec(
     tiling: Tiling,
-    strat: VerificationStrategy,
+    pack: StrategyPack,
     symmetries: FrozenSet[FrozenSet[Perm]],
 ) -> Optional[int]:
     assert all(symmetries)
     traverse_cache: Dict[Tiling, Optional[int]] = {}
-    spec = expanded_spec(tiling, strat, symmetries)
+    spec = expanded_spec(tiling, pack, symmetries)
 
     def traverse(t: Tiling) -> Optional[int]:
         rule = spec.rules_dict[t]
@@ -87,7 +86,7 @@ def shift_from_spec(
         elif t.dimensions == (1, 1):
             res = 0
         elif isinstance(rule, VerificationRule):
-            res = shift_from_spec(tiling, rule.strategy, symmetries)
+            res = shift_from_spec(tiling, rule.pack(), symmetries)
         elif isinstance(rule, Rule) and isinstance(rule.constructor, DisjointUnion):
             children_reliance = [traverse(c) for c in rule.children]
             res = min([r for r in children_reliance if r is not None], default=None)
