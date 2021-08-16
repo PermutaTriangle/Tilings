@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed isolated fusion bug
 - Fusion is now a one-way strategy.
 - Added length to name for `all_the_strategies` pack
+- pack for locally factorable now account for the basis.
 
 ### Fixed
 - Removed a redundant `Tiling.is_empty` check in the fusion algorithm.

@@ -299,8 +299,29 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
     verified tiling.
     """
 
+    def pack(self, comb_class: Tiling) -> StrategyPack:
+        if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
+            raise InvalidOperationError(
+                "Can't find generating function with component assumption."
+            )
+        return StrategyPack(
+            name="LocallyFactorable",
+            initial_strats=[FactorFactory(), RequirementCorroborationFactory()],
+            inferral_strats=[],
+            expansion_strats=[[FactorInsertionFactory()]],
+            ver_strats=[
+                BasicVerificationStrategy(),
+                OneByOneVerificationStrategy(
+                    basis=self._basis, symmetry=self._symmetry
+                ),
+                InsertionEncodingVerificationStrategy(),
+                MonotoneTreeVerificationStrategy(no_factors=True),
+                LocalVerificationStrategy(no_factors=True),
+            ],
+        )
+
     @staticmethod
-    def pack(comb_class: Tiling) -> StrategyPack:
+    def _pack_for_shift(comb_class: Tiling) -> StrategyPack:
         if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
             raise InvalidOperationError(
                 "Can't find generating function with component assumption."
@@ -350,8 +371,9 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
         if self.verified(comb_class):
             if not self.basis:
                 return ()
+            pack = self._pack_for_shift(comb_class)
             sfs = locally_factorable_shift.shift_from_spec(
-                comb_class, self, self.symmetries
+                comb_class, pack, self.symmetries
             )
             if sfs is not None:
                 return (Tiling.from_perms(self.basis),)
@@ -367,8 +389,9 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
                 raise StrategyDoesNotApply
         if not children:
             return ()
+        pack = self._pack_for_shift(comb_class)
         shift = locally_factorable_shift.shift_from_spec(
-            comb_class, self, self.symmetries
+            comb_class, pack, self.symmetries
         )
         assert shift is not None
         return (shift,)
