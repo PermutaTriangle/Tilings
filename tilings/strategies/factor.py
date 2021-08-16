@@ -8,7 +8,6 @@ from sympy import Eq, Function
 from comb_spec_searcher import (
     CartesianProduct,
     CartesianProductStrategy,
-    Strategy,
     StrategyFactory,
 )
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -417,7 +416,7 @@ class FactorFactory(StrategyFactory[Tiling]):
             FactorWithMonotoneInterleaving,
         )
 
-    def __call__(self, comb_class: Tiling) -> Iterator[Strategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[FactorStrategy]:
         factor_algo = self.factor_algo(comb_class)
         if factor_algo.factorable():
             min_comp = tuple(tuple(part) for part in factor_algo.get_components())

@@ -273,7 +273,7 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
             basis=[Perm((0, 1, 3, 2))], symmetry=True
         )
         assert strat_with_sym(t1).children == (Tiling.from_string("0132"),)
-        assert strat_with_sym(t1.rotate90()).children == (Tiling.from_string("4312"),)
+        assert strat_with_sym(t1.rotate90()).children == (Tiling.from_string("0132"),)
 
     def test_shifts(self):
         t1 = Tiling(
@@ -1185,6 +1185,32 @@ class TestShortObstructionVerificationStrategy(CommonTest):
 
     def test_get_genf(self, strategy, enum_verified):
         pass
+
+    def test_children(self):
+        t1 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 1, 3, 2), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((0, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
+            ]
+        )
+        t2 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 2, 1), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((0, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
+            ]
+        )
+        strategy = ShortObstructionVerificationStrategy(basis=[Perm((0, 1, 3, 2))])
+        assert strategy(t1).children == (Tiling.from_string("0132"),)
+        assert strategy(t2).children == ()
+
+    def test_change_basis(self):
+        strategy1 = ShortObstructionVerificationStrategy(short_length=7)
+        strategy2 = ShortObstructionVerificationStrategy(short_length=3)
+        basis = [Perm((0, 1, 2, 3))]
+        assert strategy1.change_basis(basis, False).short_length == 7
+        assert strategy2.change_basis(basis, False).short_length == 3
 
 
 class TestSubclassVerificationStrategy(CommonTest):

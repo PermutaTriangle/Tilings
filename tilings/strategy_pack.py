@@ -249,7 +249,8 @@ class TileScopePack(StrategyPack):
         ):
             raise ValueError("The pack is already elementary.")
         pack = self.make_iterative()
-        pack = pack.add_verification(strat.OneByOneVerificationStrategy(), replace=True)
+        pack = pack.add_verification(strat.BasicVerificationStrategy(), replace=True)
+        pack = pack.add_verification(strat.OneByOneVerificationStrategy())
         return pack.add_verification(
             strat.ElementaryVerificationStrategy(), "elementary"
         )

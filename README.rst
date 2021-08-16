@@ -17,7 +17,8 @@ Tilings
 .. image:: https://requires.io/github/PermutaTriangle/Tilings/requirements.svg?branch=master
      :target: https://requires.io/github/PermutaTriangle/Tilings/requirements/?branch=master
      :alt: Requirements Status
-
+.. image:: https://zenodo.org/badge/121506164.svg
+   :target: https://zenodo.org/badge/latestdoi/121506164
 
 The ``tilings`` Python library contains code for working with gridded
 permutations and tilings, and in particular the ``TileScope`` algorithm, which
@@ -347,7 +348,7 @@ This can be done using the `expand_verified` method.
 
 .. code:: python
 
-       >>> spec.expand_verified()
+       >>> spec = spec.expand_verified()
        >>> print(spec)
        A combinatorial specification with 5 rules.
        -----------
@@ -506,7 +507,7 @@ free to send them to our `Discord server <https://discord.gg/ySJD6SV>`__.
 A specification can be saved and loaded later by converting it to
 `JSON <https://realpython.com/python-json/>`__, a data storage format
 that can be written to a file or copy-pasted elsewhere for safe keeping.
-This functionality is built into `TileScope`. We can retrieve the JSON 
+This functionality is built into `TileScope`. We can retrieve the JSON
 representation of a specification and load the specificiation from said
 JSON string by doing the following:
 
@@ -1169,3 +1170,14 @@ Finally, we'd like to reiterate, if you need support, have a suggestion, or just
 want to be up to date with the latest developments please join us on our
 `Discord server <https://discord.gg/ySJD6SV>`__ where we'd be happy to hear
 from you!
+
+
+Citing
+######
+
+If you found this library helpful with your research and would like to cite us,
+you can use the following `BibTeX`_ or go to `Zenodo`_ for alternative formats.
+
+.. _BibTex: https://zenodo.org/record/4944108/export/hx#.YMcq7y2l30o
+
+.. _Zenodo: https://doi.org/10.5281/zenodo.4944107
