@@ -345,6 +345,35 @@ def test_parallel_forest():
         assert count == expected_count
 
 
+@pytest.mark.timeout(15)
+def forest_expansion():
+    """
+    A forest spec that at some point became not productive once expanded.
+    """
+    basis = "0213_1032_1302"
+    pack = TileScopePack.point_placements()
+    css = TileScope(basis, pack, ruledb=RuleDBForest())
+    spec = css.auto_search(status_update=30)
+    for rule in spec.rules_dict.values():
+        rule.label = spec.get_label(rule.comb_class)
+    spec.expand_verified()
+    assert [spec.count_objects_of_size(i) for i in range(13)] == [
+        1,
+        1,
+        2,
+        6,
+        21,
+        77,
+        287,
+        1079,
+        4082,
+        15522,
+        59280,
+        227240,
+        873886,
+    ]
+
+
 def test_guided_searcher():
     tilescope = TileScope(
         "123", TileScopePack.point_placements().make_fusion(tracked=False)
