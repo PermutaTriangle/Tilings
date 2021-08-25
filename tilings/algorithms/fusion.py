@@ -5,12 +5,7 @@ import collections
 from itertools import chain
 from typing import TYPE_CHECKING, Counter, Iterable, Iterator, List, Optional, Tuple
 
-from tilings.assumptions import (
-    ComponentAssumption,
-    SkewComponentAssumption,
-    SumComponentAssumption,
-    TrackingAssumption,
-)
+from tilings.assumptions import TrackingAssumption
 from tilings.griddedperm import GriddedPerm
 
 if TYPE_CHECKING:
@@ -603,7 +598,7 @@ class ComponentFusion(Fusion):
 
         return self._tiling == new_tiling and self._check_isolation_level()
 
-    def new_assumption(self) -> ComponentAssumption:
+    def new_assumption(self) -> TrackingAssumption:
         """
         Return the assumption that needs to be counted in order to enumerate.
         """

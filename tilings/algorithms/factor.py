@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set,
 
 from permuta.misc import UnionFind
 from tilings import GriddedPerm
-from tilings.assumptions import ComponentAssumption, TrackingAssumption
+from tilings.assumptions import TrackingAssumption
 from tilings.misc import partitions_iterator
 
 if TYPE_CHECKING:

@@ -44,11 +44,7 @@ from .algorithms import (
     SubobstructionInferral,
     guess_obstructions,
 )
-from .assumptions import (
-    SkewComponentAssumption,
-    SumComponentAssumption,
-    TrackingAssumption,
-)
+from .assumptions import TrackingAssumption
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
 from .gui_launcher import run_gui
@@ -342,9 +338,8 @@ class Tiling(CombinatorialClass):
         """
         res: List[TrackingAssumption] = []
         for assumption in self.assumptions:
-            ass = assumption.avoiding(self._obstructions, self.active_cells)
-            if ass.gps:
-                res.append(ass)
+            ass = assumption.simplify(self)
+            res.append(ass)
         self._assumptions = tuple(sorted(set(res)))
 
     @classmethod
@@ -631,6 +626,22 @@ class Tiling(CombinatorialClass):
         patt with position pos."""
         new_req_list = (GriddedPerm(patt, pos),)
         return self.add_list_requirement(new_req_list)
+
+    def add_obstructions_and_requirements(
+        self,
+        obs: Iterable[GriddedPerm],
+        reqs: Iterable[Iterable[GriddedPerm]],
+        remove_empty_rows_and_cols=True,
+    ) -> "Tiling":
+        """Returns a new tiling with the obstructions and requirements added."""
+        new_obs = tuple(obs)
+        new_reqs = tuple(tuple(gp) for gp in reqs)
+        return Tiling(
+            self._obstructions + new_obs,
+            self._requirements + new_reqs,
+            self._assumptions,
+            remove_empty_rows_and_cols=remove_empty_rows_and_cols,
+        )
 
     def add_single_cell_obstruction(self, patt: Perm, cell: Cell) -> "Tiling":
         """Returns a new tiling with the single cell obstruction of the pattern

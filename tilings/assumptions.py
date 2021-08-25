@@ -1,7 +1,19 @@
 import abc
+from collections import defaultdict
 from importlib import import_module
-from itertools import chain
-from typing import TYPE_CHECKING, FrozenSet, Iterable, List, Optional, Tuple, Type
+from itertools import chain, product
+from typing import (
+    TYPE_CHECKING,
+    DefaultDict,
+    Dict,
+    FrozenSet,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+)
 
 from permuta import Perm
 
@@ -13,65 +25,87 @@ if TYPE_CHECKING:
     from tilings import Tiling
 
 
+class GriddingsCounter:
+    """Counts the number of griddings that the subgridded perm of a gp using
+    the active cells has onto the tiling with respect to the mapping.
+    The active cells are the values of the cell map."""
+
+    def __init__(self, tiling: "Tiling", cell_map: Dict[Cell, Cell]):
+        self.tiling = tiling
+        self.cell_map = cell_map
+        self._active_cells: Optional[FrozenSet[Cell]] = None
+        self.GP_CACHE: Dict[int, DefaultDict[GriddedPerm, Set[GriddedPerm]]] = {}
+
+    @property
+    def active_cells(self) -> FrozenSet[Cell]:
+        if self._active_cells is None:
+            self._active_cells = frozenset(
+                self.cell_map[cell] for cell in self.tiling.active_cells
+            )
+        return self._active_cells
+
+    def _cell_map(self, cell: Cell) -> Cell:
+        return self.cell_map[cell]
+
+    def _griddings(self, size: int) -> DefaultDict[GriddedPerm, Set[GriddedPerm]]:
+        if size not in self.GP_CACHE:
+            res: DefaultDict[GriddedPerm, Set[GriddedPerm]] = defaultdict(set)
+            for gp in self.tiling.objects_of_size(size):
+                mapped_gp = gp.apply_map(self._cell_map)
+                res[mapped_gp].add(gp)
+            self.GP_CACHE[size] = res
+        return self.GP_CACHE[size]
+
+    def count_griddings(self, gp: GriddedPerm):
+        subgp = gp.get_gridded_perm_in_cells(self.active_cells)
+        return len(self._griddings(len(subgp))[subgp])
+
+
 class TrackingAssumption:
     """
-    An assumption used to keep track of the occurrences of a set of gridded
-    permutations.
+    An assumption used to keep track of the griddings of a tiling.
     """
 
-    def __init__(self, gps: Iterable[GriddedPerm]):
-        self.gps = tuple(sorted(set(gps)))
-
-    @classmethod
-    def from_cells(cls, cells: Iterable[Cell]) -> "TrackingAssumption":
-        gps = [GriddedPerm.single_cell((0,), cell) for cell in cells]
-        return TrackingAssumption(gps)
-
-    def avoiding(
+    def __init__(
         self,
-        obstructions: Iterable[GriddedPerm],
-        active_cells: Optional[Iterable[Cell]] = None,
+        tiling: "Tiling",
+        col_map: Dict[int, int],
+        row_map: Dict[int, int],
+    ):
+        self.tiling = tiling
+        self.col_map = col_map
+        self.row_map = row_map
+        self._cell_map: Optional[Dict[Cell, Cell]] = None
+        self.gridding_counter = GriddingsCounter(self.tiling, self.cell_map)
+
+    @property
+    def cell_map(self) -> Dict[Cell, Cell]:
+        if self._cell_map is None:
+            self._cell_map = dict()
+            for (x1, x2), (y1, y2) in product(
+                self.col_map.items(), self.row_map.items()
+            ):
+                self._cell_map[(x1, y1)] = (x2, y2)
+        return self._cell_map
+
+    def is_identity(self):
+        raise NotImplementedError
+
+    def simplify(
+        self,
+        tiling: "Tiling",
     ) -> "TrackingAssumption":
         """
-        Return the tracking absumption where all of the gridded perms avoiding
-        the obstructions are removed. If active_cells is not None, then any
-        assumptions involving a cell not in active_cells will be removed.
+        Simplify the assumption according to it being on the given tiling.
         """
-        obstructions = tuple(obstructions)
-        if active_cells is not None:
-            return self.__class__(
-                tuple(
-                    gp
-                    for gp in self.gps
-                    if all(cell in active_cells for cell in gp.pos)
-                    and gp.avoids(*obstructions)
-                )
-            )
-        return self.__class__(tuple(gp for gp in self.gps if gp.avoids(*obstructions)))
+        return self
+        raise NotImplementedError
 
     def get_value(self, gp: GriddedPerm) -> int:
         """
-        Return the number of occurrences of each of the gridded perms being track in
-        the gridded perm gp.
+        Return the number of griddings corresponding to gp.
         """
-        return len(list(chain.from_iterable(p.occurrences_in(gp) for p in self.gps)))
-
-    def get_components(self, tiling: "Tiling") -> List[List[GriddedPerm]]:
-        """
-        Return the lists of gps that count exactly one occurrence.
-        Only implemented for when a size one gp is in a point cell.
-        """
-        return [
-            [gp] for gp in self.gps if len(gp) == 1 and gp.pos[0] in tiling.point_cells
-        ]
-
-    def remove_components(self, tiling: "Tiling") -> "TrackingAssumption":
-        """
-        Return the TrackingAssumption found by removing all the components
-        found by the get_components method.
-        """
-        gps_to_remove = set(chain.from_iterable(self.get_components(tiling)))
-        return self.__class__(gp for gp in self.gps if gp not in gps_to_remove)
+        return self.gridding_counter.count_griddings(gp)
 
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the assumption."""
@@ -79,7 +113,9 @@ class TrackingAssumption:
         return {
             "class_module": c.__module__,
             "assumption": c.__name__,
-            "gps": [gp.to_jsonable() for gp in self.gps],
+            "tiling": self.tiling.to_jsonable(),
+            "col_map": [(a, b) for a, b in self.col_map.items()],
+            "row_map": [(a, b) for a, b in self.row_map.items()],
         }
 
     @classmethod
@@ -90,159 +126,49 @@ class TrackingAssumption:
         assert issubclass(
             AssClass, TrackingAssumption
         ), "Not a valid TrackingAssumption"
-        gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
-        return AssClass(gps)
+        tiling = Tiling.from_dict(d["tiling"])
+        row_map = {a: b for a, b in d["row_map"]}
+        col_map = {a: b for a, b in d["col_map"]}
+        return AssClass(tiling, col_map, row_map)
 
     def __eq__(self, other) -> bool:
         if other.__class__ == TrackingAssumption:
-            return bool(self.gps == other.gps)
+            return bool(self.tiling == other.tiling) and bool(
+                self.cell_map == other.cell_map
+            )
         return NotImplemented
 
     def __lt__(self, other) -> bool:
         if isinstance(other, TrackingAssumption):
-            key_self = (self.__class__.__name__, self.gps)
-            key_other = (other.__class__.__name__, other.gps)
+            key_self = (
+                self.__class__.__name__,
+                self.tiling.obstructions,
+                self.tiling.requirements,
+                tuple(sorted(self.cell_map.items())),
+            )
+            key_other = (
+                other.__class__.__name__,
+                other.tiling.obstructions,
+                other.tiling.requirements,
+                tuple(sorted(other.cell_map.items())),
+            )
             return key_self < key_other
         return NotImplemented
 
     def __hash__(self) -> int:
-        return hash(self.gps)
+        return hash((self.tiling, tuple(sorted(self.cell_map.items()))))
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "({})".format(self.gps)
-
-    def __str__(self):
-        if all(len(gp) == 1 for gp in self.gps):
-            cells = ", ".join(str(gp.pos[0]) for gp in self.gps)
-            return f"can count points in cell{'s' if len(self.gps) > 1 else ''} {cells}"
-        return "can count occurrences of{}".format(
-            ", ".join(str(gp) for gp in self.gps)
+        return self.__class__.__name__ + "({}, {})".format(
+            repr(self.tiling), repr(self.cell_map)
         )
 
-
-class ComponentAssumption(TrackingAssumption):
-    """
-    An assumption used to keep track of the number of components in a
-    region of a tiling.
-
-    In order to inherit from TrackingAssumption, the set of cells should be
-    given as a set of length 1 gridded perms using each cell. This ensures
-    most strategies work without change.
-    """
-
-    def __init__(self, gps: Iterable[GriddedPerm]):
-        super().__init__(gps)
-        assert all(len(gp) == 1 for gp in self.gps)
-        self.cells = frozenset(gp.pos[0] for gp in self.gps)
-
-    @abc.abstractmethod
-    def decomposition(self, perm: Perm) -> List[Perm]:
-        """Count the number of component in a permutation."""
-
-    @abc.abstractmethod
-    def tiling_decomposition(self, tiling: "Tiling") -> List[List[Cell]]:
-        """Return the components of a given tiling."""
-
-    @abc.abstractmethod
-    def is_component(
-        self,
-        cells: List[Cell],
-        point_cells: FrozenSet[Cell],
-        positive_cells: FrozenSet[Cell],
-    ) -> bool:
-        """
-        Return True if cells form a component.
-        """
-
-    def get_components(self, tiling: "Tiling") -> List[List[GriddedPerm]]:
-        sub_tiling = tiling.sub_tiling(self.cells)
-        separated_tiling, fwd_map = sub_tiling.row_and_column_separation_with_mapping()
-        back_map = {b: a for a, b in fwd_map.items()}
-        components = self.tiling_decomposition(separated_tiling)
-        return [
-            [
-                GriddedPerm.point_perm(sub_tiling.backward_cell_map[back_map[cell]])
-                for cell in comp
-            ]
-            for comp in components
-            if self.is_component(
-                comp, separated_tiling.point_cells, separated_tiling.positive_cells
-            )
-        ]
-
-    def get_value(self, gp: GriddedPerm) -> int:
-        """
-        Return the number of components in the tracked region of the gridded perm.
-        """
-        subgp = gp.get_gridded_perm_in_cells(self.cells)
-        return len(self.decomposition(subgp.patt))
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, ComponentAssumption) and self.__class__ == other.__class__:
-            return bool(self.gps == other.gps)
-        return NotImplemented
-
-    def __repr__(self) -> str:
-        return self.__class__.__name__ + "({})".format(self.gps)
-
     def __str__(self):
-        return f"can count components in cells {self.cells}"
-
-    def __hash__(self) -> int:
-        return hash(self.gps)
-
-
-class SumComponentAssumption(ComponentAssumption):
-    @staticmethod
-    def decomposition(perm: Perm) -> List[Perm]:
-        return perm.sum_decomposition()  # type: ignore
-
-    @staticmethod
-    def tiling_decomposition(tiling: "Tiling") -> List[List[Cell]]:
-        return tiling.sum_decomposition()
-
-    @staticmethod
-    def is_component(
-        cells: List[Cell], point_cells: FrozenSet[Cell], positive_cells: FrozenSet[Cell]
-    ) -> bool:
-        if len(cells) == 2:
-            (x1, y1), (x2, y2) = sorted(cells)
-            if x1 != x2 and y1 > y2:  # is skew
-                return all(cell in positive_cells for cell in cells) or any(
-                    cell in point_cells for cell in cells
-                )
-        return False
-
-    def __str__(self):
-        return f"can count sum components in cells {self.cells}"
-
-    def __hash__(self) -> int:
-        return hash(self.gps)
-
-
-class SkewComponentAssumption(ComponentAssumption):
-    @staticmethod
-    def decomposition(perm: Perm) -> List[Perm]:
-        return perm.skew_decomposition()  # type: ignore
-
-    @staticmethod
-    def tiling_decomposition(tiling: "Tiling") -> List[List[Cell]]:
-        return tiling.skew_decomposition()
-
-    @staticmethod
-    def is_component(
-        cells: List[Cell], point_cells: FrozenSet[Cell], positive_cells: FrozenSet[Cell]
-    ) -> bool:
-        if len(cells) == 2:
-            (x1, y1), (x2, y2) = sorted(cells)
-            if x1 != x2 and y1 < y2:  # is sum
-                return all(cell in positive_cells for cell in cells) or any(
-                    cell in point_cells for cell in cells
-                )
-        return False
-
-    def __str__(self):
-        return f"can count skew components in cells {self.cells}"
-
-    def __hash__(self) -> int:
-        return hash(self.gps)
+        map_str = "\n".join(
+            "   {}: {}".format(c1, c2) for c1, c2 in sorted(self.cell_map.items())
+        )
+        tiling_str = "   " + str(self.tiling).replace("\n", "\n   ")
+        return (
+            "Counting the griddings with respect to the "
+            + f"map\n{map_str}\non the tiling:\n{tiling_str}"
+        )
