@@ -8,6 +8,7 @@ from typing import (
     Dict,
     FrozenSet,
     Iterable,
+    Iterator,
     List,
     Optional,
     Set,
@@ -77,6 +78,9 @@ class TrackingAssumption:
         self.row_map = row_map
         self._cell_map: Optional[Dict[Cell, Cell]] = None
         self.gridding_counter = GriddingsCounter(self.tiling, self.cell_map)
+        self._ignore_reqs_gridding_counter = GriddingsCounter(
+            self.tiling.remove_requirements(), self.cell_map
+        )
 
     @property
     def cell_map(self) -> Dict[Cell, Cell]:
@@ -88,17 +92,22 @@ class TrackingAssumption:
                 self._cell_map[(x1, y1)] = (x2, y2)
         return self._cell_map
 
-    def is_identity(self):
-        raise NotImplementedError
+    def backward_map_gridded_perm(
+        self, gp: GriddedPerm, ignore_reqs: bool = False
+    ) -> Set[GriddedPerm]:
+        """Yield the gridded perms that map to gp according to the col and row maps."""
+        if ignore_reqs:
+            return self._ignore_reqs_gridding_counter.GP_CACHE[len(gp)][gp]
+        return self.gridding_counter.GP_CACHE[len(gp)][gp]
 
-    def simplify(
-        self,
-        tiling: "Tiling",
-    ) -> "TrackingAssumption":
-        """
-        Simplify the assumption according to it being on the given tiling.
-        """
-        return self
+    def forward_map_gridded_perm(self, gp: GriddedPerm) -> GriddedPerm:
+        """Map the gridded perm according to the col and row maps."""
+        assert gp.avoids(*self.tiling.obstructions) and all(
+            gp.contains(*req) for req in self.tiling.requirements
+        )
+        return gp.apply_map(self.gridding_counter._cell_map)
+
+    def is_identity(self):
         raise NotImplementedError
 
     def get_value(self, gp: GriddedPerm) -> int:

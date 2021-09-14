@@ -596,42 +596,34 @@ class Tiling(CombinatorialClass):
             )
         return self.add_single_cell_requirement(Perm((0,)), cell)
 
-    def add_obstruction(self, patt: Perm, pos: Iterable[Cell]) -> "Tiling":
+    def add_obstruction(
+        self, patt: Perm, pos: Iterable[Cell], remove_empty_rows_and_cols: bool = True
+    ) -> "Tiling":
         """Returns a new tiling with the obstruction of the pattern
         patt with positions pos."""
-        return Tiling(
-            self._obstructions + (GriddedPerm(patt, pos),),
-            self._requirements,
-            self._assumptions,
+        return self.add_obstructions(
+            (GriddedPerm(patt, pos),),
+            remove_empty_rows_and_cols=remove_empty_rows_and_cols,
         )
 
-    def add_obstructions(self, gps: Iterable[GriddedPerm]) -> "Tiling":
+    def add_obstructions(
+        self, gps: Iterable[GriddedPerm], remove_empty_rows_and_cols: bool = True
+    ) -> "Tiling":
         """Returns a new tiling with the obstructions added."""
         new_obs = tuple(gps)
         return Tiling(
-            self._obstructions + new_obs, self._requirements, self._assumptions
+            self._obstructions + new_obs,
+            self._requirements,
+            self._assumptions,
+            self.active_cells,
+            remove_empty_rows_and_cols=remove_empty_rows_and_cols,
         )
-
-    def add_list_requirement(self, req_list: Iterable[GriddedPerm]) -> "Tiling":
-        """
-        Return a new tiling with the requirement list added.
-        """
-        new_req = tuple(req_list)
-        return Tiling(
-            self._obstructions, self._requirements + (new_req,), self._assumptions
-        )
-
-    def add_requirement(self, patt: Perm, pos: Iterable[Cell]) -> "Tiling":
-        """Returns a new tiling with the requirement of the pattern
-        patt with position pos."""
-        new_req_list = (GriddedPerm(patt, pos),)
-        return self.add_list_requirement(new_req_list)
 
     def add_obstructions_and_requirements(
         self,
         obs: Iterable[GriddedPerm],
         reqs: Iterable[Iterable[GriddedPerm]],
-        remove_empty_rows_and_cols=True,
+        remove_empty_rows_and_cols: bool = True,
     ) -> "Tiling":
         """Returns a new tiling with the obstructions and requirements added."""
         new_obs = tuple(obs)
@@ -643,16 +635,57 @@ class Tiling(CombinatorialClass):
             remove_empty_rows_and_cols=remove_empty_rows_and_cols,
         )
 
-    def add_single_cell_obstruction(self, patt: Perm, cell: Cell) -> "Tiling":
+    def add_list_requirement(
+        self, req_list: Iterable[GriddedPerm], remove_empty_rows_and_cols: bool = True
+    ) -> "Tiling":
+        """
+        Return a new tiling with the requirement list added.
+        """
+        new_req = tuple(req_list)
+        return Tiling(
+            self._obstructions,
+            self._requirements + (new_req,),
+            self._assumptions,
+            remove_empty_rows_and_cols=remove_empty_rows_and_cols,
+        )
+
+    def add_requirement(
+        self,
+        patt: Perm,
+        pos: Iterable[Cell],
+        remove_empty_rows_and_cols: bool = True,
+    ) -> "Tiling":
+        """Returns a new tiling with the requirement of the pattern
+        patt with position pos."""
+        new_req_list = (GriddedPerm(patt, pos),)
+        return self.add_list_requirement(
+            new_req_list,
+            remove_empty_rows_and_cols=remove_empty_rows_and_cols,
+        )
+
+    def add_single_cell_obstruction(
+        self,
+        patt: Perm,
+        cell: Cell,
+        remove_empty_rows_and_cols: bool = True,
+    ) -> "Tiling":
         """Returns a new tiling with the single cell obstruction of the pattern
         patt in the given cell."""
-        return self.add_obstructions((GriddedPerm.single_cell(patt, cell),))
+        return self.add_obstructions(
+            (GriddedPerm.single_cell(patt, cell),),
+            remove_empty_rows_and_cols=remove_empty_rows_and_cols,
+        )
 
-    def add_single_cell_requirement(self, patt: Perm, cell: Cell) -> "Tiling":
+    def add_single_cell_requirement(
+        self, patt: Perm, cell: Cell, remove_empty_rows_and_cols: bool = True
+    ) -> "Tiling":
         """Returns a new tiling with the single cell requirement of the pattern
         patt in the given cell."""
         new_req_list = (GriddedPerm.single_cell(patt, cell),)
-        return self.add_list_requirement(new_req_list)
+        return self.add_list_requirement(
+            new_req_list,
+            remove_empty_rows_and_cols=remove_empty_rows_and_cols,
+        )
 
     def add_assumption(self, assumption: TrackingAssumption) -> "Tiling":
         """Returns a new tiling with the added assumption."""

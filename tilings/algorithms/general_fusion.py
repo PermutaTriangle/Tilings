@@ -156,44 +156,11 @@ class GeneralFusion(Fusion):
 
 
 def test_ass_map(tiling, original_tiling, verbose=False):
-    return
     if verbose:
         print("=" * 10)
         print("TESTING ASS MAP")
         print(tiling)
         print(original_tiling)
-    ass = tiling.assumptions[0]
-    original_obs, original_reqs = ass.obstructions_and_requirements()
-    new_obs = []
-    for ob in tiling.obstructions:
-        if verbose:
-            print(ob)
-        for gp in ass.reverse_map(ob):
-            if gp.avoids(*original_obs):
-                if verbose:
-                    print("   ", gp)
-                new_obs.append(gp)
-    new_reqs = []
-    for req in tiling.requirements:
-        new_req = []
-        for r in req:
-            if verbose:
-                print(r)
-            for gp in ass.reverse_map(r):
-                if any(gp.contains(*gps) for gps in original_reqs):
-                    if verbose:
-                        print("   ", gp)
-                    new_req.append(gp)
-        new_reqs.append(new_req)
-    unfused = Tiling(
-        new_obs + original_obs,
-        new_reqs + original_reqs,
-    )
-    if verbose:
-        # print(original_tiling)
-        print(unfused)
-        print("=" * 10)
-    assert unfused == original_tiling.remove_assumptions()
     for i in range(6):  # these counts should match!
         terms = tiling.get_terms(i)
         actual = len(list(original_tiling.remove_assumptions().objects_of_size(i)))
@@ -236,7 +203,7 @@ if __name__ == "__main__":
             "assumptions": [],
         }
     )
-
+    print(tiling)
     gf = GeneralFusion(tiling, col_idx=0, tracked=True)
     print(gf.fusable())
     print(gf.fused_tiling())
@@ -297,6 +264,13 @@ if __name__ == "__main__":
     print("===== the fused tiling =====")
     print(fused_tiling)
     print("==== end ====")
+    for gp in sorted(fused_tiling.objects_of_size(3)):
+        print(gp)
+        for gp2 in sorted(
+            fused_tiling.assumptions[0].gridding_counter._griddings(3)[gp]
+        ):
+            print("\t", gp2)
+    assert 0
 
     for i in range(6):
         terms = fused_tiling.get_terms(i)
