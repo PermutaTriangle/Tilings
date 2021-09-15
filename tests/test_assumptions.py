@@ -150,7 +150,7 @@ def test_123_fusion():
     pack = TileScopePack.row_and_col_placements(row_only=True).make_fusion(tracked=True)
     css = TileScope("123", pack)
     spec = css.auto_search(status_update=30)
-    spec.expand_verified()
+    spec = spec.expand_verified()
     assert isinstance(spec, CombinatorialSpecification)
     assert [spec.count_objects_of_size(i) for i in range(20)] == [
         1,
@@ -189,7 +189,7 @@ def test_123_positive_fusions():
     )
     css = TileScope("123", pack)
     spec = css.auto_search(status_update=30)
-    spec.expand_verified()
+    spec = spec.expand_verified()
     print(spec)
     assert isinstance(spec, CombinatorialSpecification)
     assert [spec.count_objects_of_size(i) for i in range(20)] == [
@@ -227,7 +227,7 @@ def test_123_interleaving():
     pack = TileScopePack.point_placements().make_interleaving()
     css = TileScope("123", pack)
     spec = css.auto_search(status_update=30)
-    spec.expand_verified()
+    spec = spec.expand_verified()
     assert isinstance(spec, CombinatorialSpecification)
     assert [spec.count_objects_of_size(i) for i in range(20)] == [
         1,
