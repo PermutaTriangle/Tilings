@@ -73,14 +73,52 @@ class TrackingAssumption:
         col_map: Dict[int, int],
         row_map: Dict[int, int],
     ):
+        assert not tiling.assumptions
         self.tiling = tiling
         self.col_map = col_map
         self.row_map = row_map
+        self.remove_empty_rows_and_cols()
+        self._init_checked()
         self._cell_map: Optional[Dict[Cell, Cell]] = None
         self.gridding_counter = GriddingsCounter(self.tiling, self.cell_map)
         self._ignore_reqs_gridding_counter = GriddingsCounter(
             self.tiling.remove_requirements(), self.cell_map
         )
+
+    def _init_checked(self):
+        """
+        Ensure that intervals are preseved with respect to row and col maps.
+        """
+        cols = [b for _, b in sorted(self.col_map.items())]
+        assert cols == sorted(cols)
+        rows = [b for _, b in sorted(self.row_map.items())]
+        assert rows == sorted(rows)
+
+    def remove_empty_rows_and_cols(self) -> None:
+        """
+        Update the col and row maps after removing cols and rows that
+        became empty when tiling was created.
+        """
+        self.col_map = {
+            self.tiling.forward_col_map[k]: v
+            for k, v in self.col_map.items()
+            if k in self.tiling.forward_col_map
+        }
+        self.row_map = {
+            self.tiling.forward_row_map[k]: v
+            for k, v in self.row_map.items()
+            if k in self.tiling.forward_row_map
+        }
+
+    def apply_row_col_map(
+        self, row_mapping: Dict[int, int], col_mapping: Dict[int, int]
+    ):
+        """
+        Update the col and row maps with respect to the given
+        row mapping and col mapping on the underlying tiling.
+        """
+        self.col_map = {k: col_mapping[v] for k, v in self.col_map.items()}
+        self.row_map = {k: row_mapping[v] for k, v in self.row_map.items()}
 
     @property
     def cell_map(self) -> Dict[Cell, Cell]:
@@ -106,6 +144,40 @@ class TrackingAssumption:
             gp.contains(*req) for req in self.tiling.requirements
         )
         return gp.apply_map(self.gridding_counter._cell_map)
+
+    def add_obstructions(self, obs: Tuple[GriddedPerm, ...]) -> "TrackingAssumption":
+        new_obs = chain.from_iterable(
+            self.backward_map_gridded_perm(gp, False) for gp in obs
+        )
+        return TrackingAssumption(
+            self.tiling.add_obstructions(new_obs), self.col_map, self.row_map
+        )
+
+    def add_obstructions_and_requirements(
+        self, obs: Iterable[GriddedPerm], reqs: Iterable[Iterable[GriddedPerm]]
+    ) -> "TrackingAssumption":
+        new_obs = chain.from_iterable(
+            self.backward_map_gridded_perm(gp, False) for gp in obs
+        )
+        new_reqs = chain.from_iterable(
+            chain.from_iterable(self.backward_map_gridded_perm(gp, False) for gp in req)
+            for req in reqs
+        )
+        return TrackingAssumption(
+            self.tiling.add_obstructions_and_requirements(new_obs, new_reqs),
+            self.col_map,
+            self.row_map,
+        )
+
+    def add_list_requirement(
+        self, req_list: Iterable[GriddedPerm]
+    ) -> "TrackingAssumption":
+        new_req = chain.from_iterable(
+            self.backward_map_gridded_perm(gp, False) for gp in req_list
+        )
+        return TrackingAssumption(
+            self.tiling.add_list_requirement(new_req), self.col_map, self.row_map
+        )
 
     def is_identity(self):
         raise NotImplementedError

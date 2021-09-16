@@ -92,7 +92,7 @@ class Tiling(CombinatorialClass):
         self,
         obstructions: Iterable[GriddedPerm] = tuple(),
         requirements: Iterable[Iterable[GriddedPerm]] = tuple(),
-        assumptions: Iterable[TrackingAssumption] = tuple(),
+        assumptions: Iterable[Iterable[TrackingAssumption]] = tuple(),
         remove_empty_rows_and_cols: bool = True,
         derive_empty: bool = True,
         simplify: bool = True,
@@ -116,24 +116,20 @@ class Tiling(CombinatorialClass):
             # Set of requirement lists
             self._requirements = tuple(tuple(r) for r in requirements)
             # Set of assumptions
-            self._assumptions = tuple(assumptions)
+            self._assumptions = tuple(tuple(a) for a in assumptions)
         else:
             # Set of obstructions
             self._obstructions = tuple(sorted(obstructions))
             # Set of requirement lists
             self._requirements = Tiling.sort_requirements(requirements)
             # Set of assumptions
-            self._assumptions = tuple(sorted(assumptions))
+            self._assumptions = Tiling.sort_requirements(assumptions)
 
         # Simplify the set of obstructions and the set of requirement lists
         if simplify:
             self._simplify_griddedperms(already_minimized_obs=already_minimized_obs)
 
         if not any(ob.is_empty() for ob in self.obstructions):
-
-            # Remove gridded perms that avoid obstructions from assumptions
-            if simplify:
-                self.clean_assumptions()
 
             # Fill empty
             if derive_empty:
@@ -247,6 +243,7 @@ class Tiling(CombinatorialClass):
             self._cached_properties["forward_map"] = {}
             self._obstructions = (GriddedPerm.single_cell((0,), (0, 0)),)
             self._requirements = tuple()
+            assert not self._assumptions, "UH OH - we gotta think now"
             self._assumptions = tuple()
             self._cached_properties["dimensions"] = (1, 1)
             return
@@ -285,13 +282,11 @@ class Tiling(CombinatorialClass):
             tuple(req.apply_map(cell_map) for req in reqlist)
             for reqlist in self._requirements
         )
-        self._assumptions = tuple(
-            sorted(
-                assumption.__class__(
-                    tuple(gp.apply_map(cell_map) for gp in assumption.gps)
-                )
-                for assumption in self._assumptions
-            )
+        self._assumptions = Tiling.sort_assumptions(
+            [
+                [ass.apply_row_col_map(row_mapping, col_mapping) for ass in assumption]
+                for assumption in self.assumptions
+            ]
         )
         self._cached_properties["active_cells"] = frozenset(
             self._cached_properties["forward_map"][cell]
@@ -328,19 +323,6 @@ class Tiling(CombinatorialClass):
         col_mapping = {x: actual for actual, x in enumerate(col_list)}
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
         return (col_mapping, row_mapping, False)
-
-    def clean_assumptions(self) -> None:
-        """
-        Clean assumptions with respect to the known obstructions.
-
-        TODO: this should remove points that are placed, and other requirements
-        that are contained in every gridded perm.
-        """
-        res: List[TrackingAssumption] = []
-        for assumption in self.assumptions:
-            ass = assumption.simplify(self)
-            res.append(ass)
-        self._assumptions = tuple(sorted(set(res)))
 
     @classmethod
     def guess_from_gridded_perms(
@@ -614,8 +596,10 @@ class Tiling(CombinatorialClass):
         return Tiling(
             self._obstructions + new_obs,
             self._requirements,
-            self._assumptions,
-            self.active_cells,
+            [
+                [ass.add_obstructions(new_obs) for ass in assumption]
+                for assumption in self._assumptions
+            ],
             remove_empty_rows_and_cols=remove_empty_rows_and_cols,
         )
 
@@ -631,7 +615,13 @@ class Tiling(CombinatorialClass):
         return Tiling(
             self._obstructions + new_obs,
             self._requirements + new_reqs,
-            self._assumptions,
+            [
+                [
+                    ass.add_obstruction_and_requirements(new_obs, new_reqs)
+                    for ass in assumption
+                ]
+                for assumption in self._assumptions
+            ],
             remove_empty_rows_and_cols=remove_empty_rows_and_cols,
         )
 
@@ -645,7 +635,10 @@ class Tiling(CombinatorialClass):
         return Tiling(
             self._obstructions,
             self._requirements + (new_req,),
-            self._assumptions,
+            [
+                [ass.add_list_requirement(new_req) for ass in assumption]
+                for assumption in self._assumptions
+            ],
             remove_empty_rows_and_cols=remove_empty_rows_and_cols,
         )
 
@@ -702,11 +695,11 @@ class Tiling(CombinatorialClass):
             simplify=False,
             sorted_input=True,
         )
-        tiling.clean_assumptions()
         return tiling
 
-    def remove_assumption(self, assumption: TrackingAssumption):
+    def remove_assumption(self, assumption: Iterable[TrackingAssumption]):
         """Returns a new tiling with assumption removed."""
+        assumption = tuple(sorted(set(assumption)))
         try:
             idx = self._assumptions.index(assumption)
         except ValueError as e:
@@ -722,7 +715,6 @@ class Tiling(CombinatorialClass):
             simplify=False,
             sorted_input=True,
         )
-        tiling.clean_assumptions()
         return tiling
 
     def remove_assumptions(self):
@@ -911,6 +903,7 @@ class Tiling(CombinatorialClass):
     def sort_requirements(
         requirements: Iterable[Iterable[GriddedPerm]],
     ) -> Tuple[Tuple[GriddedPerm, ...], ...]:
+        # TODO: fix name and typing to allow for assumptions
         return tuple(sorted(tuple(sorted(set(reqlist))) for reqlist in requirements))
 
     def backward_map(self, gp: GriddedPerm) -> GriddedPerm:
@@ -920,24 +913,12 @@ class Tiling(CombinatorialClass):
         return GriddedPerm(gp.patt, [self.forward_cell_map[cell] for cell in gp.pos])
 
     def forward_map_assumption(
-        self, assumption: TrackingAssumption, check_avoidance: bool = True
-    ) -> TrackingAssumption:
+        self, assumption: Iterable[TrackingAssumption]
+    ) -> Iterable[TrackingAssumption]:
         """
-        Maps the assumption using the `forward_map` method on each gridded perm.
-
-        If check_avoidance, it will return the assumption with only the mapped
-        gridded perms that avoid the obstructions on the tiling.
+        TODO: store forward row and col maps and use those! note: takes in iterable.
         """
-        mapped_assumption = assumption.__class__(
-            tuple(
-                self.forward_map(gp)
-                for gp in assumption.gps
-                if all(cell in self.forward_cell_map for cell in gp.pos)
-            )
-        )
-        if check_avoidance:
-            return mapped_assumption.avoiding(self.obstructions)
-        return mapped_assumption
+        raise NotImplementedError
 
     @property
     def forward_cell_map(self) -> CellMap:
@@ -1766,7 +1747,7 @@ class Tiling(CombinatorialClass):
         return len(self._requirements)
 
     @property
-    def assumptions(self) -> Tuple[TrackingAssumption, ...]:
+    def assumptions(self) -> Tuple[Tuple[TrackingAssumption, ...], ...]:
         return self._assumptions
 
     def total_assumptions(self) -> int:
