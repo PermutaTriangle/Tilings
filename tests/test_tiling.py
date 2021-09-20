@@ -198,7 +198,6 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
         derive_empty=False,
         simplify=False,
     )
-    print(typical_redundant_obstructions)
     assert len(tiling._obstructions) == 20
     assert len(tiling._requirements) == 0
     (i, j) = tiling.dimensions
