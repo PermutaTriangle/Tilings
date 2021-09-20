@@ -141,13 +141,37 @@ class RowColMap:
         Return True if the cell can be mapped, i.e. if the image of the row
         and the column of the are defined by the map.
         """
-        return cell[0] in self._col_map and cell[1] in self._row_map
+        return self.is_mappable_col(cell[0]) and self.is_mappable_row(cell[1])
 
     def map_cell(self, cell: Cell) -> Cell:
         """
         Map the cell according to the map.
         """
-        return (self._col_map[cell[0]], self._row_map[cell[1]])
+        return (self.map_col(cell[0]), self.map_row(cell[1]))
+
+    def is_mappable_row(self, row: int) -> bool:
+        """
+        Return True if the image of the row is defined.
+        """
+        return row in self._row_map
+
+    def map_row(self, row: int) -> int:
+        """
+        Map the row according to the map.
+        """
+        return self._row_map[row]
+
+    def is_mappable_col(self, col: int) -> bool:
+        """
+        Return True if the image of the column is defined.
+        """
+        return col in self._col_map
+
+    def map_col(self, col: int) -> int:
+        """
+        Map the column according to the map.
+        """
+        return self._col_map[col]
 
     def max_row(self) -> int:
         """Return the biggest row index in the image."""
