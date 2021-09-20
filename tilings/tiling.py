@@ -61,12 +61,21 @@ Cell = Tuple[int, int]
 ReqList = Tuple[GriddedPerm, ...]
 
 CellBasis = Dict[Cell, Tuple[List[Perm], List[Perm]]]
-CellMap = Dict[Cell, Cell]
 CellFrozenSet = FrozenSet[Cell]
 Dimension = Tuple[int, int]
 
 
 class RowColMap:
+    """
+    A class to combine a row and a column map together and map different object related
+    to tiling in accordance to those row and columns map.
+
+    INPUT:
+      - `row_map`: the row map given as a dictionary.
+      - `col_map`: the column map given as a dictionary.
+      - `is_identity`: A boolean that indicate if the map is the identity.
+    """
+
     def __init__(
         self, row_map: Dict[int, int], col_map: Dict[int, int], is_identity: bool
     ) -> None:
@@ -78,38 +87,66 @@ class RowColMap:
     def identity(cls, dimensions: Tuple[int, int]) -> "RowColMap":
         """
         Build a map that is the identity for a tiling of the given dimensions.
+
+        If one of the dimensions is 0 then the corresponding row/column map will
+        be an empty dictionary.
         """
         col_map = {i: i for i in range(dimensions[0])}
         row_map = {i: i for i in range(dimensions[1])}
         return RowColMap(row_map=row_map, col_map=col_map, is_identity=True)
 
     def reverse(self) -> "RowColMap":
-        """Return the reverse map if possible. Otherwise raise an error."""
+        """
+        Return the reverse map if possible.
+        Otherwise raise an InvalidOperationError.
+        """
         row_map = {v: k for k, v in self._row_map.items()}
         col_map = {v: k for k, v in self._col_map.items()}
-        assert len(row_map) == len(self._row_map)
-        assert len(col_map) == len(self._col_map)
+        if len(row_map) != len(self._row_map) or len(col_map) != len(self._col_map):
+            raise InvalidOperationError("The map is not reversible.")
         return RowColMap(
             row_map=row_map, col_map=col_map, is_identity=self._is_identity
         )
 
     def is_identity(self) -> bool:
+        """
+        Indicate if the map is the identity map.
+        """
         return self._is_identity
 
     def is_mappable_gp(self, gp: GriddedPerm) -> bool:
+        """
+        Return True if all the cell used by the gridded perm can be mapped.
+        """
         return all(self.is_mappable_cell(cell) for cell in gp.pos)
 
     def map_gp(self, gp: GriddedPerm) -> GriddedPerm:
+        """
+        Map the gridded permutation according to the map.
+        """
         return GriddedPerm(gp.patt, map(self.map_cell, gp.pos))
 
     def map_assumption(self, assumption: TrackingAssumption) -> TrackingAssumption:
+        """
+        Map the assumption according to the map.
+
+        If some of the gridded permutation tracked by the assumption cannot be mapped
+        they are removed from the assumption.
+        """
         gps = tuple(self.map_gp(gp) for gp in assumption.gps if self.is_mappable_gp(gp))
         return assumption.__class__(gps)
 
     def is_mappable_cell(self, cell: Cell) -> bool:
+        """
+        Return True if the cell can be mapped, i.e. if the image of the row
+        and the column of the are defined by the map.
+        """
         return cell[0] in self._col_map and cell[1] in self._row_map
 
     def map_cell(self, cell: Cell) -> Cell:
+        """
+        Map the cell according to the map.
+        """
         return (self._col_map[cell[0]], self._row_map[cell[1]])
 
     def max_row(self) -> int:
@@ -120,12 +157,10 @@ class RowColMap:
         """Return the biggest column index in the image."""
         return max(self._col_map.values())
 
-        return f"{self.__class__.__name__}({self._row_map}, {self._col_map}, {self._is_identity})"
-
     def __str__(self) -> str:
         s = "RowColMap\n"
-        s += f"row map: {self._row_map}\n"
-        s += f"col map: {self._col_map}"
+        s += f"    row map: {self._row_map}\n"
+        s += f"    col map: {self._col_map}\n"
         return s
 
 
