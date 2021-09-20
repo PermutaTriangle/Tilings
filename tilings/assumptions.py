@@ -81,9 +81,6 @@ class TrackingAssumption:
         self._init_checked()
         self._cell_map: Optional[Dict[Cell, Cell]] = None
         self.gridding_counter = GriddingsCounter(self.tiling, self.cell_map)
-        self._ignore_reqs_gridding_counter = GriddingsCounter(
-            self.tiling.remove_requirements(), self.cell_map
-        )
 
     def _init_checked(self):
         """
@@ -129,12 +126,8 @@ class TrackingAssumption:
                 self._cell_map[(x1, y1)] = (x2, y2)
         return self._cell_map
 
-    def backward_map_gridded_perm(
-        self, gp: GriddedPerm, ignore_reqs: bool = False
-    ) -> Set[GriddedPerm]:
+    def backward_map_gridded_perm(self, gp: GriddedPerm) -> Set[GriddedPerm]:
         """Yield the gridded perms that map to gp according to the col and row maps."""
-        if ignore_reqs:
-            return self._ignore_reqs_gridding_counter.GP_CACHE[len(gp)][gp]
         return self.gridding_counter.GP_CACHE[len(gp)][gp]
 
     def forward_map_gridded_perm(self, gp: GriddedPerm) -> GriddedPerm:
@@ -145,9 +138,7 @@ class TrackingAssumption:
         return gp.apply_map(self.gridding_counter._cell_map)
 
     def add_obstructions(self, obs: Tuple[GriddedPerm, ...]) -> "TrackingAssumption":
-        new_obs = chain.from_iterable(
-            self.backward_map_gridded_perm(gp, False) for gp in obs
-        )
+        new_obs = chain.from_iterable(self.backward_map_gridded_perm(gp) for gp in obs)
         return TrackingAssumption(
             self.tiling.add_obstructions(new_obs), self.col_map, self.row_map
         )
@@ -155,11 +146,9 @@ class TrackingAssumption:
     def add_obstructions_and_requirements(
         self, obs: Iterable[GriddedPerm], reqs: Iterable[Iterable[GriddedPerm]]
     ) -> "TrackingAssumption":
-        new_obs = chain.from_iterable(
-            self.backward_map_gridded_perm(gp, False) for gp in obs
-        )
+        new_obs = chain.from_iterable(self.backward_map_gridded_perm(gp) for gp in obs)
         new_reqs = chain.from_iterable(
-            chain.from_iterable(self.backward_map_gridded_perm(gp, False) for gp in req)
+            chain.from_iterable(self.backward_map_gridded_perm(gp) for gp in req)
             for req in reqs
         )
         return TrackingAssumption(
