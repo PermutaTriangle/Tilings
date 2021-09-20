@@ -99,15 +99,16 @@ class TrackingAssumption:
         Update the col and row maps after removing cols and rows that
         became empty when tiling was created.
         """
+        forward_map = self.tiling.forward_map
         self.col_map = {
-            self.tiling.forward_col_map[k]: v
+            forward_map.map_col(k): v
             for k, v in self.col_map.items()
-            if k in self.tiling.forward_col_map
+            if forward_map.is_mappable_col(k)
         }
         self.row_map = {
-            self.tiling.forward_row_map[k]: v
+            forward_map.map_row(k): v
             for k, v in self.row_map.items()
-            if k in self.tiling.forward_row_map
+            if forward_map.is_mappable_row(k)
         }
 
     def apply_row_col_map(self, row_col_map: "RowColMap"):
