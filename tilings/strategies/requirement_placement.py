@@ -91,9 +91,9 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         if self.include_empty:
             child = children[0]
             for assumption in comb_class.assumptions:
-                mapped_assumption = child.forward_map_assumption(assumption).avoiding(
-                    child.obstructions
-                )
+                mapped_assumption = child.forward_map.map_assumption(
+                    assumption
+                ).avoiding(child.obstructions)
                 if mapped_assumption.gps:
                     parent_var = comb_class.get_assumption_parameter(assumption)
                     child_var = child.get_assumption_parameter(mapped_assumption)
@@ -102,7 +102,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             zip(self._placed_cells, children[1:] if self.include_empty else children)
         ):
             mapped_assumptions = [
-                child.forward_map_assumption(ass)
+                child.forward_map.map_assumption(ass).avoiding(child.obstructions)
                 for ass in algo.stretched_assumptions(cell)
             ]
             for assumption, mapped_assumption in zip(
@@ -192,7 +192,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(tiling)
         idx = DisjointUnionStrategy.backward_map_index(gps)
-        gp: GriddedPerm = children[idx].backward_map(cast(GriddedPerm, gps[idx]))
+        gp: GriddedPerm = children[idx].backward_map.map_gp(cast(GriddedPerm, gps[idx]))
         if self.include_empty:
             if idx == 0:
                 yield gp
@@ -213,7 +213,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(tiling)
         if indices is None:
-            return (children[0].forward_map(gp),) + tuple(
+            return (children[0].forward_map.map_gp(gp),) + tuple(
                 None for _ in range(len(children) - 1)
             )
         gps_index, forced_index = indices
@@ -223,7 +223,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         gp = self.forward_gp_map(gp, forced_index)
         return (
             tuple(None for _ in range(child_index))
-            + (children[child_index].forward_map(gp),)
+            + (children[child_index].forward_map.map_gp(gp),)
             + tuple(None for _ in range(len(children) - 1))
         )
 

@@ -198,6 +198,7 @@ def test_constructor_no_requirements(typical_redundant_obstructions):
         derive_empty=False,
         simplify=False,
     )
+    print(typical_redundant_obstructions)
     assert len(tiling._obstructions) == 20
     assert len(tiling._requirements) == 0
     (i, j) = tiling.dimensions
@@ -2301,13 +2302,15 @@ def test_partial_place_col(obs_inf_til):
 
 def test_empty_obstruction():
     t = Tiling((GriddedPerm.empty_perm(),))
-    assert t.forward_cell_map == {}
+    assert t.forward_map._row_map == {}
+    assert t.forward_map._col_map == {}
     assert t.obstructions == (GriddedPerm.empty_perm(),)
 
 
 def test_point_obstruction():
     t = Tiling((GriddedPerm((0,), ((0, 0),)),))
-    assert t.forward_cell_map == {}
+    assert t.forward_map._row_map == {}
+    assert t.forward_map._col_map == {}
     assert t.obstructions == (GriddedPerm((0,), ((0, 0),)),)
 
 
