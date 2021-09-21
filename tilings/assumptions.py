@@ -23,7 +23,7 @@ from .griddedperm import GriddedPerm
 Cell = Tuple[int, int]
 
 if TYPE_CHECKING:
-    from tilings.tiling import Tiling, RowColMap
+    from tilings.tiling import RowColMap, Tiling
 
 
 class GriddingsCounter:
@@ -121,16 +121,14 @@ class TrackingAssumption:
         """
         self.col_map = {k: row_col_map.map_col(v) for k, v in self.col_map.items()}
         self.row_map = {k: row_col_map.map_row(v) for k, v in self.row_map.items()}
+        return self
 
     @property
     def cell_map(self) -> Dict[Cell, Cell]:
-        if self._cell_map is None:
-            self._cell_map = dict()
-            for (x1, x2), (y1, y2) in product(
-                self.col_map.items(), self.row_map.items()
-            ):
-                self._cell_map[(x1, y1)] = (x2, y2)
-        return self._cell_map
+        cell_map: Dict[Cell, Cell] = dict()
+        for (x1, x2), (y1, y2) in product(self.col_map.items(), self.row_map.items()):
+            cell_map[(x1, y1)] = (x2, y2)
+        return cell_map
 
     def backward_map_gridded_perm(
         self, gp: GriddedPerm, ignore_reqs: bool = False
