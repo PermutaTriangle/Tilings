@@ -20,11 +20,7 @@ from comb_spec_searcher.typing import (
 from comb_spec_searcher.utils import compositions
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import factor
-from tilings.assumptions import (
-    SkewComponentAssumption,
-    SumComponentAssumption,
-    TrackingAssumption,
-)
+from tilings.assumptions import TrackingAssumption
 
 Cell = Tuple[int, int]
 
