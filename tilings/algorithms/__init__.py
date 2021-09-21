@@ -14,6 +14,7 @@ from .obstruction_transitivity import ObstructionTransitivity
 from .requirement_placement import RequirementPlacement
 from .row_col_separation import RowColSeparation
 from .sliding import Sliding
+from .map import RowColMap
 from .subclass_verification import SubclassVerificationAlgorithm
 
 __all__ = [
@@ -34,6 +35,7 @@ __all__ = [
     "GriddedPermReduction",
     "RequirementPlacement",
     "RowColSeparation",
+    "RowColMap",
     "SubclassVerificationAlgorithm",
     "guess_obstructions",
     "Sliding",
