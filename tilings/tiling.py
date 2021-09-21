@@ -384,7 +384,7 @@ class Tiling(CombinatorialClass):
                 tuple(forward_map.map_gp(req) for req in reqlist)
                 for reqlist in self._requirements
             )
-            self._assumptions = Tiling.sort_assumptions(
+            self._assumptions = Tiling.sort_requirements(
                 [
                     [ass.apply_row_col_map(forward_map) for ass in assumption]
                     for assumption in self.assumptions
