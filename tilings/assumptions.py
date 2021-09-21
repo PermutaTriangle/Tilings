@@ -61,6 +61,9 @@ class GriddingsCounter:
         subgp = gp.get_gridded_perm_in_cells(self.active_cells)
         return len(self._griddings(len(subgp))[subgp])
 
+    def preimage(self, gp: GriddedPerm) -> Set[GriddedPerm]:
+        return self._griddings(len(gp))[gp]
+
 
 class TrackingAssumption:
     """
@@ -128,7 +131,7 @@ class TrackingAssumption:
 
     def backward_map_gridded_perm(self, gp: GriddedPerm) -> Set[GriddedPerm]:
         """Yield the gridded perms that map to gp according to the col and row maps."""
-        return self.gridding_counter.GP_CACHE[len(gp)][gp]
+        return self.gridding_counter.preimage(gp)
 
     def forward_map_gridded_perm(self, gp: GriddedPerm) -> GriddedPerm:
         """Map the gridded perm according to the col and row maps."""
