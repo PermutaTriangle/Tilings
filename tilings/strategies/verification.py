@@ -26,7 +26,6 @@ from tilings.algorithms.enumeration import (
     LocalEnumeration,
     MonotoneTreeEnumeration,
 )
-from tilings.assumptions import ComponentAssumption
 from tilings.strategies import (
     FactorFactory,
     FactorInsertionFactory,

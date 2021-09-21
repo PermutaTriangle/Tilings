@@ -2094,7 +2094,7 @@ class Tiling(CombinatorialClass):
                 result.append("\n")
         for i, ass in enumerate(self.assumptions):
             result.append("Assumption {}:\n".format(str(i)))
-            result.append(str(ass))
+            result.extend(map(str, ass))
             result.append("\n")
         if self.assumptions or self.requirements:
             result = result[:-1]
