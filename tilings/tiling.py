@@ -830,6 +830,20 @@ class Tiling(CombinatorialClass):
             sorted_input=True,
         )
 
+    def remove_requirements(self):
+        """
+        Return the same tiling without the requirements.
+        """
+        assert not self.assumptions, "Now think"
+        return self.__class__(
+            obstructions=self._obstructions,
+            requirements=[],
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
+        )
+
     def remove_components_from_assumptions(self):
         """
         Return the tiling with all the actual components from individual
