@@ -154,3 +154,8 @@ class RowColMap:
         if not isinstance(other, RowColMap):
             return NotImplemented
         return self._col_map == other._col_map and self._row_map == other._row_map
+
+    def __hash__(self) -> int:
+        row_map = tuple(sorted(self._row_map.items()))
+        col_map = tuple(sorted(self._col_map.items()))
+        return hash((col_map, row_map))
