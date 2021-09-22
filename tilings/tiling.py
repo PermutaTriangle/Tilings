@@ -130,7 +130,6 @@ class Tiling(CombinatorialClass):
             self._simplify_griddedperms(already_minimized_obs=already_minimized_obs)
 
         if not any(ob.is_empty() for ob in self.obstructions):
-
             # Fill empty
             if derive_empty:
                 if "empty_cells" not in self._cached_properties:
