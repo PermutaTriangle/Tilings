@@ -56,6 +56,17 @@ class RowColMap:
             row_map=row_map, col_map=col_map, is_identity=self._is_identity
         )
 
+    def compose(self, other: "RowColMap") -> "RowColMap":
+        """
+        The return the new map that is obtained by the applying first self and then
+        other.
+
+        If self maps a -> b and other maps b -> c than the resulting map maps a -> c.
+        """
+        col_map = {k: other.map_col(v) for k, v in self._col_map.items()}
+        row_map = {k: other.map_row(v) for k, v in self._row_map.items()}
+        return RowColMap(row_map=row_map, col_map=col_map)
+
     def is_identity(self) -> bool:
         """
         Indicate if the map is the identity map.
