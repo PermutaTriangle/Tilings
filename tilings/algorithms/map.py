@@ -149,3 +149,8 @@ class RowColMap:
         s += f"    row map: {self._row_map}\n"
         s += f"    col map: {self._col_map}\n"
         return s
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RowColMap):
+            return NotImplemented
+        return self._col_map == other._col_map and self._row_map == other._row_map
