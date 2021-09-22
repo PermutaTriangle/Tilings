@@ -48,7 +48,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         child = children[0]
         params: Dict[str, str] = {}
         for assumption in comb_class.assumptions:
-            mapped_assumption = child.forward_map_assumption(assumption)
+            mapped_assumption = child.forward_map.map_assumption(assumption)
             if mapped_assumption.gps:
                 parent_var = comb_class.get_assumption_parameter(assumption)
                 child_var = child.get_assumption_parameter(mapped_assumption)
@@ -63,7 +63,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     ) -> Iterator[GriddedPerm]:
         if children is None:
             children = self.decomposition_function(tiling)
-        yield children[0].backward_map(cast(GriddedPerm, gps[0]))
+        yield children[0].backward_map.map_gp(cast(GriddedPerm, gps[0]))
 
     def forward_map(
         self,
@@ -73,7 +73,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     ) -> Tuple[GriddedPerm]:
         if children is None:
             children = self.decomposition_function(tiling)
-        return (children[0].forward_map(gp),)
+        return (children[0].forward_map.map_gp(gp),)
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + "(gps={})".format(self.gps)

@@ -70,7 +70,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         ):
             for idx, child in enumerate(children):
                 # TODO: consider skew/sum
-                new_assumption = child.forward_map_assumption(assumption)
+                new_assumption = child.forward_map.map_assumption(assumption)
                 if new_assumption.gps:
                     child_var = child.get_assumption_parameter(new_assumption)
                     extra_parameters[idx][parent_var] = child_var
@@ -96,7 +96,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(tiling)
         gps_to_combine = tuple(
-            tiling.backward_map(cast(GriddedPerm, gp))
+            tiling.backward_map.map_gp(cast(GriddedPerm, gp))
             for gp, tiling in zip(gps, children)
         )
         temp = [
@@ -118,7 +118,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(tiling)
         return tuple(
-            tiling.forward_map(gp.get_gridded_perm_in_cells(part))
+            tiling.forward_map.map_gp(gp.get_gridded_perm_in_cells(part))
             for tiling, part in zip(children, self.partition)
         )
 

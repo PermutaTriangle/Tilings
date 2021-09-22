@@ -161,7 +161,7 @@ class ComponentAssumption(TrackingAssumption):
         components = self.tiling_decomposition(separated_tiling)
         return [
             [
-                GriddedPerm.point_perm(sub_tiling.backward_cell_map[back_map[cell]])
+                GriddedPerm.point_perm(sub_tiling.backward_map.map_cell(back_map[cell]))
                 for cell in comp
             ]
             for comp in components
