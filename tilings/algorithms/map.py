@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Dict, Tuple
+import itertools
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
 from tilings.exception import InvalidOperationError
 
@@ -21,7 +22,10 @@ class RowColMap:
     """
 
     def __init__(
-        self, row_map: Dict[int, int], col_map: Dict[int, int], is_identity: bool
+        self,
+        row_map: Dict[int, int],
+        col_map: Dict[int, int],
+        is_identity: Optional[bool] = None,
     ) -> None:
         self._row_map = row_map
         self._col_map = col_map
@@ -56,6 +60,10 @@ class RowColMap:
         """
         Indicate if the map is the identity map.
         """
+        if self.is_identity is None:
+            kv_pairs = itertools.chain(self._col_map.items(), self._row_map.items())
+            self._is_identity = all(k == v for k, v in kv_pairs)
+        assert self._is_identity is not None
         return self._is_identity
 
     def is_mappable_gp(self, gp: "GriddedPerm") -> bool:
