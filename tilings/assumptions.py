@@ -23,7 +23,7 @@ from .griddedperm import GriddedPerm
 Cell = Tuple[int, int]
 
 if TYPE_CHECKING:
-    from tilings import Tiling
+    from tilings.tiling import RowColMap, Tiling
 
 
 class GriddingsCounter:
@@ -60,6 +60,9 @@ class GriddingsCounter:
     def count_griddings(self, gp: GriddedPerm):
         subgp = gp.get_gridded_perm_in_cells(self.active_cells)
         return len(self._griddings(len(subgp))[subgp])
+
+    def preimage(self, gp: GriddedPerm) -> Set[GriddedPerm]:
+        return self._griddings(len(gp))[gp]
 
 
 class TrackingAssumption:
@@ -99,44 +102,41 @@ class TrackingAssumption:
         Update the col and row maps after removing cols and rows that
         became empty when tiling was created.
         """
+        forward_map = self.tiling.forward_map
         self.col_map = {
-            self.tiling.forward_col_map[k]: v
+            forward_map.map_col(k): v
             for k, v in self.col_map.items()
-            if k in self.tiling.forward_col_map
+            if forward_map.is_mappable_col(k)
         }
         self.row_map = {
-            self.tiling.forward_row_map[k]: v
+            forward_map.map_row(k): v
             for k, v in self.row_map.items()
-            if k in self.tiling.forward_row_map
+            if forward_map.is_mappable_row(k)
         }
 
-    def apply_row_col_map(
-        self, row_mapping: Dict[int, int], col_mapping: Dict[int, int]
-    ):
+    def apply_row_col_map(self, row_col_map: "RowColMap"):
         """
         Update the col and row maps with respect to the given
         row mapping and col mapping on the underlying tiling.
         """
-        self.col_map = {k: col_mapping[v] for k, v in self.col_map.items()}
-        self.row_map = {k: row_mapping[v] for k, v in self.row_map.items()}
+        self.col_map = {k: row_col_map.map_col(v) for k, v in self.col_map.items()}
+        self.row_map = {k: row_col_map.map_row(v) for k, v in self.row_map.items()}
+        return self
 
     @property
     def cell_map(self) -> Dict[Cell, Cell]:
-        if self._cell_map is None:
-            self._cell_map = dict()
-            for (x1, x2), (y1, y2) in product(
-                self.col_map.items(), self.row_map.items()
-            ):
-                self._cell_map[(x1, y1)] = (x2, y2)
-        return self._cell_map
+        cell_map: Dict[Cell, Cell] = dict()
+        for (x1, x2), (y1, y2) in product(self.col_map.items(), self.row_map.items()):
+            cell_map[(x1, y1)] = (x2, y2)
+        return cell_map
 
     def backward_map_gridded_perm(
         self, gp: GriddedPerm, ignore_reqs: bool = False
     ) -> Set[GriddedPerm]:
         """Yield the gridded perms that map to gp according to the col and row maps."""
         if ignore_reqs:
-            return self._ignore_reqs_gridding_counter.GP_CACHE[len(gp)][gp]
-        return self.gridding_counter.GP_CACHE[len(gp)][gp]
+            return self._ignore_reqs_gridding_counter.preimage(gp)
+        return self.gridding_counter.preimage(gp)
 
     def forward_map_gridded_perm(self, gp: GriddedPerm) -> GriddedPerm:
         """Map the gridded perm according to the col and row maps."""

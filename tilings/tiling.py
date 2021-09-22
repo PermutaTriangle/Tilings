@@ -2,7 +2,7 @@
 import json
 from array import array
 from collections import Counter, defaultdict
-from functools import partial, reduce
+from functools import reduce
 from itertools import chain, filterfalse, product
 from operator import mul, xor
 from typing import (
@@ -39,6 +39,7 @@ from .algorithms import (
     MinimalGriddedPerms,
     ObstructionTransitivity,
     RequirementPlacement,
+    RowColMap,
     RowColSeparation,
     SubclassVerificationAlgorithm,
     SubobstructionInferral,
@@ -48,28 +49,27 @@ from .assumptions import TrackingAssumption
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
 from .gui_launcher import run_gui
-from .misc import intersection_reduce, map_cell, union_reduce
+from .misc import intersection_reduce, union_reduce
 
 __all__ = ["Tiling"]
 
 
 Cell = Tuple[int, int]
 ReqList = Tuple[GriddedPerm, ...]
-
 CellBasis = Dict[Cell, Tuple[List[Perm], List[Perm]]]
-CellMap = Dict[Cell, Cell]
 CellFrozenSet = FrozenSet[Cell]
 Dimension = Tuple[int, int]
+
 
 CachedProperties = TypedDict(
     "CachedProperties",
     {
         "active_cells": CellFrozenSet,
-        "backward_map": CellMap,
+        "backward_map": RowColMap,
         "cell_basis": CellBasis,
         "dimensions": Dimension,
         "empty_cells": CellFrozenSet,
-        "forward_map": CellMap,
+        "forward_map": RowColMap,
         "point_cells": CellFrozenSet,
         "positive_cells": CellFrozenSet,
         "possibly_empty": CellFrozenSet,
@@ -145,11 +145,11 @@ class Tiling(CombinatorialClass):
             self._requirements = tuple()
             self._assumptions = tuple()
             self._cached_properties["active_cells"] = frozenset()
-            self._cached_properties["backward_map"] = {}
+            self._cached_properties["backward_map"] = RowColMap.identity((0, 0))
             self._cached_properties["cell_basis"] = {(0, 0): ([Perm()], [])}
             self._cached_properties["dimensions"] = (1, 1)
             self._cached_properties["empty_cells"] = frozenset([(0, 0)])
-            self._cached_properties["forward_map"] = {}
+            self._cached_properties["forward_map"] = RowColMap.identity((0, 0))
             self._cached_properties["point_cells"] = frozenset()
             self._cached_properties["positive_cells"] = frozenset()
             self._cached_properties["possibly_empty"] = frozenset()
@@ -240,70 +240,49 @@ class Tiling(CombinatorialClass):
         # Produce the mapping between the two tilings
         if not self.active_cells:
             assert GriddedPerm.empty_perm() not in self.obstructions
-            self._cached_properties["forward_map"] = {}
+            self._cached_properties["forward_map"] = RowColMap.identity((0, 0))
             self._obstructions = (GriddedPerm.single_cell((0,), (0, 0)),)
             self._requirements = tuple()
             assert not self._assumptions, "UH OH - we gotta think now"
             self._assumptions = tuple()
             self._cached_properties["dimensions"] = (1, 1)
             return
-        col_mapping, row_mapping, identity = self._minimize_mapping()
-        cell_map = partial(map_cell, col_mapping, row_mapping)
-
-        if identity:
-            self._cached_properties["forward_map"] = {
-                cell: cell for cell in self.active_cells
-            }
-            # We still may need to remove point obstructions if the empty row or col
-            # was on the end!
-            (width, height) = self.dimensions
-            self._obstructions = tuple(
-                ob
-                for ob in self.obstructions
-                if len(ob) > 1 or (ob.pos[0][0] < width and ob.pos[0][1] < height)
+        forward_map = self._minimize_mapping()
+        self._cached_properties["forward_map"] = forward_map
+        # We still may need to remove point obstructions if the empty row or col
+        # was on the end so we do it outside the next if statement.
+        self._obstructions = tuple(
+            forward_map.map_gp(ob)
+            for ob in self.obstructions
+            if not ob.is_point_perm() or forward_map.is_mappable_gp(ob)
+        )
+        if not forward_map.is_identity():
+            self._requirements = tuple(
+                tuple(forward_map.map_gp(req) for req in reqlist)
+                for reqlist in self._requirements
             )
-            return
+            self._assumptions = Tiling.sort_requirements(
+                [
+                    [ass.apply_row_col_map(forward_map) for ass in assumption]
+                    for assumption in self.assumptions
+                ]
+            )
+            self._cached_properties["active_cells"] = frozenset(
+                forward_map.map_cell(cell)
+                for cell in self._cached_properties["active_cells"]
+                if forward_map.is_mappable_cell(cell)
+            )
+            self._cached_properties["empty_cells"] = frozenset(
+                forward_map.map_cell(cell)
+                for cell in self._cached_properties["empty_cells"]
+                if forward_map.is_mappable_cell(cell)
+            )
+            self._cached_properties["dimensions"] = (
+                forward_map.max_col() + 1,
+                forward_map.max_row() + 1,
+            )
 
-        # For tracking regions.
-        self._cached_properties["forward_map"] = {
-            (k_x, k_y): (v_x, v_y)
-            for k_x, v_x in col_mapping.items()
-            for k_y, v_y in row_mapping.items()
-        }
-        new_obs = []
-        for ob in self._obstructions:
-            cell = ob.pos[0]
-            if not ob.is_point_perm() or (
-                cell[0] in col_mapping and cell[1] in row_mapping
-            ):
-                new_obs.append(ob.apply_map(cell_map))
-        self._obstructions = tuple(new_obs)
-        self._requirements = tuple(
-            tuple(req.apply_map(cell_map) for req in reqlist)
-            for reqlist in self._requirements
-        )
-        self._assumptions = Tiling.sort_assumptions(
-            [
-                [ass.apply_row_col_map(row_mapping, col_mapping) for ass in assumption]
-                for assumption in self.assumptions
-            ]
-        )
-        self._cached_properties["active_cells"] = frozenset(
-            self._cached_properties["forward_map"][cell]
-            for cell in self._cached_properties["active_cells"]
-            if cell in self._cached_properties["forward_map"]
-        )
-        self._cached_properties["empty_cells"] = frozenset(
-            self._cached_properties["forward_map"][cell]
-            for cell in self._cached_properties["empty_cells"]
-            if cell in self._cached_properties["forward_map"]
-        )
-        self._cached_properties["dimensions"] = (
-            max(col_mapping.values()) + 1,
-            max(row_mapping.values()) + 1,
-        )
-
-    def _minimize_mapping(self) -> Tuple[Dict[int, int], Dict[int, int], bool]:
+    def _minimize_mapping(self) -> RowColMap:
         """
         Returns a pair of dictionaries, that map rows/columns to an
         equivalent set of rows/columns where empty ones have been removed.
@@ -318,11 +297,9 @@ class Tiling(CombinatorialClass):
         identity = (self.dimensions[0] == len(col_list)) and (
             self.dimensions[1] == len(row_list)
         )
-        if identity:
-            return ({}, {}, True)
         col_mapping = {x: actual for actual, x in enumerate(col_list)}
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
-        return (col_mapping, row_mapping, False)
+        return RowColMap(row_map=row_mapping, col_map=col_mapping, is_identity=identity)
 
     @classmethod
     def guess_from_gridded_perms(
@@ -730,6 +707,20 @@ class Tiling(CombinatorialClass):
             sorted_input=True,
         )
 
+    def remove_requirements(self):
+        """
+        Return the same tiling without the requirements.
+        """
+        assert not self.assumptions, "Now think"
+        return self.__class__(
+            obstructions=self._obstructions,
+            requirements=[],
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
+        )
+
     def remove_components_from_assumptions(self):
         """
         Return the tiling with all the actual components from individual
@@ -906,22 +897,8 @@ class Tiling(CombinatorialClass):
         # TODO: fix name and typing to allow for assumptions
         return tuple(sorted(tuple(sorted(set(reqlist))) for reqlist in requirements))
 
-    def backward_map(self, gp: GriddedPerm) -> GriddedPerm:
-        return GriddedPerm(gp.patt, [self.backward_cell_map[cell] for cell in gp.pos])
-
-    def forward_map(self, gp: GriddedPerm) -> GriddedPerm:
-        return GriddedPerm(gp.patt, [self.forward_cell_map[cell] for cell in gp.pos])
-
-    def forward_map_assumption(
-        self, assumption: Iterable[TrackingAssumption]
-    ) -> Iterable[TrackingAssumption]:
-        """
-        TODO: store forward row and col maps and use those! note: takes in iterable.
-        """
-        raise NotImplementedError
-
     @property
-    def forward_cell_map(self) -> CellMap:
+    def forward_map(self) -> RowColMap:
         try:
             return self._cached_properties["forward_map"]
         except KeyError:
@@ -929,11 +906,11 @@ class Tiling(CombinatorialClass):
             return self._cached_properties["forward_map"]
 
     @property
-    def backward_cell_map(self) -> CellMap:
+    def backward_map(self) -> RowColMap:
         try:
             return self._cached_properties["backward_map"]
         except KeyError:
-            backward_map = {b: a for a, b in self.forward_cell_map.items()}
+            backward_map = self.forward_map.reverse()
             self._cached_properties["backward_map"] = backward_map
             return backward_map
 
@@ -2008,7 +1985,7 @@ class Tiling(CombinatorialClass):
                 result.append("\n")
         for i, ass in enumerate(self.assumptions):
             result.append("Assumption {}:\n".format(str(i)))
-            result.append(str(ass))
+            result.extend(map(str, ass))
             result.append("\n")
         if self.assumptions or self.requirements:
             result = result[:-1]
