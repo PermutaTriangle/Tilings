@@ -23,6 +23,9 @@ class PreimageCounter:
         self._init_checked()
 
     def _init_checked(self):
+        """
+        Some sanity check on the counter.
+        """
         assert self.map.is_non_crossing()
         assert not self.tiling.assumptions
 
@@ -33,24 +36,33 @@ class PreimageCounter:
         """
         self.map = self.tiling.backward_map.compose(self.map)
 
-    def apply_row_col_map(self, row_col_map: "RowColMap") -> "PreimageCounter":
+    def apply_row_col_map(self, row_col_map: "RowColMap") -> "Pre image Counter":
         """
         Modify in place the map with respect to the given row_col_map. Return self.
         """
         self.map = self.map.compose(row_col_map)
         return self
 
-    def get_value(self, gp: GriddedPerm) -> int:
-        raise NotImplementedError
+    def num_preimage(self, gp: GriddedPerm) -> int:
+        """
+        Return the number of preimage for the given gridded permutation.
+        """
+        return sum(1 for _ in self.preimage(gp))
 
     def preimage(
         self, gp: GriddedPerm, ignore_reqs: bool = False
     ) -> Iterator[GriddedPerm]:
+        """
+        Return the preimage of the given gridded on the tiling.
+        """
         raise NotImplementedError
 
     def add_obstructions_and_requirements(
         self, obs: Iterable[GriddedPerm], reqs: Iterable[Iterable[GriddedPerm]]
     ) -> "PreimageCounter":
+        """
+        Add the given obstructions and requirements to the tiling.
+        """
         new_obs = itertools.chain.from_iterable(self.preimage(gp, False) for gp in obs)
         new_reqs = (
             itertools.chain.from_iterable(self.preimage(gp, False) for gp in req)
@@ -84,15 +96,13 @@ class ParameterCounter:
         """
         Return the value of the parameter for the given gridded permutation.
         """
-        return sum(counter.get_value(gp) for counter in self.counters)
+        return sum(counter.num_preimage(gp) for counter in self.counters)
 
     def to_jsonable(self) -> dict:
-        """Return a dictionary form of the assumption."""
         raise NotImplementedError
 
     @classmethod
     def from_dict(cls, d: dict) -> "ParameterCounter":
-        """Return the assumption from the json dict representation."""
         raise NotImplementedError
 
     def apply_row_col_map(self, row_col_map: "RowColMap") -> "ParameterCounter":
@@ -107,6 +117,10 @@ class ParameterCounter:
     def add_obstructions_and_requirements(
         self, obs: Iterable[GriddedPerm], reqs: Iterable[Iterable[GriddedPerm]]
     ) -> "ParameterCounter":
+        """
+        Add the given obstructions and requirement to all the tilings of the preimage
+        counters.
+        """
         return ParameterCounter(
             (
                 counter.add_obstructions_and_requirements(obs, reqs)
