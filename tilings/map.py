@@ -154,8 +154,12 @@ class RowColMap:
 
     def __str__(self) -> str:
         s = "RowColMap\n"
-        s += f"    row map: {self._row_map}\n"
-        s += f"    col map: {self._col_map}\n"
+        rows = [f"{k}: {v}" for k, v in sorted(self._row_map.items())]
+        cols = [f"{k}: {v}" for k, v in sorted(self._col_map.items())]
+        row_str = ", ".join(rows)
+        col_str = ", ".join(cols)
+        s += f"    row map: {{{row_str}}}\n"
+        s += f"    col map: {{{col_str}}}"
         return s
 
     def __eq__(self, other: object) -> bool:
