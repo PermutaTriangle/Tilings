@@ -39,7 +39,6 @@ from .algorithms import (
     MinimalGriddedPerms,
     ObstructionTransitivity,
     RequirementPlacement,
-    RowColMap,
     RowColSeparation,
     SubclassVerificationAlgorithm,
     SubobstructionInferral,
@@ -49,6 +48,7 @@ from .assumptions import TrackingAssumption
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
 from .gui_launcher import run_gui
+from .map import RowColMap
 from .misc import intersection_reduce, union_reduce
 
 __all__ = ["Tiling"]

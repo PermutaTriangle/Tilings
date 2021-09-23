@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Dict, Tuple
+import itertools
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
 from tilings.exception import InvalidOperationError
 
@@ -21,7 +22,10 @@ class RowColMap:
     """
 
     def __init__(
-        self, row_map: Dict[int, int], col_map: Dict[int, int], is_identity: bool
+        self,
+        row_map: Dict[int, int],
+        col_map: Dict[int, int],
+        is_identity: Optional[bool] = None,
     ) -> None:
         self._row_map = row_map
         self._col_map = col_map
@@ -52,11 +56,33 @@ class RowColMap:
             row_map=row_map, col_map=col_map, is_identity=self._is_identity
         )
 
+    def compose(self, other: "RowColMap") -> "RowColMap":
+        """
+        The return the new map that is obtained by the applying first self and then
+        other.
+
+        If self maps a -> b and other maps b -> c than the resulting map maps a -> c.
+        """
+        col_map = {k: other.map_col(v) for k, v in self._col_map.items()}
+        row_map = {k: other.map_row(v) for k, v in self._row_map.items()}
+        return RowColMap(row_map=row_map, col_map=col_map)
+
     def is_identity(self) -> bool:
         """
         Indicate if the map is the identity map.
         """
+        if self._is_identity is None:
+            kv_pairs = itertools.chain(self._col_map.items(), self._row_map.items())
+            self._is_identity = all(k == v for k, v in kv_pairs)
         return self._is_identity
+
+    def is_non_crossing(self) -> bool:
+        """
+        Check that the row map and col map map interval to interval.
+        """
+        cols = [b for _, b in sorted(self._col_map.items())]
+        rows = [b for _, b in sorted(self._row_map.items())]
+        return cols == sorted(cols) and rows == sorted(rows)
 
     def is_mappable_gp(self, gp: "GriddedPerm") -> bool:
         """
@@ -127,6 +153,20 @@ class RowColMap:
 
     def __str__(self) -> str:
         s = "RowColMap\n"
-        s += f"    row map: {self._row_map}\n"
-        s += f"    col map: {self._col_map}\n"
+        rows = [f"{k}: {v}" for k, v in sorted(self._row_map.items())]
+        cols = [f"{k}: {v}" for k, v in sorted(self._col_map.items())]
+        row_str = ", ".join(rows)
+        col_str = ", ".join(cols)
+        s += f"    row map: {{{row_str}}}\n"
+        s += f"    col map: {{{col_str}}}"
         return s
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RowColMap):
+            return NotImplemented
+        return self._col_map == other._col_map and self._row_map == other._row_map
+
+    def __hash__(self) -> int:
+        row_map = tuple(sorted(self._row_map.items()))
+        col_map = tuple(sorted(self._col_map.items()))
+        return hash((col_map, row_map))
