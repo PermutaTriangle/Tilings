@@ -73,10 +73,41 @@ class PreimageCounter:
             self.tiling.add_obstructions_and_requirements(new_obs, new_reqs), self.map
         )
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, PreimageCounter):
+            return NotImplemented
+        return self.tiling == other.tiling and self.map == other.map
+
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, PreimageCounter):
             return NotImplemented
-        raise NotImplementedError
+        key_self = (
+            self.__class__.__name__,
+            self.tiling.obstructions,
+            self.tiling.requirements,
+            self.map,
+        )
+        key_other = (
+            other.__class__.__name__,
+            other.tiling.obstructions,
+            other.tiling.requirements,
+            self.map,
+        )
+        return key_self < key_other
+
+    def __hash__(self) -> int:
+        return hash((self.tiling, self.map))
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.tiling!r}), {self.map!r})"
+
+    def __str__(self):
+        map_str = "   " + str(self.map).replace("\n", "\n   ")
+        tiling_str = "   " + str(self.tiling).replace("\n", "\n   ")
+        return (
+            "Counting the griddings with respect to the "
+            + f"map\n{map_str}\non the tiling:\n{tiling_str}"
+        )
 
 
 class ParameterCounter:
