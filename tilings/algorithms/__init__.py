@@ -4,7 +4,6 @@ from .fusion import ComponentFusion, Fusion
 from .gridded_perm_generation import GriddedPermsOnTiling
 from .gridded_perm_reduction import GriddedPermReduction
 from .guess_obstructions import guess_obstructions
-from .map import RowColMap
 from .minimal_gridded_perms import MinimalGriddedPerms
 from .obstruction_inferral import (
     AllObstructionInferral,
@@ -35,7 +34,6 @@ __all__ = [
     "GriddedPermReduction",
     "RequirementPlacement",
     "RowColSeparation",
-    "RowColMap",
     "SubclassVerificationAlgorithm",
     "guess_obstructions",
     "Sliding",

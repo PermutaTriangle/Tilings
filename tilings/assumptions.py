@@ -19,8 +19,8 @@ from typing import (
 
 from permuta import Perm
 
-from .algorithms import RowColMap
 from .griddedperm import GriddedPerm
+from .map import RowColMap
 
 Cell = Tuple[int, int]
 
