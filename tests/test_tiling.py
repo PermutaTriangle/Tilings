@@ -11,6 +11,7 @@ from tilings.algorithms import Fusion as FusionAlg
 from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
 from tilings.map import RowColMap
+from tilings.parameter_counter import ParameterCounter, PreimageCounter
 
 
 @pytest.fixture
@@ -1410,15 +1411,15 @@ def test_initial_conditions(empty_tiling, finite_tiling):
             GriddedPerm((0, 1), ((0, 1), (0, 2))),
         ],
     )
-    ass = TrackingAssumption(
-        ass_t, RowColMap(col_map={0: 0}, row_map={0: 0, 1: 1, 2: 1})
+    param_counter = ParameterCounter(
+        [PreimageCounter(ass_t, RowColMap(col_map={0: 0}, row_map={0: 0, 1: 1, 2: 1}))]
     )
     with_ass = Tiling(
         obstructions=[
             GriddedPerm((0, 1), ((0, 0),) * 2),
             GriddedPerm((0, 1), ((0, 1),) * 2),
         ],
-        assumptions=[[ass]],
+        assumptions=[param_counter],
     )
     assert with_ass.initial_conditions(5) == [
         sympy.sympify("k_0"),
