@@ -71,10 +71,9 @@ class RowColMap:
         """
         Indicate if the map is the identity map.
         """
-        if self.is_identity is None:
+        if self._is_identity is None:
             kv_pairs = itertools.chain(self._col_map.items(), self._row_map.items())
             self._is_identity = all(k == v for k, v in kv_pairs)
-        assert self._is_identity is not None
         return self._is_identity
 
     def is_non_crossing(self) -> bool:
