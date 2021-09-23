@@ -1258,38 +1258,34 @@ class Tiling(CombinatorialClass):
             "#bfbfbf",
         ]
         has_ass: Dict[int, List[str]] = {}
-        for c, ass in enumerate(self.assumptions):
-            for gp in ass.gps:
-                if len(gp.pos) > 1:
+        for c, param_counter in enumerate(self.assumptions):
+            for i, j in param_counter.active_region():
+                dim_i, dim_j = self.dimensions
+                index = (dim_j - j - 1) * (3 * dim_i + 2) + i * 3 + 2
+                if c >= len(colors):
                     pass
+                elif index in has_ass.keys():
+                    has_ass[index].append(colors[c])
                 else:
-                    i, j = gp.pos[0]
-                    dim_i, dim_j = self.dimensions
-                    index = (dim_j - j - 1) * (3 * dim_i + 2) + i * 3 + 2
-                    if c >= len(colors):
-                        pass
-                    elif index in has_ass.keys():
-                        has_ass[index].append(colors[c])
-                    else:
-                        has_ass[index] = [colors[c]]
+                    has_ass[index] = [colors[c]]
 
-                    if c >= len(colors) or len(has_ass[index]) > 4:
-                        # display gray lines if out of color or
-                        # more than 4 assumption in single cell
-                        background_image = """background-image:
-                            repeating-linear-gradient(
-                            45deg, #ffffff, #ffffff 6px, #00000080 1px, #00000080 7px
-                            );"""
-                    else:
-                        # display stripes
-                        background_image = "background-image: linear-gradient(180deg"
-                        stripe_size = 24 // len(has_ass[index])
-                        for i, color in enumerate(has_ass[index]):
-                            background_image += f""",
-                                {color} {i*stripe_size}px,
-                                {color} {(i+1)*stripe_size}px"""
-                        background_image += ");"
-                    result[index] = f'<th style="{background_image}{style}">'
+                if c >= len(colors) or len(has_ass[index]) > 4:
+                    # display gray lines if out of color or
+                    # more than 4 assumption in single cell
+                    background_image = """background-image:
+                        repeating-linear-gradient(
+                        45deg, #ffffff, #ffffff 6px, #00000080 1px, #00000080 7px
+                        );"""
+                else:
+                    # display stripes
+                    background_image = "background-image: linear-gradient(180deg"
+                    stripe_size = 24 // len(has_ass[index])
+                    for i, color in enumerate(has_ass[index]):
+                        background_image += f""",
+                            {color} {i*stripe_size}px,
+                            {color} {(i+1)*stripe_size}px"""
+                    background_image += ");"
+                result[index] = f'<th style="{background_image}{style}">'
         return result
 
     def to_html_representation(self) -> str:
