@@ -77,6 +77,14 @@ class RowColMap:
         assert self._is_identity is not None
         return self._is_identity
 
+    def is_non_crossing(self) -> bool:
+        """
+        Check that the row map and col map map interval to interval.
+        """
+        cols = [b for _, b in sorted(self._col_map.items())]
+        rows = [b for _, b in sorted(self._row_map.items())]
+        return cols == sorted(cols) and rows == sorted(rows)
+
     def is_mappable_gp(self, gp: "GriddedPerm") -> bool:
         """
         Return True if all the cell used by the gridded perm can be mapped.

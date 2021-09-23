@@ -88,10 +88,7 @@ class TrackingAssumption:
         """
         Ensure that intervals are preseved with respect to row and col maps.
         """
-        cols = [b for _, b in sorted(self.col_map.items())]
-        assert cols == sorted(cols)
-        rows = [b for _, b in sorted(self.row_map.items())]
-        assert rows == sorted(rows)
+        assert self.map.is_non_crossing()
 
     def remove_empty_rows_and_cols(self) -> None:
         """
