@@ -1817,12 +1817,9 @@ class Tiling(CombinatorialClass):
 
     def __contains__(self, gp: GriddedPerm) -> bool:
         """Test if a gridded permtuaiton is griddable on the given tiling."""
-        res = True
-        for ob in self.obstructions:
-            res = res and ob not in gp
-        for req_list in self.requirements:
-            res = res and any(req in gp for req in req_list)
-        return res
+        return gp.avoids(*self.obstructions) and all(
+            gp.contains(*req) for req in self.requirements
+        )
 
     def __repr__(self) -> str:
         format_string = "Tiling(obstructions={}, requirements={}, assumptions={})"
