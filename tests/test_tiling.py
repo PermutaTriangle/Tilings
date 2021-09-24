@@ -2746,6 +2746,18 @@ def test_contains_all_patterns_locally_for_crossing():
     assert all(t.contains_all_patterns_locally_for_crossing((i, 0)) for i in range(3))
 
 
+def test_contains():
+    t = Tiling(
+        [GriddedPerm((0, 1), ((0, 0),) * 2), GriddedPerm((0, 1), ((1, 0),) * 2)],
+        [[GriddedPerm((0,), ((1, 0),))]],
+    )
+    assert GriddedPerm((0,), ((0, 0),)) not in t
+    assert GriddedPerm((0,), ((1, 0),)) in t
+    assert GriddedPerm((0, 1), ((0, 0), (0, 0))) not in t
+    assert GriddedPerm((0, 1), ((0, 0), (1, 0))) in t
+    assert GriddedPerm((0, 1), ((1, 0), (1, 0))) not in t
+
+
 @pytest.mark.slow
 def test_generate_known_equinumerous_tilings():
     check_up_to = 5
