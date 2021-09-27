@@ -3,9 +3,9 @@ from itertools import chain, combinations
 from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from permuta.misc import UnionFind
-from tilings import GriddedPerm
-from tilings.assumptions import TrackingAssumption
+from tilings.griddedperm import GriddedPerm
 from tilings.misc import partitions_iterator
+from tilings.parameter_counter import ParameterCounter
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -22,8 +22,7 @@ class Factor:
     Two active cells are in the same factor if they are in the same row
     or column, or they share an obstruction or a requirement.
 
-    If using tracking assumptions, then two cells will also be in the same
-    factor if they are covered by the same assumption.
+    Cell are also united according to the parameters on the tiling.
     """
 
     def __init__(self, tiling: "Tiling") -> None:
@@ -38,7 +37,7 @@ class Factor:
                 Tuple[
                     Tuple[GriddedPerm, ...],
                     Tuple[ReqList, ...],
-                    Tuple[TrackingAssumption, ...],
+                    Tuple[ParameterCounter, ...],
                 ]
             ]
         ] = None
@@ -72,17 +71,12 @@ class Factor:
             c2_int = self._cell_to_int(c2)
             self._cell_unionfind.unite(c1_int, c2_int)
 
-    def _unite_assumptions(self) -> None:
+    def _unite_parameters(self) -> None:
         """
-        For each TrackingAssumption unite all the positions of the gridded perms.
+        Unite according to parameters.
         """
-        for assumption in self._tiling.assumptions:
-            if isinstance(assumption, ComponentAssumption):
-                for comp in assumption.get_components(self._tiling):
-                    self._unite_cells(chain.from_iterable(gp.pos for gp in comp))
-            else:
-                for gp in assumption.gps:
-                    self._unite_cells(gp.pos)
+        if self._tiling.parameters:
+            raise NotImplementedError
 
     def _unite_obstructions(self) -> None:
         """
@@ -126,7 +120,7 @@ class Factor:
         """
         self._unite_obstructions()
         self._unite_requirements()
-        self._unite_assumptions()
+        self._unite_parameters()
         self._unite_rows_and_cols()
 
     def get_components(self) -> Tuple[Set[Cell], ...]:
@@ -148,7 +142,7 @@ class Factor:
         self,
     ) -> List[
         Tuple[
-            Tuple[GriddedPerm, ...], Tuple[ReqList, ...], Tuple[TrackingAssumption, ...]
+            Tuple[GriddedPerm, ...], Tuple[ReqList, ...], Tuple[ParameterCounter, ...]
         ],
     ]:
         """
@@ -167,16 +161,13 @@ class Factor:
             requirements = tuple(
                 req for req in self._tiling.requirements if req[0].pos[0] in component
             )
-            # TODO: consider skew/sum assumptions
-            assumptions = tuple(
-                ass.__class__(gp for gp in ass.gps if gp.pos[0] in component)
-                for ass in self._tiling.assumptions
-            )
+            assert not self._tiling.parameters
+            parameters: Tuple[ParameterCounter, ...] = tuple()
             factors.append(
                 (
                     obstructions,
                     requirements,
-                    tuple(set(ass for ass in assumptions if ass.gps)),
+                    parameters,
                 )
             )
         self._factors_obs_and_reqs = factors
@@ -196,7 +187,7 @@ class Factor:
             self._tiling.__class__(
                 obstructions=f[0],
                 requirements=f[1],
-                assumptions=tuple(sorted(f[2])),
+                parameters=tuple(sorted(f[2])),
                 simplify=False,
             )
             for f in self._get_factors_obs_and_reqs()
@@ -216,12 +207,12 @@ class Factor:
         for partition in partitions_iterator(min_comp):
             factors = []
             for part in partition:
-                obstructions, requirements, assumptions = zip(*part)
+                obstructions, requirements, parameters = zip(*part)
                 factors.append(
                     self._tiling.__class__(
                         obstructions=chain(*obstructions),
                         requirements=chain(*requirements),
-                        assumptions=tuple(sorted(chain(*assumptions))),
+                        parameters=tuple(sorted(chain(*parameters))),
                         simplify=False,
                     )
                 )
@@ -276,6 +267,6 @@ class FactorWithInterleaving(Factor):
         """
         Unite all the cells that share an obstruction or a requirement list.
         """
-        self._unite_assumptions()
+        self._unite_parameters()
         self._unite_obstructions()
         self._unite_requirements()
