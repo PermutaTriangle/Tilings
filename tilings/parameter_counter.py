@@ -35,7 +35,7 @@ class PreimageCounter:
         """
         self.map = self.tiling.backward_map.compose(self.map)
 
-    def apply_row_col_map(self, row_col_map: "RowColMap") -> "Pre image Counter":
+    def apply_row_col_map(self, row_col_map: "RowColMap") -> "PreimageCounter":
         """
         Modify in place the map with respect to the given row_col_map. Return self.
         """

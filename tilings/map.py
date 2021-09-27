@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Dict, Iterator, Optional, Tuple
 from tilings.exception import InvalidOperationError
 
 if TYPE_CHECKING:
-    from tilings.assumptions import TrackingAssumption
     from tilings.griddedperm import GriddedPerm
 
 Cell = Tuple[int, int]
@@ -96,16 +95,6 @@ class RowColMap:
         Map the gridded permutation according to the map.
         """
         return gp.__class__(gp.patt, map(self.map_cell, gp.pos))
-
-    def map_assumption(self, assumption: "TrackingAssumption") -> "TrackingAssumption":
-        """
-        Map the assumption according to the map.
-
-        If some of the gridded permutation tracked by the assumption cannot be mapped
-        they are removed from the assumption.
-        """
-        gps = tuple(self.map_gp(gp) for gp in assumption.gps if self.is_mappable_gp(gp))
-        return assumption.__class__(gps)
 
     def is_mappable_cell(self, cell: Cell) -> bool:
         """
