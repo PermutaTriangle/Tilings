@@ -6,16 +6,12 @@ def test_guess_obstruction():
         (
             Tiling(
                 obstructions=(GriddedPerm((0, 1), ((0, 0), (0, 0))),),
-                requirements=(),
-                assumptions=(),
             ),
             5,
         ),
         (
             Tiling(
                 obstructions=(GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),),
-                requirements=(),
-                assumptions=(),
             ),
             3,
         ),
@@ -29,7 +25,6 @@ def test_guess_obstruction():
                     GriddedPerm((2, 1, 0, 3), ((0, 0), (1, 0), (1, 0), (2, 0))),
                     GriddedPerm((2, 0, 1, 3), ((0, 0), (1, 0), (1, 0), (2, 0))),
                 ),
-                requirements=(),
             ),
             4,
         ),
@@ -55,8 +50,6 @@ def test_guess_obstruction():
                         (0, 4, 2, 1, 3), ((0, 0), (1, 0), (1, 0), (1, 0), (2, 0))
                     ),
                 ),
-                requirements=(),
-                assumptions=(),
             ),
             5,
         ),
@@ -74,8 +67,6 @@ def test_guess_obstruction():
                     GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (2, 0))),
                     GriddedPerm((3, 2, 1, 0), ((1, 1), (2, 0), (2, 0), (2, 0))),
                 ),
-                requirements=(),
-                assumptions=(),
             ),
             4,
         ),
@@ -95,8 +86,6 @@ def test_guess_obstruction():
                         ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)),
                     ),
                 ),
-                requirements=(),
-                assumptions=(),
             ),
             7,
         ),

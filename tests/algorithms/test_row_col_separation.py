@@ -896,7 +896,6 @@ def test_backmap():
             GriddedPerm((2, 3, 0, 1), ((0, 1), (0, 2), (1, 0), (1, 0))),
         ),
         requirements=((GriddedPerm((0,), ((1, 2),)),),),
-        assumptions=(),
     )
     cellmap1 = {
         (0, 1): (0, 1),
