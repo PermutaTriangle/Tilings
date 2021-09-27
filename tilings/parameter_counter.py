@@ -16,7 +16,6 @@ class PreimageCounter:
         tiling: "Tiling",
         row_col_map: RowColMap,
     ):
-        assert not tiling.assumptions
         self.tiling = tiling
         self.map = row_col_map
         self.remove_empty_rows_and_cols()
@@ -27,7 +26,7 @@ class PreimageCounter:
         Some sanity check on the counter.
         """
         assert self.map.is_non_crossing()
-        assert not self.tiling.assumptions
+        assert not self.tiling.parameters
 
     def remove_empty_rows_and_cols(self) -> None:
         """
