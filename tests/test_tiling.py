@@ -1472,12 +1472,12 @@ def test_fusion():
             GriddedPerm(Perm((2, 0, 1)), [(0, 2), (0, 1), (0, 2)]),
         ],
         assumptions=[
-            TrackingAssumption(
-                [
-                    GriddedPerm.single_cell((0,), (0, 1)),
-                    GriddedPerm.single_cell((0,), (0, 2)),
-                ]
-            )
+            # TrackingAssumption(
+            #     [
+            #         GriddedPerm.single_cell((0,), (0, 1)),
+            #         GriddedPerm.single_cell((0,), (0, 2)),
+            #     ]
+            # )
         ],
     )
     assert FusionAlg(t2, row_idx=0, tracked=True, isolation_level=None).fusable()

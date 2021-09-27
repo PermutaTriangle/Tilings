@@ -1,11 +1,9 @@
-from collections import defaultdict
-from itertools import chain, product
-from typing import Counter, DefaultDict, Dict, Iterable, Iterator, List, Optional, Tuple
+from itertools import chain
+from typing import Counter, Dict, Iterator, List, Optional
 
 from tilings.algorithms.fusion import Fusion
 from tilings.assumptions import TrackingAssumption
-from tilings.griddedperm import Cell, GriddedPerm
-from tilings.misc import union_reduce
+from tilings.griddedperm import GriddedPerm
 from tilings.tiling import Tiling
 
 

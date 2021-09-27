@@ -11,8 +11,6 @@ import heapq
 from itertools import combinations, product
 from typing import TYPE_CHECKING, Dict, List, Tuple
 
-from tilings import GriddedPerm
-
 if TYPE_CHECKING:
     from tilings import Tiling
 
