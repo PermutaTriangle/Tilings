@@ -124,7 +124,7 @@ class GuidedSearcher(TileScope):
         *args,
         **kwargs
     ):
-        self.tilings = frozenset(t.remove_assumptions() for t in tilings)
+        self.tilings = frozenset(t.remove_parameters() for t in tilings)
         super().__init__(basis, pack, *args, **kwargs)
         for t in self.tilings:
             class_label = self.classdb.get_label(t)
@@ -139,7 +139,7 @@ class GuidedSearcher(TileScope):
         strategies: Tuple[CSSstrategy, ...],
         inferral: bool,
     ) -> None:
-        if comb_class.remove_assumptions() not in self.tilings:
+        if comb_class.remove_parameters() not in self.tilings:
             return
         return super()._expand(comb_class, label, strategies, inferral)
 

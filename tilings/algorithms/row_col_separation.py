@@ -11,8 +11,6 @@ import heapq
 from itertools import combinations, product
 from typing import TYPE_CHECKING, Dict, List, Tuple
 
-from tilings import GriddedPerm
-
 if TYPE_CHECKING:
     from tilings import Tiling
 
@@ -392,9 +390,9 @@ class _RowColSeparationSingleApplication:
         cell_map = self._get_cell_map(row_order, col_order)
         obs = self.map_obstructions(cell_map)
         reqs = self.map_requirements(cell_map)
-        ass = self.map_assumptions(cell_map)
+        params = self.map_parameters(cell_map)
         return self._tiling.__class__(
-            obstructions=obs, requirements=reqs, assumptions=ass
+            obstructions=obs, requirements=reqs, parameters=params
         )
 
     @staticmethod
@@ -428,15 +426,11 @@ class _RowColSeparationSingleApplication:
         for req_list in self._tiling.requirements:
             yield [self._map_gridded_perm(cell_map, req) for req in req_list]
 
-    def map_assumptions(self, cell_map):
-        """Map the assumptions of a tiling according to the cell map."""
-        for ass in self._tiling.assumptions:
-            gps: List[GriddedPerm] = []
-            for gp in ass.gps:
-                mapped_gp = self._map_gridded_perm(cell_map, gp)
-                if not mapped_gp.contradictory():
-                    gps.append(mapped_gp)
-            yield ass.__class__(gps)
+    def map_parameters(self, cell_map):
+        """Map the parameters of a tiling according to the cell map."""
+        if self._tiling.parameters:
+            raise NotImplementedError
+        return []
 
     @property
     def max_row_order(self):

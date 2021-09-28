@@ -2,8 +2,8 @@ from itertools import chain
 from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Tuple
 
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
-from tilings import GriddedPerm
-from tilings.assumptions import TrackingAssumption
+from tilings.griddedperm import GriddedPerm
+from tilings.parameter_counter import ParameterCounter
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -13,7 +13,7 @@ Dir = int
 ListRequirement = List[GriddedPerm]
 ObsCache = Dict[Cell, List[GriddedPerm]]
 ReqsCache = Dict[Cell, List[ListRequirement]]
-AssCache = Dict[Cell, List[TrackingAssumption]]
+ParamCache = Dict[Cell, List[ParameterCounter]]
 
 
 class RequirementPlacement:
@@ -52,7 +52,7 @@ class RequirementPlacement:
         self.own_col = own_col
         self._stretched_obstructions_cache: ObsCache = {}
         self._stretched_requirements_cache: ReqsCache = {}
-        self._stretched_assumptions_cache: AssCache = {}
+        self._stretched_parameters_cache: ParamCache = {}
         if self.own_row and self.own_col:
             self.directions = frozenset(DIRS)
         elif self.own_row:
@@ -244,31 +244,29 @@ class RequirementPlacement:
             ]
         return self._stretched_requirements_cache[cell]
 
-    def stretched_assumptions(self, cell: Cell) -> List[TrackingAssumption]:
+    def stretched_parameters(self, cell: Cell) -> List[ParameterCounter]:
         """
-        Return all of the stretched assumptions that are created if placing a
+        Return all of the stretched parameters that are created if placing a
         point in the given cell.
         """
-        if cell not in self._stretched_assumptions_cache:
-            self._stretched_assumptions_cache[cell] = [
-                ass.__class__(self._stretch_gridded_perms(ass.gps, cell))
-                for ass in self._tiling.assumptions
-            ]
-        return self._stretched_assumptions_cache[cell]
+        if self._tiling.parameters:
+            raise NotImplementedError
+        else:
+            return []
 
-    def _stretched_obstructions_requirements_and_assumptions(
+    def _stretched_obstructions_requirements_and_parameters(
         self, cell: Cell
-    ) -> Tuple[List[GriddedPerm], List[ListRequirement], List[TrackingAssumption]]:
+    ) -> Tuple[List[GriddedPerm], List[ListRequirement], List[ParameterCounter]]:
         """
         Return all of the stretched obstruction and requirements assuming that
         a point is placed in cell.
         """
         stretched_obs = self.stretched_obstructions(cell)
         stretched_reqs = self.stretched_requirements(cell)
-        stretched_ass = self.stretched_assumptions(cell)
+        stretched_params = self.stretched_parameters(cell)
         point_obs = self._point_obstructions(cell)
         point_req = self._point_requirements(cell)
-        return stretched_obs + point_obs, stretched_reqs + point_req, stretched_ass
+        return stretched_obs + point_obs, stretched_reqs + point_req, stretched_params
 
     @staticmethod
     def _farther(c1: Cell, c2: Cell, direction: Dir) -> bool:
@@ -352,8 +350,8 @@ class RequirementPlacement:
         cells = frozenset(gp.pos[idx] for idx, gp in zip(indices, gps))
         res = []
         for cell in sorted(cells):
-            stretched = self._stretched_obstructions_requirements_and_assumptions(cell)
-            (obs, reqs, ass) = stretched
+            stretched = self._stretched_obstructions_requirements_and_parameters(cell)
+            (obs, reqs, param) = stretched
             forced_obs = self.forced_obstructions_from_requirement(
                 gps, indices, cell, direction
             )
@@ -367,7 +365,7 @@ class RequirementPlacement:
                 self._tiling.__class__(
                     new_obs,
                     reqs + [rem_req],
-                    assumptions=ass,
+                    parameters=param,
                     already_minimized_obs=True,
                 )
             )

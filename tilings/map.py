@@ -1,10 +1,9 @@
 import itertools
-from typing import TYPE_CHECKING, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Iterator, Optional, Tuple
 
 from tilings.exception import InvalidOperationError
 
 if TYPE_CHECKING:
-    from tilings.assumptions import TrackingAssumption
     from tilings.griddedperm import GriddedPerm
 
 Cell = Tuple[int, int]
@@ -84,6 +83,7 @@ class RowColMap:
         rows = [b for _, b in sorted(self._row_map.items())]
         return cols == sorted(cols) and rows == sorted(rows)
 
+    # Mapping method
     def is_mappable_gp(self, gp: "GriddedPerm") -> bool:
         """
         Return True if all the cell used by the gridded perm can be mapped.
@@ -95,16 +95,6 @@ class RowColMap:
         Map the gridded permutation according to the map.
         """
         return gp.__class__(gp.patt, map(self.map_cell, gp.pos))
-
-    def map_assumption(self, assumption: "TrackingAssumption") -> "TrackingAssumption":
-        """
-        Map the assumption according to the map.
-
-        If some of the gridded permutation tracked by the assumption cannot be mapped
-        they are removed from the assumption.
-        """
-        gps = tuple(self.map_gp(gp) for gp in assumption.gps if self.is_mappable_gp(gp))
-        return assumption.__class__(gps)
 
     def is_mappable_cell(self, cell: Cell) -> bool:
         """
@@ -143,6 +133,32 @@ class RowColMap:
         """
         return self._col_map[col]
 
+    # Pre-image method
+    def preimage_row(self, row: int) -> Iterator[int]:
+        """Returns all the preimages of the given row."""
+        return (k for k, v in self._row_map.items() if v == row)
+
+    def preimage_col(self, col: int) -> Iterator[int]:
+        """Returns all the preimages of the given column."""
+        return (k for k, v in self._col_map.items() if v == col)
+
+    def preimage_cell(self, cell: Cell) -> Iterator[Cell]:
+        """Returns all the preimages of the given cell."""
+        col, row = cell
+        return itertools.product(self.preimage_col(col), self.preimage_row(row))
+
+    def preimage_gp(self, gp: "GriddedPerm") -> Iterator["GriddedPerm"]:
+        """
+        Returns all the preimages of the given gridded permutation.
+
+        Gridded permutations that are contradictory are filtered out.
+        """
+        for pos in itertools.product(*(self.preimage_cell(cell) for cell in gp.pos)):
+            new_gp = gp.__class__(gp.patt, pos)
+            if not new_gp.contradictory():
+                yield new_gp
+
+    # Other method
     def max_row(self) -> int:
         """Return the biggest row index in the image."""
         return max(self._row_map.values())

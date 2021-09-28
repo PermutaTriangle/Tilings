@@ -382,10 +382,10 @@ def test_stretched_requirements(placement1, placement1owncol, placement1ownrow):
     )
 
 
-def test_stretched_obstructions_and_assumptions(
+def test_stretched_obstructions_and_parameters(
     placement1, placement1owncol, placement1ownrow
 ):
-    obs, reqs, _ = placement1._stretched_obstructions_requirements_and_assumptions(
+    obs, reqs, _ = placement1._stretched_obstructions_requirements_and_parameters(
         (1, 1)
     )
     assert set(obs) == set(
@@ -402,7 +402,7 @@ def test_stretched_obstructions_and_assumptions(
         obs,
         reqs,
         _,
-    ) = placement1ownrow._stretched_obstructions_requirements_and_assumptions((1, 1))
+    ) = placement1ownrow._stretched_obstructions_requirements_and_parameters((1, 1))
     assert set(obs) == set(
         placement1ownrow.stretched_obstructions((1, 1))
         + [
@@ -418,7 +418,7 @@ def test_stretched_obstructions_and_assumptions(
         obs,
         reqs,
         _,
-    ) = placement1owncol._stretched_obstructions_requirements_and_assumptions((1, 1))
+    ) = placement1owncol._stretched_obstructions_requirements_and_parameters((1, 1))
     assert set(obs) == set(
         placement1owncol.stretched_obstructions((1, 1))
         + [

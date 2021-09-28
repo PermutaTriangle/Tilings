@@ -12,6 +12,8 @@ from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import GuidedSearcher, TileScope
 
+pytestmark = pytest.mark.xfail
+
 point_placements = TileScopePack.point_placements()
 all_the_strategies_verify_database = TileScopePack.all_the_strategies().make_database()
 all_the_strategies_fusion = TileScopePack.all_the_strategies().make_fusion(
