@@ -429,7 +429,7 @@ class _RowColSeparationSingleApplication:
     def map_parameters(self, cell_map):
         """Map the parameters of a tiling according to the cell map."""
         if self._tiling.parameters:
-            return NotImplementedError
+            raise NotImplementedError
         return []
 
     @property
