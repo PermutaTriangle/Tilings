@@ -14,7 +14,7 @@ from comb_spec_searcher import (
 )
 from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
 from comb_spec_searcher.typing import Objects, Terms
-from permuta import Perm
+from permuta import Av, Perm
 from permuta.permutils import (
     is_insertion_encodable_maximum,
     is_insertion_encodable_rightmost,
@@ -177,11 +177,17 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
         )
 
     def verified(self, comb_class: Tiling) -> bool:
-        return comb_class.dimensions == (1, 1) and (
-            frozenset(ob.patt for ob in comb_class.obstructions) not in self.symmetries
-            or any(
-                isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions
-            )
+        if not comb_class.dimensions == (1, 1):
+            return False
+        if not self.basis:
+            return True
+        tiling_class = Av([ob.patt for ob in comb_class.obstructions])
+        sym_classes = (Av(sym) for sym in self.symmetries)
+        is_strict_subclass = any(
+            tiling_class.is_subclass(cls) and cls != tiling_class for cls in sym_classes
+        )
+        return is_strict_subclass or any(
+            isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions
         )
 
     def get_genf(
@@ -225,7 +231,10 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
         )
 
     def __str__(self) -> str:
-        return "one by one verification"
+        if not self.basis:
+            return "one by one verification"
+        else:
+            return f"One by one subclass of {Av(self.basis)}"
 
 
 class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
