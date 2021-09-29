@@ -48,13 +48,8 @@ class PreimageCounter:
         """
         return sum(1 for _ in self.preimage(gp))
 
-    def preimage(
-        self, gp: GriddedPerm, ignore_reqs: bool = False
-    ) -> Iterator[GriddedPerm]:
-        """Return the preimage of the given gridded on the tiling."""
-        # TODO: I think the bool is not needed anywhere
-        if ignore_reqs:
-            raise NotImplementedError("We needed it is the end")
+    def preimage(self, gp: GriddedPerm) -> Iterator[GriddedPerm]:
+        """Return the preimage of the given gridded permutation on the tiling."""
         return filter(self.tiling.__contains__, self.map.preimage_gp(gp))
 
     def add_obstructions_and_requirements(
@@ -63,9 +58,9 @@ class PreimageCounter:
         """
         Add the given obstructions and requirements to the tiling.
         """
-        new_obs = itertools.chain.from_iterable(self.preimage(gp, False) for gp in obs)
+        new_obs = itertools.chain.from_iterable(self.map.preimage_gp(gp) for gp in obs)
         new_reqs = (
-            itertools.chain.from_iterable(self.preimage(gp, False) for gp in req)
+            itertools.chain.from_iterable(self.map.preimage_gp(gp) for gp in req)
             for req in reqs
         )
         return PreimageCounter(
