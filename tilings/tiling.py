@@ -47,7 +47,7 @@ from .algorithms import (
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
 from .gui_launcher import run_gui
-from .map import RowColMap
+from .map import CellMap, RowColMap
 from .misc import intersection_reduce, union_reduce
 from .parameter_counter import ParameterCounter
 
@@ -1091,7 +1091,7 @@ class Tiling(CombinatorialClass):
 
     def row_and_column_separation_with_mapping(
         self,
-    ) -> Tuple["Tiling", Dict[Cell, Cell]]:
+    ) -> Tuple["Tiling", CellMap]:
         rcs = RowColSeparation(self)
         return rcs.separated_tiling(), rcs.get_cell_map()
 

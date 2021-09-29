@@ -23,6 +23,8 @@ from typing import (
     Union,
 )
 
+from tilings.map import CellMap
+
 if TYPE_CHECKING:
     from tilings import GriddedPerm, Tiling
     from tilings.parameter_counter import ParameterCounter
@@ -420,7 +422,7 @@ class _RowColSeparationSingleApplication:
     @staticmethod
     def _get_cell_map(
         row_order: List[Set[Cell]], col_order: List[Set[Cell]]
-    ) -> Dict[Cell, Cell]:
+    ) -> CellMap:
         """
         Return the position of the according to the given row_order and
         col_order.
@@ -436,24 +438,22 @@ class _RowColSeparationSingleApplication:
         for i, col in enumerate(col_order):
             for cell in col:
                 cell_map[cell] = (i, row_cell_map[cell])
-        return cell_map
+        return CellMap(cell_map)
 
-    def map_obstructions(self, cell_map: Dict[Cell, Cell]) -> Iterator["GriddedPerm"]:
+    def map_obstructions(self, cell_map: CellMap) -> Iterator["GriddedPerm"]:
         """Map the obstruction of a tiling according to the cell map."""
         non_point_obs = (ob for ob in self._tiling.obstructions if len(ob) > 1)
         for ob in non_point_obs:
-            ob = self._map_gridded_perm(cell_map, ob)
+            ob = cell_map.map_gp(ob)
             if not ob.contradictory():
                 yield ob
 
-    def map_requirements(
-        self, cell_map: Dict[Cell, Cell]
-    ) -> Iterator[List["GriddedPerm"]]:
+    def map_requirements(self, cell_map: CellMap) -> Iterator[List["GriddedPerm"]]:
         """Map the requirements of a tiling according to the cell map."""
         for req_list in self._tiling.requirements:
-            yield [self._map_gridded_perm(cell_map, req) for req in req_list]
+            yield [cell_map.map_gp(req) for req in req_list]
 
-    def map_parameters(self, cell_map: Dict[Cell, Cell]) -> List["ParameterCounter"]:
+    def map_parameters(self, cell_map: CellMap) -> List["ParameterCounter"]:
         """Map the parameters of a tiling according to the cell map."""
         if self._tiling.parameters:
             raise NotImplementedError
@@ -475,18 +475,6 @@ class _RowColSeparationSingleApplication:
         self._max_col_order = self._maximal_order(self.col_ineq_graph())
         return self._max_col_order
 
-    @staticmethod
-    def _map_gridded_perm(
-        cell_map: Dict[Cell, Cell], gp: "GriddedPerm"
-    ) -> "GriddedPerm":
-        """
-        Transform a gridded perm by mapping the position of the gridded perm
-        according to the cell_map
-        """
-        pos = (cell_map[p] for p in gp.pos)
-        gp = gp.__class__(gp.patt, pos)
-        return gp
-
     def separable(self) -> bool:
         """
         Test if the tiling is separable.
@@ -503,7 +491,7 @@ class _RowColSeparationSingleApplication:
         """
         return self._separates_tiling(self.max_row_order, self.max_col_order)
 
-    def get_cell_map(self) -> Dict[Cell, Cell]:
+    def get_cell_map(self) -> CellMap:
         """
         Return the position of the according to the given row_order and
         col_order. This accounts for any cleaning happening inside tiling initializer.
@@ -515,14 +503,7 @@ class _RowColSeparationSingleApplication:
         col_order = self.max_col_order
         sep_cell_map = self._get_cell_map(row_order, col_order)
         init_cell_map = sep_tiling.forward_map
-        res: Dict[Cell, Cell] = dict()
-        for cell in self._tiling.active_cells:
-            mid_cell = sep_cell_map[cell]
-            # If the cell is not in the init map it is an empty cell
-            if init_cell_map.is_mappable_cell(mid_cell):
-                final_cell = init_cell_map.map_cell(mid_cell)
-                res[cell] = final_cell
-        return res
+        return sep_cell_map.compose(init_cell_map)
 
     def all_separated_tiling(self, only_max: bool = False) -> Iterator["Tiling"]:
         """
@@ -575,22 +556,14 @@ class RowColSeparation:
             return self._tiling
         return self._separated_tilings[-1]
 
-    def get_cell_map(self) -> Dict[Cell, Cell]:
+    def get_cell_map(self) -> CellMap:
         """
         Return the cell map obtained by applying the algorithm until no change.
         """
+        cell_map = CellMap.identity(self._tiling.dimensions)
         separation_algo = _RowColSeparationSingleApplication(self._tiling)
-        cell_maps = []
         while separation_algo.separable():
-            cell_map = separation_algo.get_cell_map()
-            cell_maps.append(cell_map)
+            cell_map = cell_map.compose(separation_algo.get_cell_map())
             new_sep = separation_algo.separated_tiling()
             separation_algo = _RowColSeparationSingleApplication(new_sep)
-        res = {cell: cell for cell in self._tiling.active_cells}
-        for cell_map in cell_maps:
-            for cell, mapped_cell in tuple(res.items()):
-                if mapped_cell in cell_map:
-                    res[cell] = cell_map[mapped_cell]
-                else:
-                    res.pop(cell)
-        return res
+        return cell_map
