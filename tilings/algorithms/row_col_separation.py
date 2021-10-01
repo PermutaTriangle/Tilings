@@ -411,12 +411,7 @@ class _RowColSeparationSingleApplication:
         self, row_order: List[Set[Cell]], col_order: List[Set[Cell]]
     ) -> "Tiling":
         cell_map = self._get_cell_map(row_order, col_order)
-        obs = self.map_obstructions(cell_map)
-        reqs = self.map_requirements(cell_map)
-        params = self.map_parameters(cell_map)
-        return self._tiling.__class__(
-            obstructions=obs, requirements=reqs, parameters=params
-        )
+        return cell_map.map_tiling(self._tiling)
 
     @staticmethod
     def _get_cell_map(
@@ -438,72 +433,6 @@ class _RowColSeparationSingleApplication:
             for cell in col:
                 cell_map[cell] = (i, row_cell_map[cell])
         return CellMap(cell_map)
-
-    def map_obstructions(self, cell_map: CellMap) -> Iterator["GriddedPerm"]:
-        """Map the obstruction of a tiling according to the cell map."""
-        non_point_obs = (ob for ob in self._tiling.obstructions if len(ob) > 1)
-        for ob in non_point_obs:
-            ob = cell_map.map_gp(ob)
-            if not ob.contradictory():
-                yield ob
-
-    def map_requirements(self, cell_map: CellMap) -> Iterator[List["GriddedPerm"]]:
-        """Map the requirements of a tiling according to the cell map."""
-        for req_list in self._tiling.requirements:
-            yield [cell_map.map_gp(req) for req in req_list]
-
-    def map_preimage_counter(
-        self,
-        preimg_counter: "PreimageCounter",
-        cell_map: CellMap,
-    ) -> "PreimageCounter":
-        """
-        INPUTS:
-          - `preimg_counter`: The preimage counter to map
-          - `cell_map`: The cell map for the separation of the base tiling.
-        """
-        cell_pos_in_col, cell_pos_in_row = dict(), dict()
-        col_split = [1 for _ in range(preimg_counter.tiling.dimensions[0])]
-        row_split = [1 for _ in range(preimg_counter.tiling.dimensions[1])]
-        for cell in self._tiling.active_cells:
-            for pre_cell in preimg_counter.map.preimage_cell(cell):
-                col_pos = cell_map.map_cell(cell)[0] - cell[0]
-                row_pos = cell_map.map_cell(cell)[1] - cell[1]
-                cell_pos_in_col[pre_cell] = col_pos
-                cell_pos_in_row[pre_cell] = row_pos
-                col_split[cell[0]] = max(col_pos + 1, col_split[cell[0]])
-                row_split[cell[1]] = max(row_pos + 1, row_split[cell[1]])
-        cell_to_col_map = {
-            k: v + sum(col_split[: k[0]]) for k, v in cell_pos_in_col.items()
-        }
-        cell_to_row_map = {
-            k: v + sum(row_split[: k[1]]) for k, v in cell_pos_in_row.items()
-        }
-        preimg_map = CellMap(
-            {
-                cell: (cell_to_col_map[cell], cell_to_row_map[cell])
-                for cell in preimg_counter.tiling.active_cells
-            }
-        )
-        projection_map = (
-            preimg_map.inverse()
-            .compose(preimg_counter.map)
-            .compose(cell_map)
-            .to_row_col_map()
-        )
-        return preimg_counter.__class__(
-            preimg_map.map_tiling(preimg_counter.tiling), projection_map
-        )
-
-    def map_parameters(self, cell_map: CellMap) -> Iterator["ParameterCounter"]:
-        """Map the parameters of the tiling according to the cell map."""
-        for param_counter in self._tiling.parameters:
-            yield param_counter.__class__(
-                (
-                    self.map_preimage_counter(preimg_counter, cell_map)
-                    for preimg_counter in param_counter
-                )
-            )
 
     @property
     def max_row_order(self) -> List[Set[Cell]]:

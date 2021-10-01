@@ -5,6 +5,7 @@ from tilings.exception import InvalidOperationError
 
 if TYPE_CHECKING:
     from tilings.griddedperm import GriddedPerm
+    from tilings.parameter_counter import ParameterCounter, PreimageCounter
     from tilings.tiling import Tiling
 
 Cell = Tuple[int, int]
@@ -71,13 +72,60 @@ class CellMap:
 
         This is not implemented if the tiling tracks parameters.
         """
-        if tiling.parameters:
-            raise NotImplementedError
-        obs = (self.map_gp(ob) for ob in tiling.obstructions)
-        reqs = (
-            (self.map_gp(req) for req in req_list) for req_list in tiling.requirements
+        obs = map(self.map_gp, tiling.obstructions)
+        reqs = (map(self.map_gp, req_list) for req_list in tiling.requirements)
+        params = map(self.map_param, tiling.parameters)
+        return tiling.__class__(obs, reqs, params)
+
+    def map_param(self, param: "ParameterCounter") -> "ParameterCounter":
+        """
+        Map the parameter of according to the map.
+        """
+        return param.__class__(
+            (self.map_preimage_counter(preimg_counter) for preimg_counter in param)
         )
-        return tiling.__class__(obs, reqs)
+
+    def map_preimage_counter(
+        self,
+        preimg_counter: "PreimageCounter",
+    ) -> "PreimageCounter":
+        """
+        Maps the given counter according to the map.
+
+        NOTE: I This works if the map is injective. Not sure about other cases.
+        """
+        cell_pos_in_col, cell_pos_in_row = dict(), dict()
+        col_split = [0 for _ in range(preimg_counter.tiling.dimensions[0])]
+        row_split = [0 for _ in range(preimg_counter.tiling.dimensions[1])]
+        for cell in self._map:
+            for pre_cell in preimg_counter.map.preimage_cell(cell):
+                col_pos = self.map_cell(cell)[0] - cell[0]
+                row_pos = self.map_cell(cell)[1] - cell[1]
+                cell_pos_in_col[pre_cell] = col_pos
+                cell_pos_in_row[pre_cell] = row_pos
+                col_split[cell[0]] = max(col_pos + 1, col_split[cell[0]])
+                row_split[cell[1]] = max(row_pos + 1, row_split[cell[1]])
+        cell_to_col_map = {
+            k: v + sum(col_split[: k[0]]) for k, v in cell_pos_in_col.items()
+        }
+        cell_to_row_map = {
+            k: v + sum(row_split[: k[1]]) for k, v in cell_pos_in_row.items()
+        }
+        preimg_map = CellMap(
+            {
+                cell: (cell_to_col_map[cell], cell_to_row_map[cell])
+                for cell in preimg_counter.tiling.active_cells
+            }
+        )
+        projection_map = (
+            preimg_map.inverse()
+            .compose(preimg_counter.map)
+            .compose(self)
+            .to_row_col_map()
+        )
+        return preimg_counter.__class__(
+            preimg_map.map_tiling(preimg_counter.tiling), projection_map
+        )
 
     def is_mappable_gp(self, gp: "GriddedPerm") -> bool:
         """
