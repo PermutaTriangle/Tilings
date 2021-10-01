@@ -171,3 +171,6 @@ class ParameterCounter:
 
     def __str__(self):
         return "".join(map(str, self.counters))
+
+    def __iter__(self) -> Iterator[PreimageCounter]:
+        return iter(self.counters)
