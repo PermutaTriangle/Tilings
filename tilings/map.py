@@ -19,6 +19,35 @@ class CellMap:
         cells = itertools.product(range(dimensions[0]), range(dimensions[1]))
         return CellMap({c: c for c in cells})
 
+    def inverse(self) -> "CellMap":
+        """
+        Return the inverse map if possible.
+        Otherwise raise an InvalidOperationError.
+        """
+        inverse_map = {v: k for k, v in self._map.items()}
+        if len(inverse_map) != len(self._map):
+            raise InvalidOperationError("The map is not reversible.")
+        return CellMap(inverse_map)
+
+    def to_row_col_map(self) -> "RowColMap":
+        """
+        Convert the CellMap object into an equivalent RowColMap object.
+
+        Raises InvalidOperationError if the columns or row are not mapped consistently
+        and therefore the conversion can't be completed.
+        """
+        col_map, row_map = dict(), dict()
+        for (col, row), (new_col, new_row) in self._map.items():
+            if col not in col_map:
+                col_map[col] = new_col
+            elif col_map[col] != new_col:
+                raise InvalidOperationError("Not mapping column consistently.")
+            if row not in row_map:
+                row_map[row] = new_row
+            elif row_map[row] != new_row:
+                raise InvalidOperationError("Not mapping row consistently.")
+        return RowColMap(col_map=col_map, row_map=row_map)
+
     def compose(self, other: "CellMap") -> "CellMap":
         """
         The return the new map that is obtained by the applying first self and then
@@ -121,9 +150,9 @@ class RowColMap(CellMap):
         row_map = {i: i for i in range(dimensions[1])}
         return RowColMap(row_map=row_map, col_map=col_map, is_identity=True)
 
-    def reverse(self) -> "RowColMap":
+    def inverse(self) -> "RowColMap":
         """
-        Return the reverse map if possible.
+        Return the inverse map if possible.
         Otherwise raise an InvalidOperationError.
         """
         row_map = {v: k for k, v in self._row_map.items()}

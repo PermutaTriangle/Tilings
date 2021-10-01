@@ -838,7 +838,7 @@ class Tiling(CombinatorialClass):
         try:
             return self._cached_properties["backward_map"]
         except KeyError:
-            backward_map = self.forward_map.reverse()
+            backward_map = self.forward_map.inverse()
             self._cached_properties["backward_map"] = backward_map
             return backward_map
 
