@@ -11,7 +11,6 @@ import heapq
 from itertools import combinations, product
 from typing import (
     TYPE_CHECKING,
-    Dict,
     Generic,
     Iterable,
     Iterator,
@@ -23,11 +22,11 @@ from typing import (
     Union,
 )
 
-from tilings.map import CellMap
+from tilings.map import CellMap, RowColMap
 
 if TYPE_CHECKING:
     from tilings import GriddedPerm, Tiling
-    from tilings.parameter_counter import ParameterCounter
+    from tilings.parameter_counter import ParameterCounter, PreimageCounter
 
 Cell = Tuple[int, int]
 Edge = Tuple[int, int]
@@ -452,6 +451,52 @@ class _RowColSeparationSingleApplication:
         """Map the requirements of a tiling according to the cell map."""
         for req_list in self._tiling.requirements:
             yield [cell_map.map_gp(req) for req in req_list]
+
+    def map_preimage_counter(
+        self,
+        preimg_counter: "PreimageCounter",
+        cell_map: CellMap,
+    ) -> "PreimageCounter":
+        """
+        INPUTS:
+          - `preimg_counter`: The preimage counter to map
+          - `cell_map`: The cell map for the separation of the base tiling.
+        """
+        cell_pos_in_col, cell_pos_in_row = dict(), dict()
+        col_split = [1 for _ in range(preimg_counter.tiling.dimensions[0])]
+        row_split = [1 for _ in range(preimg_counter.tiling.dimensions[1])]
+        for cell in self._tiling.active_cells:
+            for pre_cell in preimg_counter.map.preimage_cell(cell):
+                col_pos = cell_map.map_cell(cell)[0] - cell[0]
+                row_pos = cell_map.map_cell(cell)[1] - cell[1]
+                cell_pos_in_col[pre_cell] = col_pos
+                cell_pos_in_row[pre_cell] = row_pos
+                col_split[cell[0]] = max(col_pos + 1, col_split[cell[0]])
+                row_split[cell[1]] = max(row_pos + 1, row_split[cell[1]])
+        cell_to_col_map = {
+            k: v + sum(col_split[: k[0]]) for k, v in cell_pos_in_col.items()
+        }
+        cell_to_row_map = {
+            k: v + sum(row_split[: k[1]]) for k, v in cell_pos_in_row.items()
+        }
+        preimg_map = CellMap(
+            {
+                cell: (cell_to_col_map[cell], cell_to_row_map[cell])
+                for cell in preimg_counter.tiling.active_cells
+            }
+        )
+        projection_col_map, projection_row_map = dict(), dict()
+        for cell in preimg_counter.tiling.active_cells:
+            new_preimg_cell = preimg_map.map_cell(cell)
+            seperated_tiling_cell = cell_map.map_cell(preimg_counter.map.map_cell(cell))
+            projection_col_map[new_preimg_cell[0]] = seperated_tiling_cell[0]
+            projection_row_map[new_preimg_cell[1]] = seperated_tiling_cell[1]
+        projection_map = RowColMap(
+            col_map=projection_col_map, row_map=projection_row_map
+        )
+        return preimg_counter.__class__(
+            preimg_map.map_tiling(preimg_counter.tiling), projection_map
+        )
 
     def map_parameters(self, cell_map: CellMap) -> List["ParameterCounter"]:
         """Map the parameters of a tiling according to the cell map."""
