@@ -485,14 +485,11 @@ class _RowColSeparationSingleApplication:
                 for cell in preimg_counter.tiling.active_cells
             }
         )
-        projection_col_map, projection_row_map = dict(), dict()
-        for cell in preimg_counter.tiling.active_cells:
-            new_preimg_cell = preimg_map.map_cell(cell)
-            seperated_tiling_cell = cell_map.map_cell(preimg_counter.map.map_cell(cell))
-            projection_col_map[new_preimg_cell[0]] = seperated_tiling_cell[0]
-            projection_row_map[new_preimg_cell[1]] = seperated_tiling_cell[1]
-        projection_map = RowColMap(
-            col_map=projection_col_map, row_map=projection_row_map
+        projection_map = (
+            preimg_map.inverse()
+            .compose(preimg_counter.map)
+            .compose(cell_map)
+            .to_row_col_map()
         )
         return preimg_counter.__class__(
             preimg_map.map_tiling(preimg_counter.tiling), projection_map
