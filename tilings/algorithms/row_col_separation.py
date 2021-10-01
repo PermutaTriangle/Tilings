@@ -498,11 +498,15 @@ class _RowColSeparationSingleApplication:
             preimg_map.map_tiling(preimg_counter.tiling), projection_map
         )
 
-    def map_parameters(self, cell_map: CellMap) -> List["ParameterCounter"]:
-        """Map the parameters of a tiling according to the cell map."""
-        if self._tiling.parameters:
-            raise NotImplementedError
-        return []
+    def map_parameters(self, cell_map: CellMap) -> Iterator["ParameterCounter"]:
+        """Map the parameters of the tiling according to the cell map."""
+        for param_counter in self._tiling.parameters:
+            yield param_counter.__class__(
+                (
+                    self.map_preimage_counter(preimg_counter, cell_map)
+                    for preimg_counter in param_counter
+                )
+            )
 
     @property
     def max_row_order(self) -> List[Set[Cell]]:
