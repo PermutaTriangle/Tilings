@@ -1,10 +1,11 @@
 import itertools
-from typing import TYPE_CHECKING, Dict, Iterator, Optional, Tuple, Iterable
+from typing import TYPE_CHECKING, Dict, Iterator, Optional, Tuple
 
 from tilings.exception import InvalidOperationError
 
 if TYPE_CHECKING:
     from tilings.griddedperm import GriddedPerm
+    from tilings.tiling import Tiling
 
 Cell = Tuple[int, int]
 
@@ -34,6 +35,21 @@ class CellMap:
         )
 
     # Mapping method
+    def map_tiling(self, tiling: "Tiling") -> "Tiling":
+        """
+        Map the obstructions and requirements of the tiling according to the map to
+        create a new tiling.
+
+        This is not implemented if the tiling tracks parameters.
+        """
+        if tiling.parameters:
+            raise NotImplementedError
+        obs = (self.map_gp(ob) for ob in tiling.obstructions)
+        reqs = (
+            (self.map_gp(req) for req in req_list) for req_list in tiling.requirements
+        )
+        return tiling.__class__(obs, reqs)
+
     def is_mappable_gp(self, gp: "GriddedPerm") -> bool:
         """
         Return True if all the cell used by the gridded perm can be mapped.
