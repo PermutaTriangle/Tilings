@@ -67,10 +67,7 @@ class CellMap:
     # Mapping method
     def map_tiling(self, tiling: "Tiling") -> "Tiling":
         """
-        Map the obstructions and requirements of the tiling according to the map to
-        create a new tiling.
-
-        This is not implemented if the tiling tracks parameters.
+        Map the the tiling according to the map to create a new tiling.
         """
         obs = map(self.map_gp, tiling.obstructions)
         reqs = (map(self.map_gp, req_list) for req_list in tiling.requirements)
@@ -92,7 +89,7 @@ class CellMap:
         """
         Maps the given counter according to the map.
 
-        NOTE: I This works if the map is injective. Not sure about other cases.
+        NOTE: This works if the map is bijective. Not sure about other cases.
         """
         cell_pos_in_col, cell_pos_in_row = dict(), dict()
         col_split = [0 for _ in range(preimg_counter.tiling.dimensions[0])]
@@ -210,6 +207,9 @@ class RowColMap(CellMap):
         return RowColMap(
             row_map=row_map, col_map=col_map, is_identity=self._is_identity
         )
+
+    def to_row_col_map(self) -> "RowColMap":
+        return self
 
     def compose(self, other: "CellMap") -> "RowColMap":
         """

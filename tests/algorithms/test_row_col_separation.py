@@ -911,8 +911,6 @@ def test_backmap():
     )
     rcs1 = _RowColSeparationSingleApplication(t)
     t1 = rcs1.separated_tiling()
-    print(t)
-    print(t1)
     assert rcs1.get_cell_map() == cellmap1
     rcs2 = _RowColSeparationSingleApplication(t1)
     t2 = rcs2.separated_tiling()

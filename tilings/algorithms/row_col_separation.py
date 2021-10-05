@@ -22,11 +22,10 @@ from typing import (
     Union,
 )
 
-from tilings.map import CellMap, RowColMap
+from tilings.map import CellMap
 
 if TYPE_CHECKING:
     from tilings import GriddedPerm, Tiling
-    from tilings.parameter_counter import ParameterCounter, PreimageCounter
 
 Cell = Tuple[int, int]
 Edge = Tuple[int, int]
