@@ -2,9 +2,9 @@ import itertools
 from typing import TYPE_CHECKING, Dict, Iterator, Optional, Tuple
 
 from tilings.exception import InvalidOperationError
+from tilings.griddedperm import GriddedPerm
 
 if TYPE_CHECKING:
-    from tilings.griddedperm import GriddedPerm
     from tilings.parameter_counter import ParameterCounter, PreimageCounter
     from tilings.tiling import Tiling
 
@@ -69,7 +69,9 @@ class CellMap:
         """
         Map the the tiling according to the map to create a new tiling.
         """
-        obs = map(self.map_gp, tiling.obstructions)
+        obs = itertools.filterfalse(
+            GriddedPerm.contradictory, map(self.map_gp, tiling.obstructions)
+        )
         reqs = (map(self.map_gp, req_list) for req_list in tiling.requirements)
         params = map(self.map_param, tiling.parameters)
         return tiling.__class__(obs, reqs, params)
