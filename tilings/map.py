@@ -69,8 +69,11 @@ class CellMap:
         """
         Map the the tiling according to the map to create a new tiling.
         """
+        non_point_obs = itertools.filterfalse(
+            GriddedPerm.is_point_perm, tiling.obstructions
+        )
         obs = itertools.filterfalse(
-            GriddedPerm.contradictory, map(self.map_gp, tiling.obstructions)
+            GriddedPerm.contradictory, map(self.map_gp, non_point_obs)
         )
         reqs = (map(self.map_gp, req_list) for req_list in tiling.requirements)
         params = map(self.map_param, tiling.parameters)
