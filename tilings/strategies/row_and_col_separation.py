@@ -8,12 +8,12 @@ from comb_spec_searcher import DisjointUnionStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RowColSeparation
+from tilings.map import CellMap
 
 __all__ = ["RowColumnSeparationStrategy"]
 
 
 Cell = Tuple[int, int]
-CellMap = Dict[Cell, Cell]
 
 
 class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
@@ -38,7 +38,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         res = self._cell_maps.get(tiling)
         if res is None:
             forward_cell_map = self.row_col_sep_algorithm(tiling).get_cell_map()
-            backward_cell_map = {y: x for x, y in forward_cell_map.items()}
+            backward_cell_map = forward_cell_map.inverse()
             self._cell_maps[tiling] = forward_cell_map, backward_cell_map
         else:
             forward_cell_map, backward_cell_map = res
@@ -60,25 +60,16 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
         child = children[0]
-        mapped_assumptions = tuple(
-            ass.__class__(
-                tuple(
-                    self.forward_map(comb_class, gp, children)[0]
-                    for gp in ass.gps
-                    if all(cell in self.forward_cell_map(comb_class) for cell in gp.pos)
-                )
-            ).avoiding(child.obstructions)
-            for ass in comb_class.assumptions
-        )
+        forward_map = self.forward_cell_map(comb_class)
+        mapped_params = tuple(map(forward_map.map_param, comb_class.parameters))
         return (
             {
-                comb_class.get_assumption_parameter(
-                    assumption
-                ): child.get_assumption_parameter(mapped_assumption)
-                for assumption, mapped_assumption in zip(
-                    comb_class.assumptions, mapped_assumptions
+                comb_class.get_parameter_name(param): child.get_parameter_name(
+                    mapped_param
                 )
-                if mapped_assumption.gps
+                for param, mapped_param in zip(comb_class.parameters, mapped_params)
+                # TODO: previsously checked that the tracked assumption had some gps
+                # here. What is the equivalence in our case.
             },
         )
 
@@ -103,8 +94,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             children = self.decomposition_function(tiling)
         gp = gps[0]
         assert gp is not None
-        backmap = self.backward_cell_map(tiling)
-        yield gp.apply_map(backmap.__getitem__)
+        yield self.backward_cell_map(tiling).map_gp(gp)
 
     def forward_map(
         self,
@@ -115,9 +105,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         """This function will enable us to have a quick membership test."""
         if children is None:
             children = self.decomposition_function(tiling)
-        forwardmap = self.forward_cell_map(tiling)
-        gp = gp.apply_map(forwardmap.__getitem__)
-        return (gp,)
+        return (self.forward_cell_map(tiling).map_gp(gp),)
 
     def __str__(self) -> str:
         return "row and column separation"
