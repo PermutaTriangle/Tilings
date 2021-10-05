@@ -28,6 +28,10 @@ If you are primarily interested in enumerating permutation classes, then you
 may wish to skip ahead to the ``TileScope`` section, but note the installation
 will be the same as for ``tilings``.
 
+If this code is useful to you in your work, please consider citing it. To generate a
+BibTeX entry (or another format), click the "DOI" badge above and locate the "Cite As"
+section.
+
 If you need support, have a suggestion, or just want to be up to date with the
 latest developments please join us on our
 `Discord server <https://discord.gg/ySJD6SV>`__ where we'd be happy to hear
