@@ -77,7 +77,10 @@ class CellMap:
             if not ob.is_point_perm() or self.is_mappable_gp(ob)
         )
         obs = itertools.filterfalse(GriddedPerm.contradictory, mapped_obs)
-        reqs = (map(self.map_gp, req_list) for req_list in tiling.requirements)
+        reqs = (
+            itertools.filterfalse(GriddedPerm.contradictory, map(self.map_gp, req_list))
+            for req_list in tiling.requirements
+        )
         params = map(self.map_param, tiling.parameters)
         return tiling.__class__(obs, reqs, params)
 
