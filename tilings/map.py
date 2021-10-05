@@ -67,14 +67,16 @@ class CellMap:
     # Mapping method
     def map_tiling(self, tiling: "Tiling") -> "Tiling":
         """
-        Map the the tiling according to the map to create a new tiling.
+        Map the tiling according to the map.
+
+        Point obstruction that cannot be mapped are ignored.
         """
-        non_point_obs = itertools.filterfalse(
-            GriddedPerm.is_point_perm, tiling.obstructions
+        mapped_obs = (
+            self.map_gp(ob)
+            for ob in tiling.obstructions
+            if not ob.is_point_perm() or self.is_mappable_gp(ob)
         )
-        obs = itertools.filterfalse(
-            GriddedPerm.contradictory, map(self.map_gp, non_point_obs)
-        )
+        obs = itertools.filterfalse(GriddedPerm.contradictory, mapped_obs)
         reqs = (map(self.map_gp, req_list) for req_list in tiling.requirements)
         params = map(self.map_param, tiling.parameters)
         return tiling.__class__(obs, reqs, params)
