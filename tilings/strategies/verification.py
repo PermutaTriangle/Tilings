@@ -233,8 +233,7 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
     def __str__(self) -> str:
         if not self.basis:
             return "one by one verification"
-        else:
-            return f"One by one subclass of {Av(self.basis)}"
+        return f"One by one subclass of {Av(self.basis)}"
 
 
 class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
