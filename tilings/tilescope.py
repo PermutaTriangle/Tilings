@@ -84,7 +84,7 @@ class LimitedAssumptionTileScope(TileScope):
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
         max_assumptions: int,
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(start_class, strategy_pack, **kwargs)
         self.max_assumptions = max_assumptions
@@ -122,7 +122,7 @@ class GuidedSearcher(TileScope):
         basis: Tiling,
         pack: TileScopePack,
         *args,
-        **kwargs
+        **kwargs,
     ):
         self.tilings = frozenset(t.remove_assumptions() for t in tilings)
         super().__init__(basis, pack, *args, **kwargs)
@@ -257,7 +257,7 @@ class ForgetTrackedSearcher(TrackedSearcher):
         self,
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
-        **kwargs
+        **kwargs,
     ):
         self.strategies: List[CSSstrategy] = list(
             chain(
