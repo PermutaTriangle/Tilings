@@ -1,9 +1,12 @@
+import itertools
 from itertools import chain
+from types import resolve_bases
 from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Tuple
 
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings.griddedperm import GriddedPerm
-from tilings.parameter_counter import ParameterCounter
+from tilings.map import RowColMap
+from tilings.parameter_counter import ParameterCounter, PreimageCounter
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -308,6 +311,24 @@ class RequirementPlacement:
                         res.append(stretched_gp)
         return res
 
+    def empty_row_and_col_obs(self, cell: Cell, dimensions: Cell) -> List[GriddedPerm]:
+        """
+        Return the obstructions needed to ensure point is the only on a the row
+        and/or column
+        """
+        res: List[GriddedPerm] = []
+        width, heigth = dimensions
+        empty_col, empty_row = cell
+        if self.own_row:
+            for i in range(width):
+                if i != empty_col:
+                    res.append(GriddedPerm.point_perm((i, empty_row)))
+        if self.own_col:
+            for j in range(heigth):
+                if j != empty_row:
+                    res.append(GriddedPerm.point_perm((empty_col, j)))
+        return res
+
     def _remaining_requirement_from_requirement(
         self, gps: Iterable[GriddedPerm], indices: Iterable[int], cell: Cell
     ) -> List[GriddedPerm]:
@@ -339,6 +360,98 @@ class RequirementPlacement:
         """
         return self.place_point_of_req((gp,), (idx,), direction)[0]
 
+    def multiplex_map(self, width: int, height: int, cell: Cell) -> RowColMap:
+        """Return the RowColMap when cell is stretched into a 3x3."""
+        # TODO: cache this?
+        x, y = cell
+        row_map = dict()
+        col_map = dict()
+        for i in range(width):
+            xs = (
+                [i]
+                if i < x or not self.own_col
+                else [i, i + 1, i + 2]
+                if i == x
+                else [i + 2]
+            )
+            for a in xs:
+                col_map[a] = i
+
+        for j in range(height):
+            ys = (
+                [j]
+                if j < y or not self.own_row
+                else [j, j + 1, j + 2]
+                if j == y
+                else [j + 2]
+            )
+            for b in ys:
+                row_map[b] = j
+        return RowColMap(row_map, col_map)
+
+    def multiplex_tiling(self, tiling: "Tiling", cell: Cell) -> "Tiling":
+        """
+        Return the tiling created by 'multipexing' in cell.
+        That is stretching the cell to be a 3x3 square.
+        """
+        # TODO: cache this?
+        row_col_map = self.multiplex_map(*tiling.dimensions, cell)
+        # TODO: should we optimise this to stop adding gps that are in cells we will
+        # later mark as empty?
+        underlying = row_col_map.preimage_tiling(tiling.remove_parameters())
+        empty_row_and_col_obs = self.empty_row_and_col_obs(
+            self._placed_cell(cell), underlying.dimensions
+        )
+        point_cell_obs = [
+            GriddedPerm.single_cell((0, 1), self._placed_cell(cell)),
+            GriddedPerm.single_cell((1, 0), self._placed_cell(cell)),
+        ]
+        point_req = [GriddedPerm.point_perm(self._placed_cell(cell))]
+        params = [self.multiplex_parameter(param, cell) for param in tiling.parameters]
+        return underlying.add_obstructions_and_requirements(
+            empty_row_and_col_obs + point_cell_obs, [point_req]
+        ).add_parameters(params)
+
+    def multiplex_preimage(
+        self, preimage: PreimageCounter, cell: Cell
+    ) -> List[PreimageCounter]:
+        """
+        Return the list of preimages whose sum count the number of preimages
+        when cell is multiplexed into a 3x3.
+        """
+        res: List[PreimageCounter] = []
+        for precell in preimage.map.preimage_cell(cell):
+            preimage_multiplex_map = self.multiplex_map(
+                *preimage.tiling.dimensions, cell
+            )
+            multiplex_tiling = self.multiplex_tiling(preimage.tiling, precell)
+            col_map = {}
+            for x in range(multiplex_tiling.dimensions[0]):
+                shift = 0 if x <= precell[0] else 1 if x == precell[0] + 1 else 2
+                col_map[x] = (
+                    preimage.map.map_col(preimage_multiplex_map.map_col(x)) + shift
+                )
+            row_map = {}
+            for y in range(multiplex_tiling.dimensions[1]):
+                shift = 0 if y <= precell[1] else 1 if y == precell[1] + 1 else 2
+                row_map[y] = (
+                    preimage.map.map_row(preimage_multiplex_map.map_row(y)) + shift
+                )
+            res.append(PreimageCounter(multiplex_tiling, RowColMap(row_map, col_map)))
+        return res
+
+    def multiplex_parameter(
+        self, parameter: ParameterCounter, cell: Cell
+    ) -> ParameterCounter:
+        """
+        Return the parameter when cell has been multiplexed into a 3x3.
+        """
+        return ParameterCounter(
+            itertools.chain.from_iterable(
+                self.multiplex_preimage(preimage, cell) for preimage in parameter
+            )
+        )
+
     def place_point_of_req(
         self, gps: Iterable[GriddedPerm], indices: Iterable[int], direction: Dir
     ) -> Tuple["Tiling", ...]:
@@ -350,23 +463,16 @@ class RequirementPlacement:
         cells = frozenset(gp.pos[idx] for idx, gp in zip(indices, gps))
         res = []
         for cell in sorted(cells):
-            stretched = self._stretched_obstructions_requirements_and_parameters(cell)
-            (obs, reqs, param) = stretched
+            multiplex_tiling = self.multiplex_tiling(self._tiling, cell)
             forced_obs = self.forced_obstructions_from_requirement(
                 gps, indices, cell, direction
-            )
-
-            reduced_obs = [o1 for o1 in obs if not any(o2 in o1 for o2 in forced_obs)]
-            new_obs = reduced_obs + forced_obs
-
-            rem_req = self._remaining_requirement_from_requirement(gps, indices, cell)
-
+            )  # TODO: get these using the multiplex map
+            rem_req = self._remaining_requirement_from_requirement(
+                gps, indices, cell
+            )  # TODO: get these using the multiplex map
             res.append(
-                self._tiling.__class__(
-                    new_obs,
-                    reqs + [rem_req],
-                    parameters=param,
-                    already_minimized_obs=True,
+                multiplex_tiling.add_obstructions_and_requirements(
+                    forced_obs, [rem_req]
                 )
             )
         return tuple(res)
