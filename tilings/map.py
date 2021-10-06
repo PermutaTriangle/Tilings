@@ -314,6 +314,18 @@ class RowColMap(CellMap):
             if not new_gp.contradictory():
                 yield new_gp
 
+    def preimage_tiling(self, tiling: "Tiling") -> "Tiling":
+        if tiling.parameters:
+            raise NotImplementedError("Not implemented for tilings with parameter")
+        obs = itertools.chain.from_iterable(
+            self.preimage_gp(ob) for ob in tiling.obstructions
+        )
+        reqs = (
+            itertools.chain.from_iterable(self.preimage_gp(req) for req in req_list)
+            for req_list in tiling.requirements
+        )
+        return tiling.__class__(obs, reqs)
+
     # Other method
     def max_row(self) -> int:
         """Return the biggest row index in the image."""

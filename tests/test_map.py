@@ -1,6 +1,6 @@
 import pytest
 
-from tilings.griddedperm import GriddedPerm
+from tilings import GriddedPerm, Tiling
 from tilings.map import RowColMap
 
 
@@ -60,3 +60,57 @@ def test_preimage_gp(double_all_map):
         GriddedPerm((0, 1), ((1, 0), (1, 1))),
         GriddedPerm((0, 1), ((1, 1), (1, 1))),
     ]
+
+
+def test_preimage_tiling(double_row_map, double_col_map, double_all_map):
+    t1 = Tiling(
+        obstructions=[
+            GriddedPerm((0, 2, 1), ((0, 0),) * 3),
+        ],
+        requirements=[[GriddedPerm((0,), ((0, 0),))]],
+    )
+    assert double_row_map.preimage_tiling(t1) == Tiling(
+        [
+            GriddedPerm((0, 2, 1), [(0, 0), (0, 0), (0, 0)]),
+            GriddedPerm((0, 2, 1), [(0, 0), (0, 1), (0, 0)]),
+            GriddedPerm((0, 2, 1), [(0, 0), (0, 1), (0, 1)]),
+            GriddedPerm((0, 2, 1), [(0, 1), (0, 1), (0, 1)]),
+        ],
+        [[GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((0, 1),))]],
+    )
+    assert double_col_map.preimage_tiling(t1) == Tiling(
+        [
+            GriddedPerm((0, 2, 1), [(0, 0), (0, 0), (0, 0)]),
+            GriddedPerm((0, 2, 1), [(0, 0), (0, 0), (1, 0)]),
+            GriddedPerm((0, 2, 1), [(0, 0), (1, 0), (1, 0)]),
+            GriddedPerm((0, 2, 1), [(1, 0), (1, 0), (1, 0)]),
+        ],
+        [[GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),))]],
+    )
+    t2 = Tiling(
+        obstructions=[
+            GriddedPerm((0, 1), ((0, 0),) * 2),
+        ],
+        requirements=[[GriddedPerm((0,), ((0, 0),))]],
+    )
+    assert double_all_map.preimage_tiling(t2) == Tiling(
+        [
+            GriddedPerm((0, 1), [(0, 0), (0, 0)]),
+            GriddedPerm((0, 1), [(0, 0), (0, 1)]),
+            GriddedPerm((0, 1), [(0, 0), (1, 0)]),
+            GriddedPerm((0, 1), [(0, 0), (1, 1)]),
+            GriddedPerm((0, 1), [(0, 1), (0, 1)]),
+            GriddedPerm((0, 1), [(0, 1), (1, 1)]),
+            GriddedPerm((0, 1), [(1, 0), (1, 0)]),
+            GriddedPerm((0, 1), [(1, 0), (1, 1)]),
+            GriddedPerm((0, 1), [(1, 1), (1, 1)]),
+        ],
+        [
+            [
+                GriddedPerm.point_perm((0, 0)),
+                GriddedPerm.point_perm((1, 0)),
+                GriddedPerm.point_perm((0, 1)),
+                GriddedPerm.point_perm((1, 1)),
+            ]
+        ],
+    )
