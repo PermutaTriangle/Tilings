@@ -8,6 +8,7 @@ from tilings.algorithms.row_col_separation import (
     RowColSeparation,
     _RowColSeparationSingleApplication,
 )
+from tilings.map import CellMap
 
 # ----------------------------------------------------------------------------
 #           Test for the Graph class
@@ -553,19 +554,6 @@ def test_separates_tiling():
     )
 
 
-def test_map_gridded_perm(separable_tiling1):
-    rcs = _RowColSeparationSingleApplication(separable_tiling1)
-    ob = GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0)))
-    cell_map = {(0, 0): (0, 0), (1, 0): (1, 1)}
-    assert rcs._map_gridded_perm(cell_map, ob) == GriddedPerm(
-        (0, 1, 2), ((0, 0), (1, 1), (1, 1))
-    )
-    ob = GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0)))
-    assert rcs._map_gridded_perm(cell_map, ob) == GriddedPerm(
-        (0, 1, 2), ((0, 0), (1, 1), (1, 1))
-    )
-
-
 def test_all_separation():
     t = Tiling(
         obstructions=[
@@ -897,24 +885,30 @@ def test_backmap():
         ),
         requirements=((GriddedPerm((0,), ((1, 2),)),),),
     )
-    cellmap1 = {
-        (0, 1): (0, 1),
-        (1, 0): (2, 0),
-        (1, 1): (2, 1),
-        (1, 2): (1, 2),
-    }
-    cellmap2 = {
-        (0, 1): (0, 1),
-        (1, 2): (1, 3),
-        (2, 0): (2, 0),
-        (2, 1): (3, 2),
-    }
-    final_cell_map = {
-        (0, 1): (0, 1),
-        (1, 0): (2, 0),
-        (1, 1): (3, 2),
-        (1, 2): (1, 3),
-    }
+    cellmap1 = CellMap(
+        {
+            (0, 1): (0, 1),
+            (1, 0): (2, 0),
+            (1, 1): (2, 1),
+            (1, 2): (1, 2),
+        }
+    )
+    cellmap2 = CellMap(
+        {
+            (0, 1): (0, 1),
+            (1, 2): (1, 3),
+            (2, 0): (2, 0),
+            (2, 1): (3, 2),
+        }
+    )
+    final_cell_map = CellMap(
+        {
+            (0, 1): (0, 1),
+            (1, 0): (2, 0),
+            (1, 1): (3, 2),
+            (1, 2): (1, 3),
+        }
+    )
     rcs1 = _RowColSeparationSingleApplication(t)
     t1 = rcs1.separated_tiling()
     assert rcs1.get_cell_map() == cellmap1
@@ -959,30 +953,36 @@ def test_backmap2():
         ),
         requirements=((GriddedPerm((0,), ((1, 0),)),),),
     )
-    cellmap1 = {
-        (0, 0): (0, 0),
-        (0, 2): (0, 3),
-        (1, 0): (1, 1),
-        (1, 1): (2, 2),
-        (1, 2): (2, 3),
-        (2, 2): (3, 3),
-    }
-    cellmap2 = {
-        (0, 0): (0, 0),
-        (0, 3): (0, 3),
-        (1, 1): (1, 1),
-        (2, 2): (3, 2),
-        (2, 3): (2, 4),
-        (3, 3): (4, 3),
-    }
-    final_cell_map = {
-        (0, 0): (0, 0),
-        (0, 2): (0, 3),
-        (1, 0): (1, 1),
-        (1, 1): (3, 2),
-        (1, 2): (2, 4),
-        (2, 2): (4, 3),
-    }
+    cellmap1 = CellMap(
+        {
+            (0, 0): (0, 0),
+            (0, 2): (0, 3),
+            (1, 0): (1, 1),
+            (1, 1): (2, 2),
+            (1, 2): (2, 3),
+            (2, 2): (3, 3),
+        }
+    )
+    cellmap2 = CellMap(
+        {
+            (0, 0): (0, 0),
+            (0, 3): (0, 3),
+            (1, 1): (1, 1),
+            (2, 2): (3, 2),
+            (2, 3): (2, 4),
+            (3, 3): (4, 3),
+        }
+    )
+    final_cell_map = CellMap(
+        {
+            (0, 0): (0, 0),
+            (0, 2): (0, 3),
+            (1, 0): (1, 1),
+            (1, 1): (3, 2),
+            (1, 2): (2, 4),
+            (2, 2): (4, 3),
+        }
+    )
     print(t)
     rcs1 = _RowColSeparationSingleApplication(t)
     t1 = rcs1.separated_tiling()
@@ -1040,14 +1040,16 @@ def test_backmap3():
         ),
         requirements=((GriddedPerm((0,), ((2, 1),)),),),
     )
-    cellmap1 = {
-        (0, 0): (2, 0),
-        (0, 1): (0, 2),
-        (0, 2): (1, 4),
-        (2, 0): (3, 1),
-        (2, 1): (3, 3),
-        (2, 2): (3, 4),
-    }
+    cellmap1 = CellMap(
+        {
+            (0, 0): (2, 0),
+            (0, 1): (0, 2),
+            (0, 2): (1, 4),
+            (2, 0): (3, 1),
+            (2, 1): (3, 3),
+            (2, 2): (3, 4),
+        }
+    )
     print(t)
     rcs1 = _RowColSeparationSingleApplication(t)
     t1 = rcs1.separated_tiling()

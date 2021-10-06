@@ -2,14 +2,177 @@ import itertools
 from typing import TYPE_CHECKING, Dict, Iterator, Optional, Tuple
 
 from tilings.exception import InvalidOperationError
+from tilings.griddedperm import GriddedPerm
 
 if TYPE_CHECKING:
-    from tilings.griddedperm import GriddedPerm
+    from tilings.parameter_counter import ParameterCounter, PreimageCounter
+    from tilings.tiling import Tiling
 
 Cell = Tuple[int, int]
 
 
-class RowColMap:
+class CellMap:
+    def __init__(self, map: Dict[Cell, Cell]) -> None:
+        self._map = map
+
+    @classmethod
+    def identity(cls, dimensions: Tuple[int, int]) -> "CellMap":
+        cells = itertools.product(range(dimensions[0]), range(dimensions[1]))
+        return CellMap({c: c for c in cells})
+
+    def inverse(self) -> "CellMap":
+        """
+        Return the inverse map if possible.
+        Otherwise raise an InvalidOperationError.
+        """
+        inverse_map = {v: k for k, v in self._map.items()}
+        if len(inverse_map) != len(self._map):
+            raise InvalidOperationError("The map is not reversible.")
+        return CellMap(inverse_map)
+
+    def to_row_col_map(self) -> "RowColMap":
+        """
+        Convert the CellMap object into an equivalent RowColMap object.
+
+        Raises InvalidOperationError if the columns or row are not mapped consistently
+        and therefore the conversion can't be completed.
+        """
+        col_map, row_map = dict(), dict()
+        for (col, row), (new_col, new_row) in self._map.items():
+            if col not in col_map:
+                col_map[col] = new_col
+            elif col_map[col] != new_col:
+                raise InvalidOperationError("Not mapping column consistently.")
+            if row not in row_map:
+                row_map[row] = new_row
+            elif row_map[row] != new_row:
+                raise InvalidOperationError("Not mapping row consistently.")
+        return RowColMap(col_map=col_map, row_map=row_map)
+
+    def compose(self, other: "CellMap") -> "CellMap":
+        """
+        The return the new map that is obtained by the applying first self and then
+        other.
+
+        If self maps a -> b and other maps b -> c than the resulting map maps a -> c.
+        """
+        return CellMap(
+            {
+                k: other.map_cell(v)
+                for k, v in self._map.items()
+                if other.is_mappable_cell(v)
+            }
+        )
+
+    # Mapping method
+    def map_tiling(self, tiling: "Tiling") -> "Tiling":
+        """
+        Map the tiling according to the map.
+
+        Point obstruction that cannot be mapped are ignored.
+        """
+        mapped_obs = (
+            self.map_gp(ob)
+            for ob in tiling.obstructions
+            if not ob.is_point_perm() or self.is_mappable_gp(ob)
+        )
+        obs = itertools.filterfalse(GriddedPerm.contradictory, mapped_obs)
+        reqs = (
+            itertools.filterfalse(GriddedPerm.contradictory, map(self.map_gp, req_list))
+            for req_list in tiling.requirements
+        )
+        params = map(self.map_param, tiling.parameters)
+        return tiling.__class__(obs, reqs, params)
+
+    def map_param(self, param: "ParameterCounter") -> "ParameterCounter":
+        """
+        Map the parameter of according to the map.
+        """
+        return param.__class__(
+            (self.map_preimage_counter(preimg_counter) for preimg_counter in param)
+        )
+
+    def map_preimage_counter(
+        self,
+        preimg_counter: "PreimageCounter",
+    ) -> "PreimageCounter":
+        """
+        Maps the given counter according to the map.
+
+        NOTE: This works if the map is bijective. Not sure about other cases.
+        """
+        cell_pos_in_col, cell_pos_in_row = dict(), dict()
+        col_split = [0 for _ in range(preimg_counter.tiling.dimensions[0])]
+        row_split = [0 for _ in range(preimg_counter.tiling.dimensions[1])]
+        for cell in self._map:
+            for pre_cell in preimg_counter.map.preimage_cell(cell):
+                col_pos = self.map_cell(cell)[0] - cell[0]
+                row_pos = self.map_cell(cell)[1] - cell[1]
+                cell_pos_in_col[pre_cell] = col_pos
+                cell_pos_in_row[pre_cell] = row_pos
+                col_split[cell[0]] = max(col_pos + 1, col_split[cell[0]])
+                row_split[cell[1]] = max(row_pos + 1, row_split[cell[1]])
+        cell_to_col_map = {
+            k: v + sum(col_split[: k[0]]) for k, v in cell_pos_in_col.items()
+        }
+        cell_to_row_map = {
+            k: v + sum(row_split[: k[1]]) for k, v in cell_pos_in_row.items()
+        }
+        preimg_map = CellMap(
+            {
+                cell: (cell_to_col_map[cell], cell_to_row_map[cell])
+                for cell in preimg_counter.tiling.active_cells
+            }
+        )
+        projection_map = (
+            preimg_map.inverse()
+            .compose(preimg_counter.map)
+            .compose(self)
+            .to_row_col_map()
+        )
+        return preimg_counter.__class__(
+            preimg_map.map_tiling(preimg_counter.tiling), projection_map
+        )
+
+    def is_mappable_gp(self, gp: "GriddedPerm") -> bool:
+        """
+        Return True if all the cell used by the gridded perm can be mapped.
+        """
+        return all(self.is_mappable_cell(cell) for cell in gp.pos)
+
+    def map_gp(self, gp: "GriddedPerm") -> "GriddedPerm":
+        """
+        Map the gridded permutation according to the map.
+        """
+        return gp.__class__(gp.patt, map(self.map_cell, gp.pos))
+
+    def is_mappable_cell(self, cell: Cell) -> bool:
+        """
+        Return True if the cell can be mapped.
+        """
+        return cell in self._map
+
+    def map_cell(self, cell: Cell) -> Cell:
+        """
+        Map the cell according to the map.
+        """
+        return self._map[cell]
+
+    def __str__(self) -> str:
+        cells = [f"{k}: {v}" for k, v in sorted(self._map.items())]
+        cells_str = ", ".join(cells)
+        return f"Cell Map: {{{cells_str}}}"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CellMap):
+            return NotImplemented
+        return self._map == other._map
+
+    def __hash__(self) -> int:
+        return hash(tuple(sorted(self._map.items())))
+
+
+class RowColMap(CellMap):
     """
     A class to combine a row and a column map together and map different object related
     to tiling in accordance to those row and columns map.
@@ -42,9 +205,9 @@ class RowColMap:
         row_map = {i: i for i in range(dimensions[1])}
         return RowColMap(row_map=row_map, col_map=col_map, is_identity=True)
 
-    def reverse(self) -> "RowColMap":
+    def inverse(self) -> "RowColMap":
         """
-        Return the reverse map if possible.
+        Return the inverse map if possible.
         Otherwise raise an InvalidOperationError.
         """
         row_map = {v: k for k, v in self._row_map.items()}
@@ -55,13 +218,18 @@ class RowColMap:
             row_map=row_map, col_map=col_map, is_identity=self._is_identity
         )
 
-    def compose(self, other: "RowColMap") -> "RowColMap":
+    def to_row_col_map(self) -> "RowColMap":
+        return self
+
+    def compose(self, other: "CellMap") -> "RowColMap":
         """
         The return the new map that is obtained by the applying first self and then
         other.
 
         If self maps a -> b and other maps b -> c than the resulting map maps a -> c.
         """
+        if not isinstance(other, RowColMap):
+            raise NotImplementedError
         col_map = {k: other.map_col(v) for k, v in self._col_map.items()}
         row_map = {k: other.map_row(v) for k, v in self._row_map.items()}
         return RowColMap(row_map=row_map, col_map=col_map)
@@ -84,18 +252,6 @@ class RowColMap:
         return cols == sorted(cols) and rows == sorted(rows)
 
     # Mapping method
-    def is_mappable_gp(self, gp: "GriddedPerm") -> bool:
-        """
-        Return True if all the cell used by the gridded perm can be mapped.
-        """
-        return all(self.is_mappable_cell(cell) for cell in gp.pos)
-
-    def map_gp(self, gp: "GriddedPerm") -> "GriddedPerm":
-        """
-        Map the gridded permutation according to the map.
-        """
-        return gp.__class__(gp.patt, map(self.map_cell, gp.pos))
-
     def is_mappable_cell(self, cell: Cell) -> bool:
         """
         Return True if the cell can be mapped, i.e. if the image of the row

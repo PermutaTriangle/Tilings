@@ -25,7 +25,6 @@ class PreimageCounter:
         """
         Some sanity check on the counter.
         """
-        assert self.map.is_non_crossing()
         assert not self.tiling.parameters
 
     def remove_empty_rows_and_cols(self) -> None:
@@ -172,3 +171,6 @@ class ParameterCounter:
 
     def __str__(self):
         return "".join(map(str, self.counters))
+
+    def __iter__(self) -> Iterator[PreimageCounter]:
+        return iter(self.counters)
