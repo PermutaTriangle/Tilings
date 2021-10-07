@@ -242,8 +242,10 @@ class Tiling(CombinatorialClass):
             self._cached_properties["forward_map"] = RowColMap.identity((0, 0))
             self._obstructions = (GriddedPerm.single_cell((0,), (0, 0)),)
             self._requirements = tuple()
-            assert not self._parameters, "UH OH - we gotta think now"
-            self._parameters = tuple()
+            assert all(
+                all(not preimage.tiling.active_cells for preimage in parameter)
+                for parameter in self._parameters
+            ), "UH OH THINK EVEN HARDER- BLAME ÉMILE"
             self._cached_properties["dimensions"] = (1, 1)
             return
         forward_map = self._minimize_mapping()
