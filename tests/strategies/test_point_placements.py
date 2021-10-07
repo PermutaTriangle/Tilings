@@ -1397,3 +1397,30 @@ def test_multiple_parent_parameters_to_same_child_parameter():
     rule = strategy(tiling)
     for i in range(6):
         rule.sanity_check(i)
+
+    def test_place_with_params():
+        tiling = Tiling(
+            obstructions=(GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),),
+            requirements=(),
+            parameters=[
+                ParameterCounter(
+                    [
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (0, 1))),
+                                    GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 1))),
+                                ),
+                                requirements=(),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0, 1: 0}, {0: 0}),
+                        )
+                    ]
+                )
+            ],
+        )
+        for rule in strat(tiling):
+            for i in range(5):
+                assert rule.sanity_check(i)

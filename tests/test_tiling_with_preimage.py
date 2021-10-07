@@ -122,3 +122,32 @@ def test_insert_point_req_tiling_with_req(normal_fusion_tiling):
     # insert in cell with two preimages
     t_base = normal_fusion_tiling.insert_cell((1, 0))
     assert t_expected == t_base.insert_cell((0, 0))
+
+
+def test_tiling_is_empty_perm_tiling():
+    tiling = Tiling(
+        obstructions=(GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),),
+        requirements=(),
+        parameters=[
+            ParameterCounter(
+                [
+                    PreimageCounter(
+                        Tiling(
+                            obstructions=(
+                                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                                GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (0, 1))),
+                                GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 1))),
+                            ),
+                            requirements=(),
+                            parameters=(),
+                        ),
+                        RowColMap({0: 0, 1: 0}, {0: 0}),
+                    )
+                ]
+            )
+        ],
+    )
+    empty_cell = tiling.empty_cell((0, 0))
+    assert empty_cell.get_terms(0) == {(1,): 1}
+    for i in range(1, 4):
+        assert empty_cell.get_terms(i) == {}
