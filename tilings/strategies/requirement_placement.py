@@ -91,11 +91,11 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         if self.include_empty:
             child = children[0]
             for parameter in comb_class.parameters:
-                mapped_parameter = child.forward_map.map_param(
-                    parameter
-                ).add_obstructions_and_requirements(child.obstructions, [])
+                mapped_parameter = parameter.add_obstructions_and_requirements(
+                    child.obstructions, []
+                ).apply_row_col_map(child.forward_map)
                 parent_var = comb_class.get_parameter_name(parameter)
-                child_var = child.get_parameter_name(parameter)
+                child_var = child.get_parameter_name(mapped_parameter)
                 extra_parameters[0][parent_var] = child_var
         for idx, (cell, child) in enumerate(
             zip(self._placed_cells, children[1:] if self.include_empty else children)
@@ -107,9 +107,9 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 self.gps, self.indices, cell
             )
             mapped_parameters = [
-                algo.multiplex_parameter(
-                    parameter, cell
-                ).add_obstructions_and_requirements(forced_obs, [rem_req])
+                algo.multiplex_parameter(parameter, cell)
+                .add_obstructions_and_requirements(forced_obs, [rem_req])
+                .apply_row_col_map(child.forward_map)
                 for parameter in comb_class.parameters
             ]
             for parameter, mapped_parameter in zip(
