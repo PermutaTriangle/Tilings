@@ -1,6 +1,4 @@
 import itertools
-from itertools import chain
-from types import resolve_bases
 from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Tuple
 
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
