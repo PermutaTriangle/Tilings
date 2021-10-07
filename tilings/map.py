@@ -1,5 +1,5 @@
 import itertools
-from typing import TYPE_CHECKING, Dict, Iterator, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Iterable, Iterator, Optional, Tuple
 
 from tilings.exception import InvalidOperationError
 from tilings.griddedperm import GriddedPerm
@@ -19,6 +19,12 @@ class CellMap:
     def identity(cls, dimensions: Tuple[int, int]) -> "CellMap":
         cells = itertools.product(range(dimensions[0]), range(dimensions[1]))
         return CellMap({c: c for c in cells})
+
+    def domain(self) -> Iterator[Cell]:
+        """
+        Return the domain of the map.
+        """
+        return iter(self._map)
 
     def inverse(self) -> "CellMap":
         """
@@ -104,7 +110,7 @@ class CellMap:
         cell_pos_in_col, cell_pos_in_row = dict(), dict()
         col_split = [0 for _ in range(preimg_counter.tiling.dimensions[0])]
         row_split = [0 for _ in range(preimg_counter.tiling.dimensions[1])]
-        for cell in self._map:
+        for cell in self.domain():
             for pre_cell in preimg_counter.map.preimage_cell(cell):
                 col_pos = self.map_cell(cell)[0] - cell[0]
                 row_pos = self.map_cell(cell)[1] - cell[1]
@@ -204,6 +210,9 @@ class RowColMap(CellMap):
         col_map = {i: i for i in range(dimensions[0])}
         row_map = {i: i for i in range(dimensions[1])}
         return RowColMap(row_map=row_map, col_map=col_map, is_identity=True)
+
+    def domain(self) -> Iterator[Cell]:
+        return itertools.product(self._col_map, self._row_map)
 
     def inverse(self) -> "RowColMap":
         """
