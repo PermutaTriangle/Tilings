@@ -294,7 +294,7 @@ class ForgetTrackedSearcher(TrackedSearcher):
         label: Optional[int] = None,
         initial: bool = False,
     ) -> Iterator[Tuple[int, Tuple[int, ...], AbstractRule]]:
-        if not isinstance(
+        if not comb_class.assumptions and not isinstance(
             strategy_generator, (AddAssumptionFactory, RearrangeAssumptionFactory)
         ):
             idx = self.strategies.index(strategy_generator)
