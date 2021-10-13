@@ -26,6 +26,7 @@ from tilings.map import CellMap
 
 if TYPE_CHECKING:
     from tilings import GriddedPerm, Tiling
+    from tilings.parameter_counter import ParameterCounter
 
 Cell = Tuple[int, int]
 Edge = Tuple[int, int]
@@ -465,17 +466,24 @@ class _RowColSeparationSingleApplication:
         """
         return self._separates_tiling(self.max_row_order, self.max_col_order)
 
+    def seperation_map(self) -> CellMap:
+        """
+        Return the position of map from the orginal tiling to the seperated tiling.
+
+        This does not account for rows or column becoming empty.
+        """
+        row_order = self.max_row_order
+        col_order = self.max_col_order
+        return self._get_cell_map(row_order, col_order)
+
     def get_cell_map(self) -> CellMap:
         """
-        Return the position of the according to the given row_order and
-        col_order. This accounts for any cleaning happening inside tiling initializer.
+        Return the position of map from the orginal tiling to the seperated tiling.
 
         This is the cell map for the separated tiling returned by `separated_tiling`.
         """
         sep_tiling = self.separated_tiling()
-        row_order = self.max_row_order
-        col_order = self.max_col_order
-        sep_cell_map = self._get_cell_map(row_order, col_order)
+        sep_cell_map = self.seperation_map()
         init_cell_map = sep_tiling.forward_map
         return sep_cell_map.compose(init_cell_map)
 
@@ -541,3 +549,17 @@ class RowColSeparation:
             new_sep = separation_algo.separated_tiling()
             separation_algo = _RowColSeparationSingleApplication(new_sep)
         return cell_map
+
+    def map_param(self, param: "ParameterCounter") -> "ParameterCounter":
+        """
+        Map the parameter the parent tiling to the corresponding parameters on the
+        child.
+        """
+        separation_algo = _RowColSeparationSingleApplication(self._tiling)
+        while separation_algo.separable():
+            new_sep = separation_algo.separated_tiling()
+            separation_map = separation_algo.seperation_map()
+            param = separation_map.map_param(param)
+            param.apply_row_col_map(new_sep.forward_map)
+            separation_algo = _RowColSeparationSingleApplication(new_sep)
+        return param
