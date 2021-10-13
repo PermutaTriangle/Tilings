@@ -13,7 +13,6 @@ from comb_spec_searcher.rule_db import RuleDBForgetStrategy
 from comb_spec_searcher.rule_db.abstract import RuleDBAbstract
 from comb_spec_searcher.strategies import AbstractStrategy
 from comb_spec_searcher.strategies.rule import AbstractRule
-from comb_spec_searcher.strategies.strategy import EmptyStrategy
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
@@ -268,7 +267,7 @@ class ForgetTrackedSearcher(TrackedSearcher):
     @property
     def strategies(self) -> List[CSSstrategy]:
         if self._strategies is None:
-            self._strategies: List[CSSstrategy] = list(
+            self._strategies = list(
                 chain(
                     self.strategy_pack.ver_strats,
                     self.strategy_pack.initial_strats,
