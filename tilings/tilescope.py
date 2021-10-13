@@ -13,6 +13,7 @@ from comb_spec_searcher.rule_db import RuleDBForgetStrategy
 from comb_spec_searcher.rule_db.abstract import RuleDBAbstract
 from comb_spec_searcher.strategies import AbstractStrategy
 from comb_spec_searcher.strategies.rule import AbstractRule
+from comb_spec_searcher.strategies.strategy import EmptyStrategy
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
@@ -259,17 +260,23 @@ class ForgetTrackedSearcher(TrackedSearcher):
         strategy_pack: TileScopePack,
         **kwargs,
     ):
-        self.strategies: List[CSSstrategy] = list(
-            chain(
-                strategy_pack.ver_strats,
-                strategy_pack.initial_strats,
-                strategy_pack.inferral_strats,
-                *strategy_pack.expansion_strats,
-            )
-        )
+        self._strategies: Optional[List[CSSstrategy]] = None
         self._strat_indices: DefaultDict[int, int] = defaultdict(int)
         kwargs["ruledb"] = kwargs.get("ruledb", RuleDBForgetStrategy())
         super().__init__(start_class, strategy_pack, **kwargs)
+
+    @property
+    def strategies(self) -> List[CSSstrategy]:
+        if self._strategies is None:
+            self._strategies: List[CSSstrategy] = list(
+                chain(
+                    self.strategy_pack.ver_strats,
+                    self.strategy_pack.initial_strats,
+                    self.strategy_pack.inferral_strats,
+                    *self.strategy_pack.expansion_strats,
+                )
+            )
+        return self._strategies
 
     def store_strategy(self, label: int, strategy: AbstractStrategy) -> None:
         """We do nothing as instead we track in the _expand method."""
@@ -291,13 +298,9 @@ class ForgetTrackedSearcher(TrackedSearcher):
         if not isinstance(
             strategy_generator, (AddAssumptionFactory, RearrangeAssumptionFactory)
         ):
-            try:
-                idx = self.strategies.index(strategy_generator)
-                assert isinstance(label, int)
-                self._strat_indices[label] |= 1 << idx
-
-            except ValueError:
-                pass
+            idx = self.strategies.index(strategy_generator)
+            assert isinstance(label, int)
+            self._strat_indices[label] |= 1 << idx
         yield from super()._expand_class_with_strategy(
             comb_class, strategy_generator, label, initial
         )
