@@ -37,7 +37,19 @@ class PreimageCounter:
     def apply_row_col_map(self, row_col_map: "RowColMap") -> "PreimageCounter":
         """
         Modify in place the map with respect to the given row_col_map. Return self.
+
+        If some of the row/col from the preimage tiling can't be mapped by the
+        composition, then they'll be made empty on the preimage tiling.
         """
+        empty_cells = [
+            cell
+            for cell in self.tiling.active_cells
+            if not row_col_map.is_mappable_cell(self.map.map_cell(cell))
+        ]
+        if empty_cells:
+            new_obs = map(GriddedPerm.point_perm, empty_cells)
+            self.tiling = self.tiling.add_obstructions(new_obs)
+            self.map = self.tiling.backward_map.compose(self.map)
         self.map = self.map.compose(row_col_map)
         return self
 

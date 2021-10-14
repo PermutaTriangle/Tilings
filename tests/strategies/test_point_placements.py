@@ -13,8 +13,6 @@ from tilings.strategies import (
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 
 pytest_plugins = [
-    "tests.fixtures.obstructions_requirements",
-    "tests.fixtures.simple_tiling",
     "tests.fixtures.diverse_tiling",
     "tests.fixtures.no_point_tiling",
 ]

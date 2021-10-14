@@ -60,8 +60,8 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
         child = children[0]
-        forward_map = self.forward_cell_map(comb_class)
-        mapped_params = tuple(map(forward_map.map_param, comb_class.parameters))
+        algo = self.row_col_sep_algorithm(comb_class)
+        mapped_params = tuple(map(algo.map_param, comb_class.parameters))
         return (
             {
                 comb_class.get_parameter_name(param): child.get_parameter_name(
