@@ -270,14 +270,7 @@ class ForgetTrackedSearcher(TrackedSearcher):
     @property
     def strategies(self) -> List[CSSstrategy]:
         if self._strategies is None:
-            self._strategies = list(
-                chain(
-                    self.strategy_pack.ver_strats,
-                    self.strategy_pack.initial_strats,
-                    self.strategy_pack.inferral_strats,
-                    *self.strategy_pack.expansion_strats,
-                )
-            )
+            self._strategies = list(self.strategy_pack)
         return self._strategies
 
     def store_strategy(self, label: int, strategy: AbstractStrategy) -> None:
