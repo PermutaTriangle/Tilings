@@ -1,5 +1,4 @@
 from collections import defaultdict
-from itertools import chain
 from typing import DefaultDict, Iterable, Iterator, List, Optional, Set, Tuple, Union
 
 import requests
@@ -13,6 +12,7 @@ from comb_spec_searcher.rule_db import RuleDBForgetStrategy
 from comb_spec_searcher.rule_db.abstract import RuleDBAbstract
 from comb_spec_searcher.strategies import AbstractStrategy
 from comb_spec_searcher.strategies.rule import AbstractRule
+from comb_spec_searcher.strategies.strategy import EmptyStrategy
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
@@ -181,7 +181,7 @@ class TrackedSearcher(LimitedAssumptionTileScope):
     def store_strategy(self, label: int, strategy: AbstractStrategy) -> None:
         self._strats[label].append(strategy)
 
-    def get_old_strategies(self, label: int) -> Tuple[CSSstrategy, ...]:
+    def get_old_strategies(self, label: int, tiling: Tiling) -> Tuple[CSSstrategy, ...]:
         return tuple(self._strats[label])
 
     def add_rule(
@@ -197,8 +197,13 @@ class TrackedSearcher(LimitedAssumptionTileScope):
         tilings with same underlying tiling
         """
         for comb_class, child_label in zip(rule.children, end_labels):
+            underlying_tiling = (
+                comb_class.remove_assumptions()
+                if comb_class.assumptions
+                else comb_class
+            )
             underlying_label = (
-                self.classdb.get_label(comb_class.remove_assumptions())
+                self.classdb.get_label(underlying_tiling)
                 if comb_class.assumptions
                 else child_label
             )
@@ -215,7 +220,9 @@ class TrackedSearcher(LimitedAssumptionTileScope):
             ):
                 self.retroactively_expanded.add(child_label)
                 # apply all rules in ruledb to child_label
-                old_strategies = self.get_old_strategies(underlying_label)
+                old_strategies = self.get_old_strategies(
+                    underlying_label, underlying_tiling
+                )
                 self._expand(comb_class, child_label, old_strategies, False)
             # apply tracking strategies
             if comb_class.assumptions and child_label not in self.tracked_expanded:
@@ -229,11 +236,6 @@ class TrackedSearcher(LimitedAssumptionTileScope):
                 self.classdb.set_empty(child_label, empty=False)
                 if underlying_label != child_label:
                     self.classdb.set_empty(underlying_label, empty=False)
-            underlying_tiling = (
-                comb_class.remove_assumptions()
-                if comb_class.assumptions
-                else comb_class
-            )
             # calls add rule recursively, so will add verification
             # rules for all with underlying tiling
             self.try_verify(underlying_tiling, underlying_label)
@@ -259,22 +261,23 @@ class ForgetTrackedSearcher(TrackedSearcher):
         strategy_pack: TileScopePack,
         **kwargs,
     ):
-        self.strategies: List[CSSstrategy] = list(
-            chain(
-                strategy_pack.ver_strats,
-                strategy_pack.initial_strats,
-                strategy_pack.inferral_strats,
-                *strategy_pack.expansion_strats,
-            )
-        )
+        self._strategies: Optional[List[CSSstrategy]] = None
         self._strat_indices: DefaultDict[int, int] = defaultdict(int)
         kwargs["ruledb"] = kwargs.get("ruledb", RuleDBForgetStrategy())
         super().__init__(start_class, strategy_pack, **kwargs)
 
+    @property
+    def strategies(self) -> List[CSSstrategy]:
+        if self._strategies is None:
+            self._strategies = list(self.strategy_pack)
+        return self._strategies
+
     def store_strategy(self, label: int, strategy: AbstractStrategy) -> None:
         """We do nothing as instead we track in the _expand method."""
 
-    def get_old_strategies(self, label: int) -> Tuple[CSSstrategy, ...]:
+    def get_old_strategies(self, label: int, tiling: Tiling) -> Tuple[CSSstrategy, ...]:
+        if self.classdb.is_empty(tiling, label):
+            return (EmptyStrategy(),)
         return tuple(
             self.strategies[idx]
             for idx, bit in enumerate(bin(self._strat_indices[label])[-1:1:-1])
@@ -283,21 +286,17 @@ class ForgetTrackedSearcher(TrackedSearcher):
 
     def _expand_class_with_strategy(
         self,
-        comb_class: CombinatorialClassType,
+        comb_class: Tiling,
         strategy_generator: CSSstrategy,
         label: Optional[int] = None,
         initial: bool = False,
     ) -> Iterator[Tuple[int, Tuple[int, ...], AbstractRule]]:
-        if not isinstance(
+        if not comb_class.assumptions and not isinstance(
             strategy_generator, (AddAssumptionFactory, RearrangeAssumptionFactory)
         ):
-            try:
-                idx = self.strategies.index(strategy_generator)
-                assert isinstance(label, int)
-                self._strat_indices[label] |= 1 << idx
-
-            except ValueError:
-                pass
+            idx = self.strategies.index(strategy_generator)
+            assert isinstance(label, int)
+            self._strat_indices[label] |= 1 << idx
         yield from super()._expand_class_with_strategy(
             comb_class, strategy_generator, label, initial
         )
