@@ -157,31 +157,17 @@ class TileScopePack(StrategyPack):
         """
         pack = self
         if component:
-            pack = pack.add_initial(
-                strat.ComponentFusionFactory(
-                    tracked=tracked, isolation_level=isolation_level
-                ),
-                "{}_component_fusion{}".format(
-                    "tracked" if tracked else "untracked",
-                    "" if isolation_level is None else "_" + isolation_level,
-                ),
-                apply_first=apply_first,
-            )
-        else:
-            pack = pack.add_initial(
-                strat.FusionFactory(tracked=tracked, isolation_level=isolation_level),
-                "{}_fusion{}".format(
-                    "tracked" if tracked else "untracked",
-                    "" if isolation_level is None else "_" + isolation_level,
-                ),
-                apply_first=apply_first,
-            )
+            raise NotImplementedError("Update to use generalised fusion.")
+        pack = pack.add_initial(
+            strat.FusionFactory(tracked=tracked, isolation_level=isolation_level),
+            "{}_fusion{}".format(
+                "tracked" if tracked else "untracked",
+                "" if isolation_level is None else "_" + isolation_level,
+            ),
+            apply_first=apply_first,
+        )
         if tracked:
             pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
-            if component:
-                pack = pack.add_initial(
-                    strat.DetectComponentsStrategy(ignore_parent=True), apply_first=True
-                )
             pack = pack.add_initial(
                 strat.RearrangeAssumptionFactory(), apply_first=True
             )

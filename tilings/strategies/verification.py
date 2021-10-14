@@ -125,10 +125,6 @@ class BasicVerificationStrategy(AtomStrategy):
 class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
     @staticmethod
     def pack(comb_class: Tiling) -> StrategyPack:
-        if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
-            raise InvalidOperationError(
-                "Can't find generating function with component assumption."
-            )
         # pylint: disable=import-outside-toplevel
         from tilings.tilescope import TileScopePack
 
@@ -178,9 +174,6 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
     def verified(self, comb_class: Tiling) -> bool:
         return comb_class.dimensions == (1, 1) and (
             frozenset(ob.patt for ob in comb_class.obstructions) not in self.symmetries
-            or any(
-                isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions
-            )
         )
 
     def get_genf(
@@ -299,10 +292,6 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
     """
 
     def pack(self, comb_class: Tiling) -> StrategyPack:
-        if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
-            raise InvalidOperationError(
-                "Can't find generating function with component assumption."
-            )
         return StrategyPack(
             name="LocallyFactorable",
             initial_strats=[FactorFactory(), RequirementCorroborationFactory()],
@@ -321,10 +310,6 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
 
     @staticmethod
     def _pack_for_shift(comb_class: Tiling) -> StrategyPack:
-        if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
-            raise InvalidOperationError(
-                "Can't find generating function with component assumption."
-            )
         return StrategyPack(
             name="LocallyFactorable",
             initial_strats=[FactorFactory(), RequirementCorroborationFactory()],
@@ -452,13 +437,6 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
             pass
         if self.no_factors:
             raise InvalidOperationError("Cannot get a simpler specification")
-        if (
-            any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions)
-            and len(comb_class.find_factors()) == 1
-        ):
-            raise InvalidOperationError(
-                "Can't find generating function with component assumption."
-            )
         return StrategyPack(
             initial_strats=[FactorFactory()],
             inferral_strats=[],
@@ -536,10 +514,6 @@ class InsertionEncodingVerificationStrategy(TileScopeVerificationStrategy):
         super().__init__(ignore_parent=ignore_parent)
 
     def pack(self, comb_class: Tiling) -> StrategyPack:
-        if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
-            raise InvalidOperationError(
-                "Can't find generating function with component assumption."
-            )
         # pylint: disable=import-outside-toplevel
         from tilings.strategy_pack import TileScopePack
 
@@ -612,10 +586,6 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
         super().__init__(ignore_parent=ignore_parent)
 
     def pack(self, comb_class: Tiling) -> StrategyPack:
-        if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
-            raise InvalidOperationError(
-                "Can't find generating function with component assumption."
-            )
         try:
             return InsertionEncodingVerificationStrategy().pack(comb_class)
         except StrategyDoesNotApply:

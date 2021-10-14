@@ -28,7 +28,6 @@ from permuta.misc import DIR_EAST, DIR_WEST
 
 from .algorithms import (
     AllObstructionInferral,
-    ComponentFusion,
     EmptyCellInferral,
     Factor,
     FactorWithInterleaving,
@@ -1025,7 +1024,7 @@ class Tiling(CombinatorialClass):
         If `row` is not `None` then `row` and `row+1` are fused together.
         If `col` is not `None` then `col` and `col+1` are fused together.
         """
-        return self._fusion(row, col, ComponentFusion)
+        raise NotImplementedError("Update to use general fusion algorithm.")
 
     def sub_tiling(
         self,
@@ -1257,10 +1256,10 @@ class Tiling(CombinatorialClass):
                     # display stripes
                     background_image = "background-image: linear-gradient(180deg"
                     stripe_size = 24 // len(has_param[index])
-                    for i, color in enumerate(has_param[index]):
+                    for idx, color in enumerate(has_param[index]):
                         background_image += f""",
-                            {color} {i*stripe_size}px,
-                            {color} {(i+1)*stripe_size}px"""
+                            {color} {idx*stripe_size}px,
+                            {color} {(idx+1)*stripe_size}px"""
                     background_image += ");"
                 result[index] = f'<th style="{background_image}{style}">'
         return result
@@ -1351,12 +1350,14 @@ class Tiling(CombinatorialClass):
         idx = parameter.split("_")[1]
         return self.parameters[int(idx)]
 
-    def get_minimum_value(self, param_name: str) -> int:
+    def get_minimum_value(self, parameter: str) -> int:
         """
         Return the minimum value that can be taken by the parameter.
         """
-        parameter = self.get_parameter(param_name)
-        return min(parameter.get_value(gp) for gp in self.minimal_gridded_perms())
+        actual_parameter = self.get_parameter(parameter)
+        return min(
+            actual_parameter.get_value(gp) for gp in self.minimal_gridded_perms()
+        )
 
     def maximum_length_of_minimum_gridded_perm(self) -> int:
         """Returns the maximum length of the minimum gridded permutation that
