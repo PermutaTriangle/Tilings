@@ -217,9 +217,6 @@ class RowColMap(CellMap):
         row_map = {i: i for i in range(dimensions[1])}
         return RowColMap(row_map=row_map, col_map=col_map, is_identity=True)
 
-    def domain(self) -> Iterator[Cell]:
-        return itertools.product(self._col_map, self._row_map)
-
     def inverse(self) -> "RowColMap":
         """
         Return the inverse map if possible.
