@@ -189,10 +189,6 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     def _split_assumption(
         self, assumption: TrackingAssumption, components: Tuple[Set[Cell], ...]
     ) -> List[TrackingAssumption]:
-        if isinstance(assumption, SkewComponentAssumption):
-            return self._split_skew_assumption(assumption)
-        if isinstance(assumption, SumComponentAssumption):
-            return self._split_sum_assumption(assumption)
         return self._split_tracking_assumption(assumption, components)
 
     @staticmethod

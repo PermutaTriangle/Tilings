@@ -8,9 +8,15 @@ from comb_spec_searcher.utils import taylor_expand
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 from tilings import strategies as strat
-from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
+from tilings.strategies.fusion import FusionStrategy
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import GuidedSearcher, TileScope
+
+
+class ComponentFusionStrategy:
+    # delete me
+    pass
+
 
 pytestmark = pytest.mark.xfail
 
@@ -20,16 +26,8 @@ all_the_strategies_fusion = TileScopePack.all_the_strategies().make_fusion(
     tracked=False
 )
 point_placements_fusion = point_placements.make_fusion(tracked=False)
-point_placements_component_fusion = point_placements.make_fusion(
-    component=True, tracked=False
-)
 row_placements_fusion = TileScopePack.row_and_col_placements(row_only=True).make_fusion(
     tracked=True
-)
-row_and_col_placements_component_fusion_fusion = (
-    TileScopePack.row_and_col_placements()
-    .make_fusion(component=True, tracked=False)
-    .make_fusion(tracked=False)
 )
 reginsenc = TileScopePack.regular_insertion_encoding(3)
 
@@ -124,6 +122,9 @@ def test_123_with_db():
 
 @pytest.mark.timeout(20)
 def test_1342_1423():
+    point_placements_component_fusion = point_placements.make_fusion(
+        component=True, tracked=False
+    )
     searcher = TileScope("1342_1423", point_placements_component_fusion)
     spec = searcher.auto_search(smallest=True)
     assert spec.number_of_rules() == 9
@@ -183,8 +184,14 @@ def test_reverse_equiv():
         assert spec.random_sample_object_of_size(i).patt in av
 
 
+@pytest.mark.xfail
 @pytest.mark.timeout(20)
 def test_1324():
+    row_and_col_placements_component_fusion_fusion = (
+        TileScopePack.row_and_col_placements()
+        .make_fusion(component=True, tracked=False)
+        .make_fusion(tracked=False)
+    )
     searcher = TileScope("1324", row_and_col_placements_component_fusion_fusion)
     spec = searcher.auto_search(smallest=True)
     assert spec.number_of_rules() == 9

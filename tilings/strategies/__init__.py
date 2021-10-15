@@ -6,7 +6,7 @@ from .experimental_verification import (
     SubclassVerificationFactory,
 )
 from .factor import FactorFactory
-from .fusion import ComponentFusionFactory, FusionFactory
+from .fusion import FusionFactory
 from .obstruction_inferral import (
     EmptyCellInferralFactory,
     ObstructionInferralFactory,
@@ -65,7 +65,6 @@ __all__ = [
     "PatternPlacementFactory",
     "SlidingFactory",
     # Fusion
-    "ComponentFusionFactory",
     "FusionFactory",
     # Inferral
     "EmptyCellInferralFactory",

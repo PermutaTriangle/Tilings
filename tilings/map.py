@@ -12,8 +12,8 @@ Cell = Tuple[int, int]
 
 
 class CellMap:
-    def __init__(self, map: Dict[Cell, Cell]) -> None:
-        self._map = map
+    def __init__(self, cell_map: Dict[Cell, Cell]) -> None:
+        self._map = cell_map
 
     @classmethod
     def identity(cls, dimensions: Tuple[int, int]) -> "CellMap":
@@ -198,6 +198,12 @@ class RowColMap(CellMap):
         self._row_map = row_map
         self._col_map = col_map
         self._is_identity = is_identity
+        super().__init__(
+            {
+                cell: self.map_cell(cell)
+                for cell in itertools.product(self._col_map, self._row_map)
+            }
+        )
 
     @classmethod
     def identity(cls, dimensions: Tuple[int, int]) -> "RowColMap":

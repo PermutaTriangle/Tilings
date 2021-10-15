@@ -1,6 +1,6 @@
 from .enumeration import DatabaseEnumeration, LocalEnumeration, MonotoneTreeEnumeration
 from .factor import Factor, FactorWithInterleaving, FactorWithMonotoneInterleaving
-from .fusion import ComponentFusion, Fusion
+from .fusion import Fusion
 from .gridded_perm_generation import GriddedPermsOnTiling
 from .gridded_perm_reduction import GriddedPermReduction
 from .guess_obstructions import guess_obstructions
@@ -23,7 +23,6 @@ __all__ = [
     "Factor",
     "FactorWithInterleaving",
     "FactorWithMonotoneInterleaving",
-    "ComponentFusion",
     "Fusion",
     "MinimalGriddedPerms",
     "AllObstructionInferral",

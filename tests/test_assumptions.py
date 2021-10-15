@@ -1,7 +1,6 @@
 import json
 import os
 import pickle
-from operator import xor
 
 import pytest
 
@@ -9,11 +8,7 @@ from comb_spec_searcher import CombinatorialSpecification
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor
-from tilings.assumptions import (
-    SkewComponentAssumption,
-    SumComponentAssumption,
-    TrackingAssumption,
-)
+from tilings.assumptions import TrackingAssumption
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
 
@@ -111,25 +106,6 @@ def test_factors(tplaced_tracked, tplaced_tracked_factored1, tplaced_tracked_fac
     assert set(Factor(tplaced_tracked).factors()) == set(
         [tplaced_tracked_factored1, tplaced_tracked_factored2]
     )
-
-
-def test_order():
-    sum_ass = SumComponentAssumption(
-        (GriddedPerm((0,), ((1, 1),)), GriddedPerm((0,), ((2, 0),)))
-    )
-    skew_ass = SkewComponentAssumption(
-        (
-            GriddedPerm((0,), ((1, 1),)),
-            GriddedPerm((0,), ((2, 0),)),
-            GriddedPerm((0,), ((2, 2),)),
-        )
-    )
-    point_ass = TrackingAssumption([GriddedPerm.single_cell((0,), (0, 0))])
-    point_ass2 = TrackingAssumption([GriddedPerm.single_cell((0,), (2, 0))])
-    assert point_ass < point_ass2 and not point_ass2 < point_ass
-    assert xor(sum_ass < skew_ass, skew_ass < sum_ass)
-    assert xor(sum_ass < point_ass, point_ass < sum_ass)
-    assert xor(point_ass < skew_ass, skew_ass < point_ass)
 
 
 def test_from_cell():
