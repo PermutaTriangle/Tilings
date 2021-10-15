@@ -251,8 +251,7 @@ class RequirementPlacement:
         """
         if self._tiling.parameters:
             raise NotImplementedError
-        else:
-            return []
+        return []
 
     def _stretched_obstructions_requirements_and_parameters(
         self, cell: Cell

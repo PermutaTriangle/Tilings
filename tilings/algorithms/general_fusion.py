@@ -1,3 +1,4 @@
+# pylint: skip-file
 from itertools import chain
 from typing import Counter, Dict, Iterator, List, Optional
 

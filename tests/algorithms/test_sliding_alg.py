@@ -25,7 +25,6 @@ t_cases = [
                 GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (2, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
         Tiling(
             obstructions=(
@@ -39,7 +38,6 @@ t_cases = [
                 GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
     ),
     (
@@ -104,7 +102,6 @@ t_cases = [
                 GriddedPerm((3, 0, 1, 2), ((1, 0), (1, 0), (2, 0), (2, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
         Tiling(
             obstructions=(
@@ -115,7 +112,6 @@ t_cases = [
                 GriddedPerm((1, 2, 3, 0), ((0, 0), (0, 0), (1, 0), (1, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
     ),
     (
@@ -126,7 +122,6 @@ t_cases = [
                 GriddedPerm((0, 1, 2, 3), ((0, 0), (1, 0), (1, 0), (1, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
         Tiling(
             obstructions=(
@@ -135,7 +130,6 @@ t_cases = [
                 GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (1, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
     ),
     (
@@ -152,7 +146,6 @@ t_cases = [
                 GriddedPerm((0, 1, 2, 3), ((1, 0), (3, 0), (3, 0), (3, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
         Tiling(
             obstructions=(
@@ -167,7 +160,6 @@ t_cases = [
                 GriddedPerm((0, 1, 2, 3), ((3, 0), (3, 0), (3, 0), (3, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
     ),
     (
@@ -227,7 +219,6 @@ t_cases = [
                 GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
         None,
     ),
@@ -240,7 +231,6 @@ t_cases = [
                 GriddedPerm((0, 1), ((1, 0), (2, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
         None,
     ),
@@ -253,7 +243,6 @@ t_cases = [
                 GriddedPerm((0, 1), ((0, 0), (2, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
         None,
     ),
@@ -266,7 +255,6 @@ t_cases = [
                 GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
         None,
     ),
@@ -279,7 +267,6 @@ t_cases = [
                 GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
         None,
     ),
@@ -314,7 +301,6 @@ def test_algorithms_sliding():
                         GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
                     ),
                     requirements=(),
-                    assumptions=(),
                 ),
             }
 
@@ -329,7 +315,6 @@ def test_algorithms_sliding():
                 GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (3, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
         Tiling(
             obstructions=(
@@ -341,7 +326,6 @@ def test_algorithms_sliding():
                 GriddedPerm((0, 1, 2), ((3, 0), (3, 0), (3, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
         Tiling(
             obstructions=(
@@ -353,7 +337,6 @@ def test_algorithms_sliding():
                 GriddedPerm((0, 1, 2), ((3, 0), (3, 0), (3, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
         Tiling(
             obstructions=(
@@ -365,7 +348,6 @@ def test_algorithms_sliding():
                 GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (3, 0))),
             ),
             requirements=(),
-            assumptions=(),
         ),
     ]
 
@@ -397,7 +379,6 @@ def test_slide():
                     GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (2, 0))),
                 ),
                 requirements=(),
-                assumptions=(),
             ),
             Tiling(
                 obstructions=(
@@ -411,7 +392,6 @@ def test_slide():
                     GriddedPerm((0, 1, 2), ((2, 0), (2, 0), (2, 0))),
                 ),
                 requirements=(),
-                assumptions=(),
             ),
             (1, 2),
             7,
