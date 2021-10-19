@@ -1,5 +1,3 @@
-from itertools import chain
-
 import pytest
 
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST

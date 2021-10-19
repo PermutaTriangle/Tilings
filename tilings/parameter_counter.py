@@ -121,7 +121,7 @@ class ParameterCounter:
     """
 
     def __init__(self, counters: Iterable[PreimageCounter]):
-        self.counters = tuple(sorted(set(counters)))
+        self.counters = tuple(sorted(counters))
 
     def active_region(self) -> Iterator[Cell]:
         """
@@ -182,7 +182,7 @@ class ParameterCounter:
         return f"{self.__class__.__name__}({self.counters!r})"
 
     def __str__(self):
-        return "".join(map(str, self.counters))
+        return "\n".join(map(str, self.counters))
 
     def __iter__(self) -> Iterator[PreimageCounter]:
         return iter(self.counters)

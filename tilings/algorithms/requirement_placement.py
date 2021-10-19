@@ -144,7 +144,8 @@ class RequirementPlacement:
     ) -> List[GriddedPerm]:
         """
         Return the obstructions needed to ensure point is the only on a the row
-        and/or column
+        and/or column assuming that the point was placed in a cell on a tiling
+        with the given height and width
         """
         if self.own_col:
             width += 2
@@ -243,7 +244,7 @@ class RequirementPlacement:
 
     def multiplex_tiling(
         self, tiling: "Tiling", cell: Cell
-    ) -> Tuple[List[GriddedPerm], List[List[GriddedPerm]], List[ParameterCounter],]:
+    ) -> Tuple[List[GriddedPerm], List[List[GriddedPerm]], List[ParameterCounter]]:
         """
         Return the tiling created by 'multipexing' in cell.
         That is stretching the cell to be a 3x3 square.
@@ -272,22 +273,39 @@ class RequirementPlacement:
         when cell is multiplexed into a 3x3.
         """
         res: List[PreimageCounter] = []
+        width, height = preimage.tiling.dimensions
+        if self.own_col:
+            width += 2
+        if self.own_row:
+            height += 2
         for precell in preimage.map.preimage_cell(cell):
             preimage_multiplex_map = self.multiplex_map(
-                *preimage.tiling.dimensions, cell
+                *preimage.tiling.dimensions, precell
             )
             multiplex_tiling = preimage.tiling.__class__(
                 *self.multiplex_tiling(preimage.tiling, precell)
             )
             col_map = {}
-            for x in range(multiplex_tiling.dimensions[0]):
-                shift = 0 if x <= precell[0] else 1 if x == precell[0] + 1 else 2
+            for x in range(width):
+                shift = (
+                    0
+                    if x <= precell[0] or not self.own_col
+                    else 1
+                    if x == precell[0] + 1
+                    else 2
+                )
                 col_map[x] = (
                     preimage.map.map_col(preimage_multiplex_map.map_col(x)) + shift
                 )
             row_map = {}
-            for y in range(multiplex_tiling.dimensions[1]):
-                shift = 0 if y <= precell[1] else 1 if y == precell[1] + 1 else 2
+            for y in range(height):
+                shift = (
+                    0
+                    if y <= precell[1] or not self.own_row
+                    else 1
+                    if y == precell[1] + 1
+                    else 2
+                )
                 row_map[y] = (
                     preimage.map.map_row(preimage_multiplex_map.map_row(y)) + shift
                 )
