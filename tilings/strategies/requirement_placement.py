@@ -103,7 +103,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             forced_obs = algo.forced_obstructions_from_requirement(
                 self.gps, self.indices, cell, self.direction
             )
-            rem_req = algo._remaining_requirement_from_requirement(
+            rem_req = algo.remaining_requirement_from_requirement(
                 self.gps, self.indices, cell
             )
             mapped_parameters = [

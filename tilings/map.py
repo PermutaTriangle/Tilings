@@ -1,5 +1,5 @@
 import itertools
-from typing import TYPE_CHECKING, Dict, Iterable, Iterator, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple
 
 from tilings.exception import InvalidOperationError
 from tilings.griddedperm import GriddedPerm
@@ -326,7 +326,9 @@ class RowColMap(CellMap):
             if not new_gp.contradictory():
                 yield new_gp
 
-    def preimage_tiling(self, tiling: "Tiling") -> "Tiling":
+    def preimage_obstruction_and_requirements(
+        self, tiling: "Tiling"
+    ) -> Tuple[List[GriddedPerm], List[List[GriddedPerm]]]:
         if tiling.parameters:
             raise NotImplementedError("Not implemented for tilings with parameter")
         obs = itertools.chain.from_iterable(
@@ -336,7 +338,10 @@ class RowColMap(CellMap):
             itertools.chain.from_iterable(self.preimage_gp(req) for req in req_list)
             for req_list in tiling.requirements
         )
-        return tiling.__class__(obs, reqs)
+        return list(obs), list(list(r) for r in reqs)
+
+    def preimage_tiling(self, tiling: "Tiling") -> "Tiling":
+        return tiling.__class__(*self.preimage_obstruction_and_requirements(tiling))
 
     # Other method
     def max_row(self) -> int:
