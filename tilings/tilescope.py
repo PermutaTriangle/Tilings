@@ -167,7 +167,6 @@ class TrackedSearcher(LimitedAssumptionTileScope):
     """
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.tilings_from_underlying: DefaultDict[int, Set[int]] = defaultdict(set)
         self.tracking_strategies = [
             AddAssumptionFactory(),
@@ -177,6 +176,7 @@ class TrackedSearcher(LimitedAssumptionTileScope):
         self.retroactively_expanded: Set[int] = set()
         # TODO: keep self._strats on the ruledb, and avoid storing strats twice.
         self._strats: DefaultDict[int, List[AbstractStrategy]] = defaultdict(list)
+        super().__init__(*args, **kwargs)
 
     def store_strategy(self, label: int, strategy: AbstractStrategy) -> None:
         self._strats[label].append(strategy)
