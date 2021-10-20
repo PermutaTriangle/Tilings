@@ -74,6 +74,7 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
+        print(comb_class)
         if not comb_class.extra_parameters:
             return super().extra_parameters(comb_class, children)
         if children is None:
@@ -85,11 +86,15 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         co_params: Dict[str, str] = {}
         for assumption in comb_class.assumptions:
             parent_var = comb_class.get_assumption_parameter(assumption)
-            av_mapped_assumption = av.forward_map.map_assumption(assumption)
+            av_mapped_assumption = av.forward_map.map_assumption(assumption).avoiding(
+                av.obstructions
+            )
             if av_mapped_assumption.gps:
                 child_var = av.get_assumption_parameter(av_mapped_assumption)
                 av_params[parent_var] = child_var
-            co_mapped_assumption = co.forward_map.map_assumption(assumption)
+            co_mapped_assumption = co.forward_map.map_assumption(assumption).avoiding(
+                co.obstructions
+            )
             if co_mapped_assumption.gps:
                 child_var = co.get_assumption_parameter(co_mapped_assumption)
                 co_params[parent_var] = child_var
