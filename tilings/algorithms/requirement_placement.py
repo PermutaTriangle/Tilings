@@ -1,5 +1,5 @@
 import itertools
-from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Tuple
+from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, Iterator, List, Tuple
 
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings.griddedperm import GriddedPerm
@@ -15,6 +15,77 @@ ListRequirement = List[GriddedPerm]
 ObsCache = Dict[Cell, List[GriddedPerm]]
 ReqsCache = Dict[Cell, List[ListRequirement]]
 ParamCache = Dict[Cell, List[ParameterCounter]]
+
+
+class MultiplexMap(RowColMap):
+    r"""
+    A special class that maps
+    + - + - + - +
+    | A |   | A | \
+    + - + - + - +    + - +
+    |   | o |   | -  | A |
+    + - + - + - +    + - +
+    | A |   | A | /
+    + - + - + - +
+    where the preimage does not place points in the empty cells.
+    """
+
+    def __init__(
+        self, width: int, height: int, cell: Cell, own_col: bool, own_row: bool
+    ):
+        x, y = cell
+        self.cell = cell
+        col_map = self.get_row_map(x, width, own_col, False)
+        row_map = self.get_row_map(y, height, own_row, False)
+        super().__init__(row_map, col_map)
+        # Create the partial map that only maps from the corners.
+        # This allows for faster preimage computation.
+        self.own_col = own_col
+        self.own_row = own_row
+        partial_col_map = self.get_row_map(x, width, own_col, True)
+        partial_row_map = self.get_row_map(y, height, own_row, True)
+        self.partial_map = RowColMap(partial_row_map, partial_col_map)
+
+    @staticmethod
+    def get_row_map(
+        row: int, height: int, own_row: bool, partial: bool
+    ) -> Dict[int, int]:
+        row_map = dict()
+        for j in range(height):
+            ys = (
+                [j]
+                if j < row or not own_row
+                else ([j, j + 2] if partial else [j, j + 1, j + 2])
+                if j == row
+                else [j + 2]
+            )
+            for b in ys:
+                row_map[b] = j
+        return row_map
+
+    def preimage_gp(self, gp: "GriddedPerm") -> Iterator["GriddedPerm"]:
+        """
+        Returns all the preimages of the given gridded permutation.
+
+        Gridded permutations that are contradictory are filtered out.
+        """
+        yield from self.partial_map.preimage_gp(gp)
+        for (idx, val), cell in zip(enumerate(gp.patt), gp.pos):
+            if cell == self.cell:
+                new_pos: List[Cell] = []
+                for (a, b), (c, d) in zip(enumerate(gp.patt), gp.pos):
+                    if self.own_col:
+                        if a == idx:
+                            c += 1
+                        elif a > idx:
+                            c += 2
+                    if self.own_row:
+                        if b == val:
+                            d += 1
+                        elif b > val:
+                            d += 2
+                    new_pos.append((c, d))
+                yield GriddedPerm(gp.patt, new_pos)
 
 
 class RequirementPlacement:
@@ -179,14 +250,14 @@ class RequirementPlacement:
         from any gridded permutation in gp_list in which the point at idx is
         farther in the given direction than the placed cell.
         """
-        row_col_map = self.multiplex_map(*self._tiling.dimensions, cell)
+        multiplex_map = self.multiplex_map(*self._tiling.dimensions, cell)
         placed_cell = self._placed_cell(cell)
         res = []
         for idx, gp in zip(indices, gps):
             # if cell is farther in the direction than gp[idx], then don't need
             # to avoid any of the stretched grided perms
             if not self._farther(cell, gp.pos[idx], direction):
-                for stretched_gp in row_col_map.preimage_gp(gp):
+                for stretched_gp in multiplex_map.preimage_gp(gp):
                     if self._farther(stretched_gp.pos[idx], placed_cell, direction):
                         res.append(stretched_gp)
         return res
@@ -203,12 +274,12 @@ class RequirementPlacement:
         a gridded permutation in gps, such that the point at idx is the placed
         cell.
         """
-        row_col_map = self.multiplex_map(*self._tiling.dimensions, cell)
+        multiplex_map = self.multiplex_map(*self._tiling.dimensions, cell)
         placed_cell = self._placed_cell(cell)
         res = []
         for idx, gp in zip(indices, gps):
             if gp.pos[idx] == cell:
-                for stretched_gp in row_col_map.preimage_gp(gp):
+                for stretched_gp in multiplex_map.preimage_gp(gp):
                     if stretched_gp.pos[idx] == placed_cell:
                         res.append(stretched_gp)
         return res
@@ -216,31 +287,7 @@ class RequirementPlacement:
     def multiplex_map(self, width: int, height: int, cell: Cell) -> RowColMap:
         """Return the RowColMap when cell is stretched into a 3x3."""
         # TODO: cache this?
-        x, y = cell
-        row_map = dict()
-        col_map = dict()
-        for i in range(width):
-            xs = (
-                [i]
-                if i < x or not self.own_col
-                else [i, i + 1, i + 2]
-                if i == x
-                else [i + 2]
-            )
-            for a in xs:
-                col_map[a] = i
-
-        for j in range(height):
-            ys = (
-                [j]
-                if j < y or not self.own_row
-                else [j, j + 1, j + 2]
-                if j == y
-                else [j + 2]
-            )
-            for b in ys:
-                row_map[b] = j
-        return RowColMap(row_map, col_map)
+        return MultiplexMap(width, height, cell, self.own_col, self.own_row)
 
     def multiplex_tiling(
         self, tiling: "Tiling", cell: Cell
