@@ -386,13 +386,19 @@ class RequirementPlacement:
             forced_obs = self.forced_obstructions_from_requirement(
                 gps, indices, cell, direction
             )
+            reduced_obs = [o1 for o1 in obs if not any(o2 in o1 for o2 in forced_obs)]
             rem_req = self.remaining_requirement_from_requirement(gps, indices, cell)
             params = [
                 param.add_obstructions_and_requirements(forced_obs, [rem_req])
                 for param in params
             ]
             res.append(
-                self._tiling.__class__(obs + forced_obs, reqs + [rem_req], params)
+                self._tiling.__class__(
+                    reduced_obs,
+                    reqs + [rem_req],
+                    params,
+                    already_minimized_obs=True,
+                )
             )
         return tuple(res)
 
