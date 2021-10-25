@@ -248,14 +248,8 @@ def test_forced_obstructions_from_patt(
     ) == set(
         [
             GriddedPerm((3, 1, 2, 0, 4), ((0, 3), (0, 0), (3, 3), (3, 0), (3, 3))),
-            GriddedPerm((3, 1, 2, 0, 4), ((0, 3), (0, 0), (2, 3), (3, 0), (3, 3))),
-            GriddedPerm((3, 1, 2, 0, 4), ((0, 3), (0, 0), (2, 3), (2, 0), (3, 3))),
-            GriddedPerm((3, 1, 2, 0, 4), ((0, 3), (0, 0), (2, 3), (2, 0), (2, 3))),
             GriddedPerm((3, 1, 2, 0, 4), ((0, 3), (0, 0), (1, 3), (3, 0), (3, 3))),
-            GriddedPerm((3, 1, 2, 0, 4), ((0, 3), (0, 0), (1, 3), (2, 0), (3, 3))),
-            GriddedPerm((3, 1, 2, 0, 4), ((0, 3), (0, 0), (1, 3), (2, 0), (2, 3))),
             GriddedPerm((3, 1, 2, 0, 4), ((0, 3), (0, 0), (1, 3), (1, 0), (3, 3))),
-            GriddedPerm((3, 1, 2, 0, 4), ((0, 3), (0, 0), (1, 3), (1, 0), (2, 3))),
             GriddedPerm((3, 1, 2, 0, 4), ((0, 3), (0, 0), (1, 3), (1, 0), (1, 3))),
         ]
     )
@@ -267,7 +261,6 @@ def test_forced_obstructions_from_patt(
     ) == set(
         [
             GriddedPerm((3, 1, 2, 0, 4), ((2, 1), (2, 0), (3, 1), (3, 0), (3, 1))),
-            GriddedPerm((3, 1, 2, 0, 4), ((1, 1), (2, 0), (3, 1), (3, 0), (3, 1))),
             GriddedPerm((3, 1, 2, 0, 4), ((0, 1), (2, 0), (3, 1), (3, 0), (3, 1))),
         ]
     )
@@ -279,7 +272,6 @@ def test_forced_obstructions_from_patt(
     ) == set(
         [
             GriddedPerm((3, 1, 2, 0, 4), ((0, 3), (0, 2), (1, 3), (1, 0), (1, 3))),
-            GriddedPerm((3, 1, 2, 0, 4), ((0, 3), (0, 1), (1, 3), (1, 0), (1, 3))),
             GriddedPerm((3, 1, 2, 0, 4), ((0, 3), (0, 0), (1, 3), (1, 0), (1, 3))),
         ]
     )
@@ -298,7 +290,6 @@ def test_forced_obstructions_from_list(placement1, placement1owncol, placement1o
     ) == set(
         [
             GriddedPerm((0,), ((0, 2),)),
-            GriddedPerm((0,), ((1, 2),)),
             GriddedPerm((0,), ((2, 2),)),
             GriddedPerm((0,), ((3, 2),)),
         ]
@@ -310,7 +301,6 @@ def test_forced_obstructions_from_list(placement1, placement1owncol, placement1o
     ) == set(
         [
             GriddedPerm((0,), ((0, 0),)),
-            GriddedPerm((0,), ((1, 0),)),
             GriddedPerm((0,), ((2, 0),)),
             GriddedPerm((0,), ((3, 0),)),
         ]
@@ -323,7 +313,6 @@ def test_forced_obstructions_from_list(placement1, placement1owncol, placement1o
         [
             GriddedPerm((0,), ((0, 2),)),
             GriddedPerm((0,), ((1, 2),)),
-            GriddedPerm((0,), ((2, 2),)),
             GriddedPerm((0,), ((3, 2),)),
         ]
     )
@@ -335,7 +324,6 @@ def test_forced_obstructions_from_list(placement1, placement1owncol, placement1o
         [
             GriddedPerm((0,), ((0, 0),)),
             GriddedPerm((0,), ((1, 0),)),
-            GriddedPerm((0,), ((2, 0),)),
             GriddedPerm((0,), ((3, 0),)),
         ]
     )
@@ -371,7 +359,6 @@ def test_forced_obstructions_from_list(placement1, placement1owncol, placement1o
     ) == set(
         [
             GriddedPerm((0,), ((2, 0),)),
-            GriddedPerm((0,), ((2, 1),)),
             GriddedPerm((0,), ((2, 2),)),
             GriddedPerm((0,), ((2, 3),)),
         ]
@@ -383,7 +370,6 @@ def test_forced_obstructions_from_list(placement1, placement1owncol, placement1o
     ) == set(
         [
             GriddedPerm((0,), ((0, 0),)),
-            GriddedPerm((0,), ((0, 1),)),
             GriddedPerm((0,), ((0, 2),)),
             GriddedPerm((0,), ((0, 3),)),
         ]
@@ -396,7 +382,6 @@ def test_forced_obstructions_from_list(placement1, placement1owncol, placement1o
         [
             GriddedPerm((0,), ((2, 0),)),
             GriddedPerm((0,), ((2, 1),)),
-            GriddedPerm((0,), ((2, 2),)),
             GriddedPerm((0,), ((2, 3),)),
         ]
     )
@@ -408,7 +393,6 @@ def test_forced_obstructions_from_list(placement1, placement1owncol, placement1o
         [
             GriddedPerm((0,), ((0, 0),)),
             GriddedPerm((0,), ((0, 1),)),
-            GriddedPerm((0,), ((0, 2),)),
             GriddedPerm((0,), ((0, 3),)),
         ]
     )
