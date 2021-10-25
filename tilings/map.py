@@ -1,5 +1,5 @@
 import itertools
-from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Dict, Iterator, List, Optional, Tuple
 
 from tilings.exception import InvalidOperationError
 from tilings.griddedperm import GriddedPerm
@@ -315,16 +315,57 @@ class RowColMap(CellMap):
         col, row = cell
         return itertools.product(self.preimage_col(col), self.preimage_row(row))
 
+    def _preimage_gp_col(
+        self, gp_cols: Tuple[int, ...], preimage_func: Callable[[int], Iterator[int]]
+    ) -> Iterator[Tuple[int, ...]]:
+        """
+        Return all the possible sequence of column for a preimage of the gridded
+        permutation using the given preimage_func.
+        """
+        possible_col = [sorted(preimage_func(col)) for col in gp_cols]
+        partial_pos: List[int] = []
+        partial_pos_indices: List[int] = []
+        while True:
+            # Padding the current solution with the leftmost options
+            while len(partial_pos) < len(gp_cols):
+                last_col = partial_pos[-1] if partial_pos else 0
+                for new_col_idx, col in enumerate(possible_col[len(partial_pos)]):
+                    if last_col <= col:
+                        break
+                else:
+                    break
+                partial_pos.append(col)
+                partial_pos_indices.append(new_col_idx)
+            else:
+                yield tuple(partial_pos)
+            # increasing the rightmost pos that can be increased.
+            while partial_pos:
+                partial_pos.pop()
+                partial_pos_last_index = partial_pos_indices.pop()
+                if partial_pos_last_index + 1 < len(possible_col[len(partial_pos)]):
+                    break
+            else:
+                break
+            partial_pos.append(
+                possible_col[len(partial_pos)][partial_pos_last_index + 1]
+            )
+            partial_pos_indices.append(partial_pos_last_index + 1)
+
     def preimage_gp(self, gp: "GriddedPerm") -> Iterator["GriddedPerm"]:
         """
         Returns all the preimages of the given gridded permutation.
 
         Gridded permutations that are contradictory are filtered out.
         """
-        for pos in itertools.product(*(self.preimage_cell(cell) for cell in gp.pos)):
-            new_gp = gp.__class__(gp.patt, pos)
-            if not new_gp.contradictory():
-                yield new_gp
+        gp_cols = tuple(col for col, _ in gp.pos)
+        preimage_col_pos = self._preimage_gp_col(gp_cols, self.preimage_col)
+        gp_rows = gp.patt.inverse().apply(row for _, row in gp.pos)
+        preimage_row_pos = list(
+            map(gp.patt.apply, self._preimage_gp_col(gp_rows, self.preimage_row))
+        )
+        for pos in itertools.product(preimage_col_pos, preimage_row_pos):
+            new_gp = gp.__class__(gp.patt, zip(*pos))
+            yield new_gp
 
     def preimage_obstruction_and_requirements(
         self, tiling: "Tiling"
