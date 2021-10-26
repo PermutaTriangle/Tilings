@@ -394,7 +394,7 @@ class RequirementPlacement:
             ]
             res.append(
                 self._tiling.__class__(
-                    reduced_obs,
+                    reduced_obs + forced_obs,
                     reqs + [rem_req],
                     params,
                     already_minimized_obs=True,
