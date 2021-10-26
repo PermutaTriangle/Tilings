@@ -404,6 +404,9 @@ class RowColMap(CellMap):
         s += f"    col map: {{{col_str}}}"
         return s
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._row_map!r}, {self._col_map!r})"
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, RowColMap):
             return NotImplemented
