@@ -315,8 +315,9 @@ class RowColMap(CellMap):
         col, row = cell
         return itertools.product(self.preimage_col(col), self.preimage_row(row))
 
+    @staticmethod
     def _preimage_gp_col(
-        self, gp_cols: Tuple[int, ...], preimage_func: Callable[[int], Iterator[int]]
+        gp_cols: Tuple[int, ...], preimage_func: Callable[[int], Iterator[int]]
     ) -> Iterator[Tuple[int, ...]]:
         """
         Return all the possible sequence of column for a preimage of the gridded
@@ -331,11 +332,11 @@ class RowColMap(CellMap):
                 last_col = partial_pos[-1] if partial_pos else 0
                 for new_col_idx, col in enumerate(possible_col[len(partial_pos)]):
                     if last_col <= col:
+                        partial_pos.append(col)
+                        partial_pos_indices.append(new_col_idx)
                         break
                 else:
                     break
-                partial_pos.append(col)
-                partial_pos_indices.append(new_col_idx)
             else:
                 yield tuple(partial_pos)
             # increasing the rightmost pos that can be increased.
@@ -360,8 +361,8 @@ class RowColMap(CellMap):
         gp_cols = tuple(col for col, _ in gp.pos)
         preimage_col_pos = self._preimage_gp_col(gp_cols, self.preimage_col)
         gp_rows = gp.patt.inverse().apply(row for _, row in gp.pos)
-        preimage_row_pos = list(
-            map(gp.patt.apply, self._preimage_gp_col(gp_rows, self.preimage_row))
+        preimage_row_pos: Iterator[Tuple[int, ...]] = map(
+            gp.patt.apply, self._preimage_gp_col(gp_rows, self.preimage_row)
         )
         for pos in itertools.product(preimage_col_pos, preimage_row_pos):
             new_gp = gp.__class__(gp.patt, zip(*pos))
