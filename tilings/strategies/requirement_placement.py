@@ -92,7 +92,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             child = children[0]
             for parameter in comb_class.parameters:
                 mapped_parameter = parameter.add_obstructions_and_requirements(
-                    child.obstructions, []
+                    self.gps, []
                 ).apply_row_col_map(child.forward_map)
                 parent_var = comb_class.get_parameter_name(parameter)
                 child_var = child.get_parameter_name(mapped_parameter)
