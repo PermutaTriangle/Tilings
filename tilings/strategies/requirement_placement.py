@@ -88,7 +88,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         algo = self.placement_class(comb_class)
         extra_parameters: Tuple[Dict[str, str], ...] = tuple({} for _ in children)
-        if self.include_empty:
+        if self.include_empty and not children[0].is_empty():
             child = children[0]
             for parameter in comb_class.parameters:
                 mapped_parameter = parameter.add_obstructions_and_requirements(
