@@ -104,7 +104,7 @@ class PreimageCounter:
         return hash((self.tiling, self.map))
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.tiling!r}), {self.map!r})"
+        return f"{self.__class__.__name__}({self.tiling!r}, {self.map!r})"
 
     def __str__(self):
         map_str = "   " + str(self.map).replace("\n", "\n   ")

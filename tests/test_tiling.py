@@ -2351,7 +2351,6 @@ def test_is_atom():
     assert not empty_set.is_atom()
 
 
-@pytest.mark.xfail
 class TestGetGenf:
     """
     Group all the test regarding getting the generating function for a tiling.

@@ -252,7 +252,6 @@ class TestMonotoneTreeEnumeration(CommonTest):
         )
         assert not MonotoneTreeEnumeration(forest_tiling).verified()
 
-    @pytest.mark.xfail
     def test_get_genf(self, enum_verified):
         x = sympy.Symbol("x")
         expected_gf = -(
@@ -272,7 +271,6 @@ class TestMonotoneTreeEnumeration(CommonTest):
         expected_gf = -1 / ((x - 1) * (x / (x - 1) + 1))
         assert sympy.simplify(enum_no_start.get_genf() - expected_gf) == 0
 
-    @pytest.mark.xfail
     def test_get_genf_simple(self):
         t = Tiling(
             obstructions=[
@@ -285,7 +283,6 @@ class TestMonotoneTreeEnumeration(CommonTest):
         assert enum.verified()
         assert sympy.simplify(enum.get_genf() - sympy.sympify("1/(1-2*x)")) == 0
 
-    @pytest.mark.xfail
     def test_with_finite_monotone_cell(self):
         t = Tiling(
             obstructions=[
@@ -300,7 +297,6 @@ class TestMonotoneTreeEnumeration(CommonTest):
         assert enum.verified()
         assert enum.get_genf().expand() == sympy.sympify("1+2*x+2*x**2")
 
-    @pytest.mark.xfail
     def test_with_finite_monotone_cell2(self):
         t = Tiling(
             obstructions=[
@@ -367,7 +363,6 @@ class TestMonotoneTreeEnumeration(CommonTest):
             + 20 * x ** 11 * dummy_var ** 3 * cell_var ** 3
         )
 
-    @pytest.mark.xfail
     def test_genf_with_req(self):
         t = Tiling(
             obstructions=[
@@ -386,7 +381,6 @@ class TestMonotoneTreeEnumeration(CommonTest):
         terms = [0, 0, 0, 3, 10, 25, 56, 119, 246, 501, 1012]
         assert taylor_expand(genf) == terms
 
-    @pytest.mark.xfail
     def test_genf_with_big_finite_cell(self):
         t = Tiling(
             obstructions=[
@@ -412,7 +406,6 @@ class TestMonotoneTreeEnumeration(CommonTest):
             + 20 * x ** 6
         )
 
-    @pytest.mark.xfail
     def test_with_two_reqs(self):
         t = Tiling(
             obstructions=(
@@ -432,7 +425,6 @@ class TestMonotoneTreeEnumeration(CommonTest):
         assert enum.verified()
         assert taylor_expand(enum.get_genf()) == expected_enum
 
-    @pytest.mark.xfail
     def test_corner(self):
         t = Tiling(
             obstructions=(
