@@ -25,7 +25,7 @@ class BasisAwareVerificationStrategy(VerificationStrategy[Tiling, GriddedPerm]):
         self,
         basis: Optional[Iterable[Perm]] = None,
         symmetry: bool = False,
-        ignore_parent: bool = True,
+        ignore_parent: bool = False,
     ):
         self._basis = tuple(basis) if basis is not None else tuple()
         self._symmetry = symmetry

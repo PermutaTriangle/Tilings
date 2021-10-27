@@ -917,7 +917,7 @@ class TestDatabaseVerificationStrategy(CommonTest):
 class TestOneByOneVerificationStrategy(CommonTest):
     @pytest.fixture
     def strategy(self):
-        return OneByOneVerificationStrategy([Perm((2, 1, 0))])
+        return OneByOneVerificationStrategy()
 
     @pytest.fixture
     def formal_step(self):
@@ -947,12 +947,22 @@ class TestOneByOneVerificationStrategy(CommonTest):
 
     @pytest.fixture
     def enum_not_verified(self):
-        return [Tiling.from_string("321")]
+        return [
+            Tiling(
+                [
+                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                ]
+            )
+        ]
 
     def test_change_basis(self, strategy):
-        new_s = strategy.change_basis([Perm((0, 1, 2))], False)
-        assert strategy.basis == (Perm((2, 1, 0)),)
-        assert new_s.basis == (Perm((0, 1, 2)),)
+        new_s1 = strategy.change_basis([Perm((2, 1, 0))], False)
+        new_s2 = new_s1.change_basis([Perm((0, 1, 2))], False)
+        assert strategy.basis == tuple()
+        assert new_s1.basis == (Perm((2, 1, 0)),)
+        assert new_s2.basis == (Perm((0, 1, 2)),)
 
     def test_pack(self, strategy, enum_verified):
         assert strategy.pack(
@@ -1101,6 +1111,16 @@ class TestOneByOneVerificationStrategy(CommonTest):
             64944,
             130358,
         ]
+
+    def test_subclass(self, strategy):
+        """
+        Check that if the strategy as a basis in only verify strict subclasses.
+        """
+        strategy = strategy.change_basis([Perm([0, 2, 1])], False)
+        assert not strategy.verified(Tiling.from_string("123"))
+        assert not strategy.verified(Tiling.from_string("1324"))
+        assert not strategy.verified(Tiling.from_string("132"))
+        assert strategy.verified(Tiling.from_string("132_1234"))
 
 
 class TestShortObstructionVerificationStrategy(CommonTest):

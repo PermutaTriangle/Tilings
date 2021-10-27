@@ -596,6 +596,45 @@ rules_to_check = [
     #         assumptions=(TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),),
     #     )
     # ),
+    # RequirementInsertionStrategy(
+    #     gps=frozenset({GriddedPerm((0,), ((1, 0),))}), ignore_parent=False
+    # )(
+    #     Tiling(
+    #         obstructions=(
+    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (1, 1))),
+    #             GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 1))),
+    #             GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+    #             GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (0, 1))),
+    #             GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (1, 0))),
+    #             GriddedPerm((0, 2, 1), ((0, 0), (1, 0), (1, 0))),
+    #             GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (1, 0))),
+    #             GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (1, 1))),
+    #             GriddedPerm((1, 0, 2), ((1, 1), (1, 0), (1, 1))),
+    #             GriddedPerm((1, 0, 2), ((1, 1), (1, 1), (1, 1))),
+    #             GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+    #             GriddedPerm((2, 1, 0), ((1, 1), (1, 0), (1, 0))),
+    #             GriddedPerm((2, 1, 0), ((1, 1), (1, 1), (1, 0))),
+    #             GriddedPerm((2, 1, 0), ((1, 1), (1, 1), (1, 1))),
+    #             GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 0), (1, 0), (1, 0))),
+    #             GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 1), (0, 0), (0, 1))),
+    #             GriddedPerm((0, 2, 1, 3), ((0, 1), (0, 1), (0, 1), (0, 1))),
+    #             GriddedPerm((0, 2, 1, 3), ((0, 1), (0, 1), (0, 1), (1, 1))),
+    #             GriddedPerm((0, 2, 1, 3), ((0, 1), (0, 1), (1, 1), (1, 1))),
+    #             GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 1), (1, 1), (1, 1))),
+    #             GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
+    #             GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (1, 1))),
+    #             GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (1, 1), (1, 1))),
+    #         ),
+    #         requirements=(
+    #             (GriddedPerm((0,), ((1, 0),)), GriddedPerm((0,), ((1, 1),))),
+    #         ),
+    #         assumptions=(
+    #             TrackingAssumption(
+    #                 (GriddedPerm((0,), ((1, 0),)), GriddedPerm((0,), ((1, 1),)))
+    #             ),
+    #         ),
+    #     )
+    # ),
 ]
 equiv_rule_to_check = [r for r in rules_to_check if r.is_equivalence()]
 
