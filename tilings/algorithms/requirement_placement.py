@@ -1,9 +1,10 @@
-from itertools import chain
-from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Tuple
+import itertools
+from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, Iterator, List, Tuple
 
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings.griddedperm import GriddedPerm
-from tilings.parameter_counter import ParameterCounter
+from tilings.map import RowColMap
+from tilings.parameter_counter import ParameterCounter, PreimageCounter
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -14,6 +15,77 @@ ListRequirement = List[GriddedPerm]
 ObsCache = Dict[Cell, List[GriddedPerm]]
 ReqsCache = Dict[Cell, List[ListRequirement]]
 ParamCache = Dict[Cell, List[ParameterCounter]]
+
+
+class MultiplexMap(RowColMap):
+    r"""
+    A special class that maps
+    + - + - + - +
+    | A |   | A | \
+    + - + - + - +    + - +
+    |   | o |   | -  | A |
+    + - + - + - +    + - +
+    | A |   | A | /
+    + - + - + - +
+    where the preimage does not place points in the empty cells.
+    """
+
+    def __init__(
+        self, width: int, height: int, cell: Cell, own_col: bool, own_row: bool
+    ):
+        x, y = cell
+        self.cell = cell
+        col_map = self.get_row_map(x, width, own_col, False)
+        row_map = self.get_row_map(y, height, own_row, False)
+        super().__init__(row_map, col_map)
+        # Create the partial map that only maps from the corners.
+        # This allows for faster preimage computation.
+        self.own_col = own_col
+        self.own_row = own_row
+        partial_col_map = self.get_row_map(x, width, own_col, True)
+        partial_row_map = self.get_row_map(y, height, own_row, True)
+        self.partial_map = RowColMap(partial_row_map, partial_col_map)
+
+    @staticmethod
+    def get_row_map(
+        row: int, height: int, own_row: bool, partial: bool
+    ) -> Dict[int, int]:
+        row_map = dict()
+        for j in range(height):
+            ys = (
+                [j]
+                if j < row or not own_row
+                else ([j, j + 2] if partial else [j, j + 1, j + 2])
+                if j == row
+                else [j + 2]
+            )
+            for b in ys:
+                row_map[b] = j
+        return row_map
+
+    def preimage_gp(self, gp: "GriddedPerm") -> Iterator["GriddedPerm"]:
+        """
+        Returns all the preimages of the given gridded permutation.
+
+        Gridded permutations that are contradictory are filtered out.
+        """
+        yield from self.partial_map.preimage_gp(gp)
+        for (idx, val), cell in zip(enumerate(gp.patt), gp.pos):
+            if cell == self.cell:
+                new_pos: List[Cell] = []
+                for (a, b), (c, d) in zip(enumerate(gp.patt), gp.pos):
+                    if self.own_col:
+                        if a == idx:
+                            c += 1
+                        elif a > idx:
+                            c += 2
+                    if self.own_row:
+                        if b == val:
+                            d += 1
+                        elif b > val:
+                            d += 2
+                    new_pos.append((c, d))
+                yield GriddedPerm(gp.patt, new_pos)
 
 
 class RequirementPlacement:
@@ -50,9 +122,6 @@ class RequirementPlacement:
         self._point_col_cells = self._tiling_point_col_cells()
         self.own_row = own_row
         self.own_col = own_col
-        self._stretched_obstructions_cache: ObsCache = {}
-        self._stretched_requirements_cache: ReqsCache = {}
-        self._stretched_parameters_cache: ParamCache = {}
         if self.own_row and self.own_col:
             self.directions = frozenset(DIRS)
         elif self.own_row:
@@ -99,67 +168,6 @@ class RequirementPlacement:
             return cell in self._point_col_cells
         raise Exception("Not placing at all!!")
 
-    def _point_translation(
-        self, gp: GriddedPerm, index: int, placed_cell: Cell
-    ) -> Cell:
-        """
-        Return the translated position of the cell at the given index.
-
-        The translation assumes that there has been a point placed in the
-        position (i, j) = placed_cell where this corresponds to the index and
-        value within the pattern of the gridded permutation gp.
-
-        If the newly placed point is assumed to put on the the new column we
-        have that the cell is expanded like:
-            -      - - -
-           | | -> | |o| |
-            -      - - -
-        meaning that indices to the right of i are shifted by 2.
-        Similarly, for new rows we have
-                   -
-                  | |
-            -      -
-           | | -> |o|
-            -      -
-                  | |
-                   -
-        meaning that values above j are shifted by 2.
-        """
-        x, y = gp.pos[index]
-        return (
-            x + 2 if self.own_col and index >= placed_cell[0] else x,
-            y + 2 if (self.own_row and gp.patt[index] >= placed_cell[1]) else y,
-        )
-
-    def _gridded_perm_translation(
-        self, gp: GriddedPerm, placed_cell: Cell
-    ) -> GriddedPerm:
-        """
-        Return the gridded permutation with all of the cells translated
-        assuming that the point was placed at placed cell
-        """
-        newpos = [
-            self._point_translation(gp, index, placed_cell) for index in range(len(gp))
-        ]
-        return gp.__class__(gp.patt, newpos)
-
-    def _gridded_perm_translation_with_point(
-        self, gp: GriddedPerm, point_index: int
-    ) -> GriddedPerm:
-        """
-        Return the stretched gridded permutation obtained when the point at
-        point_index in gp is placed.
-        """
-        # TODO: to prepare for intervals consider all ways of drawing a
-        #       rectangle around point in cell.
-        new_pos = [
-            self._point_translation(gp, i, (point_index, gp.patt[point_index]))
-            if i != point_index
-            else self._placed_cell(gp.pos[point_index])
-            for i in range(len(gp))
-        ]
-        return gp.__class__(gp.patt, new_pos)
-
     def _placed_cell(self, cell: Cell) -> Cell:
         """
         Return the cell in which the point will be added in the placed tiling.
@@ -189,84 +197,6 @@ class RequirementPlacement:
         placed_cell = self._placed_cell(cell)
         return [[GriddedPerm((0,), (placed_cell,))]]
 
-    def _stretch_gridded_perm(
-        self, gp: GriddedPerm, cell: Cell
-    ) -> Iterable[GriddedPerm]:
-        """
-        Return all of the possible ways that a gridded permutation can be
-        stretched assuming that a point is placed into the given cell.
-        """
-        mindex, maxdex, minval, maxval = gp.get_bounding_box(cell)
-        if not self.own_col:
-            maxdex = mindex
-        elif not self.own_row:
-            maxval = minval
-        res = [
-            self._gridded_perm_translation(gp, (i, j))
-            for i in range(mindex, maxdex + 1)
-            for j in range(minval, maxval + 1)
-        ]
-        for i in gp.points_in_cell(cell):
-            res.append(self._gridded_perm_translation_with_point(gp, i))
-        return res
-
-    def _stretch_gridded_perms(
-        self, gps: Iterable[GriddedPerm], cell: Cell
-    ) -> List[GriddedPerm]:
-        """
-        Return all stretched gridded permuations for an iterable of gridded
-        permutations, assuming a point is placed in the given cell.
-        """
-        return list(
-            chain.from_iterable(self._stretch_gridded_perm(gp, cell) for gp in gps)
-        )
-
-    def stretched_obstructions(self, cell: Cell) -> List[GriddedPerm]:
-        """
-        Return all of the stretched obstructions that are created if placing a
-        point in the given cell.
-        """
-        if cell not in self._stretched_obstructions_cache:
-            self._stretched_obstructions_cache[cell] = self._stretch_gridded_perms(
-                self._tiling.obstructions, cell
-            )
-        return self._stretched_obstructions_cache[cell]
-
-    def stretched_requirements(self, cell: Cell) -> List[ListRequirement]:
-        """
-        Return all of the stretched requirements that are created if placing a
-        point in the given cell.
-        """
-        if cell not in self._stretched_requirements_cache:
-            self._stretched_requirements_cache[cell] = [
-                self._stretch_gridded_perms(req_list, cell)
-                for req_list in self._tiling.requirements
-            ]
-        return self._stretched_requirements_cache[cell]
-
-    def stretched_parameters(self, cell: Cell) -> List[ParameterCounter]:
-        """
-        Return all of the stretched parameters that are created if placing a
-        point in the given cell.
-        """
-        if self._tiling.parameters:
-            raise NotImplementedError
-        return []
-
-    def _stretched_obstructions_requirements_and_parameters(
-        self, cell: Cell
-    ) -> Tuple[List[GriddedPerm], List[ListRequirement], List[ParameterCounter]]:
-        """
-        Return all of the stretched obstruction and requirements assuming that
-        a point is placed in cell.
-        """
-        stretched_obs = self.stretched_obstructions(cell)
-        stretched_reqs = self.stretched_requirements(cell)
-        stretched_params = self.stretched_parameters(cell)
-        point_obs = self._point_obstructions(cell)
-        point_req = self._point_requirements(cell)
-        return stretched_obs + point_obs, stretched_reqs + point_req, stretched_params
-
     @staticmethod
     def _farther(c1: Cell, c2: Cell, direction: Dir) -> bool:
         """Return True if c1 is farther in the given direction than c2."""
@@ -279,6 +209,30 @@ class RequirementPlacement:
         if direction == DIR_SOUTH:
             return c1[1] < c2[1]
         raise Exception("Invalid direction")
+
+    def empty_row_and_col_obs(
+        self, cell: Cell, width: int, height: int
+    ) -> List[GriddedPerm]:
+        """
+        Return the obstructions needed to ensure point is the only on a the row
+        and/or column assuming that the point was placed in a cell on a tiling
+        with the given height and width
+        """
+        if self.own_col:
+            width += 2
+        if self.own_row:
+            height += 2
+        res: List[GriddedPerm] = []
+        empty_col, empty_row = self._placed_cell(cell)
+        if self.own_row:
+            for i in range(width):
+                if i != empty_col:
+                    res.append(GriddedPerm.point_perm((i, empty_row)))
+        if self.own_col:
+            for j in range(height):
+                if j != empty_row:
+                    res.append(GriddedPerm.point_perm((empty_col, j)))
+        return res
 
     def forced_obstructions_from_requirement(
         self,
@@ -296,18 +250,19 @@ class RequirementPlacement:
         from any gridded permutation in gp_list in which the point at idx is
         farther in the given direction than the placed cell.
         """
+        multiplex_map = self.multiplex_map(*self._tiling.dimensions, cell)
         placed_cell = self._placed_cell(cell)
         res = []
         for idx, gp in zip(indices, gps):
             # if cell is farther in the direction than gp[idx], then don't need
             # to avoid any of the stretched grided perms
             if not self._farther(cell, gp.pos[idx], direction):
-                for stretched_gp in self._stretch_gridded_perm(gp, cell):
+                for stretched_gp in multiplex_map.preimage_gp(gp):
                     if self._farther(stretched_gp.pos[idx], placed_cell, direction):
                         res.append(stretched_gp)
         return res
 
-    def _remaining_requirement_from_requirement(
+    def remaining_requirement_from_requirement(
         self, gps: Iterable[GriddedPerm], indices: Iterable[int], cell: Cell
     ) -> List[GriddedPerm]:
         """
@@ -319,24 +274,102 @@ class RequirementPlacement:
         a gridded permutation in gps, such that the point at idx is the placed
         cell.
         """
+        multiplex_map = self.multiplex_map(*self._tiling.dimensions, cell)
         placed_cell = self._placed_cell(cell)
         res = []
         for idx, gp in zip(indices, gps):
             if gp.pos[idx] == cell:
-                for stretched_gp in self._stretch_gridded_perm(gp, cell):
+                for stretched_gp in multiplex_map.preimage_gp(gp):
                     if stretched_gp.pos[idx] == placed_cell:
                         res.append(stretched_gp)
         return res
 
-    def place_point_of_gridded_permutation(
-        self, gp: GriddedPerm, idx: int, direction: Dir
-    ) -> "Tiling":
+    def multiplex_map(self, width: int, height: int, cell: Cell) -> RowColMap:
+        """Return the RowColMap when cell is stretched into a 3x3."""
+        # TODO: cache this?
+        return MultiplexMap(width, height, cell, self.own_col, self.own_row)
+
+    def multiplex_tiling(
+        self, tiling: "Tiling", cell: Cell
+    ) -> Tuple[List[GriddedPerm], List[List[GriddedPerm]], List[ParameterCounter]]:
         """
-        Return the tiling where the placed point correspond to the
-        directionmost (the furtest in the given direction, ex: leftmost point)
-        occurrence of the idx point in gp.
+        Return the tiling created by 'multipexing' in cell.
+        That is stretching the cell to be a 3x3 square.
         """
-        return self.place_point_of_req((gp,), (idx,), direction)[0]
+        # TODO: cache this?
+        row_col_map = self.multiplex_map(*tiling.dimensions, cell)
+        # TODO: should we optimise this to stop adding gps that are in cells we will
+        # later mark as empty?
+        obs, reqs = row_col_map.preimage_obstruction_and_requirements(
+            tiling.remove_parameters()
+        )
+        params = [self.multiplex_parameter(param, cell) for param in tiling.parameters]
+        return (
+            obs
+            + self.empty_row_and_col_obs(cell, *tiling.dimensions)
+            + self._point_obstructions(cell),
+            reqs + self._point_requirements(cell),
+            params,
+        )
+
+    def multiplex_preimage(
+        self, preimage: PreimageCounter, cell: Cell
+    ) -> List[PreimageCounter]:
+        """
+        Return the list of preimages whose sum count the number of preimages
+        when cell is multiplexed into a 3x3.
+        """
+        res: List[PreimageCounter] = []
+        width, height = preimage.tiling.dimensions
+        if self.own_col:
+            width += 2
+        if self.own_row:
+            height += 2
+        for precell in preimage.map.preimage_cell(cell):
+            preimage_multiplex_map = self.multiplex_map(
+                *preimage.tiling.dimensions, precell
+            )
+            multiplex_tiling = preimage.tiling.__class__(
+                *self.multiplex_tiling(preimage.tiling, precell)
+            )
+            col_map = {}
+            for x in range(width):
+                shift = (
+                    0
+                    if x <= precell[0] or not self.own_col
+                    else 1
+                    if x == precell[0] + 1
+                    else 2
+                )
+                col_map[x] = (
+                    preimage.map.map_col(preimage_multiplex_map.map_col(x)) + shift
+                )
+            row_map = {}
+            for y in range(height):
+                shift = (
+                    0
+                    if y <= precell[1] or not self.own_row
+                    else 1
+                    if y == precell[1] + 1
+                    else 2
+                )
+                row_map[y] = (
+                    preimage.map.map_row(preimage_multiplex_map.map_row(y)) + shift
+                )
+            res.append(PreimageCounter(multiplex_tiling, RowColMap(row_map, col_map)))
+        return res
+
+    def multiplex_parameter(
+        self, parameter: ParameterCounter, cell: Cell
+    ) -> ParameterCounter:
+        """
+        Return the parameter when cell has been multiplexed into a 3x3.
+        """
+        return ParameterCounter(
+            itertools.chain.from_iterable(
+                self.multiplex_preimage(preimage, cell) for preimage in parameter
+            )
+        )
 
     def place_point_of_req(
         self, gps: Iterable[GriddedPerm], indices: Iterable[int], direction: Dir
@@ -349,26 +382,35 @@ class RequirementPlacement:
         cells = frozenset(gp.pos[idx] for idx, gp in zip(indices, gps))
         res = []
         for cell in sorted(cells):
-            stretched = self._stretched_obstructions_requirements_and_parameters(cell)
-            (obs, reqs, param) = stretched
+            obs, reqs, params = self.multiplex_tiling(self._tiling, cell)
             forced_obs = self.forced_obstructions_from_requirement(
                 gps, indices, cell, direction
             )
-
             reduced_obs = [o1 for o1 in obs if not any(o2 in o1 for o2 in forced_obs)]
-            new_obs = reduced_obs + forced_obs
-
-            rem_req = self._remaining_requirement_from_requirement(gps, indices, cell)
-
+            rem_req = self.remaining_requirement_from_requirement(gps, indices, cell)
+            params = [
+                param.add_obstructions_and_requirements(forced_obs, [rem_req])
+                for param in params
+            ]
             res.append(
                 self._tiling.__class__(
-                    new_obs,
+                    reduced_obs + forced_obs,
                     reqs + [rem_req],
-                    parameters=param,
+                    params,
                     already_minimized_obs=True,
                 )
             )
         return tuple(res)
+
+    def place_point_of_gridded_permutation(
+        self, gp: GriddedPerm, idx: int, direction: Dir
+    ) -> "Tiling":
+        """
+        Return the tiling where the placed point correspond to the
+        directionmost (the furtest in the given direction, ex: leftmost point)
+        occurrence of the idx point in gp.
+        """
+        return self.place_point_of_req((gp,), (idx,), direction)[0]
 
     def place_point_in_cell(self, cell: Cell, direction: Dir) -> "Tiling":
         """

@@ -65,15 +65,14 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
         extra_parameters: Tuple[Dict[str, str], ...] = tuple({} for _ in children)
-        for parent_var, assumption in zip(
-            comb_class.extra_parameters, comb_class.assumptions
+        for parent_var, parameter in zip(
+            comb_class.extra_parameters, comb_class.parameters
         ):
             for idx, child in enumerate(children):
                 # TODO: consider skew/sum
-                new_assumption = child.forward_map.map_assumption(assumption)
-                if new_assumption.gps:
-                    child_var = child.get_assumption_parameter(new_assumption)
-                    extra_parameters[idx][parent_var] = child_var
+                new_parameter = child.forward_map.map_param(parameter)
+                child_var = child.get_parameter_name(new_parameter)
+                extra_parameters[idx][parent_var] = child_var
         return extra_parameters
 
     def formal_step(self) -> str:

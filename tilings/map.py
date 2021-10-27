@@ -1,5 +1,5 @@
 import itertools
-from typing import TYPE_CHECKING, Dict, Iterator, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Dict, Iterator, List, Optional, Tuple
 
 from tilings.exception import InvalidOperationError
 from tilings.griddedperm import GriddedPerm
@@ -19,6 +19,12 @@ class CellMap:
     def identity(cls, dimensions: Tuple[int, int]) -> "CellMap":
         cells = itertools.product(range(dimensions[0]), range(dimensions[1]))
         return CellMap({c: c for c in cells})
+
+    def domain(self) -> Iterator[Cell]:
+        """
+        Return the domain of the map.
+        """
+        return iter(self._map)
 
     def inverse(self) -> "CellMap":
         """
@@ -104,7 +110,7 @@ class CellMap:
         cell_pos_in_col, cell_pos_in_row = dict(), dict()
         col_split = [0 for _ in range(preimg_counter.tiling.dimensions[0])]
         row_split = [0 for _ in range(preimg_counter.tiling.dimensions[1])]
-        for cell in self._map:
+        for cell in self.domain():
             for pre_cell in preimg_counter.map.preimage_cell(cell):
                 col_pos = self.map_cell(cell)[0] - cell[0]
                 row_pos = self.map_cell(cell)[1] - cell[1]
@@ -309,18 +315,62 @@ class RowColMap(CellMap):
         col, row = cell
         return itertools.product(self.preimage_col(col), self.preimage_row(row))
 
+    @staticmethod
+    def _preimage_gp_col(
+        gp_cols: Tuple[int, ...], preimage_func: Callable[[int], Iterator[int]]
+    ) -> Iterator[Tuple[int, ...]]:
+        """
+        Return all the possible sequence of column for a preimage of the gridded
+        permutation using the given preimage_func.
+        """
+        possible_col = [sorted(preimage_func(col)) for col in gp_cols]
+        partial_pos: List[int] = []
+        partial_pos_indices: List[int] = []
+        while True:
+            # Padding the current solution with the leftmost options
+            while len(partial_pos) < len(gp_cols):
+                last_col = partial_pos[-1] if partial_pos else 0
+                for new_col_idx, col in enumerate(possible_col[len(partial_pos)]):
+                    if last_col <= col:
+                        partial_pos.append(col)
+                        partial_pos_indices.append(new_col_idx)
+                        break
+                else:
+                    break
+            else:
+                yield tuple(partial_pos)
+            # increasing the rightmost pos that can be increased.
+            while partial_pos:
+                partial_pos.pop()
+                partial_pos_last_index = partial_pos_indices.pop()
+                if partial_pos_last_index + 1 < len(possible_col[len(partial_pos)]):
+                    break
+            else:
+                break
+            partial_pos.append(
+                possible_col[len(partial_pos)][partial_pos_last_index + 1]
+            )
+            partial_pos_indices.append(partial_pos_last_index + 1)
+
     def preimage_gp(self, gp: "GriddedPerm") -> Iterator["GriddedPerm"]:
         """
         Returns all the preimages of the given gridded permutation.
 
         Gridded permutations that are contradictory are filtered out.
         """
-        for pos in itertools.product(*(self.preimage_cell(cell) for cell in gp.pos)):
-            new_gp = gp.__class__(gp.patt, pos)
-            if not new_gp.contradictory():
-                yield new_gp
+        gp_cols = tuple(col for col, _ in gp.pos)
+        preimage_col_pos = self._preimage_gp_col(gp_cols, self.preimage_col)
+        gp_rows = gp.patt.inverse().apply(row for _, row in gp.pos)
+        preimage_row_pos: Iterator[Tuple[int, ...]] = map(
+            gp.patt.apply, self._preimage_gp_col(gp_rows, self.preimage_row)
+        )
+        for pos in itertools.product(preimage_col_pos, preimage_row_pos):
+            new_gp = gp.__class__(gp.patt, zip(*pos))
+            yield new_gp
 
-    def preimage_tiling(self, tiling: "Tiling") -> "Tiling":
+    def preimage_obstruction_and_requirements(
+        self, tiling: "Tiling"
+    ) -> Tuple[List[GriddedPerm], List[List[GriddedPerm]]]:
         if tiling.parameters:
             raise NotImplementedError("Not implemented for tilings with parameter")
         obs = itertools.chain.from_iterable(
@@ -330,7 +380,10 @@ class RowColMap(CellMap):
             itertools.chain.from_iterable(self.preimage_gp(req) for req in req_list)
             for req_list in tiling.requirements
         )
-        return tiling.__class__(obs, reqs)
+        return list(obs), list(list(r) for r in reqs)
+
+    def preimage_tiling(self, tiling: "Tiling") -> "Tiling":
+        return tiling.__class__(*self.preimage_obstruction_and_requirements(tiling))
 
     # Other method
     def max_row(self) -> int:

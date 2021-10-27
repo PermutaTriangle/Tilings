@@ -61,9 +61,7 @@ class BasicVerificationStrategy(AtomStrategy):
             raise NotImplementedError
         gp = next(comb_class.minimal_gridded_perms())
         if n == len(gp):
-            parameters = tuple(
-                assumption.get_value(gp) for assumption in comb_class.assumptions
-            )
+            parameters = tuple(param.get_value(gp) for param in comb_class.parameters)
             return Counter([parameters])
         return Counter()
 
@@ -74,9 +72,7 @@ class BasicVerificationStrategy(AtomStrategy):
         res: Objects = defaultdict(list)
         gp = next(comb_class.minimal_gridded_perms())
         if n == len(gp):
-            parameters = tuple(
-                assumption.get_value(gp) for assumption in comb_class.assumptions
-            )
+            parameters = tuple(param.get_value(gp) for param in comb_class.parameters)
             res[parameters].append(gp)
         return res
 
@@ -112,10 +108,8 @@ class BasicVerificationStrategy(AtomStrategy):
         cast(Tiling, comb_class)
         gp = next(comb_class.minimal_gridded_perms())
         expected = {"x": len(gp)}
-        for assumption in comb_class.assumptions:
-            expected[
-                comb_class.get_assumption_parameter(assumption)
-            ] = assumption.get_value(gp)
+        for param in comb_class.parameters:
+            expected[comb_class.get_parameter_name(param)] = param.get_value(gp)
         return reduce(mul, [var(k) ** n for k, n in expected.items()], 1)
 
     def __repr__(self) -> str:

@@ -90,30 +90,36 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         extra_parameters: Tuple[Dict[str, str], ...] = tuple({} for _ in children)
         if self.include_empty:
             child = children[0]
-            for assumption in comb_class.assumptions:
-                mapped_assumption = child.forward_map.map_assumption(
-                    assumption
-                ).avoiding(child.obstructions)
-                if mapped_assumption.gps:
-                    parent_var = comb_class.get_assumption_parameter(assumption)
-                    child_var = child.get_assumption_parameter(mapped_assumption)
-                    extra_parameters[0][parent_var] = child_var
+            for parameter in comb_class.parameters:
+                mapped_parameter = parameter.add_obstructions_and_requirements(
+                    child.obstructions, []
+                ).apply_row_col_map(child.forward_map)
+                parent_var = comb_class.get_parameter_name(parameter)
+                child_var = child.get_parameter_name(mapped_parameter)
+                extra_parameters[0][parent_var] = child_var
         for idx, (cell, child) in enumerate(
             zip(self._placed_cells, children[1:] if self.include_empty else children)
         ):
-            mapped_assumptions = [
-                child.forward_map.map_assumption(ass).avoiding(child.obstructions)
-                for ass in algo.stretched_assumptions(cell)
+            forced_obs = algo.forced_obstructions_from_requirement(
+                self.gps, self.indices, cell, self.direction
+            )
+            rem_req = algo.remaining_requirement_from_requirement(
+                self.gps, self.indices, cell
+            )
+            mapped_parameters = [
+                algo.multiplex_parameter(parameter, cell)
+                .add_obstructions_and_requirements(forced_obs, [rem_req])
+                .apply_row_col_map(child.forward_map)
+                for parameter in comb_class.parameters
             ]
-            for assumption, mapped_assumption in zip(
-                comb_class.assumptions, mapped_assumptions
+            for parameter, mapped_parameter in zip(
+                comb_class.parameters, mapped_parameters
             ):
-                if mapped_assumption.gps:
-                    parent_var = comb_class.get_assumption_parameter(assumption)
-                    child_var = child.get_assumption_parameter(mapped_assumption)
-                    extra_parameters[idx + 1 if self.include_empty else idx][
-                        parent_var
-                    ] = child_var
+                parent_var = comb_class.get_parameter_name(parameter)
+                child_var = child.get_parameter_name(mapped_parameter)
+                extra_parameters[idx + 1 if self.include_empty else idx][
+                    parent_var
+                ] = child_var
         return extra_parameters
 
     def direction_string(self):

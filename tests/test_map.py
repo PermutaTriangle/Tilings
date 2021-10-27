@@ -62,6 +62,52 @@ def test_preimage_gp(double_all_map):
     ]
 
 
+def test_preimage_gp_crossing_map():
+    cross_col = RowColMap(col_map={0: 1, 1: 0}, row_map={0: 0})
+    assert sorted(cross_col.preimage_gp(GriddedPerm((0, 1), ((0, 0),) * 2))) == [
+        GriddedPerm((0, 1), ((1, 0),) * 2)
+    ]
+    assert sorted(cross_col.preimage_gp(GriddedPerm((0, 1), ((1, 0),) * 2))) == [
+        GriddedPerm((0, 1), ((0, 0),) * 2)
+    ]
+    assert (
+        sorted(
+            cross_col.preimage_gp(
+                GriddedPerm(
+                    (0, 1),
+                    (
+                        (0, 0),
+                        (1, 0),
+                    ),
+                )
+            )
+        )
+        == []
+    )
+
+    cross_row = RowColMap(col_map={0: 0}, row_map={0: 1, 1: 0})
+    assert sorted(cross_row.preimage_gp(GriddedPerm((0, 1), ((0, 0),) * 2))) == [
+        GriddedPerm((0, 1), ((0, 1),) * 2)
+    ]
+    assert sorted(cross_row.preimage_gp(GriddedPerm((0, 1), ((0, 1),) * 2))) == [
+        GriddedPerm((0, 1), ((0, 0),) * 2)
+    ]
+    assert (
+        sorted(
+            cross_row.preimage_gp(
+                GriddedPerm(
+                    (0, 1),
+                    (
+                        (0, 0),
+                        (0, 1),
+                    ),
+                )
+            )
+        )
+        == []
+    )
+
+
 def test_preimage_tiling(double_row_map, double_col_map, double_all_map):
     t1 = Tiling(
         obstructions=[
