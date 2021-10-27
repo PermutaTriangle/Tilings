@@ -122,7 +122,7 @@ class Tiling(CombinatorialClass):
             # Set of requirement lists
             self._requirements = Tiling.sort_requirements(requirements)
             # Set of parameters
-            self._parameters = tuple(sorted(parameters))
+            self._parameters = tuple(sorted(set(parameters)))
 
         # Simplify the set of obstructions and the set of requirement lists
         if simplify:
