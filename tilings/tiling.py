@@ -615,10 +615,11 @@ class Tiling(CombinatorialClass):
 
     def add_parameters(self, parameters: Iterable[ParameterCounter]) -> "Tiling":
         """Returns a new tiling with the added parameters."""
+        sorted_params = sorted(chain(self._parameters, parameters))
         tiling = Tiling(
             self._obstructions,
             self._requirements,
-            self._parameters + tuple(parameters),
+            sorted_params,
             remove_empty_rows_and_cols=False,
             derive_empty=False,
             simplify=False,
