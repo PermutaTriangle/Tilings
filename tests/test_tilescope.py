@@ -18,8 +18,6 @@ class ComponentFusionStrategy:
     pass
 
 
-pytestmark = pytest.mark.xfail
-
 point_placements = TileScopePack.point_placements()
 all_the_strategies_verify_database = TileScopePack.all_the_strategies().make_database()
 all_the_strategies_fusion = TileScopePack.all_the_strategies().make_fusion(
@@ -106,6 +104,7 @@ def test_132_321_genf():
     ]
 
 
+@pytest.mark.xfail
 @pytest.mark.timeout(20)
 def test_123():
     searcher = TileScope((Perm((0, 1, 2)),), point_placements_fusion)
@@ -120,6 +119,7 @@ def test_123_with_db():
     assert isinstance(spec, CombinatorialSpecification)
 
 
+@pytest.mark.xfail
 @pytest.mark.timeout(20)
 def test_1342_1423():
     point_placements_component_fusion = point_placements.make_fusion(
@@ -305,6 +305,7 @@ def test_expansion():
         spec = spec.expand_verified()
 
 
+@pytest.mark.xfail
 @pytest.mark.timeout(30)
 def test_domino():
     domino = Tiling(
@@ -383,6 +384,7 @@ def forest_expansion():
     ]
 
 
+@pytest.mark.xfail
 def test_guided_searcher():
     tilescope = TileScope(
         "123", TileScopePack.point_placements().make_fusion(tracked=False)
