@@ -1050,11 +1050,11 @@ class Tiling(CombinatorialClass):
             if (factors and req[0].pos[0] in cells)
             or all(c in cells for c in chain.from_iterable(r.pos for r in req))
         )
-        if self._parameters:
-            raise NotImplementedError
+        parameters = [param.sub_param(set(cells)) for param in self.parameters]
         return self.__class__(
             obstructions,
             requirements,
+            tuple(param for param in parameters if param.counters),
             simplify=False,
             sorted_input=True,
         )
@@ -1238,7 +1238,7 @@ class Tiling(CombinatorialClass):
         ]
         has_param: Dict[int, List[str]] = {}
         for c, param_counter in enumerate(self.parameters):
-            for i, j in param_counter.active_region():
+            for i, j in set(chain(*param_counter.active_regions(self))):
                 dim_i, dim_j = self.dimensions
                 index = (dim_j - j - 1) * (3 * dim_i + 2) + i * 3 + 2
                 if c >= len(colors):

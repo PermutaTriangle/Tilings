@@ -1,5 +1,5 @@
 import itertools
-from typing import TYPE_CHECKING, Iterable, Iterator, Tuple
+from typing import TYPE_CHECKING, Iterable, Iterator, List, Set, Tuple
 
 from .griddedperm import GriddedPerm
 from .map import RowColMap
@@ -52,6 +52,36 @@ class PreimageCounter:
             self.map = self.tiling.backward_map.compose(self.map)
         self.map = self.map.compose(row_col_map)
         return self
+
+    def active_region(self, tiling: "Tiling") -> Set[Cell]:
+        """
+        Yield the active region of the preimage counter.
+        """
+        res = set()
+        for cell in self.tiling.active_cells:
+            if sum(1 for _ in self.map.preimage_cell(cell)) > 1:
+                res.add(cell)
+        extra_obs, extra_reqs = self.extra_obs_and_reqs(tiling)
+        for gp in itertools.chain(extra_obs, *extra_reqs):
+            res.update(gp.pos)
+        return res
+
+    def sub_preimage(self, cells: Set[Cell]) -> "PreimageCounter":
+        sub_tiling = self.tiling.sub_tiling(cells, factors=True)
+        sub_map = self.map.restricted_by(cells)
+        return PreimageCounter(sub_tiling, sub_map.to_row_col_map())
+
+    def extra_obs_and_reqs(
+        self, tiling: "Tiling"
+    ) -> Tuple[List[GriddedPerm], List[Tuple[GriddedPerm, ...]]]:
+        extra_obs, extra_reqs = [], []
+        for ob in self.tiling.obstructions:
+            if self.map.map_gp(ob) not in tiling.obstructions:
+                extra_obs.append(ob)
+        for req in self.tiling.requirements:
+            if tuple(sorted(self.map.map_gps(req))) not in tiling.requirements:
+                extra_reqs.append(req)
+        return extra_obs, extra_reqs
 
     def num_preimage(self, gp: GriddedPerm) -> int:
         """
@@ -123,11 +153,23 @@ class ParameterCounter:
     def __init__(self, counters: Iterable[PreimageCounter]):
         self.counters = tuple(sorted(counters))
 
-    def active_region(self) -> Iterator[Cell]:
+    def active_regions(self, tiling: "Tiling") -> Iterator[Set[Cell]]:
         """
-        Return the region of the assumption considered active.
+        Yield the active regions of the preimage counters.
         """
-        raise NotImplementedError
+        for preimage in self:
+            yield set(
+                preimage.map.map_cell(cell) for cell in preimage.active_region(tiling)
+            )
+
+    def sub_param(self, cells: Set[Cell]) -> "ParameterCounter":
+        res = []
+        for preimage in self.counters:
+            preimage_cells = set(
+                itertools.chain.from_iterable(map(preimage.map.preimage_cell, cells))
+            )
+            res.append(preimage.sub_preimage(preimage_cells))
+        return ParameterCounter(res)
 
     def get_value(self, gp: GriddedPerm) -> int:
         """

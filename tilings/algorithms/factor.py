@@ -75,8 +75,9 @@ class Factor:
         """
         Unite according to parameters.
         """
-        if self._tiling.parameters:
-            raise NotImplementedError
+        for param in self._tiling.parameters:
+            for cells in param.active_regions(self._tiling):
+                self._unite_cells(cells)
 
     def _unite_obstructions(self) -> None:
         """
@@ -161,13 +162,14 @@ class Factor:
             requirements = tuple(
                 req for req in self._tiling.requirements if req[0].pos[0] in component
             )
-            assert not self._tiling.parameters
-            parameters: Tuple[ParameterCounter, ...] = tuple()
+            parameters = [
+                param.sub_param(component) for param in self._tiling.parameters
+            ]
             factors.append(
                 (
                     obstructions,
                     requirements,
-                    parameters,
+                    tuple(param for param in parameters if param.counters),
                 )
             )
         self._factors_obs_and_reqs = factors
