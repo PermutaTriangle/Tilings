@@ -8,6 +8,7 @@ from tilings.algorithms import (
     ObstructionTransitivity,
     SubobstructionInferral,
 )
+from Tilings.tilings import parameter_counter
 
 __all__ = [
     "EmptyCellInferralFactory",
@@ -47,14 +48,13 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         child = children[0]
         params: Dict[str, str] = {}
-        for assumption in comb_class.assumptions:
-            mapped_assumption = child.forward_map.map_assumption(assumption).avoiding(
-                child.obstructions
-            )
-            if mapped_assumption.gps:
-                parent_var = comb_class.get_assumption_parameter(assumption)
-                child_var = child.get_assumption_parameter(mapped_assumption)
-                params[parent_var] = child_var
+        for parameter in comb_class.parameters:
+            mapped_parameter = child.forward_map.map_param(
+                parameter
+            ).add_obstructions_and_requirements(child.obstructions, [])
+            parent_var = comb_class.get_parameter_name(parameter)
+            child_var = child.get_parameter_name(mapped_parameter)
+            params[parent_var] = child_var
         return (params,)
 
     def backward_map(
