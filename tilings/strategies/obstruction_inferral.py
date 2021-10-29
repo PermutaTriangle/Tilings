@@ -8,7 +8,6 @@ from tilings.algorithms import (
     ObstructionTransitivity,
     SubobstructionInferral,
 )
-from Tilings.tilings import parameter_counter
 
 __all__ = [
     "EmptyCellInferralFactory",
