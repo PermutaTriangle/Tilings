@@ -10,6 +10,7 @@ from comb_spec_searcher.strategies import Rule
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
+from tilings.parameter_counter import ParameterCounter, PreimageCounter
 
 __all__ = [
     "PatternPlacementFactory",
@@ -107,7 +108,14 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 self.gps, self.indices, cell
             )
             mapped_parameters = [
-                algo.multiplex_parameter(parameter, cell)
+                ParameterCounter(
+                    [
+                        PreimageCounter(Tiling(obs, reqs), row_col_map)
+                        for obs, reqs, row_col_map in algo.multiplex_parameter(
+                            parameter, cell
+                        )
+                    ]
+                )
                 .add_obstructions_and_requirements(forced_obs, [rem_req])
                 .apply_row_col_map(child.forward_map)
                 for parameter in comb_class.parameters

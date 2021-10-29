@@ -15,6 +15,12 @@ ListRequirement = List[GriddedPerm]
 ObsCache = Dict[Cell, List[GriddedPerm]]
 ReqsCache = Dict[Cell, List[ListRequirement]]
 ParamCache = Dict[Cell, List[ParameterCounter]]
+UninitialisedPreimage = Tuple[
+    List[GriddedPerm],
+    List[List[GriddedPerm]],
+    RowColMap,
+]
+UninitialisedParameter = List[UninitialisedPreimage]
 
 
 class MultiplexMap(RowColMap):
@@ -291,15 +297,15 @@ class RequirementPlacement:
 
     def multiplex_tiling(
         self, tiling: "Tiling", cell: Cell
-    ) -> Tuple[List[GriddedPerm], List[List[GriddedPerm]], List[ParameterCounter]]:
+    ) -> Tuple[
+        List[GriddedPerm], List[List[GriddedPerm]], List[UninitialisedParameter]
+    ]:
         """
         Return the tiling created by 'multipexing' in cell.
         That is stretching the cell to be a 3x3 square.
         """
         # TODO: cache this?
         row_col_map = self.multiplex_map(*tiling.dimensions, cell)
-        # TODO: should we optimise this to stop adding gps that are in cells we will
-        # later mark as empty?
         obs, reqs = row_col_map.preimage_obstruction_and_requirements(
             tiling.remove_parameters()
         )
@@ -314,12 +320,11 @@ class RequirementPlacement:
 
     def multiplex_preimage(
         self, preimage: PreimageCounter, cell: Cell
-    ) -> List[PreimageCounter]:
+    ) -> Iterator[UninitialisedPreimage]:
         """
-        Return the list of preimages whose sum count the number of preimages
+        Return the iterator of preimages whose sum count the number of preimages
         when cell is multiplexed into a 3x3.
         """
-        res: List[PreimageCounter] = []
         width, height = preimage.tiling.dimensions
         if self.own_col:
             width += 2
@@ -329,9 +334,7 @@ class RequirementPlacement:
             preimage_multiplex_map = self.multiplex_map(
                 *preimage.tiling.dimensions, precell
             )
-            multiplex_tiling = preimage.tiling.__class__(
-                *self.multiplex_tiling(preimage.tiling, precell)
-            )
+            obs, reqs, _ = self.multiplex_tiling(preimage.tiling, precell)
             col_map = {}
             for x in range(width):
                 shift = (
@@ -356,20 +359,44 @@ class RequirementPlacement:
                 row_map[y] = (
                     preimage.map.map_row(preimage_multiplex_map.map_row(y)) + shift
                 )
-            res.append(PreimageCounter(multiplex_tiling, RowColMap(row_map, col_map)))
-        return res
+            yield obs, reqs, RowColMap(row_map, col_map)
 
     def multiplex_parameter(
         self, parameter: ParameterCounter, cell: Cell
-    ) -> ParameterCounter:
+    ) -> UninitialisedParameter:
         """
         Return the parameter when cell has been multiplexed into a 3x3.
         """
-        return ParameterCounter(
+        return list(
             itertools.chain.from_iterable(
                 self.multiplex_preimage(preimage, cell) for preimage in parameter
             )
         )
+
+    def add_forced_obs_and_reqs_to_param(
+        self,
+        param: UninitialisedParameter,
+        forced_obs: List[GriddedPerm],
+        rem_req: List[GriddedPerm],
+    ) -> ParameterCounter:
+        """
+        Takes int a uninitialised parameter adds the forced obstruction and the
+        remaining_requirement and return the initialised parameter.
+        """
+        preimage_counters = []
+        for pobs, preqs, row_col_map in param:
+            pforced_obs = list(row_col_map.preimage_gps(forced_obs))
+            preduced_obs = (
+                o1 for o1 in pobs if not any(o2 in o1 for o2 in pforced_obs)
+            )
+            prem_req = list(row_col_map.preimage_gps(rem_req))
+            preimage_tiling = self._tiling.__class__(
+                itertools.chain(preduced_obs, pforced_obs),
+                itertools.chain(preqs, [prem_req]),
+                already_minimized_obs=True,
+            )
+            preimage_counters.append(PreimageCounter(preimage_tiling, row_col_map))
+        return ParameterCounter(preimage_counters)
 
     def place_point_of_req(
         self, gps: Iterable[GriddedPerm], indices: Iterable[int], direction: Dir
@@ -388,15 +415,15 @@ class RequirementPlacement:
             )
             reduced_obs = [o1 for o1 in obs if not any(o2 in o1 for o2 in forced_obs)]
             rem_req = self.remaining_requirement_from_requirement(gps, indices, cell)
-            params = [
-                param.add_obstructions_and_requirements(forced_obs, [rem_req])
+            new_params = (
+                self.add_forced_obs_and_reqs_to_param(param, forced_obs, rem_req)
                 for param in params
-            ]
+            )
             res.append(
                 self._tiling.__class__(
                     reduced_obs + forced_obs,
                     reqs + [rem_req],
-                    params,
+                    new_params,
                     already_minimized_obs=True,
                 )
             )

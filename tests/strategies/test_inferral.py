@@ -9,6 +9,8 @@ from tilings.strategies import (
     RowColumnSeparationStrategy,
 )
 
+pytest_plugins = ["tests.fixtures.simple_trans"]
+
 
 @pytest.fixture
 def tiling1():

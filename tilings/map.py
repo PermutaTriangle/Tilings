@@ -388,6 +388,15 @@ class RowColMap(CellMap):
             new_gp = gp.__class__(gp.patt, zip(*pos))
             yield new_gp
 
+    def preimage_gps(self, gps: Iterable["GriddedPerm"]) -> Iterator["GriddedPerm"]:
+        """
+        Returns all the preimages of the given gridded permutations.
+
+        Gridded permutations that are contradictory are filtered out.
+        """
+        for gp in gps:
+            yield from self.preimage_gp(gp)
+
     def preimage_obstruction_and_requirements(
         self, tiling: "Tiling"
     ) -> Tuple[List[GriddedPerm], List[List[GriddedPerm]]]:
