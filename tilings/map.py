@@ -1,5 +1,14 @@
 import itertools
-from typing import TYPE_CHECKING, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+)
 
 from tilings.exception import InvalidOperationError
 from tilings.griddedperm import GriddedPerm
@@ -367,6 +376,15 @@ class RowColMap(CellMap):
         for pos in itertools.product(preimage_col_pos, preimage_row_pos):
             new_gp = gp.__class__(gp.patt, zip(*pos))
             yield new_gp
+
+    def preimage_gps(self, gps: Iterable["GriddedPerm"]) -> Iterator["GriddedPerm"]:
+        """
+        Returns all the preimages of the given gridded permutations.
+
+        Gridded permutations that are contradictory are filtered out.
+        """
+        for gp in gps:
+            yield from self.preimage_gp(gp)
 
     def preimage_obstruction_and_requirements(
         self, tiling: "Tiling"
