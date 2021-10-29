@@ -1039,6 +1039,7 @@ class Tiling(CombinatorialClass):
         completely contained in the given cells. If factors is set to True,
         then it assumes that the first cells confirms if a gridded perm uses only
         the cells."""
+        cells = set(cells)
         obstructions = tuple(
             ob
             for ob in self.obstructions
@@ -1050,11 +1051,18 @@ class Tiling(CombinatorialClass):
             if (factors and req[0].pos[0] in cells)
             or all(c in cells for c in chain.from_iterable(r.pos for r in req))
         )
-        parameters = [param.sub_param(set(cells)) for param in self.parameters]
+        parameters = [
+            ParameterCounter(
+                preimage.sub_preimage(cells)
+                for preimage in param.counters
+                if set(preimage.active_region(self)) == cells
+            )
+            for param in self.parameters
+        ]
         return self.__class__(
             obstructions,
             requirements,
-            tuple(param for param in parameters if param.counters),
+            tuple(sorted(param for param in parameters if param.counters)),
             simplify=False,
             sorted_input=True,
         )

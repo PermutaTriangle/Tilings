@@ -67,8 +67,16 @@ class PreimageCounter:
         return res
 
     def sub_preimage(self, cells: Set[Cell]) -> "PreimageCounter":
-        sub_tiling = self.tiling.sub_tiling(cells, factors=True)
-        sub_map = self.map.restricted_by(cells)
+        precells = set(
+            itertools.chain.from_iterable(
+                self.map.preimage_cell(cell) for cell in cells
+            )
+        )
+        sub_tiling = self.tiling.sub_tiling(
+            precells,
+            factors=True,
+        )
+        sub_map = self.map.restricted_by(precells)
         return PreimageCounter(sub_tiling, sub_map.to_row_col_map())
 
     def extra_obs_and_reqs(
@@ -165,10 +173,7 @@ class ParameterCounter:
     def sub_param(self, cells: Set[Cell]) -> "ParameterCounter":
         res = []
         for preimage in self.counters:
-            preimage_cells = set(
-                itertools.chain.from_iterable(map(preimage.map.preimage_cell, cells))
-            )
-            res.append(preimage.sub_preimage(preimage_cells))
+            res.append(preimage.sub_preimage(cells))
         return ParameterCounter(res)
 
     def get_value(self, gp: GriddedPerm) -> int:

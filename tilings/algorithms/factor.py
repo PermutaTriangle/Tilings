@@ -163,7 +163,12 @@ class Factor:
                 req for req in self._tiling.requirements if req[0].pos[0] in component
             )
             parameters = [
-                param.sub_param(component) for param in self._tiling.parameters
+                ParameterCounter(
+                    preimage.sub_preimage(component)
+                    for preimage in param.counters
+                    if set(preimage.active_region(self._tiling)) <= set(component)
+                )
+                for param in self._tiling.parameters
             ]
             factors.append(
                 (
