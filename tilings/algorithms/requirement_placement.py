@@ -309,8 +309,6 @@ class RequirementPlacement:
         obs, reqs = row_col_map.preimage_obstruction_and_requirements(
             tiling.remove_parameters()
         )
-        # TODO: optimise this by return obs, reqs and map of preimages so as to only
-        # call the Tiling.__init__ method once.
         params = [self.multiplex_parameter(param, cell) for param in tiling.parameters]
         return (
             obs
