@@ -12,51 +12,127 @@ from tilings.strategies.requirement_insertion import RequirementInsertionStrateg
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 
 rules_to_check = [
-    # RequirementInsertionStrategy(
-    #     gps=frozenset({GriddedPerm((0,), ((0, 0),))}), ignore_parent=True
-    # )(
-    #     Tiling(
-    #         obstructions=(
-    #             GriddedPerm((0, 1), ((0, 0), (0, 0))),
-    #             GriddedPerm((0, 1), ((0, 0), (1, 0))),
-    #             GriddedPerm((0, 1), ((1, 0), (1, 0))),
-    #             GriddedPerm((1, 0), ((0, 0), (1, 0))),
-    #             GriddedPerm((1, 0), ((1, 0), (1, 0))),
-    #         ),
-    #         requirements=((GriddedPerm((0,), ((1, 0),)),),),
-    #         assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
-    #     )
-    # ),
-    # RequirementInsertionStrategy(
-    #     gps=frozenset({GriddedPerm((0,), ((2, 0),))}), ignore_parent=True
-    # )(
-    #     Tiling(
-    #         obstructions=(
-    #             GriddedPerm((0, 1), ((1, 0), (1, 0))),
-    #             GriddedPerm((0, 1), ((2, 0), (2, 0))),
-    #             GriddedPerm((0, 1), ((2, 0), (3, 0))),
-    #             GriddedPerm((0, 1), ((3, 0), (3, 0))),
-    #             GriddedPerm((1, 0), ((0, 0), (2, 0))),
-    #             GriddedPerm((1, 0), ((0, 0), (3, 0))),
-    #             GriddedPerm((1, 0), ((2, 0), (2, 0))),
-    #             GriddedPerm((1, 0), ((2, 0), (3, 0))),
-    #             GriddedPerm((1, 0), ((3, 0), (3, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (3, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (3, 0))),
-    #             GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (1, 0))),
-    #             GriddedPerm((1, 0, 2), ((0, 0), (0, 0), (0, 0))),
-    #         ),
-    #         requirements=(
-    #             (GriddedPerm((0,), ((0, 0),)),),
-    #             (GriddedPerm((0,), ((3, 0),)),),
-    #         ),
-    #         assumptions=(TrackingAssumption((GriddedPerm((0,), ((3, 0),)),)),),
-    #     )
-    # ),
+    RequirementInsertionStrategy(
+        gps=frozenset({GriddedPerm((0,), ((0, 0),))}), ignore_parent=True
+    )(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((1, 0), ((0, 0), (1, 0))),
+                GriddedPerm((1, 0), ((1, 0), (1, 0))),
+            ),
+            requirements=((GriddedPerm((0,), ((1, 0),)),),),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                                    GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                                    GriddedPerm((0, 1), ((0, 0), (2, 0))),
+                                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                                    GriddedPerm((0, 1), ((1, 0), (2, 0))),
+                                    GriddedPerm((0, 1), ((2, 0), (2, 0))),
+                                    GriddedPerm((1, 0), ((0, 0), (1, 0))),
+                                    GriddedPerm((1, 0), ((0, 0), (2, 0))),
+                                    GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                                    GriddedPerm((1, 0), ((1, 0), (2, 0))),
+                                    GriddedPerm((1, 0), ((2, 0), (2, 0))),
+                                ),
+                                requirements=(
+                                    (
+                                        GriddedPerm((0,), ((1, 0),)),
+                                        GriddedPerm((0,), ((2, 0),)),
+                                    ),
+                                ),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0}, {0: 0, 1: 1, 2: 1}),
+                        ),
+                    )
+                ),
+            ),
+        )
+    ),
+    RequirementInsertionStrategy(
+        gps=frozenset({GriddedPerm((0,), ((2, 0),))}), ignore_parent=True
+    )(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1), ((2, 0), (2, 0))),
+                GriddedPerm((0, 1), ((2, 0), (3, 0))),
+                GriddedPerm((0, 1), ((3, 0), (3, 0))),
+                GriddedPerm((1, 0), ((0, 0), (2, 0))),
+                GriddedPerm((1, 0), ((0, 0), (3, 0))),
+                GriddedPerm((1, 0), ((2, 0), (2, 0))),
+                GriddedPerm((1, 0), ((2, 0), (3, 0))),
+                GriddedPerm((1, 0), ((3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (3, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (3, 0))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (1, 0))),
+                GriddedPerm((1, 0, 2), ((0, 0), (0, 0), (0, 0))),
+            ),
+            requirements=(
+                (GriddedPerm((0,), ((0, 0),)),),
+                (GriddedPerm((0,), ((3, 0),)),),
+            ),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                                    GriddedPerm((0, 1), ((2, 0), (2, 0))),
+                                    GriddedPerm((0, 1), ((2, 0), (3, 0))),
+                                    GriddedPerm((0, 1), ((2, 0), (4, 0))),
+                                    GriddedPerm((0, 1), ((3, 0), (3, 0))),
+                                    GriddedPerm((0, 1), ((3, 0), (4, 0))),
+                                    GriddedPerm((0, 1), ((4, 0), (4, 0))),
+                                    GriddedPerm((1, 0), ((0, 0), (2, 0))),
+                                    GriddedPerm((1, 0), ((0, 0), (3, 0))),
+                                    GriddedPerm((1, 0), ((0, 0), (4, 0))),
+                                    GriddedPerm((1, 0), ((2, 0), (2, 0))),
+                                    GriddedPerm((1, 0), ((2, 0), (3, 0))),
+                                    GriddedPerm((1, 0), ((2, 0), (4, 0))),
+                                    GriddedPerm((1, 0), ((3, 0), (3, 0))),
+                                    GriddedPerm((1, 0), ((3, 0), (4, 0))),
+                                    GriddedPerm((1, 0), ((4, 0), (4, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (3, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (4, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (3, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (4, 0))),
+                                    GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (1, 0))),
+                                    GriddedPerm((1, 0, 2), ((0, 0), (0, 0), (0, 0))),
+                                ),
+                                requirements=(
+                                    (GriddedPerm((0,), ((0, 0),)),),
+                                    (
+                                        GriddedPerm((0,), ((3, 0),)),
+                                        GriddedPerm((0,), ((4, 0),)),
+                                    ),
+                                ),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0}, {0: 0, 1: 1, 2: 2, 3: 3, 4: 3}),
+                        ),
+                    )
+                ),
+            ),
+        )
+    ),
     # FusionStrategy(col_idx=1, tracked=True)(
     #     Tiling(
     #         obstructions=(
@@ -116,29 +192,69 @@ rules_to_check = [
     #         ),
     #     )
     # ),
-    # RequirementInsertionStrategy(
-    #     gps=frozenset({GriddedPerm((0,), ((0, 2),))}), ignore_parent=True
-    # )(
-    #     Tiling(
-    #         obstructions=(
-    #             GriddedPerm((0, 1), ((0, 1), (0, 1))),
-    #             GriddedPerm((0, 1), ((0, 1), (0, 2))),
-    #             GriddedPerm((0, 1), ((0, 2), (0, 2))),
-    #             GriddedPerm((1, 0), ((0, 1), (0, 0))),
-    #             GriddedPerm((1, 0), ((0, 1), (0, 1))),
-    #             GriddedPerm((1, 0), ((0, 2), (0, 0))),
-    #             GriddedPerm((1, 0), ((0, 2), (0, 1))),
-    #             GriddedPerm((1, 0), ((0, 2), (0, 2))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 2))),
-    #             GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
-    #             GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),
-    #         ),
-    #         requirements=((GriddedPerm((0,), ((0, 1),)),),),
-    #         assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 2),)),)),),
-    #     )
-    # ),
+    RequirementInsertionStrategy(
+        gps=frozenset({GriddedPerm((0,), ((0, 2),))}), ignore_parent=True
+    )(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 1), (0, 1))),
+                GriddedPerm((0, 1), ((0, 1), (0, 2))),
+                GriddedPerm((0, 1), ((0, 2), (0, 2))),
+                GriddedPerm((1, 0), ((0, 1), (0, 0))),
+                GriddedPerm((1, 0), ((0, 1), (0, 1))),
+                GriddedPerm((1, 0), ((0, 2), (0, 0))),
+                GriddedPerm((1, 0), ((0, 2), (0, 1))),
+                GriddedPerm((1, 0), ((0, 2), (0, 2))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 2))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),
+            ),
+            requirements=((GriddedPerm((0,), ((0, 1),)),),),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((0, 1), (0, 1))),
+                                    GriddedPerm((0, 1), ((0, 1), (0, 2))),
+                                    GriddedPerm((0, 1), ((0, 1), (0, 3))),
+                                    GriddedPerm((0, 1), ((0, 2), (0, 2))),
+                                    GriddedPerm((0, 1), ((0, 2), (0, 3))),
+                                    GriddedPerm((0, 1), ((0, 3), (0, 3))),
+                                    GriddedPerm((1, 0), ((0, 1), (0, 0))),
+                                    GriddedPerm((1, 0), ((0, 1), (0, 1))),
+                                    GriddedPerm((1, 0), ((0, 2), (0, 0))),
+                                    GriddedPerm((1, 0), ((0, 2), (0, 1))),
+                                    GriddedPerm((1, 0), ((0, 2), (0, 2))),
+                                    GriddedPerm((1, 0), ((0, 3), (0, 0))),
+                                    GriddedPerm((1, 0), ((0, 3), (0, 1))),
+                                    GriddedPerm((1, 0), ((0, 3), (0, 2))),
+                                    GriddedPerm((1, 0), ((0, 3), (0, 3))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 2))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 3))),
+                                    GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+                                    GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),
+                                ),
+                                requirements=(
+                                    (
+                                        GriddedPerm((0,), ((0, 1),)),
+                                        GriddedPerm((0,), ((0, 2),)),
+                                    ),
+                                ),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0, 1: 1, 2: 1, 3: 2}, {0: 0}),
+                        ),
+                    )
+                ),
+            ),
+        )
+    ),
     FactorStrategy([[(0, 0)], [(1, 1)]])(
         Tiling(
             obstructions=(
@@ -241,59 +357,140 @@ rules_to_check = [
     #         )
     #     )
     # )[1],
-    # RequirementInsertionStrategy(
-    #     gps=frozenset({GriddedPerm((0,), ((2, 0),))}), ignore_parent=True
-    # )(
-    #     Tiling(
-    #         obstructions=(
-    #             GriddedPerm((0, 1), ((1, 0), (1, 0))),
-    #             GriddedPerm((0, 1), ((2, 0), (2, 0))),
-    #             GriddedPerm((0, 1), ((2, 0), (3, 0))),
-    #             GriddedPerm((0, 1), ((3, 0), (3, 0))),
-    #             GriddedPerm((1, 0), ((0, 0), (2, 0))),
-    #             GriddedPerm((1, 0), ((0, 0), (3, 0))),
-    #             GriddedPerm((1, 0), ((2, 0), (2, 0))),
-    #             GriddedPerm((1, 0), ((2, 0), (3, 0))),
-    #             GriddedPerm((1, 0), ((3, 0), (3, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (3, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (3, 0))),
-    #             GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (1, 0))),
-    #             GriddedPerm((1, 0, 2), ((0, 0), (0, 0), (0, 0))),
-    #         ),
-    #         requirements=(
-    #             (GriddedPerm((0,), ((0, 0),)),),
-    #             (GriddedPerm((0,), ((3, 0),)),),
-    #         ),
-    #         assumptions=(TrackingAssumption((GriddedPerm((0,), ((3, 0),)),)),),
-    #     )
-    # ),
-    # RequirementInsertionStrategy(
-    #     gps=frozenset({GriddedPerm((0,), ((0, 2),))}), ignore_parent=True
-    # )(
-    #     Tiling(
-    #         obstructions=(
-    #             GriddedPerm((0, 1), ((0, 1), (0, 1))),
-    #             GriddedPerm((0, 1), ((0, 1), (0, 2))),
-    #             GriddedPerm((0, 1), ((0, 2), (0, 2))),
-    #             GriddedPerm((1, 0), ((0, 1), (0, 0))),
-    #             GriddedPerm((1, 0), ((0, 1), (0, 1))),
-    #             GriddedPerm((1, 0), ((0, 2), (0, 0))),
-    #             GriddedPerm((1, 0), ((0, 2), (0, 1))),
-    #             GriddedPerm((1, 0), ((0, 2), (0, 2))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 2))),
-    #             GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
-    #             GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),
-    #         ),
-    #         requirements=((GriddedPerm((0,), ((0, 1),)),),),
-    #         assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 2),)),)),),
-    #     )
-    # ),
+    RequirementInsertionStrategy(
+        gps=frozenset({GriddedPerm((0,), ((2, 0),))}), ignore_parent=True
+    )(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((0, 1), ((2, 0), (2, 0))),
+                GriddedPerm((0, 1), ((2, 0), (3, 0))),
+                GriddedPerm((0, 1), ((3, 0), (3, 0))),
+                GriddedPerm((1, 0), ((0, 0), (2, 0))),
+                GriddedPerm((1, 0), ((0, 0), (3, 0))),
+                GriddedPerm((1, 0), ((2, 0), (2, 0))),
+                GriddedPerm((1, 0), ((2, 0), (3, 0))),
+                GriddedPerm((1, 0), ((3, 0), (3, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (3, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (3, 0))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (1, 0))),
+                GriddedPerm((1, 0, 2), ((0, 0), (0, 0), (0, 0))),
+            ),
+            requirements=(
+                (GriddedPerm((0,), ((0, 0),)),),
+                (GriddedPerm((0,), ((3, 0),)),),
+            ),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                                    GriddedPerm((0, 1), ((2, 0), (2, 0))),
+                                    GriddedPerm((0, 1), ((2, 0), (3, 0))),
+                                    GriddedPerm((0, 1), ((2, 0), (4, 0))),
+                                    GriddedPerm((0, 1), ((3, 0), (3, 0))),
+                                    GriddedPerm((0, 1), ((3, 0), (4, 0))),
+                                    GriddedPerm((0, 1), ((4, 0), (4, 0))),
+                                    GriddedPerm((1, 0), ((0, 0), (2, 0))),
+                                    GriddedPerm((1, 0), ((0, 0), (3, 0))),
+                                    GriddedPerm((1, 0), ((0, 0), (4, 0))),
+                                    GriddedPerm((1, 0), ((2, 0), (2, 0))),
+                                    GriddedPerm((1, 0), ((2, 0), (3, 0))),
+                                    GriddedPerm((1, 0), ((2, 0), (4, 0))),
+                                    GriddedPerm((1, 0), ((3, 0), (3, 0))),
+                                    GriddedPerm((1, 0), ((3, 0), (4, 0))),
+                                    GriddedPerm((1, 0), ((4, 0), (4, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (2, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (3, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (4, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (3, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (4, 0))),
+                                    GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (1, 0))),
+                                    GriddedPerm((1, 0, 2), ((0, 0), (0, 0), (0, 0))),
+                                ),
+                                requirements=(
+                                    (GriddedPerm((0,), ((0, 0),)),),
+                                    (
+                                        GriddedPerm((0,), ((3, 0),)),
+                                        GriddedPerm((0,), ((4, 0),)),
+                                    ),
+                                ),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0}, {0: 0, 1: 1, 2: 2, 3: 3, 4: 3}),
+                        ),
+                    )
+                ),
+            ),
+        )
+    ),
+    RequirementInsertionStrategy(
+        gps=frozenset({GriddedPerm((0,), ((0, 2),))}), ignore_parent=True
+    )(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 1), (0, 1))),
+                GriddedPerm((0, 1), ((0, 1), (0, 2))),
+                GriddedPerm((0, 1), ((0, 2), (0, 2))),
+                GriddedPerm((1, 0), ((0, 1), (0, 0))),
+                GriddedPerm((1, 0), ((0, 1), (0, 1))),
+                GriddedPerm((1, 0), ((0, 2), (0, 0))),
+                GriddedPerm((1, 0), ((0, 2), (0, 1))),
+                GriddedPerm((1, 0), ((0, 2), (0, 2))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 2))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),
+            ),
+            requirements=((GriddedPerm((0,), ((0, 1),)),),),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((0, 1), (0, 1))),
+                                    GriddedPerm((0, 1), ((0, 1), (0, 2))),
+                                    GriddedPerm((0, 1), ((0, 1), (0, 3))),
+                                    GriddedPerm((0, 1), ((0, 2), (0, 2))),
+                                    GriddedPerm((0, 1), ((0, 2), (0, 3))),
+                                    GriddedPerm((0, 1), ((0, 3), (0, 3))),
+                                    GriddedPerm((1, 0), ((0, 1), (0, 0))),
+                                    GriddedPerm((1, 0), ((0, 1), (0, 1))),
+                                    GriddedPerm((1, 0), ((0, 2), (0, 0))),
+                                    GriddedPerm((1, 0), ((0, 2), (0, 1))),
+                                    GriddedPerm((1, 0), ((0, 2), (0, 2))),
+                                    GriddedPerm((1, 0), ((0, 3), (0, 0))),
+                                    GriddedPerm((1, 0), ((0, 3), (0, 1))),
+                                    GriddedPerm((1, 0), ((0, 3), (0, 2))),
+                                    GriddedPerm((1, 0), ((0, 3), (0, 3))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 2))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 3))),
+                                    GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+                                    GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),
+                                ),
+                                requirements=((GriddedPerm((0,), ((0, 1),)),),),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0, 1: 1, 2: 2, 3: 2}, {0: 0}),
+                        ),
+                    )
+                ),
+            ),
+        )
+    ),
     # FusionStrategy(row_idx=2, tracked=True)(
     #     Tiling(
     #         obstructions=(
@@ -584,57 +781,197 @@ rules_to_check = [
             ),
         )
     ),
-    # RequirementInsertionStrategy(gps=(GriddedPerm((0,), ((1, 0),)),),)(
-    #     Tiling(
-    #         obstructions=(
-    #             GriddedPerm((0, 1), ((0, 0), (0, 0))),
-    #             GriddedPerm((0, 1), ((1, 0), (1, 0))),
-    #             GriddedPerm((0, 1), ((0, 0), (1, 0))),
-    #             GriddedPerm((1, 0), ((0, 0), (1, 0))),
-    #         ),
-    #         requirements=((GriddedPerm((0,), ((0, 0),)),),),
-    #         assumptions=(TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),),
-    #     )
-    # ),
-    # RequirementInsertionStrategy(
-    #     gps=frozenset({GriddedPerm((0,), ((1, 0),))}), ignore_parent=False
-    # )(
-    #     Tiling(
-    #         obstructions=(
-    #             GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (1, 1))),
-    #             GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 1))),
-    #             GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
-    #             GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (0, 1))),
-    #             GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (1, 0))),
-    #             GriddedPerm((0, 2, 1), ((0, 0), (1, 0), (1, 0))),
-    #             GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (1, 0))),
-    #             GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (1, 1))),
-    #             GriddedPerm((1, 0, 2), ((1, 1), (1, 0), (1, 1))),
-    #             GriddedPerm((1, 0, 2), ((1, 1), (1, 1), (1, 1))),
-    #             GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
-    #             GriddedPerm((2, 1, 0), ((1, 1), (1, 0), (1, 0))),
-    #             GriddedPerm((2, 1, 0), ((1, 1), (1, 1), (1, 0))),
-    #             GriddedPerm((2, 1, 0), ((1, 1), (1, 1), (1, 1))),
-    #             GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 0), (1, 0), (1, 0))),
-    #             GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 1), (0, 0), (0, 1))),
-    #             GriddedPerm((0, 2, 1, 3), ((0, 1), (0, 1), (0, 1), (0, 1))),
-    #             GriddedPerm((0, 2, 1, 3), ((0, 1), (0, 1), (0, 1), (1, 1))),
-    #             GriddedPerm((0, 2, 1, 3), ((0, 1), (0, 1), (1, 1), (1, 1))),
-    #             GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 1), (1, 1), (1, 1))),
-    #             GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
-    #             GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (1, 1))),
-    #             GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (1, 1), (1, 1))),
-    #         ),
-    #         requirements=(
-    #             (GriddedPerm((0,), ((1, 0),)), GriddedPerm((0,), ((1, 1),))),
-    #         ),
-    #         assumptions=(
-    #             TrackingAssumption(
-    #                 (GriddedPerm((0,), ((1, 0),)), GriddedPerm((0,), ((1, 1),)))
-    #             ),
-    #         ),
-    #     )
-    # ),
+    RequirementInsertionStrategy(gps=(GriddedPerm((0,), ((1, 0),)),),)(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                GriddedPerm((1, 0), ((0, 0), (1, 0))),
+            ),
+            requirements=((GriddedPerm((0,), ((0, 0),)),),),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                                    GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                                    GriddedPerm((0, 1), ((0, 0), (2, 0))),
+                                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                                    GriddedPerm((0, 1), ((1, 0), (2, 0))),
+                                    GriddedPerm((0, 1), ((2, 0), (2, 0))),
+                                    GriddedPerm((1, 0), ((0, 0), (1, 0))),
+                                    GriddedPerm((1, 0), ((0, 0), (2, 0))),
+                                ),
+                                requirements=((GriddedPerm((0,), ((0, 0),)),),),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0}, {0: 0, 1: 1, 2: 1}),
+                        ),
+                    )
+                ),
+            ),
+        )
+    ),
+    RequirementInsertionStrategy(
+        gps=frozenset({GriddedPerm((0,), ((1, 0),))}), ignore_parent=False
+    )(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (1, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 1))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (0, 1))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (1, 0))),
+                GriddedPerm((0, 2, 1), ((0, 0), (1, 0), (1, 0))),
+                GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (1, 0))),
+                GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (1, 1))),
+                GriddedPerm((1, 0, 2), ((1, 1), (1, 0), (1, 1))),
+                GriddedPerm((1, 0, 2), ((1, 1), (1, 1), (1, 1))),
+                GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+                GriddedPerm((2, 1, 0), ((1, 1), (1, 0), (1, 0))),
+                GriddedPerm((2, 1, 0), ((1, 1), (1, 1), (1, 0))),
+                GriddedPerm((2, 1, 0), ((1, 1), (1, 1), (1, 1))),
+                GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 1), (0, 0), (0, 1))),
+                GriddedPerm((0, 2, 1, 3), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                GriddedPerm((0, 2, 1, 3), ((0, 1), (0, 1), (0, 1), (1, 1))),
+                GriddedPerm((0, 2, 1, 3), ((0, 1), (0, 1), (1, 1), (1, 1))),
+                GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 1), (1, 1), (1, 1))),
+                GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (1, 1))),
+                GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (1, 1), (1, 1))),
+            ),
+            requirements=(
+                (GriddedPerm((0,), ((1, 0),)), GriddedPerm((0,), ((1, 1),))),
+            ),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (1, 1))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (2, 1))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 1))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (2, 1))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (2, 1))),
+                                    GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+                                    GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (0, 1))),
+                                    GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (1, 0))),
+                                    GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (2, 0))),
+                                    GriddedPerm((0, 2, 1), ((0, 0), (1, 0), (1, 0))),
+                                    GriddedPerm((0, 2, 1), ((0, 0), (1, 0), (2, 0))),
+                                    GriddedPerm((0, 2, 1), ((0, 0), (2, 0), (2, 0))),
+                                    GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (1, 0))),
+                                    GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (1, 1))),
+                                    GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (2, 0))),
+                                    GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (2, 1))),
+                                    GriddedPerm((1, 0, 2), ((1, 0), (2, 0), (2, 0))),
+                                    GriddedPerm((1, 0, 2), ((1, 0), (2, 0), (2, 1))),
+                                    GriddedPerm((1, 0, 2), ((1, 1), (1, 0), (1, 1))),
+                                    GriddedPerm((1, 0, 2), ((1, 1), (1, 0), (2, 1))),
+                                    GriddedPerm((1, 0, 2), ((1, 1), (1, 1), (1, 1))),
+                                    GriddedPerm((1, 0, 2), ((1, 1), (1, 1), (2, 1))),
+                                    GriddedPerm((1, 0, 2), ((1, 1), (2, 0), (2, 1))),
+                                    GriddedPerm((1, 0, 2), ((1, 1), (2, 1), (2, 1))),
+                                    GriddedPerm((1, 0, 2), ((2, 0), (2, 0), (2, 0))),
+                                    GriddedPerm((1, 0, 2), ((2, 0), (2, 0), (2, 1))),
+                                    GriddedPerm((1, 0, 2), ((2, 1), (2, 0), (2, 1))),
+                                    GriddedPerm((1, 0, 2), ((2, 1), (2, 1), (2, 1))),
+                                    GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+                                    GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (2, 0))),
+                                    GriddedPerm((2, 1, 0), ((1, 0), (2, 0), (2, 0))),
+                                    GriddedPerm((2, 1, 0), ((1, 1), (1, 0), (1, 0))),
+                                    GriddedPerm((2, 1, 0), ((1, 1), (1, 0), (2, 0))),
+                                    GriddedPerm((2, 1, 0), ((1, 1), (1, 1), (1, 0))),
+                                    GriddedPerm((2, 1, 0), ((1, 1), (1, 1), (1, 1))),
+                                    GriddedPerm((2, 1, 0), ((1, 1), (1, 1), (2, 0))),
+                                    GriddedPerm((2, 1, 0), ((1, 1), (1, 1), (2, 1))),
+                                    GriddedPerm((2, 1, 0), ((1, 1), (2, 0), (2, 0))),
+                                    GriddedPerm((2, 1, 0), ((1, 1), (2, 1), (2, 0))),
+                                    GriddedPerm((2, 1, 0), ((1, 1), (2, 1), (2, 1))),
+                                    GriddedPerm((2, 1, 0), ((2, 0), (2, 0), (2, 0))),
+                                    GriddedPerm((2, 1, 0), ((2, 1), (2, 0), (2, 0))),
+                                    GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (2, 0))),
+                                    GriddedPerm((2, 1, 0), ((2, 1), (2, 1), (2, 1))),
+                                    GriddedPerm(
+                                        (0, 2, 1, 3), ((0, 0), (0, 0), (1, 0), (1, 0))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 2, 1, 3), ((0, 0), (0, 0), (1, 0), (2, 0))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 2, 1, 3), ((0, 0), (0, 0), (2, 0), (2, 0))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 2, 1, 3), ((0, 0), (0, 1), (0, 0), (0, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 2, 1, 3), ((0, 1), (0, 1), (0, 1), (0, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 2, 1, 3), ((0, 1), (0, 1), (0, 1), (1, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 2, 1, 3), ((0, 1), (0, 1), (0, 1), (2, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 2, 1, 3), ((0, 1), (0, 1), (1, 1), (1, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 2, 1, 3), ((0, 1), (0, 1), (1, 1), (2, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 2, 1, 3), ((0, 1), (0, 1), (2, 1), (2, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 3, 2, 1), ((0, 0), (0, 1), (1, 1), (1, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 3, 2, 1), ((0, 0), (0, 1), (1, 1), (2, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 3, 2, 1), ((0, 0), (0, 1), (2, 1), (2, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (1, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (2, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 3, 2, 1), ((0, 1), (0, 1), (1, 1), (1, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 3, 2, 1), ((0, 1), (0, 1), (1, 1), (2, 1))
+                                    ),
+                                    GriddedPerm(
+                                        (0, 3, 2, 1), ((0, 1), (0, 1), (2, 1), (2, 1))
+                                    ),
+                                ),
+                                requirements=(
+                                    (
+                                        GriddedPerm((0,), ((1, 0),)),
+                                        GriddedPerm((0,), ((1, 1),)),
+                                        GriddedPerm((0,), ((2, 0),)),
+                                        GriddedPerm((0,), ((2, 1),)),
+                                    ),
+                                ),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0, 1: 1}, {0: 0, 1: 1, 2: 1}),
+                        ),
+                    )
+                ),
+            ),
+        )
+    ),
 ]
 equiv_rule_to_check = [r for r in rules_to_check if r.is_equivalence()]
 
