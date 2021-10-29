@@ -277,53 +277,219 @@ rules_to_check = [
             ),
         )
     ),
-    # FactorStrategy([[(0, 0)], [(1, 1)]])(
-    #     Tiling(
-    #         obstructions=(
-    #             GriddedPerm((0, 1), ((0, 0), (0, 0))),
-    #             GriddedPerm((1, 0), ((1, 1), (1, 1))),
-    #         ),
-    #         assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
-    #     )
-    # ),
-    # FactorStrategy([[(0, 0)], [(1, 1)], [(2, 2)]])(
-    #     Tiling(
-    #         obstructions=(
-    #             GriddedPerm((0, 1), ((0, 0), (0, 0))),
-    #             GriddedPerm((1, 0), ((1, 1), (1, 1))),
-    #             GriddedPerm((0, 1), ((2, 2), (2, 2))),
-    #             GriddedPerm((1, 0), ((2, 2), (2, 2))),
-    #         ),
-    #         requirements=(
-    #             (GriddedPerm((0,), ((0, 0),)),),
-    #             (GriddedPerm((0,), ((2, 2),)),),
-    #         ),
-    #         assumptions=(
-    #             TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),
-    #             TrackingAssumption(
-    #                 (GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((2, 2),))),
-    #             ),
-    #         ),
-    #     ),
-    # ),
-    # FactorStrategy([[(0, 0)], [(1, 1)], [(2, 2)]])(
-    #     Tiling(
-    #         obstructions=(
-    #             GriddedPerm((0, 1), ((0, 0), (0, 0))),
-    #             GriddedPerm((1, 0), ((1, 1), (1, 1))),
-    #             GriddedPerm((0, 1), ((2, 2), (2, 2))),
-    #             GriddedPerm((1, 0), ((2, 2), (2, 2))),
-    #         ),
-    #         requirements=(
-    #             (GriddedPerm((0,), ((0, 0),)),),
-    #             (GriddedPerm((0,), ((2, 2),)),),
-    #         ),
-    #         assumptions=(
-    #             TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),
-    #             TrackingAssumption((GriddedPerm((0,), ((2, 2),)),)),
-    #         ),
-    #     ),
-    # ),
+    FactorStrategy([[(0, 0)], [(1, 1)]])(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((1, 0), ((1, 1), (1, 1))),
+            ),
+            requirements=(),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                                    GriddedPerm((0, 1), ((0, 0), (0, 1))),
+                                    GriddedPerm((0, 1), ((0, 1), (0, 1))),
+                                    GriddedPerm((1, 0), ((1, 2), (1, 2))),
+                                ),
+                                requirements=(),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0, 1: 0, 2: 1}, {0: 0, 1: 1}),
+                        ),
+                    )
+                ),
+            ),
+        )
+    ),
+    FactorStrategy([[(0, 0)], [(1, 1)]])(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((1, 0), ((1, 1), (1, 1))),
+            ),
+            requirements=(),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                                    GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                                    GriddedPerm((1, 0), ((2, 1), (2, 1))),
+                                ),
+                                requirements=(),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0, 1: 1}, {0: 0, 1: 0, 2: 1}),
+                        ),
+                    )
+                ),
+            ),
+        )
+    ),
+    FactorStrategy([[(0, 0)], [(1, 1)], [(2, 2)]])(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((2, 2), (2, 2))),
+                GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                GriddedPerm((1, 0), ((2, 2), (2, 2))),
+            ),
+            requirements=(
+                (GriddedPerm((0,), ((0, 0),)),),
+                (GriddedPerm((0,), ((2, 2),)),),
+            ),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                                    GriddedPerm((0, 1), ((2, 2), (2, 2))),
+                                    GriddedPerm((0, 1), ((2, 2), (2, 3))),
+                                    GriddedPerm((0, 1), ((2, 3), (2, 3))),
+                                    GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                                    GriddedPerm((1, 0), ((2, 2), (2, 2))),
+                                    GriddedPerm((1, 0), ((2, 3), (2, 2))),
+                                    GriddedPerm((1, 0), ((2, 3), (2, 3))),
+                                ),
+                                requirements=(
+                                    (GriddedPerm((0,), ((0, 0),)),),
+                                    (
+                                        GriddedPerm((0,), ((2, 2),)),
+                                        GriddedPerm((0,), ((2, 3),)),
+                                    ),
+                                ),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0, 1: 1, 2: 2, 3: 2}, {0: 0, 1: 1, 2: 2}),
+                        ),
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                                    GriddedPerm((0, 1), ((0, 0), (0, 1))),
+                                    GriddedPerm((0, 1), ((0, 1), (0, 1))),
+                                    GriddedPerm((0, 1), ((2, 3), (2, 3))),
+                                    GriddedPerm((1, 0), ((1, 2), (1, 2))),
+                                    GriddedPerm((1, 0), ((2, 3), (2, 3))),
+                                ),
+                                requirements=(
+                                    (
+                                        GriddedPerm((0,), ((0, 0),)),
+                                        GriddedPerm((0,), ((0, 1),)),
+                                    ),
+                                    (GriddedPerm((0,), ((2, 3),)),),
+                                ),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0, 1: 0, 2: 1, 3: 2}, {0: 0, 1: 1, 2: 2}),
+                        ),
+                    )
+                ),
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                                    GriddedPerm((0, 1), ((0, 0), (0, 1))),
+                                    GriddedPerm((0, 1), ((0, 1), (0, 1))),
+                                    GriddedPerm((0, 1), ((2, 3), (2, 3))),
+                                    GriddedPerm((1, 0), ((1, 2), (1, 2))),
+                                    GriddedPerm((1, 0), ((2, 3), (2, 3))),
+                                ),
+                                requirements=(
+                                    (
+                                        GriddedPerm((0,), ((0, 0),)),
+                                        GriddedPerm((0,), ((0, 1),)),
+                                    ),
+                                    (GriddedPerm((0,), ((2, 3),)),),
+                                ),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0, 1: 0, 2: 1, 3: 2}, {0: 0, 1: 1, 2: 2}),
+                        ),
+                    )
+                ),
+            ),
+        )
+    ),
+    FactorStrategy([[(0, 0)], [(1, 1)], [(2, 2)]])(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((2, 2), (2, 2))),
+                GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                GriddedPerm((1, 0), ((2, 2), (2, 2))),
+            ),
+            requirements=(
+                (GriddedPerm((0,), ((0, 0),)),),
+                (GriddedPerm((0,), ((2, 2),)),),
+            ),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                                    GriddedPerm((0, 1), ((2, 2), (2, 2))),
+                                    GriddedPerm((0, 1), ((2, 2), (3, 2))),
+                                    GriddedPerm((0, 1), ((3, 2), (3, 2))),
+                                    GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                                    GriddedPerm((1, 0), ((2, 2), (2, 2))),
+                                    GriddedPerm((1, 0), ((2, 2), (3, 2))),
+                                    GriddedPerm((1, 0), ((3, 2), (3, 2))),
+                                ),
+                                requirements=(
+                                    (GriddedPerm((0,), ((0, 0),)),),
+                                    (
+                                        GriddedPerm((0,), ((2, 2),)),
+                                        GriddedPerm((0,), ((3, 2),)),
+                                    ),
+                                ),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0, 1: 1, 2: 2}, {0: 0, 1: 1, 2: 2, 3: 2}),
+                        ),
+                    )
+                ),
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                                    GriddedPerm((0, 1), ((0, 0), (1, 0))),
+                                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                                    GriddedPerm((0, 1), ((3, 2), (3, 2))),
+                                    GriddedPerm((1, 0), ((2, 1), (2, 1))),
+                                    GriddedPerm((1, 0), ((3, 2), (3, 2))),
+                                ),
+                                requirements=(
+                                    (
+                                        GriddedPerm((0,), ((0, 0),)),
+                                        GriddedPerm((0,), ((1, 0),)),
+                                    ),
+                                    (GriddedPerm((0,), ((3, 2),)),),
+                                ),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0, 1: 1, 2: 2}, {0: 0, 1: 0, 2: 1, 3: 2}),
+                        ),
+                    )
+                ),
+            ),
+        )
+    ),
     # list(
     #     SlidingFactory(use_symmetries=True)(
     #         Tiling(
