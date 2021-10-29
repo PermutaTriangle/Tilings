@@ -48,9 +48,9 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         child = children[0]
         params: Dict[str, str] = {}
         for parameter in comb_class.parameters:
-            mapped_parameter = child.forward_map.map_param(
-                parameter
-            ).add_obstructions_and_requirements(child.obstructions, [])
+            mapped_parameter = parameter.add_obstructions_and_requirements(
+                self.gps, []
+            ).apply_row_col_map(child.forward_map)
             parent_var = comb_class.get_parameter_name(parameter)
             child_var = child.get_parameter_name(mapped_parameter)
             params[parent_var] = child_var
