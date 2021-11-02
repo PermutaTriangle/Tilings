@@ -22,7 +22,6 @@ Cell = Tuple[int, int]
 
 class CellMap:
     def __init__(self, cell_map: Dict[Cell, Cell]) -> None:
-        print("AAA")
         self._map = cell_map
 
     @classmethod
@@ -208,7 +207,6 @@ class RowColMap(CellMap):
         self._row_map = row_map
         self._col_map = col_map
         self._is_identity = is_identity
-        print("BBB")
         super().__init__(
             {
                 cell: (col_map[cell[0]], row_map[cell[1]])
