@@ -210,6 +210,9 @@ class Factor:
         For example if T = T1 x T2 x T3 then (T1 x T3) x T2 is a possible
         reducible factorisation.
         """
+        if self._tiling.parameters:
+            # The parameter needs to be grouped back togheter.
+            raise NotImplementedError
         min_comp = self._get_factors_obs_and_reqs()
         for partition in partitions_iterator(min_comp):
             factors = []
