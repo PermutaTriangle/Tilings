@@ -209,7 +209,7 @@ class RowColMap(CellMap):
         self._is_identity = is_identity
         super().__init__(
             {
-                cell: self.map_cell(cell)
+                cell: (col_map[cell[0]], row_map[cell[1]])
                 for cell in itertools.product(self._col_map, self._row_map)
             }
         )
@@ -273,19 +273,6 @@ class RowColMap(CellMap):
         return cols == sorted(cols) and rows == sorted(rows)
 
     # Mapping method
-    def is_mappable_cell(self, cell: Cell) -> bool:
-        """
-        Return True if the cell can be mapped, i.e. if the image of the row
-        and the column of the are defined by the map.
-        """
-        return self.is_mappable_col(cell[0]) and self.is_mappable_row(cell[1])
-
-    def map_cell(self, cell: Cell) -> Cell:
-        """
-        Map the cell according to the map.
-        """
-        return (self.map_col(cell[0]), self.map_row(cell[1]))
-
     def is_mappable_row(self, row: int) -> bool:
         """
         Return True if the image of the row is defined.
