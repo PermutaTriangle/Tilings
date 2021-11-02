@@ -1029,44 +1029,6 @@ class Tiling(CombinatorialClass):
         """
         raise NotImplementedError("Update to use general fusion algorithm.")
 
-    def sub_tiling(
-        self,
-        cells: Iterable[Cell],
-        factors: bool = False,
-        add_parameters: Iterable[ParameterCounter] = tuple(),
-    ) -> "Tiling":
-        """Return the tiling using only the obstructions and requirements
-        completely contained in the given cells. If factors is set to True,
-        then it assumes that the first cells confirms if a gridded perm uses only
-        the cells."""
-        cells = set(cells)
-        obstructions = tuple(
-            ob
-            for ob in self.obstructions
-            if (factors and ob.pos[0] in cells) or all(c in cells for c in ob.pos)
-        )
-        requirements = Tiling.sort_requirements(
-            req
-            for req in self.requirements
-            if (factors and req[0].pos[0] in cells)
-            or all(c in cells for c in chain.from_iterable(r.pos for r in req))
-        )
-        parameters = [
-            ParameterCounter(
-                preimage.sub_preimage(cells)
-                for preimage in param.counters
-                if set(preimage.active_region(self)) == cells
-            )
-            for param in self.parameters
-        ]
-        return self.__class__(
-            obstructions,
-            requirements,
-            tuple(sorted(param for param in parameters if param.counters)),
-            simplify=False,
-            sorted_input=True,
-        )
-
     def find_factors(self, interleaving: str = "none") -> Tuple["Tiling", ...]:
         """
         Return list with the factors of the tiling.

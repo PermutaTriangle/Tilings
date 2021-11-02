@@ -56,7 +56,8 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         )
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
-        return tuple(tiling.sub_tiling(cells) for cells in self.partition)
+        factor_algo = Factor(tiling)
+        return tuple(factor_algo.factor(cells) for cells in self.partition)
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None

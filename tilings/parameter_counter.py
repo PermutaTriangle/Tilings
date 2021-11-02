@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Iterable, Iterator, List, Set, Tuple
 
 from .griddedperm import GriddedPerm
 from .map import RowColMap
+from .algorithms.factor import Factor
 
 Cell = Tuple[int, int]
 
@@ -72,10 +73,7 @@ class PreimageCounter:
                 self.map.preimage_cell(cell) for cell in cells
             )
         )
-        sub_tiling = self.tiling.sub_tiling(
-            precells,
-            factors=True,
-        )
+        sub_tiling = Factor(self.tiling).factor(precells)
         sub_map = self.map.restricted_by(precells)
         return PreimageCounter(sub_tiling, sub_map.to_row_col_map())
 

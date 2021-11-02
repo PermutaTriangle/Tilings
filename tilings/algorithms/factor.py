@@ -5,14 +5,17 @@ from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set,
 from permuta.misc import UnionFind
 from tilings.griddedperm import GriddedPerm
 from tilings.misc import partitions_iterator
-from tilings.parameter_counter import ParameterCounter
 
 if TYPE_CHECKING:
     from tilings import Tiling
+    from tilings.parameter_counter import ParameterCounter
 
 
 Cell = Tuple[int, int]
 ReqList = Tuple[GriddedPerm, ...]
+UninitializedTiling = Tuple[
+    Tuple[GriddedPerm, ...], Tuple[ReqList, ...], Tuple["ParameterCounter", ...]
+]
 
 
 class Factor:
@@ -32,15 +35,7 @@ class Factor:
         ncol = tiling.dimensions[0]
         self._cell_unionfind = UnionFind(nrow * ncol)
         self._components: Optional[Tuple[Set[Cell], ...]] = None
-        self._factors_obs_and_reqs: Optional[
-            List[
-                Tuple[
-                    Tuple[GriddedPerm, ...],
-                    Tuple[ReqList, ...],
-                    Tuple[ParameterCounter, ...],
-                ]
-            ]
-        ] = None
+        self._factors_obs_and_reqs: Optional[List[UninitializedTiling]] = None
 
     def _cell_to_int(self, cell: Cell) -> int:
         nrow = self._tiling.dimensions[1]
@@ -139,44 +134,39 @@ class Factor:
         self._components = tuple(all_components.values())
         return self._components
 
+    def _get_factor_obs_and_reqs(self, component: Set[Cell]) -> UninitializedTiling:
+        """
+        Builds the obstructions, requirements and parameters of the component.
+        """
+        obstructions = tuple(
+            ob for ob in self._tiling.obstructions if ob.pos[0] in component
+        )
+        requirements = self._tiling.sort_requirements(
+            req for req in self._tiling.requirements if req[0].pos[0] in component
+        )
+        parameters = sorted(
+            param.sub_param(component) for param in self._tiling.parameters
+        )
+        return (
+            obstructions,
+            requirements,
+            tuple(param for param in parameters if param.counters),
+        )
+
     def _get_factors_obs_and_reqs(
         self,
-    ) -> List[
-        Tuple[
-            Tuple[GriddedPerm, ...], Tuple[ReqList, ...], Tuple[ParameterCounter, ...]
-        ],
-    ]:
+    ) -> List[UninitializedTiling]:
         """
         Returns a list of all the irreducible factors of the tiling.
-        Each factor is a tuple (obstructions, requirements)
         """
         if self._factors_obs_and_reqs is not None:
             return self._factors_obs_and_reqs
         if self._tiling.is_empty():
             return [((GriddedPerm((), []),), tuple(), tuple())]
-        factors = []
-        for component in self.get_components():
-            obstructions = tuple(
-                ob for ob in self._tiling.obstructions if ob.pos[0] in component
-            )
-            requirements = tuple(
-                req for req in self._tiling.requirements if req[0].pos[0] in component
-            )
-            parameters = [
-                ParameterCounter(
-                    preimage.sub_preimage(component)
-                    for preimage in param.counters
-                    if set(preimage.active_region(self._tiling)) <= set(component)
-                )
-                for param in self._tiling.parameters
-            ]
-            factors.append(
-                (
-                    obstructions,
-                    requirements,
-                    tuple(param for param in parameters if param.counters),
-                )
-            )
+        factors = [
+            self._get_factor_obs_and_reqs(component)
+            for component in self.get_components()
+        ]
         self._factors_obs_and_reqs = factors
         return self._factors_obs_and_reqs
 
@@ -185,6 +175,16 @@ class Factor:
         Returns `True` if the tiling has more than one factor.
         """
         return len(self.get_components()) > 1
+
+    def factor(self, component: Set[Cell]) -> "Tiling":
+        """
+        Build the factor for the given component.
+        """
+        return self._tiling.__class__(
+            *self._get_factor_obs_and_reqs(component),
+            simplify=False,
+            sorted_input=True,
+        )
 
     def factors(self) -> Tuple["Tiling", ...]:
         """
