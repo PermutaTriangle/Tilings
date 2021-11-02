@@ -47,7 +47,7 @@ class CellMap:
             raise InvalidOperationError("The map is not reversible.")
         return CellMap(inverse_map)
 
-    def restricted_by(self, cells: Set[Cell]):
+    def restriction(self, cells: Set[Cell]):
         """
         Return the cell map where the domain is restricted to cells.
         """

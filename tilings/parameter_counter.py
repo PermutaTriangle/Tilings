@@ -74,7 +74,7 @@ class PreimageCounter:
             )
         )
         sub_tiling = Factor(self.tiling).factor(precells)
-        sub_map = self.map.restricted_by(precells)
+        sub_map = self.map.restriction(precells)
         return PreimageCounter(sub_tiling, sub_map.to_row_col_map())
 
     def extra_obs_and_reqs(
