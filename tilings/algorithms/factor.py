@@ -145,7 +145,10 @@ class Factor:
             req for req in self._tiling.requirements if req[0].pos[0] in component
         )
         parameters = sorted(
-            param.sub_param(component) for param in self._tiling.parameters
+            set(
+                param.sub_param(component, self._tiling)
+                for param in self._tiling.parameters
+            )
         )
         return (
             obstructions,

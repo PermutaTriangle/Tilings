@@ -1,9 +1,9 @@
 import itertools
 from typing import TYPE_CHECKING, Iterable, Iterator, List, Set, Tuple
 
+from .algorithms.factor import Factor
 from .griddedperm import GriddedPerm
 from .map import RowColMap
-from .algorithms.factor import Factor
 
 Cell = Tuple[int, int]
 
@@ -168,10 +168,13 @@ class ParameterCounter:
                 preimage.map.map_cell(cell) for cell in preimage.active_region(tiling)
             )
 
-    def sub_param(self, cells: Set[Cell]) -> "ParameterCounter":
+    def sub_param(
+        self, cells: Set[Cell], underlying_tiling: "Tiling"
+    ) -> "ParameterCounter":
         res = []
         for preimage in self.counters:
-            res.append(preimage.sub_preimage(cells))
+            if preimage.active_region(underlying_tiling) <= cells:
+                res.append(preimage.sub_preimage(cells))
         return ParameterCounter(res)
 
     def get_value(self, gp: GriddedPerm) -> int:

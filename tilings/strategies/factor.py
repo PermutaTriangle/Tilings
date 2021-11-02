@@ -30,7 +30,6 @@ from tilings.algorithms import (
 from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
 from tilings.misc import multinomial, partitions_iterator
-from tilings.parameter_counter import ParameterCounter
 
 Cell = Tuple[int, int]
 
@@ -57,7 +56,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
         factor_algo = Factor(tiling)
-        return tuple(factor_algo.factor(cells) for cells in self.partition)
+        return tuple(factor_algo.factor(set(cells)) for cells in self.partition)
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -71,10 +70,8 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
             comb_class.extra_parameters, comb_class.parameters
         ):
             for idx, (component, child) in enumerate(zip(self.partition, children)):
-                new_parameter = ParameterCounter(
-                    preimage.sub_preimage(set(component))
-                    for preimage in parameter.counters
-                    if set(preimage.active_region(comb_class)) <= set(component)
+                new_parameter = parameter.sub_param(
+                    set(component), comb_class
                 ).apply_row_col_map(child.forward_map)
                 if new_parameter.counters:
                     child_var = child.get_parameter_name(new_parameter)
