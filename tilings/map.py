@@ -3,10 +3,12 @@ from typing import (
     TYPE_CHECKING,
     Callable,
     Dict,
+    FrozenSet,
     Iterable,
     Iterator,
     List,
     Optional,
+    Set,
     Tuple,
 )
 
@@ -44,6 +46,12 @@ class CellMap:
         if len(inverse_map) != len(self._map):
             raise InvalidOperationError("The map is not reversible.")
         return CellMap(inverse_map)
+
+    def restriction(self, cells: Set[Cell]):
+        """
+        Return the cell map where the domain is restricted to cells.
+        """
+        return CellMap({a: b for a, b in self._map.items() if a in cells})
 
     def to_row_col_map(self) -> "RowColMap":
         """
@@ -160,6 +168,9 @@ class CellMap:
         Map the gridded permutation according to the map.
         """
         return gp.__class__(gp.patt, map(self.map_cell, gp.pos))
+
+    def map_gps(self, gps: Iterable["GriddedPerm"]) -> FrozenSet["GriddedPerm"]:
+        return frozenset(self.map_gp(gp) for gp in gps)
 
     def is_mappable_cell(self, cell: Cell) -> bool:
         """

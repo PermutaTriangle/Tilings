@@ -55,7 +55,8 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         )
 
     def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
-        return tuple(tiling.sub_tiling(cells) for cells in self.partition)
+        factor_algo = Factor(tiling)
+        return tuple(factor_algo.factor(set(cells)) for cells in self.partition)
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -68,11 +69,13 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         for parent_var, parameter in zip(
             comb_class.extra_parameters, comb_class.parameters
         ):
-            for idx, child in enumerate(children):
-                # TODO: consider skew/sum
-                new_parameter = child.forward_map.map_param(parameter)
-                child_var = child.get_parameter_name(new_parameter)
-                extra_parameters[idx][parent_var] = child_var
+            for idx, (component, child) in enumerate(zip(self.partition, children)):
+                new_parameter = parameter.sub_param(
+                    set(component), comb_class
+                ).apply_row_col_map(child.forward_map)
+                if new_parameter.counters:
+                    child_var = child.get_parameter_name(new_parameter)
+                    extra_parameters[idx][parent_var] = child_var
         return extra_parameters
 
     def formal_step(self) -> str:
@@ -183,19 +186,7 @@ def assumptions_to_add(
     Return the assumptions that should be tracked in the set of cells if we are
     interleaving the given rows and cols.
     """
-    col_assumptions = [
-        TrackingAssumption(
-            [GriddedPerm.point_perm(cell) for cell in cells if x == cell[0]]
-        )
-        for x in cols
-    ]
-    row_assumptions = [
-        TrackingAssumption(
-            [GriddedPerm.point_perm(cell) for cell in cells if y == cell[1]]
-        )
-        for y in rows
-    ]
-    return tuple(ass for ass in chain(col_assumptions, row_assumptions) if ass.gps)
+    raise NotImplementedError("Don't know what to do with the preimage")
 
 
 def contains_interleaving_assumptions(
@@ -206,13 +197,7 @@ def contains_interleaving_assumptions(
     assumptions needed to count the interleavings, and therefore the
     children too.
     """
-    cols, rows = interleaving_rows_and_cols(partition)
-    return all(
-        ass in comb_class.assumptions
-        for ass in chain.from_iterable(
-            assumptions_to_add(cells, cols, rows) for cells in partition
-        )
-    )
+    raise NotImplementedError("Don't know what to do with the preimage")
 
 
 class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
@@ -297,37 +282,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         """
         Return the parameters on the parent tiling that needed to be interleaved.
         """
-        res: List[Tuple[str, ...]] = []
-        cols, rows = interleaving_rows_and_cols(self.partition)
-        for x in cols:
-            assumptions = [
-                TrackingAssumption(
-                    GriddedPerm.point_perm(cell) for cell in cells if x == cell[0]
-                )
-                for cells in self.partition
-            ]
-            res.append(
-                tuple(
-                    comb_class.get_assumption_parameter(ass)
-                    for ass in assumptions
-                    if ass.gps
-                )
-            )
-        for y in rows:
-            assumptions = [
-                TrackingAssumption(
-                    GriddedPerm.point_perm(cell) for cell in cells if y == cell[1]
-                )
-                for cells in self.partition
-            ]
-            res.append(
-                tuple(
-                    comb_class.get_assumption_parameter(ass)
-                    for ass in assumptions
-                    if ass.gps
-                )
-            )
-        return res
+        raise NotImplementedError
 
     def backward_map(
         self,
