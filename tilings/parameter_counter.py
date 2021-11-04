@@ -173,7 +173,9 @@ class ParameterCounter:
     ) -> "ParameterCounter":
         res = []
         for preimage in self.counters:
-            if preimage.active_region(underlying_tiling) <= cells:
+            active_region = preimage.active_region(underlying_tiling)
+            mapped_active_region = set(map(preimage.map.map_cell, active_region))
+            if mapped_active_region <= cells:
                 res.append(preimage.sub_preimage(cells))
         return ParameterCounter(res)
 
