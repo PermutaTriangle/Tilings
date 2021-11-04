@@ -1,11 +1,15 @@
+"""
+ The implementation of the fusion algorithm
+"""
+
 from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
 
 from tilings.griddedperm import GriddedPerm
 from tilings.map import RowColMap
+from tilings.parameter_counter import ParameterCounter, PreimageCounter
 
 if TYPE_CHECKING:
     from tilings import Tiling
-    from tilings.parameter_counter import ParameterCounter
 
 
 Cell = Tuple[int, int]
@@ -66,20 +70,33 @@ class Fusion:
     def fused_obs_reqs_and_params(self) -> UninitializedTiling:
         """
         Return the fused obs, reqs, and params."""
-        if self.tiling.parameters:
-            raise NotImplementedError
         return (
             tuple(self._fuse_gps(self.tiling.obstructions)),
             tuple(tuple(self._fuse_gps(req)) for req in self.tiling.requirements),
-            tuple(),
+            tuple(self.fused_param(param) for param in self.tiling.parameters),
+        )
+
+    def fused_preimage(self, preimage: PreimageCounter) -> PreimageCounter:
+        """Return the fused preimage."""
+        row_idx, col_idx = None, None
+        if self._fuse_row:
+            row_idx = max(preimage.map.preimage_row(self._row_idx))
+        else:
+            col_idx = max(preimage.map.preimage_col(self._col_idx))
+        fuse_algo = Fusion(preimage.tiling, row_idx, col_idx, False)
+        fused_tiling = fuse_algo.fused_tiling()
+        fused_map = preimage.map.compose(fuse_algo.fuse_map)
+        return PreimageCounter(fused_tiling, fused_map)
+
+    def fused_param(self, parameter: ParameterCounter) -> ParameterCounter:
+        return ParameterCounter(
+            [self.fused_preimage(preimage) for preimage in parameter.counters]
         )
 
     def unfused_fused_obs_reqs_and_params(self) -> UninitializedTiling:
         """
         Return the tiling that is created by fusing and then unfusing the tiling.
         """
-        if self.tiling.parameters:
-            raise NotImplementedError
         obs, reqs, _ = self.fused_obs_reqs_and_params()
         return (
             tuple(self.fuse_map.preimage_gps(obs)),
@@ -95,7 +112,18 @@ class Fusion:
         return self.tiling == self.tiling.add_obstructions_and_requirements(obs, reqs)
 
     def fused_tiling(self) -> "Tiling":
+        """
+        Return the fused tiling after applying the fuse map.
+        """
+        obs, reqs, params = self.fused_obs_reqs_and_params()
         if self.tracked:
-            raise NotImplementedError
-        obs, reqs, _ = self.fused_obs_reqs_and_params()
-        return self.tiling.__class__(obs, reqs)
+            params += (self.new_parameter(),)
+        return self.tiling.__class__(obs, reqs, params)
+
+    def new_parameter(self):
+        """
+        Return the parameter needed in order to count the fusion.
+        """
+        return ParameterCounter(
+            [PreimageCounter(self.tiling.remove_parameters(), self.fuse_map)]
+        )
