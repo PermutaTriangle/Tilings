@@ -57,7 +57,7 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(tiling)
         idx = DisjointUnionStrategy.backward_map_index(gps)
-        yield children[idx].backward_map(cast(GriddedPerm, gps[idx]))
+        yield children[idx].backward_map.map_gp(cast(GriddedPerm, gps[idx]))
 
     def forward_map(
         self,
@@ -68,8 +68,8 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(tiling)
         if gp.avoids(*self.gps):
-            return (children[0].forward_map(gp), None)
-        return (None, children[1].forward_map(gp))
+            return (children[0].forward_map.map_gp(gp), None)
+        return (None, children[1].forward_map.map_gp(gp))
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -85,11 +85,15 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         co_params: Dict[str, str] = {}
         for assumption in comb_class.assumptions:
             parent_var = comb_class.get_assumption_parameter(assumption)
-            av_mapped_assumption = av.forward_map_assumption(assumption)
+            av_mapped_assumption = av.forward_map.map_assumption(assumption).avoiding(
+                av.obstructions
+            )
             if av_mapped_assumption.gps:
                 child_var = av.get_assumption_parameter(av_mapped_assumption)
                 av_params[parent_var] = child_var
-            co_mapped_assumption = co.forward_map_assumption(assumption)
+            co_mapped_assumption = co.forward_map.map_assumption(assumption).avoiding(
+                co.obstructions
+            )
             if co_mapped_assumption.gps:
                 child_var = co.get_assumption_parameter(co_mapped_assumption)
                 co_params[parent_var] = child_var

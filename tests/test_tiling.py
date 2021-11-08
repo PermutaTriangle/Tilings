@@ -2301,13 +2301,15 @@ def test_partial_place_col(obs_inf_til):
 
 def test_empty_obstruction():
     t = Tiling((GriddedPerm.empty_perm(),))
-    assert t.forward_cell_map == {}
+    assert t.forward_map._row_map == {}
+    assert t.forward_map._col_map == {}
     assert t.obstructions == (GriddedPerm.empty_perm(),)
 
 
 def test_point_obstruction():
     t = Tiling((GriddedPerm((0,), ((0, 0),)),))
-    assert t.forward_cell_map == {}
+    assert t.forward_map._row_map == {}
+    assert t.forward_map._col_map == {}
     assert t.obstructions == (GriddedPerm((0,), ((0, 0),)),)
 
 
@@ -2742,6 +2744,18 @@ def test_contains_all_patterns_locally_for_crossing():
         assumptions=(),
     )
     assert all(t.contains_all_patterns_locally_for_crossing((i, 0)) for i in range(3))
+
+
+def test_contains():
+    t = Tiling(
+        [GriddedPerm((0, 1), ((0, 0),) * 2), GriddedPerm((0, 1), ((1, 0),) * 2)],
+        [[GriddedPerm((0,), ((1, 0),))]],
+    )
+    assert GriddedPerm((0,), ((0, 0),)) not in t
+    assert GriddedPerm((0,), ((1, 0),)) in t
+    assert GriddedPerm((0, 1), ((0, 0), (0, 0))) not in t
+    assert GriddedPerm((0, 1), ((0, 0), (1, 0))) in t
+    assert GriddedPerm((0, 1), ((1, 0), (1, 0))) not in t
 
 
 @pytest.mark.slow

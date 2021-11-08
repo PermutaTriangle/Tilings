@@ -322,10 +322,15 @@ def sliding_strategy_arguments(strategy):
 def short_length_arguments(strategy):
     return [
         ShortObstructionVerificationStrategy(
-            short_length=short_length, ignore_parent=ignore_parent
+            basis=basis, short_length=short_length, ignore_parent=ignore_parent
         )
         for short_length in range(4)
         for ignore_parent in (True, False)
+        for basis in (
+            None,
+            (Perm((0, 1, 2)),),
+            (Perm((0, 1, 2, 3)), Perm((0, 1, 3, 2))),
+        )
     ]
 
 

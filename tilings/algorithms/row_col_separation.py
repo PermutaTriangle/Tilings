@@ -491,13 +491,13 @@ class _RowColSeparationSingleApplication:
         row_order = self.max_row_order
         col_order = self.max_col_order
         sep_cell_map = self._get_cell_map(row_order, col_order)
-        init_cell_map = sep_tiling.forward_cell_map
+        init_cell_map = sep_tiling.forward_map
         res: Dict[Cell, Cell] = dict()
         for cell in self._tiling.active_cells:
             mid_cell = sep_cell_map[cell]
             # If the cell is not in the init map it is an empty cell
-            if mid_cell in init_cell_map:
-                final_cell = init_cell_map[mid_cell]
+            if init_cell_map.is_mappable_cell(mid_cell):
+                final_cell = init_cell_map.map_cell(mid_cell)
                 res[cell] = final_cell
         return res
 

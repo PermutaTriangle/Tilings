@@ -11,10 +11,6 @@ AdjTable = Dict[Vertex, Set[Vertex]]
 Cell = Tuple[int, int]
 
 
-def map_cell(col_mapping: Dict[int, int], row_mapping: Dict[int, int], cell: Cell):
-    return (col_mapping[cell[0]], row_mapping[cell[1]])
-
-
 def union_reduce(iterables: Iterable[Iterable[T]]) -> Set[T]:
     """
     Returns the union of the elements contained in the iterables.

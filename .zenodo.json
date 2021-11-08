@@ -1,6 +1,15 @@
 {
     "upload_type": "software",
+    "title": "tilings",
     "creators": [
+        {
+            "affiliation": "Reykjavik University",
+            "name": "Christian Bean"
+        },
+        {
+            "affiliation": "Reykjavik University",
+            "name": "Jon Steinn Eliasson"
+        },
         {
             "name": "Tomas Ken Magnusson"
         },
@@ -9,20 +18,12 @@
             "name": "Émile Nadeau"
         },
         {
-            "affiliation": "Reykjavik University",
-            "name": "Christian Bean"
-        },
+            "affiliation": "Marquette University",
+            "name": "Jay Pantone"
+        }
         {
             "affiliation": "Reykjavik University",
             "name": "Henning Ulfarsson"
         },
-        {
-            "affiliation": "Reykjavik University",
-            "name": "Jon Steinn Eliasson"
-        },
-        {
-            "affiliation": "Marquette University",
-            "name": "Jay Pantone"
-        }
     ]
 }
