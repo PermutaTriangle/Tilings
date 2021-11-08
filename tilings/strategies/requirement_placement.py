@@ -137,7 +137,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 return placing + f"point in cell {gp.pos[index]}"
             if gp.is_localized():
                 return (
-                    f"{placing}{(index, gp.patt.index)} point in "
+                    f"{placing}{(index, gp.patt[index])} point in "
                     f"{gp.patt} in cell {gp.pos[index]}"
                 )
             return f"{placing}{(index, gp.patt[index])} point in {gp}"
