@@ -3,6 +3,7 @@ from string import ascii_uppercase
 from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, Iterator, List, Set, Tuple
 
 from permuta import Perm
+from collections import defaultdict
 
 if TYPE_CHECKING:
     from tilings import GriddedPerm, Tiling
@@ -12,6 +13,21 @@ __all__ = ["TilingDisplayer"]
 
 Cell = Tuple[int, int]
 POINT_BASIS = frozenset([Perm((0, 1)), Perm((1, 0))])
+PARAM_COLORS = (
+    "#b0dbff",
+    "#d1f0af",
+    "#db8686",
+    "#FCC997",
+    "#b0ffd0",
+    "#FCEB97",
+    "#fc97b4",
+    "#4b45ff",
+    "#c8bdff",
+    "#bfbfbf",
+)
+TILING_HTML_STYLE = (
+    """border: 1px solid; width: 24px; height: 24px; text-align: center;"""
+)
 
 
 def words_generator(alphabet: str) -> Iterator[str]:
@@ -46,6 +62,26 @@ class TilingDisplayer:
         lines.extend(self.params_lines())
         return "\n".join(lines)
 
+    def html(self) -> str:
+        """Returns an html representation of the tilings object"""
+        grid = self.grid(self.tiling)
+        param_dict = self.cell_param()
+        result = []
+        # Create tiling html table
+        result.append("<table> ")
+        for rev_row_idx, row in enumerate(grid):
+            row_idx = self.tiling.dimensions[1] - 1 - rev_row_idx
+            result.append("<tr>")
+            for col_idx, label in enumerate(row):
+                cell = (col_idx, row_idx)
+                cell_style = self.cell_background_style(param_dict[cell])
+                result.append(f"<th style='{cell_style}{TILING_HTML_STYLE}'>")
+                result.append(label)
+                result.append("</th>")
+            result.append("</tr>")
+        result.append("</table>")
+        return "".join(result)
+
     def get_label(self, basis: Iterable[Perm], positive: bool) -> str:
         """
         Return the appropriate label of the basis
@@ -71,17 +107,21 @@ class TilingDisplayer:
         content.sort()
         return content
 
-    def grid_lines(self, tiling: "Tiling") -> List[str]:
-        """
-        Compute the grid that represents the given tiling.
-        """
+    def grid(self, tiling: "Tiling") -> List[List[str]]:
         grid = [
-            [" " for _ in range(tiling.dimensions[0])]
+            ["" for _ in range(tiling.dimensions[0])]
             for _ in range(tiling.dimensions[1])
         ]
         for cell, (basis, _) in sorted(tiling.cell_basis().items()):
             label = self.get_label(basis, cell in tiling.positive_cells)
             grid[-1 - cell[1]][cell[0]] = label
+        return grid
+
+    def grid_lines(self, tiling: "Tiling") -> List[str]:
+        """
+        Compute the grid that represents the given tiling.
+        """
+        grid = self.grid(tiling)
         col_widths = [
             max(len(row[i]) for row in grid) for i in range(tiling.dimensions[0])
         ]
@@ -137,6 +177,38 @@ class TilingDisplayer:
         lines.extend(self.crossing_obs_lines(extra_obs))
         lines.extend(self.req_lines(extra_reqs))
         return lines
+
+    def cell_param(self) -> Dict[Cell, List[int]]:
+        """
+        Return a dict with the index of all the param touching each cell.
+        """
+        res: Dict[Cell, List[int]] = defaultdict(list)
+        for index, param_counter in enumerate(self.tiling.parameters):
+            active_region = set(
+                itertools.chain(*param_counter.active_regions(self.tiling))
+            )
+            for cell in active_region:
+                res[cell].append(index)
+        return res
+
+    @staticmethod
+    def cell_background_style(params: List[int]) -> str:
+        if not params:
+            return ""
+        if max(params) >= len(PARAM_COLORS) or len(params) > 4:
+            # display gray lines if out of color or
+            # more than 4 parameters in single cell
+            return """background-image:
+                repeating-linear-gradient(
+                45deg, #ffffff, #ffffff 6px, #00000080 1px, #00000080 7px
+                );"""
+        background_image = "background-image: linear-gradient(180deg"
+        stripe_size = 24 // len(params)
+        for idx, color in enumerate(map(PARAM_COLORS.__getitem__, params)):
+            background_image += f",{color} {idx*stripe_size}px, "
+            background_image += f"{color} {(idx+1)*stripe_size}px"
+        background_image += ");"
+        return background_image
 
     @staticmethod
     def map_str(d: dict) -> str:
