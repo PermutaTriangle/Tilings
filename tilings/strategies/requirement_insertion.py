@@ -201,7 +201,7 @@ class RequirementInsertionWithRestrictionFactory(AbstractRequirementInsertionFac
         args = ", ".join(
             [
                 f"maxreqlen={self.maxreqlen}",
-                f"extra_basi={self.extra_basis}",
+                f"extra_basis={self.extra_basis}",
                 f"ignore_parent={self.ignore_parent}",
             ]
         )

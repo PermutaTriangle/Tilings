@@ -128,7 +128,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     def formal_step(self):
         placing = f"placing the {self.direction_string()} "
-        if not (self.own_row and self.own_row):
+        if not (self.own_row and self.own_col):
             placing = f"partially {placing}"
         if len(self.gps) == 1:
             gp = self.gps[0]
