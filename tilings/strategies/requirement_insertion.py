@@ -26,12 +26,14 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         super().__init__(ignore_parent=ignore_parent)
         self.gps = frozenset(gps)
 
-    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, Tiling]:
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, Tiling]:
         """
         Return a tuple of tiling. The first one avoids all the pattern in the
         list while the other contain one of the patterns in the list.
         """
-        return tiling.add_obstructions(self.gps), tiling.add_list_requirement(self.gps)
+        return comb_class.add_obstructions(self.gps), comb_class.add_list_requirement(
+            self.gps
+        )
 
     def formal_step(self) -> str:
         """
@@ -44,32 +46,32 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         if len(self.gps) == 1:
             req = tuple(self.gps)[0]
             if req.is_localized():
-                return "insert {} in cell {}".format(req.patt, req.pos[0])
-            return "insert {}".format(req)
+                return f"insert {req.patt} in cell {req.pos[0]}"
+            return f"insert {req}"
         raise NotImplementedError
 
     def backward_map(
         self,
-        tiling: Tiling,
-        gps: Tuple[Optional[GriddedPerm], ...],
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
         if children is None:
-            children = self.decomposition_function(tiling)
-        idx = DisjointUnionStrategy.backward_map_index(gps)
-        yield children[idx].backward_map.map_gp(cast(GriddedPerm, gps[idx]))
+            children = self.decomposition_function(comb_class)
+        idx = DisjointUnionStrategy.backward_map_index(objs)
+        yield children[idx].backward_map.map_gp(cast(GriddedPerm, objs[idx]))
 
     def forward_map(
         self,
-        tiling: Tiling,
-        gp: GriddedPerm,
+        comb_class: Tiling,
+        obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[Optional[GriddedPerm], Optional[GriddedPerm]]:
         if children is None:
-            children = self.decomposition_function(tiling)
-        if gp.avoids(*self.gps):
-            return (children[0].forward_map.map_gp(gp), None)
-        return (None, children[1].forward_map.map_gp(gp))
+            children = self.decomposition_function(comb_class)
+        if obj.avoids(*self.gps):
+            return (children[0].forward_map.map_gp(obj), None)
+        return (None, children[1].forward_map.map_gp(obj))
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -100,9 +102,8 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return av_params, co_params
 
     def __repr__(self) -> str:
-        return "RequirementInsertionStrategy(gps={}, ignore_parent={})".format(
-            self.gps, self.ignore_parent
-        )
+        args = ", ".join([f"gps={self.gps}", f"ignore_parent={self.ignore_parent}"])
+        return f"{self.__class__.__name__}({args})"
 
     def __str__(self) -> str:
         return "requirement insertion"
@@ -157,9 +158,7 @@ class AbstractRequirementInsertionFactory(StrategyFactory[Tiling]):
         return cls(**d)
 
     def __repr__(self) -> str:
-        return "{}(ignore_parent={})".format(
-            self.__class__.__name__, self.ignore_parent
-        )
+        return f"{self.__class__.__name__}(ignore_parent={self.ignore_parent})"
 
 
 class RequirementInsertionWithRestrictionFactory(AbstractRequirementInsertionFactory):
@@ -199,12 +198,14 @@ class RequirementInsertionWithRestrictionFactory(AbstractRequirementInsertionFac
         return cls(extra_basis=extra_basis, **d)
 
     def __repr__(self) -> str:
-        return "{}(maxreqlen={}, extra_basis={}, " "ignore_parent={})".format(
-            self.__class__.__name__,
-            self.maxreqlen,
-            self.extra_basis,
-            self.ignore_parent,
+        args = ", ".join(
+            [
+                f"maxreqlen={self.maxreqlen}",
+                f"extra_basis={self.extra_basis}",
+                f"ignore_parent={self.ignore_parent}",
+            ]
         )
+        return f"{self.__class__.__name__}({args})"
 
 
 class CellInsertionFactory(RequirementInsertionWithRestrictionFactory):
@@ -263,10 +264,8 @@ class CellInsertionFactory(RequirementInsertionWithRestrictionFactory):
             return "point insertion"
         if self.extra_basis:
             perm_class = Av(self.extra_basis)
-            return "cell insertion from {} up to " "length {}".format(
-                perm_class, self.maxreqlen
-            )
-        return "cell insertion up to length {}".format(self.maxreqlen)
+            return f"cell insertion from {perm_class} up to length {self.maxreqlen}"
+        return f"cell insertion up to length {self.maxreqlen}"
 
     def __repr__(self) -> str:
         args = ", ".join(
@@ -308,27 +307,24 @@ class RootInsertionFactory(CellInsertionFactory):
 
     def __str__(self) -> str:
         if not self.extra_basis:
-            s = "root insertion up to length {}".format(self.maxreqlen)
+            s = f"root insertion up to length {self.maxreqlen}"
         else:
             perm_class = Av(self.extra_basis)
-            s = "root insertion from {} up to length {}".format(
-                perm_class, self.maxreqlen
-            )
+            s = f"root insertion from {perm_class} up to length {self.maxreqlen}"
         if self.max_num_req is not None:
-            s += " (up to {} requirements)".format(self.max_num_req)
+            s += f" (up to {self.max_num_req} requirements)"
         return s
 
     def __repr__(self) -> str:
-        return (
-            "{}(maxreqlen={}, extra_basis={}, "
-            "ignore_parent={}, max_num_req={})".format(
-                self.__class__.__name__,
-                self.maxreqlen,
-                self.extra_basis,
-                self.ignore_parent,
-                self.max_num_req,
-            )
+        args = ", ".join(
+            [
+                f"maxreqlen={self.maxreqlen}",
+                f"extra_basis={self.extra_basis}",
+                f"ignore_parent={self.ignore_parent}",
+                f"max_num_req={self.max_num_req}",
+            ]
         )
+        return f"{self.__class__.__name__}({args})"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
@@ -378,13 +374,10 @@ class RequirementExtensionFactory(RequirementInsertionWithRestrictionFactory):
 
     def __str__(self) -> str:
         if self.extra_basis:
-            perm_class = Av(self.extra_basis)
-            return "requirement extension from {} up to " "length {}".format(
-                perm_class, self.maxreqlen
-            )
-        return "requirement extension insertion up to " "length {}".format(
-            self.maxreqlen
-        )
+            perm_class = f" from {Av(self.extra_basis)}"
+        else:
+            perm_class = ""
+        return f"requirement extension{perm_class} up to length {self.maxreqlen}"
 
 
 class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
@@ -430,11 +423,10 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
         if self.maxreqlen == 1:
             return "point insertion"
         if self.extra_basis:
-            perm_class = Av(self.extra_basis)
-            return "requirement insertion from {} up to " "length {}".format(
-                perm_class, self.maxreqlen
-            )
-        return "requirement insertion up to " "length {}".format(self.maxreqlen)
+            perm_class = f" from {Av(self.extra_basis)}"
+        else:
+            perm_class = ""
+        return f"requirement insertion{perm_class} up to length {self.maxreqlen}"
 
     def __repr__(self) -> str:
         args = ", ".join(

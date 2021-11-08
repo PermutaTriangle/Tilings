@@ -49,7 +49,7 @@ def list_stratpacks(args: argparse.Namespace) -> int:
 
 def valid_kwarg_or_error(func, kwarg_name, pack_name):
     if kwarg_name not in inspect.signature(func).parameters:
-        parser.error("Invalid argument {} for {}".format(kwarg_name, pack_name))
+        parser.error(f"Invalid argument {kwarg_name} for {pack_name}")
 
 
 def build_pack(args: argparse.Namespace) -> TileScopePack:
@@ -61,7 +61,7 @@ def build_pack(args: argparse.Namespace) -> TileScopePack:
         )
 
     pack_builder: PackBuilder = BASE_PACK[args.strategy_pack]
-    kwargs = dict()
+    kwargs = {}
     if args.length is not None:
         valid_kwarg_or_error(pack_builder, "length", args.strategy_pack)
         kwargs["length"] = args.length

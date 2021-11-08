@@ -17,7 +17,7 @@ class ComponentFusionStrategy(FusionStrategy):
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"
         idx = self.row_idx if self.row_idx is not None else self.col_idx
-        return "component fuse {} {} and {}".format(fusing, idx, idx + 1)
+        return f"component fuse {fusing} {idx} and {idx+1}"
 
     def backward_map(
         self,

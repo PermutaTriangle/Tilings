@@ -95,7 +95,7 @@ class LocalEnumeration(Enumeration):
 
         funcs: Optional[Dict["Tiling", Function]] = kwargs.get("funcs")
         if funcs is None:
-            funcs = dict()
+            funcs = {}
         if self.tiling.requirements:
             reqs = self.tiling.requirements[0]
             avoided = self.tiling.__class__(
@@ -143,7 +143,7 @@ class LocalEnumeration(Enumeration):
             return gf
         # TODO: should this create a spec as in the strategy?
         raise NotImplementedError(
-            "Not sure how to enumerate the tiling:\n{}".format(self.tiling)
+            f"Not sure how to enumerate the tiling:\n{self.tiling}"
         )
 
 
@@ -256,7 +256,7 @@ class MonotoneTreeEnumeration(Enumeration):
         Return the appropriate variable to track the number of point in the
         given cell.
         """
-        return var("y_{}_{}".format(*cell))
+        return var(f"y_{cell[0]}_{cell[1]}")
 
     def _interleave_any_length(self, F, cell):
         """
@@ -331,7 +331,7 @@ class DatabaseEnumeration(Enumeration):
     find the generating function and the minimal polynomial in the database.
     """
 
-    API_ROOT_URL = "https://api.combopal.ru.is/"
+    API_ROOT_URL = "https://api.combopal.ru.is"
     all_verified_tilings: FrozenSet[bytes] = frozenset()
     num_verified_request = 0
 
@@ -344,7 +344,7 @@ class DatabaseEnumeration(Enumeration):
         That speeds up the verification test.
         """
         if not DatabaseEnumeration.all_verified_tilings:
-            uri = cls.API_ROOT_URL + "all_verified_tilings"
+            uri = f"{cls.API_ROOT_URL}/all_verified_tilings"
             response = requests.get(uri)
             response.raise_for_status()
             compressed_tilings = map(bytes.fromhex, response.json())
@@ -356,9 +356,7 @@ class DatabaseEnumeration(Enumeration):
         is not in the database.
         """
         key = self.tiling.to_bytes().hex()
-        search_url = DatabaseEnumeration.API_ROOT_URL + "verified_tiling/key/{}".format(
-            key
-        )
+        search_url = f"{DatabaseEnumeration.API_ROOT_URL}/verified_tiling/key/{key}"
         r = requests.get(search_url)
         if r.status_code == 404:
             return None

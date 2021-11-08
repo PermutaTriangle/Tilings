@@ -132,9 +132,7 @@ class ObstructionTransitivity:
                 return GriddedPerm((1, 0), [left, right])
             return GriddedPerm((0, 1), [right, left])
         raise ValueError(
-            ("Can not construct an obstruction from inequality {} < {}").format(
-                left, right
-            )
+            f"Can not construct an obstruction from inequality {left} < {right}"
         )
 
     @staticmethod

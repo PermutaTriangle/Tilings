@@ -68,13 +68,13 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def placement_class(self, tiling: Tiling) -> RequirementPlacement:
         return RequirementPlacement(tiling, own_col=self.own_col, own_row=self.own_row)
 
-    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
-        placement_class = self.placement_class(tiling)
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
+        placement_class = self.placement_class(comb_class)
         placed_tilings = placement_class.place_point_of_req(
             self.gps, self.indices, self.direction
         )
         if self.include_empty:
-            return (tiling.add_obstructions(self.gps),) + placed_tilings
+            return (comb_class.add_obstructions(self.gps),) + placed_tilings
         return placed_tilings
 
     def extra_parameters(
@@ -127,29 +127,30 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             return "bottommost"
 
     def formal_step(self):
-        placing = "{}lacing the {} ".format(
-            "p" if (self.own_col and self.own_row) else "partially p",
-            self.direction_string(),
-        )
+        placing = f"placing the {self.direction_string()} "
+        if not (self.own_row and self.own_col):
+            placing = f"partially {placing}"
         if len(self.gps) == 1:
             gp = self.gps[0]
             index = self.indices[0]
             if len(gp) == 1:
-                return placing + "point in cell {}".format(gp.pos[index])
+                return placing + f"point in cell {gp.pos[index]}"
             if gp.is_localized():
-                return placing + "{} point in {} in cell {}".format(
-                    (index, gp.patt[index]), gp.patt, gp.pos[index]
+                return (
+                    f"{placing}{(index, gp.patt[index])} point in "
+                    f"{gp.patt} in cell {gp.pos[index]}"
                 )
-            return placing + "{} point in {}".format((index, gp.patt[index]), gp)
+            return f"{placing}{(index, gp.patt[index])} point in {gp}"
         if all(len(gp) == 1 for gp in self.gps):
             col_indices = set(x for x, _ in [gp.pos[0] for gp in self.gps])
             if len(col_indices) == 1:
-                return placing + "point in column {}".format(col_indices.pop())
+                return f"{placing}point in column {col_indices.pop()}"
             row_indices = set(y for _, y in [gp.pos[0] for gp in self.gps])
             if len(row_indices) == 1:
-                return placing + "point in row {}".format(row_indices.pop())
-        return placing + "point at indices {} from the requirement ({})".format(
-            self.indices, ", ".join(str(gp) for gp in self.gps)
+                return f"{placing}point in row {row_indices.pop()}"
+        return (
+            f"{placing}point at indices {self.indices} from the requirement "
+            f"({', '.join(map(str, self.gps))})"
         )
 
     def backward_cell_map(self, placed_cell: Cell, cell: Cell) -> Cell:
@@ -185,14 +186,16 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     def backward_map(
         self,
-        tiling: Tiling,
-        gps: Tuple[Optional[GriddedPerm], ...],
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
         if children is None:
-            children = self.decomposition_function(tiling)
-        idx = DisjointUnionStrategy.backward_map_index(gps)
-        gp: GriddedPerm = children[idx].backward_map.map_gp(cast(GriddedPerm, gps[idx]))
+            children = self.decomposition_function(comb_class)
+        idx = DisjointUnionStrategy.backward_map_index(objs)
+        gp: GriddedPerm = children[idx].backward_map.map_gp(
+            cast(GriddedPerm, objs[idx])
+        )
         if self.include_empty:
             if idx == 0:
                 yield gp
@@ -205,22 +208,24 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     def forward_map(
         self,
-        tiling: Tiling,
-        gp: GriddedPerm,
+        comb_class: Tiling,
+        obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[Optional[GriddedPerm], ...]:
-        indices = gp.forced_point_of_requirement(self.gps, self.indices, self.direction)
+        indices = obj.forced_point_of_requirement(
+            self.gps, self.indices, self.direction
+        )
         if children is None:
-            children = self.decomposition_function(tiling)
+            children = self.decomposition_function(comb_class)
         if indices is None:
-            return (children[0].forward_map.map_gp(gp),) + tuple(
+            return (children[0].forward_map.map_gp(obj),) + tuple(
                 None for _ in range(len(children) - 1)
             )
         gps_index, forced_index = indices
         child_index = self._child_idx(gps_index)
         if self.include_empty:
             child_index += 1
-        gp = self.forward_gp_map(gp, forced_index)
+        gp = self.forward_gp_map(obj, forced_index)
         return (
             tuple(None for _ in range(child_index))
             + (children[child_index].forward_map.map_gp(gp),)
@@ -400,11 +405,11 @@ class PatternPlacementFactory(AbstractRequirementPlacementFactory):
         s += " placement"
         if len(self.dirs) < 4:
             if len(self.dirs) == 1:
-                s += " in direction {}".format(DIR_STR[self.dirs[0]])
+                s += f" in direction {DIR_STR[self.dirs[0]]}"
             else:
-                s += " in directions ".format()
+                s += " in directions "
                 s += ", ".join(DIR_STR[d] for d in self.dirs[:-1])
-                s += " and {}".format(DIR_STR[self.dirs[-1]])
+                s += f" and {DIR_STR[self.dirs[-1]]}"
         if self.ignore_parent:
             s += " (ignore parent)"
         return s
@@ -518,11 +523,11 @@ class RequirementPlacementFactory(AbstractRequirementPlacementFactory):
         s += "requirement placement"
         if len(self.dirs) < 4:
             if len(self.dirs) == 1:
-                s += " in direction {}".format(DIR_STR[self.dirs[0]])
+                s += f" in direction {DIR_STR[self.dirs[0]]}"
             else:
-                s += " in directions ".format()
+                s += " in directions "
                 s += ", ".join(DIR_STR[d] for d in self.dirs[:-1])
-                s += " and {}".format(DIR_STR[self.dirs[-1]])
+                s += f" and {DIR_STR[self.dirs[-1]]}"
         if self.ignore_parent:
             s += " (ignore parent)"
         if self.max_rules_per_req:
