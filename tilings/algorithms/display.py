@@ -26,6 +26,7 @@ def words_generator(alphabet: str) -> Iterator[str]:
 
 class TilingDisplayer:
     LABELS: Dict[FrozenSet[Perm], str] = {
+        frozenset([Perm()]): "\u03b5",
         frozenset([Perm((0,))]): " ",
         POINT_BASIS: "\u25cb",
         frozenset([Perm((0, 1))]): "\\",
