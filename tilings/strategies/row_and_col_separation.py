@@ -44,9 +44,9 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             forward_cell_map, backward_cell_map = res
         return forward_cell_map, backward_cell_map
 
-    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
         """Return the separated tiling if it separates, otherwise None."""
-        rcs = self.row_col_sep_algorithm(tiling)
+        rcs = self.row_col_sep_algorithm(comb_class)
         if rcs.separable():
             return (rcs.separated_tiling(),)
 
@@ -94,29 +94,29 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     def backward_map(
         self,
-        tiling: Tiling,
-        gps: Tuple[Optional[GriddedPerm], ...],
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
         """This method will enable us to generate objects, and sample."""
         if children is None:
-            children = self.decomposition_function(tiling)
-        gp = gps[0]
+            children = self.decomposition_function(comb_class)
+        gp = objs[0]
         assert gp is not None
-        backmap = self.backward_cell_map(tiling)
+        backmap = self.backward_cell_map(comb_class)
         yield gp.apply_map(backmap.__getitem__)
 
     def forward_map(
         self,
-        tiling: Tiling,
-        gp: GriddedPerm,
+        comb_class: Tiling,
+        obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm]:
         """This function will enable us to have a quick membership test."""
         if children is None:
-            children = self.decomposition_function(tiling)
-        forwardmap = self.forward_cell_map(tiling)
-        gp = gp.apply_map(forwardmap.__getitem__)
+            children = self.decomposition_function(comb_class)
+        forwardmap = self.forward_cell_map(comb_class)
+        gp = obj.apply_map(forwardmap.__getitem__)
         return (gp,)
 
     def __str__(self) -> str:

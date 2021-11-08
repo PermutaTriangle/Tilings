@@ -675,7 +675,7 @@ class GriddedPerm(CombinatorialObject):
         return f"{type(self).__name__}({tuple(self._patt)!r}, {self.pos})"
 
     def __str__(self) -> str:
-        return "{}: {}".format(str(self._patt), ", ".join(str(c) for c in self.pos))
+        return f"{self._patt}: {', '.join(str(c) for c in self.pos)}"
 
     def __hash__(self) -> int:
         return hash(self._patt) ^ hash(self._pos)
