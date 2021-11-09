@@ -509,9 +509,7 @@ class Tiling(CombinatorialClass):
         cell.
         """
         if not self.cell_within_bounds(cell):
-            raise ValueError(
-                "Cell {} is not within the bounds of the tiling.".format(cell)
-            )
+            raise ValueError(f"Cell {cell} is not within the bounds of the tiling.")
         return self.add_single_cell_obstruction(Perm((0,)), cell)
 
     def insert_cell(self, cell: Cell) -> "Tiling":
@@ -519,9 +517,7 @@ class Tiling(CombinatorialClass):
         cell. Cell should be active.
         """
         if not self.cell_within_bounds(cell):
-            raise ValueError(
-                "Cell {} is not within the bounds of the tiling.".format(cell)
-            )
+            raise ValueError(f"Cell {cell} is not within the bounds of the tiling.")
         return self.add_single_cell_requirement(Perm((0,)), cell)
 
     def add_obstruction(
@@ -1006,7 +1002,7 @@ class Tiling(CombinatorialClass):
         if not fusion.fusable():
             fus_type = "Rows" if row is not None else "Columns"
             idx = row if row is not None else col
-            message = "{} {} and {} are not fusable.".format(fus_type, idx, idx + 1)
+            message = f"{fus_type} {idx} and {idx+1} are not fusable."
             raise InvalidOperationError(message)
         return fusion.fused_tiling()
 
@@ -1049,7 +1045,7 @@ class Tiling(CombinatorialClass):
             factor = factor_class[interleaving](self)
         else:
             raise InvalidOperationError(
-                "interleaving option must be in {}".format(list(factor_class.keys()))
+                f"interleaving option must be in {list(factor_class.keys())}"
             )
         return factor.factors()
 
@@ -1213,7 +1209,7 @@ class Tiling(CombinatorialClass):
                 index = (dim_j - j - 1) * (3 * dim_i + 2) + i * 3 + 2
                 if c >= len(colors):
                     pass
-                elif index in has_param.keys():
+                elif index in has_param:
                     has_param[index].append(colors[c])
                 else:
                     has_param[index] = [colors[c]]
@@ -1259,7 +1255,7 @@ class Tiling(CombinatorialClass):
                 result.append("</th>")
             result.append("</tr>")
         result.append("</table>")
-        labels: Dict[Tuple[Tuple[Perm, ...], bool], str] = dict()
+        labels: Dict[Tuple[Tuple[Perm, ...], bool], str] = {}
 
         # Put the sets in the tiles
 
@@ -1302,7 +1298,7 @@ class Tiling(CombinatorialClass):
 
     @property
     def extra_parameters(self) -> Tuple[str, ...]:
-        return tuple("k_{}".format(i) for i in range(len(self._parameters)))
+        return tuple(f"k_{i}" for i in range(len(self._parameters)))
 
     def get_parameters(self, obj: GriddedPerm) -> Parameters:
         return tuple(param.get_value(obj) for param in self.parameters)
@@ -1317,7 +1313,7 @@ class Tiling(CombinatorialClass):
             idx = self._parameters.index(parameter)
         except ValueError as e:
             raise ValueError(f"following parameter not on tiling: '{parameter}'") from e
-        return "k_{}".format(idx)
+        return f"k_{idx}"
 
     def get_parameter(self, parameter: str) -> ParameterCounter:
         idx = parameter.split("_")[1]
@@ -1792,7 +1788,7 @@ class Tiling(CombinatorialClass):
                     result.append(" ")
             result.append("\n")
 
-        labels: Dict[Tuple[Tuple[Perm, ...], bool], str] = dict()
+        labels: Dict[Tuple[Tuple[Perm, ...], bool], str] = {}
 
         # Put the sets in the tiles
 
@@ -1834,9 +1830,8 @@ class Tiling(CombinatorialClass):
                 result.append("point")
             else:
                 result.append(
-                    "Av{}({})".format(
-                        "+" if positive else "", ", ".join(str(p) for p in basis_el)
-                    )
+                    f"Av{'+' if positive else ''}"
+                    f"({', '.join(str(p) for p in basis_el)})"
                 )
             result.append("\n")
 
@@ -1847,12 +1842,12 @@ class Tiling(CombinatorialClass):
                     result.append(str(ob))
                     result.append("\n")
         for i, req in enumerate(self.requirements):
-            result.append("Requirement {}:\n".format(str(i)))
+            result.append(f"Requirement {i}:\n")
             for r in req:
                 result.append(str(r))
                 result.append("\n")
         for i, param in enumerate(self.parameters):
-            result.append("Parameter {}:\n".format(str(i)))
+            result.append(f"Parameter {i}:\n")
             result.append(str(param))
             result.append("\n")
         if self.parameters or self.requirements:

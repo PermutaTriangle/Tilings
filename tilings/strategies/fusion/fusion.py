@@ -295,7 +295,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"
         idx = self.row_idx if self.row_idx is not None else self.col_idx
-        return "fuse {} {} and {}".format(fusing, idx, idx + 1)
+        return f"fuse {fusing} {idx} and {idx+1}"
 
     # pylint: disable=arguments-differ
     def backward_map(
@@ -408,7 +408,7 @@ class FusionFactory(StrategyFactory[Tiling]):
         return "fusion"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "(tracked={})".format(self.tracked)
+        return f"{self.__class__.__name__}(tracked={self.tracked})"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
