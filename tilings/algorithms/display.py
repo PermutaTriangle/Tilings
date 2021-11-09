@@ -1,9 +1,9 @@
 import itertools
+from collections import defaultdict
 from string import ascii_uppercase
 from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, Iterator, List, Set, Tuple
 
 from permuta import Perm
-from collections import defaultdict
 
 if TYPE_CHECKING:
     from tilings import GriddedPerm, Tiling
@@ -93,7 +93,7 @@ class TilingDisplayer:
         label = self.LABELS[basis]
         if positive:
             if basis == POINT_BASIS:
-                return "\u25cf"
+                label = "\u25cf"
             else:
                 label += "+"
         return label
@@ -139,7 +139,8 @@ class TilingDisplayer:
             lines.append(horizontal_line)
         return lines
 
-    def crossing_obs_lines(self, obs: Iterable["GriddedPerm"]) -> List[str]:
+    @staticmethod
+    def crossing_obs_lines(obs: Iterable["GriddedPerm"]) -> List[str]:
         lines = []
         for ob in obs:
             if not ob.is_single_cell():
@@ -148,7 +149,8 @@ class TilingDisplayer:
             lines = ["Crossing obstructions:"] + lines
         return lines
 
-    def req_lines(self, reqs: Iterable[Iterable["GriddedPerm"]]) -> List[str]:
+    @staticmethod
+    def req_lines(reqs: Iterable[Iterable["GriddedPerm"]]) -> List[str]:
         lines = []
         for i, req in enumerate(reqs):
             lines.append(f"Requirement {i}:")
