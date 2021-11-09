@@ -510,9 +510,7 @@ class Tiling(CombinatorialClass):
         cell.
         """
         if not self.cell_within_bounds(cell):
-            raise ValueError(
-                "Cell {} is not within the bounds of the tiling.".format(cell)
-            )
+            raise ValueError(f"Cell {cell} is not within the bounds of the tiling.")
         return self.add_single_cell_obstruction(Perm((0,)), cell)
 
     def insert_cell(self, cell: Cell) -> "Tiling":
@@ -520,9 +518,7 @@ class Tiling(CombinatorialClass):
         cell. Cell should be active.
         """
         if not self.cell_within_bounds(cell):
-            raise ValueError(
-                "Cell {} is not within the bounds of the tiling.".format(cell)
-            )
+            raise ValueError(f"Cell {cell} is not within the bounds of the tiling.")
         return self.add_single_cell_requirement(Perm((0,)), cell)
 
     def add_obstruction(
@@ -1007,7 +1003,7 @@ class Tiling(CombinatorialClass):
         if not fusion.fusable():
             fus_type = "Rows" if row is not None else "Columns"
             idx = row if row is not None else col
-            message = "{} {} and {} are not fusable.".format(fus_type, idx, idx + 1)
+            message = f"{fus_type} {idx} and {idx+1} are not fusable."
             raise InvalidOperationError(message)
         return fusion.fused_tiling()
 
@@ -1050,7 +1046,7 @@ class Tiling(CombinatorialClass):
             factor = factor_class[interleaving](self)
         else:
             raise InvalidOperationError(
-                "interleaving option must be in {}".format(list(factor_class.keys()))
+                f"interleaving option must be in {list(factor_class.keys())}"
             )
         return factor.factors()
 
@@ -1202,7 +1198,7 @@ class Tiling(CombinatorialClass):
 
     @property
     def extra_parameters(self) -> Tuple[str, ...]:
-        return tuple("k_{}".format(i) for i in range(len(self._parameters)))
+        return tuple(f"k_{i}" for i in range(len(self._parameters)))
 
     def get_parameters(self, obj: GriddedPerm) -> Parameters:
         return tuple(param.get_value(obj) for param in self.parameters)
@@ -1217,7 +1213,7 @@ class Tiling(CombinatorialClass):
             idx = self._parameters.index(parameter)
         except ValueError as e:
             raise ValueError(f"following parameter not on tiling: '{parameter}'") from e
-        return "k_{}".format(idx)
+        return f"k_{idx}"
 
     def get_parameter(self, parameter: str) -> ParameterCounter:
         idx = parameter.split("_")[1]

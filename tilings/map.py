@@ -60,7 +60,7 @@ class CellMap:
         Raises InvalidOperationError if the columns or row are not mapped consistently
         and therefore the conversion can't be completed.
         """
-        col_map, row_map = dict(), dict()
+        col_map, row_map = {}, {}
         for (col, row), (new_col, new_row) in self._map.items():
             if col not in col_map:
                 col_map[col] = new_col
@@ -124,7 +124,7 @@ class CellMap:
 
         NOTE: This works if the map is bijective. Not sure about other cases.
         """
-        cell_pos_in_col, cell_pos_in_row = dict(), dict()
+        cell_pos_in_col, cell_pos_in_row = {}, {}
         col_split = [0 for _ in range(preimg_counter.tiling.dimensions[0])]
         row_split = [0 for _ in range(preimg_counter.tiling.dimensions[1])]
         for cell in self.domain():

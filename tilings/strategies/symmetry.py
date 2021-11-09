@@ -18,17 +18,19 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         pass
 
-    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
         return (
             Tiling(
-                tuple(map(partial(self.gp_transform, tiling), tiling.obstructions)),
                 tuple(
-                    tuple(map(partial(self.gp_transform, tiling), req))
-                    for req in tiling.requirements
+                    map(partial(self.gp_transform, comb_class), comb_class.obstructions)
                 ),
                 tuple(
-                    ass.__class__(map(partial(self.gp_transform, tiling), ass.gps))
-                    for ass in tiling.assumptions
+                    tuple(map(partial(self.gp_transform, comb_class), req))
+                    for req in comb_class.requirements
+                ),
+                tuple(
+                    ass.__class__(map(partial(self.gp_transform, comb_class), ass.gps))
+                    for ass in comb_class.assumptions
                 ),
                 remove_empty_rows_and_cols=False,
                 derive_empty=False,
@@ -63,21 +65,21 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
 
     def backward_map(
         self,
-        tiling: Tiling,
-        gps: Tuple[Optional[GriddedPerm], ...],
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
         """This method will enable us to generate objects, and sample."""
-        yield self.inverse_gp_transform(tiling, cast(GriddedPerm, gps[0]))
+        yield self.inverse_gp_transform(comb_class, cast(GriddedPerm, objs[0]))
 
     def forward_map(
         self,
-        tiling: Tiling,
-        gp: GriddedPerm,
+        comb_class: Tiling,
+        obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm]:
         """This function will enable us to have a quick membership test."""
-        return (self.gp_transform(tiling, gp),)
+        return (self.gp_transform(comb_class, obj),)
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + "()"

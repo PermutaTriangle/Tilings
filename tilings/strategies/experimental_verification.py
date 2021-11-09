@@ -58,9 +58,7 @@ class ShortObstructionVerificationStrategy(BasisAwareVerificationStrategy):
         )
 
     def formal_step(self) -> str:
-        return "tiling has short (length <= {}) crossing obstructions".format(
-            self.short_length
-        )
+        return f"tiling has short (length <= {self.short_length}) crossing obstructions"
 
     def decomposition_function(
         self, comb_class: Tiling
@@ -89,8 +87,8 @@ class ShortObstructionVerificationStrategy(BasisAwareVerificationStrategy):
         return ()
 
     def __str__(self) -> str:
-        return "short (length <= {}) crossing obstruction verification".format(
-            self.short_length
+        return (
+            f"short (length <= {self.short_length}) crossing obstruction verification"
         )
 
     def __repr__(self) -> str:
@@ -131,7 +129,7 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
         return algo.subclasses == self.subclass_basis
 
     def formal_step(self) -> str:
-        return "tiling is contained in the subclass {}".format(Av(self.subclass_basis))
+        return f"tiling is contained in the subclass {Av(self.subclass_basis)}"
 
     def __str__(self) -> str:
         return "subclass verification strategy"
@@ -198,9 +196,7 @@ class SubclassVerificationFactory(StrategyFactory[Tiling]):
         return "subclass verification factory"
 
     def __repr__(self):
-        return self.__class__.__name__ + "(perms_to_check={})".format(
-            self.perms_to_check
-        )
+        return f"{self.__class__.__name__}(perms_to_check={self.perms_to_check})"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()

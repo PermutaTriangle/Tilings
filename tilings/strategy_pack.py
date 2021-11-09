@@ -155,17 +155,16 @@ class TileScopePack(StrategyPack):
         If tracked, it will return the pack for finding a tracked tree.
         If apply_first, it will add fusion to the front of the initial strategies.
         """
-        pack = self
+        name = "tracked_" if tracked else "untracked_"
+        name += "component_fusion" if component else "fusion"
+        if isolation_level is not None:
+            name += f"_{isolation_level}"
         if component:
             raise NotImplementedError("Update to use generalised fusion.")
-        pack = pack.add_initial(
-            strat.FusionFactory(tracked=tracked, isolation_level=isolation_level),
-            "{}_fusion{}".format(
-                "tracked" if tracked else "untracked",
-                "" if isolation_level is None else "_" + isolation_level,
-            ),
-            apply_first=apply_first,
+        fusion_strat = strat.FusionFactory(
+            tracked=tracked, isolation_level=isolation_level
         )
+        pack = self.add_initial(fusion_strat, name, apply_first=apply_first)
         if tracked:
             pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
             pack = pack.add_initial(
@@ -198,18 +197,16 @@ class TileScopePack(StrategyPack):
                     res.append(strategy)
             return res
 
+        name = f"{self.name}_{'' if tracked else 'un'}tracked_interleaving"
+        if unions:
+            name += "_unions"
+
         pack = self.__class__(
             ver_strats=replace_list(self.ver_strats),
             inferral_strats=replace_list(self.inferral_strats),
             initial_strats=replace_list(self.initial_strats),
             expansion_strats=list(map(replace_list, self.expansion_strats)),
-            name=(
-                self.name
-                + "_{}_interleaving{}".format(
-                    "tracked" if tracked else "untracked",
-                    "_unions" if unions else "",
-                )
-            ),
+            name=name,
             symmetries=self.symmetries,
             iterative=self.iterative,
         )
@@ -285,10 +282,13 @@ class TileScopePack(StrategyPack):
     def pattern_placements(
         cls, length: int = 1, partial: bool = False
     ) -> "TileScopePack":
-        name = "{}{}{}_placements".format(
-            "length_{}_".format(length) if length > 1 else "",
-            "partial_" if partial else "",
-            "pattern" if length > 1 else "pattern_point",
+        name = "".join(
+            [
+                "length_{length}_" if length > 1 else "",
+                "partial_" if partial else "",
+                "pattern" if length > 1 else "pattern_point",
+                "_placements",
+            ]
         )
 
         expansion_strats: List[CSSstrategy] = [
@@ -318,9 +318,12 @@ class TileScopePack(StrategyPack):
     def point_placements(
         cls, length: int = 1, partial: bool = False
     ) -> "TileScopePack":
-        name = "{}{}point_placements".format(
-            "length_{}_".format(length) if length > 1 else "",
-            "partial_" if partial else "",
+        name = "".join(
+            [
+                "length_{length}_" if length > 1 else "",
+                "partial_" if partial else "",
+                "point_placements",
+            ]
         )
 
         initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
@@ -378,17 +381,16 @@ class TileScopePack(StrategyPack):
     def regular_insertion_encoding(cls, direction: int) -> "TileScopePack":
         """This pack finds insertion encodings."""
         if direction not in DIRS:
-            raise ValueError("Must be direction in {}.".format(DIRS))
+            raise ValueError(f"Must be direction in {DIRS}.")
         place_row = direction in (DIR_NORTH, DIR_SOUTH)
         place_col = not place_row
-        name = "regular_insertion_encoding_{}".format(
-            {
-                DIR_EAST: "left",
-                DIR_WEST: "right",
-                DIR_NORTH: "bottom",
-                DIR_SOUTH: "top",
-            }[direction]
-        )
+        direction_str = {
+            DIR_EAST: "left",
+            DIR_WEST: "right",
+            DIR_NORTH: "bottom",
+            DIR_SOUTH: "top",
+        }
+        name = f"regular_insertion_encoding_{direction_str[direction]}"
         return TileScopePack(
             initial_strats=[
                 strat.FactorFactory(),
@@ -415,11 +417,14 @@ class TileScopePack(StrategyPack):
         place_row = not col_only
         place_col = not row_only
         both = place_col and place_row
-        name = "{}{}{}{}_placements".format(
-            "partial_" if partial else "",
-            "row" if not col_only else "",
-            "_and_" if both else "",
-            "col" if not row_only else "",
+        name = "".join(
+            [
+                "partial_" if partial else "",
+                "row" if not col_only else "",
+                "_and_" if both else "",
+                "col" if not row_only else "",
+                "_placements",
+            ]
         )
         rowcol_strat = strat.RowAndColumnPlacementFactory(
             place_row=place_row, place_col=place_col, partial=partial
@@ -510,9 +515,12 @@ class TileScopePack(StrategyPack):
     def requirement_placements(
         cls, length: int = 2, partial: bool = False
     ) -> "TileScopePack":
-        name = "{}{}requirement_placements".format(
-            "length_{}_".format(length) if length != 2 else "",
-            "partial_" if partial else "",
+        name = "".join(
+            [
+                "length_{length}_" if length != 2 else "",
+                "partial_" if partial else "",
+                "requirement_placements",
+            ]
         )
 
         initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
@@ -553,12 +561,16 @@ class TileScopePack(StrategyPack):
         place_row = not col_only
         place_col = not row_only
         both = place_col and place_row
-        name = "{}{}point_and_{}{}{}_placements".format(
-            "length_{}_".format(length) if length > 1 else "",
-            "partial_" if partial else "",
-            "row" if not col_only else "",
-            "_and_" if both else "",
-            "col" if not row_only else "",
+        name = "".join(
+            [
+                "length_{length}_" if length > 1 else "",
+                "partial_" if partial else "",
+                "point_and_",
+                "row" if not col_only else "",
+                "_and_" if both else "",
+                "col" if not row_only else "",
+                "_placements",
+            ]
         )
         rowcol_strat = strat.RowAndColumnPlacementFactory(
             place_row=place_row, place_col=place_col, partial=partial

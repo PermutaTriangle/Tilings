@@ -134,7 +134,7 @@ class GriddedPermReduction:
         from each of the gridded permutations in the requirement it is
         contained in.
         """
-        res: List[Requirement] = list()
+        res: List[Requirement] = []
         for requirement in requirements:
             if not requirement:
                 # If req is empty, then this requirement can't be satisfied, so

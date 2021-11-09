@@ -75,7 +75,7 @@ class Split(Constructor):
         def union_params(
             sub_params: Tuple[Dict[str, int], ...]
         ) -> Optional[Dict[str, int]]:
-            new_params: Dict[str, int] = dict()
+            new_params: Dict[str, int] = {}
             for params in sub_params:
                 for k, val in params.items():
                     if k in new_params:
@@ -262,12 +262,9 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         for idx, assumption in enumerate(comb_class.assumptions):
             split_assumptions = self._split_assumption(assumption, components)
             child_vars = tuple(
-                sorted(
-                    "k_{}".format(child.assumptions.index(ass))
-                    for ass in split_assumptions
-                )
+                sorted(f"k_{child.assumptions.index(ass)}" for ass in split_assumptions)
             )
-            split_parameters["k_{}".format(idx)] = child_vars
+            split_parameters[f"k_{idx}"] = child_vars
         return Split(split_parameters)
 
     def reverse_constructor(
