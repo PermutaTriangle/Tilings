@@ -47,11 +47,11 @@ class Fusion:
         num_col, num_row = self.tiling.dimensions
         row_map = {i: i for i in range(num_row)}
         if self._fuse_row:
-            for i in range(self._row_idx + 1, num_row + 1):
+            for i in range(self._row_idx + 1, num_row):
                 row_map[i] = i - 1
         col_map = {i: i for i in range(num_col)}
         if not self._fuse_row:
-            for i in range(self._col_idx + 1, num_col + 1):
+            for i in range(self._col_idx + 1, num_col):
                 col_map[i] = i - 1
         return RowColMap(row_map, col_map)
 
@@ -76,16 +76,71 @@ class Fusion:
             tuple(self.fused_param(param) for param in self.tiling.parameters),
         )
 
+    def is_fusable_param(self, parameter_counter: ParameterCounter):
+        return all(
+            self.is_fusable_preimage(preimage)
+            for preimage in parameter_counter.counters
+        )
+
+    def is_fusable_preimage(self, preimage: PreimageCounter) -> bool:
+        row1, row2 = self.get_preimage_fuse_indices(preimage)
+        if row1 is not None and row2 is not None and row1 + 1 != row2:
+            return False
+        if self._fuse_row:
+            fuse_region = self.tiling.cells_in_row(self._row_idx).union(
+                self.tiling.cells_in_row(self._row_idx + 1)
+            )
+        else:
+            fuse_region = self.tiling.cells_in_row(self._col_idx).union(
+                self.tiling.cells_in_col(self._col_idx + 1)
+            )
+        if preimage.active_region(self.tiling).intersection(fuse_region):
+            return self.fused_preimage(preimage) == self.new_parameter().counters[0]
+        return True
+
+    def get_preimage_fuse_indices(
+        self, preimage: PreimageCounter
+    ) -> Tuple[Optional[int], Optional[int]]:
+        """
+        Return the max of the preimage of self._row_idx, and min of the preimage
+        of self._row_idx + 1. If either is None, it means this column is empty
+        on the preimage tiling.
+        """
+        if self._fuse_row:
+            row1 = max(preimage.map.preimage_row(self._row_idx), default=None)
+            row2 = min(preimage.map.preimage_row(self._row_idx + 1), default=None)
+        else:
+            row1 = max(preimage.map.preimage_col(self._col_idx), default=None)
+            row2 = min(preimage.map.preimage_col(self._col_idx + 1), default=None)
+        return row1, row2
+
     def fused_preimage(self, preimage: PreimageCounter) -> PreimageCounter:
         """Return the fused preimage."""
         row_idx, col_idx = None, None
+        row1, row2 = self.get_preimage_fuse_indices(preimage)
+        if row1 is None or row2 is None:
+            return PreimageCounter(
+                self.tiling.__class__(
+                    preimage.tiling.obstructions, preimage.tiling.requirements
+                ),
+                preimage.map.compose(self.fuse_map),
+            )
         if self._fuse_row:
-            row_idx = max(preimage.map.preimage_row(self._row_idx))
+            row_idx = row1
         else:
-            col_idx = max(preimage.map.preimage_col(self._col_idx))
+            col_idx = row1
         fuse_algo = Fusion(preimage.tiling, row_idx, col_idx, False)
         fused_tiling = fuse_algo.fused_tiling()
-        fused_map = preimage.map.compose(fuse_algo.fuse_map)
+        fused_map = RowColMap(
+            {
+                fuse_algo.fuse_map.map_row(a): self.fuse_map.map_row(b)
+                for a, b in preimage.map._row_map.items()
+            },
+            {
+                fuse_algo.fuse_map.map_col(a): self.fuse_map.map_col(b)
+                for a, b in preimage.map._col_map.items()
+            },
+        )
         return PreimageCounter(fused_tiling, fused_map)
 
     def fused_param(self, parameter: ParameterCounter) -> ParameterCounter:
@@ -108,6 +163,10 @@ class Fusion:
         """
         Return True if tiling is fusable.
         """
+        if any(
+            not self.is_fusable_param(parameter) for parameter in self.tiling.parameters
+        ):
+            return False
         obs, reqs, _ = self.unfused_fused_obs_reqs_and_params()
         return self.tiling == self.tiling.add_obstructions_and_requirements(obs, reqs)
 
