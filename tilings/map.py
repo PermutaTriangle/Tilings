@@ -159,14 +159,12 @@ class CellMap:
                 for cell in preimg_counter.tiling.active_cells
             }
         )
-        projection_map = (
+        return preimg_counter.__class__(
+            preimg_map.map_tiling(preimg_counter.tiling),
             preimg_map.inverse()
             .compose(preimg_counter.map)
             .compose(self)
-            .to_row_col_map()
-        )
-        return preimg_counter.__class__(
-            preimg_map.map_tiling(preimg_counter.tiling), projection_map
+            .to_row_col_map(),
         )
 
     def is_mappable_gp(self, gp: "GriddedPerm") -> bool:
