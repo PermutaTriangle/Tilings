@@ -32,7 +32,7 @@ class RemoveIdentityPreimage(Strategy[Tiling, GriddedPerm]):
 
     def reverse_constructor(
         self,
-        index: int,
+        idx: int,
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
