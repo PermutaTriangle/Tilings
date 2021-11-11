@@ -124,17 +124,29 @@ class CellMap:
 
         NOTE: This works if the map is bijective. Not sure about other cases.
         """
+        cols_added_before: Dict[int, int] = {}
+        rows_added_before: Dict[int, int] = {}
+        for cell in self.domain():
+            col_pos = self.map_cell(cell)[0] - cell[0]
+            row_pos = self.map_cell(cell)[1] - cell[1]
+            cols_added_before[cell[0]] = min(
+                cols_added_before.get(cell[0], col_pos), col_pos
+            )
+            rows_added_before[cell[1]] = min(
+                rows_added_before.get(cell[1], col_pos), col_pos
+            )
         cell_pos_in_col, cell_pos_in_row = {}, {}
         col_split = [0 for _ in range(preimg_counter.tiling.dimensions[0])]
         row_split = [0 for _ in range(preimg_counter.tiling.dimensions[1])]
         for cell in self.domain():
+            col_pos = self.map_cell(cell)[0] - cell[0] - cols_added_before[cell[0]]
+            row_pos = self.map_cell(cell)[1] - cell[1] - rows_added_before[cell[1]]
             for pre_cell in preimg_counter.map.preimage_cell(cell):
-                col_pos = self.map_cell(cell)[0] - cell[0]
-                row_pos = self.map_cell(cell)[1] - cell[1]
                 cell_pos_in_col[pre_cell] = col_pos
                 cell_pos_in_row[pre_cell] = row_pos
-                col_split[cell[0]] = max(col_pos + 1, col_split[cell[0]])
-                row_split[cell[1]] = max(row_pos + 1, row_split[cell[1]])
+                col_split[pre_cell[0]] = max(col_pos + 1, col_split[pre_cell[0]])
+                row_split[pre_cell[1]] = max(row_pos + 1, row_split[pre_cell[1]])
+
         cell_to_col_map = {
             k: v + sum(col_split[: k[0]]) for k, v in cell_pos_in_col.items()
         }
