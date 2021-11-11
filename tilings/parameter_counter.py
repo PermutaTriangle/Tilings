@@ -28,6 +28,10 @@ class PreimageCounter:
         """
         assert not self.tiling.parameters
 
+    def is_empty(self):
+        """Return true if tiling is empty, and therefore always counts 0."""
+        return self.tiling.is_empty()
+
     def remove_empty_rows_and_cols(self) -> None:
         """
         Update the col and row maps after removing cols and rows that
@@ -159,7 +163,9 @@ class ParameterCounter:
     """
 
     def __init__(self, counters: Iterable[PreimageCounter]):
-        self.counters = tuple(sorted(counters))
+        self.counters = tuple(
+            sorted(itertools.filterfalse(PreimageCounter.is_empty, counters))
+        )
 
     def active_regions(self, tiling: "Tiling") -> Iterator[Set[Cell]]:
         """
