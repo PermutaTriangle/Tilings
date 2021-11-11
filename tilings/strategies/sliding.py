@@ -30,19 +30,23 @@ def _gp_reverse(c: int) -> Callable[[GriddedPerm], GriddedPerm]:
 
 def _gp_rotate90(r: int) -> Callable[[GriddedPerm], GriddedPerm]:
     def _tmp_func(gp: GriddedPerm) -> GriddedPerm:
-        return GriddedPerm(gp.patt.rotate(), ((y, 0) for _, y in gp.pos))
+        return GriddedPerm(
+            gp.patt.rotate(), gp.patt.inverse().apply(((y, 0) for _, y in gp.pos))
+        )
 
     return _tmp_func
 
 
 def _gp_rotate90_inverse(r: int) -> Callable[[GriddedPerm], GriddedPerm]:
     def _tmp_func(gp: GriddedPerm) -> GriddedPerm:
-        return GriddedPerm(gp.patt.rotate(-1), ((0, x) for x, _ in gp.pos))
+        patt = gp.patt.rotate(-1)
+        return GriddedPerm(patt, patt.apply(((0, x) for x, _ in gp.pos)))
 
     return _tmp_func
 
 
 def _gp_rotate90_and_reverse(r: int) -> Callable[[GriddedPerm], GriddedPerm]:
+    # TODO: Fixme
     def _tmp_func(gp: GriddedPerm) -> GriddedPerm:
         return GriddedPerm(
             gp.patt.rotate(1).reverse(), ((r - y - 1, 0) for _, y in gp.pos)
@@ -52,6 +56,7 @@ def _gp_rotate90_and_reverse(r: int) -> Callable[[GriddedPerm], GriddedPerm]:
 
 
 def _gp_rotate90_and_reverse_inverse(r: int) -> Callable[[GriddedPerm], GriddedPerm]:
+    # TODO: Fixme
     def _tmp_func(gp: GriddedPerm) -> GriddedPerm:
         return GriddedPerm(
             gp.patt.reverse().rotate(-1), ((0, r - x - 1) for x, _ in gp.pos)
