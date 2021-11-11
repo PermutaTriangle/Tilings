@@ -61,6 +61,8 @@ class PreimageCounter:
     def active_region(self, tiling: "Tiling") -> Set[Cell]:
         """
         Yield the active region of the preimage counter.
+
+        The cells are on the underlying tiling.
         """
         res = set()
         for cell in self.tiling.active_cells:
@@ -69,7 +71,7 @@ class PreimageCounter:
         extra_obs, extra_reqs = self.extra_obs_and_reqs(tiling)
         for gp in itertools.chain(extra_obs, *extra_reqs):
             res.update(gp.pos)
-        return res
+        return set(self.map.map_cell(cell) for cell in res)
 
     def sub_preimage(self, cells: Set[Cell]) -> "PreimageCounter":
         precells = set(
@@ -170,11 +172,11 @@ class ParameterCounter:
     def active_regions(self, tiling: "Tiling") -> Iterator[Set[Cell]]:
         """
         Yield the active regions of the preimage counters.
+
+        The cell are on the underlying tiling.
         """
         for preimage in self:
-            yield set(
-                preimage.map.map_cell(cell) for cell in preimage.active_region(tiling)
-            )
+            yield preimage.active_region(tiling)
 
     def sub_param(
         self, cells: Set[Cell], underlying_tiling: "Tiling"
