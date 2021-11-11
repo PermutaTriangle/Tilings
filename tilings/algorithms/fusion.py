@@ -134,11 +134,11 @@ class Fusion:
         fused_map = RowColMap(
             {
                 fuse_algo.fuse_map.map_row(a): self.fuse_map.map_row(b)
-                for a, b in preimage.map._row_map.items()
+                for a, b in preimage.map.row_map.items()
             },
             {
                 fuse_algo.fuse_map.map_col(a): self.fuse_map.map_col(b)
-                for a, b in preimage.map._col_map.items()
+                for a, b in preimage.map.col_map.items()
             },
         )
         return PreimageCounter(fused_tiling, fused_map)
