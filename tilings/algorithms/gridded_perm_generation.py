@@ -42,7 +42,7 @@ class GriddedPermsOnTiling:
         heapify(queue)
         for mgp in self._minimal_gps.minimal_gridded_perms():
             if len(mgp) <= size:
-                packet = QueuePacket(mgp, (-1, -1), dict(), 0)
+                packet = QueuePacket(mgp, (-1, -1), {}, 0)
                 heappush(queue, packet)
             else:
                 break

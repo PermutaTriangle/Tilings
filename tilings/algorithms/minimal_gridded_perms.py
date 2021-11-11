@@ -41,17 +41,17 @@ class MinimalGriddedPerms:
     def __init__(self, tiling: "Tiling"):
         self.obstructions = tiling.obstructions
         self.requirements = tiling.requirements
-        self.relevant_obstructions: Dict[FrozenSet[Cell], GPTuple] = dict()
-        self.relevant_requirements: Dict[FrozenSet[Cell], Reqs] = dict()
+        self.relevant_obstructions: Dict[FrozenSet[Cell], GPTuple] = {}
+        self.relevant_requirements: Dict[FrozenSet[Cell], Reqs] = {}
         self.relevant_obstructions_by_cell: Dict[
             Tuple[Cell, FrozenSet[Cell]], GPTuple
-        ] = dict()
-        self.requirements_up_to_cell: Dict[Tuple[Cell, GPTuple], GPTuple] = dict()
+        ] = {}
+        self.requirements_up_to_cell: Dict[Tuple[Cell, GPTuple], GPTuple] = {}
         # Delay computing until needed - these could all be stored on
         # MinimalGriddedPerms, as none of these are tiling specific.
-        self.localised_patts: Dict[Tuple[Cell, GPTuple], GPTuple] = dict()
-        self.max_cell_counts: Dict[GPTuple, Dict[Cell, int]] = dict()
-        self.upward_closures: Dict[GPTuple, GPTuple] = dict()
+        self.localised_patts: Dict[Tuple[Cell, GPTuple], GPTuple] = {}
+        self.max_cell_counts: Dict[GPTuple, Dict[Cell, int]] = {}
+        self.upward_closures: Dict[GPTuple, GPTuple] = {}
         self.known_patts: Dict[GriddedPerm, Set[GriddedPerm]] = defaultdict(set)
 
     def get_requirements_up_to_cell(self, cell: Cell, gps: GPTuple) -> GPTuple:
@@ -151,7 +151,7 @@ class MinimalGriddedPerms:
                 # will be used to guide us in choosing smartly which cells to
                 # insert into - see the 'get_cells_to_try' method.
                 # mindices ensure we insert left to right in each cell
-                mindices: Dict[Cell, int] = dict()
+                mindices: Dict[Cell, int] = {}
                 # last_cell ensures that we insert into cells in order after
                 # we have satisfied the local patterns needed
                 last_cell = (-1, -1)

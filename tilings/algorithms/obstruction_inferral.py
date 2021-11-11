@@ -55,7 +55,7 @@ class ObstructionInferral(abc.ABC):
 
     def formal_step(self):
         """Return a string describing the operation performed."""
-        return "Added the obstructions {}.".format(self.new_obs())
+        return f"Added the obstructions {self.new_obs()}."
 
 
 class SubobstructionInferral(ObstructionInferral):

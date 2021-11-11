@@ -44,9 +44,9 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             forward_cell_map, backward_cell_map = res
         return forward_cell_map, backward_cell_map
 
-    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
         """Return the separated tiling if it separates, otherwise None."""
-        rcs = self.row_col_sep_algorithm(tiling)
+        rcs = self.row_col_sep_algorithm(comb_class)
         if rcs.separable():
             return (rcs.separated_tiling(),)
 
@@ -85,27 +85,27 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     def backward_map(
         self,
-        tiling: Tiling,
-        gps: Tuple[Optional[GriddedPerm], ...],
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
         """This method will enable us to generate objects, and sample."""
         if children is None:
-            children = self.decomposition_function(tiling)
-        gp = gps[0]
+            children = self.decomposition_function(comb_class)
+        gp = objs[0]
         assert gp is not None
-        yield self.backward_cell_map(tiling).map_gp(gp)
+        yield self.backward_cell_map(comb_class).map_gp(gp)
 
     def forward_map(
         self,
-        tiling: Tiling,
-        gp: GriddedPerm,
+        comb_class: Tiling,
+        obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm]:
         """This function will enable us to have a quick membership test."""
         if children is None:
-            children = self.decomposition_function(tiling)
-        return (self.forward_cell_map(tiling).map_gp(gp),)
+            children = self.decomposition_function(comb_class)
+        return (self.forward_cell_map(comb_class).map_gp(obj),)
 
     def __str__(self) -> str:
         return "row and column separation"

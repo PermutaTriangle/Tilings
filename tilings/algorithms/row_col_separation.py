@@ -241,10 +241,10 @@ class Graph(Generic[T]):
             return orientation2
 
     def __repr__(self) -> str:
-        s = "Graph over the vertices {}\n".format(self._vertex_labels)
-        s += "Vertex weight is {}\n".format(self._vertex_weights)
+        s = f"Graph over the vertices {self._vertex_labels}\n"
+        s += f"Vertex weight is {self._vertex_weights}\n"
         for row in self._matrix:
-            s += "{}\n".format(row)
+            s += f"{row}\n"
         return s
 
     def __lt__(self, other: object) -> bool:
@@ -424,11 +424,11 @@ class _RowColSeparationSingleApplication:
         This method does not account for any cleaning occuring in the initializer. For
         the complete cell map use `get_cell_map`.
         """
-        row_cell_map = dict()
+        row_cell_map = {}
         for i, row in enumerate(row_order):
             for cell in row:
                 row_cell_map[cell] = i
-        cell_map = dict()
+        cell_map = {}
         for i, col in enumerate(col_order):
             for cell in col:
                 cell_map[cell] = (i, row_cell_map[cell])

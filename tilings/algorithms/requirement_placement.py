@@ -56,7 +56,7 @@ class MultiplexMap(RowColMap):
     def get_row_map(
         row: int, height: int, own_row: bool, partial: bool
     ) -> Dict[int, int]:
-        row_map = dict()
+        row_map = {}
         for j in range(height):
             ys = (
                 [j]

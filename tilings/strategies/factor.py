@@ -54,8 +54,8 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
             ignore_parent=ignore_parent, workable=workable, inferrable=inferrable
         )
 
-    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling, ...]:
-        factor_algo = Factor(tiling)
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
+        factor_algo = Factor(comb_class)
         return tuple(factor_algo.factor(set(cells)) for cells in self.partition)
 
     def extra_parameters(
@@ -82,24 +82,22 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         """
         Return a string that describe the operation performed on the tiling.
         """
-        return "factor with partition {}".format(
-            " / ".join(
-                "{{{}}}".format(", ".join(str(c) for c in part))
-                for part in self.partition
-            )
+        partition_str = " / ".join(
+            f"{{{', '.join(map(str, part))}}}" for part in self.partition
         )
+        return f"factor with partition {partition_str}"
 
     def backward_map(
         self,
-        tiling: Tiling,
-        gps: Tuple[Optional[GriddedPerm], ...],
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
         if children is None:
-            children = self.decomposition_function(tiling)
+            children = self.decomposition_function(comb_class)
         gps_to_combine = tuple(
             tiling.backward_map.map_gp(cast(GriddedPerm, gp))
-            for gp, tiling in zip(gps, children)
+            for gp, tiling in zip(objs, children)
         )
         temp = [
             ((cell[0], idx), (cell[1], val))
@@ -113,14 +111,14 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
 
     def forward_map(
         self,
-        tiling: Tiling,
-        gp: GriddedPerm,
+        comb_class: Tiling,
+        obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm, ...]:
         if children is None:
-            children = self.decomposition_function(tiling)
+            children = self.decomposition_function(comb_class)
         return tuple(
-            tiling.forward_map.map_gp(gp.get_gridded_perm_in_cells(part))
+            tiling.forward_map.map_gp(obj.get_gridded_perm_in_cells(part))
             for tiling, part in zip(children, self.partition)
         )
 
@@ -262,19 +260,19 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         return "interleaving " + super().formal_step()
 
     def constructor(
-        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Interleaving:
         if children is None:
-            children = self.decomposition_function(tiling)
+            children = self.decomposition_function(comb_class)
         try:
-            interleaving_parameters = self.interleaving_parameters(tiling)
+            interleaving_parameters = self.interleaving_parameters(comb_class)
         except ValueError as e:
             # must be untracked
             raise NotImplementedError("The interleaving factor was not tracked.") from e
         return Interleaving(
-            tiling,
+            comb_class,
             children,
-            self.extra_parameters(tiling, children),
+            self.extra_parameters(comb_class, children),
             interleaving_parameters,
         )
 
@@ -286,16 +284,16 @@ class FactorWithInterleavingStrategy(FactorStrategy):
 
     def backward_map(
         self,
-        tiling: Tiling,
-        gps: Tuple[Optional[GriddedPerm], ...],
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
         raise NotImplementedError
 
     def forward_map(
         self,
-        tiling: Tiling,
-        gp: GriddedPerm,
+        comb_class: Tiling,
+        obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm, ...]:
         raise NotImplementedError
@@ -315,21 +313,21 @@ class MonotoneInterleaving(Interleaving):
 
 class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
     def constructor(
-        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> MonotoneInterleaving:
         if children is None:
-            children = self.decomposition_function(tiling)
+            children = self.decomposition_function(comb_class)
         try:
-            interleaving_parameters = self.interleaving_parameters(tiling)
+            interleaving_parameters = self.interleaving_parameters(comb_class)
         except ValueError as e:
             # must be untracked
             raise NotImplementedError(
                 "The monotone interleaving was not tracked."
             ) from e
         return MonotoneInterleaving(
-            tiling,
+            comb_class,
             children,
-            self.extra_parameters(tiling, children),
+            self.extra_parameters(comb_class, children),
             interleaving_parameters,
         )
 
