@@ -133,7 +133,7 @@ class CellMap:
                 cols_added_before.get(cell[0], col_pos), col_pos
             )
             rows_added_before[cell[1]] = min(
-                rows_added_before.get(cell[1], col_pos), col_pos
+                rows_added_before.get(cell[1], row_pos), row_pos
             )
         cell_pos_in_col, cell_pos_in_row = {}, {}
         col_split = [0 for _ in range(preimg_counter.tiling.dimensions[0])]
