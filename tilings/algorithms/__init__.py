@@ -1,3 +1,4 @@
+from .display import TilingDisplayer
 from .enumeration import DatabaseEnumeration, LocalEnumeration, MonotoneTreeEnumeration
 from .factor import Factor, FactorWithInterleaving, FactorWithMonotoneInterleaving
 from .fusion import Fusion
@@ -36,4 +37,5 @@ __all__ = [
     "SubclassVerificationAlgorithm",
     "guess_obstructions",
     "Sliding",
+    "TilingDisplayer",
 ]

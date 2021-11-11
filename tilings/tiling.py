@@ -41,6 +41,7 @@ from .algorithms import (
     RowColSeparation,
     SubclassVerificationAlgorithm,
     SubobstructionInferral,
+    TilingDisplayer,
     guess_obstructions,
 )
 from .exception import InvalidOperationError
@@ -1187,110 +1188,9 @@ class Tiling(CombinatorialClass):
     # HTML methods
     # -------------------------------------------------------------
 
-    def _handle_html_parameter(self, result: List[str], style) -> List[str]:
-        """adds background color in cells where parameter happens"""
-        # pylint: disable=too-many-locals
-        colors = [
-            "#b0dbff",
-            "#d1f0af",
-            "#db8686",
-            "#FCC997",
-            "#b0ffd0",
-            "#FCEB97",
-            "#fc97b4",
-            "#4b45ff",
-            "#c8bdff",
-            "#bfbfbf",
-        ]
-        has_param: Dict[int, List[str]] = {}
-        for c, param_counter in enumerate(self.parameters):
-            for i, j in set(chain(*param_counter.active_regions(self))):
-                dim_i, dim_j = self.dimensions
-                index = (dim_j - j - 1) * (3 * dim_i + 2) + i * 3 + 2
-                if c >= len(colors):
-                    pass
-                elif index in has_param:
-                    has_param[index].append(colors[c])
-                else:
-                    has_param[index] = [colors[c]]
-
-                if c >= len(colors) or len(has_param[index]) > 4:
-                    # display gray lines if out of color or
-                    # more than 4 parameters in single cell
-                    background_image = """background-image:
-                        repeating-linear-gradient(
-                        45deg, #ffffff, #ffffff 6px, #00000080 1px, #00000080 7px
-                        );"""
-                else:
-                    # display stripes
-                    background_image = "background-image: linear-gradient(180deg"
-                    stripe_size = 24 // len(has_param[index])
-                    for idx, color in enumerate(has_param[index]):
-                        background_image += f""",
-                            {color} {idx*stripe_size}px,
-                            {color} {(idx+1)*stripe_size}px"""
-                    background_image += ");"
-                result[index] = f'<th style="{background_image}{style}">'
-        return result
-
     def to_html_representation(self) -> str:
         """Returns an html representation of the tilings object"""
-        # pylint: disable=too-many-locals
-        # stylesheet for tiling
-        style = """
-            border: 1px solid;
-            width: 24px;
-            height: 24px;
-            text-align: center;
-            """
-        dim_i, dim_j = self.dimensions
-        result = []
-        # Create tiling html table
-        result.append("<table> ")
-        for _ in range(dim_j):
-            result.append("<tr>")
-            for _ in range(dim_i):
-                result.append(f"<th style='{style}'>")
-                result.append(" ")
-                result.append("</th>")
-            result.append("</tr>")
-        result.append("</table>")
-        labels: Dict[Tuple[Tuple[Perm, ...], bool], str] = {}
-
-        # Put the sets in the tiles
-
-        # How many characters are in a row in the grid
-        row_width = 3 * dim_i + 2
-        curr_label = 1
-        for cell, gridded_perms in sorted(self.cell_basis().items()):
-            obstructions, _ = gridded_perms
-            basis = list(sorted(obstructions))
-            if basis == [Perm((0,))]:
-                continue
-            # the block, is the basis and whether or not positive
-            block = (tuple(basis), cell in self.positive_cells)
-            label = labels.get(block)
-            if label is None:
-                if basis == [Perm((0, 1)), Perm((1, 0))]:
-                    if cell in self.positive_cells:
-                        label = "\u25cf"
-                    else:
-                        label = "\u25cb"
-                elif basis == [Perm((0, 1))]:
-                    label = "\\"
-                elif basis == [Perm((1, 0))]:
-                    label = "/"
-                else:
-                    label = str(curr_label)
-                    curr_label += 1
-                labels[block] = label
-            row_index_from_top = dim_j - cell[1] - 1
-            index = row_index_from_top * row_width + cell[0] * 3 + 3
-            result[index] = label
-
-        # adds background color in cells where parameter happens
-        result = self._handle_html_parameter(result, style)
-        return "".join(result)
+        return TilingDisplayer(self).html()
 
     # -------------------------------------------------------------
     # Properties and getters
@@ -1765,92 +1665,4 @@ class Tiling(CombinatorialClass):
         )
 
     def __str__(self) -> str:
-        # pylint: disable=too-many-locals
-        # pylint: disable=too-many-branches
-        # pylint: disable=too-many-statements
-        dim_i, dim_j = self.dimensions
-        result = []
-        # Create tiling lines
-        for j in range(2 * dim_j + 1):
-            for i in range(2 * dim_i + 1):
-                # Whether or not a vertical line and a horizontal line is
-                # present
-                vertical = i % 2 == 0
-                horizontal = j % 2 == 0
-                if vertical:
-                    if horizontal:
-                        result.append("+")
-                    else:
-                        result.append("|")
-                elif horizontal:
-                    result.append("-")
-                else:
-                    result.append(" ")
-            result.append("\n")
-
-        labels: Dict[Tuple[Tuple[Perm, ...], bool], str] = {}
-
-        # Put the sets in the tiles
-
-        # How many characters are in a row in the grid
-        row_width = 2 * dim_i + 2
-        curr_label = 1
-        for cell, gridded_perms in sorted(self.cell_basis().items()):
-            obstructions, _ = gridded_perms
-            basis = list(sorted(obstructions))
-            if basis == [Perm((0,))]:
-                continue
-            # the block, is the basis and whether or not positive
-            block = (tuple(basis), cell in self.positive_cells)
-            label = labels.get(block)
-            if label is None:
-                if basis == [Perm((0, 1)), Perm((1, 0))]:
-                    if cell in self.positive_cells:
-                        label = "\u25cf"
-                    else:
-                        label = "\u25cb"
-                elif basis == [Perm((0, 1))]:
-                    label = "\\"
-                elif basis == [Perm((1, 0))]:
-                    label = "/"
-                else:
-                    label = str(curr_label)
-                    curr_label += 1
-                labels[block] = label
-            row_index_from_top = dim_j - cell[1] - 1
-            index = (2 * row_index_from_top + 1) * row_width + 2 * cell[0] + 1
-            result[index] = label
-
-        # Legend at bottom
-        for block, label in sorted(labels.items(), key=lambda x: x[1]):
-            basis_el, positive = block
-            result.append(label)
-            result.append(": ")
-            if basis_el == (Perm((0, 1)), Perm((1, 0))) and positive:
-                result.append("point")
-            else:
-                result.append(
-                    f"Av{'+' if positive else ''}"
-                    f"({', '.join(str(p) for p in basis_el)})"
-                )
-            result.append("\n")
-
-        if any(not ob.is_single_cell() for ob in self.obstructions):
-            result.append("Crossing obstructions:\n")
-            for ob in self.obstructions:
-                if not ob.is_single_cell():
-                    result.append(str(ob))
-                    result.append("\n")
-        for i, req in enumerate(self.requirements):
-            result.append(f"Requirement {i}:\n")
-            for r in req:
-                result.append(str(r))
-                result.append("\n")
-        for i, param in enumerate(self.parameters):
-            result.append(f"Parameter {i}:\n")
-            result.append(str(param))
-            result.append("\n")
-        if self.parameters or self.requirements:
-            result = result[:-1]
-
-        return "".join(result)
+        return TilingDisplayer(self).ascii()
