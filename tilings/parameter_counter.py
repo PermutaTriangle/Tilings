@@ -81,6 +81,8 @@ class PreimageCounter:
         self, tiling: "Tiling"
     ) -> Tuple[List[GriddedPerm], List[Tuple[GriddedPerm, ...]]]:
         extra_obs, extra_reqs = [], []
+        if self.tiling == self.tiling.__class__():
+            return ([], [])
         for ob in self.tiling.obstructions:
             if self.map.map_gp(ob) not in tiling.obstructions:
                 extra_obs.append(ob)

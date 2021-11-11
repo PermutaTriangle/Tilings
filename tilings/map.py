@@ -225,6 +225,14 @@ class RowColMap(CellMap):
             }
         )
 
+    @property
+    def row_map(self) -> Dict[int, int]:
+        return self._row_map
+
+    @property
+    def col_map(self) -> Dict[int, int]:
+        return self._col_map
+
     @classmethod
     def identity(cls, dimensions: Tuple[int, int]) -> "RowColMap":
         """
