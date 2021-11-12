@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
+- Bug with sliding symmetries
 
 ### Changed
 - One by one verification will now only verify subclasses of the given basis.
