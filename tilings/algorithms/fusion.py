@@ -129,7 +129,9 @@ class Fusion:
             row_idx = row1
         else:
             col_idx = row1
-        fuse_algo = Fusion(preimage.tiling, row_idx, col_idx, False)
+        fuse_algo = Fusion(
+            preimage.tiling.remove_requirements(), row_idx, col_idx, False
+        )
         fused_tiling = fuse_algo.fused_tiling()
         fused_map = RowColMap(
             {
