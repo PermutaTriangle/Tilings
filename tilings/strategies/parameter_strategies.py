@@ -9,12 +9,13 @@ from comb_spec_searcher.strategies import (
     DisjointUnionStrategy,
     Strategy,
     StrategyFactory,
+    VerificationStrategy,
 )
 from tilings import GriddedPerm, Tiling
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
 
 
-class RemoveIdentityPreimage(Strategy[Tiling, GriddedPerm]):
+class RemoveIdentityPreimageStrategy(Strategy[Tiling, GriddedPerm]):
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
         applied = False
         params: List[List[PreimageCounter]] = []
@@ -89,6 +90,7 @@ class DisjointParameterStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self.strategy = strategy
         self.param_idx = param_idx
         self.preimg_idx = preimg_idx
+        super().__init__()
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
         if (
@@ -162,3 +164,45 @@ class DisjointUnionParameterFactory(StrategyFactory[Tiling]):
     @classmethod
     def from_dict(cls, d: dict) -> "DisjointUnionParameterFactory":
         raise NotImplementedError
+
+
+class ParameterVerificationStrategy(VerificationStrategy[Tiling, GriddedPerm]):
+    """
+    A subclass for when a combinatorial class is equal to the empty set.
+    """
+
+    @staticmethod
+    def random_sample_object_of_size(
+        comb_class: Tiling, n: int, **parameters: int
+    ) -> Tiling:
+        raise NotImplementedError
+
+    @staticmethod
+    def verified(comb_class: Tiling) -> bool:
+        if (
+            comb_class.dimensions != (1, 1)
+            or len(comb_class.parameters) != 1
+            or len(comb_class.parameters[0].counters) != 1
+        ):
+            return False
+        preimage = comb_class.parameters[0].counters[0]
+        extra_obs, extra_reqs = preimage.extra_obs_and_reqs(comb_class)
+        # TODO: check if skew, sum, or point fusion.
+        # TODO: Should child be without params?
+        return not extra_reqs and all(len(ob) < 3 for ob in extra_obs)
+
+    @staticmethod
+    def formal_step() -> str:
+        return "parameter verified"
+
+    @staticmethod
+    def pack(comb_class: Tiling) -> "StrategyPack":
+        raise NotImplementedError
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "ParameterVerificationStrategy":
+        assert not d
+        return cls()
+
+    def __str__(self) -> str:
+        return "parameter verification"
