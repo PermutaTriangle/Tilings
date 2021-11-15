@@ -90,7 +90,7 @@ class DisjointParameterStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self.strategy = strategy
         self.param_idx = param_idx
         self.preimg_idx = preimg_idx
-        super().__init__()
+        super().__init__(ignore_parent=True)
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
         if (
