@@ -160,6 +160,8 @@ class DisjointUnionParameterFactory(StrategyFactory[Tiling]):
                         yield DisjointParameterStrategy(rule.strategy, i, j)
 
     def __str__(self) -> str:
+        if len(self.strategies) == 1:
+            return f"applying '{self.strategies[0]}' to parameters"
         return f"applying '{self.strategies}' to parameters"
 
     def __repr__(self) -> str:
@@ -193,10 +195,15 @@ class ParameterVerificationStrategy(VerificationStrategy[Tiling, GriddedPerm]):
         ):
             return False
         preimage = comb_class.parameters[0].counters[0]
+        if not sum(preimage.tiling.dimensions) == 3:
+            return False
         extra_obs, extra_reqs = preimage.extra_obs_and_reqs(comb_class)
         # TODO: check if skew, sum, or point fusion.
         # TODO: Should child be without params?
-        return not extra_reqs and all(len(ob) < 3 for ob in extra_obs)
+        return not extra_reqs and (
+            all(len(ob) < 3 and not ob.is_single_cell() for ob in extra_obs)
+            or not extra_obs
+        )
 
     @staticmethod
     def formal_step() -> str:
