@@ -19,6 +19,9 @@ from tilings.parameter_counter import ParameterCounter, PreimageCounter
 
 
 class RemoveIdentityPreimageStrategy(Strategy[Tiling, GriddedPerm]):
+    def __init__(self) -> None:
+        super().__init__(ignore_parent=True)
+
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
         applied = False
         params: List[List[PreimageCounter]] = []
