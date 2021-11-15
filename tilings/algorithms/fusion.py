@@ -20,6 +20,10 @@ UninitializedTiling = Tuple[
 
 
 class Fusion:
+    MAX_NUMBER_EXTRA = 1
+    MAX_LENGTH_EXTRA = 2
+    MAX_NUM_PARAMS = 1
+
     def __init__(
         self,
         tiling: "Tiling",
@@ -170,7 +174,17 @@ class Fusion:
         ):
             return False
         obs, reqs, _ = self.unfused_fused_obs_reqs_and_params()
-        return self.tiling == self.tiling.add_obstructions_and_requirements(obs, reqs)
+        if self.tiling == self.tiling.add_obstructions_and_requirements(obs, reqs):
+            ft = self.fused_tiling()
+            if len(ft.parameters) <= self.MAX_NUM_PARAMS:
+                eobs, ereqs = self.extra_obs_and_reqs()
+                if (
+                    not ereqs
+                    and len(eobs) <= self.MAX_NUMBER_EXTRA
+                    and all(len(gp) <= self.MAX_LENGTH_EXTRA for gp in eobs)
+                ):
+                    return True
+        return False
 
     def fused_tiling(self) -> "Tiling":
         """
@@ -188,3 +202,9 @@ class Fusion:
         return ParameterCounter(
             [PreimageCounter(self.tiling.remove_parameters(), self.fuse_map)]
         )
+
+    def extra_obs_and_reqs(
+        self,
+    ) -> Tuple[List[GriddedPerm], List[Tuple[GriddedPerm, ...]]]:
+        ft = self.fused_tiling()
+        return self.new_parameter().counters[0].extra_obs_and_reqs(ft)
