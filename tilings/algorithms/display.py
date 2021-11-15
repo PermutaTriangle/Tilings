@@ -56,10 +56,11 @@ class TilingDisplayer:
 
     def ascii(self) -> str:
         lines = self.grid_lines(self.tiling)
+        param_lines = self.params_lines()
         lines.extend(self.legend())
         lines.extend(self.crossing_obs_lines(self.tiling.obstructions))
         lines.extend(self.req_lines(self.tiling.requirements))
-        lines.extend(self.params_lines())
+        lines.extend(param_lines)
         return "\n".join(lines)
 
     def html(self) -> str:
