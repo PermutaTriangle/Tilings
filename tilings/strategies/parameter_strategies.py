@@ -7,10 +7,13 @@ from comb_spec_searcher.strategies import (
     Constructor,
     DisjointUnion,
     DisjointUnionStrategy,
+    Rule,
     Strategy,
     StrategyFactory,
+    StrategyPack,
     VerificationStrategy,
 )
+from comb_spec_searcher.typing import CSSstrategy
 from tilings import GriddedPerm, Tiling
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
 
@@ -70,7 +73,7 @@ class RemoveIdentityPreimageStrategy(Strategy[Tiling, GriddedPerm]):
         return "remove identity preimages"
 
     @classmethod
-    def from_dict(cls, d: dict) -> "RemoveIdentityPreimage":
+    def from_dict(cls, d: dict) -> "RemoveIdentityPreimageStrategy":
         raise NotImplementedError
 
     def is_reversible(self, comb_class: Tiling) -> bool:
@@ -105,6 +108,7 @@ class DisjointParameterStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 if param_idx == self.param_idx and preimg_idx == self.preimg_idx:
                     t = preimg.tiling
                     rule = self.strategy(t)
+                    assert isinstance(rule, Rule)
                     if not isinstance(rule.constructor, DisjointUnion):
                         raise StrategyDoesNotApply
                     for child in rule.children:
@@ -131,7 +135,10 @@ class DisjointParameterStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return (obj,)
 
     def formal_step(self) -> str:
-        return f"applied '{self.strategy.formal_step()}' to primage {self.preimg_idx} in parameter {self.param_idx}"
+        return (
+            f"applied '{self.strategy.formal_step()}' to primage "
+            f"{self.preimg_idx} in parameter {self.param_idx}"
+        )
 
     @classmethod
     def from_dict(cls, d: dict) -> "DisjointParameterStrategy":
@@ -139,9 +146,9 @@ class DisjointParameterStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
 
 class DisjointUnionParameterFactory(StrategyFactory[Tiling]):
-    def __init__(self, strategies: Iterable[AbstractStrategy], **kwargs):
+    def __init__(self, strategies: Iterable[CSSstrategy]):
         self.strategies = tuple(strategies)
-        super().__init__(**kwargs)
+        super().__init__()
 
     def __call__(self, comb_class: Tiling) -> Iterator[DisjointUnionStrategy]:
         for i, param in enumerate(comb_class.parameters):
@@ -174,7 +181,7 @@ class ParameterVerificationStrategy(VerificationStrategy[Tiling, GriddedPerm]):
     @staticmethod
     def random_sample_object_of_size(
         comb_class: Tiling, n: int, **parameters: int
-    ) -> Tiling:
+    ) -> GriddedPerm:
         raise NotImplementedError
 
     @staticmethod
@@ -196,7 +203,7 @@ class ParameterVerificationStrategy(VerificationStrategy[Tiling, GriddedPerm]):
         return "parameter verified"
 
     @staticmethod
-    def pack(comb_class: Tiling) -> "StrategyPack":
+    def pack(comb_class: Tiling) -> StrategyPack:
         raise NotImplementedError
 
     @classmethod
