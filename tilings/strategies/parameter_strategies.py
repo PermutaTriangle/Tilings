@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
 import sympy
@@ -29,6 +29,7 @@ from comb_spec_searcher.typing import (
 )
 from tilings import GriddedPerm, Tiling
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
+from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 
 
 class RemoveIdentityPreimageConstructor(Constructor):
@@ -66,6 +67,89 @@ class RemoveIdentityPreimageConstructor(Constructor):
             return tuple(
                 param[child_param_idx] + reduction
                 for child_param_idx, reduction in map_data
+            )
+
+        return param_map
+
+    def get_equation(
+        self, lhs_func: sympy.Function, rhs_funcs: Tuple[sympy.Function, ...]
+    ) -> sympy.Eq:
+        raise NotImplementedError
+
+    def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
+        raise NotImplementedError
+
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
+        terms = Counter()
+        # print(subterms[0](n))
+        for param, count in subterms[0](n).items():
+            new_param = self.child_to_parent_map(param)
+            # print(param, count, new_param)
+            terms[new_param] += count
+        return terms
+
+    def get_sub_objects(
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
+        raise NotImplementedError
+
+    def random_sample_sub_objects(
+        self,
+        parent_count: int,
+        subsamplers: SubSamplers,
+        subrecs: SubRecs,
+        n: int,
+        **parameters: int,
+    ) -> Tuple[Optional[GriddedPerm], ...]:
+        raise NotImplementedError
+
+    def equiv(
+        self, other: Constructor, data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
+        raise NotImplementedError
+
+
+class AddIdentityPreimageConstructor(Constructor):
+    def __init__(
+        self,
+        parent: Tiling,
+        child: Tiling,
+        extra_params: Dict[str, str],
+        reduction: Dict[str, int],
+    ):
+        self.child_to_parent_map = self.build_param_map(
+            parent, child, extra_params, reduction
+        )
+
+    def build_param_map(
+        self,
+        parent: Tiling,
+        child: Tiling,
+        extra_params: Dict[str, str],
+        reduction: Dict[str, int],
+    ) -> ParametersMap:
+        reverse_extra_params = {v: k for k, v in extra_params.items()}
+        # reverse_extra_params = defaultdict(list)
+        # for parent_param, child_param in extra_params.items():
+        #     reverse_extra_params[child_param].append(parent_param)
+
+        # List for each index which index to use and how much to shift
+        foo: List[Optional[Tuple[int, int]]] = list(None for _ in child.parameters)
+        for child_param, parent_param in reverse_extra_params.items():
+            child_param_idx = child.parameters.index(child.get_parameter(child_param))
+            parent_param_idx = parent.parameters.index(
+                parent.get_parameter(parent_param)
+            )
+            foo[child_param_idx] = (parent_param_idx, reduction[parent_param])
+        assert all(x is not None for x in foo)
+        map_data: Tuple[Tuple[int, int], ...] = tuple(cast(List[Tuple[int, int]], foo))
+
+        def param_map(param: Parameters) -> Parameters:
+            return tuple(
+                param[parent_param_idx] - reduction
+                for parent_param_idx, reduction in map_data
             )
 
         return param_map
@@ -184,7 +268,16 @@ class RemoveIdentityPreimageStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
-        raise NotImplementedError
+        assert idx == 0
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        child = children[0]
+        return AddIdentityPreimageConstructor(
+            comb_class,
+            child,
+            self.extra_parameter(comb_class, child),
+            self._param_reduction(comb_class),
+        )
 
     def backward_map(
         self,
@@ -238,12 +331,13 @@ class DisjointParameterStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         strategy: DisjointUnionStrategy[Tiling, GriddedPerm],
         param_idx: int,
         preimg_idx: int,
+        ignore_parent: bool = True,
     ):
         assert isinstance(strategy, DisjointUnionStrategy)
         self.strategy = strategy
         self.param_idx = param_idx
         self.preimg_idx = preimg_idx
-        super().__init__(ignore_parent=True)
+        super().__init__(ignore_parent=ignore_parent)
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
         if (
@@ -295,13 +389,13 @@ class DisjointParameterStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         )
         return (extra_params,)
 
-    # def backward_map(
-    #     self,
-    #     comb_class: Tiling,
-    #     objs: Tuple[Optional[GriddedPerm], ...],
-    #     children: Optional[Tuple[Tiling, ...]] = None,
-    # ) -> Iterator[GriddedPerm]:
-    #     return objs[0]
+    def backward_map(
+        self,
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Iterator[GriddedPerm]:
+        return objs[0]
 
     def forward_map(
         self,
@@ -416,3 +510,52 @@ class ParameterVerificationStrategy(VerificationStrategy[Tiling, GriddedPerm]):
 
     def __str__(self) -> str:
         return "parameter verification"
+
+
+class RemoveReqFactory(StrategyFactory[Tiling]):
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
+        for param_idx, param in enumerate(comb_class.parameters):
+            for preimg_idx, preimg in enumerate(param):
+                tiling = preimg.tiling
+                for req_idx, req in enumerate(tiling.requirements):
+                    if (
+                        tuple(sorted((preimg.map.map_gps(req))))
+                        in comb_class.requirements
+                    ):
+                        continue
+                    new_tiling = Tiling(
+                        tiling.obstructions,
+                        tiling.requirements[:req_idx]
+                        + tiling.requirements[req_idx + 1 :],
+                    )
+                    new_preimage = PreimageCounter(new_tiling, preimg.map)
+                    new_param = ParameterCounter(
+                        comb_class.parameters[param_idx].counters[:preimg_idx]
+                        + comb_class.parameters[param_idx].counters[preimg_idx + 1 :]
+                        + (new_preimage,)
+                    )
+                    new_comb_class = comb_class.remove_parameter(param).add_parameter(
+                        new_param
+                    )
+                    param_strategy = RequirementInsertionStrategy(req)
+                    strategy = DisjointParameterStrategy(
+                        param_strategy,
+                        new_comb_class.parameters.index(new_param),
+                        new_param.counters.index(new_preimage),
+                        False,
+                    )
+                    rule = strategy(new_comb_class)
+                    yield rule
+
+    def __str__(self) -> str:
+        return f"Remove reqs from preimages"
+
+    def __repr__(self) -> str:
+        raise NotImplementedError
+
+    def to_jsonable(self) -> dict:
+        raise NotImplementedError
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "DisjointUnionParameterFactory":
+        raise NotImplementedError
