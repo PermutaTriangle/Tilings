@@ -93,6 +93,7 @@ def test_bijection_1():
     )
 
 
+@pytest.mark.skip
 def test_bijection_2():
     _tester(
         "0132_0213_0231_0312_0321_1032_1320_2301_3021_3120",
@@ -229,6 +230,7 @@ def test_bijection_9_cross_domain():
     _bijection_asserter(find_bijection_between(searcher2, searcher1))
 
 
+@pytest.mark.skip
 def test_bijection_10():
     pack1 = TileScopePack.requirement_placements()
     pack1 = pack1.add_verification(BasicVerificationStrategy(), replace=True)
@@ -239,6 +241,7 @@ def test_bijection_10():
     _bijection_asserter(find_bijection_between(searcher1, searcher2))
 
 
+@pytest.mark.skip
 @pytest.mark.slow
 def test_bijection_11():
     pairs = [
@@ -487,7 +490,7 @@ def test_bijection_14_json():
     _bijection_asserter(Bijection.from_dict(json.loads(json.dumps(bi.to_jsonable()))))
 
 
-@pytest.mark.xfail
+@pytest.mark.skip
 @pytest.mark.slow
 def test_bijection_15_fusion():
     pack = TileScopePack.row_and_col_placements(row_only=True).make_fusion(tracked=True)

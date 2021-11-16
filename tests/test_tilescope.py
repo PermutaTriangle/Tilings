@@ -104,7 +104,6 @@ def test_132_321_genf():
     ]
 
 
-@pytest.mark.xfail
 @pytest.mark.timeout(20)
 def test_123():
     searcher = TileScope((Perm((0, 1, 2)),), point_placements_fusion)
