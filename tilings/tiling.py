@@ -624,9 +624,8 @@ class Tiling(CombinatorialClass):
         )
         return tiling
 
-    def remove_parameter(self, parameter: Iterable[ParameterCounter]):
+    def remove_parameter(self, parameter: ParameterCounter):
         """Returns a new tiling with parameter removed."""
-        parameter = tuple(sorted(set(parameter)))
         try:
             idx = self._parameters.index(parameter)
         except ValueError as e:
