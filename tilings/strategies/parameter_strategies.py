@@ -1,4 +1,4 @@
-from typing import Iterable, Iterator, List, Optional, Tuple
+from typing import Iterator, List, Optional, Tuple
 
 from comb_spec_searcher import CombinatorialSpecificationSearcher
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -77,7 +77,15 @@ class RemoveIdentityPreimageStrategy(Strategy[Tiling, GriddedPerm]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "RemoveIdentityPreimageStrategy":
-        raise NotImplementedError
+        return cls()
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d.pop("ignore_parent")
+        d.pop("inferrable")
+        d.pop("possibly_empty")
+        d.pop("workable")
+        return d
 
     def is_reversible(self, comb_class: Tiling) -> bool:
         return True
@@ -92,7 +100,13 @@ class RemoveIdentityPreimageStrategy(Strategy[Tiling, GriddedPerm]):
 
 
 class DisjointParameterStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
-    def __init__(self, strategy: AbstractStrategy, param_idx: int, preimg_idx: int):
+    def __init__(
+        self,
+        strategy: DisjointUnionStrategy[Tiling, GriddedPerm],
+        param_idx: int,
+        preimg_idx: int,
+    ):
+        assert isinstance(strategy, DisjointUnionStrategy)
         self.strategy = strategy
         self.param_idx = param_idx
         self.preimg_idx = preimg_idx
@@ -145,37 +159,48 @@ class DisjointParameterStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "DisjointParameterStrategy":
-        raise NotImplementedError
+        strategy = AbstractStrategy.from_dict(d.pop("strategy"))
+        assert isinstance(strategy, DisjointUnionStrategy)
+        return cls(strategy, **d)
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["strategy"] = self.strategy.to_jsonable()
+        d["param_idx"] = self.param_idx
+        d["preimg_idx"] = self.preimg_idx
+        return d
 
 
 class DisjointUnionParameterFactory(StrategyFactory[Tiling]):
-    def __init__(self, strategies: Iterable[CSSstrategy]):
-        self.strategies = tuple(strategies)
+    def __init__(self, strategy: CSSstrategy):
+        self.strategy = strategy
         super().__init__()
 
     def __call__(self, comb_class: Tiling) -> Iterator[DisjointUnionStrategy]:
         for i, param in enumerate(comb_class.parameters):
             for j, preimage in enumerate(param.counters):
-                for strategy in self.strategies:
-                    for rule in CombinatorialSpecificationSearcher._rules_from_strategy(
-                        preimage.tiling, strategy
-                    ):
-                        yield DisjointParameterStrategy(rule.strategy, i, j)
+                for rule in CombinatorialSpecificationSearcher._rules_from_strategy(
+                    preimage.tiling, self.strategy
+                ):
+                    assert isinstance(rule.strategy, DisjointUnionStrategy)
+                    yield DisjointParameterStrategy(rule.strategy, i, j)
 
     def __str__(self) -> str:
-        if len(self.strategies) == 1:
-            return f"applying '{self.strategies[0]}' to parameters"
-        return f"applying '{self.strategies}' to parameters"
+        return f"applying '{self.strategy}' to parameters"
 
     def __repr__(self) -> str:
-        return f"DisjointUnionParameterFactory({repr(self.strategies)})"
+        return f"DisjointUnionParameterFactory({self.strategy!r})"
 
     def to_jsonable(self) -> dict:
-        raise NotImplementedError
+        d = super().to_jsonable()
+        d["strategy"] = self.strategy.to_jsonable()
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "DisjointUnionParameterFactory":
-        raise NotImplementedError
+        strategy = AbstractStrategy.from_dict(d.pop("strategy"))
+        assert not d
+        return cls(strategy)
 
 
 class ParameterVerificationStrategy(VerificationStrategy[Tiling, GriddedPerm]):
@@ -220,6 +245,11 @@ class ParameterVerificationStrategy(VerificationStrategy[Tiling, GriddedPerm]):
     def from_dict(cls, d: dict) -> "ParameterVerificationStrategy":
         assert not d
         return cls()
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d.pop("ignore_parent")
+        return d
 
     def __str__(self) -> str:
         return "parameter verification"

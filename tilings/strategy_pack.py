@@ -168,7 +168,7 @@ class TileScopePack(StrategyPack):
         pack = self.add_initial(fusion_strat, name, apply_first=apply_first)
         if tracked:
             pack = pack.add_initial(
-                DisjointUnionParameterFactory([strat.FactorInsertionFactory()]),
+                DisjointUnionParameterFactory(strat.FactorInsertionFactory()),
                 apply_first=True,
             )
             pack = pack.add_initial(RemoveIdentityPreimageStrategy(), apply_first=True)
@@ -219,7 +219,7 @@ class TileScopePack(StrategyPack):
                 strat.AddInterleavingAssumptionFactory(unions=unions), apply_first=True
             )
             pack = pack.add_initial(
-                DisjointUnionParameterFactory([strat.FactorInsertionFactory()]),
+                DisjointUnionParameterFactory(strat.FactorInsertionFactory()),
                 apply_first=True,
             )
             pack = pack.add_initial(RemoveIdentityPreimageStrategy(), apply_first=True)
