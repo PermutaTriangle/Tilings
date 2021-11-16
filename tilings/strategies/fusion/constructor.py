@@ -253,28 +253,30 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         min_left, min_right = self.min_points
 
         def add_new_term(
-            params: List[int], value: int, left_points: int, fuse_region_points: int
+            params: List[int], value: int, left_points: int, fuse_region_griddings: int
         ) -> None:
             """Update new terms if there is enough points on the left and right."""
             if (
-                min_left <= left_points
-                and min_right <= fuse_region_points - left_points
-            ):
+                min_left <= fuse_region_griddings - 1
+                and min_right <= fuse_region_griddings - left_points + 1
+            ):  # <- NEW: should be a -1, since 1 gridding implies 0 points in our logic
                 new_terms[tuple(params)] += value
 
         for param, value in subterms[0](n).items():
-            fuse_region_points = param[self.fuse_parameter_index]
+            fuse_region_griddings = param[self.fuse_parameter_index]
             new_params = list(self.children_param_map(param))
             for idx in self.left_parameter_indices:
-                new_params[idx] -= fuse_region_points
-            add_new_term(new_params, value, 0, fuse_region_points)
-            for left_points in range(1, fuse_region_points + 1):
+                new_params[idx] -= fuse_region_griddings
+            # add_new_term(
+            #     new_params, value, 0, fuse_region_points
+            # )  # <- NEW: should start from 1 now??
+            for left_points in range(1, fuse_region_griddings + 1):
                 for idx in self.left_parameter_indices:
                     new_params[idx] += 1
                 for idx in self.right_parameter_indices:
                     new_params[idx] -= 1
 
-                add_new_term(new_params, value, left_points, fuse_region_points)
+                add_new_term(new_params, value, left_points, fuse_region_griddings)
         return new_terms
 
     def determine_number_of_points_in_fuse_region(

@@ -1,7 +1,7 @@
 """
  The implementation of the fusion algorithm
 """
-
+import itertools
 from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
 
 from tilings.griddedperm import GriddedPerm
@@ -201,6 +201,69 @@ class Fusion:
         """
         return ParameterCounter(
             [PreimageCounter(self.tiling.remove_parameters(), self.fuse_map)]
+        )
+
+    def min_left_right_points(self) -> Tuple[int, int]:
+        """Return if the left side is positive, else 0 otherwise."""
+        l, r = 0, 0
+        if self._fuse_row:
+            if all(
+                cell in self.tiling.positive_cells
+                for cell in self.tiling.cells_in_row(self._row_idx)
+            ):
+                l += 1
+            if all(
+                cell in self.tiling.positive_cells
+                for cell in self.tiling.cells_in_row(self._row_idx + 1)
+            ):
+                r += 1
+        else:
+            if all(
+                cell in self.tiling.positive_cells
+                for cell in self.tiling.cells_in_col(self._col_idx)
+            ):
+                l += 1
+            if all(
+                cell in self.tiling.positive_cells
+                for cell in self.tiling.cells_in_col(self._col_idx + 1)
+            ):
+                r += 1
+        return l, r
+
+    def is_left_sided_parameter(self, parameter: ParameterCounter) -> bool:
+        """
+        Return True if active region doesn't overlap the right column/row being fused
+        """
+        if self._fuse_row:
+            return all(
+                y != self._row_idx + 1
+                for _, y in itertools.chain.from_iterable(
+                    parameter.active_regions(self.tiling)
+                )
+            )
+        return all(
+            x != self._col_idx + 1
+            for x, _ in itertools.chain.from_iterable(
+                parameter.active_regions(self.tiling)
+            )
+        )
+
+    def is_right_sided_parameter(self, parameter: ParameterCounter) -> bool:
+        """
+        Return True if active region doesn't overlap the left column/row being fused
+        """
+        if self._fuse_row:
+            return all(
+                y != self._row_idx
+                for _, y in itertools.chain.from_iterable(
+                    parameter.active_regions(self.tiling)
+                )
+            )
+        return all(
+            x != self._col_idx
+            for x, _ in itertools.chain.from_iterable(
+                parameter.active_regions(self.tiling)
+            )
         )
 
     def extra_obs_and_reqs(

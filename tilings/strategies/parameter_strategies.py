@@ -1,4 +1,4 @@
-from typing import Iterator, List, Optional, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
 from comb_spec_searcher import CombinatorialSpecificationSearcher
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -13,7 +13,7 @@ from comb_spec_searcher.strategies import (
     StrategyPack,
     VerificationStrategy,
 )
-from comb_spec_searcher.typing import CSSstrategy
+from comb_spec_searcher.typing import CSSstrategy, Terms
 from tilings import GriddedPerm, Tiling
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
 
@@ -135,6 +135,33 @@ class DisjointParameterStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         t = comb_class.remove_parameters().add_parameters(map(ParameterCounter, params))
         return (t,)
 
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[str, str], ...]:
+        child = children[0]
+        extra_params: Dict[str, str] = {}
+        for i, param in enumerate(comb_class.parameters):
+            if i == self.param_idx:
+                continue
+            extra_params[
+                comb_class.get_parameter_name(param)
+            ] = child.get_parameter_name(param)
+        param = comb_class.parameters[self.param_idx]
+        new_preimages = []
+        for j, preimage in enumerate(param.counters):
+            if j != self.preimg_idx:
+                new_preimages.append(preimage)
+            rule = self.strategy(preimage.tiling)
+            for preimage_child in rule.children:
+                new_preimages.append(
+                    PreimageCounter(preimage_child, preimage.map)
+                )  # TODO: did the preimage map change?
+        new_parameter = ParameterCounter(new_preimages)
+        extra_params[comb_class.get_parameter_name(param)] = child.get_parameter_name(
+            new_parameter
+        )
+        return (extra_params,)
+
     # def backward_map(
     #     self,
     #     comb_class: Tiling,
@@ -232,6 +259,9 @@ class ParameterVerificationStrategy(VerificationStrategy[Tiling, GriddedPerm]):
             all(len(ob) < 3 and not ob.is_single_cell() for ob in extra_obs)
             or not extra_obs
         )
+
+    def get_terms(self, comb_class: Tiling, n: int) -> Terms:
+        return comb_class.get_terms(n)
 
     @staticmethod
     def formal_step() -> str:
