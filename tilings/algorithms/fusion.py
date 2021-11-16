@@ -95,7 +95,7 @@ class Fusion:
                 self.tiling.cells_in_row(self._row_idx + 1)
             )
         else:
-            fuse_region = self.tiling.cells_in_row(self._col_idx).union(
+            fuse_region = self.tiling.cells_in_col(self._col_idx).union(
                 self.tiling.cells_in_col(self._col_idx + 1)
             )
         if preimage.active_region(self.tiling).intersection(fuse_region):
