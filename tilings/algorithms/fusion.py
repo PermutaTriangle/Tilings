@@ -2,7 +2,7 @@
  The implementation of the fusion algorithm
 """
 import itertools
-from typing import TYPE_CHECKING, Iterable, Iterator, List, Optional, Tuple
+from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
 
 from tilings.griddedperm import GriddedPerm
 from tilings.map import RowColMap
@@ -86,9 +86,10 @@ class Fusion:
             for preimage in parameter_counter.counters
         )
 
-    def _active_region_of_preimage_intersects_fuse_region(
-        self, preimage: PreimageCounter
-    ) -> bool:
+    def is_fusable_preimage(self, preimage: PreimageCounter) -> bool:
+        row1, row2 = self.get_preimage_fuse_indices(preimage)
+        if row1 is not None and row2 is not None and row1 + 1 != row2:
+            return False
         if self._fuse_row:
             fuse_region = self.tiling.cells_in_row(self._row_idx).union(
                 self.tiling.cells_in_row(self._row_idx + 1)
@@ -97,49 +98,9 @@ class Fusion:
             fuse_region = self.tiling.cells_in_col(self._col_idx).union(
                 self.tiling.cells_in_col(self._col_idx + 1)
             )
-        return bool(preimage.active_region(self.tiling).intersection(fuse_region))
-
-    def is_fusable_preimage(self, preimage: PreimageCounter) -> bool:
-        row1, row2 = self.get_preimage_fuse_indices(preimage)
-        if row1 is not None and row2 is not None and row1 + 1 != row2:
-            return False
-        if self._active_region_of_preimage_intersects_fuse_region(preimage):
+        if preimage.active_region(self.tiling).intersection(fuse_region):
             return self.fused_preimage(preimage) == self.new_parameter().counters[0]
         return True
-
-    def is_fusable_preimage_jay(self, preimage: PreimageCounter) -> bool:
-        if not self._active_region_of_preimage_intersects_fuse_region(preimage):
-            return True
-        obs: List[GriddedPerm] = []
-        reqs: List[List[GriddedPerm]] = []
-        for rowcolmap in self._unfuse_maps():
-            obs.extend(rowcolmap.preimage_gps(self.tiling.obstructions))
-            for req in self.tiling.requirements:
-                reqs.append(rowcolmap.preimage_gps(req))
-        jays_tiling = self.tiling.__class__(obs, reqs)
-        return preimage.tiling == jays_tiling
-
-    is_fusable_preimage = is_fusable_preimage_jay
-
-    def _unfuse_maps(self) -> Iterator[RowColMap]:
-        if self._fuse_row:
-            num_col, num_row = self.tiling.dimensions
-            col_map = {i: i for i in range(num_col)}
-            num_row += 1
-            for row in (self._row_idx, self._row_idx + 1):
-                row_map = {i: i for i in range(num_row)}
-                for i in range(row + 1, num_row):
-                    row_map[i] = i - 1
-                yield RowColMap(row_map, col_map)
-        else:
-            num_col, num_row = self.tiling.dimensions
-            row_map = {i: i for i in range(num_row)}
-            num_col += 1
-            for col in (self._col_idx, self._col_idx + 1):
-                col_map = {i: i for i in range(num_col)}
-                for i in range(col + 1, num_col):
-                    row_map[i] = i - 1
-                yield RowColMap(row_map, col_map)
 
     def get_preimage_fuse_indices(
         self, preimage: PreimageCounter
@@ -286,13 +247,13 @@ class Fusion:
             return all(
                 y != self._row_idx + 1
                 for _, y in itertools.chain.from_iterable(
-                    parameter.active_regions(self.tiling, True)
+                    parameter.active_regions(self.tiling)
                 )
             )
         return all(
             x != self._col_idx + 1
             for x, _ in itertools.chain.from_iterable(
-                parameter.active_regions(self.tiling, True)
+                parameter.active_regions(self.tiling)
             )
         )
 
@@ -304,13 +265,13 @@ class Fusion:
             return all(
                 y != self._row_idx
                 for _, y in itertools.chain.from_iterable(
-                    parameter.active_regions(self.tiling, True)
+                    parameter.active_regions(self.tiling)
                 )
             )
         return all(
             x != self._col_idx
             for x, _ in itertools.chain.from_iterable(
-                parameter.active_regions(self.tiling, True)
+                parameter.active_regions(self.tiling)
             )
         )
 

@@ -58,7 +58,7 @@ class PreimageCounter:
         self.map = self.map.compose(row_col_map)
         return self
 
-    def active_region(self, tiling: "Tiling", ignore_extra: bool = False) -> Set[Cell]:
+    def active_region(self, tiling: "Tiling") -> Set[Cell]:
         """
         Yield the active region of the preimage counter.
 
@@ -68,8 +68,6 @@ class PreimageCounter:
         for cell in self.tiling.active_cells:
             if sum(1 for _ in self.map.preimage_cell(cell)) > 1:
                 res.add(cell)
-        if ignore_extra:
-            return res
         extra_obs, extra_reqs = self.extra_obs_and_reqs(tiling)
         for gp in itertools.chain(extra_obs, *extra_reqs):
             res.update(gp.pos)
@@ -169,16 +167,14 @@ class ParameterCounter:
             sorted(itertools.filterfalse(PreimageCounter.is_empty, counters))
         )
 
-    def active_regions(
-        self, tiling: "Tiling", ignore_extra: bool = False
-    ) -> Iterator[Set[Cell]]:
+    def active_regions(self, tiling: "Tiling") -> Iterator[Set[Cell]]:
         """
         Yield the active regions of the preimage counters.
 
         The cell are on the underlying tiling.
         """
         for preimage in self:
-            yield preimage.active_region(tiling, ignore_extra=ignore_extra)
+            yield preimage.active_region(tiling)
 
     def sub_param(
         self, cells: Set[Cell], underlying_tiling: "Tiling"
