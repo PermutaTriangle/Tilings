@@ -378,6 +378,7 @@ class DisjointParameterStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         for j, preimage in enumerate(param.counters):
             if j != self.preimg_idx:
                 new_preimages.append(preimage)
+                continue
             rule = self.strategy(preimage.tiling)
             for preimage_child in rule.children:
                 new_preimages.append(
@@ -407,7 +408,7 @@ class DisjointParameterStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     def formal_step(self) -> str:
         return (
-            f"applied '{self.strategy.formal_step()}' to primage "
+            f"applied '{self.strategy.formal_step()}' to preimage "
             f"{self.preimg_idx} in parameter {self.param_idx}"
         )
 
