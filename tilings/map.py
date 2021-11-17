@@ -204,6 +204,9 @@ class CellMap:
             return NotImplemented
         return self._map == other._map
 
+    def __lt__(self, other):
+        return tuple(sorted(self._map.items())) < tuple(sorted(other._map.items()))
+
     def __hash__(self) -> int:
         return hash(tuple(sorted(self._map.items())))
 
