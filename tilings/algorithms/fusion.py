@@ -148,9 +148,20 @@ class Fusion:
         return PreimageCounter(fused_tiling, fused_map)
 
     def fused_param(self, parameter: ParameterCounter) -> ParameterCounter:
-        return ParameterCounter(
-            [self.fused_preimage(preimage) for preimage in parameter.counters]
-        )
+        counters = [self.fused_preimage(preimage) for preimage in parameter.counters]
+        newpreimage = self.new_parameter().counters[0]
+        # The following ensures that the new preimage appears at most once in a
+        # parameter.
+        removed = False
+        while True:
+            try:
+                counters.remove(newpreimage)
+                removed = True
+            except ValueError:
+                break
+        if removed:
+            counters.append(newpreimage)
+        return ParameterCounter(counters)
 
     def unfused_fused_obs_reqs_and_params(self) -> UninitializedTiling:
         """
@@ -172,7 +183,9 @@ class Fusion:
         ):
             return False
         obs, reqs, _ = self.unfused_fused_obs_reqs_and_params()
-        if self.tiling == self.tiling.add_obstructions_and_requirements(obs, reqs):
+        if self.tiling == self.tiling.add_obstructions_and_requirements(
+            obs, reqs
+        ):  # everything is fusable!
             ft = self.fused_tiling()
             if len(ft.parameters) <= self.MAX_NUM_PARAMS:
                 eobs, ereqs = self.extra_obs_and_reqs()
@@ -182,6 +195,9 @@ class Fusion:
                     and all(len(gp) <= self.MAX_LENGTH_EXTRA for gp in eobs)
                 ):
                     return True
+        else:
+            print(self.tiling)
+            assert 0, "it was false"
         return False
 
     def fused_tiling(self) -> "Tiling":

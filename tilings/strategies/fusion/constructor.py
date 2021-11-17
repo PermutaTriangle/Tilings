@@ -129,6 +129,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             for i, k in enumerate(parent.extra_parameters)
             if k in self.right_sided_parameters
         )
+        self.both_parameter_indices = tuple(
+            i
+            for i, k in enumerate(parent.extra_parameters)
+            if k in self.both_sided_parameters
+        )
         self.fuse_parameter_index = child.extra_parameters.index(self.fuse_parameter)
         child_pos_to_parent_pos = tuple(
             index_mapping[idx] for idx in range(len(child.extra_parameters))
@@ -268,6 +273,8 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             for idx in self.left_parameter_indices:
                 new_params[idx] -= fuse_region_griddings
             for idx in self.right_parameter_indices:
+                new_params[idx] += 1
+            for idx in self.both_parameter_indices:
                 new_params[idx] += 1
             # add_new_term(
             #     new_params, value, 0, fuse_region_points
