@@ -138,7 +138,7 @@ class Fusion:
             for col in (self._col_idx, self._col_idx + 1):
                 col_map = {i: i for i in range(num_col)}
                 for i in range(col + 1, num_col):
-                    row_map[i] = i - 1
+                    col_map[i] = i - 1
                 yield RowColMap(row_map, col_map)
 
     def get_preimage_fuse_indices(
