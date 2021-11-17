@@ -183,9 +183,7 @@ class Fusion:
         ):
             return False
         obs, reqs, _ = self.unfused_fused_obs_reqs_and_params()
-        if self.tiling == self.tiling.add_obstructions_and_requirements(
-            obs, reqs
-        ):  # everything is fusable!
+        if self.tiling == self.tiling.add_obstructions_and_requirements(obs, reqs):
             ft = self.fused_tiling()
             if len(ft.parameters) <= self.MAX_NUM_PARAMS:
                 eobs, ereqs = self.extra_obs_and_reqs()
@@ -195,9 +193,6 @@ class Fusion:
                     and all(len(gp) <= self.MAX_LENGTH_EXTRA for gp in eobs)
                 ):
                     return True
-        else:
-            print(self.tiling)
-            assert 0, "it was false"
         return False
 
     def fused_tiling(self) -> "Tiling":
