@@ -214,30 +214,30 @@ class Fusion:
 
     def min_left_right_points(self) -> Tuple[int, int]:
         """Return if the left side is positive, else 0 otherwise."""
-        l, r = 0, 0
+        left, right = 0, 0
         if self._fuse_row:
             if all(
                 cell in self.tiling.positive_cells
                 for cell in self.tiling.cells_in_row(self._row_idx)
             ):
-                l += 1
+                left += 1
             if all(
                 cell in self.tiling.positive_cells
                 for cell in self.tiling.cells_in_row(self._row_idx + 1)
             ):
-                r += 1
+                right += 1
         else:
             if all(
                 cell in self.tiling.positive_cells
                 for cell in self.tiling.cells_in_col(self._col_idx)
             ):
-                l += 1
+                left += 1
             if all(
                 cell in self.tiling.positive_cells
                 for cell in self.tiling.cells_in_col(self._col_idx + 1)
             ):
-                r += 1
-        return l, r
+                right += 1
+        return left, right
 
     def is_left_sided_parameter(self, parameter: ParameterCounter) -> bool:
         """
