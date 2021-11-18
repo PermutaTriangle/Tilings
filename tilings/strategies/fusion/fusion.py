@@ -251,7 +251,10 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             _,
             _,
             mapped_parameters,
-        ) = algo.fused_obs_reqs_and_params()  # TODO: apply child forward map?
+        ) = algo.fused_obs_reqs_and_params()
+        mapped_parameters = tuple(
+            param.apply_row_col_map(child.forward_map) for param in mapped_parameters
+        )
         return (
             {
                 k: child.get_parameter_name(param)
