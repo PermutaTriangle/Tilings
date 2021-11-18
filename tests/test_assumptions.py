@@ -7,8 +7,6 @@ import pytest
 from comb_spec_searcher import CombinatorialSpecification
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import Factor
-from tilings.assumptions import TrackingAssumption
 from tilings.map import RowColMap
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
 from tilings.strategy_pack import TileScopePack
