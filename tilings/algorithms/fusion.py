@@ -215,6 +215,11 @@ class Fusion:
         """
         Return True if tiling is fusable.
         """
+        if (self._fuse_row and self._row_idx > self.tiling.dimensions[1] - 2) or (
+            not self._fuse_row and self._col_idx > self.tiling.dimensions[0] - 2
+        ):
+            # Cannot fuse if the row or column index is too big.
+            return False
         if any(
             not self.is_fusable_param(parameter) for parameter in self.tiling.parameters
         ):
