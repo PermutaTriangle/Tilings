@@ -1,6 +1,7 @@
 """
  The implementation of the fusion algorithm
 """
+import functools
 import itertools
 from typing import TYPE_CHECKING, Iterable, Iterator, List, Optional, Tuple
 
@@ -100,26 +101,23 @@ class Fusion:
         return bool(preimage.active_region(self.tiling).intersection(fuse_region))
 
     def is_fusable_preimage(self, preimage: PreimageCounter) -> bool:
-        row1, row2 = self.get_preimage_fuse_indices(preimage)
-        if row1 is not None and row2 is not None and row1 + 1 != row2:
-            return False
-        if self._active_region_of_preimage_intersects_fuse_region(preimage):
-            return self.fused_preimage(preimage) == self.new_parameter().counters[0]
-        return True
-
-    def is_fusable_preimage_jay(self, preimage: PreimageCounter) -> bool:
         if not self._active_region_of_preimage_intersects_fuse_region(preimage):
             return True
+        return preimage.tiling == self.allowed_preimage
+
+    @functools.cached_property
+    def allowed_preimage(self) -> Tiling:
         obs: List[GriddedPerm] = []
         reqs: List[List[GriddedPerm]] = []
-        for rowcolmap in self._unfuse_maps():
+        unfuse_map = list(self._unfuse_maps())
+        for rowcolmap in unfuse_map:
             obs.extend(rowcolmap.preimage_gps(self.tiling.obstructions))
-            for req in self.tiling.requirements:
-                reqs.append(rowcolmap.preimage_gps(req))
-        jays_tiling = self.tiling.__class__(obs, reqs)
-        return preimage.tiling == jays_tiling
-
-    is_fusable_preimage = is_fusable_preimage_jay
+        for req in self.tiling.requirements:
+            new_req = list()
+            for rowcolmap in unfuse_map:
+                new_req.extend(list(rowcolmap.preimage_gps(req)))
+            reqs.append(new_req)
+        return self.tiling.__class__(obs, reqs)
 
     def _unfuse_maps(self) -> Iterator[RowColMap]:
         if self._fuse_row:
