@@ -564,6 +564,6 @@ class RemoveReqFactory(StrategyFactory[Tiling]):
         raise NotImplementedError
 
     @classmethod
-    def from_dict(cls, d: dict) -> "DisjointUnionParameterFactory":
+    def from_dict(cls, d: dict) -> "RemoveReqFactory":
         assert not d
         return cls()

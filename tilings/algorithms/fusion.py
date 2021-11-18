@@ -59,7 +59,7 @@ class Fusion:
                 col_map[i] = i - 1
         return RowColMap(row_map, col_map)
 
-    def _fuse_gps(self, gps: Iterable["GriddedPerm"]):
+    def _fuse_gps(self, gps: Iterable["GriddedPerm"]) -> List[GriddedPerm]:
         return self.upward_closure(self.fuse_map.map_gps(gps))
 
     @staticmethod
@@ -80,7 +80,7 @@ class Fusion:
             tuple(self.fused_param(param) for param in self.tiling.parameters),
         )
 
-    def is_fusable_param(self, parameter_counter: ParameterCounter):
+    def is_fusable_param(self, parameter_counter: ParameterCounter) -> bool:
         return all(
             self.is_fusable_preimage(preimage)
             for preimage in parameter_counter.counters
@@ -174,7 +174,7 @@ class Fusion:
             tuple(),
         )
 
-    def fusable(self):
+    def fusable(self) -> bool:
         """
         Return True if tiling is fusable.
         """
@@ -204,7 +204,7 @@ class Fusion:
             params += (self.new_parameter(),)
         return self.tiling.__class__(obs, reqs, params)
 
-    def new_parameter(self):
+    def new_parameter(self) -> ParameterCounter:
         """
         Return the parameter needed in order to count the fusion.
         """

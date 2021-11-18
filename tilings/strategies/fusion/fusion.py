@@ -172,12 +172,9 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
 
     def is_reversible(self, comb_class: Tiling) -> bool:
         algo = self.fusion_algorithm(comb_class)
-        new_ass = algo.new_assumption()
-        fused_assumptions = (
-            ass.__class__(gps)
-            for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
-        )
-        return new_ass in fused_assumptions
+        new_param = algo.new_parameter()
+        fused_params = map(algo.fused_param, comb_class.parameters)
+        return new_param in fused_params
 
     @staticmethod
     def shifts(
@@ -311,12 +308,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         """
         if children is None:
             children = self.decomposition_function(comb_class)
-        gp = objs[0]
-        assert gp is not None
-        gp = children[0].backward_map.map_gp(gp)
-        yield from self.fusion_algorithm(comb_class).unfuse_gridded_perm(
-            gp, left_points
-        )
+        raise NotImplementedError
 
     def forward_map(
         self,
@@ -330,8 +322,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         """
         if children is None:
             children = self.decomposition_function(comb_class)
-        fused_gp = self.fusion_algorithm(comb_class).fuse_gridded_perm(obj)
-        return (children[0].forward_map.map_gp(fused_gp),)
+        raise NotImplementedError
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
