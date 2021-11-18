@@ -106,14 +106,14 @@ class Fusion:
         return preimage.tiling == self.allowed_preimage
 
     @functools.cached_property
-    def allowed_preimage(self) -> Tiling:
+    def allowed_preimage(self) -> "Tiling":
         obs: List[GriddedPerm] = []
         reqs: List[List[GriddedPerm]] = []
         unfuse_map = list(self._unfuse_maps())
         for rowcolmap in unfuse_map:
             obs.extend(rowcolmap.preimage_gps(self.tiling.obstructions))
         for req in self.tiling.requirements:
-            new_req = list()
+            new_req = []
             for rowcolmap in unfuse_map:
                 new_req.extend(list(rowcolmap.preimage_gps(req)))
             reqs.append(new_req)
