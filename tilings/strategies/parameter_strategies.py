@@ -563,9 +563,7 @@ class RemoveReqFactory(StrategyFactory[Tiling]):
     def __repr__(self) -> str:
         raise NotImplementedError
 
-    def to_jsonable(self) -> dict:
-        raise NotImplementedError
-
     @classmethod
     def from_dict(cls, d: dict) -> "DisjointUnionParameterFactory":
-        raise NotImplementedError
+        assert not d
+        return cls()
