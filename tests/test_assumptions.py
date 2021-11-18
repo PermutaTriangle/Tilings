@@ -9,8 +9,8 @@ from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.map import RowColMap
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
-from tilings.strategy_pack import TileScopePack
 from tilings.strategies.fusion import FusionStrategy
+from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
 
 
