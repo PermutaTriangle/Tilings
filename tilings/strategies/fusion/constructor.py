@@ -276,9 +276,6 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 new_params[idx] += 1
             for idx in self.both_parameter_indices:
                 new_params[idx] += 1
-            # add_new_term(
-            #     new_params, value, 0, fuse_region_points
-            # )  # <- NEW: should start from 1 now??
             for left_points in range(1, fuse_region_griddings + 1):
                 for idx in self.left_parameter_indices:
                     new_params[idx] += 1
