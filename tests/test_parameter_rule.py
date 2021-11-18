@@ -4,7 +4,7 @@ from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
 from tilings.map import RowColMap
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
-from tilings.strategies.fusion import FusionStrategy, FusionFactory
+from tilings.strategies.fusion import FusionFactory, FusionStrategy
 
 
 def test_counting_fusion_rule():
