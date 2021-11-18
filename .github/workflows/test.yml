@@ -22,7 +22,6 @@ jobs:
             toxenv: black
             os: ubuntu-latest
 
-            os: ubuntu-latest
           - python: 3.8
             toxenv: py38
             os: ubuntu-latest
