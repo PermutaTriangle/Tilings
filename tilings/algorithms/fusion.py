@@ -20,8 +20,8 @@ UninitializedTiling = Tuple[
 
 
 class Fusion:
-    MAX_NUMBER_EXTRA = 1
-    MAX_LENGTH_EXTRA = 2
+    MAX_NUMBER_EXTRA = 0
+    MAX_LENGTH_EXTRA = 0
     MAX_NUM_PARAMS = 1
 
     def __init__(
