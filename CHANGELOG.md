@@ -7,10 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
+- Bug with sliding symmetries
 
 ### Changed
 - One by one verification will now only verify subclasses of the given basis.
 - Verification strategies no longer ignore parent
+
+### Deprecated
+- Python 3.7 is no longer supported
 
 ## [3.0.0] - 2021-06-14
 ### Added
