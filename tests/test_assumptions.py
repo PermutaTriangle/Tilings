@@ -10,6 +10,7 @@ from tilings import GriddedPerm, Tiling
 from tilings.map import RowColMap
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
 from tilings.strategy_pack import TileScopePack
+from tilings.strategies.fusion import FusionStrategy
 from tilings.tilescope import TileScope
 
 
@@ -196,6 +197,77 @@ def test_123_fusion():
         477638700,
         1767263190,
     ]
+
+
+@pytest.mark.timeout(90)
+def test_123_ppfusion():
+    pack = TileScopePack.point_placements().make_fusion(tracked=True)
+    pack.ver_strats = pack.ver_strats[:1]
+    css = TileScope("123", pack)
+    spec = css.auto_search(status_update=30)
+    assert isinstance(spec, CombinatorialSpecification)
+    spec = spec.expand_verified()
+    assert [spec.count_objects_of_size(i) for i in range(20)] == [
+        1,
+        1,
+        2,
+        5,
+        14,
+        42,
+        132,
+        429,
+        1430,
+        4862,
+        16796,
+        58786,
+        208012,
+        742900,
+        2674440,
+        9694845,
+        35357670,
+        129644790,
+        477638700,
+        1767263190,
+    ]
+    rule = FusionStrategy(row_idx=0, col_idx=None, tracked=True)(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                GriddedPerm((0, 1), ((1, 1), (1, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (0, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (1, 1))),
+                GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 1))),
+                GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (1, 1))),
+            ),
+            requirements=(),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                                    GriddedPerm((0, 1), ((0, 0), (0, 1))),
+                                    GriddedPerm((0, 1), ((0, 1), (0, 1))),
+                                    GriddedPerm((0, 1), ((1, 2), (1, 2))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 2), (0, 2))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 2), (1, 2))),
+                                    GriddedPerm((0, 1, 2), ((0, 1), (0, 2), (0, 2))),
+                                    GriddedPerm((0, 1, 2), ((0, 1), (0, 2), (1, 2))),
+                                    GriddedPerm((0, 1, 2), ((0, 2), (0, 2), (0, 2))),
+                                    GriddedPerm((0, 1, 2), ((0, 2), (0, 2), (1, 2))),
+                                ),
+                                requirements=(),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0, 1: 0, 2: 1}, {0: 0, 1: 1}),
+                        ),
+                    )
+                ),
+            ),
+        )
+    )
+    assert str(rule) in map(str, spec)
 
 
 @pytest.mark.xfail
