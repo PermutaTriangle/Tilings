@@ -16,6 +16,7 @@ from tilings.strategies.parameter_strategies import (
     DisjointUnionParameterFactory,
     ParameterVerificationStrategy,
     RemoveIdentityPreimageStrategy,
+    RemoveReqFactory,
 )
 from tilings.strategies.verification import BasisAwareVerificationStrategy
 
@@ -171,6 +172,7 @@ class TileScopePack(StrategyPack):
                 DisjointUnionParameterFactory(strat.FactorInsertionFactory()),
                 apply_first=True,
             )
+            pack = pack.add_initial(RemoveReqFactory(), apply_first=True)
             pack = pack.add_initial(RemoveIdentityPreimageStrategy(), apply_first=True)
             pack = pack.add_verification(ParameterVerificationStrategy())
         return pack
@@ -222,6 +224,7 @@ class TileScopePack(StrategyPack):
                 DisjointUnionParameterFactory(strat.FactorInsertionFactory()),
                 apply_first=True,
             )
+            pack = pack.add_initial(RemoveReqFactory(), apply_first=True)
             pack = pack.add_initial(RemoveIdentityPreimageStrategy(), apply_first=True)
             pack = pack.add_verification(ParameterVerificationStrategy())
         return pack

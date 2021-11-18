@@ -1,3 +1,4 @@
+import itertools
 from collections import defaultdict
 from itertools import chain, combinations
 from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set, Tuple
@@ -177,7 +178,16 @@ class Factor:
         """
         Returns `True` if the tiling has more than one factor.
         """
-        return len(self.get_components()) > 1
+        return (
+            all(
+                active_region
+                for active_region in itertools.chain.from_iterable(
+                    param.active_regions(self._tiling)
+                    for param in self._tiling.parameters
+                )
+            )  # ensures that each preimage is mapped to a unique child
+            and len(self.get_components()) > 1
+        )
 
     def factor(self, component: Set[Cell]) -> "Tiling":
         """

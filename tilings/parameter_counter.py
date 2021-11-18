@@ -131,16 +131,14 @@ class PreimageCounter:
         if not isinstance(other, PreimageCounter):
             return NotImplemented
         key_self = (
-            self.__class__.__name__,
             self.tiling.obstructions,
             self.tiling.requirements,
             self.map,
         )
         key_other = (
-            other.__class__.__name__,
             other.tiling.obstructions,
             other.tiling.requirements,
-            self.map,
+            other.map,
         )
         return key_self < key_other
 

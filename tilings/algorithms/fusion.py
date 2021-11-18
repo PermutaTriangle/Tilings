@@ -1,7 +1,7 @@
 """
  The implementation of the fusion algorithm
 """
-
+import itertools
 from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
 
 from tilings.griddedperm import GriddedPerm
@@ -20,8 +20,8 @@ UninitializedTiling = Tuple[
 
 
 class Fusion:
-    MAX_NUMBER_EXTRA = 1
-    MAX_LENGTH_EXTRA = 2
+    MAX_NUMBER_EXTRA = 0
+    MAX_LENGTH_EXTRA = 0
     MAX_NUM_PARAMS = 1
 
     def __init__(
@@ -59,7 +59,7 @@ class Fusion:
                 col_map[i] = i - 1
         return RowColMap(row_map, col_map)
 
-    def _fuse_gps(self, gps: Iterable["GriddedPerm"]):
+    def _fuse_gps(self, gps: Iterable["GriddedPerm"]) -> List[GriddedPerm]:
         return self.upward_closure(self.fuse_map.map_gps(gps))
 
     @staticmethod
@@ -80,7 +80,7 @@ class Fusion:
             tuple(self.fused_param(param) for param in self.tiling.parameters),
         )
 
-    def is_fusable_param(self, parameter_counter: ParameterCounter):
+    def is_fusable_param(self, parameter_counter: ParameterCounter) -> bool:
         return all(
             self.is_fusable_preimage(preimage)
             for preimage in parameter_counter.counters
@@ -95,7 +95,7 @@ class Fusion:
                 self.tiling.cells_in_row(self._row_idx + 1)
             )
         else:
-            fuse_region = self.tiling.cells_in_row(self._col_idx).union(
+            fuse_region = self.tiling.cells_in_col(self._col_idx).union(
                 self.tiling.cells_in_col(self._col_idx + 1)
             )
         if preimage.active_region(self.tiling).intersection(fuse_region):
@@ -133,9 +133,7 @@ class Fusion:
             row_idx = row1
         else:
             col_idx = row1
-        fuse_algo = Fusion(
-            preimage.tiling.remove_requirements(), row_idx, col_idx, False
-        )
+        fuse_algo = Fusion(preimage.tiling, row_idx, col_idx, False)
         fused_tiling = fuse_algo.fused_tiling()
         fused_map = RowColMap(
             {
@@ -150,9 +148,20 @@ class Fusion:
         return PreimageCounter(fused_tiling, fused_map)
 
     def fused_param(self, parameter: ParameterCounter) -> ParameterCounter:
-        return ParameterCounter(
-            [self.fused_preimage(preimage) for preimage in parameter.counters]
-        )
+        counters = [self.fused_preimage(preimage) for preimage in parameter.counters]
+        newpreimage = self.new_parameter().counters[0]
+        # The following ensures that the new preimage appears at most once in a
+        # parameter.
+        removed = False
+        while True:
+            try:
+                counters.remove(newpreimage)
+                removed = True
+            except ValueError:
+                break
+        if removed:
+            counters.append(newpreimage)
+        return ParameterCounter(counters)
 
     def unfused_fused_obs_reqs_and_params(self) -> UninitializedTiling:
         """
@@ -165,7 +174,7 @@ class Fusion:
             tuple(),
         )
 
-    def fusable(self):
+    def fusable(self) -> bool:
         """
         Return True if tiling is fusable.
         """
@@ -195,12 +204,75 @@ class Fusion:
             params += (self.new_parameter(),)
         return self.tiling.__class__(obs, reqs, params)
 
-    def new_parameter(self):
+    def new_parameter(self) -> ParameterCounter:
         """
         Return the parameter needed in order to count the fusion.
         """
         return ParameterCounter(
             [PreimageCounter(self.tiling.remove_parameters(), self.fuse_map)]
+        )
+
+    def min_left_right_points(self) -> Tuple[int, int]:
+        """Return if the left side is positive, else 0 otherwise."""
+        left, right = 0, 0
+        if self._fuse_row:
+            if all(
+                cell in self.tiling.positive_cells
+                for cell in self.tiling.cells_in_row(self._row_idx)
+            ):
+                left += 1
+            if all(
+                cell in self.tiling.positive_cells
+                for cell in self.tiling.cells_in_row(self._row_idx + 1)
+            ):
+                right += 1
+        else:
+            if all(
+                cell in self.tiling.positive_cells
+                for cell in self.tiling.cells_in_col(self._col_idx)
+            ):
+                left += 1
+            if all(
+                cell in self.tiling.positive_cells
+                for cell in self.tiling.cells_in_col(self._col_idx + 1)
+            ):
+                right += 1
+        return left, right
+
+    def is_left_sided_parameter(self, parameter: ParameterCounter) -> bool:
+        """
+        Return True if active region doesn't overlap the right column/row being fused
+        """
+        if self._fuse_row:
+            return all(
+                y != self._row_idx + 1
+                for _, y in itertools.chain.from_iterable(
+                    parameter.active_regions(self.tiling)
+                )
+            )
+        return all(
+            x != self._col_idx + 1
+            for x, _ in itertools.chain.from_iterable(
+                parameter.active_regions(self.tiling)
+            )
+        )
+
+    def is_right_sided_parameter(self, parameter: ParameterCounter) -> bool:
+        """
+        Return True if active region doesn't overlap the left column/row being fused
+        """
+        if self._fuse_row:
+            return all(
+                y != self._row_idx
+                for _, y in itertools.chain.from_iterable(
+                    parameter.active_regions(self.tiling)
+                )
+            )
+        return all(
+            x != self._col_idx
+            for x, _ in itertools.chain.from_iterable(
+                parameter.active_regions(self.tiling)
+            )
         )
 
     def extra_obs_and_reqs(
