@@ -1,10 +1,10 @@
 import pytest
 
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
 from tilings.map import RowColMap
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
 from tilings.strategies.fusion import FusionStrategy
-from comb_spec_searcher.exception import StrategyDoesNotApply
 
 
 def test_counting_fusion_rule():
