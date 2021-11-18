@@ -4,7 +4,7 @@ from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
 from tilings.map import RowColMap
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
-from tilings.strategies.fusion import FusionStrategy
+from tilings.strategies.fusion import FusionFactory, FusionStrategy
 
 
 def test_counting_fusion_rule():
@@ -88,3 +88,37 @@ def test_fusion():
     strategy = FusionStrategy(col_idx=0, tracked=True)
     with pytest.raises(StrategyDoesNotApply):
         strategy(t)
+
+
+def test_positive_fusion():
+    t = Tiling(
+        obstructions=(
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (0, 1))),
+            GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 1))),
+        ),
+        requirements=((GriddedPerm((0,), ((0, 0),)),),),
+        parameters=(),
+    )
+    strategy = FusionStrategy(row_idx=0, tracked=True)
+    rule = strategy(t)
+    for n in range(5):
+        rule._sanity_check_count(n)
+
+
+def test_col_fuse_with_empty():
+    t = Tiling(
+        obstructions=(
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (0, 1))),
+            GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 1))),
+        ),
+        requirements=((GriddedPerm((0,), ((0, 0),)),),),
+        parameters=(),
+    )
+    strategy = FusionStrategy(col_idx=1, tracked=True)
+    with pytest.raises(StrategyDoesNotApply):
+        strategy(t)
+
+    factory = FusionFactory()
+    assert sum(1 for _ in factory(t)) == 1
