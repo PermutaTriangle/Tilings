@@ -493,7 +493,7 @@ class ParameterVerificationStrategy(VerificationStrategy[Tiling, GriddedPerm]):
         extra_obs, extra_reqs = preimage.extra_obs_and_reqs(comb_class)
         # TODO: check if skew, sum, or point fusion.
         # TODO: Should child be without params?
-        return not extra_reqs and (
+        return all(len(gp) < 2 for req in extra_reqs for gp in req) and (
             all(len(ob) < 3 and not ob.is_single_cell() for ob in extra_obs)
             or not extra_obs
         )
