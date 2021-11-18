@@ -20,8 +20,8 @@ UninitializedTiling = Tuple[
 
 
 class Fusion:
-    MAX_NUMBER_EXTRA = 0
-    MAX_LENGTH_EXTRA = 0
+    MAX_NUMBER_EXTRA = 2
+    MAX_LENGTH_EXTRA = 2
     MAX_NUM_PARAMS = 1
 
     def __init__(
@@ -247,13 +247,13 @@ class Fusion:
             return all(
                 y != self._row_idx + 1
                 for _, y in itertools.chain.from_iterable(
-                    parameter.active_regions(self.tiling)
+                    parameter.active_regions(self.tiling, True)
                 )
             )
         return all(
             x != self._col_idx + 1
             for x, _ in itertools.chain.from_iterable(
-                parameter.active_regions(self.tiling)
+                parameter.active_regions(self.tiling, True)
             )
         )
 
@@ -265,13 +265,13 @@ class Fusion:
             return all(
                 y != self._row_idx
                 for _, y in itertools.chain.from_iterable(
-                    parameter.active_regions(self.tiling)
+                    parameter.active_regions(self.tiling, True)
                 )
             )
         return all(
             x != self._col_idx
             for x, _ in itertools.chain.from_iterable(
-                parameter.active_regions(self.tiling)
+                parameter.active_regions(self.tiling, True)
             )
         )
 
