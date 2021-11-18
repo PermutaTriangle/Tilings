@@ -383,7 +383,7 @@ def forest_expansion():
     ]
 
 
-@pytest.mark.xfail
+@pytest.mark.skip(reason="seems to run forever")
 def test_guided_searcher():
     tilescope = TileScope(
         "123", TileScopePack.point_placements().make_fusion(tracked=False)
