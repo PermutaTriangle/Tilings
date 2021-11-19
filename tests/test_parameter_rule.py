@@ -177,3 +177,64 @@ def test_remove_req_identity():
     )
     with pytest.raises(StopIteration):
         next(RemoveReqFactory()(t))
+
+
+def test_remove_req_factory():
+    t = Tiling(
+        obstructions=(GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),),
+        requirements=((GriddedPerm((0,), ((0, 0),)),),),
+        parameters=(
+            ParameterCounter(
+                (
+                    PreimageCounter(
+                        Tiling(
+                            obstructions=(
+                                GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                            ),
+                            requirements=((GriddedPerm((0,), ((1, 0),)),),),
+                            parameters=(),
+                        ),
+                        RowColMap({0: 0}, {0: 0, 1: 0}),
+                    ),
+                )
+            ),
+        ),
+    )
+    strat = RemoveReqFactory()
+    assert sum(1 for _ in strat(t)) == 1
+    assert next(strat(t)).children == (
+        Tiling(
+            obstructions=(GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),),
+            requirements=((GriddedPerm((0,), ((0, 0),)),),),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1), ((1, 0), (1, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+                                ),
+                                requirements=((GriddedPerm((0,), ((1, 0),)),),),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0}, {0: 0, 1: 0}),
+                        ),
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+                                ),
+                                requirements=((GriddedPerm((0,), ((0, 0),)),),),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0}, {0: 0}),
+                        ),
+                    )
+                ),
+            ),
+        ),
+    )
