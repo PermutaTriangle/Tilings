@@ -202,6 +202,10 @@ def test_123_fusion():
 @pytest.mark.timeout(90)
 def test_123_ppfusion():
     pack = TileScopePack.point_placements().make_fusion(tracked=True)
+    strat = pack.expansion_strats[0][1]
+    assert strat.__class__.__name__ == "PatternPlacementFactory"
+    strat.dirs = (0, 3)
+    pack.initial_strats
     pack.ver_strats = pack.ver_strats[:1]
     css = TileScope("123", pack)
     spec = css.auto_search(status_update=30)
@@ -229,45 +233,10 @@ def test_123_ppfusion():
         477638700,
         1767263190,
     ]
-    rule = FusionStrategy(row_idx=0, col_idx=None, tracked=True)(
-        Tiling(
-            obstructions=(
-                GriddedPerm((0, 1), ((0, 0), (0, 0))),
-                GriddedPerm((0, 1), ((1, 1), (1, 1))),
-                GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (0, 1))),
-                GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (1, 1))),
-                GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 1))),
-                GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (1, 1))),
-            ),
-            requirements=(),
-            parameters=(
-                ParameterCounter(
-                    (
-                        PreimageCounter(
-                            Tiling(
-                                obstructions=(
-                                    GriddedPerm((0, 1), ((0, 0), (0, 0))),
-                                    GriddedPerm((0, 1), ((0, 0), (0, 1))),
-                                    GriddedPerm((0, 1), ((0, 1), (0, 1))),
-                                    GriddedPerm((0, 1), ((1, 2), (1, 2))),
-                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 2), (0, 2))),
-                                    GriddedPerm((0, 1, 2), ((0, 0), (0, 2), (1, 2))),
-                                    GriddedPerm((0, 1, 2), ((0, 1), (0, 2), (0, 2))),
-                                    GriddedPerm((0, 1, 2), ((0, 1), (0, 2), (1, 2))),
-                                    GriddedPerm((0, 1, 2), ((0, 2), (0, 2), (0, 2))),
-                                    GriddedPerm((0, 1, 2), ((0, 2), (0, 2), (1, 2))),
-                                ),
-                                requirements=(),
-                                parameters=(),
-                            ),
-                            RowColMap({0: 0, 1: 0, 2: 1}, {0: 0, 1: 1}),
-                        ),
-                    )
-                ),
-            ),
-        )
+    assert any(
+        "fuse" in rule.formal_step and rule.comb_class.dimensions == (2, 2)
+        for rule in spec
     )
-    assert str(rule) in map(str, spec)
 
 
 @pytest.mark.xfail
