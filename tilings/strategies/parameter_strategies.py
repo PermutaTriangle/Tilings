@@ -548,14 +548,19 @@ class RemoveReqFactory(StrategyFactory[Tiling]):
                         new_param
                     )
                     param_strategy = RequirementInsertionStrategy(req)
-                    strategy = DisjointParameterStrategy(
-                        param_strategy,
-                        new_comb_class.parameters.index(new_param),
-                        new_param.counters.index(new_preimage),
-                        False,
-                    )
-                    rule = strategy(new_comb_class)
-                    yield rule
+                    if any(
+                        child == comb_class.remove_parameters()
+                        and PreimageCounter(child, preimg.map).map.is_identity()
+                        for child in param_strategy(new_tiling).children
+                    ):
+                        strategy = DisjointParameterStrategy(
+                            param_strategy,
+                            new_comb_class.parameters.index(new_param),
+                            new_param.counters.index(new_preimage),
+                            False,
+                        )
+                        rule = strategy(new_comb_class)
+                        yield rule
 
     def __str__(self) -> str:
         return "Remove requirements from preimages"

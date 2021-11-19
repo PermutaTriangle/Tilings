@@ -198,6 +198,46 @@ def test_123_fusion():
     ]
 
 
+@pytest.mark.timeout(90)
+def test_123_ppfusion():
+    pack = TileScopePack.point_placements().make_fusion(tracked=True)
+    strat = pack.expansion_strats[0][1]
+    assert strat.__class__.__name__ == "PatternPlacementFactory"
+    strat.dirs = (0, 3)
+    pack.initial_strats
+    pack.ver_strats = pack.ver_strats[:1]
+    css = TileScope("123", pack)
+    spec = css.auto_search(status_update=30)
+    assert isinstance(spec, CombinatorialSpecification)
+    spec = spec.expand_verified()
+    assert [spec.count_objects_of_size(i) for i in range(20)] == [
+        1,
+        1,
+        2,
+        5,
+        14,
+        42,
+        132,
+        429,
+        1430,
+        4862,
+        16796,
+        58786,
+        208012,
+        742900,
+        2674440,
+        9694845,
+        35357670,
+        129644790,
+        477638700,
+        1767263190,
+    ]
+    assert any(
+        "fuse" in rule.formal_step and rule.comb_class.dimensions == (2, 2)
+        for rule in spec
+    )
+
+
 @pytest.mark.xfail
 @pytest.mark.timeout(90)
 def test_123_fusion_generate_and_sample():
