@@ -22,8 +22,14 @@ UninitializedTiling = Tuple[
 
 class Fusion:
     MAX_NUMBER_EXTRA = 2
+    MAX_NUMBER_EXTRA_LOCAL = 2
+    MAX_NUMBER_EXTRA_CROSSING = 2
+    MAX_NUMBER_EXTRA_LEAVING = 2
     MAX_LENGTH_EXTRA = 2
-    MAX_NUM_PARAMS = 1
+    MAX_LENGTH_EXTRA_LOCAL = 2
+    MAX_LENGTH_EXTRA_CROSSING = 2
+    MAX_LENGTH_EXTRA_LEAVING = 2
+    MAX_NUM_PARAMS = 2
 
     def __init__(
         self,
@@ -225,17 +231,49 @@ class Fusion:
         ):
             return False
         obs, reqs, _ = self.unfused_fused_obs_reqs_and_params()
-        if self.tiling == self.tiling.add_obstructions_and_requirements(obs, reqs):
-            ft = self.fused_tiling()
-            if len(ft.parameters) <= self.MAX_NUM_PARAMS:
-                eobs, ereqs = self.extra_obs_and_reqs()
-                if (
-                    not ereqs
-                    and len(eobs) <= self.MAX_NUMBER_EXTRA
-                    and all(len(gp) <= self.MAX_LENGTH_EXTRA for gp in eobs)
-                ):
-                    return True
-        return False
+        unfused_fused_tiling = (
+            self.tiling.remove_parameters().add_obstructions_and_requirements(obs, reqs)
+        )
+        return (
+            self.tiling.remove_parameters() == unfused_fused_tiling
+            and self._check_fusion_restriction()
+        )
+
+    def _check_fusion_restriction(self) -> bool:
+        ft = self.fused_tiling()
+        if len(ft.parameters) > self.MAX_NUM_PARAMS:
+            return False
+        eobs, ereqs = self.extra_obs_and_reqs()
+        eobs_local = frozenset(filter(GriddedPerm.is_localized, eobs))
+        eobs_crossing = frozenset(filter(self._is_crossing, eobs))
+        eobs_leaving = frozenset(
+            gp for gp in eobs if gp not in eobs_local and gp not in eobs_crossing
+        )
+        return (
+            not ereqs
+            and len(eobs) <= self.MAX_NUMBER_EXTRA
+            and len(eobs_local) <= self.MAX_NUMBER_EXTRA_LOCAL
+            and len(eobs_crossing) <= self.MAX_NUMBER_EXTRA_CROSSING
+            and len(eobs_leaving) <= self.MAX_NUMBER_EXTRA_LEAVING
+            and max(map(len, eobs), default=0) <= self.MAX_LENGTH_EXTRA
+            and max(map(len, eobs_local), default=0) <= self.MAX_LENGTH_EXTRA_LOCAL
+            and max(map(len, eobs_crossing), default=0)
+            <= self.MAX_LENGTH_EXTRA_CROSSING
+            and max(map(len, eobs_leaving), default=0) <= self.MAX_LENGTH_EXTRA_LEAVING
+        )
+
+    def _is_crossing(self, gp: GriddedPerm) -> bool:
+        """
+        Check if the gridded permutation is not localized but stays only in the fuse
+        region.
+        """
+        if self._fuse_row:
+            rows = (cell[1] for cell in gp.pos)
+            good_rows = (self._row_idx, self._row_idx + 1)
+        else:
+            rows = (cell[0] for cell in gp.pos)
+            good_rows = (self._col_idx, self._col_idx + 1)
+        return not gp.is_localized() and all(r in good_rows for r in rows)
 
     def fused_tiling(self) -> "Tiling":
         """
