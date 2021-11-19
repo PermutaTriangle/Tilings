@@ -620,7 +620,7 @@ class Tiling(CombinatorialClass):
             remove_empty_rows_and_cols=False,
             derive_empty=False,
             simplify=False,
-            sorted_input=True,
+            sorted_input=False,
         )
         return tiling
 
