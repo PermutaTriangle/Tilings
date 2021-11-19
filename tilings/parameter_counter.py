@@ -58,6 +58,17 @@ class PreimageCounter:
         self.map = self.map.compose(row_col_map)
         return self
 
+    def always_counts_one(self, underlying: "Tiling") -> bool:
+        """
+        Returns True if the number of preimage of a gridded perm on underlying
+        is always 1.
+        """
+        return (
+            self.map.is_identity()
+            and self.tiling.obstructions == underlying.obstructions
+            and self.tiling.requirements == underlying.requirements
+        )
+
     def active_region(self, tiling: "Tiling", ignore_extra: bool = False) -> Set[Cell]:
         """
         Yield the active region of the preimage counter.
