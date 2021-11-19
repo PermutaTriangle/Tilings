@@ -227,10 +227,7 @@ class RemoveIdentityPreimageStrategy(Strategy[Tiling, GriddedPerm]):
         preimgs = (
             preimg
             for preimg in param.counters
-            if not (
-                preimg.map.is_identity()
-                and preimg.tiling == comb_class.remove_parameters()
-            )
+            if not preimg.always_counts_one(comb_class)
         )
         return ParameterCounter(preimgs)
 
@@ -549,8 +546,7 @@ class RemoveReqFactory(StrategyFactory[Tiling]):
                     )
                     param_strategy = RequirementInsertionStrategy(req)
                     if any(
-                        child == comb_class.remove_parameters()
-                        and PreimageCounter(child, preimg.map).map.is_identity()
+                        PreimageCounter(child, preimg.map).always_counts_one(comb_class)
                         for child in param_strategy(new_tiling).children
                     ):
                         strategy = DisjointParameterStrategy(
