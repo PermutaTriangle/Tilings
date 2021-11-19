@@ -525,15 +525,24 @@ class RemoveReqFactory(StrategyFactory[Tiling]):
         for param_idx, param in enumerate(comb_class.parameters):
             for preimg_idx, preimg in enumerate(param):
                 for req_idx, req in enumerate(preimg.tiling.requirements):
+                    image_req = tuple(sorted(preimg.map.map_gps(req)))
+                    preimage_image_req = tuple(
+                        sorted(preimg.map.preimage_gps(image_req))
+                    )
                     if (
-                        tuple(sorted((preimg.map.map_gps(req))))
-                        in comb_class.requirements
+                        image_req in comb_class.requirements
+                        and preimage_image_req == req
                     ):
                         continue
                     new_tiling = Tiling(
                         preimg.tiling.obstructions,
                         preimg.tiling.requirements[:req_idx]
-                        + preimg.tiling.requirements[req_idx + 1 :],
+                        + preimg.tiling.requirements[req_idx + 1 :]
+                        + (
+                            (preimage_image_req,)
+                            if preimage_image_req != req
+                            else tuple()
+                        ),
                     )
                     new_preimage = PreimageCounter(new_tiling, preimg.map)
                     new_param = ParameterCounter(
@@ -549,14 +558,12 @@ class RemoveReqFactory(StrategyFactory[Tiling]):
                         PreimageCounter(child, preimg.map).always_counts_one(comb_class)
                         for child in param_strategy(new_tiling).children
                     ):
-                        strategy = DisjointParameterStrategy(
+                        yield DisjointParameterStrategy(
                             param_strategy,
                             new_comb_class.parameters.index(new_param),
                             new_param.counters.index(new_preimage),
                             False,
-                        )
-                        rule = strategy(new_comb_class)
-                        yield rule
+                        )(new_comb_class)
 
     def __str__(self) -> str:
         return "Remove requirements from preimages"
