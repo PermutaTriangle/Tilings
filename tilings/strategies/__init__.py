@@ -1,4 +1,3 @@
-from .assumption_insertion import AddInterleavingParameterFactory, AddParameterFactory
 from .assumption_splitting import SplittingStrategy
 from .detect_components import DetectComponentsStrategy
 from .experimental_verification import (
@@ -13,6 +12,7 @@ from .obstruction_inferral import (
     ObstructionTransitivityFactory,
     SubobstructionInferralFactory,
 )
+from .parameter_insertion import AddInterleavingParameterFactory, AddParameterFactory
 from .parameter_strategies import (
     DisjointUnionParameterFactory,
     ParameterVerificationStrategy,

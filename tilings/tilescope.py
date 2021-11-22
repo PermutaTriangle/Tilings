@@ -17,7 +17,7 @@ from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.strategies import AddParameterFactory, RearrangeAssumptionFactory
-from tilings.strategies.assumption_insertion import AddParametersStrategy
+from tilings.strategies.parameter_insertion import AddParametersStrategy
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategy_pack import TileScopePack
 
