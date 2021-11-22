@@ -12,12 +12,6 @@ from comb_spec_searcher.strategies import (
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import strategies as strat
-from tilings.strategies.parameter_strategies import (
-    DisjointUnionParameterFactory,
-    ParameterVerificationStrategy,
-    RemoveIdentityPreimageStrategy,
-    RemoveReqFactory,
-)
 from tilings.strategies.verification import BasisAwareVerificationStrategy
 
 if TYPE_CHECKING:
@@ -169,12 +163,15 @@ class TileScopePack(StrategyPack):
         pack = self.add_initial(fusion_strat, name, apply_first=apply_first)
         if tracked:
             pack = pack.add_initial(
-                DisjointUnionParameterFactory(strat.FactorInsertionFactory()),
+                strat.DisjointUnionParameterFactory(strat.FactorInsertionFactory()),
                 apply_first=True,
             )
-            pack = pack.add_initial(RemoveReqFactory(), apply_first=True)
-            pack = pack.add_initial(RemoveIdentityPreimageStrategy(), apply_first=True)
-            pack = pack.add_verification(ParameterVerificationStrategy())
+            pack = pack.add_initial(strat.RemoveReqFactory(), apply_first=True)
+            pack = pack.add_initial(
+                strat.RemoveIdentityPreimageStrategy(), apply_first=True
+            )
+            pack = pack.add_initial(strat.AddParameterFactory(), apply_first=True)
+            pack = pack.add_verification(strat.ParameterVerificationStrategy())
         return pack
 
     def make_interleaving(
@@ -218,15 +215,18 @@ class TileScopePack(StrategyPack):
 
         if tracked:
             pack = pack.add_initial(
-                strat.AddInterleavingAssumptionFactory(unions=unions), apply_first=True
+                strat.AddInterleavingParameterFactory(unions=unions), apply_first=True
             )
             pack = pack.add_initial(
-                DisjointUnionParameterFactory(strat.FactorInsertionFactory()),
+                strat.DisjointUnionParameterFactory(strat.FactorInsertionFactory()),
                 apply_first=True,
             )
-            pack = pack.add_initial(RemoveReqFactory(), apply_first=True)
-            pack = pack.add_initial(RemoveIdentityPreimageStrategy(), apply_first=True)
-            pack = pack.add_verification(ParameterVerificationStrategy())
+            pack = pack.add_initial(strat.RemoveReqFactory(), apply_first=True)
+            pack = pack.add_initial(
+                strat.RemoveIdentityPreimageStrategy(), apply_first=True
+            )
+            pack = pack.add_initial(strat.AddParameterFactory(), apply_first=True)
+            pack = pack.add_verification(strat.ParameterVerificationStrategy())
         return pack
 
     def make_elementary(self) -> "TileScopePack":

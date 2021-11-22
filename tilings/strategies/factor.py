@@ -27,9 +27,9 @@ from tilings.algorithms import (
     FactorWithInterleaving,
     FactorWithMonotoneInterleaving,
 )
-from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
 from tilings.misc import multinomial, partitions_iterator
+from tilings.parameter_counter import ParameterCounter
 
 Cell = Tuple[int, int]
 
@@ -154,7 +154,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         return cls(partition=partition, **d)
 
 
-# The following functions are used to determine assumptions needed to count the
+# The following functions are used to determine parameters needed to count the
 # interleavings of a factor. They are also used by AddInterleavingAssumptionStrategy.
 
 
@@ -177,22 +177,22 @@ def interleaving_rows_and_cols(
     return cols, rows
 
 
-def assumptions_to_add(
+def parameters_to_add(
     cells: Tuple[Cell, ...], cols: Set[int], rows: Set[int]
-) -> Tuple[TrackingAssumption, ...]:
+) -> Tuple[ParameterCounter, ...]:
     """
-    Return the assumptions that should be tracked in the set of cells if we are
+    Return the parameters that should be tracked in the set of cells if we are
     interleaving the given rows and cols.
     """
     raise NotImplementedError("Don't know what to do with the preimage")
 
 
-def contains_interleaving_assumptions(
+def contains_interleaving_parameters(
     comb_class: Tiling, partition: Tuple[Tuple[Cell, ...], ...]
 ) -> bool:
     """
     Return True if the parent tiling contains all of the necessary tracking
-    assumptions needed to count the interleavings, and therefore the
+    parameters needed to count the interleavings, and therefore the
     children too.
     """
     raise NotImplementedError("Don't know what to do with the preimage")
@@ -378,11 +378,11 @@ class FactorFactory(StrategyFactory[Tiling]):
                     components = tuple(
                         tuple(chain.from_iterable(part)) for part in partition
                     )
-                    if not self.tracked or contains_interleaving_assumptions(
+                    if not self.tracked or contains_interleaving_parameters(
                         comb_class, components
                     ):
                         yield self._build_strategy(components, workable=False)
-            if not self.tracked or contains_interleaving_assumptions(
+            if not self.tracked or contains_interleaving_parameters(
                 comb_class, min_comp
             ):
                 yield self._build_strategy(min_comp, workable=self.workable)

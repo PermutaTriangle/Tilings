@@ -16,12 +16,12 @@ from comb_spec_searcher.strategies.strategy import EmptyStrategy
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
-from tilings.strategies import AddAssumptionFactory, RearrangeAssumptionFactory
-from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
+from tilings.strategies import AddParameterFactory, RearrangeAssumptionFactory
+from tilings.strategies.assumption_insertion import AddParametersStrategy
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategy_pack import TileScopePack
 
-__all__ = ("TileScope", "TileScopePack", "LimitedAssumptionTileScope", "GuidedSearcher")
+__all__ = ("TileScope", "TileScopePack", "LimitedParameterTileScope", "GuidedSearcher")
 
 
 class TileScope(CombinatorialSpecificationSearcher):
@@ -73,21 +73,21 @@ class TileScope(CombinatorialSpecificationSearcher):
         )
 
 
-class LimitedAssumptionTileScope(TileScope):
+class LimitedParameterTileScope(TileScope):
     """
     A subclass of Tilescope that allows a limit to be set on the maximum number of
-    assumptions that appear on any tiling in the universe.
+    parameters that appear on any tiling in the universe.
     """
 
     def __init__(
         self,
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
-        max_assumptions: int,
+        max_parameters: int,
         **kwargs,
     ) -> None:
         super().__init__(start_class, strategy_pack, **kwargs)
-        self.max_assumptions = max_assumptions
+        self.max_parameters = max_parameters
 
     def _expand(
         self,
@@ -98,7 +98,7 @@ class LimitedAssumptionTileScope(TileScope):
     ) -> None:
         """
         Will expand the combinatorial class with given label using the given
-        strategies, but only add rules whose children all satisfy the max_assumptions
+        strategies, but only add rules whose children all satisfy the max_parameters
         requirement.
         """
         if inferral:
@@ -109,7 +109,7 @@ class LimitedAssumptionTileScope(TileScope):
                     comb_class, strategy_generator, label
                 ):
                     if all(
-                        len(child.assumptions) <= self.max_assumptions
+                        len(child.parameters) <= self.max_parameters
                         for child in rule.children
                     ):
                         self.add_rule(start_label, end_labels, rule)
@@ -159,17 +159,17 @@ class GuidedSearcher(TileScope):
         return cls.from_spec(spec, pack)
 
 
-class TrackedSearcher(LimitedAssumptionTileScope):
+class TrackedSearcher(LimitedParameterTileScope):
     """
     A TileScope that only adds underlying tilings to the queue, but expands all
-    assumption tilings with the strategies that apply to the underlying tiling
+    parameter tilings with the strategies that apply to the underlying tiling
     immediately.
     """
 
     def __init__(self, *args, **kwargs):
         self.tilings_from_underlying: DefaultDict[int, Set[int]] = defaultdict(set)
         self.tracking_strategies = [
-            AddAssumptionFactory(),
+            AddParameterFactory(),
             RearrangeAssumptionFactory(),
         ]
         self.tracked_expanded: Set[int] = set()
@@ -193,18 +193,16 @@ class TrackedSearcher(LimitedAssumptionTileScope):
         - try to verify children combinatorial classes
         - set workability of combinatorial classes
         - symmetry expand combinatorial classes
-        - add underlying class to classqueue, and do the expansion for any assumption
+        - add underlying class to classqueue, and do the expansion for any parameter
         tilings with same underlying tiling
         """
         for comb_class, child_label in zip(rule.children, end_labels):
             underlying_tiling = (
-                comb_class.remove_assumptions()
-                if comb_class.assumptions
-                else comb_class
+                comb_class.remove_parameters() if comb_class.parameters else comb_class
             )
             underlying_label = (
                 self.classdb.get_label(underlying_tiling)
-                if comb_class.assumptions
+                if comb_class.parameters
                 else child_label
             )
             if underlying_label != child_label:
@@ -225,7 +223,7 @@ class TrackedSearcher(LimitedAssumptionTileScope):
                 )
                 self._expand(comb_class, child_label, old_strategies, False)
             # apply tracking strategies
-            if comb_class.assumptions and child_label not in self.tracked_expanded:
+            if comb_class.parameters and child_label not in self.tracked_expanded:
                 self.tracked_expanded.add(child_label)
                 self._expand(comb_class, child_label, self.tracking_strategies, False)
             if not rule.inferrable:
@@ -246,12 +244,12 @@ class TrackedSearcher(LimitedAssumptionTileScope):
         self.ruledb.add(start_label, end_labels, rule)
         if not isinstance(
             rule.strategy,
-            (RearrangeAssumptionStrategy, AddAssumptionsStrategy),
+            (RearrangeAssumptionStrategy, AddParametersStrategy),
         ):
             self.store_strategy(start_label, rule.strategy)
             for label in list(self.tilings_from_underlying[start_label]):
-                assumption_tiling = self.classdb.get_class(label)
-                self._expand(assumption_tiling, label, (rule.strategy,), False)
+                parameter_tiling = self.classdb.get_class(label)
+                self._expand(parameter_tiling, label, (rule.strategy,), False)
 
 
 class ForgetTrackedSearcher(TrackedSearcher):
@@ -292,7 +290,7 @@ class ForgetTrackedSearcher(TrackedSearcher):
         initial: bool = False,
     ) -> Iterator[Tuple[int, Tuple[int, ...], AbstractRule]]:
         if not comb_class.parameters and not isinstance(
-            strategy_generator, (AddAssumptionFactory, RearrangeAssumptionFactory)
+            strategy_generator, (AddParameterFactory, RearrangeAssumptionFactory)
         ):
             idx = self.strategies.index(strategy_generator)
             assert isinstance(label, int)
