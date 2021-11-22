@@ -1,4 +1,4 @@
-from .assumption_insertion import AddAssumptionFactory, AddInterleavingAssumptionFactory
+from .assumption_insertion import AddInterleavingParameterFactory, AddParameterFactory
 from .assumption_splitting import SplittingStrategy
 from .detect_components import DetectComponentsStrategy
 from .experimental_verification import (
@@ -12,6 +12,12 @@ from .obstruction_inferral import (
     ObstructionInferralFactory,
     ObstructionTransitivityFactory,
     SubobstructionInferralFactory,
+)
+from .parameter_strategies import (
+    DisjointUnionParameterFactory,
+    ParameterVerificationStrategy,
+    RemoveIdentityPreimageStrategy,
+    RemoveReqFactory,
 )
 from .rearrange_assumption import RearrangeAssumptionFactory
 from .requirement_insertion import (
@@ -43,11 +49,15 @@ from .verification import (
 )
 
 __all__ = [
-    # Assumptions
-    "AddAssumptionFactory",
-    "AddInterleavingAssumptionFactory",
+    # Parameters
+    "AddInterleavingParameterFactory",
+    "AddParameterFactory",
     "DetectComponentsStrategy",
+    "DisjointUnionParameterFactory",
+    "ParameterVerificationStrategy",
     "RearrangeAssumptionFactory",
+    "RemoveIdentityPreimageStrategy",
+    "RemoveReqFactory",
     "SplittingStrategy",
     # Batch
     "CellInsertionFactory",
