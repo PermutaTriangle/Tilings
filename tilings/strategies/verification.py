@@ -166,7 +166,7 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
         )
 
     def verified(self, comb_class: Tiling) -> bool:
-        if not comb_class.dimensions == (1, 1):
+        if not comb_class.dimensions == (1, 1) or comb_class.parameters:
             return False
         if not self.basis:
             return True
@@ -345,6 +345,7 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
     def verified(self, comb_class: Tiling):
         return (
             not comb_class.dimensions == (1, 1)
+            and not comb_class.parameters
             and self._locally_factorable_obstructions(comb_class)
             and self._locally_factorable_requirements(comb_class)
         )
@@ -407,7 +408,11 @@ class ElementaryVerificationStrategy(LocallyFactorableVerificationStrategy):
 
     @staticmethod
     def verified(comb_class: Tiling):
-        return comb_class.fully_isolated() and not comb_class.dimensions == (1, 1)
+        return (
+            not comb_class.parameters
+            and comb_class.fully_isolated()
+            and not comb_class.dimensions == (1, 1)
+        )
 
     @staticmethod
     def formal_step() -> str:
@@ -457,6 +462,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
     def verified(self, comb_class: Tiling) -> bool:
         return (
             comb_class.dimensions != (1, 1)
+            and not comb_class.parameters
             and (not self.no_factors or len(comb_class.find_factors()) == 1)
             and LocalEnumeration(comb_class).verified()
         )
@@ -610,7 +616,9 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
 
     def verified(self, comb_class: Tiling) -> bool:
         return (
-            not self.no_factors or len(comb_class.find_factors()) == 1
+            not comb_class.parameters
+            and not self.no_factors
+            or len(comb_class.find_factors()) == 1
         ) and MonotoneTreeEnumeration(comb_class).verified()
 
     @staticmethod
