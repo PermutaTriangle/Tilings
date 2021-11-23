@@ -114,6 +114,7 @@ class GriddedPermReduction:
     ) -> Tuple[Requirement, ...]:
         algos: Tuple[Callable, ...] = (
             GriddedPermReduction.factored_reqs,
+            self.remove_redundant,
             self.cleaned_requirements,
             partial(self.remove_avoided, obstructions=obstructions),
         )
@@ -123,6 +124,28 @@ class GriddedPermReduction:
             if any(not r for r in minimized_requirements):
                 return (tuple(),)
         return tuple(minimized_requirements)
+
+    def remove_redundant(self, requirements: List[Requirement]) -> List[Requirement]:
+        relevant_reqs: List[Requirement] = []
+        for idx, requirement in enumerate(requirements):
+            if not all(requirement):
+                continue
+            if self._requirement_implied_by_some_requirement(
+                requirement,
+                chain(
+                    islice(requirements, idx),
+                    [
+                        gps
+                        for gps in islice(requirements, idx + 1, None)
+                        if gps != requirement
+                    ],
+                ),
+            ):
+                # we only keep requirements which are not implies by other
+                # requirements
+                continue
+            relevant_reqs.append(requirement)
+        return relevant_reqs
 
     # If all of the gp's in a requirment list contain the same factor, you can remove
     # that factor from all of them and add it as it's own size one requirement list
@@ -178,8 +201,6 @@ class GriddedPermReduction:
         implied by another requirement.
         """
         for idx, requirement in enumerate(requirements):
-            if not all(requirement):
-                continue
             newgps: List[GriddedPerm] = []
             for gp in requirement:
                 cells: List[Cell] = []
@@ -254,6 +275,31 @@ class GriddedPermReduction:
                 griddedperm, requirement
             )
             for requirement in requirements
+        )
+
+    def _requirement_implied_by_some_requirement(
+        self,
+        requirement: Requirement,
+        requirements: Iterable[Requirement],
+    ) -> bool:
+        """
+        Return True if one of the requirements implies the containment of requirement.
+        """
+        return any(
+            self._requirement_implied_by_requirement(requirement, req)
+            for req in requirements
+        )
+
+    @staticmethod
+    def _requirement_implied_by_requirement(
+        requirement: Requirement, other_requirement: Requirement
+    ) -> bool:
+        """
+        Return True if the containment of other implies a containment of requirement.
+        """
+        return all(
+            any(other_gp.contains(gp) for gp in requirement)
+            for other_gp in other_requirement
         )
 
     @staticmethod
