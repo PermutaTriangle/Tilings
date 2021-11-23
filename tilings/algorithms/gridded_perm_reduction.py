@@ -190,9 +190,6 @@ class GriddedPermReduction:
     # if a gridded perm G in a requirment has a factor that appears in EVERY gridded
     # perm of some other requirement, then that factor can be removed from G
     # [subrequirement inferral]
-    # NOTE: This handles the following case:
-    #   requirement R2 makes requirement R1 redundant if:
-    #   For all G in R2, there exists H in R1 such that H <= G
     def cleaned_requirements(
         self, requirements: List[Requirement]
     ) -> List[Requirement]:
