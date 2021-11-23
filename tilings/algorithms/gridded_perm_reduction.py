@@ -134,11 +134,11 @@ class GriddedPermReduction:
                 requirement,
                 chain(
                     islice(requirements, idx),
-                    [
+                    (
                         gps
                         for gps in islice(requirements, idx + 1, None)
                         if gps != requirement
-                    ],
+                    ),
                 ),
             ):
                 # we only keep requirements which are not implies by other
