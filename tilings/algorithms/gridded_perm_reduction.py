@@ -97,23 +97,32 @@ class GriddedPermReduction:
             else GriddedPermReduction._minimize(self._obstructions)
         )
 
-        def changed_obs_by_gp(gp: GriddedPerm) -> Set[GriddedPerm]:
+        def changed_obs_by_gp(
+            gp: GriddedPerm, obs_to_check: Tuple[GriddedPerm, ...]
+        ) -> Set[GriddedPerm]:
             changed_obs = set()
-            for ob in min_perms:
+            for ob in obs_to_check:
                 cleaned_perm = self._clean_isolated(ob, gp)
                 if cleaned_perm != ob:
                     changed_obs.add(cleaned_perm)
             return changed_obs
 
         all_changed = set()
-        for requirement in self._requirements:
-            if requirement:
-                changed_obs = changed_obs_by_gp(requirement[0])
-                for gp in requirement[1:]:
-                    if not changed_obs:
-                        break
-                    changed_obs.intersection_update(changed_obs_by_gp(gp))
-                all_changed.update(changed_obs)
+        obs_to_check = min_perms
+        while obs_to_check:
+            new_obs_to_check: Set[GriddedPerm] = set()
+            for requirement in self._requirements:
+                if requirement:
+                    changed_obs = changed_obs_by_gp(requirement[0], obs_to_check)
+                    for gp in requirement[1:]:
+                        if not changed_obs:
+                            break
+                        changed_obs.intersection_update(
+                            changed_obs_by_gp(gp, obs_to_check)
+                        )
+                    all_changed.update(changed_obs)
+                    new_obs_to_check.update(changed_obs)
+            obs_to_check = tuple(new_obs_to_check)
         if not all_changed:
             return min_perms
 
