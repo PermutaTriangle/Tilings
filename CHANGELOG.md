@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added 
+- The tiling initialiser will now add factors of obstructions if it is implied by 
+multiple different obs and one requirement list of size possibly greater than one. 
+Previously it was only doing the case where a single ob's factor is implied by a 
+requirement.
+
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
 - Bug with sliding symmetries
@@ -13,10 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - One by one verification will now only verify subclasses of the given basis.
 - Verification strategies no longer ignore parent
-- The tiling initialiser will now add factors of obstructions if it is implied by 
-multiple different obs and one requirement list of size possibly greater than one. 
-Previously it was only do the case where a single ob's factor is implied by a 
-requirement.
+
 
 ### Deprecated
 - Python 3.7 is no longer supported
