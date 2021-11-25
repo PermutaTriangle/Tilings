@@ -276,7 +276,7 @@ class TrackedQueue(CSSQueue):
             f"{len(queue.working):,d}" for queue in self.queues[:-1]
         )
         table.append(working)
-        for idx in range(len(self.pack.expansion_strats) + 1):
+        for idx in range(len(self.pack.expansion_strats)):
             current = (f"current (set {idx+1})",) + tuple(
                 f"{len(queue.curr_level[idx]):,d}" for queue in self.queues[:-1]
             )
