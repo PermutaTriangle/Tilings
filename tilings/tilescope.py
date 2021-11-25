@@ -1,7 +1,6 @@
-from collections import Counter, defaultdict
+from collections import Counter
 from typing import Counter as CounterType
 from typing import (
-    DefaultDict,
     Deque,
     Dict,
     Iterable,
@@ -11,6 +10,7 @@ from typing import (
     Set,
     Tuple,
     Union,
+    cast,
 )
 
 import requests
@@ -22,17 +22,10 @@ from comb_spec_searcher import (
     CombinatorialSpecificationSearcher,
 )
 from comb_spec_searcher.class_queue import CSSQueue, DefaultQueue, WorkPacket
-from comb_spec_searcher.rule_db import RuleDBForgetStrategy
 from comb_spec_searcher.rule_db.abstract import RuleDBAbstract
-from comb_spec_searcher.strategies import AbstractStrategy
-from comb_spec_searcher.strategies.rule import AbstractRule
-from comb_spec_searcher.strategies.strategy import EmptyStrategy
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
-from tilings.strategies import AddAssumptionFactory, RearrangeAssumptionFactory
-from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
-from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategy_pack import TileScopePack
 
 __all__ = ("TileScope", "TileScopePack", "LimitedAssumptionTileScope", "GuidedSearcher")
@@ -185,18 +178,24 @@ class TrackedSearcher(LimitedAssumptionTileScope):
             start_class, strategy_pack, max_assumptions=max_assumptions, **kwargs
         )
         # reset to the trackedqueue!
-        self.classqueue = TrackedQueue(strategy_pack, self)
+        self.classqueue = cast(
+            DefaultQueue, TrackedQueue(strategy_pack, self)
+        )  # TODO: make CSS accept a CSSQueue as a kwarg
         self.classqueue.add(self.start_label)
 
 
 class TrackedDefaultQueue(DefaultQueue):
-    def __init__(self, pack: TileScopePack, all_queues: "TrackedQueue"):
+    def __init__(self, pack: TileScopePack):
         super().__init__(pack)
         self.next_curr_level: Optional[Tuple[Deque[int], ...]] = None
-        self.all_queues = all_queues
 
     def set_next_curr_level(self, other: "TrackedDefaultQueue"):
         self.next_curr_level = other.curr_level
+
+    def set_tracked_queue(self, tracked_queue: "TrackedQueue") -> None:
+        self._inferral_expanded = tracked_queue.inferral_expanded
+        self._initial_expanded = tracked_queue.initial_expanded
+        self.ignore = tracked_queue.ignore
 
     def _change_level(self) -> None:
         assert not self.staging, "Can't change level is staging is not empty"
@@ -218,13 +217,11 @@ class TrackedQueue(CSSQueue):
         self.label_to_underlying: Dict[int, int] = {}
 
         self._level_first_found: Dict[int, int] = {}
-        self._inferral_expanded: Set[int] = set()
-        self._initial_expanded: Set[int] = set()
+        self.inferral_expanded: Set[int] = set()
+        self.initial_expanded: Set[int] = set()
         self.ignore: Set[int] = set()
-        first_queue = TrackedDefaultQueue(pack, self)
-        first_queue._inferral_expanded = self._inferral_expanded
-        first_queue._initial_expanded = self._initial_expanded
-        first_queue.ignore = self.ignore
+        first_queue = TrackedDefaultQueue(pack)
+        first_queue.set_tracked_queue(self)
         self.queues = [first_queue]
         self.add_new_queue()
 
@@ -232,10 +229,8 @@ class TrackedQueue(CSSQueue):
 
     def add_new_queue(self) -> None:
         last_queue = self.queues[-1]
-        new_queue = TrackedDefaultQueue(self.pack, self)
-        new_queue._inferral_expanded = self._inferral_expanded
-        new_queue._initial_expanded = self._initial_expanded
-        new_queue.ignore = self.ignore
+        new_queue = TrackedDefaultQueue(self.pack)
+        new_queue.set_tracked_queue(self)
         last_queue.set_next_curr_level(new_queue)
         self.queues.append(new_queue)
 
@@ -266,7 +261,7 @@ class TrackedQueue(CSSQueue):
         self.queues[self.level_first_found(label)].set_not_inferrable(label)
 
     def set_verified(self, label: int) -> None:
-        self.queues[self._evel_first_found(label)].set_verified(label)
+        self.queues[self.level_first_found(label)].set_verified(label)
 
     def set_stop_yielding(self, label: int) -> None:
         self.queues[self.level_first_found(label)].set_stop_yielding(label)
