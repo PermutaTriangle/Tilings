@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import partial
-from itertools import chain, islice
+from itertools import chain, combinations, islice
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 from ..griddedperm import GriddedPerm
@@ -74,59 +74,83 @@ class GriddedPermReduction:
 
             self._requirements = minimized_requirements
 
-    # if there is a requirement for which every component contains the same factor of
-    # obstruction, then that factor can be removed from obstruction
-    # [subobstruction inferral]
-    def _clean_isolated(
+    def _set_of_implied_obstructions(
         self, obstruction: GriddedPerm, requirementgp: GriddedPerm
-    ) -> GriddedPerm:
-        """Remove the isolated factors that are implied by requirements
-        from all obstructions."""
-        cells_to_remove: Set[Cell] = set()
+    ) -> List[GriddedPerm]:
+        """
+        Detects all factors of <obstruction> whose existence is implied by
+        <requirementgp>, and then returns the list of size 2^|factors| of obstructions
+        formed by deleting any subset of the factors.
+        """
+        factor_cells: List[Set[Cell]] = []
         for factor in obstruction.factors():
             if self._griddedperm_implied_by_requirement(factor, (requirementgp,)):
-                cells_to_remove.update(factor.pos)
-        if cells_to_remove:
-            obstruction = obstruction.remove_cells(cells_to_remove)
-        return obstruction
+                factor_cells.append(set(factor.pos))
+        powerset = chain.from_iterable(
+            combinations(factor_cells, r) for r in range(len(factor_cells) + 1)
+        )
+        return [
+            obstruction.remove_cells(set.union(*cell_set)) if cell_set else obstruction
+            for cell_set in powerset
+        ]
 
-    def minimal_obs(self, already_minimized_obs=False) -> Tuple[GriddedPerm, ...]:
+    def minimal_obs(
+        self, already_minimized_obs: bool = False
+    ) -> Tuple[GriddedPerm, ...]:
         min_perms = (
             self._obstructions
             if already_minimized_obs
             else GriddedPermReduction._minimize(self._obstructions)
         )
 
-        def changed_obs_by_gp(
-            gp: GriddedPerm, obs_to_check: Tuple[GriddedPerm, ...]
-        ) -> Set[GriddedPerm]:
-            changed_obs = set()
-            for ob in obs_to_check:
-                cleaned_perm = self._clean_isolated(ob, gp)
-                if cleaned_perm != ob:
-                    changed_obs.add(cleaned_perm)
-            return changed_obs
+        # helper function for combining sets of implied obs
+        def _obs_star(
+            obs1: Tuple[GriddedPerm, ...], obs2: Tuple[GriddedPerm, ...]
+        ) -> Tuple[GriddedPerm, ...]:
+            """
+            Let A = <obs1> and B = <obs2>. A * B is the set
+                {a in A : b <= a for some b in B}
+                union
+                {b in B : a <= b for some a in A}
+            In the context of a full set O that A and B come from, A * B is the set of all
+            sub-factor-perms of O that contain both a perm in A and a perm in B.
+            """
+            return tuple(
+                {o1 for o1 in obs1 if any(o1.contains(o2) for o2 in obs2)}.union(
+                    {o2 for o2 in obs2 if any(o2.contains(o1) for o1 in obs1)}
+                )
+            )
 
-        all_changed = set()
-        obs_to_check = min_perms
-        while obs_to_check:
-            new_obs_to_check: Set[GriddedPerm] = set()
+        new_obs = min_perms
+        while new_obs:
+            next_obs = new_obs
             for requirement in self._requirements:
+                this_req_obs: Tuple[GriddedPerm, ...] = tuple()
                 if requirement:
-                    changed_obs = changed_obs_by_gp(requirement[0], obs_to_check)
-                    for gp in requirement[1:]:
-                        if not changed_obs:
-                            break
-                        changed_obs.intersection_update(
-                            changed_obs_by_gp(gp, obs_to_check)
+                    for req_gp in requirement:
+                        union_set: Set[GriddedPerm] = set()
+                        implied_obs = tuple(
+                            union_set.union(
+                                *[
+                                    self._set_of_implied_obstructions(ob, req_gp)
+                                    for ob in next_obs
+                                ]
+                            )
                         )
-                    all_changed.update(changed_obs)
-                    new_obs_to_check.update(changed_obs)
-            obs_to_check = tuple(new_obs_to_check)
-        if not all_changed:
-            return min_perms
-
-        return GriddedPermReduction._minimize(all_changed.union(min_perms))
+                        if not this_req_obs:
+                            # if this is the first time that we have interesting
+                            #  implied_obs, just save them
+                            this_req_obs = implied_obs
+                        else:
+                            # otherwise we have to do the * operation
+                            this_req_obs = _obs_star(this_req_obs, implied_obs)
+                next_obs = GriddedPermReduction._minimize(this_req_obs)
+            # if nothing changed, break out of the while loop
+            next_obs = tuple(sorted(next_obs))
+            if next_obs == new_obs:
+                break
+            new_obs = next_obs
+        return new_obs
 
     def minimal_reqs(
         self, obstructions: Tuple[GriddedPerm, ...]
