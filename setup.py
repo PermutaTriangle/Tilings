@@ -36,6 +36,7 @@ setup(
     install_requires=[
         "comb-spec-searcher==4.0.0",
         "permuta==2.2.0",
+        "tabulate==0.8.9",
     ],
     python_requires=">=3.7",
     include_package_data=True,
