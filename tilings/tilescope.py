@@ -289,7 +289,11 @@ class TrackedQueue(CSSQueue):
         headers = ("Size",) + tuple(
             f"Queue {idx}" for idx in range(len(self.queues) - 1)
         )
-        colalign = ("left",) + tuple("right" for _ in range(len(self.queues) - 1))
+        table = [headers] + table
+        table = list(zip(*table))
+        headers = table[0]
+        table = table[1:]
+        colalign = ("left",) + tuple("right" for _ in headers[1:])
         status += (
             tabulate.tabulate(table, headers=headers, colalign=colalign).replace(
                 "\n", "\n    "
