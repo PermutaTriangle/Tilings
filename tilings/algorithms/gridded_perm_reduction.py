@@ -112,8 +112,8 @@ class GriddedPermReduction:
                 {a in A : b <= a for some b in B}
                 union
                 {b in B : a <= b for some a in A}
-            In the context of a full set O that A and B come from, A * B is the set of all
-            sub-factor-perms of O that contain both a perm in A and a perm in B.
+            In the context of a full set O that A and B come from, A * B is the set of
+            all sub-factor-perms of O that contain both a perm in A and a perm in B.
             """
             return tuple(
                 {o1 for o1 in obs1 if any(o1.contains(o2) for o2 in obs2)}.union(
@@ -144,7 +144,8 @@ class GriddedPermReduction:
                         else:
                             # otherwise we have to do the * operation
                             this_req_obs = _obs_star(this_req_obs, implied_obs)
-                next_obs = GriddedPermReduction._minimize(this_req_obs)
+                next_obs = this_req_obs
+            next_obs = GriddedPermReduction._minimize(next_obs)
             # if nothing changed, break out of the while loop
             next_obs = tuple(sorted(next_obs))
             if next_obs == new_obs:
