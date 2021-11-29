@@ -202,6 +202,11 @@ class TrackedDefaultQueue(DefaultQueue):
         assert not self.working, "Can't change level is working is not empty"
         assert not any(self.curr_level), "Can't change level is curr_level is not empty"
         assert self.next_curr_level is not None, "not set the next curr queue"
+        if any(self.next_curr_level):
+            # this ensures we only change level when the next curr queue is empty
+            # and therefore makes sure we never expand a label with the same strategy
+            # twice
+            raise StopIteration
         self.next_curr_level[0].extend(
             label for label, _ in sorted(self.next_level.items(), key=lambda x: -x[1])
         )
