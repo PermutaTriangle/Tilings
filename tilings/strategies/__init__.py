@@ -19,7 +19,7 @@ from .parameter_strategies import (
     RemoveIdentityPreimageStrategy,
     RemoveReqFactory,
 )
-from .rearrange_assumption import RearrangeParameterFactory
+from .rearrange_parameter import RearrangeParameterFactory
 from .requirement_insertion import (
     CellInsertionFactory,
     FactorInsertionFactory,

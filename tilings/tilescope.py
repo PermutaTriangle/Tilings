@@ -18,7 +18,7 @@ from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.strategies import AddParameterFactory, RearrangeParameterFactory
 from tilings.strategies.parameter_insertion import AddParametersStrategy
-from tilings.strategies.rearrange_assumption import RearrangeParameterStrategy
+from tilings.strategies.rearrange_parameter import RearrangeParameterStrategy
 from tilings.strategy_pack import TileScopePack
 
 __all__ = ("TileScope", "TileScopePack", "LimitedParameterTileScope", "GuidedSearcher")
