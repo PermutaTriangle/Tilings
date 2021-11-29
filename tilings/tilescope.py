@@ -189,6 +189,9 @@ class TrackedDefaultQueue(DefaultQueue):
         super().__init__(pack)
         self.next_curr_level: Optional[Tuple[Deque[int], ...]] = None
 
+    def is_empty(self) -> bool:
+        return bool(self.working or self.next_level or any(self.curr_level))
+
     def set_next_curr_level(self, other: "TrackedDefaultQueue"):
         self.next_curr_level = other.curr_level
 
@@ -310,9 +313,10 @@ class TrackedQueue(CSSQueue):
     def __next__(self) -> WorkPacket:
         for idx, queue in enumerate(self.queues):
             if idx == len(self.queues) - 1:
+                if all(queue.is_empty() for queue in self.queues):
+                    raise StopIteration
                 self.add_new_queue()
             try:
                 return next(queue)
             except StopIteration:
                 continue
-        raise StopIteration
