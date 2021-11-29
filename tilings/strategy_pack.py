@@ -182,7 +182,7 @@ class TileScopePack(StrategyPack):
         interleaving factor strategy.
 
         If unions is set to True it will overwrite unions on the strategy, and
-        also pass the argument to AddInterleavingAssumption method.
+        also pass the argument to AddInterleavingParameter method.
         """
 
         def replace_list(strats):

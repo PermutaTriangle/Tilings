@@ -19,7 +19,7 @@ from .parameter_strategies import (
     RemoveIdentityPreimageStrategy,
     RemoveReqFactory,
 )
-from .rearrange_assumption import RearrangeAssumptionFactory
+from .rearrange_assumption import RearrangeParameterFactory
 from .requirement_insertion import (
     CellInsertionFactory,
     FactorInsertionFactory,
@@ -55,7 +55,7 @@ __all__ = [
     "DetectComponentsStrategy",
     "DisjointUnionParameterFactory",
     "ParameterVerificationStrategy",
-    "RearrangeAssumptionFactory",
+    "RearrangeParameterFactory",
     "RemoveIdentityPreimageStrategy",
     "RemoveReqFactory",
     "SplittingStrategy",
