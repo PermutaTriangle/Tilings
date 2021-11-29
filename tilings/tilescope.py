@@ -211,7 +211,9 @@ class TrackedDefaultQueue(DefaultQueue):
             # twice
             raise StopIteration
         self.next_curr_level[0].extend(
-            label for label, _ in sorted(self.next_level.items(), key=lambda x: -x[1])
+            label
+            for label, _ in sorted(self.next_level.items(), key=lambda x: -x[1])
+            if label not in self.ignore
         )
         self.next_level: CounterType[int] = Counter()
         if not any(self.curr_level):
@@ -223,8 +225,9 @@ class TrackedQueue(CSSQueue):
         self.tilescope = tilescope
         self.pack = pack
         self.label_to_underlying: Dict[int, int] = {}
-
         self._level_first_found: Dict[int, int] = {}
+        self._underlyng_labels_per_level: CounterType[int] = Counter()
+        self._all_labels_per_level: CounterType[int] = Counter()
         self.inferral_expanded: Set[int] = set()
         self.initial_expanded: Set[int] = set()
         self.ignore: Set[int] = set()
@@ -254,6 +257,8 @@ class TrackedQueue(CSSQueue):
             underlying_tiling = tiling.remove_assumptions()
             underlying_label = self.tilescope.classdb.get_label(underlying_tiling)
             self.label_to_underlying[label] = underlying_label
+            # count the number of labels that will be added to this level
+            self._all_labels_per_level[self.level_first_found(underlying_label)] += 1
         return underlying_label
 
     def level_first_found(self, label: int) -> int:
@@ -263,6 +268,8 @@ class TrackedQueue(CSSQueue):
         if level is None:
             level = len(self.queues) - 2
             self._level_first_found[underlying_label] = level
+            # count the number of underlying labels added to this level
+            self._underlyng_labels_per_level[level] += 1
         return level
 
     def add(self, label: int) -> None:
@@ -303,6 +310,14 @@ class TrackedQueue(CSSQueue):
         headers = ("Size",) + tuple(
             f"Queue {idx}" for idx in range(len(self.queues) - 1)
         )
+        underlying = ("underlying",) + tuple(
+            self._underlyng_labels_per_level[level] for level in range(len(self.queues))
+        )
+        table.append(underlying)
+        all_labels = ("all labels",) + tuple(
+            self._all_labels_per_level[level] for level in range(len(self.queues))
+        )
+        table.append(all_labels)
         table = [headers] + table
         table = list(zip(*table))
         headers = table[0]
