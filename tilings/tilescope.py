@@ -235,6 +235,11 @@ class TrackedQueue(CSSQueue):
 
         super().__init__(pack)
 
+    @property
+    def levels_completed(self):
+        """Return the number of levels completed for underlying tilings"""
+        return len(self.queues) - 2
+
     def add_new_queue(self) -> None:
         last_queue = self.queues[-1]
         new_queue = TrackedDefaultQueue(self.pack)
@@ -278,7 +283,8 @@ class TrackedQueue(CSSQueue):
         raise NotImplementedError
 
     def status(self) -> str:
-        status = "Queue status:\n"
+        # status = "Queue status:\n"
+        status = f"Queue status (currently on level {self.levels_completed}):\n"
         table: List[Tuple[str, ...]] = []
         working = ("working",) + tuple(
             f"{len(queue.working):,d}" for queue in self.queues[:-1]
