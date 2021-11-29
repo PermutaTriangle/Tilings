@@ -190,7 +190,9 @@ class TrackedDefaultQueue(DefaultQueue):
         self.next_curr_level: Optional[Tuple[Deque[int], ...]] = None
 
     def is_empty(self) -> bool:
-        return bool(self.working or self.next_level or any(self.curr_level))
+        return bool(
+            not self.working and not self.next_level and not any(self.curr_level)
+        )
 
     def set_next_curr_level(self, other: "TrackedDefaultQueue"):
         self.next_curr_level = other.curr_level
