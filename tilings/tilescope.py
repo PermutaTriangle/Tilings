@@ -292,7 +292,6 @@ class TrackedQueue(CSSQueue):
         raise NotImplementedError
 
     def status(self) -> str:
-        # status = "Queue status:\n"
         status = f"Queue status (currently on level {self.levels_completed}):\n"
         table: List[Tuple[str, ...]] = []
         working = ("working",) + tuple(
