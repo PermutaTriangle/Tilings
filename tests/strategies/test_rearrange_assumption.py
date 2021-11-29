@@ -2,44 +2,55 @@ import pytest
 import sympy
 
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import TrackingAssumption
-from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
+from tilings.map import RowColMap
+from tilings.parameter_counter import ParameterCounter, PreimageCounter
+from tilings.strategies.rearrange_assumption import RearrangeParameterStrategy
+
+
+def columntopreimage(col: int, tiling: Tiling) -> PreimageCounter:
+    rowmap = {i: i for i in range(tiling.dimensions[1])}
+    colmap = {i: i for i in range(col + 1)}
+    for i in range(col + 1, tiling.dimensions[0] + 1):
+        colmap[i] = i - 1
+    rowcolmap = RowColMap(rowmap, colmap)
+    return PreimageCounter(rowcolmap.preimage_tiling(tiling), rowcolmap)
 
 
 @pytest.fixture
 def rule1():
-    ass1 = TrackingAssumption([GriddedPerm((0,), ((0, 0),))])
-    ass2 = TrackingAssumption(
-        [GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),))]
-    )
-    strat = RearrangeAssumptionStrategy(ass2, ass1)
-    t1 = Tiling(
+    tiling = Tiling(
         obstructions=[
             GriddedPerm((0, 1), ((0, 0),) * 2),
             GriddedPerm((0, 1), ((1, 0),) * 2),
-        ],
-        assumptions=[ass1, ass2],
+        ]
     )
-    return strat(t1)
+    param1 = ParameterCounter([columntopreimage(0, tiling)])
+    param2 = ParameterCounter(
+        [columntopreimage(0, tiling), columntopreimage(1, tiling)]
+    )
+    tiling = tiling.add_parameters([param1, param2])
+    strat = RearrangeParameterStrategy(param2, param1)
+
+    return strat(tiling)
 
 
 @pytest.fixture
 def rule2():
-    ass1 = TrackingAssumption([GriddedPerm((0,), ((0, 0),))])
-    ass2 = TrackingAssumption(
-        [GriddedPerm((0,), ((0, 0),)), GriddedPerm((0,), ((1, 0),))]
-    )
-    ass3 = TrackingAssumption([GriddedPerm((0,), ((1, 0),))])
-    strat = RearrangeAssumptionStrategy(ass2, ass1)
-    t1 = Tiling(
+    tiling = Tiling(
         obstructions=[
             GriddedPerm((0, 1), ((0, 0),) * 2),
             GriddedPerm((0, 1), ((1, 0),) * 2),
-        ],
-        assumptions=[ass1, ass2],
+        ]
     )
-    t2 = t1.add_assumption(ass3)
-    return strat(t2)
+    param1 = ParameterCounter([columntopreimage(0, tiling)])
+    param2 = ParameterCounter(
+        [columntopreimage(0, tiling), columntopreimage(1, tiling)]
+    )
+    param3 = ParameterCounter([columntopreimage(1, tiling)])
+    strat = RearrangeParameterStrategy(param2, param1)
+    tiling = tiling.add_parameters([param1, param2])
+    tiling2 = tiling.add_parameters([param3])
+    return strat(tiling2)
 
 
 def test_extra_param(rule1, rule2):

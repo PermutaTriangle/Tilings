@@ -360,13 +360,12 @@ class RearrangeParameterStrategy(Strategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         res: Dict[str, str] = {}
         child = children[0]
-        for parent_param, parent_param in zip(
+        for parent_param, parent_param_name in zip(
             comb_class.parameters, comb_class.extra_parameters
         ):
             if parent_param == self.parameter:
                 continue
-            child_param = child.extra_parameters[child.parameters.index(parent_param)]
-            res[parent_param] = child_param
+            res[parent_param_name] = child.get_parameter_name(parent_param)
         return (res,)
 
     def formal_step(self) -> str:
