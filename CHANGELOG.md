@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - One by one verification will now only verify subclasses of the given basis.
 - Verification strategies no longer ignore parent
+- `TrackedSearcher` now uses a `TrackedQueue` and is able to work with all packs 
+  and new future strategies.
 
 ### Deprecated
 - Python 3.7 is no longer supported
