@@ -4,4 +4,8 @@ from tilings.tiling import Tiling
 
 __version__ = "3.0.0"
 
-__all__ = ["GriddedPerm", "Tiling", "TrackingAssumption"]
+__all__ = [
+    "GriddedPerm",
+    "Tiling",
+    "TrackingAssumption",
+]

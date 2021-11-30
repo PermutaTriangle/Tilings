@@ -16,9 +16,9 @@ from comb_spec_searcher.strategies.strategy import EmptyStrategy
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
-from tilings.strategies import AddParameterFactory, RearrangeAssumptionFactory
+from tilings.strategies import AddParameterFactory, RearrangeParameterFactory
 from tilings.strategies.parameter_insertion import AddParametersStrategy
-from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
+from tilings.strategies.rearrange_parameter import RearrangeParameterStrategy
 from tilings.strategy_pack import TileScopePack
 
 __all__ = ("TileScope", "TileScopePack", "LimitedParameterTileScope", "GuidedSearcher")
@@ -170,7 +170,7 @@ class TrackedSearcher(LimitedParameterTileScope):
         self.tilings_from_underlying: DefaultDict[int, Set[int]] = defaultdict(set)
         self.tracking_strategies = [
             AddParameterFactory(),
-            RearrangeAssumptionFactory(),
+            RearrangeParameterFactory(),
         ]
         self.tracked_expanded: Set[int] = set()
         self.retroactively_expanded: Set[int] = set()
@@ -244,7 +244,7 @@ class TrackedSearcher(LimitedParameterTileScope):
         self.ruledb.add(start_label, end_labels, rule)
         if not isinstance(
             rule.strategy,
-            (RearrangeAssumptionStrategy, AddParametersStrategy),
+            (RearrangeParameterStrategy, AddParametersStrategy),
         ):
             self.store_strategy(start_label, rule.strategy)
             for label in list(self.tilings_from_underlying[start_label]):
@@ -290,7 +290,7 @@ class ForgetTrackedSearcher(TrackedSearcher):
         initial: bool = False,
     ) -> Iterator[Tuple[int, Tuple[int, ...], AbstractRule]]:
         if not comb_class.parameters and not isinstance(
-            strategy_generator, (AddParameterFactory, RearrangeAssumptionFactory)
+            strategy_generator, (AddParameterFactory, RearrangeParameterFactory)
         ):
             idx = self.strategies.index(strategy_generator)
             assert isinstance(label, int)
