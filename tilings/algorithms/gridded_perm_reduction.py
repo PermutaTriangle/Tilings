@@ -1,7 +1,7 @@
 from collections import defaultdict
 from functools import partial
 from itertools import chain, islice
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 from ..griddedperm import GriddedPerm
 from .minimal_gridded_perms import MinimalGriddedPerms

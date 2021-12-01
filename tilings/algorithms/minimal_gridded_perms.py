@@ -1,7 +1,7 @@
 from collections import Counter, defaultdict
 from heapq import heapify, heappop, heappush
 from itertools import chain, product
-from typing import TYPE_CHECKING, Dict, FrozenSet, Iterator, List, Optional, Set, Tuple
+from typing import Dict, FrozenSet, Iterator, List, Optional, Set, Tuple
 
 from permuta import Perm
 from tilings import GriddedPerm
