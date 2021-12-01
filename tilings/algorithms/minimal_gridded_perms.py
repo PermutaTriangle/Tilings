@@ -38,9 +38,9 @@ class QueuePacket:
 
 
 class MinimalGriddedPerms:
-    def __init__(self, tiling: "Tiling"):
-        self.obstructions = tiling.obstructions
-        self.requirements = tiling.requirements
+    def __init__(self, obstructions: GPTuple, requirements: Reqs):
+        self.obstructions = obstructions
+        self.requirements = requirements
         self.relevant_obstructions: Dict[FrozenSet[Cell], GPTuple] = {}
         self.relevant_requirements: Dict[FrozenSet[Cell], Reqs] = {}
         self.relevant_obstructions_by_cell: Dict[
