@@ -6,10 +6,6 @@ from typing import TYPE_CHECKING, Dict, FrozenSet, Iterator, List, Optional, Set
 from permuta import Perm
 from tilings import GriddedPerm
 
-if TYPE_CHECKING:
-    from tilings import Tiling
-
-
 __all__ = ["MinimalGriddedPerms"]
 
 Cell = Tuple[int, int]
