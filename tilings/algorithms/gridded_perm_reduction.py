@@ -48,20 +48,12 @@ class GriddedPermReduction:
             self._obstructions = (GriddedPerm.empty_perm(),)
             self._requirements = tuple()
 
+        if not already_minimized_obs:
+            self._obstructions = GriddedPermReduction._minimize(self._obstructions)
+        first = True
         while True:
-            # Minimize the set of obstructions
-            minimized_obs = self.minimal_obs(
-                already_minimized_obs=already_minimized_obs
-            )
-
-            if minimized_obs and not minimized_obs[0]:
-                set_empty()
-                break
-
-            self._obstructions = tuple(sorted(minimized_obs))
-
             # Minimize the set of requiriments
-            minimized_requirements = self.minimal_reqs(minimized_obs)
+            minimized_requirements = self.minimal_reqs(self._obstructions)
             minimized_requirements = tuple(
                 sorted(tuple(sorted(set(req))) for req in minimized_requirements)
             )
@@ -70,10 +62,24 @@ class GriddedPermReduction:
                 set_empty()
                 break
 
-            if self._requirements == minimized_requirements:
+            changed = self._requirements != minimized_requirements
+            if changed:
+                self._requirements = minimized_requirements
+            elif not first:
+                break
+            first = False
+
+            # Minimize the set of obstructions
+            minimized_obs = tuple(sorted(self.minimal_obs(already_minimized_obs=True)))
+
+            if minimized_obs and not minimized_obs[0]:
+                set_empty()
                 break
 
-            self._requirements = minimized_requirements
+            if self._obstructions == minimized_obs:
+                break
+
+            self._obstructions = minimized_obs
 
     def clean_isolated(
         self, obstructions: Tuple[GriddedPerm, ...], gp: GriddedPerm
@@ -104,8 +110,10 @@ class GriddedPermReduction:
                     min_perms,
                     tuple(
                         tuple(
-                            sorted(self.clean_isolated(min_perms, gp))
-                        )  # TODO: we could reduce these sets first?
+                            GriddedPermReduction._minimize(
+                                self.clean_isolated(min_perms, gp)
+                            )
+                        )
                         for gp in requirement
                     ),
                 ).minimal_gridded_perms()
