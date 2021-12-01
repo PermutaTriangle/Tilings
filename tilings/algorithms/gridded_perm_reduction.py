@@ -90,7 +90,7 @@ class GriddedPermReduction:
                 cleaned_obs.add(ob.remove_cells(cells_to_remove))
         return cleaned_obs
 
-    def minimal_obs(self) -> Tuple[GriddedPerm, ...]:
+    def minimal_obs(self) -> bool:
         """
         Reduce the obstruction according to the requirements.
         Return True if something changed.
@@ -138,12 +138,12 @@ class GriddedPermReduction:
             if any(not r for r in minimized_requirements):
                 self._requirements = (tuple(),)
                 return True
-        minimized_requirements = tuple(
+        sorted_minimized_requirements = tuple(
             sorted(tuple(sorted(req)) for req in minimized_requirements)
         )
-        if minimized_requirements == self._requirements:
+        if sorted_minimized_requirements == self._requirements:
             return False
-        self._requirements = minimized_requirements
+        self._requirements = sorted_minimized_requirements
         self.minimal_reqs()
         return True
 
