@@ -29,6 +29,7 @@ from tilings.algorithms.enumeration import (
 from tilings.strategies import (
     FactorFactory,
     FactorInsertionFactory,
+    RemoveRequirementFactory,
     RequirementCorroborationFactory,
 )
 
@@ -299,7 +300,7 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
             name="LocallyFactorable",
             initial_strats=[FactorFactory(), RequirementCorroborationFactory()],
             inferral_strats=[],
-            expansion_strats=[[FactorInsertionFactory()]],
+            expansion_strats=[[FactorInsertionFactory()], [RemoveRequirementFactory()]],
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(

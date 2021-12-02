@@ -4,6 +4,7 @@ from typing import Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
+from comb_spec_searcher.strategies import Rule
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 
@@ -509,3 +510,25 @@ class RequirementCorroborationFactory(AbstractRequirementInsertionFactory):
 
     def __str__(self) -> str:
         return "requirement corroboration"
+
+
+class RemoveRequirementFactory(StrategyFactory[Tiling]):
+    """
+    For a tiling T, and each requirement R on T, create the rules that
+    cell inserts R onto the tiling T without R.
+    """
+
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule[Tiling, GriddedPerm]]:
+        for req_list in comb_class.requirements:
+            remove_req = comb_class.remove_requirement(req_list)
+            yield RequirementInsertionStrategy(req_list)(remove_req)
+
+    def __str__(self) -> str:
+        return "remove requirements"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "RemoveRequirementFactory":
+        return cls()
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"

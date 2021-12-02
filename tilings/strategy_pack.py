@@ -611,3 +611,17 @@ class TileScopePack(StrategyPack):
             ],
             name=name,
         )
+
+    @classmethod
+    def cell_insertions(cls, length: int):
+        return TileScopePack(
+            initial_strats=[],
+            ver_strats=[
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+            ],
+            inferral_strats=[],
+            expansion_strats=[[strat.CellInsertionFactory(maxreqlen=length)]],
+            name="length_{length}_cell_insertions",
+        )

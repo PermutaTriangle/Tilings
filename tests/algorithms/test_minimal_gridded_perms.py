@@ -277,7 +277,9 @@ expected_mgps = [
 @pytest.mark.parametrize(("tiling", "expected_mgps"), zip(tilings, expected_mgps))
 def test_minimal_gridded_perms(tiling, expected_mgps):
     mgps = []
-    for gp in MinimalGriddedPerms(tiling).minimal_gridded_perms():
+    for gp in MinimalGriddedPerms(
+        tiling.obstructions, tiling.requirements
+    ).minimal_gridded_perms():
         assert gp not in mgps
         for old in mgps:
             assert gp not in old
@@ -330,7 +332,9 @@ def test_order():
             ),
         ),
     )
-    mgps = list(MinimalGriddedPerms(t).minimal_gridded_perms())
+    mgps = list(
+        MinimalGriddedPerms(t.obstructions, t.requirements).minimal_gridded_perms()
+    )
     assert mgps == [
         GriddedPerm(Perm([3, 1, 0, 2]), [(1, 2), (2, 1), (2, 1), (2, 1)]),
         GriddedPerm(Perm([1, 3, 2, 4, 0]), [(1, 2), (2, 3), (2, 3), (2, 3), (2, 1)]),

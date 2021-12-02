@@ -4,6 +4,7 @@ from itertools import chain, islice
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 from ..griddedperm import GriddedPerm
+from .minimal_gridded_perms import MinimalGriddedPerms
 
 Cell = Tuple[int, int]
 Requirement = Tuple[GriddedPerm, ...]
@@ -47,83 +48,104 @@ class GriddedPermReduction:
             self._obstructions = (GriddedPerm.empty_perm(),)
             self._requirements = tuple()
 
+        if not already_minimized_obs:
+            self._obstructions = tuple(
+                sorted(GriddedPermReduction._minimize(self._obstructions))
+            )
+        first = True
         while True:
-            # Minimize the set of obstructions
-            minimized_obs = self.minimal_obs(
-                already_minimized_obs=already_minimized_obs
-            )
-
-            if minimized_obs and not minimized_obs[0]:
-                set_empty()
-                break
-
-            self._obstructions = tuple(sorted(minimized_obs))
-
             # Minimize the set of requiriments
-            minimized_requirements = self.minimal_reqs(minimized_obs)
-            minimized_requirements = tuple(
-                sorted(tuple(sorted(set(req))) for req in minimized_requirements)
-            )
+            if not self.minimal_reqs() and not first:
+                # if it didn't change then break if its the second or
+                # later pass
+                break
+            first = False
 
-            if minimized_requirements and not minimized_requirements[0]:
+            if self._requirements and not self._requirements[0]:
                 set_empty()
                 break
 
-            if self._requirements == minimized_requirements:
+            # Minimize the set of obstructions
+            if not self.minimal_obs():
+                # if they didn't change then break
                 break
 
-            self._requirements = minimized_requirements
+            if self._obstructions and not self._obstructions[0]:
+                set_empty()
+                break
 
-    # if there is a requirement for which every component contains the same factor of
-    # obstruction, then that factor can be removed from obstruction
-    # [subobstruction inferral]
-    def _clean_isolated(self, obstruction: GriddedPerm) -> GriddedPerm:
-        """Remove the isolated factors that are implied by requirements
-        from all obstructions."""
-        cells_to_remove: Set[Cell] = set()
-        for factor in obstruction.factors():
-            if self._griddedperm_implied_by_some_requirement(factor):
-                cells_to_remove.update(factor.pos)
-        if cells_to_remove:
-            obstruction = obstruction.remove_cells(cells_to_remove)
-        return obstruction
+    def clean_isolated(
+        self, obstructions: Tuple[GriddedPerm, ...], gp: GriddedPerm
+    ) -> Set[GriddedPerm]:
+        """
+        Return the obstructions which have some factors removed due to containing gp.
+        """
+        cleaned_obs: Set[GriddedPerm] = set()
+        for ob in obstructions:
+            cells_to_remove: Set[Cell] = set()
+            for factor in ob.factors():
+                if self._griddedperm_implied_by_requirement(factor, (gp,)):
+                    cells_to_remove.update(factor.pos)
+            if cells_to_remove:
+                cleaned_obs.add(ob.remove_cells(cells_to_remove))
+        return cleaned_obs
 
-    def minimal_obs(self, already_minimized_obs=False) -> Tuple[GriddedPerm, ...]:
-        min_perms = (
-            self._obstructions
-            if already_minimized_obs
-            else GriddedPermReduction._minimize(self._obstructions)
-        )
-        changed = []
-        unchanged = []
-        for ob in min_perms:
-            cleaned_perm = self._clean_isolated(ob)
-            if cleaned_perm == ob:
-                unchanged.append(cleaned_perm)
-            else:
-                changed.append(cleaned_perm)
-        if not changed:
-            return tuple(unchanged)
+    def minimal_obs(self) -> bool:
+        """
+        Reduce the obstruction according to the requirements.
+        Return True if something changed.
+        """
+        changed = False
+        new_obs: Set[GriddedPerm] = set()
+        for requirement in self.requirements:
+            new_obs.update(
+                MinimalGriddedPerms(
+                    self._obstructions,
+                    tuple(
+                        tuple(
+                            GriddedPermReduction._minimize(
+                                self.clean_isolated(self._obstructions, gp)
+                            )
+                        )
+                        for gp in requirement
+                    ),
+                ).minimal_gridded_perms()
+            )
+        if new_obs:
+            changed = True
+            self._obstructions = tuple(
+                sorted(
+                    GriddedPermReduction._minimize(self._obstructions + tuple(new_obs))
+                )
+            )
+            self.minimal_obs()
+        return changed
 
-        return GriddedPermReduction._minimize(changed) + tuple(
-            gp for gp in unchanged if gp.avoids(*changed)
-        )
-
-    def minimal_reqs(
-        self, obstructions: Tuple[GriddedPerm, ...]
-    ) -> Tuple[Requirement, ...]:
+    def minimal_reqs(self) -> bool:
+        """
+        Update the requirements according to avoiding the obstructions.
+        Returns True if something changed.
+        """
         algos: Tuple[Callable, ...] = (
             GriddedPermReduction.factored_reqs,
             self.remove_redundant,
             self.cleaned_requirements,
-            partial(self.remove_avoided, obstructions=obstructions),
+            partial(self.remove_avoided, obstructions=self._obstructions),
         )
-        minimized_requirements = self._requirements
+        minimized_requirements = list(self._requirements)
         for algo in algos:
             minimized_requirements = algo(minimized_requirements)
             if any(not r for r in minimized_requirements):
-                return (tuple(),)
-        return tuple(minimized_requirements)
+                self._requirements = (tuple(),)
+                return True
+        sorted_minimized_requirements = tuple(
+            sorted(tuple(sorted(req)) for req in minimized_requirements)
+        )
+        if sorted_minimized_requirements == self._requirements:
+            return False
+        self._requirements = sorted_minimized_requirements
+        self.minimal_reqs()
+        return True
 
     def remove_redundant(self, requirements: List[Requirement]) -> List[Requirement]:
         relevant_reqs: List[Requirement] = []

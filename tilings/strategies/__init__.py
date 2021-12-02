@@ -23,6 +23,7 @@ from .rearrange_parameter import RearrangeParameterFactory
 from .requirement_insertion import (
     CellInsertionFactory,
     FactorInsertionFactory,
+    RemoveRequirementFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
     RequirementInsertionFactory,
@@ -63,6 +64,7 @@ __all__ = [
     "CellInsertionFactory",
     "FactorInsertionFactory",
     "AllPlacementsFactory",
+    "RemoveRequirementFactory",
     "RequirementExtensionFactory",
     "RequirementInsertionFactory",
     "RequirementPlacementFactory",
