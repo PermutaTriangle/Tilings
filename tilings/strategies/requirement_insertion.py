@@ -475,10 +475,37 @@ class FactorInsertionFactory(AbstractRequirementInsertionFactory):
         gp_facts = map(GriddedPerm.factors, reqs_and_obs)
         proper_facts = chain.from_iterable(f for f in gp_facts if len(f) > 1)
         for f in proper_facts:
-            yield (GriddedPerm(f.patt, f.pos),)
+            if not any(f.contains(*req) for req in tiling.requirements):
+                yield (GriddedPerm(f.patt, f.pos),)
 
     def __str__(self) -> str:
         return "all factor insertion"
+
+
+class FactorSizeTwoObstructionInsertionFactory(AbstractRequirementInsertionFactory):
+    """
+    Insert factors of size two obstructions which are factorable.
+    """
+
+    def __init__(self, ignore_parent: bool = True) -> None:
+        super().__init__(ignore_parent)
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        gp_facts = map(
+            GriddedPerm.factors,
+            (
+                ob
+                for ob in tiling.obstructions
+                if len(ob) == 2 and not ob.is_single_cell() and not ob.is_interleaving()
+            ),
+        )
+        proper_facts = chain.from_iterable(f for f in gp_facts if len(f) > 1)
+        for f in proper_facts:
+            if not any(f.contains(*req) for req in tiling.requirements):
+                yield (GriddedPerm(f.patt, f.pos),)
+
+    def __str__(self) -> str:
+        return "targeted cell insertion into size two obs"
 
 
 class RequirementCorroborationFactory(AbstractRequirementInsertionFactory):
