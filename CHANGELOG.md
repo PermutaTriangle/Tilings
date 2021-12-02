@@ -35,6 +35,7 @@ requirement.
 - a `insertion_point_row_and_col_placements` pack in `TileScopePack`
 - `TrackedSearcher` and `ForgetTrackedSearcher` that prioritise expanding classes
   with assumptions when the underlying tiling was expanded
+- `TileScopePack.cell_insertions` which only does cell insertion and verification
 
 ### Changed
 - Updated to use comb_spec_searcher 4.0.0
