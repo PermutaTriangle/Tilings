@@ -4,6 +4,7 @@ import sympy
 from comb_spec_searcher import CombinatorialSpecification
 from comb_spec_searcher.exception import SpecificationNotFound
 from comb_spec_searcher.rule_db import RuleDBForest
+from comb_spec_searcher.strategies import ReverseRule
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
@@ -292,8 +293,23 @@ def test_expansion():
     pack = TileScopePack.only_root_placements(3, 1)
     css = TileScope("132", pack)
     spec = css.auto_search(smallest=True)
-    with pytest.raises(SpecificationNotFound):
-        spec = spec.expand_verified()
+    spec = spec.expand_verified()
+    assert sum(1 for rule in spec if isinstance(rule, ReverseRule)) == 1
+    assert [spec.count_objects_of_size(i) for i in range(13)] == [
+        1,
+        1,
+        2,
+        5,
+        14,
+        42,
+        132,
+        429,
+        1430,
+        4862,
+        16796,
+        58786,
+        208012,
+    ]
 
 
 @pytest.mark.timeout(30)
