@@ -167,11 +167,24 @@ class GuidedSearcher(TileScope):
 
 
 class TrackedSearcher(LimitedAssumptionTileScope):
+    """
+    A TileScope that will prioritise expanding tilings whose underlying tilings
+    were found at earlier levels. It does this by keeping a queue for each level,
+    and adding tilings to the queue that the underlying was first found at.
+
+    The first time a queue changes level, the next level of queue i will be added
+    to the curr level of queue i + 1. If `delay_next` is False then it continues
+    in this way for future change levels but if it is False (the default) the next
+    level of queue i will be added to the curr level of queue i after the first
+    change levels.
+    """
+
     def __init__(
         self,
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
         max_assumptions: int,
+        delay_next: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(
@@ -179,15 +192,16 @@ class TrackedSearcher(LimitedAssumptionTileScope):
         )
         # reset to the trackedqueue!
         self.classqueue = cast(
-            DefaultQueue, TrackedQueue(strategy_pack, self)
+            DefaultQueue, TrackedQueue(strategy_pack, self, delay_next)
         )  # TODO: make CSS accept a CSSQueue as a kwarg
         self.classqueue.add(self.start_label)
 
 
 class TrackedDefaultQueue(DefaultQueue):
-    def __init__(self, pack: TileScopePack):
+    def __init__(self, pack: TileScopePack, delay_next: bool):
         super().__init__(pack)
         self.next_curr_level: Optional[Tuple[Deque[int], ...]] = None
+        self.delay_next = delay_next
 
     def is_empty(self) -> bool:
         return bool(
@@ -218,14 +232,19 @@ class TrackedDefaultQueue(DefaultQueue):
             if label not in self.ignore
         )
         self.next_level: CounterType[int] = Counter()
+        if not self.delay_next:
+            self.next_curr_level = self.curr_level
         if not any(self.curr_level):
             raise StopIteration
 
 
 class TrackedQueue(CSSQueue):
-    def __init__(self, pack: TileScopePack, tilescope: TrackedSearcher):
+    def __init__(
+        self, pack: TileScopePack, tilescope: TrackedSearcher, delay_next: bool
+    ):
         self.tilescope = tilescope
         self.pack = pack
+        self.delay_next = delay_next
         self.label_to_underlying: Dict[int, int] = {}
         self._level_first_found: Dict[int, int] = {}
         self._underlyng_labels_per_level: CounterType[int] = Counter()
@@ -233,7 +252,7 @@ class TrackedQueue(CSSQueue):
         self.inferral_expanded: Set[int] = set()
         self.initial_expanded: Set[int] = set()
         self.ignore: Set[int] = set()
-        first_queue = TrackedDefaultQueue(pack)
+        first_queue = TrackedDefaultQueue(pack, self.delay_next)
         first_queue.set_tracked_queue(self)
         self.queues = [first_queue]
         self.add_new_queue()
@@ -247,7 +266,7 @@ class TrackedQueue(CSSQueue):
 
     def add_new_queue(self) -> None:
         last_queue = self.queues[-1]
-        new_queue = TrackedDefaultQueue(self.pack)
+        new_queue = TrackedDefaultQueue(self.pack, self.delay_next)
         new_queue.set_tracked_queue(self)
         last_queue.set_next_curr_level(new_queue)
         self.queues.append(new_queue)

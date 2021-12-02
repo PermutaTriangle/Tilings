@@ -34,7 +34,9 @@ class GriddedPermsOnTiling:
 
     def __init__(self, tiling: "Tiling"):
         self._tiling = tiling
-        self._minimal_gps = MinimalGriddedPerms(tiling)
+        self._minimal_gps = MinimalGriddedPerms(
+            tiling.obstructions, tiling.requirements
+        )
         self._yielded_gridded_perms: Set[GriddedPerm] = set()
 
     def prepare_queue(self, size: int) -> List[QueuePacket]:

@@ -1437,7 +1437,7 @@ class Tiling(CombinatorialClass):
             return True
         if len(self.requirements) <= 1:
             return False
-        MGP = MinimalGriddedPerms(self)
+        MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
         return all(False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True))
 
     def is_finite(self) -> bool:
@@ -1509,7 +1509,7 @@ class Tiling(CombinatorialClass):
         # TODO: this doesn't work due to minimization on initialising"""
         if len(self.requirements) <= 1:
             return self
-        mgps = MinimalGriddedPerms(self)
+        mgps = MinimalGriddedPerms(self.obstructions, self.requirements)
         requirements = tuple(
             GriddedPerm(gp.patt, gp.pos) for gp in mgps.minimal_gridded_perms()
         )
@@ -1519,7 +1519,7 @@ class Tiling(CombinatorialClass):
         """
         An iterator over all minimal gridded permutations.
         """
-        MGP = MinimalGriddedPerms(self)
+        MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
         yield from MGP.minimal_gridded_perms()
 
     def is_epsilon(self) -> bool:
