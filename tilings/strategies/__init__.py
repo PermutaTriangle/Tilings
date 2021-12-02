@@ -17,6 +17,7 @@ from .rearrange_assumption import RearrangeAssumptionFactory
 from .requirement_insertion import (
     CellInsertionFactory,
     FactorInsertionFactory,
+    RemoveRequirementFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
     RequirementInsertionFactory,
@@ -53,6 +54,7 @@ __all__ = [
     "CellInsertionFactory",
     "FactorInsertionFactory",
     "AllPlacementsFactory",
+    "RemoveRequirementFactory",
     "RequirementExtensionFactory",
     "RequirementInsertionFactory",
     "RequirementPlacementFactory",

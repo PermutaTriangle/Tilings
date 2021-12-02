@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- `Tiling.remove_requirement` method that removes a requirement from a tiling.
+- `RemoveRequirementFactory` which adds the rules where we insert a requirement to a 
+tiling after we first remove that requirement. This is added to 
+`LocallyFactorableVerificationStrategy.pack`.
+
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
 - Bug with sliding symmetries

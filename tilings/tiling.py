@@ -614,6 +614,24 @@ class Tiling(CombinatorialClass):
         new_req_list = (GriddedPerm.single_cell(patt, cell),)
         return self.add_list_requirement(new_req_list)
 
+    def remove_requirement(self, requirement: Tuple[GriddedPerm, ...]) -> "Tiling":
+        """Return the tiling where the requirement is removed"""
+        try:
+            idx = self._requirements.index(requirement)
+        except ValueError as e:
+            raise ValueError(
+                f"following requirement not on tiling: {requirement}"
+            ) from e
+        return Tiling(
+            self._obstructions,
+            self._requirements[:idx] + self._requirements[idx + 1 :],
+            self._assumptions,
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
+        )
+
     def add_assumption(self, assumption: TrackingAssumption) -> "Tiling":
         """Returns a new tiling with the added assumption."""
         return self.add_assumptions((assumption,))
