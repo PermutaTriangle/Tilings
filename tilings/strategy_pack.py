@@ -170,6 +170,7 @@ class TileScopePack(StrategyPack):
             pack = pack.add_initial(
                 strat.RemoveIdentityPreimageStrategy(), apply_first=True
             )
+            pack = pack.add_initial(strat.RearrangeParameterFactory(), apply_first=True)
             pack = pack.add_initial(strat.AddParameterFactory(), apply_first=True)
             pack = pack.add_verification(strat.ParameterVerificationStrategy())
         return pack
@@ -225,6 +226,7 @@ class TileScopePack(StrategyPack):
             pack = pack.add_initial(
                 strat.RemoveIdentityPreimageStrategy(), apply_first=True
             )
+            pack = pack.add_initial(strat.RearrangeParameterFactory(), apply_first=True)
             pack = pack.add_initial(strat.AddParameterFactory(), apply_first=True)
             pack = pack.add_verification(strat.ParameterVerificationStrategy())
         return pack
