@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Callable, Dict, Iterator, List, Optional, Tuple, cast
+from typing import Callable, Dict, Iterator, List, Optional, Tuple, Union, cast
 
 import sympy
 
@@ -29,6 +29,11 @@ from comb_spec_searcher.typing import (
 )
 from tilings import GriddedPerm, Tiling
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
+
+from .requirement_insertion import (
+    RemoveRequirementFactory,
+    RequirementInsertionStrategy,
+)
 
 
 class RemoveIdentityPreimageConstructor(Constructor):
@@ -437,14 +442,59 @@ class DisjointUnionParameterFactory(StrategyFactory[Tiling]):
         self.strategy = strategy
         super().__init__()
 
-    def __call__(self, comb_class: Tiling) -> Iterator[DisjointUnionStrategy]:
+    def __call__(
+        self, comb_class: Tiling
+    ) -> Iterator[Union[DisjointUnionStrategy, Rule]]:
         for i, param in enumerate(comb_class.parameters):
             for j, preimage in enumerate(param.counters):
                 for rule in CombinatorialSpecificationSearcher._rules_from_strategy(
                     preimage.tiling, self.strategy
                 ):
                     assert isinstance(rule.strategy, DisjointUnionStrategy)
-                    yield DisjointParameterStrategy(rule.strategy, i, j)
+                    if rule.comb_class == comb_class:
+                        yield DisjointParameterStrategy(rule.strategy, i, j)
+                    elif isinstance(self.strategy, RemoveRequirementFactory):
+                        assert isinstance(rule.strategy, RequirementInsertionStrategy)
+                        yield from self._special_case_remove_requirement_factory(
+                            comb_class, rule.strategy, i, j
+                        )
+
+    @staticmethod
+    def _special_case_remove_requirement_factory(
+        comb_class: Tiling, strategy: RequirementInsertionStrategy, i: int, j: int
+    ) -> Iterator[Rule]:
+        """TODO: this is a major special case to reduce work done"""
+        param = comb_class.parameters[i]
+        preimage = param.counters[j]
+        req = tuple(sorted(strategy.gps))
+        req_idx = preimage.tiling.requirements.index(req)
+        image_req = tuple(sorted(preimage.map.map_gps(req)))
+        preimage_image_req = tuple(sorted(preimage.map.preimage_gps(image_req)))
+        if image_req in comb_class.requirements and preimage_image_req == req:
+            return
+        new_tiling = Tiling(
+            preimage.tiling.obstructions,
+            preimage.tiling.requirements[:req_idx]
+            + preimage.tiling.requirements[req_idx + 1 :]
+            + ((preimage_image_req,) if preimage_image_req != req else tuple()),
+        )
+        new_preimage = PreimageCounter(new_tiling, preimage.map)
+        new_param = ParameterCounter(
+            comb_class.parameters[i].counters[:j]
+            + comb_class.parameters[i].counters[j + 1 :]
+            + (new_preimage,)
+        )
+        new_comb_class = comb_class.remove_parameter(param).add_parameter(new_param)
+        if any(
+            PreimageCounter(child, preimage.map).always_counts_one(comb_class)
+            for child in strategy(new_tiling).children
+        ):
+            yield DisjointParameterStrategy(
+                strategy,
+                new_comb_class.parameters.index(new_param),
+                new_param.counters.index(new_preimage),
+                False,
+            )(new_comb_class)
 
     def __str__(self) -> str:
         return f"applying '{self.strategy}' to parameters"
