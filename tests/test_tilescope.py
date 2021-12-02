@@ -2,7 +2,6 @@ import pytest
 import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
-from comb_spec_searcher.exception import SpecificationNotFound
 from comb_spec_searcher.rule_db import RuleDBForest
 from comb_spec_searcher.strategies import ReverseRule
 from comb_spec_searcher.utils import taylor_expand
