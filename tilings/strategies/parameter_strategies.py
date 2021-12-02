@@ -29,7 +29,6 @@ from comb_spec_searcher.typing import (
 )
 from tilings import GriddedPerm, Tiling
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
-from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 
 
 class RemoveIdentityPreimageConstructor(Constructor):
