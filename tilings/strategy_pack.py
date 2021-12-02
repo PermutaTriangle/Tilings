@@ -170,9 +170,7 @@ class TileScopePack(StrategyPack):
             )
             # TODO: CSS add initial doesn't allow two of the same strategy
             pack.initial_strats = (
-                strat.DisjointUnionParameterFactory(
-                    strat.FactorSizeTwoObstructionInsertionFactory()
-                ),
+                strat.DisjointUnionParameterFactory(strat.RemoveRequirementFactory()),
             ) + pack.initial_strats
             pack = pack.add_initial(
                 strat.RemoveIdentityPreimageStrategy(), apply_first=True
@@ -233,9 +231,7 @@ class TileScopePack(StrategyPack):
             )
             # TODO: CSS add initial doesn't allow two of the same strategy
             pack.initial_strats = (
-                strat.DisjointUnionParameterFactory(
-                    strat.FactorSizeTwoObstructionInsertionFactory()
-                ),
+                strat.DisjointUnionParameterFactory(strat.RemoveRequirementFactory()),
             ) + pack.initial_strats
             pack = pack.add_initial(
                 strat.RemoveIdentityPreimageStrategy(), apply_first=True
