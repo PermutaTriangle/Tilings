@@ -10,7 +10,7 @@ from comb_spec_searcher.typing import Objects
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
 
-from .constructor import FusionConstructor, ReverseFusionConstructor
+from .constructor import FusionConstructor
 
 
 class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
@@ -212,32 +212,32 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
         raise NotImplementedError("Not fixed for parameters.")
-        if not self.tracked:
-            # constructor only enumerates when tracked.
-            raise NotImplementedError("The fusion strategy was not tracked.")
-        # Need to recompute some info to count, so ignoring passed in children
-        algo = self.fusion_algorithm(comb_class)
-        if not algo.fusable():
-            raise StrategyDoesNotApply("Strategy does not apply")
-        if algo.min_left_right_points() != (0, 0):
-            raise NotImplementedError(
-                "Reverse positive fusion counting not implemented"
-            )
-        child = algo.fused_tiling()
-        assert children is None or children == (child,)
-        (
-            left_sided_params,
-            right_sided_params,
-            _,
-        ) = self.left_right_both_sided_parameters(comb_class)
-        return ReverseFusionConstructor(
-            comb_class,
-            child,
-            self._fuse_parameter_name(comb_class),
-            self.extra_parameters(comb_class, children)[0],
-            tuple(left_sided_params),
-            tuple(right_sided_params),
-        )
+        # if not self.tracked:
+        #     # constructor only enumerates when tracked.
+        #     raise NotImplementedError("The fusion strategy was not tracked.")
+        # # Need to recompute some info to count, so ignoring passed in children
+        # algo = self.fusion_algorithm(comb_class)
+        # if not algo.fusable():
+        #     raise StrategyDoesNotApply("Strategy does not apply")
+        # if algo.min_left_right_points() != (0, 0):
+        #     raise NotImplementedError(
+        #         "Reverse positive fusion counting not implemented"
+        #     )
+        # child = algo.fused_tiling()
+        # assert children is None or children == (child,)
+        # (
+        #     left_sided_params,
+        #     right_sided_params,
+        #     _,
+        # ) = self.left_right_both_sided_parameters(comb_class)
+        # return ReverseFusionConstructor(
+        #     comb_class,
+        #     child,
+        #     self._fuse_parameter_name(comb_class),
+        #     self.extra_parameters(comb_class, children)[0],
+        #     tuple(left_sided_params),
+        #     tuple(right_sided_params),
+        # )
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
