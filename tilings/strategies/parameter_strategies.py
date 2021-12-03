@@ -451,7 +451,7 @@ class DisjointUnionParameterFactory(StrategyFactory[Tiling]):
                     preimage.tiling, self.strategy
                 ):
                     assert isinstance(rule.strategy, DisjointUnionStrategy)
-                    if rule.comb_class == comb_class:
+                    if rule.comb_class == preimage.tiling:
                         yield DisjointParameterStrategy(rule.strategy, i, j)
                     elif isinstance(self.strategy, RemoveRequirementFactory):
                         assert isinstance(rule.strategy, RequirementInsertionStrategy)
