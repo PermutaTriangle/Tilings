@@ -96,8 +96,9 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                     self.gps, []
                 ).apply_row_col_map(child.forward_map)
                 parent_var = comb_class.get_parameter_name(parameter)
-                child_var = child.get_parameter_name(mapped_parameter)
-                extra_parameters[0][parent_var] = child_var
+                if mapped_parameter.counters:
+                    child_var = child.get_parameter_name(mapped_parameter)
+                    extra_parameters[0][parent_var] = child_var
         for idx, (cell, child) in enumerate(
             zip(self._placed_cells, children[1:] if self.include_empty else children)
         ):
@@ -124,10 +125,11 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 comb_class.parameters, mapped_parameters
             ):
                 parent_var = comb_class.get_parameter_name(parameter)
-                child_var = child.get_parameter_name(mapped_parameter)
-                extra_parameters[idx + 1 if self.include_empty else idx][
-                    parent_var
-                ] = child_var
+                if mapped_parameter.counters:
+                    child_var = child.get_parameter_name(mapped_parameter)
+                    extra_parameters[idx + 1 if self.include_empty else idx][
+                        parent_var
+                    ] = child_var
         return extra_parameters
 
     def direction_string(self):

@@ -1264,6 +1264,41 @@ rules_to_check = [
             ),
         )
     ),
+    RequirementInsertionStrategy(
+        gps=frozenset({GriddedPerm((0,), ((0, 0),))}), ignore_parent=False
+    )(
+        Tiling(
+            obstructions=(GriddedPerm((1, 0, 3, 2), ((0, 0), (0, 0), (0, 0), (0, 0))),),
+            requirements=((GriddedPerm((0,), ((0, 0),)),),),
+            parameters=(
+                ParameterCounter(
+                    (
+                        PreimageCounter(
+                            Tiling(
+                                obstructions=(
+                                    GriddedPerm((1, 0), ((1, 0), (1, 0))),
+                                    GriddedPerm(
+                                        (1, 0, 3, 2), ((0, 0), (0, 0), (0, 0), (0, 0))
+                                    ),
+                                    GriddedPerm(
+                                        (1, 0, 3, 2), ((0, 0), (0, 0), (0, 0), (1, 0))
+                                    ),
+                                ),
+                                requirements=(
+                                    (
+                                        GriddedPerm((0,), ((0, 0),)),
+                                        GriddedPerm((0,), ((1, 0),)),
+                                    ),
+                                ),
+                                parameters=(),
+                            ),
+                            RowColMap({0: 0}, {0: 0, 1: 0}),
+                        ),
+                    )
+                ),
+            ),
+        )
+    ),
 ]
 equiv_rule_to_check = [r for r in rules_to_check if r.is_equivalence()]
 

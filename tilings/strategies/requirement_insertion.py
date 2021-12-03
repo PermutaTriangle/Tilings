@@ -91,13 +91,15 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             av_mapped_param = parameter.add_obstructions_and_requirements(
                 self.gps, []
             ).apply_row_col_map(av.forward_map)
-            child_var = av.get_parameter_name(av_mapped_param)
-            av_params[parent_var] = child_var
+            if av_mapped_param.counters:
+                child_var = av.get_parameter_name(av_mapped_param)
+                av_params[parent_var] = child_var
             co_mapped_param = parameter.add_obstructions_and_requirements(
                 [], [self.gps]
             ).apply_row_col_map(co.forward_map)
-            child_var = co.get_parameter_name(co_mapped_param)
-            co_params[parent_var] = child_var
+            if co_mapped_param.counters:
+                child_var = co.get_parameter_name(co_mapped_param)
+                co_params[parent_var] = child_var
         return av_params, co_params
 
     def __repr__(self) -> str:
