@@ -517,8 +517,7 @@ def test_expansion():
     ]
 
 
-@pytest.mark.xfail
-@pytest.mark.timeout(30)
+@pytest.mark.skip
 def test_domino():
     domino = Tiling(
         obstructions=[
