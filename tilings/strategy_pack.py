@@ -12,12 +12,6 @@ from comb_spec_searcher.strategies import (
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import strategies as strat
-from tilings.strategies.parameter_strategies import (
-    DisjointUnionParameterFactory,
-    ParameterVerificationStrategy,
-    RemoveIdentityPreimageStrategy,
-    RemoveReqFactory,
-)
 from tilings.strategies.verification import BasisAwareVerificationStrategy
 
 if TYPE_CHECKING:
@@ -169,12 +163,21 @@ class TileScopePack(StrategyPack):
         pack = self.add_initial(fusion_strat, name, apply_first=apply_first)
         if tracked:
             pack = pack.add_initial(
-                DisjointUnionParameterFactory(strat.FactorInsertionFactory()),
+                strat.DisjointUnionParameterFactory(
+                    strat.FactorSizeTwoObstructionInsertionFactory()
+                ),
                 apply_first=True,
             )
-            pack = pack.add_initial(RemoveReqFactory(), apply_first=True)
-            pack = pack.add_initial(RemoveIdentityPreimageStrategy(), apply_first=True)
-            pack = pack.add_verification(ParameterVerificationStrategy())
+            # TODO: CSS add initial doesn't allow two of the same strategy
+            pack.initial_strats = (
+                strat.DisjointUnionParameterFactory(strat.RemoveRequirementFactory()),
+            ) + pack.initial_strats
+            pack = pack.add_initial(
+                strat.RemoveIdentityPreimageStrategy(), apply_first=True
+            )
+            pack = pack.add_initial(strat.RearrangeParameterFactory(), apply_first=True)
+            pack = pack.add_initial(strat.AddParameterFactory(), apply_first=True)
+            pack = pack.add_verification(strat.ParameterVerificationStrategy())
         return pack
 
     def make_interleaving(
@@ -185,7 +188,7 @@ class TileScopePack(StrategyPack):
         interleaving factor strategy.
 
         If unions is set to True it will overwrite unions on the strategy, and
-        also pass the argument to AddInterleavingAssumption method.
+        also pass the argument to AddInterleavingParameter method.
         """
 
         def replace_list(strats):
@@ -218,15 +221,24 @@ class TileScopePack(StrategyPack):
 
         if tracked:
             pack = pack.add_initial(
-                strat.AddInterleavingAssumptionFactory(unions=unions), apply_first=True
+                strat.AddInterleavingParameterFactory(unions=unions), apply_first=True
             )
             pack = pack.add_initial(
-                DisjointUnionParameterFactory(strat.FactorInsertionFactory()),
+                strat.DisjointUnionParameterFactory(
+                    strat.FactorSizeTwoObstructionInsertionFactory()
+                ),
                 apply_first=True,
             )
-            pack = pack.add_initial(RemoveReqFactory(), apply_first=True)
-            pack = pack.add_initial(RemoveIdentityPreimageStrategy(), apply_first=True)
-            pack = pack.add_verification(ParameterVerificationStrategy())
+            # TODO: CSS add initial doesn't allow two of the same strategy
+            pack.initial_strats = (
+                strat.DisjointUnionParameterFactory(strat.RemoveRequirementFactory()),
+            ) + pack.initial_strats
+            pack = pack.add_initial(
+                strat.RemoveIdentityPreimageStrategy(), apply_first=True
+            )
+            pack = pack.add_initial(strat.RearrangeParameterFactory(), apply_first=True)
+            pack = pack.add_initial(strat.AddParameterFactory(), apply_first=True)
+            pack = pack.add_verification(strat.ParameterVerificationStrategy())
         return pack
 
     def make_elementary(self) -> "TileScopePack":
@@ -610,4 +622,18 @@ class TileScopePack(StrategyPack):
                 ],
             ],
             name=name,
+        )
+
+    @classmethod
+    def cell_insertions(cls, length: int):
+        return TileScopePack(
+            initial_strats=[],
+            ver_strats=[
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+            ],
+            inferral_strats=[],
+            expansion_strats=[[strat.CellInsertionFactory(maxreqlen=length)]],
+            name="length_{length}_cell_insertions",
         )

@@ -21,9 +21,9 @@ from tilings.bijections import (
     _AssumptionPathTracker,
 )
 from tilings.strategies import BasicVerificationStrategy
-from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
 from tilings.strategies.factor import FactorStrategy
 from tilings.strategies.fusion import FusionStrategy
+from tilings.strategies.parameter_insertion import AddParametersStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 from tilings.strategies.sliding import SlidingFactory, SlidingStrategy
 from tilings.tilescope import TileScope, TileScopePack

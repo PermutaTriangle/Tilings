@@ -340,6 +340,30 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
         assert not rule.children
         assert rule.shifts() == ()
 
+    def test_expand_with_remove_req(self):
+        tiling = Tiling(
+            obstructions=(
+                GriddedPerm(
+                    (3, 5, 4, 0, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1), (0, 1), (0, 1))
+                ),
+                GriddedPerm(
+                    (3, 5, 4, 0, 2, 1), ((0, 1), (0, 1), (0, 1), (1, 0), (1, 0), (1, 0))
+                ),
+                GriddedPerm(
+                    (3, 5, 4, 0, 2, 1), ((1, 0), (1, 0), (1, 0), (1, 0), (1, 0), (1, 0))
+                ),
+            ),
+            requirements=(
+                (GriddedPerm((0,), ((0, 1),)),),
+                (GriddedPerm((0,), ((1, 0),)),),
+            ),
+        )
+        basis = [Perm((3, 5, 4, 0, 2, 1))]
+        rule = LocallyFactorableVerificationStrategy(basis=basis)(tiling)
+        rule2 = OneByOneVerificationStrategy()(Tiling.from_perms(basis))
+        spec = CombinatorialSpecification(tiling, [rule, rule2])
+        assert isinstance(spec.expand_verified(), CombinatorialSpecification)
+
 
 class TestLocalVerificationStrategy(CommonTest):
     @pytest.fixture

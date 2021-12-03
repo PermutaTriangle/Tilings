@@ -1,27 +1,34 @@
-from collections import defaultdict
-from typing import DefaultDict, Iterable, Iterator, List, Optional, Set, Tuple, Union
+from collections import Counter
+from typing import Counter as CounterType
+from typing import (
+    Deque,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    cast,
+)
 
 import requests
+import tabulate
 from logzero import logger
 
 from comb_spec_searcher import (
     CombinatorialSpecification,
     CombinatorialSpecificationSearcher,
 )
-from comb_spec_searcher.rule_db import RuleDBForgetStrategy
+from comb_spec_searcher.class_queue import CSSQueue, DefaultQueue, WorkPacket
 from comb_spec_searcher.rule_db.abstract import RuleDBAbstract
-from comb_spec_searcher.strategies import AbstractStrategy
-from comb_spec_searcher.strategies.rule import AbstractRule
-from comb_spec_searcher.strategies.strategy import EmptyStrategy
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
-from tilings.strategies import AddAssumptionFactory, RearrangeAssumptionFactory
-from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
-from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategy_pack import TileScopePack
 
-__all__ = ("TileScope", "TileScopePack", "LimitedAssumptionTileScope", "GuidedSearcher")
+__all__ = ("TileScope", "TileScopePack", "LimitedParameterTileScope", "GuidedSearcher")
 
 
 class TileScope(CombinatorialSpecificationSearcher):
@@ -73,21 +80,21 @@ class TileScope(CombinatorialSpecificationSearcher):
         )
 
 
-class LimitedAssumptionTileScope(TileScope):
+class LimitedParameterTileScope(TileScope):
     """
     A subclass of Tilescope that allows a limit to be set on the maximum number of
-    assumptions that appear on any tiling in the universe.
+    parameters that appear on any tiling in the universe.
     """
 
     def __init__(
         self,
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
-        max_assumptions: int,
+        max_parameters: int,
         **kwargs,
     ) -> None:
         super().__init__(start_class, strategy_pack, **kwargs)
-        self.max_assumptions = max_assumptions
+        self.max_parameters = max_parameters
 
     def _expand(
         self,
@@ -98,7 +105,7 @@ class LimitedAssumptionTileScope(TileScope):
     ) -> None:
         """
         Will expand the combinatorial class with given label using the given
-        strategies, but only add rules whose children all satisfy the max_assumptions
+        strategies, but only add rules whose children all satisfy the max_parameters
         requirement.
         """
         if inferral:
@@ -109,7 +116,7 @@ class LimitedAssumptionTileScope(TileScope):
                     comb_class, strategy_generator, label
                 ):
                     if all(
-                        len(child.assumptions) <= self.max_assumptions
+                        len(child.parameters) <= self.max_parameters
                         for child in rule.children
                     ):
                         self.add_rule(start_label, end_labels, rule)
@@ -159,144 +166,198 @@ class GuidedSearcher(TileScope):
         return cls.from_spec(spec, pack)
 
 
-class TrackedSearcher(LimitedAssumptionTileScope):
+class TrackedSearcher(LimitedParameterTileScope):
     """
-    A TileScope that only adds underlying tilings to the queue, but expands all
-    assumption tilings with the strategies that apply to the underlying tiling
-    immediately.
+    A TileScope that will prioritise expanding tilings whose underlying tilings
+    were found at earlier levels. It does this by keeping a queue for each level,
+    and adding tilings to the queue that the underlying was first found at.
+
+    The first time a queue changes level, the next level of queue i will be added
+    to the curr level of queue i + 1. If `delay_next` is False then it continues
+    in this way for future change levels but if it is False (the default) the next
+    level of queue i will be added to the curr level of queue i after the first
+    change levels.
     """
 
-    def __init__(self, *args, **kwargs):
-        self.tilings_from_underlying: DefaultDict[int, Set[int]] = defaultdict(set)
-        self.tracking_strategies = [
-            AddAssumptionFactory(),
-            RearrangeAssumptionFactory(),
-        ]
-        self.tracked_expanded: Set[int] = set()
-        self.retroactively_expanded: Set[int] = set()
-        # TODO: keep self._strats on the ruledb, and avoid storing strats twice.
-        self._strats: DefaultDict[int, List[AbstractStrategy]] = defaultdict(list)
-        super().__init__(*args, **kwargs)
-
-    def store_strategy(self, label: int, strategy: AbstractStrategy) -> None:
-        self._strats[label].append(strategy)
-
-    def get_old_strategies(self, label: int, tiling: Tiling) -> Tuple[CSSstrategy, ...]:
-        return tuple(self._strats[label])
-
-    def add_rule(
-        self, start_label: int, end_labels: Tuple[int, ...], rule: AbstractRule
-    ) -> None:
-        """
-        Add the rule to the searcher
-
-        - try to verify children combinatorial classes
-        - set workability of combinatorial classes
-        - symmetry expand combinatorial classes
-        - add underlying class to classqueue, and do the expansion for any assumption
-        tilings with same underlying tiling
-        """
-        for comb_class, child_label in zip(rule.children, end_labels):
-            underlying_tiling = (
-                comb_class.remove_assumptions()
-                if comb_class.assumptions
-                else comb_class
-            )
-            underlying_label = (
-                self.classdb.get_label(underlying_tiling)
-                if comb_class.assumptions
-                else child_label
-            )
-            if underlying_label != child_label:
-                self.tilings_from_underlying[underlying_label].add(child_label)
-            if self.symmetries and child_label not in self.symmetry_expanded:
-                self._symmetry_expand(comb_class, child_label)
-            if rule.workable:
-                # add the underlying label to the queue
-                self.classqueue.add(underlying_label)
-            if (
-                underlying_label != child_label
-                and child_label not in self.retroactively_expanded
-            ):
-                self.retroactively_expanded.add(child_label)
-                # apply all rules in ruledb to child_label
-                old_strategies = self.get_old_strategies(
-                    underlying_label, underlying_tiling
-                )
-                self._expand(comb_class, child_label, old_strategies, False)
-            # apply tracking strategies
-            if comb_class.assumptions and child_label not in self.tracked_expanded:
-                self.tracked_expanded.add(child_label)
-                self._expand(comb_class, child_label, self.tracking_strategies, False)
-            if not rule.inferrable:
-                self.classqueue.set_not_inferrable(underlying_label)
-            if not rule.possibly_empty:
-                # this is shortcutting some empty checks by ruledb,
-                # so should be done to both underlying and child labels
-                self.classdb.set_empty(child_label, empty=False)
-                if underlying_label != child_label:
-                    self.classdb.set_empty(underlying_label, empty=False)
-            # calls add rule recursively, so will add verification
-            # rules for all with underlying tiling
-            self.try_verify(underlying_tiling, underlying_label)
-        if rule.ignore_parent:
-            self.classqueue.set_stop_yielding(start_label)
-
-        # update all with same underlying label
-        self.ruledb.add(start_label, end_labels, rule)
-        if not isinstance(
-            rule.strategy,
-            (RearrangeAssumptionStrategy, AddAssumptionsStrategy),
-        ):
-            self.store_strategy(start_label, rule.strategy)
-            for label in list(self.tilings_from_underlying[start_label]):
-                assumption_tiling = self.classdb.get_class(label)
-                self._expand(assumption_tiling, label, (rule.strategy,), False)
-
-
-class ForgetTrackedSearcher(TrackedSearcher):
     def __init__(
         self,
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
+        max_parameters: int,
+        delay_next: bool = False,
         **kwargs,
+    ) -> None:
+        super().__init__(
+            start_class, strategy_pack, max_parameters=max_parameters, **kwargs
+        )
+        # reset to the trackedqueue!
+        self.classqueue = cast(
+            DefaultQueue, TrackedQueue(strategy_pack, self, delay_next)
+        )  # TODO: make CSS accept a CSSQueue as a kwarg
+        self.classqueue.add(self.start_label)
+
+
+class TrackedDefaultQueue(DefaultQueue):
+    def __init__(self, pack: TileScopePack, delay_next: bool):
+        super().__init__(pack)
+        self.next_curr_level: Optional[Tuple[Deque[int], ...]] = None
+        self.delay_next = delay_next
+
+    def is_empty(self) -> bool:
+        return bool(
+            not self.working and not self.next_level and not any(self.curr_level)
+        )
+
+    def set_next_curr_level(self, other: "TrackedDefaultQueue"):
+        self.next_curr_level = other.curr_level
+
+    def set_tracked_queue(self, tracked_queue: "TrackedQueue") -> None:
+        self._inferral_expanded = tracked_queue.inferral_expanded
+        self._initial_expanded = tracked_queue.initial_expanded
+        self.ignore = tracked_queue.ignore
+
+    def _change_level(self) -> None:
+        assert not self.staging, "Can't change level is staging is not empty"
+        assert not self.working, "Can't change level is working is not empty"
+        assert not any(self.curr_level), "Can't change level is curr_level is not empty"
+        assert self.next_curr_level is not None, "not set the next curr queue"
+        if any(self.next_curr_level):
+            # this ensures we only change level when the next curr queue is empty
+            # and therefore makes sure we never expand a label with the same strategy
+            # twice
+            raise StopIteration
+        self.next_curr_level[0].extend(
+            label
+            for label, _ in sorted(self.next_level.items(), key=lambda x: -x[1])
+            if label not in self.ignore
+        )
+        self.next_level: CounterType[int] = Counter()
+        if not self.delay_next:
+            self.next_curr_level = self.curr_level
+        if not any(self.curr_level):
+            raise StopIteration
+
+
+class TrackedQueue(CSSQueue):
+    def __init__(
+        self, pack: TileScopePack, tilescope: TrackedSearcher, delay_next: bool
     ):
-        self._strategies: Optional[List[CSSstrategy]] = None
-        self._strat_indices: DefaultDict[int, int] = defaultdict(int)
-        kwargs["ruledb"] = kwargs.get("ruledb", RuleDBForgetStrategy())
-        super().__init__(start_class, strategy_pack, **kwargs)
+        self.tilescope = tilescope
+        self.pack = pack
+        self.delay_next = delay_next
+        self.label_to_underlying: Dict[int, int] = {}
+        self._level_first_found: Dict[int, int] = {}
+        self._underlyng_labels_per_level: CounterType[int] = Counter()
+        self._all_labels_per_level: CounterType[int] = Counter()
+        self.inferral_expanded: Set[int] = set()
+        self.initial_expanded: Set[int] = set()
+        self.ignore: Set[int] = set()
+        first_queue = TrackedDefaultQueue(pack, self.delay_next)
+        first_queue.set_tracked_queue(self)
+        self.queues = [first_queue]
+        self.add_new_queue()
+
+        super().__init__(pack)
 
     @property
-    def strategies(self) -> List[CSSstrategy]:
-        if self._strategies is None:
-            self._strategies = list(self.strategy_pack)
-        return self._strategies
+    def levels_completed(self):
+        """Return the number of levels completed for underlying tilings"""
+        return len(self.queues) - 2
 
-    def store_strategy(self, label: int, strategy: AbstractStrategy) -> None:
-        """We do nothing as instead we track in the _expand method."""
+    def add_new_queue(self) -> None:
+        last_queue = self.queues[-1]
+        new_queue = TrackedDefaultQueue(self.pack, self.delay_next)
+        new_queue.set_tracked_queue(self)
+        last_queue.set_next_curr_level(new_queue)
+        self.queues.append(new_queue)
 
-    def get_old_strategies(self, label: int, tiling: Tiling) -> Tuple[CSSstrategy, ...]:
-        if self.classdb.is_empty(tiling, label):
-            return (EmptyStrategy(),)
-        return tuple(
-            self.strategies[idx]
-            for idx, bit in enumerate(bin(self._strat_indices[label])[-1:1:-1])
-            if bit == "1"
+    def get_underlying_label(self, label: int) -> int:
+        underlying_label = self.label_to_underlying.get(label)
+        if underlying_label is None:
+            tiling = self.tilescope.classdb.get_class(label)
+            underlying_tiling = tiling.remove_parameters()
+            underlying_label = self.tilescope.classdb.get_label(underlying_tiling)
+            self.label_to_underlying[label] = underlying_label
+            # count the number of labels that will be added to this level
+            self._all_labels_per_level[self.level_first_found(underlying_label)] += 1
+        return underlying_label
+
+    def level_first_found(self, label: int) -> int:
+        """Return the level that the underlying label was first found at."""
+        underlying_label = self.get_underlying_label(label)
+        level = self._level_first_found.get(underlying_label)
+        if level is None:
+            level = len(self.queues) - 2
+            self._level_first_found[underlying_label] = level
+            # count the number of underlying labels added to this level
+            self._underlyng_labels_per_level[level] += 1
+        return level
+
+    def add(self, label: int) -> None:
+        if label in self.ignore:
+            return
+        self.queues[self.level_first_found(label)].add(label)
+
+    def set_not_inferrable(self, label: int) -> None:
+        self.queues[self.level_first_found(label)].set_not_inferrable(label)
+
+    def set_verified(self, label: int) -> None:
+        self.queues[self.level_first_found(label)].set_verified(label)
+
+    def set_stop_yielding(self, label: int) -> None:
+        self.queues[self.level_first_found(label)].set_stop_yielding(label)
+
+    def do_level(self) -> Iterator[WorkPacket]:
+        raise NotImplementedError
+
+    def status(self) -> str:
+        status = f"Queue status (currently on level {self.levels_completed}):\n"
+        table: List[Tuple[str, ...]] = []
+        working = ("working",) + tuple(
+            f"{len(queue.working):,d}" for queue in self.queues[:-1]
         )
-
-    def _expand_class_with_strategy(
-        self,
-        comb_class: Tiling,
-        strategy_generator: CSSstrategy,
-        label: Optional[int] = None,
-        initial: bool = False,
-    ) -> Iterator[Tuple[int, Tuple[int, ...], AbstractRule]]:
-        if not comb_class.parameters and not isinstance(
-            strategy_generator, (AddAssumptionFactory, RearrangeAssumptionFactory)
-        ):
-            idx = self.strategies.index(strategy_generator)
-            assert isinstance(label, int)
-            self._strat_indices[label] |= 1 << idx
-        yield from super()._expand_class_with_strategy(
-            comb_class, strategy_generator, label, initial
+        table.append(working)
+        for idx in range(len(self.pack.expansion_strats)):
+            current = (f"current (set {idx+1})",) + tuple(
+                f"{len(queue.curr_level[idx]):,d}" for queue in self.queues[:-1]
+            )
+            table.append(current)
+        nxt = ("next",) + tuple(
+            f"{len(queue.next_level):,d}" for queue in self.queues[:-1]
         )
+        table.append(nxt)
+        status += "    "
+        headers = ("Size",) + tuple(
+            f"Queue {idx}" for idx in range(len(self.queues) - 1)
+        )
+        underlying = ("underlying",) + tuple(
+            self._underlyng_labels_per_level[level] for level in range(len(self.queues))
+        )
+        table.append(underlying)
+        all_labels = ("all labels",) + tuple(
+            self._all_labels_per_level[level] for level in range(len(self.queues))
+        )
+        table.append(all_labels)
+        table = [headers] + table
+        table = list(zip(*table))
+        headers = table[0]
+        table = table[1:]
+        colalign = ("left",) + tuple("right" for _ in headers[1:])
+        status += (
+            tabulate.tabulate(table, headers=headers, colalign=colalign).replace(
+                "\n", "\n    "
+            )
+            + "\n"
+        )
+        return status
+
+    def __next__(self) -> WorkPacket:
+        for idx, queue in enumerate(self.queues):
+            if idx == len(self.queues) - 1:
+                if all(queue.is_empty() for queue in self.queues):
+                    raise StopIteration
+                self.add_new_queue()
+            try:
+                return next(queue)
+            except StopIteration:
+                continue

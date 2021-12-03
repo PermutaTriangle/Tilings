@@ -4,6 +4,7 @@ from typing import Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
+from comb_spec_searcher.strategies import Rule
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 
@@ -474,10 +475,37 @@ class FactorInsertionFactory(AbstractRequirementInsertionFactory):
         gp_facts = map(GriddedPerm.factors, reqs_and_obs)
         proper_facts = chain.from_iterable(f for f in gp_facts if len(f) > 1)
         for f in proper_facts:
-            yield (GriddedPerm(f.patt, f.pos),)
+            if not any(f.contains(*req) for req in tiling.requirements):
+                yield (GriddedPerm(f.patt, f.pos),)
 
     def __str__(self) -> str:
         return "all factor insertion"
+
+
+class FactorSizeTwoObstructionInsertionFactory(AbstractRequirementInsertionFactory):
+    """
+    Insert factors of size two obstructions which are factorable.
+    """
+
+    def __init__(self, ignore_parent: bool = True) -> None:
+        super().__init__(ignore_parent)
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        gp_facts = map(
+            GriddedPerm.factors,
+            (
+                ob
+                for ob in tiling.obstructions
+                if len(ob) == 2 and not ob.is_single_cell() and not ob.is_interleaving()
+            ),
+        )
+        proper_facts = chain.from_iterable(f for f in gp_facts if len(f) > 1)
+        for f in proper_facts:
+            if not any(f.contains(*req) for req in tiling.requirements):
+                yield (GriddedPerm(f.patt, f.pos),)
+
+    def __str__(self) -> str:
+        return "targeted cell insertion into size two obs"
 
 
 class RequirementCorroborationFactory(AbstractRequirementInsertionFactory):
@@ -509,3 +537,25 @@ class RequirementCorroborationFactory(AbstractRequirementInsertionFactory):
 
     def __str__(self) -> str:
         return "requirement corroboration"
+
+
+class RemoveRequirementFactory(StrategyFactory[Tiling]):
+    """
+    For a tiling T, and each requirement R on T, create the rules that
+    cell inserts R onto the tiling T without R.
+    """
+
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule[Tiling, GriddedPerm]]:
+        for req_list in comb_class.requirements:
+            remove_req = comb_class.remove_requirement(req_list)
+            yield RequirementInsertionStrategy(req_list)(remove_req)
+
+    def __str__(self) -> str:
+        return "remove requirements"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "RemoveRequirementFactory":
+        return cls()
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
