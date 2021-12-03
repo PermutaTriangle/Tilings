@@ -211,6 +211,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
+        raise NotImplementedError("Not fixed for parameters.")
         if not self.tracked:
             # constructor only enumerates when tracked.
             raise NotImplementedError("The fusion strategy was not tracked.")
