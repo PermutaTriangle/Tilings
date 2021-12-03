@@ -8,9 +8,15 @@ from comb_spec_searcher.utils import taylor_expand
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 from tilings import strategies as strat
+from tilings.strategies import DisjointUnionParameterFactory
 from tilings.strategies.fusion import FusionStrategy
 from tilings.strategy_pack import TileScopePack
-from tilings.tilescope import GuidedSearcher, TileScope, TrackedSearcher
+from tilings.tilescope import (
+    GuidedSearcher,
+    LimitedParameterTileScope,
+    TileScope,
+    TrackedSearcher,
+)
 
 
 class ComponentFusionStrategy:
@@ -113,9 +119,16 @@ def test_123():
 
 @pytest.mark.timeout(60)
 def test_123_pp_fusion():
-    searcher = TrackedSearcher(
+    pack = TileScopePack.point_placements().make_fusion(tracked=True)
+    # TODO: shouldn't need to remove the disjoint param strats
+    pack.initial_strats = tuple(
+        strat
+        for strat in pack.initial_strats
+        if not isinstance(strat, DisjointUnionParameterFactory)
+    )
+    searcher = LimitedParameterTileScope(
         (Perm((0, 1, 2)),),
-        TileScopePack.point_placements().make_fusion(tracked=True),
+        pack,
         max_parameters=1,
     )
     spec = searcher.auto_search()
@@ -504,7 +517,7 @@ def test_expansion():
     ]
 
 
-@pytest.mark.xfail("Need to work out why its not being found.")
+@pytest.mark.xfail
 @pytest.mark.timeout(30)
 def test_domino():
     domino = Tiling(
