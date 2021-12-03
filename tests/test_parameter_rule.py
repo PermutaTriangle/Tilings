@@ -4,8 +4,9 @@ from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
 from tilings.map import RowColMap
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
+from tilings.strategies import RemoveRequirementFactory
 from tilings.strategies.fusion import FusionFactory, FusionStrategy
-from tilings.strategies.parameter_strategies import RemoveReqFactory
+from tilings.strategies.parameter_strategies import DisjointUnionParameterFactory
 
 
 def test_counting_fusion_rule():
@@ -176,7 +177,7 @@ def test_remove_req_identity():
         ),
     )
     with pytest.raises(StopIteration):
-        next(RemoveReqFactory()(t))
+        next(DisjointUnionParameterFactory(RemoveRequirementFactory())(t))
 
 
 def test_remove_req_factory():
@@ -202,7 +203,7 @@ def test_remove_req_factory():
             ),
         ),
     )
-    strat = RemoveReqFactory()
+    strat = DisjointUnionParameterFactory(RemoveRequirementFactory())
     assert sum(1 for _ in strat(t)) == 1
     assert next(strat(t)).children == (
         Tiling(

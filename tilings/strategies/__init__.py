@@ -17,12 +17,12 @@ from .parameter_strategies import (
     DisjointUnionParameterFactory,
     ParameterVerificationStrategy,
     RemoveIdentityPreimageStrategy,
-    RemoveReqFactory,
 )
 from .rearrange_parameter import RearrangeParameterFactory
 from .requirement_insertion import (
     CellInsertionFactory,
     FactorInsertionFactory,
+    FactorSizeTwoObstructionInsertionFactory,
     RemoveRequirementFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
@@ -58,12 +58,12 @@ __all__ = [
     "ParameterVerificationStrategy",
     "RearrangeParameterFactory",
     "RemoveIdentityPreimageStrategy",
-    "RemoveReqFactory",
     "SplittingStrategy",
     # Batch
+    "AllPlacementsFactory",
     "CellInsertionFactory",
     "FactorInsertionFactory",
-    "AllPlacementsFactory",
+    "FactorSizeTwoObstructionInsertionFactory",
     "RemoveRequirementFactory",
     "RequirementExtensionFactory",
     "RequirementInsertionFactory",

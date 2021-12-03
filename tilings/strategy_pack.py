@@ -163,10 +163,15 @@ class TileScopePack(StrategyPack):
         pack = self.add_initial(fusion_strat, name, apply_first=apply_first)
         if tracked:
             pack = pack.add_initial(
-                strat.DisjointUnionParameterFactory(strat.FactorInsertionFactory()),
+                strat.DisjointUnionParameterFactory(
+                    strat.FactorSizeTwoObstructionInsertionFactory()
+                ),
                 apply_first=True,
             )
-            pack = pack.add_initial(strat.RemoveReqFactory(), apply_first=True)
+            # TODO: CSS add initial doesn't allow two of the same strategy
+            pack.initial_strats = (
+                strat.DisjointUnionParameterFactory(strat.RemoveRequirementFactory()),
+            ) + pack.initial_strats
             pack = pack.add_initial(
                 strat.RemoveIdentityPreimageStrategy(), apply_first=True
             )
@@ -219,10 +224,15 @@ class TileScopePack(StrategyPack):
                 strat.AddInterleavingParameterFactory(unions=unions), apply_first=True
             )
             pack = pack.add_initial(
-                strat.DisjointUnionParameterFactory(strat.FactorInsertionFactory()),
+                strat.DisjointUnionParameterFactory(
+                    strat.FactorSizeTwoObstructionInsertionFactory()
+                ),
                 apply_first=True,
             )
-            pack = pack.add_initial(strat.RemoveReqFactory(), apply_first=True)
+            # TODO: CSS add initial doesn't allow two of the same strategy
+            pack.initial_strats = (
+                strat.DisjointUnionParameterFactory(strat.RemoveRequirementFactory()),
+            ) + pack.initial_strats
             pack = pack.add_initial(
                 strat.RemoveIdentityPreimageStrategy(), apply_first=True
             )

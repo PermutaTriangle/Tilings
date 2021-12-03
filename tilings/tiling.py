@@ -617,7 +617,7 @@ class Tiling(CombinatorialClass):
         return Tiling(
             self._obstructions,
             self._requirements[:idx] + self._requirements[idx + 1 :],
-            self._assumptions,
+            self._parameters,
             remove_empty_rows_and_cols=False,
             derive_empty=False,
             simplify=False,
