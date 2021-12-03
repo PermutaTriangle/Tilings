@@ -89,8 +89,11 @@ class Fusion:
 
     def is_fusable_param(self, parameter_counter: ParameterCounter) -> bool:
         return all(
-            self.is_fusable_preimage(preimage)
+            not self._active_region_of_preimage_intersects_fuse_region(preimage)
             for preimage in parameter_counter.counters
+        ) or (
+            len(parameter_counter.counters) == 1
+            and parameter_counter.counters[0].tiling == self.allowed_preimage
         )
 
     def _active_region_of_preimage_intersects_fuse_region(
@@ -105,11 +108,6 @@ class Fusion:
                 self.tiling.cells_in_col(self._col_idx + 1)
             )
         return bool(preimage.active_region(self.tiling).intersection(fuse_region))
-
-    def is_fusable_preimage(self, preimage: PreimageCounter) -> bool:
-        if not self._active_region_of_preimage_intersects_fuse_region(preimage):
-            return True
-        return preimage.tiling == self.allowed_preimage
 
     @functools.cached_property
     def allowed_preimage(self) -> "Tiling":

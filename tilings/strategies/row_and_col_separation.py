@@ -68,8 +68,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                     mapped_param
                 )
                 for param, mapped_param in zip(comb_class.parameters, mapped_params)
-                # TODO: previsously checked that the tracked assumption had some gps
-                # here. What is the equivalence in our case.
+                if mapped_param.counters
             },
         )
 

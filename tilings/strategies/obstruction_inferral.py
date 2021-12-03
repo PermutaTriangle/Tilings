@@ -50,8 +50,9 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 self.gps, []
             ).apply_row_col_map(child.forward_map)
             parent_var = comb_class.get_parameter_name(parameter)
-            child_var = child.get_parameter_name(mapped_parameter)
-            params[parent_var] = child_var
+            if mapped_parameter.counters:
+                child_var = child.get_parameter_name(mapped_parameter)
+                params[parent_var] = child_var
         return (params,)
 
     def backward_map(
