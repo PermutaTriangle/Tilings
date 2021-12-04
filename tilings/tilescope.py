@@ -28,7 +28,7 @@ from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.strategy_pack import TileScopePack
 
-__all__ = ("TileScope", "TileScopePack", "LimitedAssumptionTileScope", "GuidedSearcher")
+__all__ = ("TileScope", "TileScopePack", "LimitedParameterTileScope", "GuidedSearcher")
 
 
 class TileScope(CombinatorialSpecificationSearcher):
@@ -80,21 +80,21 @@ class TileScope(CombinatorialSpecificationSearcher):
         )
 
 
-class LimitedAssumptionTileScope(TileScope):
+class LimitedParameterTileScope(TileScope):
     """
     A subclass of Tilescope that allows a limit to be set on the maximum number of
-    assumptions that appear on any tiling in the universe.
+    parameters that appear on any tiling in the universe.
     """
 
     def __init__(
         self,
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
-        max_assumptions: int,
+        max_parameters: int,
         **kwargs,
     ) -> None:
         super().__init__(start_class, strategy_pack, **kwargs)
-        self.max_assumptions = max_assumptions
+        self.max_parameters = max_parameters
 
     def _expand(
         self,
@@ -105,7 +105,7 @@ class LimitedAssumptionTileScope(TileScope):
     ) -> None:
         """
         Will expand the combinatorial class with given label using the given
-        strategies, but only add rules whose children all satisfy the max_assumptions
+        strategies, but only add rules whose children all satisfy the max_parameters
         requirement.
         """
         if inferral:
@@ -116,7 +116,7 @@ class LimitedAssumptionTileScope(TileScope):
                     comb_class, strategy_generator, label
                 ):
                     if all(
-                        len(child.assumptions) <= self.max_assumptions
+                        len(child.parameters) <= self.max_parameters
                         for child in rule.children
                     ):
                         self.add_rule(start_label, end_labels, rule)
@@ -131,7 +131,7 @@ class GuidedSearcher(TileScope):
         *args,
         **kwargs,
     ):
-        self.tilings = frozenset(t.remove_assumptions() for t in tilings)
+        self.tilings = frozenset(t.remove_parameters() for t in tilings)
         super().__init__(basis, pack, *args, **kwargs)
         for t in self.tilings:
             class_label = self.classdb.get_label(t)
@@ -146,7 +146,7 @@ class GuidedSearcher(TileScope):
         strategies: Tuple[CSSstrategy, ...],
         inferral: bool,
     ) -> None:
-        if comb_class.remove_assumptions() not in self.tilings:
+        if comb_class.remove_parameters() not in self.tilings:
             return
         return super()._expand(comb_class, label, strategies, inferral)
 
@@ -166,7 +166,7 @@ class GuidedSearcher(TileScope):
         return cls.from_spec(spec, pack)
 
 
-class TrackedSearcher(LimitedAssumptionTileScope):
+class TrackedSearcher(LimitedParameterTileScope):
     """
     A TileScope that will prioritise expanding tilings whose underlying tilings
     were found at earlier levels. It does this by keeping a queue for each level,
@@ -183,12 +183,12 @@ class TrackedSearcher(LimitedAssumptionTileScope):
         self,
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
-        max_assumptions: int,
+        max_parameters: int,
         delay_next: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(
-            start_class, strategy_pack, max_assumptions=max_assumptions, **kwargs
+            start_class, strategy_pack, max_parameters=max_parameters, **kwargs
         )
         # reset to the trackedqueue!
         self.classqueue = cast(
@@ -275,7 +275,7 @@ class TrackedQueue(CSSQueue):
         underlying_label = self.label_to_underlying.get(label)
         if underlying_label is None:
             tiling = self.tilescope.classdb.get_class(label)
-            underlying_tiling = tiling.remove_assumptions()
+            underlying_tiling = tiling.remove_parameters()
             underlying_label = self.tilescope.classdb.get_label(underlying_tiling)
             self.label_to_underlying[label] = underlying_label
             # count the number of labels that will be added to this level

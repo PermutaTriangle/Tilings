@@ -172,12 +172,9 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
 
     def is_reversible(self, comb_class: Tiling) -> bool:
         algo = self.fusion_algorithm(comb_class)
-        new_ass = algo.new_assumption()
-        fused_assumptions = (
-            ass.__class__(gps)
-            for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
-        )
-        return new_ass in fused_assumptions
+        new_param = algo.new_parameter()
+        fused_params = map(algo.fused_param, comb_class.parameters)
+        return new_param in fused_params
 
     @staticmethod
     def shifts(
@@ -201,7 +198,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         return FusionConstructor(
             comb_class,
             child,
-            self._fuse_parameter(comb_class),
+            self._fuse_parameter_name(comb_class),
             self.extra_parameters(comb_class, children)[0],
             *self.left_right_both_sided_parameters(comb_class),
             min_left,
@@ -235,7 +232,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         return ReverseFusionConstructor(
             comb_class,
             child,
-            self._fuse_parameter(comb_class),
+            self._fuse_parameter_name(comb_class),
             self.extra_parameters(comb_class, children)[0],
             tuple(left_sided_params),
             tuple(right_sided_params),
@@ -250,15 +247,18 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         algo = self.fusion_algorithm(comb_class)
         child = children[0]
-        mapped_assumptions = [
-            child.forward_map.map_assumption(ass.__class__(gps))
-            for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
-        ]
+        (
+            _,
+            _,
+            mapped_parameters,
+        ) = algo.fused_obs_reqs_and_params()
+        mapped_parameters = tuple(
+            param.apply_row_col_map(child.forward_map) for param in mapped_parameters
+        )
         return (
             {
-                k: child.get_assumption_parameter(ass)
-                for k, ass in zip(comb_class.extra_parameters, mapped_assumptions)
-                if ass.gps
+                k: child.get_parameter_name(param)
+                for k, param in zip(comb_class.extra_parameters, mapped_parameters)
             },
         )
 
@@ -269,10 +269,10 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         right_sided_params: Set[str] = set()
         both_sided_params: Set[str] = set()
         algo = self.fusion_algorithm(comb_class)
-        for assumption in comb_class.assumptions:
-            parent_var = comb_class.get_assumption_parameter(assumption)
-            left_sided = algo.is_left_sided_assumption(assumption)
-            right_sided = algo.is_right_sided_assumption(assumption)
+        for parameter in comb_class.parameters:
+            parent_var = comb_class.get_parameter_name(parameter)
+            left_sided = algo.is_left_sided_parameter(parameter)
+            right_sided = algo.is_right_sided_parameter(parameter)
             if left_sided and not right_sided:
                 left_sided_params.add(parent_var)
             elif right_sided and not left_sided:
@@ -285,12 +285,12 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             both_sided_params,
         )
 
-    def _fuse_parameter(self, comb_class: Tiling) -> str:
+    def _fuse_parameter_name(self, comb_class: Tiling) -> str:
+        """Return the parameter name used by the fuse parameter."""
         algo = self.fusion_algorithm(comb_class)
         child = algo.fused_tiling()
-        ass = algo.new_assumption()
-        fuse_assumption = ass.__class__(child.forward_map.map_gp(gp) for gp in ass.gps)
-        return child.get_assumption_parameter(fuse_assumption)
+        ass = algo.new_parameter()
+        return child.get_parameter_name(ass)
 
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"
@@ -311,12 +311,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         """
         if children is None:
             children = self.decomposition_function(comb_class)
-        gp = objs[0]
-        assert gp is not None
-        gp = children[0].backward_map.map_gp(gp)
-        yield from self.fusion_algorithm(comb_class).unfuse_gridded_perm(
-            gp, left_points
-        )
+        raise NotImplementedError
 
     def forward_map(
         self,
@@ -330,8 +325,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         """
         if children is None:
             children = self.decomposition_function(comb_class)
-        fused_gp = self.fusion_algorithm(comb_class).fuse_gridded_perm(obj)
-        return (children[0].forward_map.map_gp(fused_gp),)
+        raise NotImplementedError
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()

@@ -9,17 +9,32 @@ separation is idempotent by applying the core algorithm until it stabilises.
 """
 import heapq
 from itertools import combinations, product
-from typing import TYPE_CHECKING, Dict, List, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Generic,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
-from tilings import GriddedPerm
+from tilings.map import CellMap
 
 if TYPE_CHECKING:
-    from tilings import Tiling
+    from tilings import GriddedPerm, Tiling
+    from tilings.parameter_counter import ParameterCounter
 
 Cell = Tuple[int, int]
+Edge = Tuple[int, int]
+Matrix = List[List[int]]
+T = TypeVar("T")
 
 
-class Graph:
+class Graph(Generic[T]):
     """
     A weighted directed graph implemented with an adjacency matrix.
 
@@ -42,7 +57,7 @@ class Graph:
         - For the vertex order implied by a reduced acyclic graph
     """
 
-    def __init__(self, vertices, matrix=None):
+    def __init__(self, vertices: Iterable[T], matrix: Matrix):
         self._vertex_labels = [set([v]) for v in vertices]
         self._vertex_weights = [1 for _ in self._vertex_labels]
         self._matrix = matrix
@@ -52,13 +67,13 @@ class Graph:
         self._is_acyclic = False
 
     @property
-    def num_vertices(self):
+    def num_vertices(self) -> int:
         """
         The number of vertices of the graph
         """
         return len(self._vertex_weights)
 
-    def _merge_vertices(self, v1, v2):
+    def _merge_vertices(self, v1: int, v2: int) -> None:
         """
         Merge the two vertices.
 
@@ -73,7 +88,7 @@ class Graph:
         self._add_matrix_columns(v1, v2)
         self._trim_edges(v1)
 
-    def reduce(self):
+    def reduce(self) -> None:
         if self._reduced:
             return
         non_edge = self.find_non_edge()
@@ -82,7 +97,7 @@ class Graph:
             non_edge = self.find_non_edge()
         self._reduced = True
 
-    def find_non_edge(self):
+    def find_non_edge(self) -> Tuple[int, int]:
         """
         Return a non-edge of the graph.
 
@@ -93,7 +108,7 @@ class Graph:
             if not self._is_edge(v1, v2) and not self._is_edge(v2, v1):
                 return (v1, v2)
 
-    def is_acyclic(self):
+    def is_acyclic(self) -> bool:
         """
         Check if the graph is acyclic.
 
@@ -105,7 +120,7 @@ class Graph:
             return True
         return self.find_cycle() is None
 
-    def find_cycle(self):
+    def find_cycle(self) -> Optional[Union[Tuple[Edge, Edge], Tuple[Edge, Edge, Edge]]]:
         """
         Return the edges of a cycle of the graphs. The graphs first need to be
         reduced
@@ -131,7 +146,7 @@ class Graph:
         self._is_acyclic = True
         return None
 
-    def break_cycle_in_all_ways(self, edges):
+    def break_cycle_in_all_ways(self, edges: Iterable[Edge]) -> Iterator["Graph"]:
         """
         Generator over Graph object obtained by removing one edge of the
         `edges` iterator.
@@ -147,7 +162,7 @@ class Graph:
             new_graph._is_acyclic = False
             yield new_graph
 
-    def vertex_order(self):
+    def vertex_order(self) -> List[Set[T]]:
         """
         Return the order of the vertex in a reduced acyclic graph.
 
@@ -161,7 +176,7 @@ class Graph:
         vert_num_parent = [row.count(0) for row in self._matrix]
         return [p[1] for p in sorted(zip(vert_num_parent, self._vertex_labels))]
 
-    def _add_matrix_rows(self, row1_idx, row2_idx):
+    def _add_matrix_rows(self, row1_idx: int, row2_idx: int) -> None:
         """
         Deletes row 2 from the graph matrix and change row 1 to
         the sum of both row.
@@ -171,7 +186,7 @@ class Graph:
         row2 = self._matrix.pop(row2_idx)
         self._matrix[row1_idx] = list(map(sum, zip(row1, row2)))
 
-    def _add_matrix_columns(self, col1_idx, col2_idx):
+    def _add_matrix_columns(self, col1_idx: int, col2_idx: int) -> None:
         """
         Deletes column 2 from the graph matrix and change column 1 to
         the sum of both column.
@@ -181,7 +196,7 @@ class Graph:
             c2_value = row.pop(col2_idx)
             row[col1_idx] += c2_value
 
-    def _trim_edges(self, vertex):
+    def _trim_edges(self, vertex: int) -> None:
         """
         Remove all the edges that touch vertex that that have a weight which is
         too small.
@@ -197,7 +212,7 @@ class Graph:
             self._delete_edge_if_small(v1, v2, weight_prod)
             self._delete_edge_if_small(v2, v1, weight_prod)
 
-    def _delete_edge_if_small(self, head, tail, cap):
+    def _delete_edge_if_small(self, head: int, tail: int, cap: int) -> None:
         """
         Delete the edges that goes from head to tail if its weight is lower
         than the cap.
@@ -206,10 +221,10 @@ class Graph:
         if weight < cap:
             self._matrix[head][tail] = 0
 
-    def _is_edge(self, v1, v2):
+    def _is_edge(self, v1: int, v2: int) -> bool:
         return self._matrix[v1][v2] != 0
 
-    def _length3_cycle(self, v1, v2, v3):
+    def _length3_cycle(self, v1: int, v2: int, v3: int) -> Tuple[Edge, Edge, Edge]:
         """
         Return the edges of a length 3 cycle containing the three vertices if
         such a cycle exist. Otherwise return None
@@ -225,25 +240,29 @@ class Graph:
         if is_cycle(orientation2):
             return orientation2
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         s = f"Graph over the vertices {self._vertex_labels}\n"
         s += f"Vertex weight is {self._vertex_weights}\n"
         for row in self._matrix:
             s += f"{row}\n"
         return s
 
-    def __lt__(self, other):
+    def __lt__(self, other: object) -> bool:
         """
         A graph is 'smaller if it as more vertices.
         Useful for the priority queue
         """
+        if not isinstance(other, Graph):
+            return NotImplemented
         return self.num_vertices > other.num_vertices
 
-    def __le__(self, other):
+    def __le__(self, other: object) -> bool:
         """
         A graph is 'smaller if it as more vertices.
         Useful for the priority queue
         """
+        if not isinstance(other, Graph):
+            return NotImplemented
         return self.num_vertices >= other.num_vertices
 
 
@@ -252,22 +271,22 @@ class _RowColSeparationSingleApplication:
     Make the row separation of the tiling.
     """
 
-    def __init__(self, tiling):
+    def __init__(self, tiling: "Tiling"):
         self._tiling = tiling
         self._active_cells = tuple(sorted(tiling.active_cells))
-        self._ineq_matrices = None
-        self._max_row_order = None
-        self._max_col_order = None
+        self._ineq_matrices: Optional[Tuple[Matrix, Matrix]] = None
+        self._max_row_order: Optional[List[Set[Cell]]] = None
+        self._max_col_order: Optional[List[Set[Cell]]] = None
 
-    def cell_at_idx(self, idx):
+    def cell_at_idx(self, idx: int) -> Cell:
         """Return the cell at index `idx`."""
         return self._active_cells[idx]
 
-    def cell_idx(self, cell):
+    def cell_idx(self, cell: Cell) -> int:
         """Return the index of the cell"""
         return self._active_cells.index(cell)
 
-    def _basic_matrix(self, row):
+    def _basic_matrix(self, row: bool) -> Matrix:
         """
         Compute the basic matrix of inequalities based only on difference in
         row and columns. If `row` is True return the matrix for the row,
@@ -276,12 +295,12 @@ class _RowColSeparationSingleApplication:
         idx = 1 if row else 0
         m = []
         for c1 in self._active_cells:
-            row = [1 if c1[idx] < c2[idx] else 0 for c2 in self._active_cells]
-            m.append(row)
+            new_row = [1 if c1[idx] < c2[idx] else 0 for c2 in self._active_cells]
+            m.append(new_row)
         return m
 
     @staticmethod
-    def _row_cell_order(ob):
+    def _row_cell_order(ob: "GriddedPerm") -> Tuple[Cell, Cell]:
         """
         Return the order of the two cells of a length 2 obstruction localized
         in a row.
@@ -302,7 +321,7 @@ class _RowColSeparationSingleApplication:
         return c1, c2
 
     @staticmethod
-    def _col_cell_order(ob):
+    def _col_cell_order(ob: "GriddedPerm") -> Tuple[Cell, Cell]:
         """
         Return the order of the two cells of a length 2 obstruction.
 
@@ -318,7 +337,7 @@ class _RowColSeparationSingleApplication:
         assert not c1[1] == c2[1], "Obstruction is single cell"
         return c2, c1
 
-    def _add_ineq(self, ineq, matrix):
+    def _add_ineq(self, ineq: Tuple[Cell, Cell], matrix: Matrix) -> None:
         """
         Add an inequalities to the matrix.
 
@@ -327,7 +346,7 @@ class _RowColSeparationSingleApplication:
         small_c, big_c = ineq
         matrix[self.cell_idx(small_c)][self.cell_idx(big_c)] = 1
 
-    def _complete_ineq_matrices(self):
+    def _complete_ineq_matrices(self) -> Tuple[Matrix, Matrix]:
         """
         Return the matrices of inequalities between the cells.
 
@@ -354,14 +373,14 @@ class _RowColSeparationSingleApplication:
         self._ineq_matrices = row_m, col_m
         return self._ineq_matrices
 
-    def row_ineq_graph(self):
+    def row_ineq_graph(self) -> Graph:
         return Graph(self._active_cells, self._complete_ineq_matrices()[0])
 
-    def col_ineq_graph(self):
+    def col_ineq_graph(self) -> Graph:
         return Graph(self._active_cells, self._complete_ineq_matrices()[1])
 
     @staticmethod
-    def _all_order(graph, only_max=False):
+    def _all_order(graph: Graph, only_max: bool = False) -> Iterator[List[Set[Cell]]]:
         """
         Generator of ordering of the active cells.
 
@@ -384,21 +403,20 @@ class _RowColSeparationSingleApplication:
                     heapq.heappush(heap, g)
 
     @staticmethod
-    def _maximal_order(graph):
+    def _maximal_order(graph: Graph) -> List[Set[Cell]]:
         """Returns a order that maximise separation."""
         return next(_RowColSeparationSingleApplication._all_order(graph))
 
-    def _separates_tiling(self, row_order, col_order):
+    def _separates_tiling(
+        self, row_order: List[Set[Cell]], col_order: List[Set[Cell]]
+    ) -> "Tiling":
         cell_map = self._get_cell_map(row_order, col_order)
-        obs = self.map_obstructions(cell_map)
-        reqs = self.map_requirements(cell_map)
-        ass = self.map_assumptions(cell_map)
-        return self._tiling.__class__(
-            obstructions=obs, requirements=reqs, assumptions=ass
-        )
+        return cell_map.map_tiling(self._tiling)
 
     @staticmethod
-    def _get_cell_map(row_order, col_order):
+    def _get_cell_map(
+        row_order: List[Set[Cell]], col_order: List[Set[Cell]]
+    ) -> CellMap:
         """
         Return the position of the according to the given row_order and
         col_order.
@@ -406,40 +424,18 @@ class _RowColSeparationSingleApplication:
         This method does not account for any cleaning occuring in the initializer. For
         the complete cell map use `get_cell_map`.
         """
-        cell_map = {}
+        row_cell_map = {}
         for i, row in enumerate(row_order):
             for cell in row:
-                cell_map[cell] = (None, i)
+                row_cell_map[cell] = i
+        cell_map = {}
         for i, col in enumerate(col_order):
             for cell in col:
-                cell_map[cell] = (i, cell_map[cell][1])
-        return cell_map
-
-    def map_obstructions(self, cell_map):
-        """Map the obstruction of a tiling according to the cell map."""
-        non_point_obs = (ob for ob in self._tiling.obstructions if len(ob) > 1)
-        for ob in non_point_obs:
-            ob = self._map_gridded_perm(cell_map, ob)
-            if not ob.contradictory():
-                yield ob
-
-    def map_requirements(self, cell_map):
-        """Map the requirements of a tiling according to the cell map."""
-        for req_list in self._tiling.requirements:
-            yield [self._map_gridded_perm(cell_map, req) for req in req_list]
-
-    def map_assumptions(self, cell_map):
-        """Map the assumptions of a tiling according to the cell map."""
-        for ass in self._tiling.assumptions:
-            gps: List[GriddedPerm] = []
-            for gp in ass.gps:
-                mapped_gp = self._map_gridded_perm(cell_map, gp)
-                if not mapped_gp.contradictory():
-                    gps.append(mapped_gp)
-            yield ass.__class__(gps)
+                cell_map[cell] = (i, row_cell_map[cell])
+        return CellMap(cell_map)
 
     @property
-    def max_row_order(self):
+    def max_row_order(self) -> List[Set[Cell]]:
         """A maximal order on the rows."""
         if self._max_row_order is not None:
             return self._max_row_order
@@ -447,24 +443,14 @@ class _RowColSeparationSingleApplication:
         return self._max_row_order
 
     @property
-    def max_col_order(self):
+    def max_col_order(self) -> List[Set[Cell]]:
         """A maximal order on the columns."""
         if self._max_col_order is not None:
             return self._max_col_order
         self._max_col_order = self._maximal_order(self.col_ineq_graph())
         return self._max_col_order
 
-    @staticmethod
-    def _map_gridded_perm(cell_map, gp):
-        """
-        Transform a gridded perm by mapping the position of the gridded perm
-        according to the cell_map
-        """
-        pos = (cell_map[p] for p in gp.pos)
-        gp = gp.__class__(gp.patt, pos)
-        return gp
-
-    def separable(self):
+    def separable(self) -> bool:
         """
         Test if the tiling is separable.
 
@@ -474,34 +460,34 @@ class _RowColSeparationSingleApplication:
         ncol, nrow = self._tiling.dimensions
         return len(self.max_row_order) > nrow or len(self.max_col_order) > ncol
 
-    def separated_tiling(self):
+    def separated_tiling(self) -> "Tiling":
         """
         Return the one the possible maximal separation of the tiling.
         """
         return self._separates_tiling(self.max_row_order, self.max_col_order)
 
-    def get_cell_map(self) -> Dict[Cell, Cell]:
+    def seperation_map(self) -> CellMap:
         """
-        Return the position of the according to the given row_order and
-        col_order. This accounts for any cleaning happening inside tiling initializer.
+        Return the position of map from the orginal tiling to the seperated tiling.
+
+        This does not account for rows or column becoming empty.
+        """
+        row_order = self.max_row_order
+        col_order = self.max_col_order
+        return self._get_cell_map(row_order, col_order)
+
+    def get_cell_map(self) -> CellMap:
+        """
+        Return the position of map from the orginal tiling to the seperated tiling.
 
         This is the cell map for the separated tiling returned by `separated_tiling`.
         """
         sep_tiling = self.separated_tiling()
-        row_order = self.max_row_order
-        col_order = self.max_col_order
-        sep_cell_map = self._get_cell_map(row_order, col_order)
+        sep_cell_map = self.seperation_map()
         init_cell_map = sep_tiling.forward_map
-        res: Dict[Cell, Cell] = {}
-        for cell in self._tiling.active_cells:
-            mid_cell = sep_cell_map[cell]
-            # If the cell is not in the init map it is an empty cell
-            if init_cell_map.is_mappable_cell(mid_cell):
-                final_cell = init_cell_map.map_cell(mid_cell)
-                res[cell] = final_cell
-        return res
+        return sep_cell_map.compose(init_cell_map)
 
-    def all_separated_tiling(self, only_max=False):
+    def all_separated_tiling(self, only_max: bool = False) -> Iterator["Tiling"]:
         """
         Generator over all the possibles separation of the tiling.
 
@@ -552,22 +538,28 @@ class RowColSeparation:
             return self._tiling
         return self._separated_tilings[-1]
 
-    def get_cell_map(self) -> Dict[Cell, Cell]:
+    def get_cell_map(self) -> CellMap:
         """
         Return the cell map obtained by applying the algorithm until no change.
         """
+        cell_map = CellMap.identity(self._tiling.dimensions)
         separation_algo = _RowColSeparationSingleApplication(self._tiling)
-        cell_maps = []
         while separation_algo.separable():
-            cell_map = separation_algo.get_cell_map()
-            cell_maps.append(cell_map)
+            cell_map = cell_map.compose(separation_algo.get_cell_map())
             new_sep = separation_algo.separated_tiling()
             separation_algo = _RowColSeparationSingleApplication(new_sep)
-        res = {cell: cell for cell in self._tiling.active_cells}
-        for cell_map in cell_maps:
-            for cell, mapped_cell in tuple(res.items()):
-                if mapped_cell in cell_map:
-                    res[cell] = cell_map[mapped_cell]
-                else:
-                    res.pop(cell)
-        return res
+        return cell_map
+
+    def map_param(self, param: "ParameterCounter") -> "ParameterCounter":
+        """
+        Map the parameter the parent tiling to the corresponding parameters on the
+        child.
+        """
+        separation_algo = _RowColSeparationSingleApplication(self._tiling)
+        while separation_algo.separable():
+            new_sep = separation_algo.separated_tiling()
+            separation_map = separation_algo.seperation_map()
+            param = separation_map.map_param(param)
+            param.apply_row_col_map(new_sep.forward_map)
+            separation_algo = _RowColSeparationSingleApplication(new_sep)
+        return param

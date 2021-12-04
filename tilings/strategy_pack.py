@@ -127,18 +127,14 @@ class TileScopePack(StrategyPack):
                     res.append(strategy)
             return res
 
-        return (
-            self.__class__(
-                ver_strats=replace_list(self.ver_strats),
-                inferral_strats=replace_list(self.inferral_strats),
-                initial_strats=replace_list(self.initial_strats),
-                expansion_strats=list(map(replace_list, self.expansion_strats)),
-                name=self.name,
-                symmetries=self.symmetries,
-                iterative=self.iterative,
-            )
-            .add_initial(strat.AddAssumptionFactory(), apply_first=True)
-            .add_initial(strat.RearrangeAssumptionFactory(), apply_first=True)
+        return self.__class__(
+            ver_strats=replace_list(self.ver_strats),
+            inferral_strats=replace_list(self.inferral_strats),
+            initial_strats=replace_list(self.initial_strats),
+            expansion_strats=list(map(replace_list, self.expansion_strats)),
+            name=self.name,
+            symmetries=self.symmetries,
+            iterative=self.iterative,
         )
 
     def make_fusion(
@@ -160,23 +156,28 @@ class TileScopePack(StrategyPack):
         if isolation_level is not None:
             name += f"_{isolation_level}"
         if component:
-            fusion_strat: StrategyFactory = strat.ComponentFusionFactory(
-                tracked=tracked, isolation_level=isolation_level
-            )
-        else:
-            fusion_strat = strat.FusionFactory(
-                tracked=tracked, isolation_level=isolation_level
-            )
+            raise NotImplementedError("Update to use generalised fusion.")
+        fusion_strat = strat.FusionFactory(
+            tracked=tracked, isolation_level=isolation_level
+        )
         pack = self.add_initial(fusion_strat, name, apply_first=apply_first)
         if tracked:
-            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
-            if component:
-                pack = pack.add_initial(
-                    strat.DetectComponentsStrategy(ignore_parent=True), apply_first=True
-                )
             pack = pack.add_initial(
-                strat.RearrangeAssumptionFactory(), apply_first=True
+                strat.DisjointUnionParameterFactory(
+                    strat.FactorSizeTwoObstructionInsertionFactory()
+                ),
+                apply_first=True,
             )
+            # TODO: CSS add initial doesn't allow two of the same strategy
+            pack.initial_strats = (
+                strat.DisjointUnionParameterFactory(strat.RemoveRequirementFactory()),
+            ) + pack.initial_strats
+            pack = pack.add_initial(
+                strat.RemoveIdentityPreimageStrategy(), apply_first=True
+            )
+            pack = pack.add_initial(strat.RearrangeParameterFactory(), apply_first=True)
+            pack = pack.add_initial(strat.AddParameterFactory(), apply_first=True)
+            pack = pack.add_verification(strat.ParameterVerificationStrategy())
         return pack
 
     def make_interleaving(
@@ -187,7 +188,7 @@ class TileScopePack(StrategyPack):
         interleaving factor strategy.
 
         If unions is set to True it will overwrite unions on the strategy, and
-        also pass the argument to AddInterleavingAssumption method.
+        also pass the argument to AddInterleavingParameter method.
         """
 
         def replace_list(strats):
@@ -220,10 +221,24 @@ class TileScopePack(StrategyPack):
 
         if tracked:
             pack = pack.add_initial(
-                strat.AddInterleavingAssumptionFactory(unions=unions), apply_first=True
+                strat.AddInterleavingParameterFactory(unions=unions), apply_first=True
             )
-            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
-
+            pack = pack.add_initial(
+                strat.DisjointUnionParameterFactory(
+                    strat.FactorSizeTwoObstructionInsertionFactory()
+                ),
+                apply_first=True,
+            )
+            # TODO: CSS add initial doesn't allow two of the same strategy
+            pack.initial_strats = (
+                strat.DisjointUnionParameterFactory(strat.RemoveRequirementFactory()),
+            ) + pack.initial_strats
+            pack = pack.add_initial(
+                strat.RemoveIdentityPreimageStrategy(), apply_first=True
+            )
+            pack = pack.add_initial(strat.RearrangeParameterFactory(), apply_first=True)
+            pack = pack.add_initial(strat.AddParameterFactory(), apply_first=True)
+            pack = pack.add_verification(strat.ParameterVerificationStrategy())
         return pack
 
     def make_elementary(self) -> "TileScopePack":

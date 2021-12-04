@@ -12,7 +12,6 @@ from tilings.strategies import (
     AllPlacementsFactory,
     BasicVerificationStrategy,
     CellInsertionFactory,
-    ComponentFusionFactory,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
     EmptyCellInferralFactory,
@@ -47,7 +46,7 @@ from tilings.strategies.factor import (
     FactorWithInterleavingStrategy,
     FactorWithMonotoneInterleavingStrategy,
 )
-from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
+from tilings.strategies.fusion import FusionStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
@@ -388,11 +387,7 @@ strategy_objects = (
     + [RowColumnSeparationStrategy(), SubobstructionInferralFactory()]
     + [FusionStrategy(row_idx=1)]
     + [FusionStrategy(col_idx=3)]
-    + [ComponentFusionStrategy(row_idx=1)]
-    + [ComponentFusionStrategy(col_idx=3)]
-    + [ComponentFusionStrategy(col_idx=3)]
     + [FusionFactory()]
-    + [ComponentFusionFactory()]
     + [ObstructionInferralStrategy([GriddedPerm((0, 1, 2), ((0, 0), (1, 1), (1, 2)))])]
     + [
         SplittingStrategy(),

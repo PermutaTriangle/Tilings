@@ -1,4 +1,3 @@
-from .assumption_insertion import AddAssumptionFactory, AddInterleavingAssumptionFactory
 from .assumption_splitting import SplittingStrategy
 from .detect_components import DetectComponentsStrategy
 from .experimental_verification import (
@@ -6,17 +5,24 @@ from .experimental_verification import (
     SubclassVerificationFactory,
 )
 from .factor import FactorFactory
-from .fusion import ComponentFusionFactory, FusionFactory
+from .fusion import FusionFactory
 from .obstruction_inferral import (
     EmptyCellInferralFactory,
     ObstructionInferralFactory,
     ObstructionTransitivityFactory,
     SubobstructionInferralFactory,
 )
-from .rearrange_assumption import RearrangeAssumptionFactory
+from .parameter_insertion import AddInterleavingParameterFactory, AddParameterFactory
+from .parameter_strategies import (
+    DisjointUnionParameterFactory,
+    ParameterVerificationStrategy,
+    RemoveIdentityPreimageStrategy,
+)
+from .rearrange_parameter import RearrangeParameterFactory
 from .requirement_insertion import (
     CellInsertionFactory,
     FactorInsertionFactory,
+    FactorSizeTwoObstructionInsertionFactory,
     RemoveRequirementFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
@@ -44,16 +50,20 @@ from .verification import (
 )
 
 __all__ = [
-    # Assumptions
-    "AddAssumptionFactory",
-    "AddInterleavingAssumptionFactory",
+    # Parameters
+    "AddInterleavingParameterFactory",
+    "AddParameterFactory",
     "DetectComponentsStrategy",
-    "RearrangeAssumptionFactory",
+    "DisjointUnionParameterFactory",
+    "ParameterVerificationStrategy",
+    "RearrangeParameterFactory",
+    "RemoveIdentityPreimageStrategy",
     "SplittingStrategy",
     # Batch
+    "AllPlacementsFactory",
     "CellInsertionFactory",
     "FactorInsertionFactory",
-    "AllPlacementsFactory",
+    "FactorSizeTwoObstructionInsertionFactory",
     "RemoveRequirementFactory",
     "RequirementExtensionFactory",
     "RequirementInsertionFactory",
@@ -67,7 +77,6 @@ __all__ = [
     "PatternPlacementFactory",
     "SlidingFactory",
     # Fusion
-    "ComponentFusionFactory",
     "FusionFactory",
     # Inferral
     "EmptyCellInferralFactory",

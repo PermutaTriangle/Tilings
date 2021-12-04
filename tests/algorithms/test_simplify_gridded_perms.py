@@ -233,7 +233,6 @@ def test_reduce_but_keep_bigger_sub_ob():
             GriddedPerm((1, 0), ((0, 0), (0, 0))),
         ),
         requirements=((GriddedPerm((0,), ((1, 2),)), GriddedPerm((0,), ((2, 1),))),),
-        assumptions=(),
     )
     assert t == expected
 

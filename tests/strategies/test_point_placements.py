@@ -4,7 +4,8 @@ from comb_spec_searcher import DisjointUnion
 from comb_spec_searcher.strategies import Rule
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import TrackingAssumption
+from tilings.map import RowColMap
+from tilings.parameter_counter import ParameterCounter, PreimageCounter
 from tilings.strategies import (
     AllPlacementsFactory,
     PatternPlacementFactory,
@@ -13,8 +14,6 @@ from tilings.strategies import (
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 
 pytest_plugins = [
-    "tests.fixtures.obstructions_requirements",
-    "tests.fixtures.simple_tiling",
     "tests.fixtures.diverse_tiling",
     "tests.fixtures.no_point_tiling",
 ]
@@ -1319,7 +1318,6 @@ def test_reverse_rule_non_empty_children():
                 GriddedPerm((1, 0), ((2, 5), (2, 0))),
             ),
         ),
-        assumptions=(),
     )
     rule = strategy(tiling)
     eqv_rule = rule.to_equivalence_rule()
@@ -1356,13 +1354,22 @@ def test_multiple_parent_parameters_to_same_child_parameter():
             GriddedPerm((0, 2, 3, 1), ((0, 0), (0, 0), (3, 0), (3, 0))),
         ),
         requirements=(),
-        assumptions=(
-            TrackingAssumption((GriddedPerm((0,), ((2, 0),)),)),
-            TrackingAssumption(
-                (GriddedPerm((0,), ((2, 0),)), GriddedPerm((0,), ((3, 0),)))
-            ),
-        ),
     )
+
+    row_map = {0: 0}
+    col_map1 = {0: 0, 1: 1, 2: 2, 3: 2, 4: 3}
+    col_map2 = {0: 0, 1: 1, 2: 2, 3: 3, 4: 3}
+
+    row_col_map1 = RowColMap(row_map, col_map1)
+    row_col_map2 = RowColMap(row_map, col_map2)
+
+    preimage1 = PreimageCounter(row_col_map1.preimage_tiling(tiling), row_col_map1)
+    preimage2 = PreimageCounter(row_col_map2.preimage_tiling(tiling), row_col_map2)
+
+    param1 = ParameterCounter([preimage1])
+    param2 = ParameterCounter([preimage1, preimage2])
+
+    tiling = tiling.add_parameters([param1, param2])
     strategy = RequirementPlacementStrategy(
         gps=(
             GriddedPerm((0,), ((1, 0),)),
@@ -1380,3 +1387,31 @@ def test_multiple_parent_parameters_to_same_child_parameter():
     rule = strategy(tiling)
     for i in range(6):
         rule.sanity_check(i)
+
+
+def test_place_with_params():
+    tiling = Tiling(
+        obstructions=(GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),),
+        requirements=(),
+        parameters=[
+            ParameterCounter(
+                [
+                    PreimageCounter(
+                        Tiling(
+                            obstructions=(
+                                GriddedPerm((0, 1), ((0, 0), (0, 0))),
+                                GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (0, 1))),
+                                GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 1))),
+                            ),
+                            requirements=(),
+                            parameters=(),
+                        ),
+                        RowColMap({0: 0, 1: 0}, {0: 0}),
+                    )
+                ]
+            )
+        ],
+    )
+    for rule in AllPlacementsFactory()(tiling):
+        for i in range(5):
+            assert rule.sanity_check(i)

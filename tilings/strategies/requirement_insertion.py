@@ -86,19 +86,19 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         av, co = children
         av_params: Dict[str, str] = {}
         co_params: Dict[str, str] = {}
-        for assumption in comb_class.assumptions:
-            parent_var = comb_class.get_assumption_parameter(assumption)
-            av_mapped_assumption = av.forward_map.map_assumption(assumption).avoiding(
-                av.obstructions
-            )
-            if av_mapped_assumption.gps:
-                child_var = av.get_assumption_parameter(av_mapped_assumption)
+        for parameter in comb_class.parameters:
+            parent_var = comb_class.get_parameter_name(parameter)
+            av_mapped_param = parameter.add_obstructions_and_requirements(
+                self.gps, []
+            ).apply_row_col_map(av.forward_map)
+            if av_mapped_param.counters:
+                child_var = av.get_parameter_name(av_mapped_param)
                 av_params[parent_var] = child_var
-            co_mapped_assumption = co.forward_map.map_assumption(assumption).avoiding(
-                co.obstructions
-            )
-            if co_mapped_assumption.gps:
-                child_var = co.get_assumption_parameter(co_mapped_assumption)
+            co_mapped_param = parameter.add_obstructions_and_requirements(
+                [], [self.gps]
+            ).apply_row_col_map(co.forward_map)
+            if co_mapped_param.counters:
+                child_var = co.get_parameter_name(co_mapped_param)
                 co_params[parent_var] = child_var
         return av_params, co_params
 
@@ -477,10 +477,37 @@ class FactorInsertionFactory(AbstractRequirementInsertionFactory):
         gp_facts = map(GriddedPerm.factors, reqs_and_obs)
         proper_facts = chain.from_iterable(f for f in gp_facts if len(f) > 1)
         for f in proper_facts:
-            yield (GriddedPerm(f.patt, f.pos),)
+            if not any(f.contains(*req) for req in tiling.requirements):
+                yield (GriddedPerm(f.patt, f.pos),)
 
     def __str__(self) -> str:
         return "all factor insertion"
+
+
+class FactorSizeTwoObstructionInsertionFactory(AbstractRequirementInsertionFactory):
+    """
+    Insert factors of size two obstructions which are factorable.
+    """
+
+    def __init__(self, ignore_parent: bool = True) -> None:
+        super().__init__(ignore_parent)
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        gp_facts = map(
+            GriddedPerm.factors,
+            (
+                ob
+                for ob in tiling.obstructions
+                if len(ob) == 2 and not ob.is_single_cell() and not ob.is_interleaving()
+            ),
+        )
+        proper_facts = chain.from_iterable(f for f in gp_facts if len(f) > 1)
+        for f in proper_facts:
+            if not any(f.contains(*req) for req in tiling.requirements):
+                yield (GriddedPerm(f.patt, f.pos),)
+
+    def __str__(self) -> str:
+        return "targeted cell insertion into size two obs"
 
 
 class RequirementCorroborationFactory(AbstractRequirementInsertionFactory):

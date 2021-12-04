@@ -61,17 +61,12 @@ class LocalEnumeration(Enumeration):
         self.no_req = no_req
 
     def verified(self) -> bool:
+        if self.tiling.parameters:
+            raise NotImplementedError
         if self.no_req and self.tiling.requirements:
             return False
-        return (
-            all(gp.is_single_cell() for gp in self.tiling.obstructions)
-            and all(self._req_is_single_cell(req) for req in self.tiling.requirements)
-            and all(
-                gp.is_single_cell()
-                for gp in chain.from_iterable(
-                    ass.gps for ass in self.tiling.assumptions
-                )
-            )
+        return all(gp.is_single_cell() for gp in self.tiling.obstructions) and all(
+            self._req_is_single_cell(req) for req in self.tiling.requirements
         )
 
     @staticmethod
@@ -101,12 +96,12 @@ class LocalEnumeration(Enumeration):
             avoided = self.tiling.__class__(
                 self.tiling.obstructions + reqs,
                 self.tiling.requirements[1:],
-                self.tiling.assumptions,
+                self.tiling.parameters,
             )
             without = self.tiling.__class__(
                 self.tiling.obstructions,
                 self.tiling.requirements[1:],
-                self.tiling.assumptions,
+                self.tiling.parameters,
             )
             avgf = LocalEnumeration(avoided).get_genf(funcs=funcs)
             wogf = LocalEnumeration(without).get_genf(funcs=funcs)

@@ -27,9 +27,9 @@ from tilings.algorithms import (
     FactorWithInterleaving,
     FactorWithMonotoneInterleaving,
 )
-from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
 from tilings.misc import multinomial, partitions_iterator
+from tilings.parameter_counter import ParameterCounter
 
 Cell = Tuple[int, int]
 
@@ -55,7 +55,8 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         )
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
-        return tuple(comb_class.sub_tiling(cells) for cells in self.partition)
+        factor_algo = Factor(comb_class)
+        return tuple(factor_algo.factor(set(cells)) for cells in self.partition)
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -65,14 +66,15 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
         extra_parameters: Tuple[Dict[str, str], ...] = tuple({} for _ in children)
-        for parent_var, assumption in zip(
-            comb_class.extra_parameters, comb_class.assumptions
+        for parent_var, parameter in zip(
+            comb_class.extra_parameters, comb_class.parameters
         ):
-            for idx, child in enumerate(children):
-                # TODO: consider skew/sum
-                new_assumption = child.forward_map.map_assumption(assumption)
-                if new_assumption.gps:
-                    child_var = child.get_assumption_parameter(new_assumption)
+            for idx, (component, child) in enumerate(zip(self.partition, children)):
+                new_parameter = parameter.sub_param(
+                    set(component), comb_class
+                ).apply_row_col_map(child.forward_map)
+                if new_parameter.counters:
+                    child_var = child.get_parameter_name(new_parameter)
                     extra_parameters[idx][parent_var] = child_var
         return extra_parameters
 
@@ -152,7 +154,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         return cls(partition=partition, **d)
 
 
-# The following functions are used to determine assumptions needed to count the
+# The following functions are used to determine parameters needed to count the
 # interleavings of a factor. They are also used by AddInterleavingAssumptionStrategy.
 
 
@@ -175,43 +177,25 @@ def interleaving_rows_and_cols(
     return cols, rows
 
 
-def assumptions_to_add(
+def parameters_to_add(
     cells: Tuple[Cell, ...], cols: Set[int], rows: Set[int]
-) -> Tuple[TrackingAssumption, ...]:
+) -> Tuple[ParameterCounter, ...]:
     """
-    Return the assumptions that should be tracked in the set of cells if we are
+    Return the parameters that should be tracked in the set of cells if we are
     interleaving the given rows and cols.
     """
-    col_assumptions = [
-        TrackingAssumption(
-            [GriddedPerm.point_perm(cell) for cell in cells if x == cell[0]]
-        )
-        for x in cols
-    ]
-    row_assumptions = [
-        TrackingAssumption(
-            [GriddedPerm.point_perm(cell) for cell in cells if y == cell[1]]
-        )
-        for y in rows
-    ]
-    return tuple(ass for ass in chain(col_assumptions, row_assumptions) if ass.gps)
+    raise NotImplementedError("Don't know what to do with the preimage")
 
 
-def contains_interleaving_assumptions(
+def contains_interleaving_parameters(
     comb_class: Tiling, partition: Tuple[Tuple[Cell, ...], ...]
 ) -> bool:
     """
     Return True if the parent tiling contains all of the necessary tracking
-    assumptions needed to count the interleavings, and therefore the
+    parameters needed to count the interleavings, and therefore the
     children too.
     """
-    cols, rows = interleaving_rows_and_cols(partition)
-    return all(
-        ass in comb_class.assumptions
-        for ass in chain.from_iterable(
-            assumptions_to_add(cells, cols, rows) for cells in partition
-        )
-    )
+    raise NotImplementedError("Don't know what to do with the preimage")
 
 
 class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
@@ -296,37 +280,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         """
         Return the parameters on the parent tiling that needed to be interleaved.
         """
-        res: List[Tuple[str, ...]] = []
-        cols, rows = interleaving_rows_and_cols(self.partition)
-        for x in cols:
-            assumptions = [
-                TrackingAssumption(
-                    GriddedPerm.point_perm(cell) for cell in cells if x == cell[0]
-                )
-                for cells in self.partition
-            ]
-            res.append(
-                tuple(
-                    comb_class.get_assumption_parameter(ass)
-                    for ass in assumptions
-                    if ass.gps
-                )
-            )
-        for y in rows:
-            assumptions = [
-                TrackingAssumption(
-                    GriddedPerm.point_perm(cell) for cell in cells if y == cell[1]
-                )
-                for cells in self.partition
-            ]
-            res.append(
-                tuple(
-                    comb_class.get_assumption_parameter(ass)
-                    for ass in assumptions
-                    if ass.gps
-                )
-            )
-        return res
+        raise NotImplementedError
 
     def backward_map(
         self,
@@ -424,11 +378,11 @@ class FactorFactory(StrategyFactory[Tiling]):
                     components = tuple(
                         tuple(chain.from_iterable(part)) for part in partition
                     )
-                    if not self.tracked or contains_interleaving_assumptions(
+                    if not self.tracked or contains_interleaving_parameters(
                         comb_class, components
                     ):
                         yield self._build_strategy(components, workable=False)
-            if not self.tracked or contains_interleaving_assumptions(
+            if not self.tracked or contains_interleaving_parameters(
                 comb_class, min_comp
             ):
                 yield self._build_strategy(min_comp, workable=self.workable)

@@ -8,9 +8,21 @@ from comb_spec_searcher.utils import taylor_expand
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 from tilings import strategies as strat
-from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
+from tilings.strategies import DisjointUnionParameterFactory
+from tilings.strategies.fusion import FusionStrategy
 from tilings.strategy_pack import TileScopePack
-from tilings.tilescope import GuidedSearcher, TileScope
+from tilings.tilescope import (
+    GuidedSearcher,
+    LimitedParameterTileScope,
+    TileScope,
+    TrackedSearcher,
+)
+
+
+class ComponentFusionStrategy:
+    # delete me
+    pass
+
 
 point_placements = TileScopePack.point_placements()
 all_the_strategies_verify_database = TileScopePack.all_the_strategies().make_database()
@@ -18,16 +30,8 @@ all_the_strategies_fusion = TileScopePack.all_the_strategies().make_fusion(
     tracked=False
 )
 point_placements_fusion = point_placements.make_fusion(tracked=False)
-point_placements_component_fusion = point_placements.make_fusion(
-    component=True, tracked=False
-)
 row_placements_fusion = TileScopePack.row_and_col_placements(row_only=True).make_fusion(
     tracked=True
-)
-row_and_col_placements_component_fusion_fusion = (
-    TileScopePack.row_and_col_placements()
-    .make_fusion(component=True, tracked=False)
-    .make_fusion(tracked=False)
 )
 reginsenc = TileScopePack.regular_insertion_encoding(3)
 
@@ -113,6 +117,78 @@ def test_123():
     assert isinstance(spec, CombinatorialSpecification)
 
 
+@pytest.mark.timeout(60)
+def test_123_pp_fusion():
+    pack = TileScopePack.point_placements().make_fusion(tracked=True)
+    # TODO: shouldn't need to remove the disjoint param strats
+    pack.initial_strats = tuple(
+        strat
+        for strat in pack.initial_strats
+        if not isinstance(strat, DisjointUnionParameterFactory)
+    )
+    searcher = LimitedParameterTileScope(
+        (Perm((0, 1, 2)),),
+        pack,
+        max_parameters=1,
+    )
+    spec = searcher.auto_search()
+    assert isinstance(spec, CombinatorialSpecification)
+    assert [spec.count_objects_of_size(i) for i in range(20)] == [
+        1,
+        1,
+        2,
+        5,
+        14,
+        42,
+        132,
+        429,
+        1430,
+        4862,
+        16796,
+        58786,
+        208012,
+        742900,
+        2674440,
+        9694845,
+        35357670,
+        129644790,
+        477638700,
+        1767263190,
+    ]
+
+
+@pytest.mark.timeout(20)
+def test_123_row_fusion():
+    searcher = TileScope(
+        (Perm((0, 1, 2)),),
+        TileScopePack.row_and_col_placements(row_only=True).make_fusion(tracked=True),
+    )
+    spec = searcher.auto_search()
+    assert isinstance(spec, CombinatorialSpecification)
+    assert [spec.count_objects_of_size(i) for i in range(20)] == [
+        1,
+        1,
+        2,
+        5,
+        14,
+        42,
+        132,
+        429,
+        1430,
+        4862,
+        16796,
+        58786,
+        208012,
+        742900,
+        2674440,
+        9694845,
+        35357670,
+        129644790,
+        477638700,
+        1767263190,
+    ]
+
+
 @pytest.mark.timeout(120)
 def test_123_with_db():
     searcher = TileScope("123", all_the_strategies_verify_database)
@@ -122,10 +198,134 @@ def test_123_with_db():
 
 @pytest.mark.timeout(20)
 def test_1342_1423():
-    searcher = TileScope("1342_1423", point_placements_component_fusion)
+    point_placements_component_fusion = point_placements.make_fusion(tracked=True)
+    searcher = TrackedSearcher(
+        "1342_1423", point_placements_component_fusion, max_parameters=1
+    )
     spec = searcher.auto_search(smallest=True)
-    assert spec.number_of_rules() == 9
-    assert isinstance(spec, CombinatorialSpecification)
+    # TODO: change to 20 when fixed param verification
+    assert [spec.count_objects_of_size(i) for i in range(8)] == [
+        1,
+        1,
+        2,
+        6,
+        22,
+        90,
+        394,
+        1806,
+        # 8558,
+        # 41586,
+        # 206098,
+        # 1037718,
+        # 5293446,
+        # 27297738,
+        # 142078746,
+        # 745387038,
+        # 3937603038,
+        # 20927156706,
+        # 111818026018,
+        # 600318853926,
+    ]
+
+
+@pytest.mark.timeout(20)
+def test_3142_2413():
+    point_placements_component_fusion = point_placements.make_fusion(tracked=True)
+    searcher = TrackedSearcher(
+        "3142_2413", point_placements_component_fusion, max_parameters=1
+    )
+    spec = searcher.auto_search(smallest=True)
+    # TODO: change to 20 when fixed param verification
+    assert [spec.count_objects_of_size(i) for i in range(8)] == [
+        1,
+        1,
+        2,
+        6,
+        22,
+        90,
+        394,
+        1806,
+        # 8558,
+        # 41586,
+        # 206098,
+        # 1037718,
+        # 5293446,
+        # 27297738,
+        # 142078746,
+        # 745387038,
+        # 3937603038,
+        # 20927156706,
+        # 111818026018,
+        # 600318853926,
+    ]
+
+
+@pytest.mark.timeout(20)
+def test_1234():
+    pack = TileScopePack.row_and_col_placements(row_only=True).make_fusion(tracked=True)
+    pack.expansion_strats[0][0].dirs = (3,)
+    searcher = TrackedSearcher(
+        "1234",
+        pack,
+        max_parameters=2,
+    )
+    spec = searcher.auto_search()
+    assert [spec.count_objects_of_size(i) for i in range(20)] == [
+        1,
+        1,
+        2,
+        6,
+        23,
+        103,
+        513,
+        2761,
+        15767,
+        94359,
+        586590,
+        3763290,
+        24792705,
+        167078577,
+        1148208090,
+        8026793118,
+        56963722223,
+        409687815151,
+        2981863943718,
+        21937062144834,
+    ]
+
+
+@pytest.mark.timeout(20)
+def test_1243():
+    pack = TileScopePack.row_and_col_placements(row_only=True).make_fusion(tracked=True)
+    pack.expansion_strats[0][0].dirs = (3,)
+    searcher = TrackedSearcher(
+        "1243",
+        pack,
+        max_parameters=2,
+    )
+    spec = searcher.auto_search()
+    assert [spec.count_objects_of_size(i) for i in range(20)] == [
+        1,
+        1,
+        2,
+        6,
+        23,
+        103,
+        513,
+        2761,
+        15767,
+        94359,
+        586590,
+        3763290,
+        24792705,
+        167078577,
+        1148208090,
+        8026793118,
+        56963722223,
+        409687815151,
+        2981863943718,
+        21937062144834,
+    ]
 
 
 @pytest.mark.timeout(60)
@@ -181,8 +381,14 @@ def test_reverse_equiv():
         assert spec.random_sample_object_of_size(i).patt in av
 
 
+@pytest.mark.xfail
 @pytest.mark.timeout(20)
 def test_1324():
+    row_and_col_placements_component_fusion_fusion = (
+        TileScopePack.row_and_col_placements()
+        .make_fusion(component=True, tracked=False)
+        .make_fusion(tracked=False)
+    )
     searcher = TileScope("1324", row_and_col_placements_component_fusion_fusion)
     spec = searcher.auto_search(smallest=True)
     assert spec.number_of_rules() == 9
@@ -311,7 +517,7 @@ def test_expansion():
     ]
 
 
-@pytest.mark.timeout(30)
+@pytest.mark.skip
 def test_domino():
     domino = Tiling(
         obstructions=[
@@ -320,11 +526,10 @@ def test_domino():
             GriddedPerm((0, 2, 1, 3), [(0, 0), (0, 1), (0, 0), (0, 1)]),
         ]
     )
-    tilescope = TileScope(
+    tilescope = TrackedSearcher(
         domino,
-        TileScopePack.row_and_col_placements().make_fusion(
-            tracked=True, component=True
-        ),
+        TileScopePack.row_and_col_placements(col_only=True).make_fusion(tracked=True),
+        max_parameters=1,
     )
     spec = tilescope.auto_search()
     assert isinstance(spec, CombinatorialSpecification)
@@ -389,6 +594,8 @@ def forest_expansion():
     ]
 
 
+@pytest.mark.xfail
+@pytest.mark.timeout(20)
 def test_guided_searcher():
     tilescope = TileScope(
         "123", TileScopePack.point_placements().make_fusion(tracked=False)

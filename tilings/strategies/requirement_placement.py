@@ -10,6 +10,7 @@ from comb_spec_searcher.strategies import Rule
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
+from tilings.parameter_counter import ParameterCounter, PreimageCounter
 
 __all__ = [
     "PatternPlacementFactory",
@@ -88,29 +89,44 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         algo = self.placement_class(comb_class)
         extra_parameters: Tuple[Dict[str, str], ...] = tuple({} for _ in children)
-        if self.include_empty:
+        if self.include_empty and not children[0].is_empty():
             child = children[0]
-            for assumption in comb_class.assumptions:
-                mapped_assumption = child.forward_map.map_assumption(
-                    assumption
-                ).avoiding(child.obstructions)
-                if mapped_assumption.gps:
-                    parent_var = comb_class.get_assumption_parameter(assumption)
-                    child_var = child.get_assumption_parameter(mapped_assumption)
+            for parameter in comb_class.parameters:
+                mapped_parameter = parameter.add_obstructions_and_requirements(
+                    self.gps, []
+                ).apply_row_col_map(child.forward_map)
+                parent_var = comb_class.get_parameter_name(parameter)
+                if mapped_parameter.counters:
+                    child_var = child.get_parameter_name(mapped_parameter)
                     extra_parameters[0][parent_var] = child_var
         for idx, (cell, child) in enumerate(
             zip(self._placed_cells, children[1:] if self.include_empty else children)
         ):
-            mapped_assumptions = [
-                child.forward_map.map_assumption(ass).avoiding(child.obstructions)
-                for ass in algo.stretched_assumptions(cell)
+            forced_obs = algo.forced_obstructions_from_requirement(
+                self.gps, self.indices, cell, self.direction
+            )
+            rem_req = algo.remaining_requirement_from_requirement(
+                self.gps, self.indices, cell
+            )
+            mapped_parameters = [
+                ParameterCounter(
+                    [
+                        PreimageCounter(Tiling(obs, reqs), row_col_map)
+                        for obs, reqs, row_col_map in algo.multiplex_parameter(
+                            parameter, cell
+                        )
+                    ]
+                )
+                .add_obstructions_and_requirements(forced_obs, [rem_req])
+                .apply_row_col_map(child.forward_map)
+                for parameter in comb_class.parameters
             ]
-            for assumption, mapped_assumption in zip(
-                comb_class.assumptions, mapped_assumptions
+            for parameter, mapped_parameter in zip(
+                comb_class.parameters, mapped_parameters
             ):
-                if mapped_assumption.gps:
-                    parent_var = comb_class.get_assumption_parameter(assumption)
-                    child_var = child.get_assumption_parameter(mapped_assumption)
+                parent_var = comb_class.get_parameter_name(parameter)
+                if mapped_parameter.counters:
+                    child_var = child.get_parameter_name(mapped_parameter)
                     extra_parameters[idx + 1 if self.include_empty else idx][
                         parent_var
                     ] = child_var
