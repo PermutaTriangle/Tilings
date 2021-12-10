@@ -1,5 +1,15 @@
 from collections import Counter
-from typing import Callable, Dict, Iterator, List, Optional, Tuple, Union, cast
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
 import sympy
 
@@ -30,6 +40,7 @@ from comb_spec_searcher.typing import (
 from tilings import GriddedPerm, Tiling
 from tilings.parameter_counter import ParameterCounter, PreimageCounter
 
+from ..algorithms.minimal_gridded_perms import MinimalGriddedPerms
 from .requirement_insertion import (
     RemoveRequirementFactory,
     RequirementInsertionStrategy,
@@ -512,6 +523,148 @@ class DisjointUnionParameterFactory(StrategyFactory[Tiling]):
         strategy = AbstractStrategy.from_dict(d.pop("strategy"))
         assert not d
         return cls(strategy)
+
+
+class SubsetPreimageStrategy(Strategy[Tiling, GriddedPerm]):
+    def __init__(self, preimage: PreimageCounter) -> None:
+        self.preimage = preimage
+        super().__init__(ignore_parent=True)
+
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, Tiling]:
+        subtiling = self.subtiling(comb_class, self.preimage, with_params=True)
+        without_preimage = self.remove_preimage(comb_class)
+        subtiling_without = self.subtiling(
+            without_preimage, self.preimage, with_params=True
+        )
+        # A - B + C
+        return (without_preimage, subtiling_without, subtiling)
+
+    def remove_preimage(self, tiling: Tiling) -> Tiling:
+        params = [
+            ParameterCounter(
+                [preimage for preimage in parameter if preimage != self.preimage]
+            )
+            for parameter in tiling.parameters
+        ]
+        return Tiling(
+            tiling.obstructions,
+            tiling.requirements,
+            [param for param in params if param.counters],
+        )
+
+    @staticmethod
+    def subtiling(
+        tiling: Tiling, preimage: PreimageCounter, with_params: bool = False
+    ) -> Tiling:
+        def upward_closure(gps: Iterable[GriddedPerm]):
+            mgp = MinimalGriddedPerms(tiling.obstructions, [[gp] for gp in gps])
+            return mgp.minimal_gridded_perms()
+
+        if not with_params:
+            tiling = tiling.remove_parameters()
+        if preimage.tiling.obstructions == (GriddedPerm((0,), ((0, 0),)),):
+            return tiling.add_obstructions_and_requirements(
+                (GriddedPerm((0,), ((0, 0),)),), []
+            )
+
+        obs = upward_closure(preimage.map.map_gps(preimage.tiling.obstructions))
+        reqs = [preimage.map.map_gps(req) for req in preimage.tiling.requirements]
+        subtiling = tiling.add_obstructions_and_requirements(obs, reqs)
+        return subtiling
+
+    def extra_parameter(self, comb_class: Tiling, child: Tiling) -> Dict[str, str]:
+        raise NotImplementedError
+
+    def constructor(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Constructor:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        raise NotImplementedError
+
+    def reverse_constructor(
+        self,
+        idx: int,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        raise NotImplementedError
+
+    def backward_map(
+        self,
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError
+
+    def forward_map(
+        self,
+        comb_class: Tiling,
+        obj: GriddedPerm,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Optional[GriddedPerm], ...]:
+        raise NotImplementedError
+
+    def formal_step(self) -> str:
+        return "remove subset preimages"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "SubsetPreimageStrategy":
+        return cls(PreimageCounter.from_dict(d["preimage"]))
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d.pop("ignore_parent")
+        d.pop("inferrable")
+        d.pop("possibly_empty")
+        d.pop("workable")
+        d["preimage"] = self.preimage.to_jsonable()
+        return d
+
+    @staticmethod
+    def can_be_equivalent() -> bool:
+        return False
+
+    @staticmethod
+    def is_two_way(comb_class: Tiling):
+        return False
+
+    @staticmethod
+    def is_reversible(comb_class: Tiling) -> bool:
+        return False
+
+    def shifts(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, int]:
+        return (0, 0, 0)
+
+
+class SubsetPreimageFactory(StrategyFactory[Tiling]):
+    def __call__(
+        self, comb_class: Tiling
+    ) -> Iterator[Union[DisjointUnionStrategy, Rule]]:
+        without = comb_class.remove_parameters()
+        for parameter in comb_class.parameters:
+            for preimage in parameter.counters:
+                if preimage.map.is_one_to_one():
+                    subtiling = SubsetPreimageStrategy.subtiling(comb_class, preimage)
+                    if subtiling != without:
+                        print(SubsetPreimageStrategy(preimage)(comb_class))
+                        yield SubsetPreimageStrategy(preimage)
+
+    def __str__(self) -> str:
+        return f"restrict to a subset"
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "DisjointUnionParameterFactory":
+        assert not d
+        return cls()
 
 
 class ParameterVerificationStrategy(VerificationStrategy[Tiling, GriddedPerm]):

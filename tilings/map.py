@@ -271,6 +271,11 @@ class RowColMap(CellMap):
             row_map=row_map, col_map=col_map, is_identity=self._is_identity
         )
 
+    def is_one_to_one(self):
+        return len(self.row_map.values()) == len(set(self.row_map.values())) and len(
+            self.col_map.values()
+        ) == len(set(self.col_map.values()))
+
     def to_row_col_map(self) -> "RowColMap":
         return self
 

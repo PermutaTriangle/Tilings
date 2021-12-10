@@ -169,9 +169,10 @@ class TileScopePack(StrategyPack):
                 apply_first=True,
             )
             # TODO: CSS add initial doesn't allow two of the same strategy
-            pack.initial_strats = (
-                strat.DisjointUnionParameterFactory(strat.RemoveRequirementFactory()),
-            ) + pack.initial_strats
+            # pack.initial_strats = (
+            #     strat.DisjointUnionParameterFactory(strat.RemoveRequirementFactory()),
+            # ) + pack.initial_strats
+            pack = pack.add_initial(strat.SubsetPreimageFactory(), apply_first=True)
             pack = pack.add_initial(
                 strat.RemoveIdentityPreimageStrategy(), apply_first=True
             )

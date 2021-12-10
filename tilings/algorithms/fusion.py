@@ -221,6 +221,8 @@ class Fusion:
         """
         Return True if tiling is fusable.
         """
+        if self.tiling.requirements:
+            return False
         if (self._fuse_row and self._row_idx > self.tiling.dimensions[1] - 2) or (
             not self._fuse_row and self._col_idx > self.tiling.dimensions[0] - 2
         ):

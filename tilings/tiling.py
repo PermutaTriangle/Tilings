@@ -128,6 +128,7 @@ class Tiling(CombinatorialClass):
         # Simplify the set of obstructions and the set of requirement lists
         if simplify:
             self._simplify_griddedperms(already_minimized_obs=already_minimized_obs)
+            self.parameters = tuple(param for param in parameters if param.counters)
 
         if not any(ob.is_empty() for ob in self.obstructions):
             # Fill empty

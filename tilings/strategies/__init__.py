@@ -17,6 +17,7 @@ from .parameter_strategies import (
     DisjointUnionParameterFactory,
     ParameterVerificationStrategy,
     RemoveIdentityPreimageStrategy,
+    SubsetPreimageFactory,
 )
 from .rearrange_parameter import RearrangeParameterFactory
 from .requirement_insertion import (
@@ -59,6 +60,7 @@ __all__ = [
     "RearrangeParameterFactory",
     "RemoveIdentityPreimageStrategy",
     "SplittingStrategy",
+    "SubsetPreimageFactory",
     # Batch
     "AllPlacementsFactory",
     "CellInsertionFactory",
