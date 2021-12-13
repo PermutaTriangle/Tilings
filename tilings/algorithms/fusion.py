@@ -3,7 +3,7 @@
 """
 import functools
 import itertools
-from typing import TYPE_CHECKING, Iterable, Iterator, List, Optional, Tuple
+from typing import TYPE_CHECKING, FrozenSet, Iterable, Iterator, List, Optional, Tuple
 
 from tilings.griddedperm import GriddedPerm
 from tilings.map import RowColMap
@@ -67,7 +67,16 @@ class Fusion:
         return RowColMap(row_map, col_map)
 
     def _fuse_gps(self, gps: Iterable["GriddedPerm"]) -> List[GriddedPerm]:
-        return self.upward_closure(self.fuse_map.map_gps(gps))
+        in_fuse_region: List[GriddedPerm] = []
+        out_fuse_region: List[GriddedPerm] = []
+        for gp in gps:
+            if all(cell in self.fuse_region for cell in gp.pos):
+                in_fuse_region.append(gp)
+            else:
+                out_fuse_region.append(gp)
+        return self.upward_closure(self.fuse_map.map_gps(in_fuse_region)) + list(
+            self.fuse_map.map_gps(out_fuse_region)
+        )
 
     @staticmethod
     def upward_closure(gps: Iterable[GriddedPerm]) -> List[GriddedPerm]:
@@ -93,18 +102,20 @@ class Fusion:
             for preimage in parameter_counter.counters
         )
 
+    @functools.cached_property
+    def fuse_region(self) -> FrozenSet[int]:
+        if self._fuse_row:
+            return self.tiling.cells_in_row(self._row_idx).union(
+                self.tiling.cells_in_row(self._row_idx + 1)
+            )
+        return self.tiling.cells_in_col(self._col_idx).union(
+            self.tiling.cells_in_col(self._col_idx + 1)
+        )
+
     def _active_region_of_preimage_intersects_fuse_region(
         self, preimage: PreimageCounter
     ) -> bool:
-        if self._fuse_row:
-            fuse_region = self.tiling.cells_in_row(self._row_idx).union(
-                self.tiling.cells_in_row(self._row_idx + 1)
-            )
-        else:
-            fuse_region = self.tiling.cells_in_col(self._col_idx).union(
-                self.tiling.cells_in_col(self._col_idx + 1)
-            )
-        return bool(preimage.active_region(self.tiling).intersection(fuse_region))
+        return bool(preimage.active_region(self.tiling).intersection(self.fuse_region))
 
     def is_fusable_preimage(self, preimage: PreimageCounter) -> bool:
         if not self._active_region_of_preimage_intersects_fuse_region(preimage):
