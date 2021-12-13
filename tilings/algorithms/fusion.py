@@ -103,7 +103,7 @@ class Fusion:
         )
 
     @functools.cached_property
-    def fuse_region(self) -> FrozenSet[int]:
+    def fuse_region(self) -> FrozenSet[Cell]:
         if self._fuse_row:
             return self.tiling.cells_in_row(self._row_idx).union(
                 self.tiling.cells_in_row(self._row_idx + 1)
