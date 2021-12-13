@@ -593,3 +593,18 @@ class TestComponentFusion(TestFusion):
             assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
         )
         assert not Fusion(tiling, col_idx=0, tracked=True).fusable()
+
+
+def test_upward_closure():
+    t = Tiling(
+        [
+            GriddedPerm((1, 0), ((1, 0), (1, 0))),
+            GriddedPerm((1, 0), ((2, 0), (2, 0))),
+            GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (1, 0))),
+            GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (0, 0), (2, 0))),
+            GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 0), (1, 0), (2, 0))),
+        ]
+    )
+    algo = Fusion(t, col_idx=1)
+    assert GriddedPerm((1, 0), ((1, 0), (1, 0))) in algo.fused_tiling().obstructions
