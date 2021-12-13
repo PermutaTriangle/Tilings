@@ -556,20 +556,25 @@ class SubsetPreimageStrategy(Strategy[Tiling, GriddedPerm]):
     def subtiling(
         tiling: Tiling, preimage: PreimageCounter, with_params: bool = False
     ) -> Tiling:
-        def upward_closure(gps: Iterable[GriddedPerm]):
-            mgp = MinimalGriddedPerms(tiling.obstructions, [[gp] for gp in gps])
-            return mgp.minimal_gridded_perms()
+        def upward_closure(gps: Iterable[GriddedPerm]) -> List[GriddedPerm]:
+            gps = list(gps)
+            return [
+                gp
+                for gp in gps
+                if not any(gp in othergp for othergp in gps if gp != othergp)
+            ]
 
         if not with_params:
             tiling = tiling.remove_parameters()
-        if preimage.tiling.obstructions == (GriddedPerm((0,), ((0, 0),)),):
-            return tiling.add_obstructions_and_requirements(
-                (GriddedPerm((0,), ((0, 0),)),), []
-            )
-
-        obs = upward_closure(preimage.map.map_gps(preimage.tiling.obstructions))
+        empty_cells = tiling.active_cells - set(preimage.map.image())
+        empty_cells = empty_cells.union(set(preimage.map.image()) - tiling.active_cells)
+        empty_obs = [GriddedPerm((0,), (cell,)) for cell in empty_cells]
+        if all(cell in empty_cells for cell in tiling.active_cells):
+            obs = []
+        else:
+            obs = upward_closure(preimage.map.map_gps(preimage.tiling.obstructions))
         reqs = [preimage.map.map_gps(req) for req in preimage.tiling.requirements]
-        subtiling = tiling.add_obstructions_and_requirements(obs, reqs)
+        subtiling = tiling.add_obstructions_and_requirements(empty_obs + obs, reqs)
         return subtiling
 
     def extra_parameter(self, comb_class: Tiling, child: Tiling) -> Dict[str, str]:

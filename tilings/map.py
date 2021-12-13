@@ -37,6 +37,9 @@ class CellMap:
         """
         return iter(self._map)
 
+    def image(self) -> Iterator[Cell]:
+        return iter(self._map.values())
+
     def inverse(self) -> "CellMap":
         """
         Return the inverse map if possible.
