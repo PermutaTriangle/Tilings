@@ -9,6 +9,7 @@ from tilings.assumptions import TrackingAssumption
 from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
 from tilings.strategies.factor import FactorStrategy
 from tilings.strategies.fusion import FusionStrategy
+from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
@@ -536,6 +537,45 @@ rules_to_check = [
             assumptions=(TrackingAssumption((GriddedPerm((0,), ((1, 0),)),)),),
         )
     ),
+    RequirementInsertionStrategy(
+        gps=frozenset({GriddedPerm((0,), ((1, 0),))}), ignore_parent=False
+    )(
+        Tiling(
+            obstructions=(
+                GriddedPerm((0, 1, 2), ((0, 0), (0, 1), (1, 1))),
+                GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 1))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (0, 1))),
+                GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (1, 0))),
+                GriddedPerm((0, 2, 1), ((0, 0), (1, 0), (1, 0))),
+                GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (1, 0))),
+                GriddedPerm((1, 0, 2), ((1, 0), (1, 0), (1, 1))),
+                GriddedPerm((1, 0, 2), ((1, 1), (1, 0), (1, 1))),
+                GriddedPerm((1, 0, 2), ((1, 1), (1, 1), (1, 1))),
+                GriddedPerm((2, 1, 0), ((1, 0), (1, 0), (1, 0))),
+                GriddedPerm((2, 1, 0), ((1, 1), (1, 0), (1, 0))),
+                GriddedPerm((2, 1, 0), ((1, 1), (1, 1), (1, 0))),
+                GriddedPerm((2, 1, 0), ((1, 1), (1, 1), (1, 1))),
+                GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 0), (1, 0), (1, 0))),
+                GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 1), (0, 0), (0, 1))),
+                GriddedPerm((0, 2, 1, 3), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                GriddedPerm((0, 2, 1, 3), ((0, 1), (0, 1), (0, 1), (1, 1))),
+                GriddedPerm((0, 2, 1, 3), ((0, 1), (0, 1), (1, 1), (1, 1))),
+                GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 1), (1, 1), (1, 1))),
+                GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (0, 1))),
+                GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (0, 1), (1, 1))),
+                GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 1), (1, 1), (1, 1))),
+            ),
+            requirements=(
+                (GriddedPerm((0,), ((1, 0),)), GriddedPerm((0,), ((1, 1),))),
+            ),
+            assumptions=(
+                TrackingAssumption(
+                    (GriddedPerm((0,), ((1, 0),)), GriddedPerm((0,), ((1, 1),)))
+                ),
+            ),
+        )
+    ),
 ]
 equiv_rule_to_check = [r for r in rules_to_check if r.is_equivalence()]
 
@@ -677,3 +717,119 @@ def test_sanity_check_big_row_placement():
         )
     )
     rule.sanity_check(2)
+
+
+def test_eqv_path_complement():
+    strategy = ObstructionInferralStrategy(
+        gps=(GriddedPerm((0,), ((0, 1),)), GriddedPerm((0,), ((0, 2),)))
+    )
+    tiling = Tiling(
+        obstructions=(
+            GriddedPerm((0, 1), ((0, 1), (0, 2))),
+            GriddedPerm((0, 1), ((0, 1), (0, 3))),
+            GriddedPerm((0, 1), ((0, 2), (0, 3))),
+            GriddedPerm((1, 0), ((0, 2), (0, 1))),
+            GriddedPerm((1, 0), ((0, 3), (0, 1))),
+            GriddedPerm((1, 0), ((0, 3), (0, 2))),
+            GriddedPerm((0, 2, 1), ((0, 1), (0, 4), (0, 4))),
+            GriddedPerm((0, 2, 1), ((0, 2), (0, 4), (0, 4))),
+            GriddedPerm((0, 2, 1), ((0, 3), (0, 4), (0, 4))),
+            GriddedPerm((2, 0, 1), ((0, 4), (0, 1), (0, 4))),
+            GriddedPerm((2, 0, 1), ((0, 4), (0, 2), (0, 4))),
+            GriddedPerm((2, 0, 1), ((0, 4), (0, 3), (0, 4))),
+            GriddedPerm((2, 1, 0), ((0, 4), (0, 4), (0, 1))),
+            GriddedPerm((2, 1, 0), ((0, 4), (0, 4), (0, 2))),
+            GriddedPerm((2, 1, 0), ((0, 4), (0, 4), (0, 3))),
+            GriddedPerm((1, 0, 3, 2), ((0, 1), (0, 1), (0, 1), (0, 1))),
+            GriddedPerm((1, 0, 3, 2), ((0, 1), (0, 1), (0, 4), (0, 1))),
+            GriddedPerm((1, 0, 3, 2), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm((1, 0, 3, 2), ((0, 2), (0, 2), (0, 4), (0, 2))),
+            GriddedPerm((1, 0, 3, 2), ((0, 3), (0, 3), (0, 3), (0, 3))),
+            GriddedPerm((1, 0, 3, 2), ((0, 3), (0, 3), (0, 4), (0, 3))),
+            GriddedPerm((1, 0, 3, 2), ((0, 4), (0, 4), (0, 4), (0, 4))),
+            GriddedPerm((1, 3, 0, 2), ((0, 1), (0, 1), (0, 1), (0, 1))),
+            GriddedPerm((1, 3, 0, 2), ((0, 1), (0, 4), (0, 1), (0, 1))),
+            GriddedPerm((1, 3, 0, 2), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm((1, 3, 0, 2), ((0, 2), (0, 4), (0, 2), (0, 2))),
+            GriddedPerm((1, 3, 0, 2), ((0, 3), (0, 3), (0, 3), (0, 3))),
+            GriddedPerm((1, 3, 0, 2), ((0, 3), (0, 4), (0, 3), (0, 3))),
+            GriddedPerm((1, 3, 0, 2), ((0, 4), (0, 4), (0, 4), (0, 4))),
+            GriddedPerm((1, 3, 2, 0), ((0, 1), (0, 1), (0, 1), (0, 1))),
+            GriddedPerm((1, 3, 2, 0), ((0, 1), (0, 4), (0, 1), (0, 1))),
+            GriddedPerm((1, 3, 2, 0), ((0, 2), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm((1, 3, 2, 0), ((0, 2), (0, 4), (0, 2), (0, 2))),
+            GriddedPerm((1, 3, 2, 0), ((0, 3), (0, 3), (0, 3), (0, 3))),
+            GriddedPerm((1, 3, 2, 0), ((0, 3), (0, 4), (0, 3), (0, 3))),
+            GriddedPerm((1, 3, 2, 0), ((0, 4), (0, 4), (0, 4), (0, 4))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 0), (0, 0), (0, 1), (0, 0))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 0), (0, 0), (0, 1), (0, 1))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 0), (0, 0), (0, 2), (0, 0))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 0), (0, 0), (0, 2), (0, 2))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 0), (0, 0), (0, 3), (0, 0))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 0), (0, 0), (0, 3), (0, 3))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 0), (0, 0), (0, 4), (0, 0))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 0), (0, 0), (0, 4), (0, 1))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 0), (0, 0), (0, 4), (0, 2))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 0), (0, 0), (0, 4), (0, 3))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 0), (0, 0), (0, 4), (0, 4))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 1), (0, 0), (0, 1), (0, 1))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 1), (0, 0), (0, 4), (0, 1))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 2), (0, 0), (0, 2), (0, 2))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 2), (0, 0), (0, 4), (0, 2))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 3), (0, 0), (0, 3), (0, 3))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 3), (0, 0), (0, 4), (0, 3))),
+            GriddedPerm((0, 2, 1, 4, 3), ((0, 0), (0, 4), (0, 0), (0, 4), (0, 4))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 0), (0, 1), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 0), (0, 1), (0, 0), (0, 1))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 0), (0, 2), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 0), (0, 2), (0, 0), (0, 2))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 0), (0, 3), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 0), (0, 3), (0, 0), (0, 3))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 0), (0, 4), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 0), (0, 4), (0, 0), (0, 1))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 0), (0, 4), (0, 0), (0, 2))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 0), (0, 4), (0, 0), (0, 3))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 0), (0, 4), (0, 0), (0, 4))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 1), (0, 1), (0, 0), (0, 1))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 1), (0, 4), (0, 0), (0, 1))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 2), (0, 2), (0, 0), (0, 2))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 2), (0, 4), (0, 0), (0, 2))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 3), (0, 3), (0, 0), (0, 3))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 3), (0, 4), (0, 0), (0, 3))),
+            GriddedPerm((0, 2, 4, 1, 3), ((0, 0), (0, 4), (0, 4), (0, 0), (0, 4))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 0), (0, 1), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 0), (0, 1), (0, 1), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 0), (0, 2), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 0), (0, 2), (0, 2), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 0), (0, 3), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 0), (0, 3), (0, 3), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 0), (0, 4), (0, 0), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 0), (0, 4), (0, 1), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 0), (0, 4), (0, 2), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 0), (0, 4), (0, 3), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 0), (0, 4), (0, 4), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 1), (0, 1), (0, 1), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 1), (0, 4), (0, 1), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 2), (0, 2), (0, 2), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 2), (0, 4), (0, 2), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 3), (0, 3), (0, 3), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 3), (0, 4), (0, 3), (0, 0))),
+            GriddedPerm((0, 2, 4, 3, 1), ((0, 0), (0, 4), (0, 4), (0, 4), (0, 0))),
+        ),
+        requirements=((GriddedPerm((0,), ((0, 3),)),),),
+        assumptions=(
+            TrackingAssumption((GriddedPerm((0,), ((0, 1),)),)),
+            TrackingAssumption(
+                (GriddedPerm((0,), ((0, 1),)), GriddedPerm((0,), ((0, 2),)))
+            ),
+            TrackingAssumption(
+                (GriddedPerm((0,), ((0, 3),)), GriddedPerm((0,), ((0, 4),)))
+            ),
+        ),
+    )
+    rule = EquivalencePathRule([strategy(tiling).to_reverse_rule(0)])
+    for i in range(5):
+        rule.sanity_check(i)

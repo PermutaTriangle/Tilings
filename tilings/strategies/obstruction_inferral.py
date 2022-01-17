@@ -24,17 +24,15 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             ignore_parent=True, inferrable=True, possibly_empty=False, workable=True
         )
 
-    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
-        return (tiling.add_obstructions(self.gps),)
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
+        return (comb_class.add_obstructions(self.gps),)
 
     def formal_step(self) -> str:
         """Return a string describing the operation performed."""
         if all(len(gp) == 1 for gp in self.gps):
             empty_cells_str = ", ".join(map(str, (gp.pos[0] for gp in self.gps)))
-            return "the cells {{{}}} are empty".format(empty_cells_str)
-        return "added the obstructions {{{}}}".format(
-            ", ".join(str(p) for p in self.gps),
-        )
+            return f"the cells {{{empty_cells_str}}} are empty"
+        return f"added the obstructions {{{', '.join(map(str, self.gps))}}}"
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -48,7 +46,9 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         child = children[0]
         params: Dict[str, str] = {}
         for assumption in comb_class.assumptions:
-            mapped_assumption = child.forward_map_assumption(assumption)
+            mapped_assumption = child.forward_map.map_assumption(assumption).avoiding(
+                child.obstructions
+            )
             if mapped_assumption.gps:
                 parent_var = comb_class.get_assumption_parameter(assumption)
                 child_var = child.get_assumption_parameter(mapped_assumption)
@@ -57,26 +57,26 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     def backward_map(
         self,
-        tiling: Tiling,
-        gps: Tuple[Optional[GriddedPerm], ...],
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
         if children is None:
-            children = self.decomposition_function(tiling)
-        yield children[0].backward_map(cast(GriddedPerm, gps[0]))
+            children = self.decomposition_function(comb_class)
+        yield children[0].backward_map.map_gp(cast(GriddedPerm, objs[0]))
 
     def forward_map(
         self,
-        tiling: Tiling,
-        gp: GriddedPerm,
+        comb_class: Tiling,
+        obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm]:
         if children is None:
-            children = self.decomposition_function(tiling)
-        return (children[0].forward_map(gp),)
+            children = self.decomposition_function(comb_class)
+        return (children[0].forward_map.map_gp(obj),)
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "(gps={})".format(self.gps)
+        return f"{self.__class__.__name__}(gps={self.gps})"
 
     def __str__(self) -> str:
         return self.formal_step()
@@ -134,12 +134,12 @@ class ObstructionInferralFactory(StrategyFactory[Tiling]):
         return cls(**d)
 
     def __repr__(self) -> str:
-        return "{}(maxlen={})".format(self.__class__.__name__, self.maxlen)
+        return f"{self.__class__.__name__}(maxlen={self.maxlen})"
 
     def __str__(self) -> str:
         if self.maxlen == 1:
             return "empty cell inferral"
-        return "obstruction inferral (max length is {})".format(self.maxlen)
+        return f"obstruction inferral (max length is {self.maxlen})"
 
 
 class EmptyCellInferralFactory(ObstructionInferralFactory):

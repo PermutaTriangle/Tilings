@@ -86,6 +86,7 @@ packs = (
     + directions(TileScopePack.regular_insertion_encoding)
     + length_partial(TileScopePack.requirement_placements)
     + row_col_partial(TileScopePack.row_and_col_placements)
+    + length(TileScopePack.cell_insertions)
 )
 
 packs.extend(

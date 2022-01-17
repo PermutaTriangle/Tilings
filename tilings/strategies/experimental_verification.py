@@ -4,13 +4,16 @@ tilings for which we are not certain we can independently calculate their counti
 sequence or generating function.
 """
 
-from typing import Iterable, Iterator, Optional
+from typing import Iterable, Iterator, Optional, Tuple
 
 from comb_spec_searcher import StrategyFactory, VerificationStrategy
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import VerificationRule
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor, SubclassVerificationAlgorithm
+
+from .abstract import BasisAwareVerificationStrategy
 
 __all__ = [
     "ShortObstructionVerificationStrategy",
@@ -20,15 +23,21 @@ __all__ = [
 TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
 
 
-class ShortObstructionVerificationStrategy(TileScopeVerificationStrategy):
+class ShortObstructionVerificationStrategy(BasisAwareVerificationStrategy):
     """
     A strategy to mark as verified any tiling whose crossing obstructions all have
     size at most 3. Tilings with dimensions 1x1 are ignored.
     """
 
-    def __init__(self, short_length: int = 3, ignore_parent: bool = True):
+    def __init__(
+        self,
+        short_length: int = 3,
+        basis: Optional[Iterable[Perm]] = None,
+        symmetry: bool = False,
+        ignore_parent: bool = True,
+    ):
         self.short_length = short_length
-        super().__init__(ignore_parent=ignore_parent)
+        super().__init__(basis=basis, symmetry=symmetry, ignore_parent=ignore_parent)
 
     def verified(self, comb_class: Tiling):
         return comb_class.dimensions != (1, 1) and all(
@@ -36,19 +45,56 @@ class ShortObstructionVerificationStrategy(TileScopeVerificationStrategy):
             for ob in comb_class.obstructions
         )
 
-    def formal_step(self) -> str:
-        return "tiling has short (length <= {}) crossing obstructions".format(
-            self.short_length
+    def change_basis(
+        self, basis: Iterable[Perm], symmetry: bool
+    ) -> "ShortObstructionVerificationStrategy":
+        """
+        Return a new version of the verification strategy with the given basis instead
+        of the current one.
+        """
+        basis = tuple(basis)
+        return ShortObstructionVerificationStrategy(
+            self.short_length, basis, symmetry, self.ignore_parent
         )
 
+    def formal_step(self) -> str:
+        return f"tiling has short (length <= {self.short_length}) crossing obstructions"
+
+    def decomposition_function(
+        self, comb_class: Tiling
+    ) -> Optional[Tuple[Tiling, ...]]:
+        """
+        The rule as the root as children if one of the cell of the tiling is the root.
+        """
+        if self.verified(comb_class):
+            if not self.basis:
+                return ()
+            for obs, _ in comb_class.cell_basis().values():
+                if frozenset(obs) in self.symmetries:
+                    return (Tiling.from_perms(self.basis),)
+            return ()
+        return None
+
+    def shifts(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply
+        if children:
+            return (0,)
+        return ()
+
     def __str__(self) -> str:
-        return "short (length <= {}) crossing obstruction verification".format(
-            self.short_length
+        return (
+            f"short (length <= {self.short_length}) crossing obstruction verification"
         )
 
     def __repr__(self) -> str:
         args = ", ".join(
             [
+                f"basis={self._basis}",
                 f"short_length={self.short_length}",
                 f"ignore_parent={self.ignore_parent}",
             ]
@@ -62,7 +108,11 @@ class ShortObstructionVerificationStrategy(TileScopeVerificationStrategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> "ShortObstructionVerificationStrategy":
-        return cls(**d)
+        if "basis" in d and d["basis"] is not None:
+            basis: Optional[Tuple[Perm, ...]] = tuple(Perm(p) for p in d.pop("basis"))
+        else:
+            basis = d.pop("basis", None)
+        return cls(basis=basis, **d)
 
 
 class SubclassVerificationStrategy(TileScopeVerificationStrategy):
@@ -79,7 +129,7 @@ class SubclassVerificationStrategy(TileScopeVerificationStrategy):
         return algo.subclasses == self.subclass_basis
 
     def formal_step(self) -> str:
-        return "tiling is contained in the subclass {}".format(Av(self.subclass_basis))
+        return f"tiling is contained in the subclass {Av(self.subclass_basis)}"
 
     def __str__(self) -> str:
         return "subclass verification strategy"
@@ -146,9 +196,7 @@ class SubclassVerificationFactory(StrategyFactory[Tiling]):
         return "subclass verification factory"
 
     def __repr__(self):
-        return self.__class__.__name__ + "(perms_to_check={})".format(
-            self.perms_to_check
-        )
+        return f"{self.__class__.__name__}(perms_to_check={self.perms_to_check})"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()

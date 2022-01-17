@@ -109,15 +109,13 @@ class TrackingAssumption:
         return hash(self.gps)
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "({})".format(self.gps)
+        return self.__class__.__name__ + f"({self.gps})"
 
     def __str__(self):
         if all(len(gp) == 1 for gp in self.gps):
             cells = ", ".join(str(gp.pos[0]) for gp in self.gps)
             return f"can count points in cell{'s' if len(self.gps) > 1 else ''} {cells}"
-        return "can count occurrences of{}".format(
-            ", ".join(str(gp) for gp in self.gps)
-        )
+        return f"can count occurrences of {', '.join(str(gp) for gp in self.gps)}"
 
 
 class ComponentAssumption(TrackingAssumption):
@@ -161,7 +159,7 @@ class ComponentAssumption(TrackingAssumption):
         components = self.tiling_decomposition(separated_tiling)
         return [
             [
-                GriddedPerm.point_perm(sub_tiling.backward_cell_map[back_map[cell]])
+                GriddedPerm.point_perm(sub_tiling.backward_map.map_cell(back_map[cell]))
                 for cell in comp
             ]
             for comp in components
@@ -183,7 +181,7 @@ class ComponentAssumption(TrackingAssumption):
         return NotImplemented
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "({})".format(self.gps)
+        return self.__class__.__name__ + f"({self.gps})"
 
     def __str__(self):
         return f"can count components in cells {self.cells}"

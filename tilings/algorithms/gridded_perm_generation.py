@@ -34,7 +34,9 @@ class GriddedPermsOnTiling:
 
     def __init__(self, tiling: "Tiling"):
         self._tiling = tiling
-        self._minimal_gps = MinimalGriddedPerms(tiling)
+        self._minimal_gps = MinimalGriddedPerms(
+            tiling.obstructions, tiling.requirements
+        )
         self._yielded_gridded_perms: Set[GriddedPerm] = set()
 
     def prepare_queue(self, size: int) -> List[QueuePacket]:
@@ -42,7 +44,7 @@ class GriddedPermsOnTiling:
         heapify(queue)
         for mgp in self._minimal_gps.minimal_gridded_perms():
             if len(mgp) <= size:
-                packet = QueuePacket(mgp, (-1, -1), dict(), 0)
+                packet = QueuePacket(mgp, (-1, -1), {}, 0)
                 heappush(queue, packet)
             else:
                 break

@@ -2,7 +2,7 @@
 import json
 from array import array
 from collections import Counter, defaultdict
-from functools import partial, reduce
+from functools import reduce
 from itertools import chain, filterfalse, product
 from operator import mul, xor
 from typing import (
@@ -39,6 +39,7 @@ from .algorithms import (
     MinimalGriddedPerms,
     ObstructionTransitivity,
     RequirementPlacement,
+    RowColMap,
     RowColSeparation,
     SubclassVerificationAlgorithm,
     SubobstructionInferral,
@@ -52,28 +53,27 @@ from .assumptions import (
 from .exception import InvalidOperationError
 from .griddedperm import GriddedPerm
 from .gui_launcher import run_gui
-from .misc import intersection_reduce, map_cell, union_reduce
+from .misc import intersection_reduce, union_reduce
 
 __all__ = ["Tiling"]
 
 
 Cell = Tuple[int, int]
 ReqList = Tuple[GriddedPerm, ...]
-
 CellBasis = Dict[Cell, Tuple[List[Perm], List[Perm]]]
-CellMap = Dict[Cell, Cell]
 CellFrozenSet = FrozenSet[Cell]
 Dimension = Tuple[int, int]
+
 
 CachedProperties = TypedDict(
     "CachedProperties",
     {
         "active_cells": CellFrozenSet,
-        "backward_map": CellMap,
+        "backward_map": RowColMap,
         "cell_basis": CellBasis,
         "dimensions": Dimension,
         "empty_cells": CellFrozenSet,
-        "forward_map": CellMap,
+        "forward_map": RowColMap,
         "point_cells": CellFrozenSet,
         "positive_cells": CellFrozenSet,
         "possibly_empty": CellFrozenSet,
@@ -134,7 +134,6 @@ class Tiling(CombinatorialClass):
             self._simplify_griddedperms(already_minimized_obs=already_minimized_obs)
 
         if not any(ob.is_empty() for ob in self.obstructions):
-
             # Remove gridded perms that avoid obstructions from assumptions
             if simplify:
                 self.clean_assumptions()
@@ -153,11 +152,11 @@ class Tiling(CombinatorialClass):
             self._requirements = tuple()
             self._assumptions = tuple()
             self._cached_properties["active_cells"] = frozenset()
-            self._cached_properties["backward_map"] = {}
+            self._cached_properties["backward_map"] = RowColMap.identity((0, 0))
             self._cached_properties["cell_basis"] = {(0, 0): ([Perm()], [])}
             self._cached_properties["dimensions"] = (1, 1)
             self._cached_properties["empty_cells"] = frozenset([(0, 0)])
-            self._cached_properties["forward_map"] = {}
+            self._cached_properties["forward_map"] = RowColMap.identity((0, 0))
             self._cached_properties["point_cells"] = frozenset()
             self._cached_properties["positive_cells"] = frozenset()
             self._cached_properties["possibly_empty"] = frozenset()
@@ -248,71 +247,49 @@ class Tiling(CombinatorialClass):
         # Produce the mapping between the two tilings
         if not self.active_cells:
             assert GriddedPerm.empty_perm() not in self.obstructions
-            self._cached_properties["forward_map"] = {}
+            self._cached_properties["forward_map"] = RowColMap.identity((0, 0))
             self._obstructions = (GriddedPerm.single_cell((0,), (0, 0)),)
             self._requirements = tuple()
             self._assumptions = tuple()
             self._cached_properties["dimensions"] = (1, 1)
             return
-        col_mapping, row_mapping, identity = self._minimize_mapping()
-        cell_map = partial(map_cell, col_mapping, row_mapping)
-
-        if identity:
-            self._cached_properties["forward_map"] = {
-                cell: cell for cell in self.active_cells
-            }
-            # We still may need to remove point obstructions if the empty row or col
-            # was on the end!
-            (width, height) = self.dimensions
-            self._obstructions = tuple(
-                ob
-                for ob in self.obstructions
-                if len(ob) > 1 or (ob.pos[0][0] < width and ob.pos[0][1] < height)
-            )
-            return
-
-        # For tracking regions.
-        self._cached_properties["forward_map"] = {
-            (k_x, k_y): (v_x, v_y)
-            for k_x, v_x in col_mapping.items()
-            for k_y, v_y in row_mapping.items()
-        }
-        new_obs = []
-        for ob in self._obstructions:
-            cell = ob.pos[0]
-            if not ob.is_point_perm() or (
-                cell[0] in col_mapping and cell[1] in row_mapping
-            ):
-                new_obs.append(ob.apply_map(cell_map))
-        self._obstructions = tuple(new_obs)
-        self._requirements = tuple(
-            tuple(req.apply_map(cell_map) for req in reqlist)
-            for reqlist in self._requirements
+        forward_map = self._minimize_mapping()
+        self._cached_properties["forward_map"] = forward_map
+        # We still may need to remove point obstructions if the empty row or col
+        # was on the end so we do it outside the next if statement.
+        self._obstructions = tuple(
+            forward_map.map_gp(ob)
+            for ob in self.obstructions
+            if not ob.is_point_perm() or forward_map.is_mappable_gp(ob)
         )
-        self._assumptions = tuple(
-            sorted(
-                assumption.__class__(
-                    tuple(gp.apply_map(cell_map) for gp in assumption.gps)
+
+        if not forward_map.is_identity():
+            self._requirements = tuple(
+                tuple(forward_map.map_gp(req) for req in reqlist)
+                for reqlist in self._requirements
+            )
+            self._assumptions = tuple(
+                sorted(
+                    forward_map.map_assumption(assumption)
+                    for assumption in self._assumptions
                 )
-                for assumption in self._assumptions
             )
-        )
-        self._cached_properties["active_cells"] = frozenset(
-            self._cached_properties["forward_map"][cell]
-            for cell in self._cached_properties["active_cells"]
-            if cell in self._cached_properties["forward_map"]
-        )
-        self._cached_properties["empty_cells"] = frozenset(
-            self._cached_properties["forward_map"][cell]
-            for cell in self._cached_properties["empty_cells"]
-            if cell in self._cached_properties["forward_map"]
-        )
-        self._cached_properties["dimensions"] = (
-            max(col_mapping.values()) + 1,
-            max(row_mapping.values()) + 1,
-        )
+            self._cached_properties["active_cells"] = frozenset(
+                forward_map.map_cell(cell)
+                for cell in self._cached_properties["active_cells"]
+                if forward_map.is_mappable_cell(cell)
+            )
+            self._cached_properties["empty_cells"] = frozenset(
+                forward_map.map_cell(cell)
+                for cell in self._cached_properties["empty_cells"]
+                if forward_map.is_mappable_cell(cell)
+            )
+            self._cached_properties["dimensions"] = (
+                forward_map.max_col() + 1,
+                forward_map.max_row() + 1,
+            )
 
-    def _minimize_mapping(self) -> Tuple[Dict[int, int], Dict[int, int], bool]:
+    def _minimize_mapping(self) -> RowColMap:
         """
         Returns a pair of dictionaries, that map rows/columns to an
         equivalent set of rows/columns where empty ones have been removed.
@@ -327,11 +304,9 @@ class Tiling(CombinatorialClass):
         identity = (self.dimensions[0] == len(col_list)) and (
             self.dimensions[1] == len(row_list)
         )
-        if identity:
-            return ({}, {}, True)
         col_mapping = {x: actual for actual, x in enumerate(col_list)}
         row_mapping = {y: actual for actual, y in enumerate(row_list)}
-        return (col_mapping, row_mapping, False)
+        return RowColMap(row_map=row_mapping, col_map=col_mapping, is_identity=identity)
 
     def clean_assumptions(self) -> None:
         """
@@ -586,9 +561,7 @@ class Tiling(CombinatorialClass):
         cell.
         """
         if not self.cell_within_bounds(cell):
-            raise ValueError(
-                "Cell {} is not within the bounds of the tiling.".format(cell)
-            )
+            raise ValueError(f"Cell {cell} is not within the bounds of the tiling.")
         return self.add_single_cell_obstruction(Perm((0,)), cell)
 
     def insert_cell(self, cell: Cell) -> "Tiling":
@@ -596,9 +569,7 @@ class Tiling(CombinatorialClass):
         cell. Cell should be active.
         """
         if not self.cell_within_bounds(cell):
-            raise ValueError(
-                "Cell {} is not within the bounds of the tiling.".format(cell)
-            )
+            raise ValueError(f"Cell {cell} is not within the bounds of the tiling.")
         return self.add_single_cell_requirement(Perm((0,)), cell)
 
     def add_obstruction(self, patt: Perm, pos: Iterable[Cell]) -> "Tiling":
@@ -642,6 +613,24 @@ class Tiling(CombinatorialClass):
         patt in the given cell."""
         new_req_list = (GriddedPerm.single_cell(patt, cell),)
         return self.add_list_requirement(new_req_list)
+
+    def remove_requirement(self, requirement: Tuple[GriddedPerm, ...]) -> "Tiling":
+        """Return the tiling where the requirement is removed"""
+        try:
+            idx = self._requirements.index(requirement)
+        except ValueError as e:
+            raise ValueError(
+                f"following requirement not on tiling: {requirement}"
+            ) from e
+        return Tiling(
+            self._obstructions,
+            self._requirements[:idx] + self._requirements[idx + 1 :],
+            self._assumptions,
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
+        )
 
     def add_assumption(self, assumption: TrackingAssumption) -> "Tiling":
         """Returns a new tiling with the added assumption."""
@@ -869,34 +858,8 @@ class Tiling(CombinatorialClass):
     ) -> Tuple[Tuple[GriddedPerm, ...], ...]:
         return tuple(sorted(tuple(sorted(set(reqlist))) for reqlist in requirements))
 
-    def backward_map(self, gp: GriddedPerm) -> GriddedPerm:
-        return GriddedPerm(gp.patt, [self.backward_cell_map[cell] for cell in gp.pos])
-
-    def forward_map(self, gp: GriddedPerm) -> GriddedPerm:
-        return GriddedPerm(gp.patt, [self.forward_cell_map[cell] for cell in gp.pos])
-
-    def forward_map_assumption(
-        self, assumption: TrackingAssumption, check_avoidance: bool = True
-    ) -> TrackingAssumption:
-        """
-        Maps the assumption using the `forward_map` method on each gridded perm.
-
-        If check_avoidance, it will return the assumption with only the mapped
-        gridded perms that avoid the obstructions on the tiling.
-        """
-        mapped_assumption = assumption.__class__(
-            tuple(
-                self.forward_map(gp)
-                for gp in assumption.gps
-                if all(cell in self.forward_cell_map for cell in gp.pos)
-            )
-        )
-        if check_avoidance:
-            return mapped_assumption.avoiding(self.obstructions)
-        return mapped_assumption
-
     @property
-    def forward_cell_map(self) -> CellMap:
+    def forward_map(self) -> RowColMap:
         try:
             return self._cached_properties["forward_map"]
         except KeyError:
@@ -904,11 +867,11 @@ class Tiling(CombinatorialClass):
             return self._cached_properties["forward_map"]
 
     @property
-    def backward_cell_map(self) -> CellMap:
+    def backward_map(self) -> RowColMap:
         try:
             return self._cached_properties["backward_map"]
         except KeyError:
-            backward_map = {b: a for a, b in self.forward_cell_map.items()}
+            backward_map = self.forward_map.reverse()
             self._cached_properties["backward_map"] = backward_map
             return backward_map
 
@@ -1076,7 +1039,7 @@ class Tiling(CombinatorialClass):
         if not fusion.fusable():
             fus_type = "Rows" if row is not None else "Columns"
             idx = row if row is not None else col
-            message = "{} {} and {} are not fusable.".format(fus_type, idx, idx + 1)
+            message = f"{fus_type} {idx} and {idx+1} are not fusable."
             raise InvalidOperationError(message)
         return fusion.fused_tiling()
 
@@ -1157,7 +1120,7 @@ class Tiling(CombinatorialClass):
             factor = factor_class[interleaving](self)
         else:
             raise InvalidOperationError(
-                "interleaving option must be in {}".format(list(factor_class.keys()))
+                f"interleaving option must be in {list(factor_class.keys())}"
             )
         return factor.factors()
 
@@ -1325,7 +1288,7 @@ class Tiling(CombinatorialClass):
                     index = (dim_j - j - 1) * (3 * dim_i + 2) + i * 3 + 2
                     if c >= len(colors):
                         pass
-                    elif index in has_ass.keys():
+                    elif index in has_ass:
                         has_ass[index].append(colors[c])
                     else:
                         has_ass[index] = [colors[c]]
@@ -1371,7 +1334,7 @@ class Tiling(CombinatorialClass):
                 result.append("</th>")
             result.append("</tr>")
         result.append("</table>")
-        labels: Dict[Tuple[Tuple[Perm, ...], bool], str] = dict()
+        labels: Dict[Tuple[Tuple[Perm, ...], bool], str] = {}
 
         # Put the sets in the tiles
 
@@ -1414,7 +1377,7 @@ class Tiling(CombinatorialClass):
 
     @property
     def extra_parameters(self) -> Tuple[str, ...]:
-        return tuple("k_{}".format(i) for i in range(len(self._assumptions)))
+        return tuple(f"k_{i}" for i in range(len(self._assumptions)))
 
     def get_parameters(self, obj: GriddedPerm) -> Parameters:
         return tuple(ass.get_value(obj) for ass in self.assumptions)
@@ -1444,7 +1407,7 @@ class Tiling(CombinatorialClass):
             raise ValueError(
                 f"following assumption not on tiling: '{assumption}'"
             ) from e
-        return "k_{}".format(idx)
+        return f"k_{idx}"
 
     def get_assumption(self, parameter: str) -> TrackingAssumption:
         idx = parameter.split("_")[1]
@@ -1474,7 +1437,7 @@ class Tiling(CombinatorialClass):
             return True
         if len(self.requirements) <= 1:
             return False
-        MGP = MinimalGriddedPerms(self)
+        MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
         return all(False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True))
 
     def is_finite(self) -> bool:
@@ -1546,7 +1509,7 @@ class Tiling(CombinatorialClass):
         # TODO: this doesn't work due to minimization on initialising"""
         if len(self.requirements) <= 1:
             return self
-        mgps = MinimalGriddedPerms(self)
+        mgps = MinimalGriddedPerms(self.obstructions, self.requirements)
         requirements = tuple(
             GriddedPerm(gp.patt, gp.pos) for gp in mgps.minimal_gridded_perms()
         )
@@ -1556,7 +1519,7 @@ class Tiling(CombinatorialClass):
         """
         An iterator over all minimal gridded permutations.
         """
-        MGP = MinimalGriddedPerms(self)
+        MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
         yield from MGP.minimal_gridded_perms()
 
     def is_epsilon(self) -> bool:
@@ -1889,6 +1852,12 @@ class Tiling(CombinatorialClass):
             or self.assumptions != other.assumptions
         )
 
+    def __contains__(self, gp: GriddedPerm) -> bool:
+        """Test if a gridded permtuaiton is griddable on the given tiling."""
+        return gp.avoids(*self.obstructions) and all(
+            gp.contains(*req) for req in self.requirements
+        )
+
     def __repr__(self) -> str:
         format_string = "Tiling(obstructions={}, requirements={}, assumptions={})"
         non_point_obstructions = tuple(
@@ -1922,7 +1891,7 @@ class Tiling(CombinatorialClass):
                     result.append(" ")
             result.append("\n")
 
-        labels: Dict[Tuple[Tuple[Perm, ...], bool], str] = dict()
+        labels: Dict[Tuple[Tuple[Perm, ...], bool], str] = {}
 
         # Put the sets in the tiles
 
@@ -1964,9 +1933,8 @@ class Tiling(CombinatorialClass):
                 result.append("point")
             else:
                 result.append(
-                    "Av{}({})".format(
-                        "+" if positive else "", ", ".join(str(p) for p in basis_el)
-                    )
+                    f"Av{'+' if positive else ''}"
+                    f"({', '.join(str(p) for p in basis_el)})"
                 )
             result.append("\n")
 
@@ -1977,12 +1945,12 @@ class Tiling(CombinatorialClass):
                     result.append(str(ob))
                     result.append("\n")
         for i, req in enumerate(self.requirements):
-            result.append("Requirement {}:\n".format(str(i)))
+            result.append(f"Requirement {i}:\n")
             for r in req:
                 result.append(str(r))
                 result.append("\n")
         for i, ass in enumerate(self.assumptions):
-            result.append("Assumption {}:\n".format(str(i)))
+            result.append(f"Assumption {i}:\n")
             result.append(str(ass))
             result.append("\n")
         if self.assumptions or self.requirements:

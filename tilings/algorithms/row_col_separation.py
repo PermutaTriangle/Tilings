@@ -226,10 +226,10 @@ class Graph:
             return orientation2
 
     def __repr__(self):
-        s = "Graph over the vertices {}\n".format(self._vertex_labels)
-        s += "Vertex weight is {}\n".format(self._vertex_weights)
+        s = f"Graph over the vertices {self._vertex_labels}\n"
+        s += f"Vertex weight is {self._vertex_weights}\n"
         for row in self._matrix:
-            s += "{}\n".format(row)
+            s += f"{row}\n"
         return s
 
     def __lt__(self, other):
@@ -406,7 +406,7 @@ class _RowColSeparationSingleApplication:
         This method does not account for any cleaning occuring in the initializer. For
         the complete cell map use `get_cell_map`.
         """
-        cell_map = dict()
+        cell_map = {}
         for i, row in enumerate(row_order):
             for cell in row:
                 cell_map[cell] = (None, i)
@@ -491,13 +491,13 @@ class _RowColSeparationSingleApplication:
         row_order = self.max_row_order
         col_order = self.max_col_order
         sep_cell_map = self._get_cell_map(row_order, col_order)
-        init_cell_map = sep_tiling.forward_cell_map
-        res: Dict[Cell, Cell] = dict()
+        init_cell_map = sep_tiling.forward_map
+        res: Dict[Cell, Cell] = {}
         for cell in self._tiling.active_cells:
             mid_cell = sep_cell_map[cell]
             # If the cell is not in the init map it is an empty cell
-            if mid_cell in init_cell_map:
-                final_cell = init_cell_map[mid_cell]
+            if init_cell_map.is_mappable_cell(mid_cell):
+                final_cell = init_cell_map.map_cell(mid_cell)
                 res[cell] = final_cell
         return res
 

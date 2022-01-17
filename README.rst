@@ -28,6 +28,10 @@ If you are primarily interested in enumerating permutation classes, then you
 may wish to skip ahead to the ``TileScope`` section, but note the installation
 will be the same as for ``tilings``.
 
+If this code is useful to you in your work, please consider citing it. To generate a
+BibTeX entry (or another format), click the "DOI" badge above and locate the "Cite As"
+section.
+
 If you need support, have a suggestion, or just want to be up to date with the
 latest developments please join us on our
 `Discord server <https://discord.gg/ySJD6SV>`__ where we'd be happy to hear
@@ -348,7 +352,7 @@ This can be done using the `expand_verified` method.
 
 .. code:: python
 
-       >>> spec.expand_verified()
+       >>> spec = spec.expand_verified()
        >>> print(spec)
        A combinatorial specification with 5 rules.
        -----------
@@ -507,7 +511,7 @@ free to send them to our `Discord server <https://discord.gg/ySJD6SV>`__.
 A specification can be saved and loaded later by converting it to
 `JSON <https://realpython.com/python-json/>`__, a data storage format
 that can be written to a file or copy-pasted elsewhere for safe keeping.
-This functionality is built into `TileScope`. We can retrieve the JSON 
+This functionality is built into `TileScope`. We can retrieve the JSON
 representation of a specification and load the specificiation from said
 JSON string by doing the following:
 
@@ -1175,8 +1179,8 @@ from you!
 Citing
 ######
 
-If you found this library helpful with your research and would like to cite us, 
-you can use the following `BibTeX`_ or go to `Zenodo`_ for alternative formats. 
+If you found this library helpful with your research and would like to cite us,
+you can use the following `BibTeX`_ or go to `Zenodo`_ for alternative formats.
 
 .. _BibTex: https://zenodo.org/record/4944108/export/hx#.YMcq7y2l30o
 

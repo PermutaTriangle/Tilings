@@ -251,7 +251,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         child = children[0]
         mapped_assumptions = [
-            child.forward_map_assumption(ass.__class__(gps))
+            child.forward_map.map_assumption(ass.__class__(gps))
             for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
         ]
         return (
@@ -289,13 +289,13 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         child = algo.fused_tiling()
         ass = algo.new_assumption()
-        fuse_assumption = ass.__class__(child.forward_map(gp) for gp in ass.gps)
+        fuse_assumption = ass.__class__(child.forward_map.map_gp(gp) for gp in ass.gps)
         return child.get_assumption_parameter(fuse_assumption)
 
     def formal_step(self) -> str:
         fusing = "rows" if self.row_idx is not None else "columns"
         idx = self.row_idx if self.row_idx is not None else self.col_idx
-        return "fuse {} {} and {}".format(fusing, idx, idx + 1)
+        return f"fuse {fusing} {idx} and {idx+1}"
 
     # pylint: disable=arguments-differ
     def backward_map(
@@ -313,7 +313,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             children = self.decomposition_function(comb_class)
         gp = objs[0]
         assert gp is not None
-        gp = children[0].backward_map(gp)
+        gp = children[0].backward_map.map_gp(gp)
         yield from self.fusion_algorithm(comb_class).unfuse_gridded_perm(
             gp, left_points
         )
@@ -331,7 +331,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(comb_class)
         fused_gp = self.fusion_algorithm(comb_class).fuse_gridded_perm(obj)
-        return (children[0].forward_map(fused_gp),)
+        return (children[0].forward_map.map_gp(fused_gp),)
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
@@ -408,7 +408,7 @@ class FusionFactory(StrategyFactory[Tiling]):
         return "fusion"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "(tracked={})".format(self.tracked)
+        return f"{self.__class__.__name__}(tracked={self.tracked})"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
