@@ -5,14 +5,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [3.1.0] - 2022-01-17
 ### Added
 - `Tiling.remove_requirement` method that removes a requirement from a tiling.
-- `RemoveRequirementFactory` which adds the rules where we insert a requirement to a 
-tiling after we first remove that requirement. This is added to 
+- `RemoveRequirementFactory` which adds the rules where we insert a requirement to a
+tiling after we first remove that requirement. This is added to
 `LocallyFactorableVerificationStrategy.pack`.
-- The tiling initialiser will now add factors of obstructions if it is implied by 
-multiple different obs and one requirement list of size possibly greater than one. 
-Previously it was only doing the case where a single ob's factor is implied by a 
+- The tiling initialiser will now add factors of obstructions if it is implied by
+multiple different obs and one requirement list of size possibly greater than one.
+Previously it was only doing the case where a single ob's factor is implied by a
 requirement.
 
 ### Fixed
@@ -23,7 +25,7 @@ requirement.
 ### Changed
 - One by one verification will now only verify subclasses of the given basis.
 - Verification strategies no longer ignore parent
-- `TrackedSearcher` now uses a `TrackedQueue` and is able to work with all packs 
+- `TrackedSearcher` now uses a `TrackedQueue` and is able to work with all packs
    and new future strategies.
 
 ### Deprecated
