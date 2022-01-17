@@ -614,6 +614,24 @@ class Tiling(CombinatorialClass):
         new_req_list = (GriddedPerm.single_cell(patt, cell),)
         return self.add_list_requirement(new_req_list)
 
+    def remove_requirement(self, requirement: Tuple[GriddedPerm, ...]) -> "Tiling":
+        """Return the tiling where the requirement is removed"""
+        try:
+            idx = self._requirements.index(requirement)
+        except ValueError as e:
+            raise ValueError(
+                f"following requirement not on tiling: {requirement}"
+            ) from e
+        return Tiling(
+            self._obstructions,
+            self._requirements[:idx] + self._requirements[idx + 1 :],
+            self._assumptions,
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
+        )
+
     def add_assumption(self, assumption: TrackingAssumption) -> "Tiling":
         """Returns a new tiling with the added assumption."""
         return self.add_assumptions((assumption,))
@@ -1419,7 +1437,7 @@ class Tiling(CombinatorialClass):
             return True
         if len(self.requirements) <= 1:
             return False
-        MGP = MinimalGriddedPerms(self)
+        MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
         return all(False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True))
 
     def is_finite(self) -> bool:
@@ -1491,7 +1509,7 @@ class Tiling(CombinatorialClass):
         # TODO: this doesn't work due to minimization on initialising"""
         if len(self.requirements) <= 1:
             return self
-        mgps = MinimalGriddedPerms(self)
+        mgps = MinimalGriddedPerms(self.obstructions, self.requirements)
         requirements = tuple(
             GriddedPerm(gp.patt, gp.pos) for gp in mgps.minimal_gridded_perms()
         )
@@ -1501,7 +1519,7 @@ class Tiling(CombinatorialClass):
         """
         An iterator over all minimal gridded permutations.
         """
-        MGP = MinimalGriddedPerms(self)
+        MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
         yield from MGP.minimal_gridded_perms()
 
     def is_epsilon(self) -> bool:

@@ -5,12 +5,29 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- `Tiling.remove_requirement` method that removes a requirement from a tiling.
+- `RemoveRequirementFactory` which adds the rules where we insert a requirement to a 
+tiling after we first remove that requirement. This is added to 
+`LocallyFactorableVerificationStrategy.pack`.
+- The tiling initialiser will now add factors of obstructions if it is implied by 
+multiple different obs and one requirement list of size possibly greater than one. 
+Previously it was only doing the case where a single ob's factor is implied by a 
+requirement.
+
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
+- Bug with sliding symmetries
+- The tiling initialiser was not removing duplicate/redundant requirements.
 
 ### Changed
 - One by one verification will now only verify subclasses of the given basis.
 - Verification strategies no longer ignore parent
+- `TrackedSearcher` now uses a `TrackedQueue` and is able to work with all packs 
+   and new future strategies.
+
+### Deprecated
+- Python 3.7 is no longer supported
 
 ## [3.0.0] - 2021-06-14
 ### Added
@@ -22,6 +39,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - a `insertion_point_row_and_col_placements` pack in `TileScopePack`
 - `TrackedSearcher` and `ForgetTrackedSearcher` that prioritise expanding classes
   with assumptions when the underlying tiling was expanded
+- `TileScopePack.cell_insertions` which only does cell insertion and verification
 
 ### Changed
 - Updated to use comb_spec_searcher 4.0.0
