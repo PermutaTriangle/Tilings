@@ -1,8 +1,7 @@
 from itertools import chain
-from typing import Iterator, Tuple
+from typing import Iterator, Optional, Tuple
 
 from comb_spec_searcher.strategies import DisjointUnionStrategy, StrategyFactory
-from permuta import Perm
 from tilings import GriddedPerm, Tiling, TrackingAssumption
 from tilings.algorithms import Fusion
 
@@ -21,12 +20,12 @@ class PointJumpingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self.row = row
         super().__init__()
 
-    def decomposition_function(self, tiling: Tiling) -> Tuple[Tiling]:
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
         return (
             Tiling(
-                tiling.obstructions,
-                self.swapped_requirements(tiling),
-                self.swapped_assumptions(tiling),
+                comb_class.obstructions,
+                self.swapped_requirements(comb_class),
+                self.swapped_assumptions(comb_class),
             ),
         )
 
@@ -69,10 +68,22 @@ class PointJumpingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 x = self.idx1
         return x, y
 
-    def backward_map(self, objs: Tuple[GriddedPerm, ...]) -> GriddedPerm:
-        return objs[0]
+    def backward_map(
+        self,
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Iterator[GriddedPerm]:
+        gp = objs[0]
+        assert gp is not None
+        yield gp
 
-    def forward_map(self, obj: GriddedPerm):
+    def forward_map(
+        self,
+        comb_class: Tiling,
+        obj: GriddedPerm,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Optional[GriddedPerm]]:
         return (obj,)
 
     def formal_step(self) -> str:
@@ -107,16 +118,12 @@ class PointJumpingFactory(StrategyFactory[Tiling]):
             *comb_class.requirements, *[ass.gps for ass in comb_class.assumptions]
         )
         for col in range(cols - 1):
-            if any(
-                x == col or x == col + 1 for gp in gps_to_be_swapped for x, _ in gp.pos
-            ):
+            if any(x in (col, col + 1) for gp in gps_to_be_swapped for x, _ in gp.pos):
                 algo = Fusion(comb_class, col_idx=col)
                 if algo.fusable():
                     yield PointJumpingStrategy(col, col + 1, False)
         for row in range(rows - 1):
-            if any(
-                y == row or y == row + 1 for gp in gps_to_be_swapped for y, _ in gp.pos
-            ):
+            if any(y in (row, row + 1) for gp in gps_to_be_swapped for y, _ in gp.pos):
                 algo = Fusion(comb_class, row_idx=row)
                 if algo.fusable():
                     yield PointJumpingStrategy(row, row + 1, True)
