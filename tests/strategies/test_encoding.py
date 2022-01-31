@@ -26,6 +26,7 @@ from tilings.strategies import (
     ObstructionTransitivityFactory,
     OneByOneVerificationStrategy,
     PatternPlacementFactory,
+    PointJumpingFactory,
     RearrangeAssumptionFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
@@ -49,6 +50,7 @@ from tilings.strategies.factor import (
 )
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
+from tilings.strategies.point_jumping import PointJumpingStrategy
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
@@ -321,9 +323,7 @@ def sliding_strategy_arguments(strategy):
 
 def short_length_arguments(strategy):
     return [
-        ShortObstructionVerificationStrategy(
-            basis=basis, short_length=short_length, ignore_parent=ignore_parent
-        )
+        strategy(basis=basis, short_length=short_length, ignore_parent=ignore_parent)
         for short_length in range(4)
         for ignore_parent in (True, False)
         for basis in (
@@ -331,6 +331,15 @@ def short_length_arguments(strategy):
             (Perm((0, 1, 2)),),
             (Perm((0, 1, 2, 3)), Perm((0, 1, 3, 2))),
         )
+    ]
+
+
+def indices_and_row(strategy):
+    return [
+        strategy(idx1, idx2, row)
+        for idx1 in range(3)
+        for idx2 in range(3)
+        for row in (True, False)
     ]
 
 
@@ -409,6 +418,8 @@ strategy_objects = (
             TrackingAssumption([GriddedPerm((0,), [(0, 0)])]),
         )
     ]
+    + [PointJumpingFactory()]
+    + indices_and_row(PointJumpingStrategy)
 )
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))

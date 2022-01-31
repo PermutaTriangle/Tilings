@@ -6,7 +6,7 @@ import pytest
 from permuta import Perm
 from permuta.misc import DIRS
 from tilings import strategies as strat
-from tilings.strategies import SlidingFactory
+from tilings.strategies import PointJumpingFactory, SlidingFactory
 from tilings.strategy_pack import TileScopePack
 
 
@@ -100,6 +100,7 @@ packs.extend(
     + [pack.make_interleaving() for pack in packs]
     + [pack.add_initial(SlidingFactory()) for pack in packs]
     + [pack.add_initial(SlidingFactory(use_symmetries=True)) for pack in packs]
+    + [pack.add_initial(PointJumpingFactory()) for pack in packs]
 )
 
 
