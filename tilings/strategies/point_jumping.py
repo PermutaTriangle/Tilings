@@ -1,6 +1,7 @@
 from itertools import chain
-from typing import Iterator, Optional, Tuple
+from typing import Dict, Iterator, Optional, Tuple
 
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import DisjointUnionStrategy, StrategyFactory
 from tilings import GriddedPerm, Tiling, TrackingAssumption
 from tilings.algorithms import Fusion
@@ -68,6 +69,9 @@ class PointJumpingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 x = self.idx1
         return x, y
 
+    def _swap_assumption(self, assumption: TrackingAssumption) -> TrackingAssumption:
+        return TrackingAssumption(self._swapped_gp(gp) for gp in assumption.gps)
+
     def backward_map(
         self,
         comb_class: Tiling,
@@ -85,6 +89,25 @@ class PointJumpingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[Optional[GriddedPerm]]:
         return (obj,)
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[str, str], ...]:
+        if not comb_class.extra_parameters:
+            return super().extra_parameters(comb_class, children)
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        child = children[0]
+        return (
+            {
+                comb_class.get_assumption_parameter(
+                    ass
+                ): child.get_assumption_parameter(self._swap_assumption(ass))
+                for ass in comb_class.assumptions
+            },
+        )
 
     def formal_step(self) -> str:
         row_or_col = "row" if self.row else "col"
