@@ -610,6 +610,60 @@ class TileScopePack(StrategyPack):
         )
 
     @classmethod
+    def requirement_and_row_and_col_placements(
+        cls,
+        length: int = 1,
+        row_only: bool = False,
+        col_only: bool = False,
+        partial: bool = False,
+    ) -> "TileScopePack":
+        if row_only and col_only:
+            raise ValueError("Can't be row and col only.")
+        place_row = not col_only
+        place_col = not row_only
+        both = place_col and place_row
+        name = "".join(
+            [
+                "length_{length}_" if length > 1 else "",
+                "partial_" if partial else "",
+                "requirement_and_",
+                "row" if not col_only else "",
+                "_and_" if both else "",
+                "col" if not row_only else "",
+                "_placements",
+            ]
+        )
+        rowcol_strat = strat.RowAndColumnPlacementFactory(
+            place_row=place_row, place_col=place_col, partial=partial
+        )
+
+        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        if length > 1:
+            initial_strats.append(strat.RequirementCorroborationFactory())
+
+        return TileScopePack(
+            initial_strats=initial_strats,
+            ver_strats=[
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
+            ],
+            inferral_strats=[
+                strat.RowColumnSeparationStrategy(),
+                strat.ObstructionTransitivityFactory(),
+            ],
+            expansion_strats=[
+                [
+                    strat.RequirementInsertionFactory(maxreqlen=length),
+                    strat.PatternPlacementFactory(partial=partial),
+                    rowcol_strat,
+                ],
+            ],
+            name=name,
+        )
+
+    @classmethod
     def cell_insertions(cls, length: int):
         return TileScopePack(
             initial_strats=[],

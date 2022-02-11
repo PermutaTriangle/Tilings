@@ -16,6 +16,7 @@ tiling after we first remove that requirement. This is added to
 multiple different obs and one requirement list of size possibly greater than one.
 Previously it was only doing the case where a single ob's factor is implied by a
 requirement.
+- added `TileScopePack.requirement_and_row_and_col_placements`
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
