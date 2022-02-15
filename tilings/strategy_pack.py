@@ -624,7 +624,7 @@ class TileScopePack(StrategyPack):
         both = place_col and place_row
         name = "".join(
             [
-                "length_{length}_" if length > 1 else "",
+                f"length_{length}_" if length > 1 else "",
                 "partial_" if partial else "",
                 "requirement_and_",
                 "row" if not col_only else "",
