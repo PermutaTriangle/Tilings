@@ -327,7 +327,7 @@ class TileScopePack(StrategyPack):
     ) -> "TileScopePack":
         name = "".join(
             [
-                "length_{length}_" if length > 1 else "",
+                f"length_{length}_" if length > 1 else "",
                 "partial_" if partial else "",
                 "point_placements",
             ]
@@ -524,7 +524,7 @@ class TileScopePack(StrategyPack):
     ) -> "TileScopePack":
         name = "".join(
             [
-                "length_{length}_" if length != 2 else "",
+                f"length_{length}_" if length != 2 else "",
                 "partial_" if partial else "",
                 "requirement_placements",
             ]
@@ -570,7 +570,7 @@ class TileScopePack(StrategyPack):
         both = place_col and place_row
         name = "".join(
             [
-                "length_{length}_" if length > 1 else "",
+                f"length_{length}_" if length > 1 else "",
                 "partial_" if partial else "",
                 "point_and_",
                 "row" if not col_only else "",
@@ -674,5 +674,5 @@ class TileScopePack(StrategyPack):
             ],
             inferral_strats=[],
             expansion_strats=[[strat.CellInsertionFactory(maxreqlen=length)]],
-            name="length_{length}_cell_insertions",
+            name=f"length_{length}_cell_insertions",
         )

@@ -17,6 +17,8 @@ multiple different obs and one requirement list of size possibly greater than on
 Previously it was only doing the case where a single ob's factor is implied by a
 requirement.
 - added `TileScopePack.requirement_and_row_and_col_placements`
+- `PointJumpingFactory` which adds rules where requirements and assumptions can be 
+swapped around a fusable row or column.
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
