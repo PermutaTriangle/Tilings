@@ -13,6 +13,7 @@ from .obstruction_inferral import (
     ObstructionTransitivityFactory,
     SubobstructionInferralFactory,
 )
+from .point_jumping import PointJumpingFactory
 from .rearrange_assumption import RearrangeAssumptionFactory
 from .requirement_insertion import (
     CellInsertionFactory,
@@ -65,6 +66,7 @@ __all__ = [
     "FactorFactory",
     # Equivalence
     "PatternPlacementFactory",
+    "PointJumpingFactory",
     "SlidingFactory",
     # Fusion
     "ComponentFusionFactory",
