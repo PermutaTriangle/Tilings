@@ -291,7 +291,7 @@ class TileScopePack(StrategyPack):
     ) -> "TileScopePack":
         name = "".join(
             [
-                "length_{length}_" if length > 1 else "",
+                f"length_{length}_" if length > 1 else "",
                 "partial_" if partial else "",
                 "pattern" if length > 1 else "pattern_point",
                 "_placements",
