@@ -19,6 +19,9 @@ requirement.
 - added `TileScopePack.requirement_and_row_and_col_placements`
 - `PointJumpingFactory` which adds rules where requirements and assumptions can be 
 swapped around a fusable row or column.
+- `MonotoneSlidingFactory` that creates rules that swaps neighbouring cells if they
+  are 'monotone' fusable, i.e., they are a generalized fusion with a monotone local 
+  extra obstruction.
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.

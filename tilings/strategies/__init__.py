@@ -7,6 +7,7 @@ from .experimental_verification import (
 )
 from .factor import FactorFactory
 from .fusion import ComponentFusionFactory, FusionFactory
+from .monotone_sliding import MonotoneSlidingFactory
 from .obstruction_inferral import (
     EmptyCellInferralFactory,
     ObstructionInferralFactory,
@@ -65,6 +66,7 @@ __all__ = [
     # Decomposition
     "FactorFactory",
     # Equivalence
+    "MonotoneSlidingFactory",
     "PatternPlacementFactory",
     "PointJumpingFactory",
     "SlidingFactory",
