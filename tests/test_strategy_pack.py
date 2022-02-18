@@ -6,7 +6,7 @@ import pytest
 from permuta import Perm
 from permuta.misc import DIRS
 from tilings import strategies as strat
-from tilings.strategies import SlidingFactory
+from tilings.strategies import PointJumpingFactory, SlidingFactory
 from tilings.strategy_pack import TileScopePack
 
 
@@ -70,6 +70,17 @@ def row_col_partial(pack):
     ]
 
 
+def length_row_col_partial(pack):
+    return [
+        pack(length=length, row_only=row_only, col_only=col_only, partial=partial)
+        for row_only, col_only, partial in product(
+            (True, False), (True, False), (True, False)
+        )
+        if not row_only or not col_only
+        for length in (1, 2, 3)
+    ]
+
+
 packs = (
     length(TileScopePack.all_the_strategies)
     + partial(TileScopePack.insertion_point_placements)
@@ -87,6 +98,8 @@ packs = (
     + length_partial(TileScopePack.requirement_placements)
     + row_col_partial(TileScopePack.row_and_col_placements)
     + length(TileScopePack.cell_insertions)
+    + length_row_col_partial(TileScopePack.point_and_row_and_col_placements)
+    + length_row_col_partial(TileScopePack.requirement_and_row_and_col_placements)
 )
 
 packs.extend(
@@ -100,6 +113,7 @@ packs.extend(
     + [pack.make_interleaving() for pack in packs]
     + [pack.add_initial(SlidingFactory()) for pack in packs]
     + [pack.add_initial(SlidingFactory(use_symmetries=True)) for pack in packs]
+    + [pack.add_initial(PointJumpingFactory()) for pack in packs]
 )
 
 

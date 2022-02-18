@@ -114,6 +114,7 @@ def test_123():
 
 
 @pytest.mark.timeout(120)
+@pytest.mark.skip(reason="Too inconsistent connection db")
 def test_123_with_db():
     searcher = TileScope("123", all_the_strategies_verify_database)
     spec = searcher.auto_search(smallest=True)
