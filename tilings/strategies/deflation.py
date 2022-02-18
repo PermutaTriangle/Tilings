@@ -1,5 +1,4 @@
 """The deflation strategy."""
-from collections import Counter
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
 import sympy
@@ -8,7 +7,6 @@ from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.typing import (
     Parameters,
-    ParametersMap,
     RelianceProfile,
     SubObjects,
     SubRecs,
@@ -24,10 +22,17 @@ Cell = Tuple[int, int]
 
 
 class DeflationConstructor(Constructor):
+    def __init__(self, parameter: str):
+        self.parameter = parameter
+
     def get_equation(
         self, lhs_func: sympy.Function, rhs_funcs: Tuple[sympy.Function, ...]
     ) -> sympy.Eq:
-        raise NotImplementedError
+        indec = 1 / (1 - rhs_funcs[1])
+        return sympy.Eq(
+            lhs_func,
+            rhs_funcs[0].subs({self.parameter: indec}),
+        )
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
@@ -107,11 +112,18 @@ class DeflationStrategy(Strategy[Tiling, GriddedPerm]):
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> DeflationConstructor:
+        if not self.tracked:
+            raise NotImplementedError("The deflation strategy was not tracked")
         if children is None:
             children = self.decomposition_function(comb_class)
             if children is None:
                 raise StrategyDoesNotApply("Can't deflate the cell")
-        return DeflationConstructor()
+        ass = TrackingAssumption.from_cells([self.cell])
+        child_param = children[0].get_assumption_parameter(ass)
+        gp = GriddedPerm.point_perm(self.cell)
+        if any(gp in assumption.gps for assumption in comb_class.assumptions):
+            raise NotImplementedError
+        return DeflationConstructor(child_param)
 
     def reverse_constructor(
         self,
@@ -205,11 +217,9 @@ class DeflationFactory(StrategyFactory[Tiling]):
             if self.sum_closed(cell_basis):
                 if self.can_deflate(comb_class, cell, True):
                     yield DeflationStrategy(cell, True, self.tracked)
-                    # print(DeflationStrategy(cell, True, self.tracked)(comb_class))
             if self.skew_closed(cell_basis):
                 if self.can_deflate(comb_class, cell, False):
                     yield DeflationStrategy(cell, False, self.tracked)
-                    # print(DeflationStrategy(cell, False, self.tracked)(comb_class))
 
     @staticmethod
     def sum_closed(basis: Iterable[Perm]) -> bool:
@@ -262,8 +272,8 @@ class DeflationFactory(StrategyFactory[Tiling]):
                 ) or DeflationFactory.point_in_between(ob, False, cell, other_cell):
                     # this cell does not interleave with inflated components
                     cells_not_interleaving.add(other_cell)
-                else:
-                    break  # False
+                    continue
+                break  # False
             elif number_points_in_cell >= 3:
                 # you can interleave with components
                 break  # False
@@ -285,13 +295,11 @@ class DeflationFactory(StrategyFactory[Tiling]):
             left = other_cell[0] < cell[0]
             if left:
                 return bool(patt[0] == 1)
-            else:
-                return bool(patt[2] == 1)
+            return bool(patt[2] == 1)
         below = other_cell[1] < cell[1]
         if below:
             return bool(patt[1] == 0)
-        else:
-            return bool(patt[1] == 2)
+        return bool(patt[1] == 2)
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + f"({self.tracked})"

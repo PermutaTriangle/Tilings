@@ -1,5 +1,6 @@
 from .assumption_insertion import AddAssumptionFactory, AddInterleavingAssumptionFactory
 from .assumption_splitting import SplittingStrategy
+from .deflation import DeflationFactory
 from .detect_components import DetectComponentsStrategy
 from .experimental_verification import (
     ShortObstructionVerificationStrategy,
@@ -64,6 +65,8 @@ __all__ = [
     "RowAndColumnPlacementFactory",
     # Decomposition
     "FactorFactory",
+    # Deflation
+    "DeflationFactory",
     # Equivalence
     "PatternPlacementFactory",
     "PointJumpingFactory",
