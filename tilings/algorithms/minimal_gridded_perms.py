@@ -379,7 +379,7 @@ class MinimalGriddedPerms:
             yield idx, nextgp
 
     def minimal_gridded_perms(
-        self, yield_non_minimal: bool = False
+        self, yield_non_minimal: bool = False, max_length_to_build: Optional[int] = None
     ) -> Iterator[GriddedPerm]:
         """
         Yield all minimal gridded perms on the tiling.
@@ -388,6 +388,9 @@ class MinimalGriddedPerms:
         that are non-minimal, found by the initial_gp method. Even though it
         may not be minimal, this is useful when trying to determine whether or
         not a tiling is empty.
+
+        If `max_length_to_build` it will only try to build minimal gridded
+        perms of size shorter than this.
         """
         if not self.requirements:
             if GriddedPerm.empty_perm() not in self.obstructions:
@@ -453,7 +456,9 @@ class MinimalGriddedPerms:
                         # perm containing it.
                         yielded.add(nextgp)
                         yield nextgp
-                    else:
+                    elif (
+                        max_length_to_build is None or len(nextgp) < max_length_to_build
+                    ):
                         # Update the minimum index that we inserted a
                         # a point into each cell.
                         next_mindices = {

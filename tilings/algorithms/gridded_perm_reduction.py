@@ -109,7 +109,9 @@ class GriddedPermReduction:
                         )
                         for gp in requirement
                     ),
-                ).minimal_gridded_perms()
+                ).minimal_gridded_perms(
+                    max_length_to_build=max(map(len, self._obstructions))
+                )
             )
         if new_obs:
             changed = True
