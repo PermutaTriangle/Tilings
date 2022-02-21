@@ -123,6 +123,14 @@ class TileScopePack(StrategyPack):
             for strategy in strats:
                 if isinstance(strategy, strat.FusionFactory):
                     res.append(strategy.make_tracked())
+                elif isinstance(strategy, strat.FactorFactory):
+                    d = strategy.to_jsonable()
+                    if not d["tracked"] and d["interleaving"] in ("all", "monotone"):
+                        res.append(
+                            strat.AddInterleavingAssumptionFactory(unions=d["unions"])
+                        )
+                    d["tracked"] = True
+                    res.append(AbstractStrategy.from_dict(d))
                 else:
                     res.append(strategy)
             return res

@@ -30,6 +30,8 @@ swapped around a fusable row or column.
 - Verification strategies no longer ignore parent
 - `TrackedSearcher` now uses a `TrackedQueue` and is able to work with all packs
    and new future strategies.
+- `TileScopePack.make_tracked` will add the appropriate tracking methods for 
+  interleaving factors.
 
 ### Deprecated
 - Python 3.7 is no longer supported
