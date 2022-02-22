@@ -28,11 +28,7 @@ class DeflationConstructor(Constructor):
     def get_equation(
         self, lhs_func: sympy.Function, rhs_funcs: Tuple[sympy.Function, ...]
     ) -> sympy.Eq:
-        indec = 1 / (1 - rhs_funcs[1])
-        return sympy.Eq(
-            lhs_func,
-            rhs_funcs[0].subs({self.parameter: indec}),
-        )
+        raise NotImplementedError
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
@@ -67,12 +63,12 @@ class DeflationStrategy(Strategy[Tiling, GriddedPerm]):
     def __init__(
         self,
         cell: Cell,
-        sum_decomp: bool,
+        sum_deflate: bool,
         tracked: bool = True,
     ):
         self.cell = cell
         self.tracked = tracked
-        self.sum_decomp = sum_decomp
+        self.sum_deflate = sum_deflate
         super().__init__()
 
     @staticmethod
@@ -94,7 +90,7 @@ class DeflationStrategy(Strategy[Tiling, GriddedPerm]):
         return (0, 0)
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, Tiling]:
-        if self.sum_decomp:
+        if self.sum_deflate:
             extra = Perm((1, 0))
         else:
             extra = Perm((0, 1))
@@ -177,14 +173,14 @@ class DeflationStrategy(Strategy[Tiling, GriddedPerm]):
         d.pop("workable")
         d["cell"] = self.cell
         d["tracked"] = self.tracked
-        d["sum_decomp"] = self.sum_decomp
+        d["sum_deflate"] = self.sum_deflate
         return d
 
     def __repr__(self) -> str:
         args = ", ".join(
             [
                 f"cell={self.cell!r}",
-                f"sum_decomp={self.sum_decomp!r}",
+                f"sum_deflate={self.sum_deflate!r}",
                 f"tracked={self.tracked!r}",
             ]
         )
@@ -211,26 +207,14 @@ class DeflationFactory(StrategyFactory[Tiling]):
         if comb_class.requirements:
             # TODO: this is obviously too strong
             return
-        bases = comb_class.cell_basis()
         for cell in comb_class.active_cells:
-            cell_basis = bases[cell][0]
-            if self.sum_closed(cell_basis):
-                if self.can_deflate(comb_class, cell, True):
-                    yield DeflationStrategy(cell, True, self.tracked)
-            if self.skew_closed(cell_basis):
-                if self.can_deflate(comb_class, cell, False):
-                    yield DeflationStrategy(cell, False, self.tracked)
+            if self.can_deflate(comb_class, cell, True):
+                yield DeflationStrategy(cell, True, self.tracked)
+            if self.can_deflate(comb_class, cell, False):
+                yield DeflationStrategy(cell, False, self.tracked)
 
     @staticmethod
-    def sum_closed(basis: Iterable[Perm]) -> bool:
-        return all(not p.is_sum_decomposable() for p in basis)
-
-    @staticmethod
-    def skew_closed(basis: Iterable[Perm]) -> bool:
-        return all(not p.is_skew_decomposable() for p in basis)
-
-    @staticmethod
-    def can_deflate(tiling: Tiling, cell: Cell, sum_decomp: bool) -> bool:
+    def can_deflate(tiling: Tiling, cell: Cell, sum_deflate: bool) -> bool:
         alone_in_row = tiling.only_cell_in_row(cell)
         alone_in_col = tiling.only_cell_in_col(cell)
 
@@ -238,7 +222,7 @@ class DeflationFactory(StrategyFactory[Tiling]):
             return False
 
         deflate_patt = GriddedPerm.single_cell(
-            Perm((1, 0)) if sum_decomp else Perm((0, 1)), cell
+            Perm((1, 0)) if sum_deflate else Perm((0, 1)), cell
         )
 
         # we must be sure that no cell in a row or column can interleave
