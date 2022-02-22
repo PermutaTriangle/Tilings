@@ -32,6 +32,9 @@ swapped around a fusable row or column.
    and new future strategies.
 - `TileScopePack.make_tracked` will add the appropriate tracking methods for 
   interleaving factors.
+- The `GriddedPermReduction` limits the size of obstructions it tries to infer in 
+  the `minimal_obs` method to the size of the largest obstruction already on the 
+  tiling.
 
 ### Deprecated
 - Python 3.7 is no longer supported
