@@ -30,6 +30,9 @@ swapped around a fusable row or column.
 - Verification strategies no longer ignore parent
 - `TrackedSearcher` now uses a `TrackedQueue` and is able to work with all packs
    and new future strategies.
+- The `GriddedPermReduction` limits the size of obstructions it tries to infer in 
+  the `minimal_obs` method to the size of the largest obstruction already on the 
+  tiling.
 
 ### Deprecated
 - Python 3.7 is no longer supported
