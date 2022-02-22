@@ -14,6 +14,7 @@ from tilings.strategies import (
     CellInsertionFactory,
     ComponentFusionFactory,
     DatabaseVerificationStrategy,
+    DeflationFactory,
     ElementaryVerificationStrategy,
     EmptyCellInferralFactory,
     FactorFactory,
@@ -400,7 +401,8 @@ strategy_objects = (
     + [ComponentFusionStrategy(row_idx=1)]
     + [ComponentFusionStrategy(col_idx=3)]
     + [ComponentFusionStrategy(col_idx=3)]
-    + [FusionFactory()]
+    + [FusionFactory(tracked=True), FusionFactory(tracked=False)]
+    + [DeflationFactory(tracked=True), DeflationFactory(tracked=False)]
     + [ComponentFusionFactory()]
     + [ObstructionInferralStrategy([GriddedPerm((0, 1, 2), ((0, 0), (1, 1), (1, 2)))])]
     + [
