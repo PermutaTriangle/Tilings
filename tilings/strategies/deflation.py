@@ -1,5 +1,5 @@
 """The deflation strategy."""
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple, cast
+from typing import Callable, Dict, Iterator, List, Optional, Tuple, cast
 
 import sympy
 
