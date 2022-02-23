@@ -19,6 +19,9 @@ requirement.
 - added `TileScopePack.requirement_and_row_and_col_placements`
 - `PointJumpingFactory` which adds rules where requirements and assumptions can be 
 swapped around a fusable row or column.
+- `DeflationFactory` which adds rules where cells can be deflated into increasing or
+  decreasing cells as obstructions can't occur across the sum/skew components in that
+  cell.
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
@@ -30,6 +33,11 @@ swapped around a fusable row or column.
 - Verification strategies no longer ignore parent
 - `TrackedSearcher` now uses a `TrackedQueue` and is able to work with all packs
    and new future strategies.
+- `TileScopePack.make_tracked` will add the appropriate tracking methods for 
+  interleaving factors.
+- The `GriddedPermReduction` limits the size of obstructions it tries to infer in 
+  the `minimal_obs` method to the size of the largest obstruction already on the 
+  tiling.
 
 ### Deprecated
 - Python 3.7 is no longer supported
