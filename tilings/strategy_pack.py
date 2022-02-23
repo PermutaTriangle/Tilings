@@ -12,7 +12,6 @@ from comb_spec_searcher.strategies import (
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import strategies as strat
-from tilings.strategies.symmetry import JaysSymmetriesFactory
 from tilings.strategies.verification import BasisAwareVerificationStrategy
 
 if TYPE_CHECKING:
@@ -41,7 +40,7 @@ class TileScopePack(StrategyPack):
                     if strategy.basis:
                         logger.warning("Basis changed in %s", strategy)
                     res.append(strategy.change_basis(basis, symmetry))
-                elif isinstance(strategy, JaysSymmetriesFactory):
+                elif isinstance(strategy, strat.SymmetriesFactory):
                     if strategy.basis:
                         logger.warning("Basis changed in %s", strategy)
                     res.append(strategy.change_basis(basis))

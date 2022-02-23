@@ -265,54 +265,6 @@ class TilingRotate270(TilingSymmetryStrategy):
 
 class SymmetriesFactory(StrategyFactory[Tiling]):
     """
-    Yield all symmetry strategies for a tiling.
-    """
-
-    def __call__(self, comb_class: Tiling) -> Iterator[TilingSymmetryStrategy]:
-        def strategy(rotations: int, inverse: bool) -> TilingSymmetryStrategy:
-            # pylint: disable=too-many-return-statements
-            if rotations == 0:
-                if inverse:
-                    return TilingInverse()
-            if rotations == 1:
-                if inverse:
-                    return TilingReverse()
-                return TilingRotate90()
-            if rotations == 2:
-                if inverse:
-                    return TilingAntidiagonal()
-                return TilingRotate180()
-            if rotations == 3:
-                if inverse:
-                    return TilingComplement()
-                return TilingRotate270()
-
-        symmetries = set([comb_class])
-        for rotations in range(4):
-            if comb_class not in symmetries:
-                yield strategy(rotations, False)
-            symmetries.add(comb_class)
-            comb_class_inverse = comb_class.inverse()
-            if comb_class_inverse not in symmetries:
-                yield strategy(rotations, True)
-            symmetries.add(comb_class_inverse)
-            comb_class = comb_class.rotate90()
-            if comb_class in symmetries:
-                break
-
-    def __str__(self) -> str:
-        return "all symmetries"
-
-    def __repr__(self) -> str:
-        return self.__class__.__name__ + "()"
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "SymmetriesFactory":
-        return cls()
-
-
-class JaysSymmetriesFactory(StrategyFactory[Tiling]):
-    """
     Yield symmetry strategies such that all of the underlying patterns of
     obstructions of the symmetric tiling are subpatterns of the given basis.
     """
@@ -322,40 +274,71 @@ class JaysSymmetriesFactory(StrategyFactory[Tiling]):
         basis: Optional[Iterable[Perm]] = None,
     ):
         self._basis = tuple(basis) if basis is not None else tuple()
-        assert all(
-            isinstance(p, Perm) for p in self._basis
-        ), "Element of the basis must be Perm"
-        self.subpatterns: Set[Perm] = set(
-            chain.from_iterable(self._subpatterns(p) for p in self._basis)
-        )
-        self.acceptablesubpatterns: List[Set[Perm]] = [
-            set(p for p in self.subpatterns if p.rotate() in self.subpatterns),
-            set(p for p in self.subpatterns if p.rotate(2) in self.subpatterns),
-            set(p for p in self.subpatterns if p.rotate(3) in self.subpatterns),
-            set(p for p in self.subpatterns if p.inverse() in self.subpatterns),
-            set(p for p in self.subpatterns if p.reverse() in self.subpatterns),
-            set(
-                p for p in self.subpatterns if p.flip_antidiagonal() in self.subpatterns
-            ),
-            set(p for p in self.subpatterns if p.complement() in self.subpatterns),
-        ]
+        if self._basis is not None:
+            assert all(
+                isinstance(p, Perm) for p in self._basis
+            ), "Element of the basis must be Perm"
+            self.subpatterns: Set[Perm] = set(
+                chain.from_iterable(self._subpatterns(p) for p in self._basis)
+            )
+            self.acceptablesubpatterns: List[Set[Perm]] = [
+                set(p for p in self.subpatterns if p.rotate() in self.subpatterns),
+                set(p for p in self.subpatterns if p.rotate(2) in self.subpatterns),
+                set(p for p in self.subpatterns if p.rotate(3) in self.subpatterns),
+                set(p for p in self.subpatterns if p.inverse() in self.subpatterns),
+                set(p for p in self.subpatterns if p.reverse() in self.subpatterns),
+                set(
+                    p
+                    for p in self.subpatterns
+                    if p.flip_antidiagonal() in self.subpatterns
+                ),
+                set(p for p in self.subpatterns if p.complement() in self.subpatterns),
+            ]
         super().__init__()
 
     def __call__(self, tiling: Tiling) -> Iterator[TilingSymmetryStrategy]:
         underlying_patts = set(gp.patt for gp in tiling.obstructions)
-        if all(p in self.acceptablesubpatterns[0] for p in underlying_patts):
+        if (
+            self._basis is None
+            or all(p in self.acceptablesubpatterns[0] for p in underlying_patts)
+            or self._basis is None
+        ):
             yield TilingRotate90()
-        if all(p in self.acceptablesubpatterns[1] for p in underlying_patts):
+        if (
+            self._basis is None
+            or all(p in self.acceptablesubpatterns[1] for p in underlying_patts)
+            or self._basis is None
+        ):
             yield TilingRotate180()
-        if all(p in self.acceptablesubpatterns[2] for p in underlying_patts):
+        if (
+            self._basis is None
+            or all(p in self.acceptablesubpatterns[2] for p in underlying_patts)
+            or self._basis is None
+        ):
             yield TilingRotate270()
-        if all(p in self.acceptablesubpatterns[3] for p in underlying_patts):
+        if (
+            self._basis is None
+            or all(p in self.acceptablesubpatterns[3] for p in underlying_patts)
+            or self._basis is None
+        ):
             yield TilingInverse()
-        if all(p in self.acceptablesubpatterns[4] for p in underlying_patts):
+        if (
+            self._basis is None
+            or all(p in self.acceptablesubpatterns[4] for p in underlying_patts)
+            or self._basis is None
+        ):
             yield TilingReverse()
-        if all(p in self.acceptablesubpatterns[5] for p in underlying_patts):
+        if (
+            self._basis is None
+            or all(p in self.acceptablesubpatterns[5] for p in underlying_patts)
+            or self._basis is None
+        ):
             yield TilingAntidiagonal()
-        if all(p in self.acceptablesubpatterns[6] for p in underlying_patts):
+        if (
+            self._basis is None
+            or all(p in self.acceptablesubpatterns[6] for p in underlying_patts)
+            or self._basis is None
+        ):
             yield TilingComplement()
 
     @staticmethod
@@ -367,7 +350,7 @@ class JaysSymmetriesFactory(StrategyFactory[Tiling]):
     def change_basis(
         self,
         basis: Iterable[Perm],
-    ) -> "JaysSymmetriesFactory":
+    ) -> "SymmetriesFactory":
         """
         Return the version of the strategy with the given basis instead
         of the current one.
@@ -384,7 +367,7 @@ class JaysSymmetriesFactory(StrategyFactory[Tiling]):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "JaysSymmetriesFactory":
+    def from_dict(cls, d: dict) -> "SymmetriesFactory":
         if "basis" in d and d["basis"] is not None:
             basis: Optional[List[Perm]] = [Perm(p) for p in d.pop("basis")]
         else:
@@ -392,7 +375,10 @@ class JaysSymmetriesFactory(StrategyFactory[Tiling]):
         return cls(basis=basis)
 
     def __str__(self) -> str:
-        return "jays symmetries"
+        if self._basis is not None:
+            basis = ", ".join(str(p) for p in self._basis)
+            return f"symmetries in Av({basis})"
+        return "all symmetries"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(basis={self._basis})"
