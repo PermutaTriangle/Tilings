@@ -1,12 +1,20 @@
 import abc
 from itertools import chain, product
-from typing import Dict, Iterable, Iterator, List, Optional, Tuple, cast
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
+from comb_spec_searcher.strategies.strategy import VerificationStrategy
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
+from tilings.algorithms import Factor
+from tilings.strategies import (
+    BasicVerificationStrategy,
+    InsertionEncodingVerificationStrategy,
+    LocallyFactorableVerificationStrategy,
+    OneByOneVerificationStrategy,
+)
 
 ListRequirement = Tuple[GriddedPerm, ...]
 
@@ -534,3 +542,47 @@ class RemoveRequirementFactory(StrategyFactory[Tiling]):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}()"
+
+
+class FactorRowCol(Factor):
+    def _unite_all(self) -> None:
+        self._unite_rows_and_cols()
+
+
+class TargetedCellInsertionFactory(AbstractRequirementInsertionFactory):
+    """
+    Insert factors requirements or obstructions on the tiling if it can lead
+    to separating a verified factor.
+    """
+
+    def __init__(self, ignore_parent: bool = True) -> None:
+        super().__init__(ignore_parent)
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        factor_class = FactorRowCol(tiling)
+        potential_factors = factor_class.get_components()
+        reqs_and_obs: Set[GriddedPerm] = set(
+            chain(tiling.obstructions, *tiling.requirements)
+        )
+        verification_strats: List[VerificationStrategy] = [
+            BasicVerificationStrategy(),
+            InsertionEncodingVerificationStrategy(),
+            OneByOneVerificationStrategy(),
+            LocallyFactorableVerificationStrategy(),
+        ]
+        potential_verified = [False for _ in potential_factors]
+        for idx, cells in enumerate(potential_factors):
+            sub_tiling = tiling.sub_tiling(cells)
+            for strategy in verification_strats:
+                potential_verified[idx] |= strategy.verified(sub_tiling)
+
+        for idx, cells in enumerate(potential_factors):
+            if potential_verified[idx]:
+                for gp in reqs_and_obs:
+                    if any(cell in cells for cell in gp.pos) and any(
+                        cell not in cells for cell in gp.pos
+                    ):
+                        yield (gp.get_gridded_perm_in_cells(cells),)
+
+    def __str__(self) -> str:
+        return "targeted cell insertions"

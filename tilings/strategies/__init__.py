@@ -24,6 +24,7 @@ from .requirement_insertion import (
     RequirementExtensionFactory,
     RequirementInsertionFactory,
     RootInsertionFactory,
+    TargetedCellInsertionFactory,
 )
 from .requirement_placement import (
     AllPlacementsFactory,
@@ -63,6 +64,7 @@ __all__ = [
     "RequirementCorroborationFactory",
     "RootInsertionFactory",
     "RowAndColumnPlacementFactory",
+    "TargetedCellInsertionFactory",
     # Decomposition
     "FactorFactory",
     # Deflation
