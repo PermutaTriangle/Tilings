@@ -2,6 +2,7 @@ import abc
 from itertools import chain, product
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
+import tilings.strategies as strat
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
@@ -9,12 +10,6 @@ from comb_spec_searcher.strategies.strategy import VerificationStrategy
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor
-from tilings.strategies import (
-    BasicVerificationStrategy,
-    InsertionEncodingVerificationStrategy,
-    LocallyFactorableVerificationStrategy,
-    OneByOneVerificationStrategy,
-)
 
 ListRequirement = Tuple[GriddedPerm, ...]
 
@@ -565,10 +560,10 @@ class TargetedCellInsertionFactory(AbstractRequirementInsertionFactory):
             chain(tiling.obstructions, *tiling.requirements)
         )
         verification_strats: List[VerificationStrategy] = [
-            BasicVerificationStrategy(),
-            InsertionEncodingVerificationStrategy(),
-            OneByOneVerificationStrategy(),
-            LocallyFactorableVerificationStrategy(),
+            strat.BasicVerificationStrategy(),
+            strat.InsertionEncodingVerificationStrategy(),
+            strat.OneByOneVerificationStrategy(),
+            strat.LocallyFactorableVerificationStrategy(),
         ]
         potential_verified = [False for _ in potential_factors]
         for idx, cells in enumerate(potential_factors):
