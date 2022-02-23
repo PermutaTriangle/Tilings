@@ -54,10 +54,7 @@ from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 from tilings.strategies.point_jumping import PointJumpingStrategy
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
-from tilings.strategies.requirement_insertion import (
-    RequirementInsertionStrategy,
-    TargetedCellInsertionFactory,
-)
+from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 from tilings.strategies.sliding import SlidingStrategy
 
