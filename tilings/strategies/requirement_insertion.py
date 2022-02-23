@@ -2,6 +2,7 @@ import abc
 from itertools import chain, product
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
+import tilings.strategies as strat
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
@@ -9,8 +10,6 @@ from comb_spec_searcher.strategies.strategy import VerificationStrategy
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor
-
-import tilings.strategies as strat
 
 ListRequirement = Tuple[GriddedPerm, ...]
 
