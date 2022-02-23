@@ -273,7 +273,7 @@ class SymmetriesFactory(StrategyFactory[Tiling]):
         self,
         basis: Optional[Iterable[Perm]] = None,
     ):
-        self._basis = tuple(basis) if basis is not None else tuple()
+        self._basis = tuple(basis) if basis is not None else None
         if self._basis is not None:
             assert all(
                 isinstance(p, Perm) for p in self._basis
