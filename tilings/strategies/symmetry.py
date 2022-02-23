@@ -358,7 +358,7 @@ class SymmetriesFactory(StrategyFactory[Tiling]):
         return self.__class__(tuple(basis))
 
     @property
-    def basis(self) -> Tuple[Perm, ...]:
+    def basis(self) -> Optional[Tuple[Perm, ...]]:
         return self._basis
 
     def to_jsonable(self) -> dict:
