@@ -16,11 +16,91 @@ from tilings.algorithms import Factor, SubclassVerificationAlgorithm
 from .abstract import BasisAwareVerificationStrategy
 
 __all__ = [
+    "NoRootCellVerificationStrategy",
     "ShortObstructionVerificationStrategy",
     "SubclassVerificationFactory",
 ]
 
 TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
+
+
+class NoRootCellVerificationStrategy(BasisAwareVerificationStrategy):
+    """
+    A strategy to mark as verified any tiling that does not contain the root
+    basis localized in a cell. Tilings with dimensions 1x1 are ignored.
+    """
+
+    def __init__(
+        self,
+        basis: Optional[Iterable[Perm]] = None,
+        symmetry: bool = False,
+        ignore_parent: bool = True,
+    ):
+        super().__init__(basis=basis, symmetry=symmetry, ignore_parent=ignore_parent)
+
+    def verified(self, comb_class: Tiling):
+        return comb_class.dimensions != (1, 1) and all(
+            frozenset(obs) not in self.symmetries
+            for obs, _ in comb_class.cell_basis().values()
+        )
+
+    def change_basis(
+        self, basis: Iterable[Perm], symmetry: bool
+    ) -> "NoRootCellVerificationStrategy":
+        """
+        Return a new version of the verification strategy with the given basis instead
+        of the current one.
+        """
+        basis = tuple(basis)
+        return NoRootCellVerificationStrategy(basis, symmetry, self.ignore_parent)
+
+    def formal_step(self) -> str:
+        return "tiling has no root cell"
+
+    def decomposition_function(
+        self, comb_class: Tiling
+    ) -> Optional[Tuple[Tiling, ...]]:
+        """
+        The rule as the root as children if one of the cell of the tiling is the root.
+        """
+        if self.verified(comb_class):
+            return ()
+        return None
+
+    def shifts(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply
+        if children:
+            return (0,)
+        return ()
+
+    def __str__(self) -> str:
+        return "no root cell verification"
+
+    def __repr__(self) -> str:
+        args = ", ".join(
+            [
+                f"basis={self._basis}",
+                f"ignore_parent={self.ignore_parent}",
+            ]
+        )
+        return f"{self.__class__.__name__}({args})"
+
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "NoRootCellVerificationStrategy":
+        if "basis" in d and d["basis"] is not None:
+            basis: Optional[Tuple[Perm, ...]] = tuple(Perm(p) for p in d.pop("basis"))
+        else:
+            basis = d.pop("basis", None)
+        return cls(basis=basis, **d)
 
 
 class ShortObstructionVerificationStrategy(BasisAwareVerificationStrategy):
