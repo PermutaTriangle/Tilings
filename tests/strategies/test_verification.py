@@ -1247,15 +1247,15 @@ class TestNoRootCellVerificationStrategy(CommonTest):
             ]
         )
         strategy = NoRootCellVerificationStrategy(basis=[Perm((0, 1, 3, 2))])
-        assert strategy(t1) == False
+        assert not strategy(t1)
         assert strategy(t2).children == ()
 
     def test_change_basis(self):
         strategy1 = NoRootCellVerificationStrategy()
         strategy2 = NoRootCellVerificationStrategy()
         basis = [Perm((0, 1, 2, 3))]
-        assert strategy1.change_basis(basis) == True
-        assert strategy2.change_basis(basis) == True
+        assert not strategy1.change_basis(basis)
+        assert strategy2.change_basis(basis)
 
 
 class TestShortObstructionVerificationStrategy(CommonTest):
