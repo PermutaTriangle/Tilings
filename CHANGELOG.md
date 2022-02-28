@@ -38,6 +38,7 @@ swapped around a fusable row or column.
 - The `GriddedPermReduction` limits the size of obstructions it tries to infer in 
   the `minimal_obs` method to the size of the largest obstruction already on the 
   tiling.
+- Don't reinitialise in the `Tiling.from_dict` method.
 
 ### Deprecated
 - Python 3.7 is no longer supported
