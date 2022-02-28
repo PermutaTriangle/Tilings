@@ -38,6 +38,8 @@ swapped around a fusable row or column.
 - The `GriddedPermReduction` limits the size of obstructions it tries to infer in 
   the `minimal_obs` method to the size of the largest obstruction already on the 
   tiling.
+- `RequirementPlacement` adds empty cells when placing a point cell. This saves 
+  some inferral in partial placements.
 
 ### Deprecated
 - Python 3.7 is no longer supported
