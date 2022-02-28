@@ -1,6 +1,6 @@
 import abc
 from itertools import chain, product
-from typing import Dict, Iterable, Iterator, List, Optional, Tuple, cast
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -8,6 +8,7 @@ from comb_spec_searcher.strategies import Rule
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 
+Cell = Tuple[int, int]
 ListRequirement = Tuple[GriddedPerm, ...]
 
 EXTRA_BASIS_ERR = "'extra_basis' should be a list of Perm to avoid"
@@ -514,7 +515,7 @@ class RequirementCorroborationFactory(AbstractRequirementInsertionFactory):
         return "requirement corroboration"
 
 
-class PointCorroborationFactory(AbstractRequirementInsertionFactory):
+class PositiveCorroborationFactory(AbstractRequirementInsertionFactory):
     """
     The point corroboration strategy.
 
@@ -527,24 +528,21 @@ class PointCorroborationFactory(AbstractRequirementInsertionFactory):
         super().__init__(ignore_parent)
 
     def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
-        potential_cells = set()
+        potential_cells: Set[Tuple[Cell, Cell]] = set()
+        cells_to_yield: Set[Cell] = set()
         for gp in tiling.obstructions:
-            if (
-                len(gp) == 2
-                and not gp.is_localized()
-                and all(tiling.is_point_or_empty_cell(cell) for cell in gp.pos)
-            ):
-                c1, c2 = gp.pos
+            if len(gp) == 2 and not gp.is_localized():
                 if gp.is_interleaving():
                     cells = tuple(sorted(gp.pos))
                     if cells in potential_cells:
-                        yield (GriddedPerm.point_perm(c1),)
-                        yield (GriddedPerm.point_perm(c2),)
+                        cells_to_yield.update(cells)
                     else:
                         potential_cells.add(cells)
                 else:
-                    yield (GriddedPerm.point_perm(c1),)
-                    yield (GriddedPerm.point_perm(c2),)
+                    cells_to_yield.update(gp.pos)
+        for cell in cells_to_yield:
+            if cell not in tiling.point_cells:
+                yield (GriddedPerm.point_perm(cell),)
 
     def __str__(self) -> str:
         return "point corroboration"

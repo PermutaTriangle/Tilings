@@ -1557,15 +1557,6 @@ class Tiling(CombinatorialClass):
             return min(len(gp) for gp in self.requirements[0])
         return len(next(self.minimal_gridded_perms()))
 
-    def is_point_or_empty(self) -> bool:
-        point_or_empty_tiling = Tiling(
-            obstructions=(
-                GriddedPerm((0, 1), ((0, 0), (0, 0))),
-                GriddedPerm((1, 0), ((0, 0), (0, 0))),
-            )
-        )
-        return self == point_or_empty_tiling
-
     def is_point_or_empty_cell(self, cell: Cell) -> bool:
         point_or_empty_obs = (
             GriddedPerm((0, 1), (cell, cell)),

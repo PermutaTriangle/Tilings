@@ -22,6 +22,8 @@ swapped around a fusable row or column.
 - `DeflationFactory` which adds rules where cells can be deflated into increasing or
   decreasing cells as obstructions can't occur across the sum/skew components in that
   cell.
+- `PositiveCorroborationFactory` that inserts into cells which if positive makes 
+  another cell empty. This strategy is added to most packs.
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.

@@ -268,7 +268,10 @@ class TileScopePack(StrategyPack):
     # Creation of the base pack
     @classmethod
     def all_the_strategies(cls, length: int = 1) -> "TileScopePack":
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PositiveCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
@@ -308,6 +311,7 @@ class TileScopePack(StrategyPack):
 
         expansion_strats: List[CSSstrategy] = [
             strat.FactorFactory(unions=True),
+            strat.PositiveCorroborationFactory(),
             strat.CellInsertionFactory(maxreqlen=length),
         ]
         if length > 1:
@@ -341,7 +345,10 @@ class TileScopePack(StrategyPack):
             ]
         )
 
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PositiveCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
@@ -448,7 +455,10 @@ class TileScopePack(StrategyPack):
         if partial:
             expansion_strats.append([strat.PatternPlacementFactory(point_only=True)])
         return TileScopePack(
-            initial_strats=[strat.FactorFactory()],
+            initial_strats=[
+                strat.FactorFactory(),
+                strat.PositiveCorroborationFactory(),
+            ],
             ver_strats=[
                 strat.BasicVerificationStrategy(),
                 strat.InsertionEncodingVerificationStrategy(),
@@ -511,6 +521,7 @@ class TileScopePack(StrategyPack):
             initial_strats=[
                 strat.RootInsertionFactory(maxreqlen=length, max_num_req=max_num_req),
                 strat.FactorFactory(unions=True, ignore_parent=False, workable=False),
+                strat.PositiveCorroborationFactory(),
             ],
             ver_strats=[
                 strat.BasicVerificationStrategy(),
@@ -538,7 +549,10 @@ class TileScopePack(StrategyPack):
             ]
         )
 
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PositiveCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
@@ -591,7 +605,10 @@ class TileScopePack(StrategyPack):
             place_row=place_row, place_col=place_col, partial=partial
         )
 
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PositiveCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
@@ -645,7 +662,10 @@ class TileScopePack(StrategyPack):
             place_row=place_row, place_col=place_col, partial=partial
         )
 
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PositiveCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
