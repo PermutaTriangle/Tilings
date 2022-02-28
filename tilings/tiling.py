@@ -1566,6 +1566,13 @@ class Tiling(CombinatorialClass):
         )
         return self == point_or_empty_tiling
 
+    def is_point_or_empty_cell(self, cell: Cell) -> bool:
+        point_or_empty_obs = (
+            GriddedPerm((0, 1), (cell, cell)),
+            GriddedPerm((1, 0), (cell, cell)),
+        )
+        return all(ob in self.obstructions for ob in point_or_empty_obs)
+
     def is_empty_cell(self, cell: Cell) -> bool:
         """Check if the cell of the tiling is empty."""
         return cell in self.empty_cells

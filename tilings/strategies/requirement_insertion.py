@@ -514,6 +514,42 @@ class RequirementCorroborationFactory(AbstractRequirementInsertionFactory):
         return "requirement corroboration"
 
 
+class PointCorroborationFactory(AbstractRequirementInsertionFactory):
+    """
+    The point corroboration strategy.
+
+    The point corroboration strategy inserts points into any two point
+    or empty cells which can not both be a point, i.e., one is a point
+    and the other is empty.
+    """
+
+    def __init__(self, ignore_parent: bool = True):
+        super().__init__(ignore_parent)
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        potential_cells = set()
+        for gp in tiling.obstructions:
+            if (
+                len(gp) == 2
+                and not gp.is_localized()
+                and all(tiling.is_point_or_empty_cell(cell) for cell in gp.pos)
+            ):
+                c1, c2 = gp.pos
+                if gp.is_interleaving():
+                    cells = tuple(sorted(gp.pos))
+                    if cells in potential_cells:
+                        yield (GriddedPerm.point_perm(c1),)
+                        yield (GriddedPerm.point_perm(c2),)
+                    else:
+                        potential_cells.add(cells)
+                else:
+                    yield (GriddedPerm.point_perm(c1),)
+                    yield (GriddedPerm.point_perm(c2),)
+
+    def __str__(self) -> str:
+        return "point corroboration"
+
+
 class RemoveRequirementFactory(StrategyFactory[Tiling]):
     """
     For a tiling T, and each requirement R on T, create the rules that
