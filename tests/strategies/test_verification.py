@@ -1223,22 +1223,20 @@ class TestNoRootCellVerificationStrategy(CommonTest):
     @pytest.fixture
     def enum_not_verified(self):
         return [
-            Tiling.from_string("12"),
-            Tiling.from_string("123"),
-            Tiling.from_string("1234"),
+            Tiling.from_string("0132"),
+            Tiling(
+                obstructions=[
+                    GriddedPerm.single_cell((0, 1, 3, 2), ((0, 0))),
+                    GriddedPerm.single_cell((0, 2, 1), ((0, 1))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
+                ]
+            ),
         ]
 
     def test_get_genf(self, strategy, enum_verified):
         pass
 
     def test_children(self):
-        t1 = Tiling(
-            obstructions=[
-                GriddedPerm.single_cell((0, 1, 3, 2), ((0, 0))),
-                GriddedPerm.single_cell((0, 2, 1), ((0, 1))),
-                GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
-            ]
-        )
         t2 = Tiling(
             obstructions=[
                 GriddedPerm.single_cell((0, 2, 1), ((0, 0))),
@@ -1247,15 +1245,14 @@ class TestNoRootCellVerificationStrategy(CommonTest):
             ]
         )
         strategy = NoRootCellVerificationStrategy(basis=[Perm((0, 1, 3, 2))])
-        assert not strategy(t1)
         assert strategy(t2).children == ()
 
     def test_change_basis(self):
-        strategy1 = NoRootCellVerificationStrategy()
-        strategy2 = NoRootCellVerificationStrategy()
-        basis = [Perm((0, 1, 2, 3))]
-        assert not strategy1.change_basis(basis)
-        assert strategy2.change_basis(basis)
+        strategy = NoRootCellVerificationStrategy()
+        strategy1 = strategy.change_basis([Perm((0, 1, 2))], False)
+        strategy2 = strategy1.change_basis([Perm((0, 1, 3, 2))], False)
+        assert strategy1.basis == (Perm((0, 1, 2)),)
+        assert strategy2.basis == (Perm((0, 1, 3, 2)),)
 
 
 class TestShortObstructionVerificationStrategy(CommonTest):

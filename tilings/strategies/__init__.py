@@ -91,6 +91,7 @@ __all__ = [
     "LocalVerificationStrategy",
     "InsertionEncodingVerificationStrategy",
     "MonotoneTreeVerificationStrategy",
+    "NoRootCellVerificationStrategy",
     "OneByOneVerificationStrategy",
     "ShortObstructionVerificationStrategy",
     "SubclassVerificationFactory",
