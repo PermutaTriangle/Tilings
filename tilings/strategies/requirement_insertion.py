@@ -528,7 +528,7 @@ class PositiveCorroborationFactory(AbstractRequirementInsertionFactory):
         super().__init__(ignore_parent)
 
     def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
-        potential_cells: Set[Tuple[Cell, Cell]] = set()
+        potential_cells: Set[Tuple[Cell, ...]] = set()
         cells_to_yield: Set[Cell] = set()
         for gp in tiling.obstructions:
             if len(gp) == 2 and not gp.is_localized():
