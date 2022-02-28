@@ -24,6 +24,7 @@ swapped around a fusable row or column.
   cell.
 - `PositiveCorroborationFactory` that inserts into cells which if positive makes 
   another cell empty. This strategy is added to most packs.
+- `TileScopePack.remove_strategy` method that removes a strategy from a pack.
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.

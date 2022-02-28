@@ -4,6 +4,7 @@ from typing import Optional
 
 import pytest
 import requests
+from sympy import Point
 
 from comb_spec_searcher import (
     AtomStrategy,
@@ -20,7 +21,7 @@ from tilings.bijections import (
     FusionParallelSpecFinder,
     _AssumptionPathTracker,
 )
-from tilings.strategies import BasicVerificationStrategy
+from tilings.strategies import BasicVerificationStrategy, PositiveCorroborationFactory
 from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
 from tilings.strategies.factor import FactorStrategy
 from tilings.strategies.fusion import FusionStrategy
@@ -50,6 +51,7 @@ def find_bijection_between_fusion(
 
 def _b2rc(basis: str) -> CombinatorialSpecificationSearcher:
     pack = TileScopePack.row_and_col_placements(row_only=True)
+    pack = pack.remove_strategy(PositiveCorroborationFactory())
     pack = pack.add_verification(BasicVerificationStrategy(), replace=True)
     searcher = TileScope(basis, pack)
     assert isinstance(searcher, CombinatorialSpecificationSearcher)
@@ -470,6 +472,7 @@ def test_bijection_12():
 def test_bijection_13():
     pack = TileScopePack.point_and_row_and_col_placements(row_only=True)
     pack = pack.add_verification(BasicVerificationStrategy(), replace=True)
+    pack = pack.remove_strategy(PositiveCorroborationFactory())
     searcher1 = TileScope("0132_0213_0231_0321_1032_1320_2031_2301_3021_3120", pack)
     searcher2 = TileScope("0132_0213_0231_0312_0321_1302_1320_2031_2301_3120", pack)
     _bijection_asserter(find_bijection_between(searcher1, searcher2))

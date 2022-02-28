@@ -9,6 +9,7 @@ from comb_spec_searcher.strategies import (
     StrategyFactory,
     VerificationStrategy,
 )
+from comb_spec_searcher.typing import CSSstrategy
 from permuta import Perm
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import strategies as strat
@@ -264,6 +265,28 @@ class TileScopePack(StrategyPack):
         if self.symmetries:
             raise ValueError("Symmetries already turned on.")
         return super().add_symmetry(strat.SymmetriesFactory(), "symmetries")
+
+    def remove_strategy(self, strategy: CSSstrategy):
+        """remove the strategy from the pack"""
+        d = strategy.to_jsonable()
+
+        def replace_list(strats):
+            """Return a new list with the replaced fusion strat."""
+            res = []
+            for strategy in strats:
+                if not strategy.to_jsonable() == d:
+                    res.append(strategy)
+            return res
+
+        return self.__class__(
+            ver_strats=replace_list(self.ver_strats),
+            inferral_strats=replace_list(self.inferral_strats),
+            initial_strats=replace_list(self.initial_strats),
+            expansion_strats=list(map(replace_list, self.expansion_strats)),
+            name=self.name,
+            symmetries=replace_list(self.symmetries),
+            iterative=self.iterative,
+        )
 
     # Creation of the base pack
     @classmethod
