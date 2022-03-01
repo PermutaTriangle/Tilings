@@ -301,6 +301,14 @@ class RequirementPlacement:
         """
         placed_cell = self._placed_cell(cell)
         res = []
+        if cell in self._tiling.point_cells:
+            x, y = placed_cell
+            if self.own_row:
+                res.append(GriddedPerm.point_perm((x, y + 1)))
+                res.append(GriddedPerm.point_perm((x, y - 1)))
+            if self.own_col:
+                res.append(GriddedPerm.point_perm((x + 1, y)))
+                res.append(GriddedPerm.point_perm((x - 1, y)))
         for idx, gp in zip(indices, gps):
             # if cell is farther in the direction than gp[idx], then don't need
             # to avoid any of the stretched grided perms
