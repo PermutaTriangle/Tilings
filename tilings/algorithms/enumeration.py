@@ -289,11 +289,11 @@ class MonotoneTreeEnumeration(Enumeration):
         `MonotoneTreeEnumeration._tracking_var` in `F`.
         A variable is added to track the number of point in cell.
         """
-        new_genf = self._tracking_var ** num_point * F
+        new_genf = self._tracking_var**num_point * F
         for i in range(1, num_point + 1):
             new_genf = diff(new_genf, self._tracking_var) / i
         new_genf *= self._cell_variable(cell) ** num_point
-        new_genf *= x ** num_point
+        new_genf *= x**num_point
         return new_genf.subs({self._tracking_var: 1})
 
     def _cell_num_point(self, cell):
