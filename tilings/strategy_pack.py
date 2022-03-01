@@ -40,6 +40,10 @@ class TileScopePack(StrategyPack):
                     if strategy.basis:
                         logger.warning("Basis changed in %s", strategy)
                     res.append(strategy.change_basis(basis, symmetry))
+                elif isinstance(strategy, strat.SymmetriesFactory):
+                    if strategy.basis:
+                        logger.warning("Basis changed in %s", strategy)
+                    res.append(strategy.change_basis(basis))
                 else:
                     res.append(strategy)
             return res
@@ -50,7 +54,7 @@ class TileScopePack(StrategyPack):
             initial_strats=replace_list(self.initial_strats),
             expansion_strats=list(map(replace_list, self.expansion_strats)),
             name=self.name,
-            symmetries=self.symmetries,
+            symmetries=replace_list(self.symmetries),
             iterative=self.iterative,
         )
 
