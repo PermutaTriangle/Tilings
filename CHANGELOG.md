@@ -22,6 +22,9 @@ swapped around a fusable row or column.
 - `MonotoneSlidingFactory` that creates rules that swaps neighbouring cells if they
   are 'monotone' fusable, i.e., they are a generalized fusion with a monotone local 
   extra obstruction.
+- `DeflationFactory` which adds rules where cells can be deflated into increasing or
+  decreasing cells as obstructions can't occur across the sum/skew components in that
+  cell.
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
@@ -33,6 +36,14 @@ swapped around a fusable row or column.
 - Verification strategies no longer ignore parent
 - `TrackedSearcher` now uses a `TrackedQueue` and is able to work with all packs
    and new future strategies.
+- `TileScopePack.make_tracked` will add the appropriate tracking methods for 
+  interleaving factors and make strategies tracked if it can be.
+- The `GriddedPermReduction` limits the size of obstructions it tries to infer in 
+  the `minimal_obs` method to the size of the largest obstruction already on the 
+  tiling.
+- `RequirementPlacement` adds empty cells when placing a point cell. This saves 
+  some inferral in partial placements.
+- Don't reinitialise in the `Tiling.from_dict` method.
 
 ### Deprecated
 - Python 3.7 is no longer supported

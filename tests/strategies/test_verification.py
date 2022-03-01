@@ -192,7 +192,7 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
         x = sympy.var("x")
         assert (
             sympy.simplify(
-                strategy.get_genf(enum_verified[0]) - 1 / (2 * x ** 2 - 3 * x + 1)
+                strategy.get_genf(enum_verified[0]) - 1 / (2 * x**2 - 3 * x + 1)
             )
             == 0
         )
@@ -566,7 +566,7 @@ class TestInsertionEncodingVerificationStrategy(CommonTest):
 
     def test_get_genf(self, strategy, enum_verified):
         x = sympy.Symbol("x")
-        expected_gf = (1 - x) / (4 * x ** 2 - 4 * x + 1)
+        expected_gf = (1 - x) / (4 * x**2 - 4 * x + 1)
         assert sympy.simplify(strategy.get_genf(enum_verified[0]) - expected_gf) == 0
 
 
@@ -673,10 +673,10 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
         x = sympy.Symbol("x")
         expected_gf = -(
             sympy.sqrt(
-                -(4 * x ** 3 - 14 * x ** 2 + 8 * x - 1) / (2 * x ** 2 - 4 * x + 1)
+                -(4 * x**3 - 14 * x**2 + 8 * x - 1) / (2 * x**2 - 4 * x + 1)
             )
             - 1
-        ) / (2 * x * (x ** 2 - 3 * x + 1))
+        ) / (2 * x * (x**2 - 3 * x + 1))
         assert sympy.simplify(strategy.get_genf(enum_verified[0]) - expected_gf) == 0
 
         expected_gf = -1 / ((x - 1) * (x / (x - 1) + 1))
@@ -756,11 +756,11 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
             genf
             == 1
             + 2 * x
-            + 4 * x ** 2
-            + 8 * x ** 3
-            + 14 * x ** 4
-            + 20 * x ** 5
-            + 20 * x ** 6
+            + 4 * x**2
+            + 8 * x**3
+            + 14 * x**4
+            + 20 * x**5
+            + 20 * x**6
         )
 
     def test_with_two_reqs(self, strategy):
