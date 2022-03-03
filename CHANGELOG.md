@@ -22,6 +22,8 @@ swapped around a fusable row or column.
 - `DeflationFactory` which adds rules where cells can be deflated into increasing or
   decreasing cells as obstructions can't occur across the sum/skew components in that
   cell.
+- `CellReductionFactory` which changes a cell to monotone if at most one point of 
+  any crossing gp touches that cell.
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.

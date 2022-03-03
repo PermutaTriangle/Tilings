@@ -1,5 +1,6 @@
 from .assumption_insertion import AddAssumptionFactory, AddInterleavingAssumptionFactory
 from .assumption_splitting import SplittingStrategy
+from .cell_reduction import CellReductionFactory
 from .deflation import DeflationFactory
 from .detect_components import DetectComponentsStrategy
 from .experimental_verification import (
@@ -80,6 +81,8 @@ __all__ = [
     "ObstructionTransitivityFactory",
     "RowColumnSeparationStrategy",
     "SubobstructionInferralFactory",
+    # Reduction
+    "CellReductionFactory",
     # Symmetry
     "SymmetriesFactory",
     # Verification
