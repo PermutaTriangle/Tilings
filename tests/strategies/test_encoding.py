@@ -20,6 +20,7 @@ from tilings.strategies import (
     FactorFactory,
     FactorInsertionFactory,
     FusionFactory,
+    InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
@@ -363,6 +364,7 @@ strategy_objects = (
     + ignoreparent(ElementaryVerificationStrategy)
     + ignoreparent(LocalVerificationStrategy)
     + ignoreparent(MonotoneTreeVerificationStrategy)
+    + ignoreparent(InsertionEncodingVerificationStrategy)
     + [ObstructionTransitivityFactory()]
     + [
         OneByOneVerificationStrategy(
