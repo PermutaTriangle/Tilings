@@ -44,6 +44,7 @@ swapped around a fusable row or column.
 - `RequirementPlacement` adds empty cells when placing a point cell. This saves 
   some inferral in partial placements.
 - Don't reinitialise in the `Tiling.from_dict` method.
+- `GuidedSearcher` expands every symmetry
 
 ### Deprecated
 - Python 3.7 is no longer supported
