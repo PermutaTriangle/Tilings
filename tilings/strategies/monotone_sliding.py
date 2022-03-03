@@ -12,21 +12,25 @@ class GeneralizedSlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     A strategy that slides column idx and idx + 1.
     """
 
-    def __init__(self, idx: int):
+    def __init__(self, idx: int, rotate: bool = False):
         super().__init__()
         self.idx = idx
+        self.rotate = rotate
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
-        return (
-            Tiling(
-                self.slide_gps(comb_class.obstructions),
-                map(self.slide_gps, comb_class.requirements),
-                [
-                    TrackingAssumption(self.slide_gps(ass.gps))
-                    for ass in comb_class.assumptions
-                ],
-            ),
+        if self.rotate:
+            comb_class = comb_class.rotate270()
+        child = Tiling(
+            self.slide_gps(comb_class.obstructions),
+            map(self.slide_gps, comb_class.requirements),
+            [
+                TrackingAssumption(self.slide_gps(ass.gps))
+                for ass in comb_class.assumptions
+            ],
         )
+        if self.rotate:
+            child = child.rotate90()
+        return (child,)
 
     def formal_step(self) -> str:
         return f"Sliding index {self.idx}"
@@ -56,6 +60,8 @@ class GeneralizedSlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             children = self.decomposition_function(comb_class)
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
+        if self.rotate:
+            raise NotImplementedError("Not implemented counting for columns")
         child = children[0]
         return (
             {
@@ -79,7 +85,7 @@ class GeneralizedSlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return tuple(map(self.slide_gp, gps))
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(idx={self.idx})"
+        return f"{self.__class__.__name__}(idx={self.idx}, rotate={self.rotate})"
 
     def __str__(self) -> str:
         return f"slide column {self.idx} and {self.idx + 1}"
@@ -87,11 +93,12 @@ class GeneralizedSlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
         d["idx"] = self.idx
+        d["rotate"] = self.rotate
         return d
 
     @classmethod
     def from_dict(cls, d: dict):
-        return cls(d["idx"])
+        return cls(d["idx"], d["rotate"])
 
 
 class MonotoneSlidingFactory(StrategyFactory[Tiling]):
@@ -100,10 +107,18 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
     are 'monotone' fusable, i.e., they are a generalized fusion with
     a monotone local extra obstruction.
 
-    This is only looks at n x 1 row tilings.
+    This is only looks at n x 1 and 1 x n tilings.
     """
 
     def __call__(self, comb_class: Tiling) -> Iterator[GeneralizedSlidingStrategy]:
+        rotate = False
+        if (
+            not comb_class.dimensions[1] == 1
+            and comb_class.dimensions[0] == 1
+            and not comb_class.requirements
+        ):
+            comb_class = comb_class.rotate270()
+            rotate = True
         if comb_class.dimensions[1] == 1 and not comb_class.requirements:
             for col in range(comb_class.dimensions[0] - 1):
                 local_cells = (
@@ -137,7 +152,7 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
                             )
                         )
                         if comb_class == comb_class.add_obstructions(unfused_obs):
-                            yield GeneralizedSlidingStrategy(col)
+                            yield GeneralizedSlidingStrategy(col, rotate)
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"
