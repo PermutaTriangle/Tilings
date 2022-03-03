@@ -37,10 +37,12 @@ class NoRootCellVerificationStrategy(BasisAwareVerificationStrategy):
         )
 
     def formal_step(self) -> str:
-        return "tiling has no root cell"
+        basis = ", ".join(str(p) for p in self.basis)
+        return f"tiling has no Av({basis}) cell"
 
     def __str__(self) -> str:
-        return "no root cell verification"
+        basis = ", ".join(str(p) for p in self.basis)
+        return f"no Av({basis}) cell verification"
 
 
 class ShortObstructionVerificationStrategy(BasisAwareVerificationStrategy):
