@@ -41,6 +41,9 @@ swapped around a fusable row or column.
 - The `GriddedPermReduction` limits the size of obstructions it tries to infer in 
   the `minimal_obs` method to the size of the largest obstruction already on the 
   tiling.
+- The `SymmetriesFactory` takes a basis and will not return any symmetries where 
+  any of the patterns of the obstruction are not subpatterns of some basis element.
+  If no basis is given, all symmetries are returned.
 - `RequirementPlacement` adds empty cells when placing a point cell. This saves 
   some inferral in partial placements.
 - Don't reinitialise in the `Tiling.from_dict` method.
