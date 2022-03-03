@@ -1155,7 +1155,7 @@ class TestNoRootCellVerificationStrategy(CommonTest):
 
     @pytest.fixture
     def formal_step(self):
-        return "tiling has no root cell"
+        return "tiling has no Av(0132) cell"
 
     @pytest.fixture
     def enum_verified(self):
