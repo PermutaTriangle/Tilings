@@ -275,10 +275,35 @@ class TileScopePack(StrategyPack):
             raise ValueError("Symmetries already turned on.")
         return super().add_symmetry(strat.SymmetriesFactory(), "symmetries")
 
+    def remove_strategy(self, strategy: CSSstrategy):
+        """remove the strategy from the pack"""
+        d = strategy.to_jsonable()
+
+        def replace_list(strats):
+            """Return a new list with the replaced fusion strat."""
+            res = []
+            for strategy in strats:
+                if not strategy.to_jsonable() == d:
+                    res.append(strategy)
+            return res
+
+        return self.__class__(
+            ver_strats=replace_list(self.ver_strats),
+            inferral_strats=replace_list(self.inferral_strats),
+            initial_strats=replace_list(self.initial_strats),
+            expansion_strats=list(map(replace_list, self.expansion_strats)),
+            name=self.name,
+            symmetries=replace_list(self.symmetries),
+            iterative=self.iterative,
+        )
+
     # Creation of the base pack
     @classmethod
     def all_the_strategies(cls, length: int = 1) -> "TileScopePack":
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PositiveCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
@@ -318,6 +343,7 @@ class TileScopePack(StrategyPack):
 
         expansion_strats: List[CSSstrategy] = [
             strat.FactorFactory(unions=True),
+            strat.PositiveCorroborationFactory(),
             strat.CellInsertionFactory(maxreqlen=length),
         ]
         if length > 1:
@@ -351,7 +377,10 @@ class TileScopePack(StrategyPack):
             ]
         )
 
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PositiveCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
@@ -458,7 +487,10 @@ class TileScopePack(StrategyPack):
         if partial:
             expansion_strats.append([strat.PatternPlacementFactory(point_only=True)])
         return TileScopePack(
-            initial_strats=[strat.FactorFactory()],
+            initial_strats=[
+                strat.FactorFactory(),
+                strat.PositiveCorroborationFactory(),
+            ],
             ver_strats=[
                 strat.BasicVerificationStrategy(),
                 strat.InsertionEncodingVerificationStrategy(),
@@ -521,6 +553,7 @@ class TileScopePack(StrategyPack):
             initial_strats=[
                 strat.RootInsertionFactory(maxreqlen=length, max_num_req=max_num_req),
                 strat.FactorFactory(unions=True, ignore_parent=False, workable=False),
+                strat.PositiveCorroborationFactory(),
             ],
             ver_strats=[
                 strat.BasicVerificationStrategy(),
@@ -548,7 +581,10 @@ class TileScopePack(StrategyPack):
             ]
         )
 
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PositiveCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
@@ -601,7 +637,10 @@ class TileScopePack(StrategyPack):
             place_row=place_row, place_col=place_col, partial=partial
         )
 
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PositiveCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
@@ -655,7 +694,10 @@ class TileScopePack(StrategyPack):
             place_row=place_row, place_col=place_col, partial=partial
         )
 
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PositiveCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
