@@ -22,6 +22,7 @@ from tilings.strategies import (
     FusionFactory,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
+    MonotoneSlidingFactory,
     MonotoneTreeVerificationStrategy,
     ObstructionInferralFactory,
     ObstructionTransitivityFactory,
@@ -50,6 +51,7 @@ from tilings.strategies.factor import (
     FactorWithMonotoneInterleavingStrategy,
 )
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
+from tilings.strategies.monotone_sliding import GeneralizedSlidingStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 from tilings.strategies.point_jumping import PointJumpingStrategy
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
@@ -421,6 +423,7 @@ strategy_objects = (
         )
     ]
     + [PointJumpingFactory()]
+    + [MonotoneSlidingFactory(), GeneralizedSlidingStrategy(1)]
     + indices_and_row(PointJumpingStrategy)
 )
 
