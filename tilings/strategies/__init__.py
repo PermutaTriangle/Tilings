@@ -3,11 +3,13 @@ from .assumption_splitting import SplittingStrategy
 from .deflation import DeflationFactory
 from .detect_components import DetectComponentsStrategy
 from .experimental_verification import (
+    NoRootCellVerificationStrategy,
     ShortObstructionVerificationStrategy,
     SubclassVerificationFactory,
 )
 from .factor import FactorFactory
 from .fusion import ComponentFusionFactory, FusionFactory
+from .monotone_sliding import MonotoneSlidingFactory
 from .obstruction_inferral import (
     EmptyCellInferralFactory,
     ObstructionInferralFactory,
@@ -25,6 +27,7 @@ from .requirement_insertion import (
     RequirementExtensionFactory,
     RequirementInsertionFactory,
     RootInsertionFactory,
+    TargetedCellInsertionFactory,
 )
 from .requirement_placement import (
     AllPlacementsFactory,
@@ -65,11 +68,13 @@ __all__ = [
     "RequirementCorroborationFactory",
     "RootInsertionFactory",
     "RowAndColumnPlacementFactory",
+    "TargetedCellInsertionFactory",
     # Decomposition
     "FactorFactory",
     # Deflation
     "DeflationFactory",
     # Equivalence
+    "MonotoneSlidingFactory",
     "PatternPlacementFactory",
     "PointJumpingFactory",
     "SlidingFactory",
@@ -92,6 +97,7 @@ __all__ = [
     "LocalVerificationStrategy",
     "InsertionEncodingVerificationStrategy",
     "MonotoneTreeVerificationStrategy",
+    "NoRootCellVerificationStrategy",
     "OneByOneVerificationStrategy",
     "ShortObstructionVerificationStrategy",
     "SubclassVerificationFactory",

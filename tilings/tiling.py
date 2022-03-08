@@ -545,6 +545,10 @@ class Tiling(CombinatorialClass):
             obstructions=obstructions,
             requirements=requirements,
             assumptions=assumptions,
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
         )
 
     # -------------------------------------------------------------

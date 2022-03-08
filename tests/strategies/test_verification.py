@@ -18,6 +18,7 @@ from tilings.strategies import (
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
     MonotoneTreeVerificationStrategy,
+    NoRootCellVerificationStrategy,
     OneByOneVerificationStrategy,
     ShortObstructionVerificationStrategy,
 )
@@ -192,7 +193,7 @@ class TestLocallyFactorableVerificationStrategy(CommonTest):
         x = sympy.var("x")
         assert (
             sympy.simplify(
-                strategy.get_genf(enum_verified[0]) - 1 / (2 * x ** 2 - 3 * x + 1)
+                strategy.get_genf(enum_verified[0]) - 1 / (2 * x**2 - 3 * x + 1)
             )
             == 0
         )
@@ -566,7 +567,7 @@ class TestInsertionEncodingVerificationStrategy(CommonTest):
 
     def test_get_genf(self, strategy, enum_verified):
         x = sympy.Symbol("x")
-        expected_gf = (1 - x) / (4 * x ** 2 - 4 * x + 1)
+        expected_gf = (1 - x) / (4 * x**2 - 4 * x + 1)
         assert sympy.simplify(strategy.get_genf(enum_verified[0]) - expected_gf) == 0
 
 
@@ -673,10 +674,10 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
         x = sympy.Symbol("x")
         expected_gf = -(
             sympy.sqrt(
-                -(4 * x ** 3 - 14 * x ** 2 + 8 * x - 1) / (2 * x ** 2 - 4 * x + 1)
+                -(4 * x**3 - 14 * x**2 + 8 * x - 1) / (2 * x**2 - 4 * x + 1)
             )
             - 1
-        ) / (2 * x * (x ** 2 - 3 * x + 1))
+        ) / (2 * x * (x**2 - 3 * x + 1))
         assert sympy.simplify(strategy.get_genf(enum_verified[0]) - expected_gf) == 0
 
         expected_gf = -1 / ((x - 1) * (x / (x - 1) + 1))
@@ -756,11 +757,11 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
             genf
             == 1
             + 2 * x
-            + 4 * x ** 2
-            + 8 * x ** 3
-            + 14 * x ** 4
-            + 20 * x ** 5
-            + 20 * x ** 6
+            + 4 * x**2
+            + 8 * x**3
+            + 14 * x**4
+            + 20 * x**5
+            + 20 * x**6
         )
 
     def test_with_two_reqs(self, strategy):
@@ -1145,6 +1146,113 @@ class TestOneByOneVerificationStrategy(CommonTest):
         assert not strategy.verified(Tiling.from_string("1324"))
         assert not strategy.verified(Tiling.from_string("132"))
         assert strategy.verified(Tiling.from_string("132_1234"))
+
+
+class TestNoRootCellVerificationStrategy(CommonTest):
+    @pytest.fixture
+    def strategy(self):
+        return NoRootCellVerificationStrategy(basis=[Perm((0, 1, 3, 2))])
+
+    @pytest.fixture
+    def formal_step(self):
+        return "tiling has no Av(0132) cell"
+
+    @pytest.fixture
+    def enum_verified(self):
+        # +-+-+-+-+
+        # |2| | | |
+        # +-+-+-+-+
+        # | | |●| |
+        # +-+-+-+-+
+        # |\| | | |
+        # +-+-+-+-+
+        # | |●| | |
+        # +-+-+-+-+
+        # |1| | |3|
+        # +-+-+-+-+
+        # 1: Av+(120, 0132)
+        # 2: Av(012)
+        # 3: Av(0132, 0231, 1203)
+        # \: Av(01)
+        # ●: point
+        # Crossing obstructions:
+        # 01: (0, 0), (3, 0)
+        # 012: (0, 0), (0, 0), (0, 2)
+        # 012: (0, 0), (0, 0), (0, 4)
+        # 012: (0, 0), (0, 2), (0, 4)
+        # 012: (0, 0), (0, 4), (0, 4)
+        # 012: (0, 2), (0, 4), (0, 4)
+        # 120: (0, 0), (0, 2), (0, 0)
+        # Requirement 0:
+        # 0: (0, 0)
+        # Requirement 1:
+        # 0: (1, 1)
+        # Requirement 2:
+        # 0: (2, 3)
+        return [
+            Tiling(
+                obstructions=(
+                    GriddedPerm((0, 1), ((0, 0), (3, 0))),
+                    GriddedPerm((0, 1), ((0, 2), (0, 2))),
+                    GriddedPerm((0, 1), ((1, 1), (1, 1))),
+                    GriddedPerm((0, 1), ((2, 3), (2, 3))),
+                    GriddedPerm((1, 0), ((1, 1), (1, 1))),
+                    GriddedPerm((1, 0), ((2, 3), (2, 3))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 2))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 4))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 2), (0, 4))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 4), (0, 4))),
+                    GriddedPerm((0, 1, 2), ((0, 2), (0, 4), (0, 4))),
+                    GriddedPerm((0, 1, 2), ((0, 4), (0, 4), (0, 4))),
+                    GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),
+                    GriddedPerm((1, 2, 0), ((0, 0), (0, 2), (0, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 0), (0, 0))),
+                    GriddedPerm((0, 1, 3, 2), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                    GriddedPerm((0, 2, 3, 1), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                    GriddedPerm((1, 2, 0, 3), ((3, 0), (3, 0), (3, 0), (3, 0))),
+                ),
+                requirements=(
+                    (GriddedPerm((0,), ((0, 0),)),),
+                    (GriddedPerm((0,), ((1, 1),)),),
+                    (GriddedPerm((0,), ((2, 3),)),),
+                ),
+                assumptions=(),
+            )
+        ]
+
+    @pytest.fixture
+    def enum_not_verified(self):
+        return [
+            Tiling.from_string("0132"),
+            Tiling(
+                obstructions=[
+                    GriddedPerm.single_cell((0, 1, 3, 2), ((0, 0))),
+                    GriddedPerm.single_cell((0, 2, 1), ((0, 1))),
+                    GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 1))),
+                ]
+            ),
+        ]
+
+    def test_get_genf(self, strategy, enum_verified):
+        pass
+
+    def test_children(self):
+        t2 = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0, 2, 1), ((0, 0))),
+                GriddedPerm.single_cell((0, 2, 1), ((0, 1))),
+                GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 0), (0, 1), (0, 1))),
+            ]
+        )
+        strategy = NoRootCellVerificationStrategy(basis=[Perm((0, 1, 3, 2))])
+        assert strategy(t2).children == ()
+
+    def test_change_basis(self):
+        strategy = NoRootCellVerificationStrategy()
+        strategy1 = strategy.change_basis([Perm((0, 1, 2))], False)
+        strategy2 = strategy1.change_basis([Perm((0, 1, 3, 2))], False)
+        assert strategy1.basis == (Perm((0, 1, 2)),)
+        assert strategy2.basis == (Perm((0, 1, 3, 2)),)
 
 
 class TestShortObstructionVerificationStrategy(CommonTest):

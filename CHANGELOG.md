@@ -19,12 +19,17 @@ requirement.
 - added `TileScopePack.requirement_and_row_and_col_placements`
 - `PointJumpingFactory` which adds rules where requirements and assumptions can be 
 swapped around a fusable row or column.
+- `MonotoneSlidingFactory` that creates rules that swaps neighbouring cells if they
+  are 'monotone' fusable, i.e., they are a generalized fusion with a monotone local 
+  extra obstruction.
 - `DeflationFactory` which adds rules where cells can be deflated into increasing or
   decreasing cells as obstructions can't occur across the sum/skew components in that
   cell.
 - `PositiveCorroborationFactory` that inserts into cells which if positive makes 
   another cell empty. This strategy is added to most packs.
 - `TileScopePack.remove_strategy` method that removes a strategy from a pack.
+- `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can 
+  lead to factoring out a verified sub tiling. 
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
@@ -37,10 +42,16 @@ swapped around a fusable row or column.
 - `TrackedSearcher` now uses a `TrackedQueue` and is able to work with all packs
    and new future strategies.
 - `TileScopePack.make_tracked` will add the appropriate tracking methods for 
-  interleaving factors.
+  interleaving factors and make strategies tracked if it can be.
 - The `GriddedPermReduction` limits the size of obstructions it tries to infer in 
   the `minimal_obs` method to the size of the largest obstruction already on the 
   tiling.
+- The `SymmetriesFactory` takes a basis and will not return any symmetries where 
+  any of the patterns of the obstruction are not subpatterns of some basis element.
+  If no basis is given, all symmetries are returned.
+- `RequirementPlacement` adds empty cells when placing a point cell. This saves 
+  some inferral in partial placements.
+- Don't reinitialise in the `Tiling.from_dict` method.
 
 ### Deprecated
 - Python 3.7 is no longer supported

@@ -20,9 +20,12 @@ from tilings.strategies import (
     FactorFactory,
     FactorInsertionFactory,
     FusionFactory,
+    InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
+    MonotoneSlidingFactory,
     MonotoneTreeVerificationStrategy,
+    NoRootCellVerificationStrategy,
     ObstructionInferralFactory,
     ObstructionTransitivityFactory,
     OneByOneVerificationStrategy,
@@ -42,6 +45,7 @@ from tilings.strategies import (
     SubclassVerificationFactory,
     SubobstructionInferralFactory,
     SymmetriesFactory,
+    TargetedCellInsertionFactory,
 )
 from tilings.strategies.experimental_verification import SubclassVerificationStrategy
 from tilings.strategies.factor import (
@@ -50,6 +54,7 @@ from tilings.strategies.factor import (
     FactorWithMonotoneInterleavingStrategy,
 )
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
+from tilings.strategies.monotone_sliding import GeneralizedSlidingStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 from tilings.strategies.point_jumping import PointJumpingStrategy
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
@@ -362,6 +367,7 @@ strategy_objects = (
     + ignoreparent(ElementaryVerificationStrategy)
     + ignoreparent(LocalVerificationStrategy)
     + ignoreparent(MonotoneTreeVerificationStrategy)
+    + ignoreparent(InsertionEncodingVerificationStrategy)
     + [ObstructionTransitivityFactory()]
     + [
         OneByOneVerificationStrategy(
@@ -372,6 +378,16 @@ strategy_objects = (
         ),
         OneByOneVerificationStrategy(basis=[], ignore_parent=False, symmetry=False),
         OneByOneVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
+    ]
+    + [
+        NoRootCellVerificationStrategy(
+            basis=[Perm((0, 1, 2)), Perm((2, 1, 0, 3))], ignore_parent=True
+        ),
+        NoRootCellVerificationStrategy(
+            basis=[Perm((2, 1, 0, 3))], ignore_parent=False, symmetry=True
+        ),
+        NoRootCellVerificationStrategy(basis=[], ignore_parent=False, symmetry=False),
+        NoRootCellVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
     ]
     + [
         SubclassVerificationFactory(perms_to_check=[Perm((0, 1, 2)), Perm((1, 0))]),
@@ -421,7 +437,9 @@ strategy_objects = (
         )
     ]
     + [PointJumpingFactory()]
+    + [MonotoneSlidingFactory(), GeneralizedSlidingStrategy(1)]
     + indices_and_row(PointJumpingStrategy)
+    + [TargetedCellInsertionFactory()]
 )
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))

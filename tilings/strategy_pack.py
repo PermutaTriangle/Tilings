@@ -40,6 +40,10 @@ class TileScopePack(StrategyPack):
                     if strategy.basis:
                         logger.warning("Basis changed in %s", strategy)
                     res.append(strategy.change_basis(basis, symmetry))
+                elif isinstance(strategy, strat.SymmetriesFactory):
+                    if strategy.basis:
+                        logger.warning("Basis changed in %s", strategy)
+                    res.append(strategy.change_basis(basis))
                 else:
                     res.append(strategy)
             return res
@@ -50,7 +54,7 @@ class TileScopePack(StrategyPack):
             initial_strats=replace_list(self.initial_strats),
             expansion_strats=list(map(replace_list, self.expansion_strats)),
             name=self.name,
-            symmetries=self.symmetries,
+            symmetries=replace_list(self.symmetries),
             iterative=self.iterative,
         )
 
@@ -118,36 +122,42 @@ class TileScopePack(StrategyPack):
         """Make a fusion pack tracked."""
 
         def replace_list(strats):
-            """Return a new list with the replaced fusion strat."""
+            """Return a new list with strats tracked."""
             res = []
             for strategy in strats:
-                if isinstance(strategy, strat.FusionFactory):
-                    res.append(strategy.make_tracked())
-                elif isinstance(strategy, strat.FactorFactory):
-                    d = strategy.to_jsonable()
+                d = strategy.to_jsonable()
+                if "interleaving" in d:
                     if not d["tracked"] and d["interleaving"] in ("all", "monotone"):
                         res.append(
                             strat.AddInterleavingAssumptionFactory(unions=d["unions"])
                         )
+                if not d.get("tracked", True):
                     d["tracked"] = True
-                    res.append(AbstractStrategy.from_dict(d))
-                else:
-                    res.append(strategy)
+                    strategy = AbstractStrategy.from_dict(d)
+                res.append(strategy)
             return res
 
-        return (
-            self.__class__(
-                ver_strats=replace_list(self.ver_strats),
-                inferral_strats=replace_list(self.inferral_strats),
-                initial_strats=replace_list(self.initial_strats),
-                expansion_strats=list(map(replace_list, self.expansion_strats)),
-                name=self.name,
-                symmetries=self.symmetries,
-                iterative=self.iterative,
-            )
-            .add_initial(strat.AddAssumptionFactory(), apply_first=True)
-            .add_initial(strat.RearrangeAssumptionFactory(), apply_first=True)
+        pack = self.__class__(
+            ver_strats=replace_list(self.ver_strats),
+            inferral_strats=replace_list(self.inferral_strats),
+            initial_strats=replace_list(self.initial_strats),
+            expansion_strats=list(map(replace_list, self.expansion_strats)),
+            name=self.name.replace("untracked", "tracked"),
+            symmetries=self.symmetries,
+            iterative=self.iterative,
         )
+        if all(
+            not isinstance(strategy, strat.AddAssumptionFactory) for strategy in pack
+        ):
+            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
+        if all(
+            not isinstance(strategy, strat.RearrangeAssumptionFactory)
+            for strategy in pack
+        ):
+            pack = pack.add_initial(
+                strat.RearrangeAssumptionFactory(), apply_first=True
+            )
+        return pack
 
     def make_fusion(
         self,
