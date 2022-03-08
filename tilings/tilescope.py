@@ -192,7 +192,8 @@ class TrackedSearcher(LimitedAssumptionTileScope):
         )
         # reset to the trackedqueue!
         self.classqueue = cast(
-            DefaultQueue, TrackedQueue(strategy_pack, self, delay_next)
+            DefaultQueue,
+            TrackedQueue(cast(TileScopePack, self.strategy_pack), self, delay_next),
         )  # TODO: make CSS accept a CSSQueue as a kwarg
         self.classqueue.add(self.start_label)
 

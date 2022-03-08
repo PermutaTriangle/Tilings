@@ -25,6 +25,7 @@ from tilings.strategies import (
     LocalVerificationStrategy,
     MonotoneSlidingFactory,
     MonotoneTreeVerificationStrategy,
+    NoRootCellVerificationStrategy,
     ObstructionInferralFactory,
     ObstructionTransitivityFactory,
     OneByOneVerificationStrategy,
@@ -377,6 +378,16 @@ strategy_objects = (
         ),
         OneByOneVerificationStrategy(basis=[], ignore_parent=False, symmetry=False),
         OneByOneVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
+    ]
+    + [
+        NoRootCellVerificationStrategy(
+            basis=[Perm((0, 1, 2)), Perm((2, 1, 0, 3))], ignore_parent=True
+        ),
+        NoRootCellVerificationStrategy(
+            basis=[Perm((2, 1, 0, 3))], ignore_parent=False, symmetry=True
+        ),
+        NoRootCellVerificationStrategy(basis=[], ignore_parent=False, symmetry=False),
+        NoRootCellVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
     ]
     + [
         SubclassVerificationFactory(perms_to_check=[Perm((0, 1, 2)), Perm((1, 0))]),

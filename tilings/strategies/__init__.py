@@ -3,6 +3,7 @@ from .assumption_splitting import SplittingStrategy
 from .deflation import DeflationFactory
 from .detect_components import DetectComponentsStrategy
 from .experimental_verification import (
+    NoRootCellVerificationStrategy,
     ShortObstructionVerificationStrategy,
     SubclassVerificationFactory,
 )
@@ -94,6 +95,7 @@ __all__ = [
     "LocalVerificationStrategy",
     "InsertionEncodingVerificationStrategy",
     "MonotoneTreeVerificationStrategy",
+    "NoRootCellVerificationStrategy",
     "OneByOneVerificationStrategy",
     "ShortObstructionVerificationStrategy",
     "SubclassVerificationFactory",
