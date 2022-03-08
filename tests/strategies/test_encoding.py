@@ -20,6 +20,7 @@ from tilings.strategies import (
     FactorFactory,
     FactorInsertionFactory,
     FusionFactory,
+    InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
     MonotoneSlidingFactory,
@@ -43,6 +44,7 @@ from tilings.strategies import (
     SubclassVerificationFactory,
     SubobstructionInferralFactory,
     SymmetriesFactory,
+    TargetedCellInsertionFactory,
 )
 from tilings.strategies.experimental_verification import SubclassVerificationStrategy
 from tilings.strategies.factor import (
@@ -364,6 +366,7 @@ strategy_objects = (
     + ignoreparent(ElementaryVerificationStrategy)
     + ignoreparent(LocalVerificationStrategy)
     + ignoreparent(MonotoneTreeVerificationStrategy)
+    + ignoreparent(InsertionEncodingVerificationStrategy)
     + [ObstructionTransitivityFactory()]
     + [
         OneByOneVerificationStrategy(
@@ -425,6 +428,7 @@ strategy_objects = (
     + [PointJumpingFactory()]
     + [MonotoneSlidingFactory(), GeneralizedSlidingStrategy(1)]
     + indices_and_row(PointJumpingStrategy)
+    + [TargetedCellInsertionFactory()]
 )
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))

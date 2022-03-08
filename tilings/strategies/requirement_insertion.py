@@ -1,12 +1,15 @@
 import abc
 from itertools import chain, product
-from typing import Dict, Iterable, Iterator, List, Optional, Tuple, cast
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
+import tilings.strategies as strat
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
+from comb_spec_searcher.strategies.strategy import VerificationStrategy
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
+from tilings.algorithms import Factor
 
 ListRequirement = Tuple[GriddedPerm, ...]
 
@@ -534,3 +537,74 @@ class RemoveRequirementFactory(StrategyFactory[Tiling]):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}()"
+
+
+class FactorRowCol(Factor):
+    def _unite_all(self) -> None:
+        self._unite_rows_and_cols()
+
+
+class TargetedCellInsertionFactory(AbstractRequirementInsertionFactory):
+    """
+    Insert factors requirements or obstructions on the tiling if it can lead
+    to separating a verified factor.
+    """
+
+    def __init__(
+        self,
+        verification_strategies: Optional[Iterable[VerificationStrategy]] = None,
+        ignore_parent: bool = True,
+    ) -> None:
+        self.verification_strats: List[VerificationStrategy] = (
+            list(verification_strategies)
+            if verification_strategies is not None
+            else [
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
+            ]
+        )
+        super().__init__(ignore_parent)
+
+    def verified(self, tiling: Tiling) -> bool:
+        """Return True if any verification strategy verifies the tiling"""
+        return any(strategy.verified(tiling) for strategy in self.verification_strats)
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        factor_class = FactorRowCol(tiling)
+        potential_factors = factor_class.get_components()
+        reqs_and_obs: Set[GriddedPerm] = set(
+            chain(tiling.obstructions, *tiling.requirements)
+        )
+        for cells in potential_factors:
+            if self.verified(tiling.sub_tiling(cells)):
+                for gp in reqs_and_obs:
+                    if any(cell in cells for cell in gp.pos) and any(
+                        cell not in cells for cell in gp.pos
+                    ):
+                        yield (gp.get_gridded_perm_in_cells(cells),)
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["ver_strats"] = [
+            strategy.to_jsonable() for strategy in self.verification_strats
+        ]
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "TargetedCellInsertionFactory":
+        ver_strats = [
+            cast(VerificationStrategy, VerificationStrategy.from_dict(strategy))
+            for strategy in d["ver_strats"]
+        ]
+        return TargetedCellInsertionFactory(ver_strats, d["ignore_parent"])
+
+    def __repr__(self):
+        return (
+            self.__class__.__name__
+            + f"({self.verification_strats}, {self.ignore_parent})"
+        )
+
+    def __str__(self) -> str:
+        return "targeted cell insertions"

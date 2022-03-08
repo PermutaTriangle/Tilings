@@ -25,6 +25,8 @@ swapped around a fusable row or column.
 - `DeflationFactory` which adds rules where cells can be deflated into increasing or
   decreasing cells as obstructions can't occur across the sum/skew components in that
   cell.
+- `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can 
+  lead to factoring out a verified sub tiling. 
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
