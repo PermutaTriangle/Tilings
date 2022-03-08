@@ -25,6 +25,9 @@ swapped around a fusable row or column.
 - `DeflationFactory` which adds rules where cells can be deflated into increasing or
   decreasing cells as obstructions can't occur across the sum/skew components in that
   cell.
+- `PositiveCorroborationFactory` that inserts into cells which if positive makes 
+  another cell empty. This strategy is added to most packs.
+- `TileScopePack.remove_strategy` method that removes a strategy from a pack.
 - `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can 
   lead to factoring out a verified sub tiling. 
 

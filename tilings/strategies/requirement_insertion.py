@@ -11,6 +11,7 @@ from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Factor
 
+Cell = Tuple[int, int]
 ListRequirement = Tuple[GriddedPerm, ...]
 
 EXTRA_BASIS_ERR = "'extra_basis' should be a list of Perm to avoid"
@@ -515,6 +516,39 @@ class RequirementCorroborationFactory(AbstractRequirementInsertionFactory):
 
     def __str__(self) -> str:
         return "requirement corroboration"
+
+
+class PositiveCorroborationFactory(AbstractRequirementInsertionFactory):
+    """
+    The point corroboration strategy.
+
+    The point corroboration strategy inserts points into any two point
+    or empty cells which can not both be a point, i.e., one is a point
+    and the other is empty.
+    """
+
+    def __init__(self, ignore_parent: bool = True):
+        super().__init__(ignore_parent)
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        potential_cells: Set[Tuple[Cell, ...]] = set()
+        cells_to_yield: Set[Cell] = set()
+        for gp in tiling.obstructions:
+            if len(gp) == 2 and not gp.is_localized():
+                if gp.is_interleaving():
+                    cells = tuple(sorted(gp.pos))
+                    if cells in potential_cells:
+                        cells_to_yield.update(cells)
+                    else:
+                        potential_cells.add(cells)
+                else:
+                    cells_to_yield.update(gp.pos)
+        for cell in cells_to_yield:
+            if cell not in tiling.point_cells:
+                yield (GriddedPerm.point_perm(cell),)
+
+    def __str__(self) -> str:
+        return "point corroboration"
 
 
 class RemoveRequirementFactory(StrategyFactory[Tiling]):
