@@ -186,9 +186,17 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         new_assumptions: List[TrackingAssumption] = []
         for ass in comb_class.assumptions:
             new_assumptions.extend(self._split_assumption(ass, components))
-        return (
-            Tiling(comb_class.obstructions, comb_class.requirements, new_assumptions),
+        new_tiling = Tiling(
+            comb_class.obstructions,
+            comb_class.requirements,
+            sorted(new_assumptions),
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
         )
+        new_tiling.clean_assumptions()
+        return (new_tiling,)
 
     def _split_assumption(
         self, assumption: TrackingAssumption, components: Tuple[Set[Cell], ...]

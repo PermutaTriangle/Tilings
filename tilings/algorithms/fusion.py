@@ -401,6 +401,8 @@ class Fusion:
                 obstructions=self.obstruction_fuse_counter.keys(),
                 requirements=requirements,
                 assumptions=assumptions,
+                derive_empty=False,
+                already_minimized_obs=True,
             )
         return self._fused_tiling
 

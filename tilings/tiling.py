@@ -579,26 +579,31 @@ class Tiling(CombinatorialClass):
     def add_obstruction(self, patt: Perm, pos: Iterable[Cell]) -> "Tiling":
         """Returns a new tiling with the obstruction of the pattern
         patt with positions pos."""
-        return Tiling(
-            self._obstructions + (GriddedPerm(patt, pos),),
-            self._requirements,
-            self._assumptions,
-        )
+        return self.add_obstructions((GriddedPerm(patt, pos),))
 
     def add_obstructions(self, gps: Iterable[GriddedPerm]) -> "Tiling":
         """Returns a new tiling with the obstructions added."""
         new_obs = tuple(gps)
         return Tiling(
-            self._obstructions + new_obs, self._requirements, self._assumptions
+            sorted(self._obstructions + new_obs),
+            self._requirements,
+            self._assumptions,
+            sorted_input=True,
+            derive_empty=False,
         )
 
     def add_list_requirement(self, req_list: Iterable[GriddedPerm]) -> "Tiling":
         """
         Return a new tiling with the requirement list added.
         """
-        new_req = tuple(req_list)
+        new_req = tuple(sorted(req_list))
         return Tiling(
-            self._obstructions, self._requirements + (new_req,), self._assumptions
+            self._obstructions,
+            sorted(self._requirements + (new_req,)),
+            self._assumptions,
+            sorted_input=True,
+            already_minimized_obs=True,
+            derive_empty=False,
         )
 
     def add_requirement(self, patt: Perm, pos: Iterable[Cell]) -> "Tiling":
@@ -901,6 +906,9 @@ class Tiling(CombinatorialClass):
                 ass.__class__(gptransf(gp) for gp in ass.gps)
                 for ass in self._assumptions
             ),
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
         )
 
     def reverse(self, regions=False):
@@ -1776,9 +1784,11 @@ class Tiling(CombinatorialClass):
         res: List[GriddedPerm] = []
         rec(cols, patt, pos, used, 0, 0, res)
         return Tiling(
-            obstructions=list(self.obstructions) + res,
+            obstructions=sorted(list(self.obstructions) + res),
             requirements=self.requirements,
             assumptions=self.assumptions,
+            sorted_input=True,
+            derive_empty=False,
         )
 
     @classmethod
