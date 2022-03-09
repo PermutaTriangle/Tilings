@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Dict, Iterator, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import DisjointUnionStrategy, StrategyFactory
@@ -108,6 +108,15 @@ class PointJumpingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 for ass in comb_class.assumptions
             },
         )
+
+    def cell_maps(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[Cell, List[Cell]], ...]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        raise NotImplementedError
 
     def formal_step(self) -> str:
         row_or_col = "row" if self.row else "col"

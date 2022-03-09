@@ -351,6 +351,15 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
             res[parent_param] = child_param
         return (res,)
 
+    def cell_maps(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[Cell, List[Cell]], ...]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        return ({cell: [cell] for cell in tiling.active_cells},)
+
     def formal_step(self) -> str:
         return f"rearranging the assumption {self.assumption} and {self.sub_assumption}"
 

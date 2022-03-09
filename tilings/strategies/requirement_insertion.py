@@ -106,6 +106,22 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 co_params[parent_var] = child_var
         return av_params, co_params
 
+    def cell_maps(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[Cell, List[Cell]], ...]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        av, co = children
+        res: Tuple[Dict[Cell, List[Cell]], Dict[Cell, List[Cell]]] = ({}, {})
+        for cell in tiling.active_cells:
+            if av.forward_map.is_mappable_cell(cell):
+                res[0][cell] = [av.forward_map.map_cell(cell)]
+            if co.forward_map.is_mappable_cell(cell):
+                res[1][cell] = [co.forward_map.map_cell(cell)]
+        return res
+
     def __repr__(self) -> str:
         args = ", ".join([f"gps={self.gps}", f"ignore_parent={self.ignore_parent}"])
         return f"{self.__class__.__name__}({args})"

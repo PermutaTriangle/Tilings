@@ -2,7 +2,7 @@
 The row and column separation strategy. The details of the algorithm can be
 found in the algorithms folder.
 """
-from typing import Dict, Iterator, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 from comb_spec_searcher import DisjointUnionStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -81,6 +81,15 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 if mapped_assumption.gps
             },
         )
+
+    def cell_maps(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[Cell, List[Cell]], ...]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        return ({a: [b] for a, b in self.forward_cell_map(tiling).items()},)
 
     @staticmethod
     def row_col_sep_algorithm(tiling: Tiling) -> RowColSeparation:

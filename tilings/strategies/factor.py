@@ -76,6 +76,25 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
                     extra_parameters[idx][parent_var] = child_var
         return extra_parameters
 
+    def cell_maps(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[Cell, List[Cell]], ...]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        cell_maps = []
+        for idx, part in enumerate(self.partition):
+            child = children[idx]
+            cell_maps.append(
+                {
+                    cell: [child.forward_map.map_cell(cell)]
+                    for cell in part
+                    if child.forward_map.is_mappable_cell(cell)
+                }
+            )
+        return tuple(cell_maps)
+
     def formal_step(self) -> str:
         """
         Return a string that describe the operation performed on the tiling.

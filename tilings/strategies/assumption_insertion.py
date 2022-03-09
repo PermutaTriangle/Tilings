@@ -204,6 +204,15 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
             },
         )
 
+    def cell_maps(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[Cell, List[Cell]], ...]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        return ({cell: [cell] for cell in tiling.active_cells},)
+
     def formal_step(self) -> str:
         if len(self.assumptions) == 1:
             return f"adding the assumption '{self.assumptions[0]}'"

@@ -116,6 +116,65 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                     ] = child_var
         return extra_parameters
 
+    def cell_maps(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[Cell, List[Cell]], ...]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        res = []
+        if self.include_empty:
+            child = children[0]
+            children = children[1:]
+            res.append(
+                {
+                    cell: [child.forward_map.map_cell(cell)]
+                    for cell in tiling.active_cells
+                    if child.forward_map.is_mappable_cell(cell)
+                }
+            )
+        for idx, placed_cell in enumerate(self._placed_cells):
+            strategy_map = self._strategy_cell_map(tiling, placed_cell)
+            child = children[idx]
+            res.append(
+                {
+                    cell: [
+                        child.forward_map.map_cell(mapped_cell)
+                        for mapped_cell in strategy_map[cell]
+                        if child.forward_map.is_mappable_cell(mapped_cell)
+                    ]
+                    for cell in tiling.active_cells
+                }
+            )
+
+        return tuple(res)
+
+    def _strategy_cell_map(self, tiling, placed_cell: Cell) -> Dict[Cell, List[Cell]]:
+        strategy_map = {}
+        for (x, y) in tiling.active_cells:
+            xs, ys = [], []
+            if self.own_col:
+                if x < placed_cell[0]:
+                    xs.append(x)
+                elif x == placed_cell[0]:
+                    xs.extend((x, x + 1, x + 2))
+                else:
+                    xs.append(x + 2)
+            else:
+                xs.append(x)
+            if self.own_row:
+                if y < placed_cell[1]:
+                    ys.append(y)
+                elif y == placed_cell[1]:
+                    ys.extend((y, y + 1, y + 2))
+                else:
+                    ys.append(y + 2)
+            else:
+                ys.append(y)
+            strategy_map[(x, y)] = list(product(xs, ys))
+        return strategy_map
+
     def direction_string(self):
         if self.direction == DIR_EAST:
             return "rightmost"

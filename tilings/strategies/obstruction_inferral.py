@@ -9,6 +9,8 @@ from tilings.algorithms import (
     SubobstructionInferral,
 )
 
+Cell = Tuple[int, int]
+
 __all__ = [
     "EmptyCellInferralFactory",
     "ObstructionInferralFactory",
@@ -54,6 +56,22 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 child_var = child.get_assumption_parameter(mapped_assumption)
                 params[parent_var] = child_var
         return (params,)
+
+    def cell_maps(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[Cell, List[Cell]], ...]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        child = children[0]
+        return (
+            {
+                cell: [child.forward_map.map_cell(cell)]
+                for cell in tiling.active_cells
+                if child.forward_map.is_mappable_cell(cell)
+            },
+        )
 
     def backward_map(
         self,

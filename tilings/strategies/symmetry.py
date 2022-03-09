@@ -9,6 +9,7 @@ from permuta import Perm
 from tilings import GriddedPerm, Tiling
 
 __all__ = ("SymmetriesFactory",)
+Cell = Tuple[int, int]
 
 
 class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
@@ -62,6 +63,20 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
                 for assumption, mapped_assumption in zip(
                     comb_class.assumptions, mapped_assumptions
                 )
+            },
+        )
+
+    def cell_maps(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[Cell, List[Cell]], ...]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        return (
+            {
+                cell: [self.gp_transform(tiling, GriddedPerm.point_perm(cell)).pos[0]]
+                for cell in tiling.active_cells
             },
         )
 

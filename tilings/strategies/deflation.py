@@ -142,6 +142,15 @@ class DeflationStrategy(Strategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         raise NotImplementedError
 
+    def cell_maps(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[Cell, List[Cell]], ...]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        return ({cell: [cell] for cell in tiling.active_cells}, {self.cell: [(0, 0)]})
+
     def formal_step(self) -> str:
         return f"deflating cell {self.cell}"
 

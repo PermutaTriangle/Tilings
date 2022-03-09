@@ -1,5 +1,6 @@
-from typing import Callable, Dict, Iterator, Optional, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.strategies.strategy import (
     DisjointUnionStrategy,
@@ -8,6 +9,7 @@ from comb_spec_searcher.strategies.strategy import (
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Sliding
 
+Cell = Tuple[int, int]
 _NO_SYMMETRY, _ROTATE, _REVERSE, _ROTATE_AND_REVERSE = range(4)
 
 
@@ -214,6 +216,15 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 for ass in comb_class.assumptions
             },
         )
+
+    def cell_maps(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[Cell, List[Cell]], ...]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        raise NotImplementedError
 
     def to_jsonable(self) -> dict:
         """Return a dictionary form of the strategy."""
