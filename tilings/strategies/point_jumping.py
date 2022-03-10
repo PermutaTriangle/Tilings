@@ -128,6 +128,9 @@ class AssumptionAndPointJumpingStrategy(
                 comb_class.obstructions,
                 self.swapped_requirements(comb_class),
                 self.swapped_assumptions(comb_class),
+                simplify=False,
+                derive_empty=False,
+                remove_empty_rows_and_cols=False,
             ),
         )
 
@@ -182,6 +185,9 @@ class AssumptionJumpingStrategy(AssumptionOrPointJumpingStrategy):
                 comb_class.obstructions,
                 comb_class.requirements,
                 self.swapped_assumptions(comb_class),
+                simplify=False,
+                derive_empty=False,
+                remove_empty_rows_and_cols=False,
             ),
         )
 
@@ -258,6 +264,9 @@ class PointJumpingStrategy(AssumptionOrPointJumpingStrategy):
                 comb_class.obstructions,
                 self.swapped_requirements(comb_class),
                 comb_class.assumptions,
+                simplify=False,
+                derive_empty=False,
+                remove_empty_rows_and_cols=False,
             ),
         )
 
