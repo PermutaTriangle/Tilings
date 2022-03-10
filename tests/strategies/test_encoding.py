@@ -10,6 +10,7 @@ from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, TrackingAssumption
 from tilings.strategies import (
     AllPlacementsFactory,
+    AssumptionAndPointJumpingFactory,
     BasicVerificationStrategy,
     CellInsertionFactory,
     ComponentFusionFactory,
@@ -30,7 +31,6 @@ from tilings.strategies import (
     ObstructionTransitivityFactory,
     OneByOneVerificationStrategy,
     PatternPlacementFactory,
-    PointJumpingFactory,
     RearrangeAssumptionFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
@@ -56,7 +56,11 @@ from tilings.strategies.factor import (
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
 from tilings.strategies.monotone_sliding import GeneralizedSlidingStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
-from tilings.strategies.point_jumping import PointJumpingStrategy
+from tilings.strategies.point_jumping import (
+    AssumptionAndPointJumpingStrategy,
+    AssumptionJumpingStrategy,
+    PointJumpingStrategy,
+)
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
@@ -436,7 +440,10 @@ strategy_objects = (
             TrackingAssumption([GriddedPerm((0,), [(0, 0)])]),
         )
     ]
-    + [PointJumpingFactory()]
+    + [AssumptionAndPointJumpingFactory()]
+    + indices_and_row(PointJumpingStrategy)
+    + indices_and_row(AssumptionJumpingStrategy)
+    + indices_and_row(AssumptionAndPointJumpingStrategy)
     + [MonotoneSlidingFactory(), GeneralizedSlidingStrategy(1)]
     + indices_and_row(PointJumpingStrategy)
     + [TargetedCellInsertionFactory()]

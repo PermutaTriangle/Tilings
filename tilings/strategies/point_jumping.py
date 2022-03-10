@@ -1,18 +1,25 @@
+import abc
 from itertools import chain
 from typing import Dict, Iterator, Optional, Tuple
 
+from comb_spec_searcher import Constructor
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.strategies import DisjointUnionStrategy, StrategyFactory
+from comb_spec_searcher.strategies import (
+    DisjointUnionStrategy,
+    Strategy,
+    StrategyFactory,
+)
 from tilings import GriddedPerm, Tiling, TrackingAssumption
 from tilings.algorithms import Fusion
 
 Cell = Tuple[int, int]
 
 
-class PointJumpingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
+class AssumptionOrPointJumpingStrategy(Strategy[Tiling, GriddedPerm]):
     """
-    A strategy which moves requirements and assumptions from a column (or row)
-    to its neighbouring column (or row) if the two columns are fusable.
+    An abstract strategy class which moves requirements or assumptions from a
+    column (or row) to its neighbouring column (or row) if the two columns
+    are fusable.
     """
 
     def __init__(self, idx1: int, idx2: int, row: bool):
@@ -21,14 +28,9 @@ class PointJumpingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self.row = row
         super().__init__()
 
+    @abc.abstractmethod
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
-        return (
-            Tiling(
-                comb_class.obstructions,
-                self.swapped_requirements(comb_class),
-                self.swapped_assumptions(comb_class),
-            ),
-        )
+        pass
 
     def swapped_requirements(
         self, tiling: Tiling
@@ -72,6 +74,66 @@ class PointJumpingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def _swap_assumption(self, assumption: TrackingAssumption) -> TrackingAssumption:
         return TrackingAssumption(self._swapped_gp(gp) for gp in assumption.gps)
 
+    @abc.abstractmethod
+    def backward_map(
+        self,
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Iterator[GriddedPerm]:
+        pass
+
+    @abc.abstractmethod
+    def forward_map(
+        self,
+        comb_class: Tiling,
+        obj: GriddedPerm,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Optional[GriddedPerm]]:
+        pass
+
+    @abc.abstractmethod
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[str, str], ...]:
+        pass
+
+    @abc.abstractmethod
+    def formal_step(self) -> str:
+        pass
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d.pop("ignore_parent")
+        d["idx1"] = self.idx1
+        d["idx2"] = self.idx2
+        d["row"] = self.row
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "AssumptionOrPointJumpingStrategy":
+        return cls(d.pop("idx1"), d.pop("idx2"), d.pop("row"))
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.idx1}, {self.idx2}, {self.row})"
+
+
+class AssumptionAndPointJumpingStrategy(
+    AssumptionOrPointJumpingStrategy,
+    DisjointUnionStrategy[Tiling, GriddedPerm],
+):
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
+        return (
+            Tiling(
+                comb_class.obstructions,
+                self.swapped_requirements(comb_class),
+                self.swapped_assumptions(comb_class),
+                simplify=False,
+                derive_empty=False,
+                remove_empty_rows_and_cols=False,
+            ),
+        )
+
     def backward_map(
         self,
         comb_class: Tiling,
@@ -110,32 +172,179 @@ class PointJumpingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         )
 
     def formal_step(self) -> str:
-        row_or_col = "row" if self.row else "col"
-        return f"swapping reqs in {row_or_col} {self.idx1} and {self.idx2}"
-
-    def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
-        d.pop("ignore_parent")
-        d["idx1"] = self.idx1
-        d["idx2"] = self.idx2
-        d["row"] = self.row
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "PointJumpingStrategy":
-        return cls(d.pop("idx1"), d.pop("idx2"), d.pop("row"))
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.idx1}, {self.idx2}, {self.row})"
+        row_or_col = "rows" if self.row else "cols"
+        return (
+            f"swapping reqs and assumptions in {row_or_col} {self.idx1} and {self.idx2}"
+        )
 
 
-class PointJumpingFactory(StrategyFactory[Tiling]):
+class AssumptionJumpingStrategy(AssumptionOrPointJumpingStrategy):
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
+        return (
+            Tiling(
+                comb_class.obstructions,
+                comb_class.requirements,
+                self.swapped_assumptions(comb_class),
+                simplify=False,
+                derive_empty=False,
+                remove_empty_rows_and_cols=False,
+            ),
+        )
+
+    @staticmethod
+    def can_be_equivalent() -> bool:
+        return False
+
+    @staticmethod
+    def is_two_way(comb_class: Tiling) -> bool:
+        return True
+
+    @staticmethod
+    def is_reversible(comb_class: Tiling) -> bool:
+        return True
+
+    @staticmethod
+    def shifts(
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]],
+    ) -> Tuple[int, ...]:
+        return (0,)
+
+    def constructor(
+        self,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        raise NotImplementedError
+
+    def reverse_constructor(
+        self,
+        idx: int,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        raise NotImplementedError
+
+    def backward_map(
+        self,
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError
+
+    def forward_map(
+        self,
+        comb_class: Tiling,
+        obj: GriddedPerm,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Optional[GriddedPerm]]:
+        raise NotImplementedError
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[str, str], ...]:
+        if not comb_class.extra_parameters:
+            return super().extra_parameters(comb_class, children)
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        raise NotImplementedError
+
+    def formal_step(self) -> str:
+        row_or_col = "rows" if self.row else "cols"
+        return f"swapping assumptions in {row_or_col} {self.idx1} and {self.idx2}"
+
+
+class PointJumpingStrategy(AssumptionOrPointJumpingStrategy):
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
+        return (
+            Tiling(
+                comb_class.obstructions,
+                self.swapped_requirements(comb_class),
+                comb_class.assumptions,
+                simplify=False,
+                derive_empty=False,
+                remove_empty_rows_and_cols=False,
+            ),
+        )
+
+    @staticmethod
+    def can_be_equivalent() -> bool:
+        return False
+
+    @staticmethod
+    def is_two_way(comb_class: Tiling) -> bool:
+        return True
+
+    @staticmethod
+    def is_reversible(comb_class: Tiling) -> bool:
+        return True
+
+    @staticmethod
+    def shifts(
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]],
+    ) -> Tuple[int, ...]:
+        return (0,)
+
+    def constructor(
+        self,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        raise NotImplementedError
+
+    def reverse_constructor(
+        self,
+        idx: int,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        raise NotImplementedError
+
+    def backward_map(
+        self,
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError
+
+    def forward_map(
+        self,
+        comb_class: Tiling,
+        obj: GriddedPerm,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Optional[GriddedPerm]]:
+        raise NotImplementedError
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[str, str], ...]:
+        if not comb_class.extra_parameters:
+            return super().extra_parameters(comb_class, children)
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        raise NotImplementedError
+
+    def formal_step(self) -> str:
+        row_or_col = "rows" if self.row else "cols"
+        return f"swapping requirements in {row_or_col} {self.idx1} and {self.idx2}"
+
+
+class AssumptionAndPointJumpingFactory(StrategyFactory[Tiling]):
     """
-    A factory returning the disjoint union strategies that moves requirements
+    A factory returning the strategies that moves requirements and/or assumptions
     across the boundary of two fusable columns (or rows).
     """
 
-    def __call__(self, comb_class: Tiling) -> Iterator[DisjointUnionStrategy]:
+    def __call__(
+        self, comb_class: Tiling
+    ) -> Iterator[AssumptionOrPointJumpingStrategy]:
         cols, rows = comb_class.dimensions
         gps_to_be_swapped = chain(
             *comb_class.requirements, *[ass.gps for ass in comb_class.assumptions]
@@ -144,15 +353,19 @@ class PointJumpingFactory(StrategyFactory[Tiling]):
             if any(x in (col, col + 1) for gp in gps_to_be_swapped for x, _ in gp.pos):
                 algo = Fusion(comb_class, col_idx=col)
                 if algo.fusable():
+                    yield AssumptionAndPointJumpingStrategy(col, col + 1, False)
+                    yield AssumptionJumpingStrategy(col, col + 1, False)
                     yield PointJumpingStrategy(col, col + 1, False)
         for row in range(rows - 1):
             if any(y in (row, row + 1) for gp in gps_to_be_swapped for y, _ in gp.pos):
                 algo = Fusion(comb_class, row_idx=row)
                 if algo.fusable():
+                    yield AssumptionAndPointJumpingStrategy(row, row + 1, True)
+                    yield AssumptionJumpingStrategy(row, row + 1, True)
                     yield PointJumpingStrategy(row, row + 1, True)
 
     def __str__(self) -> str:
-        return "point jumping"
+        return "assumption and point jumping"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}()"
@@ -164,6 +377,6 @@ class PointJumpingFactory(StrategyFactory[Tiling]):
         return hash(self.__class__)
 
     @classmethod
-    def from_dict(cls, d: dict) -> "PointJumpingFactory":
+    def from_dict(cls, d: dict) -> "AssumptionAndPointJumpingFactory":
         assert not d
-        return PointJumpingFactory()
+        return cls()
