@@ -143,6 +143,7 @@ class GuidedSearcher(TileScope):
             is_empty = self.classdb.is_empty(t, class_label)
             if not is_empty:
                 self.classqueue.add(class_label)
+            self._symmetry_expand(t, class_label)
 
     def _expand(
         self,
@@ -154,6 +155,18 @@ class GuidedSearcher(TileScope):
         if comb_class.remove_assumptions() not in self.tilings:
             return
         return super()._expand(comb_class, label, strategies, inferral)
+
+    def _symmetry_expand(self, comb_class: CombinatorialClassType, label: int) -> None:
+        sym_labels = set([label])
+        for strategy_generator in self.symmetries:
+            for start_label, end_labels, rule in self._expand_class_with_strategy(
+                comb_class, strategy_generator, label=label
+            ):
+                sym_label = end_labels[0]
+                self.ruledb.add(start_label, (sym_label,), rule)
+                self.classqueue.add(sym_label)
+                sym_labels.add(sym_label)
+        self.symmetry_expanded.update(sym_labels)
 
     @classmethod
     def from_spec(
@@ -200,7 +213,8 @@ class TrackedSearcher(LimitedAssumptionTileScope):
         self.start_label = self.classdb.get_label(start_class)
         # reset to the trackedqueue!
         self.classqueue = cast(
-            DefaultQueue, TrackedQueue(strategy_pack, self, delay_next)
+            DefaultQueue,
+            TrackedQueue(cast(TileScopePack, self.strategy_pack), self, delay_next),
         )  # TODO: make CSS accept a CSSQueue as a kwarg
         self.classqueue.add(self.start_label)
 
