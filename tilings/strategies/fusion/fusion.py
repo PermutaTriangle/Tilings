@@ -12,6 +12,8 @@ from tilings.algorithms import Fusion
 
 from .constructor import FusionConstructor, ReverseFusionConstructor
 
+Cell = Tuple[int, int]
+
 
 class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
     """Overwritten the generate objects of size method, as this relies on
@@ -261,6 +263,25 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
                 if ass.gps
             },
         )
+
+    def cell_maps(
+        self, tiling: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[Cell, List[Cell]], ...]:
+        if children is None:
+            children = self.decomposition_function(tiling)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        child = children[0]
+        res = {}
+        for cell in tiling.active_cells:
+            x, y = cell
+            if self.row_idx is not None and y > self.row_idx:
+                y -= 1
+            if self.col_idx is not None and x > self.col_idx:
+                x -= 1
+            if child.forward_map.is_mappable_cell((x, y)):
+                res[cell] = [child.forward_map.map_cell((x, y))]
+        return (res,)
 
     def left_right_both_sided_parameters(
         self, comb_class: Tiling
