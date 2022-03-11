@@ -32,6 +32,7 @@ swapped around a fusable row or column.
 - `TileScopePack.remove_strategy` method that removes a strategy from a pack.
 - `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can 
   lead to factoring out a verified sub tiling. 
+- `TrackedClassDB` used by `TrackedSearcher`
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.

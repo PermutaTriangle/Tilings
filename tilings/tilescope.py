@@ -1,5 +1,4 @@
 from collections import Counter
-from datetime import timedelta
 from typing import Counter as CounterType
 from typing import (
     Deque,
@@ -47,6 +46,7 @@ class TileScope(CombinatorialSpecificationSearcher):
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
         ruledb: Optional[RuleDBAbstract] = None,
+        classdb: Optional[ClassDB] = None,
         expand_verified: bool = False,
         debug: bool = False,
     ) -> None:
@@ -83,6 +83,10 @@ class TileScope(CombinatorialSpecificationSearcher):
             expand_verified=expand_verified,
             debug=debug,
         )
+        if isinstance(classdb, TrackedClassDB):
+            # reset to tracked classdb
+            self.classdb = classdb
+            self.start_label = self.classdb.get_label(start_tiling)
 
 
 class LimitedAssumptionTileScope(TileScope):
@@ -98,7 +102,12 @@ class LimitedAssumptionTileScope(TileScope):
         max_assumptions: int,
         **kwargs,
     ) -> None:
-        super().__init__(start_class, strategy_pack, **kwargs)
+        super().__init__(
+            start_class,
+            strategy_pack,
+            classdb=TrackedClassDB(),
+            **kwargs,
+        )
         self.max_assumptions = max_assumptions
 
     def _expand(
@@ -133,11 +142,15 @@ class GuidedSearcher(TileScope):
         tilings: Iterable[Tiling],
         basis: Tiling,
         pack: TileScopePack,
-        *args,
         **kwargs,
     ):
         self.tilings = frozenset(t.remove_assumptions() for t in tilings)
-        super().__init__(basis, pack, *args, **kwargs)
+        super().__init__(
+            basis,
+            pack,
+            classdb=TrackedClassDB(),
+            **kwargs,
+        )
         for t in self.tilings:
             class_label = self.classdb.get_label(t)
             is_empty = self.classdb.is_empty(t, class_label)
@@ -206,11 +219,11 @@ class TrackedSearcher(LimitedAssumptionTileScope):
         **kwargs,
     ) -> None:
         super().__init__(
-            start_class, strategy_pack, max_assumptions=max_assumptions, **kwargs
+            start_class,
+            strategy_pack,
+            max_assumptions=max_assumptions,
+            **kwargs,
         )
-        # reset to tracked classdb
-        self.classdb = TrackedClassDB()
-        self.start_label = self.classdb.get_label(start_class)
         # reset to the trackedqueue!
         self.classqueue = cast(
             DefaultQueue,
@@ -387,13 +400,10 @@ class TrackedQueue(CSSQueue):
 
 class TrackedClassDB(ClassDB[Tiling]):
     def __init__(self):
+        super().__init__(Tiling)
         self.classdb = ClassDB(Tiling)
-        self.label_to_tilings: Dict[
-            int, Tuple[int, Tuple[Tuple[Cell, ...], ...]]
-        ] = dict()
-        self.tilings_to_label: Dict[
-            Tuple[int, Tuple[Tuple[Cell, ...], ...]], int
-        ] = dict()
+        self.label_to_tilings: Dict[int, Tuple[int, Tuple[Tuple[Cell, ...], ...]]] = {}
+        self.tilings_to_label: Dict[Tuple[int, Tuple[Tuple[Cell, ...], ...]], int] = {}
 
     def __iter__(self) -> Iterator[int]:
         for key in self.label_to_info:
@@ -404,12 +414,10 @@ class TrackedClassDB(ClassDB[Tiling]):
             actual_key = self.classdb.get_label(key.remove_assumptions()), tuple(
                 ass.get_cells() for ass in key.assumptions
             )
-            res = self.tilings_to_label.get(actual_key)
-        elif isinstance(key, int):
-            res = self.label_to_tilings.get(key)
-        else:
-            raise ValueError("Invalid key")
-        return res is not None
+            return self.tilings_to_label.get(actual_key) is not None
+        if isinstance(key, int):
+            return self.label_to_tilings.get(key) is not None
+        raise ValueError("Invalid key")
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TrackedClassDB):
@@ -423,37 +431,34 @@ class TrackedClassDB(ClassDB[Tiling]):
     def add(self, comb_class: ClassKey, compressed: bool = False) -> None:
         if compressed:
             raise NotImplementedError
-        underlying_label = self.classdb.get_label(comb_class.remove_assumptions)
-        cells = tuple(ass.get_cells() for ass in comb_class.assumptions)
-        key = underlying_label, cells
-        if key not in self.tilings_to_label:
-            self.label_to_tilings[len(self.tilings_to_label)] = key
-            self.tilings_to_label[key] = len(self.tilings_to_label)
-
-    def _get_info(self, key: Key) -> Info:
-        if isinstance(key, Tiling):
-            underlying_label = self.classdb.get_label(key.remove_assumptions)
-            cells = tuple(ass.get_cells() for ass in key.assumptions)
+        if isinstance(comb_class, Tiling):
+            underlying_label = self.classdb.get_label(comb_class.remove_assumptions())
+            cells = tuple(ass.get_cells() for ass in comb_class.assumptions)
             key = underlying_label, cells
             if key not in self.tilings_to_label:
-                raise KeyError("Key not in ClassDB")
+                self.label_to_tilings[len(self.tilings_to_label)] = key
+                self.tilings_to_label[key] = len(self.tilings_to_label)
+
+    def _get_info(self, key: Key) -> Info:
+        # pylint: disable=protected-access
+        if isinstance(key, Tiling):
+            underlying_label = self.classdb.get_label(key.remove_assumptions())
+            cells = tuple(ass.get_cells() for ass in key.assumptions)
+            if (underlying_label, cells) not in self.tilings_to_label:
+                self.add(key)
             info = self.classdb._get_info(underlying_label)
-            if info is None:
-                raise KeyError("Key not in ClassDB")
             info = Info(
                 self.classdb.get_class(underlying_label).add_assumptions(
                     TrackingAssumption.from_cells(c) for c in cells
                 ),
-                self.tilings_to_label[key],
+                self.tilings_to_label[(underlying_label, cells)],
                 info.empty,
             )
         elif isinstance(key, int):
             if key not in self.label_to_tilings:
                 raise KeyError("Key not in ClassDB")
             underlying_label, cells = self.label_to_tilings[key]
-            info = self.label_to_info.get(underlying_label)
-            if info is None:
-                raise KeyError("Key not in ClassDB.")
+            info = self.classdb.label_to_info.get(underlying_label)
             info = Info(
                 self.classdb.get_class(underlying_label).add_assumptions(
                     TrackingAssumption.from_cells(c) for c in cells
@@ -463,40 +468,20 @@ class TrackedClassDB(ClassDB[Tiling]):
             )
         else:
             raise TypeError()
-        return info
+        return cast(Info, info)
 
-    def get_class(self, key: Key) -> CombinatorialClassType:
-        if isinstance(key, Tiling):
-            return key
-        if key in self.label_to_tilings:
-            underlying_label, cells = self.label_to_tilings[key]
-            return self.classdb.get_class(underlying_label).add_assumptions(
-                TrackingAssumption.from_cells(c) for c in cells
-            )
-        raise KeyError("Key not in ClassDB")
+    def get_class(self, key: Key) -> Tiling:
+        """
+        Return combinatorial class of key.
+        """
+        info = self._get_info(key)
+        return cast(Tiling, info.comb_class)
 
-    def get_label(self, key: Key) -> int:
-        if isinstance(key, int):
-            if key < len(self.label_to_tilings):
-                return key
-        if isinstance(key, Tiling):
-            underlying_label = self.classdb.get_label(key.remove_assumptions())
-            cells = tuple(ass.get_cells() for ass in key.assumptions)
-            key = underlying_label, cells
-            if key in self.tilings_to_label:
-                return self.tilings_to_label[key]
-            self.label_to_tilings[len(self.tilings_to_label)] = key
-            self.tilings_to_label[key] = len(self.tilings_to_label)
-            return len(self.tilings_to_label) - 1
-        raise KeyError("Key not in ClassDB")
-
-    def is_empty(
-        self, comb_class: CombinatorialClassType, label: Optional[int] = None
-    ) -> bool:
+    def is_empty(self, comb_class: Tiling, label: Optional[int] = None) -> bool:
         """
         Return True if combinatorial class is empty set, False if not.
         """
-        return self.classdb.is_empty(comb_class.remove_assumptions())
+        return bool(self.classdb.is_empty(comb_class.remove_assumptions()))
 
     def set_empty(self, key: Key, empty: bool = True) -> None:
         if isinstance(key, int):
@@ -510,13 +495,9 @@ class TrackedClassDB(ClassDB[Tiling]):
         """
         Return a string with the current status of the run.
         """
-        status = "TrackedClassDB status:\n"
-        status += "\tTotal number of combinatorial classes found is"
-        status += f" {len(self.label_to_tilings):,d}\n"
-        status += "\tTotal number of underlying combinatorial classes found is"
-        status += f" {len(self.classdb.class_to_info)}\n"
-        status += (
-            f"\tis_empty check applied {self.classdb._empty_num_application} times. "
-        )
-        status += f"Time spent: {timedelta(seconds=int(self.classdb._empty_time))}"
-        return status
+        status = self.classdb.status()
+        status = status.replace("combinatorial classes", "underlying tilings")
+        tilings = "\n\tTotal number of tilings found is"
+        tilings += f" {len(self.label_to_tilings)}"
+        status = status.replace("ClassDB status:", "TrackedClassDB status:" + tilings)
+        return cast(str, status)
