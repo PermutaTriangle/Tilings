@@ -342,15 +342,16 @@ class TileScopePack(StrategyPack):
         )
 
         expansion_strats: List[CSSstrategy] = [
-            strat.FactorFactory(unions=True),
-            strat.PositiveCorroborationFactory(),
             strat.CellInsertionFactory(maxreqlen=length),
         ]
         if length > 1:
             expansion_strats.append(strat.RequirementCorroborationFactory())
 
         return TileScopePack(
-            initial_strats=[strat.PatternPlacementFactory(partial=partial)],
+            initial_strats=[
+                strat.PositiveCorroborationFactory(),
+                strat.FactorFactory(unions=True, ignore_parent=False),
+            ],
             ver_strats=[
                 strat.BasicVerificationStrategy(),
                 strat.InsertionEncodingVerificationStrategy(),
@@ -361,7 +362,10 @@ class TileScopePack(StrategyPack):
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityFactory(),
             ],
-            expansion_strats=[expansion_strats],
+            expansion_strats=[
+                [strat.PatternPlacementFactory(partial=partial)],
+                expansion_strats,
+            ],
             name=name,
         )
 
