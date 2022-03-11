@@ -5,6 +5,7 @@ from collections import Counter, defaultdict
 from functools import reduce
 from itertools import chain, filterfalse, product
 from operator import mul, xor
+from time import time
 from typing import (
     Callable,
     Dict,
@@ -111,6 +112,17 @@ class Tiling(CombinatorialClass):
         - already_minimized_obs indicates if the obstructions are already minimized
             we pass this through to GriddedPermReduction
         """
+        start = time()
+        inputted = {
+            "obstructions": obstructions,
+            "requirements": requirements,
+            "assumptions": assumptions,
+            "remove_empty_rows_and_cols": remove_empty_rows_and_cols,
+            "derive_empty": derive_empty,
+            "simplify": simplify,
+            "sorted_input": sorted_input,
+            "already_minimized_obs": already_minimized_obs,
+        }
         self._cached_properties: CachedProperties = {}
 
         super().__init__()
@@ -160,6 +172,12 @@ class Tiling(CombinatorialClass):
             self._cached_properties["point_cells"] = frozenset()
             self._cached_properties["positive_cells"] = frozenset()
             self._cached_properties["possibly_empty"] = frozenset()
+        total = time() - start
+        if total > 5:
+            print(f"Took {round(total, 2)} seconds to initialise")
+            print(self)
+            print("with the input")
+            print(inputted)
 
     @classmethod
     def from_perms(
