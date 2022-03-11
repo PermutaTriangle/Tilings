@@ -116,9 +116,15 @@ class RequirementInsertionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         av, co = children
         res: Tuple[Dict[Cell, List[Cell]], Dict[Cell, List[Cell]]] = ({}, {})
         for cell in tiling.active_cells:
-            if av.forward_map.is_mappable_cell(cell):
+            if (
+                av.forward_map.is_mappable_cell(cell)
+                and av.forward_map.map_cell(cell) in av.active_cells
+            ):
                 res[0][cell] = [av.forward_map.map_cell(cell)]
-            if co.forward_map.is_mappable_cell(cell):
+            if (
+                co.forward_map.is_mappable_cell(cell)
+                and co.forward_map.map_cell(cell) in co.active_cells
+            ):
                 res[1][cell] = [co.forward_map.map_cell(cell)]
         return res
 

@@ -279,7 +279,10 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
                 y -= 1
             if self.col_idx is not None and x > self.col_idx:
                 x -= 1
-            if child.forward_map.is_mappable_cell((x, y)):
+            if (
+                child.forward_map.is_mappable_cell((x, y))
+                and child.forward_map.map_cell((x, y)) in child.active_cells
+            ):
                 res[cell] = [child.forward_map.map_cell((x, y))]
         return (res,)
 

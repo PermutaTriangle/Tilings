@@ -91,6 +91,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
                     cell: [child.forward_map.map_cell(cell)]
                     for cell in part
                     if child.forward_map.is_mappable_cell(cell)
+                    and child.forward_map.map_cell(cell) in child.active_cells
                 }
             )
         return tuple(cell_maps)

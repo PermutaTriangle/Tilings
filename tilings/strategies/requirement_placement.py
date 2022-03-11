@@ -132,6 +132,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                     cell: [child.forward_map.map_cell(cell)]
                     for cell in tiling.active_cells
                     if child.forward_map.is_mappable_cell(cell)
+                    and child.forward_map.map_cell(cell) in child.active_cells
                 }
             )
         for idx, placed_cell in enumerate(self._placed_cells):
@@ -143,11 +144,12 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                         child.forward_map.map_cell(mapped_cell)
                         for mapped_cell in strategy_map[cell]
                         if child.forward_map.is_mappable_cell(mapped_cell)
+                        and child.forward_map.map_cell(mapped_cell)
+                        in child.active_cells
                     ]
                     for cell in tiling.active_cells
                 }
             )
-
         return tuple(res)
 
     def _strategy_cell_map(self, tiling, placed_cell: Cell) -> Dict[Cell, List[Cell]]:

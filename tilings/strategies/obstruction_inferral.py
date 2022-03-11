@@ -70,6 +70,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 cell: [child.forward_map.map_cell(cell)]
                 for cell in tiling.active_cells
                 if child.forward_map.is_mappable_cell(cell)
+                and child.forward_map.map_cell(cell) in child.active_cells
             },
         )
 
