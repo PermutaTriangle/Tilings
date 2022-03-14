@@ -152,6 +152,7 @@ class MinimalGriddedPerms:
                         for cell in chain(gpcounter, counter)
                     }
                 )
+                assert max_length_to_build is not None
                 if sum(new_counter.values()) <= max_length_to_build:
                     for gps in _rec_product_requirements(rest, new_counter):
                         yield (gp,) + gps

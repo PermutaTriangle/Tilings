@@ -55,6 +55,8 @@ swapped around a fusable row or column.
   some inferral in partial placements.
 - Don't reinitialise in the `Tiling.from_dict` method.
 - `GuidedSearcher` expands every symmetry
+- `TileScopePack.pattern_placements` factors as an initial strategy.
+
 
 ### Deprecated
 - Python 3.7 is no longer supported

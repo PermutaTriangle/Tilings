@@ -1,6 +1,5 @@
-import operator
 from collections import defaultdict
-from functools import partial, reduce
+from functools import partial
 from itertools import chain, islice
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
@@ -9,10 +8,6 @@ from .minimal_gridded_perms import MinimalGriddedPerms
 
 Cell = Tuple[int, int]
 Requirement = Tuple[GriddedPerm, ...]
-
-
-def prod(iterable):
-    return reduce(operator.mul, iterable, 1)
 
 
 class GriddedPermReduction:
@@ -113,21 +108,6 @@ class GriddedPermReduction:
                 )
                 for gp in requirement
             )
-            # print([len(l) for l in cleaned_obs])
-            size_of_product = prod([len(l) for l in cleaned_obs])
-            while size_of_product > 10000:
-                # print(size_of_product)
-                max_len = max(len(p) for p in chain(*cleaned_obs))
-                # print(max_len)
-                cleaned_obs = tuple(
-                    tuple(gp for gp in obs if len(gp) < max_len) for obs in cleaned_obs
-                )
-                size_of_product = prod([len(l) for l in cleaned_obs])
-            # print(size_of_product)
-            # for obs in cleaned_obs:
-            #     print("=" * 10)
-            #     for ob in obs:
-            #         print(ob)
             new_obs.update(
                 MinimalGriddedPerms(
                     self._obstructions,
@@ -136,9 +116,6 @@ class GriddedPermReduction:
                     max_length_to_build=max(map(len, self._obstructions)) - 1
                 )
             )
-            # print("NEW OBS")
-            # for ob in new_obs:
-            #     print(ob)
         if new_obs:
             changed = True
             self._obstructions = tuple(

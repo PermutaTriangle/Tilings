@@ -349,8 +349,8 @@ class TileScopePack(StrategyPack):
 
         return TileScopePack(
             initial_strats=[
-                strat.PositiveCorroborationFactory(),
                 strat.FactorFactory(unions=True, ignore_parent=False),
+                strat.PositiveCorroborationFactory(),
             ],
             ver_strats=[
                 strat.BasicVerificationStrategy(),
