@@ -97,7 +97,23 @@ class CellReductionStrategy(Strategy[Tiling, GriddedPerm]):
             extra = Perm((1, 0))
         else:
             extra = Perm((0, 1))
-        reduced_tiling = comb_class.add_obstruction(extra, (self.cell, self.cell))
+        reduced_obs = sorted(
+            [
+                ob
+                for ob in comb_class.obstructions
+                if not ob.pos[0] == self.cell or not ob.is_single_cell()
+            ]
+            + [GriddedPerm.single_cell(extra, self.cell)]
+        )
+        reduced_tiling = Tiling(
+            reduced_obs,
+            comb_class.requirements,
+            comb_class.assumptions,
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
+        )
         local_basis = comb_class.sub_tiling([self.cell])
         if self.tracked:
             return (
@@ -208,21 +224,38 @@ class CellReductionFactory(StrategyFactory[Tiling]):
         super().__init__()
 
     def __call__(self, comb_class: Tiling) -> Iterator[CellReductionStrategy]:
+        cell_bases = comb_class.cell_basis()
         for cell in self.reducible_cells(comb_class):
-            yield CellReductionStrategy(cell, True, self.tracked)
-            yield CellReductionStrategy(cell, False, self.tracked)
+            if not (  # a finite cell
+                any(patt.is_increasing() for patt in cell_bases[cell][0])
+                and any(patt.is_decreasing() for patt in cell_bases[cell][0])
+            ):
+                yield CellReductionStrategy(cell, True, self.tracked)
+                yield CellReductionStrategy(cell, False, self.tracked)
 
     @staticmethod
     def reducible_cells(tiling: Tiling) -> Set[Cell]:
         """Return the set of cells with at most one point in a crossing
         gridded permutation touching them"""
+
+        def gp_in_row_and_col(gp: GriddedPerm, cell: Cell) -> bool:
+            """Return True if there are points touching a cell in the row and col of
+            cell that isn't cell itself."""
+            x, y = cell
+            return (
+                len(set(gp.pos[idx][1] for idx, _ in gp.get_points_col(x))) > 1
+                and len(set(gp.pos[idx][0] for idx, _ in gp.get_points_row(y))) > 1
+            )
+
         gps: Iterator[GriddedPerm] = chain(tiling.obstructions, *tiling.requirements)
-        cells = set(tiling.active_cells)
+        cells = set(tiling.active_cells) - set(tiling.point_cells)
         for gp in gps:
+            if not cells:
+                break
             if not gp.is_localized():
                 seen = set()
                 for cell in gp.pos:
-                    if cell in seen:
+                    if cell in seen or gp_in_row_and_col(gp, cell):
                         cells.discard(cell)
                     seen.add(cell)
         return cells
