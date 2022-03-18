@@ -10,6 +10,7 @@ from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, TrackingAssumption
 from tilings.strategies import (
     AllPlacementsFactory,
+    AssumptionAndPointJumpingFactory,
     BasicVerificationStrategy,
     CellInsertionFactory,
     CellReductionFactory,
@@ -21,14 +22,16 @@ from tilings.strategies import (
     FactorFactory,
     FactorInsertionFactory,
     FusionFactory,
+    InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
+    MonotoneSlidingFactory,
     MonotoneTreeVerificationStrategy,
+    NoRootCellVerificationStrategy,
     ObstructionInferralFactory,
     ObstructionTransitivityFactory,
     OneByOneVerificationStrategy,
     PatternPlacementFactory,
-    PointJumpingFactory,
     RearrangeAssumptionFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
@@ -43,6 +46,7 @@ from tilings.strategies import (
     SubclassVerificationFactory,
     SubobstructionInferralFactory,
     SymmetriesFactory,
+    TargetedCellInsertionFactory,
 )
 from tilings.strategies.cell_reduction import CellReductionStrategy
 from tilings.strategies.deflation import DeflationStrategy
@@ -53,8 +57,13 @@ from tilings.strategies.factor import (
     FactorWithMonotoneInterleavingStrategy,
 )
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
+from tilings.strategies.monotone_sliding import GeneralizedSlidingStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
-from tilings.strategies.point_jumping import PointJumpingStrategy
+from tilings.strategies.point_jumping import (
+    AssumptionAndPointJumpingStrategy,
+    AssumptionJumpingStrategy,
+    PointJumpingStrategy,
+)
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
@@ -365,6 +374,7 @@ strategy_objects = (
     + ignoreparent(ElementaryVerificationStrategy)
     + ignoreparent(LocalVerificationStrategy)
     + ignoreparent(MonotoneTreeVerificationStrategy)
+    + ignoreparent(InsertionEncodingVerificationStrategy)
     + [ObstructionTransitivityFactory()]
     + [
         OneByOneVerificationStrategy(
@@ -375,6 +385,16 @@ strategy_objects = (
         ),
         OneByOneVerificationStrategy(basis=[], ignore_parent=False, symmetry=False),
         OneByOneVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
+    ]
+    + [
+        NoRootCellVerificationStrategy(
+            basis=[Perm((0, 1, 2)), Perm((2, 1, 0, 3))], ignore_parent=True
+        ),
+        NoRootCellVerificationStrategy(
+            basis=[Perm((2, 1, 0, 3))], ignore_parent=False, symmetry=True
+        ),
+        NoRootCellVerificationStrategy(basis=[], ignore_parent=False, symmetry=False),
+        NoRootCellVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
     ]
     + [
         SubclassVerificationFactory(perms_to_check=[Perm((0, 1, 2)), Perm((1, 0))]),
@@ -436,8 +456,13 @@ strategy_objects = (
             TrackingAssumption([GriddedPerm((0,), [(0, 0)])]),
         )
     ]
-    + [PointJumpingFactory()]
+    + [AssumptionAndPointJumpingFactory()]
     + indices_and_row(PointJumpingStrategy)
+    + indices_and_row(AssumptionJumpingStrategy)
+    + indices_and_row(AssumptionAndPointJumpingStrategy)
+    + [MonotoneSlidingFactory(), GeneralizedSlidingStrategy(1)]
+    + indices_and_row(PointJumpingStrategy)
+    + [TargetedCellInsertionFactory()]
 )
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))

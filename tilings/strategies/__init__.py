@@ -4,27 +4,31 @@ from .cell_reduction import CellReductionFactory
 from .deflation import DeflationFactory
 from .detect_components import DetectComponentsStrategy
 from .experimental_verification import (
+    NoRootCellVerificationStrategy,
     ShortObstructionVerificationStrategy,
     SubclassVerificationFactory,
 )
 from .factor import FactorFactory
 from .fusion import ComponentFusionFactory, FusionFactory
+from .monotone_sliding import MonotoneSlidingFactory
 from .obstruction_inferral import (
     EmptyCellInferralFactory,
     ObstructionInferralFactory,
     ObstructionTransitivityFactory,
     SubobstructionInferralFactory,
 )
-from .point_jumping import PointJumpingFactory
+from .point_jumping import AssumptionAndPointJumpingFactory
 from .rearrange_assumption import RearrangeAssumptionFactory
 from .requirement_insertion import (
     CellInsertionFactory,
     FactorInsertionFactory,
+    PositiveCorroborationFactory,
     RemoveRequirementFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
     RequirementInsertionFactory,
     RootInsertionFactory,
+    TargetedCellInsertionFactory,
 )
 from .requirement_placement import (
     AllPlacementsFactory,
@@ -54,9 +58,10 @@ __all__ = [
     "RearrangeAssumptionFactory",
     "SplittingStrategy",
     # Batch
+    "AllPlacementsFactory",
     "CellInsertionFactory",
     "FactorInsertionFactory",
-    "AllPlacementsFactory",
+    "PositiveCorroborationFactory",
     "RemoveRequirementFactory",
     "RequirementExtensionFactory",
     "RequirementInsertionFactory",
@@ -64,14 +69,17 @@ __all__ = [
     "RequirementCorroborationFactory",
     "RootInsertionFactory",
     "RowAndColumnPlacementFactory",
+    "TargetedCellInsertionFactory",
     # Decomposition
     "FactorFactory",
     # Deflation
     "DeflationFactory",
     # Equivalence
+    "MonotoneSlidingFactory",
     "PatternPlacementFactory",
-    "PointJumpingFactory",
     "SlidingFactory",
+    # Experimental
+    "AssumptionAndPointJumpingFactory",
     # Fusion
     "ComponentFusionFactory",
     "FusionFactory",
@@ -93,6 +101,7 @@ __all__ = [
     "LocalVerificationStrategy",
     "InsertionEncodingVerificationStrategy",
     "MonotoneTreeVerificationStrategy",
+    "NoRootCellVerificationStrategy",
     "OneByOneVerificationStrategy",
     "ShortObstructionVerificationStrategy",
     "SubclassVerificationFactory",
