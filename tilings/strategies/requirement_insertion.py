@@ -571,13 +571,10 @@ class PointCorroborationFactory(PositiveCorroborationFactory):
         for cell, (patts, _) in cell_basis.items():
             if patts == [Perm((0, 1)), Perm((1, 0))]:
                 point_or_empty_cells.add(cell)
-        for cell in tiling.point_cells:
-            point_or_empty_cells.remove(cell)
+        point_or_empty_cells = point_or_empty_cells - tiling.point_cells
         if point_or_empty_cells:
-            return set(
-                cell
-                for cell in PositiveCorroborationFactory.cells_to_yield(tiling)
-                if cell in point_or_empty_cells
+            return point_or_empty_cells.intersection(
+                PositiveCorroborationFactory.cells_to_yield(tiling)
             )
         return set()
 
