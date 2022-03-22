@@ -1,6 +1,5 @@
 import abc
 from itertools import chain, product
-from os import stat
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 import tilings.strategies as strat
@@ -556,7 +555,7 @@ class PositiveCorroborationFactory(AbstractRequirementInsertionFactory):
         return "positive corroboration"
 
 
-class PointCorroborationFactory(AbstractRequirementInsertionFactory):
+class PointCorroborationFactory(PositiveCorroborationFactory):
     """
     The point corroboration strategy.
 
@@ -577,7 +576,7 @@ class PointCorroborationFactory(AbstractRequirementInsertionFactory):
         if point_or_empty_cells:
             return set(
                 cell
-                for cell in super().cells_to_yield(tiling)
+                for cell in PositiveCorroborationFactory.cells_to_yield(tiling)
                 if cell in point_or_empty_cells
             )
         return set()
