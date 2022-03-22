@@ -27,6 +27,8 @@ swapped around a fusable row or column.
 - `DeflationFactory` which adds rules where cells can be deflated into increasing or
   decreasing cells as obstructions can't occur across the sum/skew components in that
   cell.
+- `CellReductionFactory` which changes a cell to monotone if at most one point of 
+  any crossing gp touches that cell.
 - `PositiveCorroborationFactory` that inserts into cells which if positive makes 
   another cell empty. This strategy is added to most packs.
 - `TileScopePack.remove_strategy` method that removes a strategy from a pack.
