@@ -17,6 +17,7 @@ class GriddedPermReduction:
         requirements: Tuple[Tuple[GriddedPerm, ...], ...],
         sorted_input: bool = False,
         already_minimized_obs: bool = False,
+        manual: bool = False,
     ):
         # Only using MGP for typing purposes.
         if sorted_input:
@@ -25,8 +26,8 @@ class GriddedPermReduction:
         else:
             self._obstructions = tuple(sorted(obstructions))
             self._requirements = tuple(sorted(tuple(sorted(r)) for r in requirements))
-
-        self._minimize_griddedperms(already_minimized_obs=already_minimized_obs)
+        if not manual:
+            self._minimize_griddedperms(already_minimized_obs=already_minimized_obs)
 
     @property
     def obstructions(self) -> Tuple[GriddedPerm, ...]:
@@ -100,21 +101,26 @@ class GriddedPermReduction:
         changed = False
         new_obs: Set[GriddedPerm] = set()
         for requirement in self.requirements:
-            new_obs.update(
+            cleaned_obs = tuple(
+                tuple(
+                    GriddedPermReduction._minimize(
+                        self.clean_isolated(self._obstructions, gp)
+                    )
+                )
+                for gp in requirement
+            )
+            gpr = GriddedPermReduction(self._obstructions, cleaned_obs, manual=True)
+            gpr.minimal_reqs()
+            cleaned_obs = gpr.requirements
+            implied_obs = set(
                 MinimalGriddedPerms(
                     self._obstructions,
-                    tuple(
-                        tuple(
-                            GriddedPermReduction._minimize(
-                                self.clean_isolated(self._obstructions, gp)
-                            )
-                        )
-                        for gp in requirement
-                    ),
+                    cleaned_obs,
                 ).minimal_gridded_perms(
-                    max_length_to_build=max(map(len, self._obstructions))
+                    max_length_to_build=max(map(len, self._obstructions)) - 1
                 )
             )
+            new_obs.update(implied_obs)
         if new_obs:
             changed = True
             self._obstructions = tuple(

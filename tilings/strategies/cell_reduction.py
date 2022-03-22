@@ -1,5 +1,6 @@
-"""The deflation strategy."""
-from typing import Callable, Dict, Iterator, List, Optional, Tuple, cast
+"""The cell reduction strategy."""
+from itertools import chain
+from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, cast
 
 import sympy
 
@@ -21,7 +22,7 @@ from tilings.assumptions import TrackingAssumption
 Cell = Tuple[int, int]
 
 
-class DeflationConstructor(Constructor):
+class CellReductionConstructor(Constructor):
     def __init__(self, parameter: str):
         self.parameter = parameter
 
@@ -59,16 +60,18 @@ class DeflationConstructor(Constructor):
         raise NotImplementedError
 
 
-class DeflationStrategy(Strategy[Tiling, GriddedPerm]):
+class CellReductionStrategy(Strategy[Tiling, GriddedPerm]):
+    """A strategy that replaces the cell with an increasing or decreasing cell."""
+
     def __init__(
         self,
         cell: Cell,
-        sum_deflate: bool,
+        increasing: bool,
         tracked: bool = True,
     ):
         self.cell = cell
         self.tracked = tracked
-        self.sum_deflate = sum_deflate
+        self.increasing = increasing
         super().__init__()
 
     @staticmethod
@@ -90,36 +93,52 @@ class DeflationStrategy(Strategy[Tiling, GriddedPerm]):
         return (0, 0)
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, Tiling]:
-        if self.sum_deflate:
+        if self.increasing:
             extra = Perm((1, 0))
         else:
             extra = Perm((0, 1))
-        deflated_tiling = comb_class.add_obstruction(extra, (self.cell, self.cell))
+        reduced_obs = sorted(
+            [
+                ob
+                for ob in comb_class.obstructions
+                if not ob.pos[0] == self.cell or not ob.is_single_cell()
+            ]
+            + [GriddedPerm.single_cell(extra, self.cell)]
+        )
+        reduced_tiling = Tiling(
+            reduced_obs,
+            comb_class.requirements,
+            comb_class.assumptions,
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
+        )
         local_basis = comb_class.sub_tiling([self.cell])
         if self.tracked:
             return (
-                deflated_tiling.add_assumption(
+                reduced_tiling.add_assumption(
                     TrackingAssumption.from_cells([self.cell])
                 ),
                 local_basis,
             )
-        return deflated_tiling, local_basis
+        return reduced_tiling, local_basis
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
-    ) -> DeflationConstructor:
+    ) -> CellReductionConstructor:
         if not self.tracked:
-            raise NotImplementedError("The deflation strategy was not tracked")
+            raise NotImplementedError("The reduction strategy was not tracked")
         if children is None:
             children = self.decomposition_function(comb_class)
             if children is None:
-                raise StrategyDoesNotApply("Can't deflate the cell")
+                raise StrategyDoesNotApply("Can't reduce the cell")
         ass = TrackingAssumption.from_cells([self.cell])
         child_param = children[0].get_assumption_parameter(ass)
         gp = GriddedPerm.point_perm(self.cell)
         if any(gp in assumption.gps for assumption in comb_class.assumptions):
             raise NotImplementedError
-        return DeflationConstructor(child_param)
+        return CellReductionConstructor(child_param)
 
     def reverse_constructor(
         self,
@@ -130,7 +149,7 @@ class DeflationStrategy(Strategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(comb_class)
             if children is None:
-                raise StrategyDoesNotApply("Can't deflate the cell")
+                raise StrategyDoesNotApply("Can't reduce the cell")
         raise NotImplementedError
 
     def extra_parameters(
@@ -143,7 +162,7 @@ class DeflationStrategy(Strategy[Tiling, GriddedPerm]):
         raise NotImplementedError
 
     def formal_step(self) -> str:
-        return f"deflating cell {self.cell}"
+        return f"reducing cell {self.cell}"
 
     def backward_map(
         self,
@@ -173,124 +192,83 @@ class DeflationStrategy(Strategy[Tiling, GriddedPerm]):
         d.pop("workable")
         d["cell"] = self.cell
         d["tracked"] = self.tracked
-        d["sum_deflate"] = self.sum_deflate
+        d["increasing"] = self.increasing
         return d
 
     def __repr__(self) -> str:
         args = ", ".join(
             [
                 f"cell={self.cell!r}",
-                f"sum_deflate={self.sum_deflate!r}",
+                f"increasing={self.increasing!r}",
                 f"tracked={self.tracked!r}",
             ]
         )
         return f"{self.__class__.__name__}({args})"
 
     @classmethod
-    def from_dict(cls, d: dict) -> "DeflationStrategy":
+    def from_dict(cls, d: dict) -> "CellReductionStrategy":
         cell = cast(Tuple[int, int], tuple(d.pop("cell")))
         tracked = d.pop("tracked")
-        sum_deflate = d.pop("sum_deflate")
+        increasing = d.pop("increasing")
         assert not d
-        return cls(cell, sum_deflate, tracked)
+        return cls(cell, increasing, tracked)
 
     @staticmethod
     def get_eq_symbol() -> str:
         return "↣"
 
 
-class DeflationFactory(StrategyFactory[Tiling]):
+class CellReductionFactory(StrategyFactory[Tiling]):
     def __init__(self, tracked: bool):
         self.tracked = tracked
         super().__init__()
 
-    def __call__(self, comb_class: Tiling) -> Iterator[DeflationStrategy]:
-        if comb_class.requirements:
-            # TODO: this is obviously too strong
+    def __call__(self, comb_class: Tiling) -> Iterator[CellReductionStrategy]:
+        if comb_class.dimensions == (1, 1):
             return
-        for cell in comb_class.active_cells:
-            if self.can_deflate(comb_class, cell, True):
-                yield DeflationStrategy(cell, True, self.tracked)
-            if self.can_deflate(comb_class, cell, False):
-                yield DeflationStrategy(cell, False, self.tracked)
+        cell_bases = comb_class.cell_basis()
+        for cell in self.reducible_cells(comb_class):
+            if not (  # a finite cell
+                any(patt.is_increasing() for patt in cell_bases[cell][0])
+                and any(patt.is_decreasing() for patt in cell_bases[cell][0])
+            ):
+                yield CellReductionStrategy(cell, True, self.tracked)
+                yield CellReductionStrategy(cell, False, self.tracked)
 
     @staticmethod
-    def can_deflate(tiling: Tiling, cell: Cell, sum_deflate: bool) -> bool:
-        alone_in_row = tiling.only_cell_in_row(cell)
-        alone_in_col = tiling.only_cell_in_col(cell)
+    def reducible_cells(tiling: Tiling) -> Set[Cell]:
+        """Return the set of cells with at most one point in a crossing
+        gridded permutation touching them"""
 
-        if alone_in_row and alone_in_col:
-            return False
+        def gp_in_row_and_col(gp: GriddedPerm, cell: Cell) -> bool:
+            """Return True if there are points touching a cell in the row and col of
+            cell that isn't cell itself."""
+            x, y = cell
+            return (
+                len(set(gp.pos[idx][1] for idx, _ in gp.get_points_col(x))) > 1
+                and len(set(gp.pos[idx][0] for idx, _ in gp.get_points_row(y))) > 1
+            )
 
-        deflate_patt = GriddedPerm.single_cell(
-            Perm((1, 0)) if sum_deflate else Perm((0, 1)), cell
-        )
-
-        # we must be sure that no cell in a row or column can interleave
-        # with any reinflated components, so collect cells that do not.
-        cells_not_interleaving = set([cell])
-
-        for ob in tiling.obstructions:
-            if ob == deflate_patt:
-                break  # False
-            if ob.is_single_cell() or not ob.occupies(cell):
-                continue
-            number_points_in_cell = sum(1 for c in ob.pos if c == cell)
-            if number_points_in_cell == 1:
-                if len(ob) == 2:
-                    # not interleaving with cell as separating if
-                    # in same row or column
-                    other_cell = [c for c in ob.pos if c != cell][0]
-                    cells_not_interleaving.add(other_cell)
-            elif number_points_in_cell == 2:
-                if len(ob) != 3:
-                    break  # False
-                patt_in_cell = ob.get_gridded_perm_in_cells((cell,))
-                if patt_in_cell != deflate_patt:
-                    # you can interleave with components
-                    break  # False
-                # we need the other cell to be in between the intended deflate
-                # patt in either the row or column
-                other_cell = [c for c in ob.pos if c != cell][0]
-                if DeflationFactory.point_in_between(
-                    ob, True, cell, other_cell
-                ) or DeflationFactory.point_in_between(ob, False, cell, other_cell):
-                    # this cell does not interleave with inflated components
-                    cells_not_interleaving.add(other_cell)
-                    continue
-                break  # False
-            elif number_points_in_cell >= 3:
-                # you can interleave with components
-                break  # False
-        else:
-            # check that do not interleave with any cells in row or column.
-            return cells_not_interleaving >= tiling.cells_in_row(
-                cell[1]
-            ) and cells_not_interleaving >= tiling.cells_in_col(cell[0])
-        return False
-
-    @staticmethod
-    def point_in_between(
-        ob: GriddedPerm, row: bool, cell: Cell, other_cell: Cell
-    ) -> bool:
-        """Return true if point in other cell is in between point in cell.
-        Assumes a length 3 pattern, and to be told if row or column."""
-        patt = cast(Tuple[int, int, int], ob.patt)
-        if row:
-            left = other_cell[0] < cell[0]
-            if left:
-                return bool(patt[0] == 1)
-            return bool(patt[2] == 1)
-        below = other_cell[1] < cell[1]
-        if below:
-            return bool(patt[1] == 0)
-        return bool(patt[1] == 2)
+        gps: Iterator[GriddedPerm] = chain(tiling.obstructions, *tiling.requirements)
+        cells = set(tiling.active_cells) - set(tiling.point_cells)
+        for gp in gps:
+            if not cells:
+                break
+            if not gp.is_localized():
+                seen = set()
+                for cell in gp.pos:
+                    if cell in seen or gp_in_row_and_col(gp, cell):
+                        cells.discard(cell)
+                    seen.add(cell)
+            elif len(gp) == 2:
+                cells.discard(gp.pos[0])
+        return cells
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + f"({self.tracked})"
 
     def __str__(self) -> str:
-        return ("tracked " if self.tracked else "") + "deflation factory"
+        return ("tracked " if self.tracked else "") + "cell reduction factory"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
@@ -298,5 +276,5 @@ class DeflationFactory(StrategyFactory[Tiling]):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "DeflationFactory":
+    def from_dict(cls, d: dict) -> "CellReductionFactory":
         return cls(d["tracked"])

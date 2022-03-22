@@ -27,6 +27,8 @@ swapped around a fusable row or column.
 - `DeflationFactory` which adds rules where cells can be deflated into increasing or
   decreasing cells as obstructions can't occur across the sum/skew components in that
   cell.
+- `CellReductionFactory` which changes a cell to monotone if at most one point of 
+  any crossing gp touches that cell.
 - `PositiveCorroborationFactory` that inserts into cells which if positive makes 
   another cell empty. This strategy is added to most packs.
 - `TileScopePack.remove_strategy` method that removes a strategy from a pack.
@@ -56,6 +58,8 @@ swapped around a fusable row or column.
   some inferral in partial placements.
 - Don't reinitialise in the `Tiling.from_dict` method.
 - `GuidedSearcher` expands every symmetry
+- `TileScopePack.pattern_placements` factors as an initial strategy.
+
 
 ### Deprecated
 - Python 3.7 is no longer supported

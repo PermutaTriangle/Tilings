@@ -13,6 +13,7 @@ from tilings.strategies import (
     AssumptionAndPointJumpingFactory,
     BasicVerificationStrategy,
     CellInsertionFactory,
+    CellReductionFactory,
     ComponentFusionFactory,
     DatabaseVerificationStrategy,
     DeflationFactory,
@@ -47,6 +48,8 @@ from tilings.strategies import (
     SymmetriesFactory,
     TargetedCellInsertionFactory,
 )
+from tilings.strategies.cell_reduction import CellReductionStrategy
+from tilings.strategies.deflation import DeflationStrategy
 from tilings.strategies.experimental_verification import SubclassVerificationStrategy
 from tilings.strategies.factor import (
     FactorStrategy,
@@ -423,6 +426,19 @@ strategy_objects = (
     + [ComponentFusionStrategy(col_idx=3)]
     + [FusionFactory(tracked=True), FusionFactory(tracked=False)]
     + [DeflationFactory(tracked=True), DeflationFactory(tracked=False)]
+    + [CellReductionFactory(tracked=True), DeflationFactory(tracked=False)]
+    + [
+        CellReductionStrategy((0, 0), True, True),
+        CellReductionStrategy((2, 1), True, False),
+        CellReductionStrategy((3, 3), False, True),
+        CellReductionStrategy((4, 1), False, False),
+    ]
+    + [
+        DeflationStrategy((0, 0), True, True),
+        DeflationStrategy((2, 1), True, False),
+        DeflationStrategy((3, 3), False, True),
+        DeflationStrategy((4, 1), False, False),
+    ]
     + [ComponentFusionFactory()]
     + [ObstructionInferralStrategy([GriddedPerm((0, 1, 2), ((0, 0), (1, 1), (1, 2)))])]
     + [
