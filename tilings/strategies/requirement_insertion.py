@@ -1,5 +1,6 @@
 import abc
 from itertools import chain, product
+from os import stat
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
 import tilings.strategies as strat
@@ -520,17 +521,18 @@ class RequirementCorroborationFactory(AbstractRequirementInsertionFactory):
 
 class PositiveCorroborationFactory(AbstractRequirementInsertionFactory):
     """
-    The point corroboration strategy.
+    The positive corroboration strategy.
 
-    The point corroboration strategy inserts points into any two point
-    or empty cells which can not both be a point, i.e., one is a point
+    The positive corroboration strategy inserts points into any two
+    cells which can not both be positive, i.e., one is positive
     and the other is empty.
     """
 
     def __init__(self, ignore_parent: bool = True):
         super().__init__(ignore_parent)
 
-    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+    @staticmethod
+    def cells_to_yield(tiling: Tiling) -> Set[Cell]:
         potential_cells: Set[Tuple[Cell, ...]] = set()
         cells_to_yield: Set[Cell] = set()
         for gp in tiling.obstructions:
@@ -543,9 +545,42 @@ class PositiveCorroborationFactory(AbstractRequirementInsertionFactory):
                         potential_cells.add(cells)
                 else:
                     cells_to_yield.update(gp.pos)
-        for cell in cells_to_yield:
+        return cells_to_yield
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        for cell in self.cells_to_yield(tiling):
             if cell not in tiling.point_cells:
                 yield (GriddedPerm.point_perm(cell),)
+
+    def __str__(self) -> str:
+        return "positive corroboration"
+
+
+class PointCorroborationFactory(AbstractRequirementInsertionFactory):
+    """
+    The point corroboration strategy.
+
+    The point corroboration strategy inserts points into any two point
+    or empty cells which can not both be a point, i.e., one is a point
+    and the other is empty.
+    """
+
+    @staticmethod
+    def cells_to_yield(tiling: Tiling) -> Set[Cell]:
+        cell_basis = tiling.cell_basis()
+        point_or_empty_cells = set()
+        for cell, (patts, _) in cell_basis.items():
+            if patts == [Perm((0, 1)), Perm((1, 0))]:
+                point_or_empty_cells.add(cell)
+        for cell in tiling.point_cells:
+            point_or_empty_cells.remove(cell)
+        if point_or_empty_cells:
+            return set(
+                cell
+                for cell in super().cells_to_yield(tiling)
+                if cell in point_or_empty_cells
+            )
+        return set()
 
     def __str__(self) -> str:
         return "point corroboration"
