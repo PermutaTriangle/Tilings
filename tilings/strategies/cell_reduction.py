@@ -224,6 +224,8 @@ class CellReductionFactory(StrategyFactory[Tiling]):
         super().__init__()
 
     def __call__(self, comb_class: Tiling) -> Iterator[CellReductionStrategy]:
+        if comb_class.dimensions == (1, 1):
+            return
         cell_bases = comb_class.cell_basis()
         for cell in self.reducible_cells(comb_class):
             if not (  # a finite cell
@@ -258,6 +260,8 @@ class CellReductionFactory(StrategyFactory[Tiling]):
                     if cell in seen or gp_in_row_and_col(gp, cell):
                         cells.discard(cell)
                     seen.add(cell)
+            elif len(gp) == 2:
+                cells.discard(gp.pos[0])
         return cells
 
     def __repr__(self) -> str:
