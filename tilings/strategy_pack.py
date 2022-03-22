@@ -297,6 +297,93 @@ class TileScopePack(StrategyPack):
             iterative=self.iterative,
         )
 
+    def kitchen_sinkify(
+        self, short_obs_len: int, obs_inferral_len: int, tracked: bool
+    ) -> "TileScopePack":
+        """
+        Create a new pack with the following added:
+            Short Obs verification
+            No Root Cell verification
+            Database verification
+            Deflation
+            Point and/or Assumption Jumping
+            Generalized Monotone Sliding
+            Free Cell Reduction
+            Obstruction Inferral
+            Symmetries
+        Will be made tracked or not, depending on preference.
+        Note that nothing is done with positive / point corroboration, requirement
+        corroboration, or database verification.
+        """
+
+        ks_pack = self.__class__(
+            ver_strats=self.ver_strats,
+            inferral_strats=self.inferral_strats,
+            initial_strats=self.initial_strats,
+            expansion_strats=self.expansion_strats,
+            name=self.name,
+            symmetries=self.symmetries,
+            iterative=self.iterative,
+        )
+
+        try:
+            ks_pack = ks_pack.add_verification(
+                strat.ShortObstructionVerificationStrategy(short_obs_len)
+            )
+        except ValueError:
+            pass
+
+        try:
+            ks_pack = ks_pack.add_verification(strat.NoRootCellVerificationStrategy())
+        except ValueError:
+            pass
+
+        # try:
+        #     ks_pack = ks_pack.add_verification(strat.DatabaseVerificationStrategy())
+        # except ValueError:
+        #     pass
+
+        try:
+            ks_pack = ks_pack.add_initial(strat.DeflationFactory(tracked))
+        except ValueError:
+            pass
+
+        try:
+            ks_pack = ks_pack.add_initial(strat.AssumptionAndPointJumpingFactory())
+        except ValueError:
+            pass
+
+        try:
+            ks_pack = ks_pack.add_initial(strat.MonotoneSlidingFactory())
+        except ValueError:
+            pass
+
+        try:
+            ks_pack = ks_pack.add_initial(strat.CellReductionFactory(tracked))
+        except ValueError:
+            pass
+
+        try:
+            ks_pack = ks_pack.add_inferral(
+                strat.ObstructionInferralFactory(obs_inferral_len)
+            )
+        except ValueError:
+            pass
+
+        ks_pack = ks_pack.make_interleaving(tracked=tracked, unions=True)
+
+        try:
+            ks_pack = ks_pack.add_all_symmetry()
+        except ValueError:
+            pass
+
+        if tracked:
+            ks_pack = ks_pack.make_tracked()
+
+        ks_pack.name += "_kitchen_sink"
+
+        return ks_pack
+
     # Creation of the base pack
     @classmethod
     def all_the_strategies(cls, length: int = 1) -> "TileScopePack":
