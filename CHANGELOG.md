@@ -29,7 +29,6 @@ swapped around a fusable row or column.
   cell.
 - `CellReductionFactory` which changes a cell to monotone if at most one point of
   any crossing gp touches that cell.
-<<<<<<< HEAD
 - `PositiveCorroborationFactory` that inserts into cells which if positive makes 
   another cell empty. Also, the `PointCorroborationFactory`, which does this for 
   point or empty cells which is added to most packs.
