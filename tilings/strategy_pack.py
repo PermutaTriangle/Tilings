@@ -302,14 +302,14 @@ class TileScopePack(StrategyPack):
     ) -> "TileScopePack":
         """
         Create a new pack with the following added:
-            Short Obs verification
+            Short Obs verification (unless short_obs_len = 0)
             No Root Cell verification
             Database verification
             Deflation
             Point and/or Assumption Jumping
             Generalized Monotone Sliding
             Free Cell Reduction
-            Obstruction Inferral
+            Obstruction Inferral (unless obs_inferral_len = 0)
             Symmetries
         Will be made tracked or not, depending on preference.
         Note that nothing is done with positive / point corroboration, requirement
@@ -326,12 +326,13 @@ class TileScopePack(StrategyPack):
             iterative=self.iterative,
         )
 
-        try:
-            ks_pack = ks_pack.add_verification(
-                strat.ShortObstructionVerificationStrategy(short_obs_len)
-            )
-        except ValueError:
-            pass
+        if short_obs_len > 0:
+            try:
+                ks_pack = ks_pack.add_verification(
+                    strat.ShortObstructionVerificationStrategy(short_obs_len)
+                )
+            except ValueError:
+                pass
 
         try:
             ks_pack = ks_pack.add_verification(strat.NoRootCellVerificationStrategy())
@@ -363,12 +364,13 @@ class TileScopePack(StrategyPack):
         except ValueError:
             pass
 
-        try:
-            ks_pack = ks_pack.add_inferral(
-                strat.ObstructionInferralFactory(obs_inferral_len)
-            )
-        except ValueError:
-            pass
+        if obs_inferral_len > 0:
+            try:
+                ks_pack = ks_pack.add_inferral(
+                    strat.ObstructionInferralFactory(obs_inferral_len)
+                )
+            except ValueError:
+                pass
 
         ks_pack = ks_pack.make_interleaving(tracked=tracked, unions=True)
 
