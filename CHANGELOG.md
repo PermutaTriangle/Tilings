@@ -29,8 +29,10 @@ swapped around a fusable row or column.
   cell.
 - `CellReductionFactory` which changes a cell to monotone if at most one point of
   any crossing gp touches that cell.
-- `PositiveCorroborationFactory` that inserts into cells which if positive makes
-  another cell empty. This strategy is added to most packs.
+<<<<<<< HEAD
+- `PositiveCorroborationFactory` that inserts into cells which if positive makes 
+  another cell empty. Also, the `PointCorroborationFactory`, which does this for 
+  point or empty cells which is added to most packs.
 - `TileScopePack.remove_strategy` method that removes a strategy from a pack.
 - `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can
   lead to factoring out a verified sub tiling.
