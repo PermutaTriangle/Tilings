@@ -21,7 +21,7 @@ from tilings.bijections import (
     FusionParallelSpecFinder,
     _AssumptionPathTracker,
 )
-from tilings.strategies import BasicVerificationStrategy, PositiveCorroborationFactory
+from tilings.strategies import BasicVerificationStrategy, PointCorroborationFactory
 from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
 from tilings.strategies.factor import FactorStrategy
 from tilings.strategies.fusion import FusionStrategy
@@ -51,7 +51,7 @@ def find_bijection_between_fusion(
 
 def _b2rc(basis: str) -> CombinatorialSpecificationSearcher:
     pack = TileScopePack.row_and_col_placements(row_only=True)
-    pack = pack.remove_strategy(PositiveCorroborationFactory())
+    pack = pack.remove_strategy(PointCorroborationFactory())
     pack = pack.add_verification(BasicVerificationStrategy(), replace=True)
     searcher = TileScope(basis, pack)
     assert isinstance(searcher, CombinatorialSpecificationSearcher)
@@ -167,7 +167,7 @@ def test_bijection_8_cross_domain():
     )
     pack = TileScopePack.row_and_col_placements(row_only=True)
     pack = pack.add_verification(BasicVerificationStrategy(), replace=True)
-    pack = pack.remove_strategy(PositiveCorroborationFactory())
+    pack = pack.remove_strategy(PointCorroborationFactory())
     pack.inferral_strats = ()
     searcher1 = TileScope(t, pack)
 
@@ -233,11 +233,11 @@ def test_bijection_9_cross_domain():
 def test_bijection_10():
     pack1 = TileScopePack.requirement_placements()
     pack1 = pack1.add_verification(BasicVerificationStrategy(), replace=True)
-    pack1 = pack1.remove_strategy(PositiveCorroborationFactory())
+    pack1 = pack1.remove_strategy(PointCorroborationFactory())
     searcher1 = TileScope("132_4312", pack1)
     pack2 = TileScopePack.requirement_placements()
     pack2 = pack2.add_verification(BasicVerificationStrategy(), replace=True)
-    pack2 = pack2.remove_strategy(PositiveCorroborationFactory())
+    pack2 = pack2.remove_strategy(PointCorroborationFactory())
     searcher2 = TileScope("132_4231", pack2)
     _bijection_asserter(find_bijection_between(searcher1, searcher2))
 
@@ -458,7 +458,7 @@ def test_bijection_12():
     def _pntrcpls(b1, b2):
         pack = TileScopePack.point_and_row_and_col_placements(row_only=True)
         pack = pack.add_verification(BasicVerificationStrategy(), replace=True)
-        pack = pack.remove_strategy(PositiveCorroborationFactory())
+        pack = pack.remove_strategy(PointCorroborationFactory())
         searcher1 = TileScope(b1, pack)
         searcher2 = TileScope(b2, pack)
         _bijection_asserter(find_bijection_between(searcher1, searcher2))
@@ -476,7 +476,7 @@ def test_bijection_12():
 def test_bijection_13():
     pack = TileScopePack.point_and_row_and_col_placements(row_only=True)
     pack = pack.add_verification(BasicVerificationStrategy(), replace=True)
-    pack = pack.remove_strategy(PositiveCorroborationFactory())
+    pack = pack.remove_strategy(PointCorroborationFactory())
     searcher1 = TileScope("0132_0213_0231_0321_1032_1320_2031_2301_3021_3120", pack)
     searcher2 = TileScope("0132_0213_0231_0312_0321_1302_1320_2031_2301_3120", pack)
     _bijection_asserter(find_bijection_between(searcher1, searcher2))
@@ -496,13 +496,13 @@ def test_bijection_14_json():
 def test_bijection_15_fusion():
     pack = TileScopePack.row_and_col_placements(row_only=True).make_fusion(tracked=True)
     pack = pack.add_verification(BasicVerificationStrategy(), replace=True)
-    pack = pack.remove_strategy(PositiveCorroborationFactory())
+    pack = pack.remove_strategy(PointCorroborationFactory())
     pack2 = TileScopePack.row_and_col_placements(row_only=True).make_fusion(
         tracked=True
     )
     pack2 = pack2.add_initial(SlidingFactory(True))
     pack2 = pack2.add_verification(BasicVerificationStrategy(), replace=True)
-    pack2 = pack2.remove_strategy(PositiveCorroborationFactory())
+    pack2 = pack2.remove_strategy(PointCorroborationFactory())
     long_1234 = Perm(
         (
             47,

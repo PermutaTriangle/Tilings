@@ -22,6 +22,7 @@ from .rearrange_assumption import RearrangeAssumptionFactory
 from .requirement_insertion import (
     CellInsertionFactory,
     FactorInsertionFactory,
+    PointCorroborationFactory,
     PositiveCorroborationFactory,
     RemoveRequirementFactory,
     RequirementCorroborationFactory,
@@ -61,6 +62,7 @@ __all__ = [
     "AllPlacementsFactory",
     "CellInsertionFactory",
     "FactorInsertionFactory",
+    "PointCorroborationFactory",
     "PositiveCorroborationFactory",
     "RemoveRequirementFactory",
     "RequirementExtensionFactory",
