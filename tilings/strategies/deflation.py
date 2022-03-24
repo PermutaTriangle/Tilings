@@ -90,11 +90,7 @@ class DeflationStrategy(Strategy[Tiling, GriddedPerm]):
         return (0, 0)
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, Tiling]:
-        if self.sum_deflate:
-            extra = Perm((1, 0))
-        else:
-            extra = Perm((0, 1))
-        deflated_tiling = comb_class.add_obstruction(extra, (self.cell, self.cell))
+        deflated_tiling = self.deflated_tiling(comb_class)
         local_basis = comb_class.sub_tiling([self.cell])
         if self.tracked:
             return (
@@ -104,6 +100,26 @@ class DeflationStrategy(Strategy[Tiling, GriddedPerm]):
                 local_basis,
             )
         return deflated_tiling, local_basis
+
+    def deflated_tiling(self, tiling: Tiling) -> Tiling:
+        if self.sum_deflate:
+            extra = Perm((1, 0))
+        else:
+            extra = Perm((0, 1))
+        reduced_reqs = tuple(
+            req
+            for req in tiling.requirements
+            if not all(gp.pos[0] == self.cell and gp.is_single_cell() for gp in req)
+        )
+        return Tiling(
+            tiling.obstructions,
+            reduced_reqs,
+            tiling.assumptions,
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
+        ).add_obstruction(extra, (self.cell, self.cell))
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -205,14 +221,22 @@ class DeflationFactory(StrategyFactory[Tiling]):
         super().__init__()
 
     def __call__(self, comb_class: Tiling) -> Iterator[DeflationStrategy]:
-        if comb_class.requirements:
-            # TODO: this is obviously too strong
-            return
         for cell in comb_class.active_cells:
+            if not self._can_deflate_requirements(comb_class, cell):
+                continue
             if self.can_deflate(comb_class, cell, True):
                 yield DeflationStrategy(cell, True, self.tracked)
             if self.can_deflate(comb_class, cell, False):
                 yield DeflationStrategy(cell, False, self.tracked)
+
+    @staticmethod
+    def _can_deflate_requirements(tiling: Tiling, cell: Cell) -> bool:
+        def can_deflate_req_list(req: Tuple[GriddedPerm, ...]) -> bool:
+            return all(gp.pos[0] == cell and gp.is_single_cell() for gp in req) or all(
+                len(list(gp.points_in_cell(cell))) < 2 for gp in req
+            )
+
+        return all(can_deflate_req_list(req) for req in tiling.requirements)
 
     @staticmethod
     def can_deflate(tiling: Tiling, cell: Cell, sum_deflate: bool) -> bool:
@@ -252,9 +276,11 @@ class DeflationFactory(StrategyFactory[Tiling]):
                 # we need the other cell to be in between the intended deflate
                 # patt in either the row or column
                 other_cell = [c for c in ob.pos if c != cell][0]
-                if DeflationFactory.point_in_between(
-                    ob, True, cell, other_cell
-                ) or DeflationFactory.point_in_between(ob, False, cell, other_cell):
+                if (  # in a different row and column
+                    cell[0] != other_cell[0] and cell[1] != other_cell[1]
+                ):
+                    break
+                if DeflationFactory.point_in_between(ob, cell, other_cell):
                     # this cell does not interleave with inflated components
                     cells_not_interleaving.add(other_cell)
                     continue
@@ -270,17 +296,17 @@ class DeflationFactory(StrategyFactory[Tiling]):
         return False
 
     @staticmethod
-    def point_in_between(
-        ob: GriddedPerm, row: bool, cell: Cell, other_cell: Cell
-    ) -> bool:
+    def point_in_between(ob: GriddedPerm, cell: Cell, other_cell: Cell) -> bool:
         """Return true if point in other cell is in between point in cell.
-        Assumes a length 3 pattern, and to be told if row or column."""
+        Assumes a length 3 pattern, and it is in a row or column."""
+        row = cell[1] == other_cell[1]
         patt = cast(Tuple[int, int, int], ob.patt)
         if row:
             left = other_cell[0] < cell[0]
             if left:
                 return bool(patt[0] == 1)
             return bool(patt[2] == 1)
+        assert cell[0] == other_cell[0]
         below = other_cell[1] < cell[1]
         if below:
             return bool(patt[1] == 0)
