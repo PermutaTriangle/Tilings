@@ -276,11 +276,9 @@ class DeflationFactory(StrategyFactory[Tiling]):
                 # we need the other cell to be in between the intended deflate
                 # patt in either the row or column
                 other_cell = [c for c in ob.pos if c != cell][0]
-                if (  # in a different row and column
-                    cell[0] != other_cell[0] and cell[1] != other_cell[1]
-                ):
-                    break
-                if DeflationFactory.point_in_between(ob, cell, other_cell):
+                if (  # in a row or column
+                    cell[0] == other_cell[0] or cell[1] == other_cell[1]
+                ) and DeflationFactory.point_in_between(ob, cell, other_cell):
                     # this cell does not interleave with inflated components
                     cells_not_interleaving.add(other_cell)
                     continue
