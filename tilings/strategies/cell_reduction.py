@@ -246,7 +246,7 @@ class CellReductionFactory(StrategyFactory[Tiling]):
                 # at most one point in cell
                 sum(1 for _ in gp.points_in_cell(cell)) < 2
                 # no gp in row and col
-                and self.gp_in_row_and_col(gp, cell)
+                and not self.gp_in_row_and_col(gp, cell)
                 for gp in req
             )
             for req in tiling.requirements
