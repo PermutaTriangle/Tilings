@@ -292,6 +292,14 @@ class FactorWithInterleavingStrategy(FactorStrategy):
             interleaving_parameters,
         )
 
+    def reverse_constructor(
+        self,
+        idx: int,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ):
+        raise NotImplementedError
+
     def interleaving_parameters(self, comb_class: Tiling) -> List[Tuple[str, ...]]:
         """
         Return the parameters on the parent tiling that needed to be interleaved.
