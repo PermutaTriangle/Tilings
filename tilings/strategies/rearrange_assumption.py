@@ -18,7 +18,7 @@ from comb_spec_searcher.typing import (
     Terms,
 )
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import ComponentAssumption, TrackingAssumption
 
 Cell = Tuple[int, int]
 
@@ -418,6 +418,8 @@ class RearrangeAssumptionFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling) -> Iterator[RearrangeAssumptionStrategy]:
         assumptions = comb_class.assumptions
         for ass1, ass2 in combinations(assumptions, 2):
+            if any(isinstance(ass, ComponentAssumption) for ass in (ass1, ass2)):
+                continue
             if set(ass1.gps).issubset(set(ass2.gps)):
                 yield RearrangeAssumptionStrategy(ass2, ass1)
             if set(ass2.gps).issubset(set(ass1.gps)):
