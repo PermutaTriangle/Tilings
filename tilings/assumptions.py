@@ -168,6 +168,13 @@ class ComponentAssumption(TrackingAssumption):
             )
         ]
 
+    def cell_decomposition(self, tiling: "Tiling"):
+        sub_tiling = tiling.sub_tiling(self.cells)
+        return [
+            [sub_tiling.backward_map.map_cell(cell) for cell in comp]
+            for comp in self.tiling_decomposition(sub_tiling)
+        ]
+
     def get_value(self, gp: GriddedPerm) -> int:
         """
         Return the number of components in the tracked region of the gridded perm.
