@@ -42,6 +42,7 @@ from .sliding import SlidingFactory
 from .symmetry import SymmetriesFactory
 from .verification import (
     BasicVerificationStrategy,
+    ComponentVerificationStrategy,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
     InsertionEncodingVerificationStrategy,
@@ -97,6 +98,7 @@ __all__ = [
     "SymmetriesFactory",
     # Verification
     "BasicVerificationStrategy",
+    "ComponentVerificationStrategy",
     "DatabaseVerificationStrategy",
     "ElementaryVerificationStrategy",
     "LocallyFactorableVerificationStrategy",

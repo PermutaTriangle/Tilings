@@ -187,9 +187,7 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
         is_strict_subclass = any(
             tiling_class.is_subclass(cls) and cls != tiling_class for cls in sym_classes
         )
-        return is_strict_subclass or any(
-            isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions
-        )
+        return is_strict_subclass
 
     def get_genf(
         self, comb_class: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
@@ -235,6 +233,72 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
         if not self.basis:
             return "one by one verification"
         return f"One by one subclass of {Av(self.basis)}"
+
+
+class ComponentVerificationStrategy(TileScopeVerificationStrategy):
+    """Enumeration strategy for verifying 1x1s with component assumptions."""
+
+    @staticmethod
+    def pack(comb_class: Tiling) -> StrategyPack:
+        raise NotImplementedError("No pack for removing component assumption")
+
+    @staticmethod
+    def verified(comb_class: Tiling) -> bool:
+        return comb_class.dimensions == (1, 1) and any(
+            isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions
+        )
+
+    def decomposition_function(
+        self, comb_class: Tiling
+    ) -> Optional[Tuple[Tiling, ...]]:
+        """
+        The rule as the root as children if one of the cell of the tiling is the root.
+        """
+        if self.verified(comb_class):
+            return (comb_class.remove_assumptions(),)
+        return None
+
+    def shifts(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        return (0,)
+
+    @staticmethod
+    def formal_step() -> str:
+        return "component assumption verified"
+
+    def get_genf(
+        self, comb_class: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
+    ) -> Expr:
+        raise NotImplementedError(
+            "Not implemented method to count objects for component verified"
+        )
+
+    def get_terms(self, comb_class: Tiling, n: int) -> Terms:
+        raise NotImplementedError(
+            "Not implemented method to count objects for component verified"
+        )
+
+    def generate_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError(
+            "Not implemented method to generate objects for component verified tilings"
+        )
+
+    def random_sample_object_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        raise NotImplementedError(
+            "Not implemented random sample for component verified tilings"
+        )
+
+    def __str__(self) -> str:
+        return "component verification"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "DatabaseVerificationStrategy":
+        return cls(**d)
 
 
 class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
@@ -461,7 +525,9 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         except StrategyDoesNotApply:
             pass
         if self.no_factors:
-            raise InvalidOperationError("Cannot get a simpler specification")
+            raise InvalidOperationError(
+                f"Cannot get a simpler specification for\n{comb_class}"
+            )
         if (
             any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions)
             and len(comb_class.find_factors()) == 1

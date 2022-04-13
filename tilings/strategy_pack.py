@@ -157,6 +157,19 @@ class TileScopePack(StrategyPack):
             pack = pack.add_initial(
                 strat.RearrangeAssumptionFactory(), apply_first=True
             )
+        if strat.ComponentVerificationStrategy() in pack:
+            if all(
+                not isinstance(strategy, strat.DetectComponentsStrategy)
+                for strategy in pack
+            ):
+                pack = pack.add_initial(
+                    strat.DetectComponentsStrategy(ignore_parent=True)
+                )
+            if all(
+                not isinstance(strategy, strat.ComponentVerificationStrategy)
+                for strategy in pack
+            ):
+                pack = pack.add_verification(strat.ComponentVerificationStrategy())
         return pack
 
     def make_fusion(
@@ -192,6 +205,7 @@ class TileScopePack(StrategyPack):
                 pack = pack.add_initial(
                     strat.DetectComponentsStrategy(ignore_parent=True), apply_first=True
                 )
+                pack = pack.add_verification(strat.ComponentVerificationStrategy())
             pack = pack.add_initial(
                 strat.RearrangeAssumptionFactory(), apply_first=True
             )
