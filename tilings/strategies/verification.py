@@ -296,7 +296,7 @@ class ComponentVerificationStrategy(TileScopeVerificationStrategy):
         return "component verification"
 
     @classmethod
-    def from_dict(cls, d: dict) -> "DatabaseVerificationStrategy":
+    def from_dict(cls, d: dict) -> "ComponentVerificationStrategy":
         return cls(**d)
 
 
