@@ -577,7 +577,17 @@ class ComponentFusion(Fusion):
         are all contained entirely on the left of the fusion region, entirely
         on the right, or split in every possible way.
         """
-        if not isinstance(assumption, ComponentAssumption):
+        if (
+            not isinstance(assumption, ComponentAssumption)
+            or (
+                isinstance(assumption, SumComponentAssumption)
+                and not self.is_sum_component_fusion()
+            )
+            or (
+                isinstance(assumption, SkewComponentAssumption)
+                and self.is_sum_component_fusion()
+            )
+        ):
             return self.is_left_sided_assumption(
                 assumption
             ) and self.is_right_sided_assumption(assumption)
@@ -610,15 +620,21 @@ class ComponentFusion(Fusion):
         Return the assumption that needs to be counted in order to enumerate.
         """
         fcell = self.first_cell
-        scell = self.second_cell
         gps = (GriddedPerm.single_cell((0,), fcell),)
+        if self.is_sum_component_fusion():
+            return SumComponentAssumption(gps)
+        return SkewComponentAssumption(gps)
+
+    def is_sum_component_fusion(self) -> bool:
+        """
+        Return true if is a sum component fusion"""
+        fcell = self.first_cell
+        scell = self.second_cell
         if self._fuse_row:
             sum_ob = GriddedPerm((1, 0), (scell, fcell))
         else:
             sum_ob = GriddedPerm((1, 0), (fcell, scell))
-        if sum_ob in self._tiling.obstructions:
-            return SumComponentAssumption(gps)
-        return SkewComponentAssumption(gps)
+        return sum_ob in self._tiling.obstructions
 
     def __str__(self) -> str:
         s = "ComponentFusion Algorithm for:\n"
