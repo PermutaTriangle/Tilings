@@ -569,13 +569,11 @@ class ComponentFusion(Fusion):
             self.unfuse_gridded_perm(ob) for ob in self.obstruction_fuse_counter
         )
 
-    def _can_fuse_assumption(
-        self, assumption: TrackingAssumption, fuse_counter: Counter[GriddedPerm]
-    ) -> bool:
+    def _can_component_fuse_assumption(self, assumption: TrackingAssumption) -> bool:
         """
         Return True if an assumption can be fused. That is, prefusion, the gps
-        are all contained entirely on the left of the fusion region, entirely
-        on the right, or split in every possible way.
+        do not touch the fuse region unless it is the correct sum or skew
+        assumption.
         """
         if (
             not isinstance(assumption, ComponentAssumption)
@@ -591,10 +589,7 @@ class ComponentFusion(Fusion):
             return self.is_left_sided_assumption(
                 assumption
             ) and self.is_right_sided_assumption(assumption)
-        return self._can_fuse_set_of_gridded_perms(fuse_counter) or (
-            all(count == 1 for gp, count in fuse_counter.items())
-            and self._is_one_sided_assumption(assumption)
-        )
+        return True
 
     def _can_fuse_set_of_gridded_perms(
         self, fuse_counter: Counter[GriddedPerm]
@@ -613,7 +608,14 @@ class ComponentFusion(Fusion):
             return False
         new_tiling = self._tiling.add_obstructions(self.obstructions_to_add())
 
-        return self._tiling == new_tiling and self._check_isolation_level()
+        return (
+            self._tiling == new_tiling
+            and self._check_isolation_level()
+            and all(
+                self._can_component_fuse_assumption(assumption)
+                for assumption in self._tiling.assumptions
+            )
+        )
 
     def new_assumption(self) -> ComponentAssumption:
         """
