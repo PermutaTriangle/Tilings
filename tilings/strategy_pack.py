@@ -157,7 +157,7 @@ class TileScopePack(StrategyPack):
             pack = pack.add_initial(
                 strat.RearrangeAssumptionFactory(), apply_first=True
             )
-        if strat.ComponentVerificationStrategy() in pack:
+        if strat.ComponentFusionFactory() in pack:
             if all(
                 not isinstance(strategy, strat.DetectComponentsStrategy)
                 for strategy in pack
