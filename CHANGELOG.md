@@ -17,24 +17,25 @@ multiple different obs and one requirement list of size possibly greater than on
 Previously it was only doing the case where a single ob's factor is implied by a
 requirement.
 - added `TileScopePack.requirement_and_row_and_col_placements`
-- `AssumptionAndPointJumpingFactory` which adds rules where requirements and/or 
+- `AssumptionAndPointJumpingFactory` which adds rules where requirements and/or
   assumptions are swapped around a fusable row or column.
-- `PointJumpingFactory` which adds rules where requirements and assumptions can be 
+- `PointJumpingFactory` which adds rules where requirements and assumptions can be
 swapped around a fusable row or column.
 - `MonotoneSlidingFactory` that creates rules that swaps neighbouring cells if they
-  are 'monotone' fusable, i.e., they are a generalized fusion with a monotone local 
+  are 'monotone' fusable, i.e., they are a generalized fusion with a monotone local
   extra obstruction.
 - `DeflationFactory` which adds rules where cells can be deflated into increasing or
   decreasing cells as obstructions can't occur across the sum/skew components in that
   cell.
-- `CellReductionFactory` which changes a cell to monotone if at most one point of 
+- `CellReductionFactory` which changes a cell to monotone if at most one point of
   any crossing gp touches that cell.
 - `PositiveCorroborationFactory` that inserts into cells which if positive makes 
   another cell empty. Also, the `PointCorroborationFactory`, which does this for 
   point or empty cells which is added to most packs.
 - `TileScopePack.remove_strategy` method that removes a strategy from a pack.
-- `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can 
-  lead to factoring out a verified sub tiling. 
+- `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can
+  lead to factoring out a verified sub tiling.
+- `StrategyPack.kitchen_sinkify` to add many experimental strategies to the pack
 - `SubobstructionInsertionFactory` that inserts subobstructions and the pack
   `TileScopePack.subobstruction_placements` which uses it. 
 
@@ -48,15 +49,15 @@ swapped around a fusable row or column.
 - Verification strategies no longer ignore parent
 - `TrackedSearcher` now uses a `TrackedQueue` and is able to work with all packs
    and new future strategies.
-- `TileScopePack.make_tracked` will add the appropriate tracking methods for 
+- `TileScopePack.make_tracked` will add the appropriate tracking methods for
   interleaving factors and make strategies tracked if it can be.
-- The `GriddedPermReduction` limits the size of obstructions it tries to infer in 
-  the `minimal_obs` method to the size of the largest obstruction already on the 
+- The `GriddedPermReduction` limits the size of obstructions it tries to infer in
+  the `minimal_obs` method to the size of the largest obstruction already on the
   tiling.
-- The `SymmetriesFactory` takes a basis and will not return any symmetries where 
+- The `SymmetriesFactory` takes a basis and will not return any symmetries where
   any of the patterns of the obstruction are not subpatterns of some basis element.
   If no basis is given, all symmetries are returned.
-- `RequirementPlacement` adds empty cells when placing a point cell. This saves 
+- `RequirementPlacement` adds empty cells when placing a point cell. This saves
   some inferral in partial placements.
 - Don't reinitialise in the `Tiling.from_dict` method.
 - `GuidedSearcher` expands every symmetry
