@@ -35,11 +35,17 @@ swapped around a fusable row or column.
 - `TileScopePack.remove_strategy` method that removes a strategy from a pack.
 - `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can 
   lead to factoring out a verified sub tiling. 
+- `ComponentVerificationStrategy` which is added to component fusion packs. Other 
+  verification strategies will stop verifying component assumptions.
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
 - Bug with sliding symmetries
 - The tiling initialiser was not removing duplicate/redundant requirements.
+- `Factor` was not factoring correctly with respect to component assumptions.
+- `ComponentAssumption` are flipped when taking symmetries
+- `Tiling.get_minimum_value` fixed for component assumptions
+- `RearrangeCorroborationFactory` will ignore component assumptions
 
 ### Changed
 - One by one verification will now only verify subclasses of the given basis.
@@ -59,6 +65,7 @@ swapped around a fusable row or column.
 - Don't reinitialise in the `Tiling.from_dict` method.
 - `GuidedSearcher` expands every symmetry
 - `TileScopePack.pattern_placements` factors as an initial strategy.
+- `is_component` method of assumptions updated to consider cell decomposition
 
 
 ### Deprecated
