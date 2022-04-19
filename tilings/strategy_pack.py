@@ -297,7 +297,7 @@ class TileScopePack(StrategyPack):
             iterative=self.iterative,
         )
 
-    def kitchen_sinkify(
+    def kitchen_sinkify(  # pylint: disable=R0912
         self, short_obs_len: int, obs_inferral_len: int, tracked: bool
     ) -> "TileScopePack":
         """
