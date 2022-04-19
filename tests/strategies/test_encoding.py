@@ -45,6 +45,7 @@ from tilings.strategies import (
     SplittingStrategy,
     SubclassVerificationFactory,
     SubobstructionInferralFactory,
+    SubobstructionInsertionFactory,
     SymmetriesFactory,
     TargetedCellInsertionFactory,
 )
@@ -463,6 +464,7 @@ strategy_objects = (
     + [MonotoneSlidingFactory(), GeneralizedSlidingStrategy(1)]
     + indices_and_row(PointJumpingStrategy)
     + [TargetedCellInsertionFactory()]
+    + ignoreparent(SubobstructionInsertionFactory)
 )
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))

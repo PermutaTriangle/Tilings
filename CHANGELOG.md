@@ -36,6 +36,8 @@ swapped around a fusable row or column.
 - `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can 
   lead to factoring out a verified sub tiling. 
 - `ComponentVerificationStrategy` which is added to component fusion packs. 
+- `SubobstructionInsertionFactory` that inserts subobstructions and the pack
+  `TileScopePack.subobstruction_placements` which uses it. 
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
