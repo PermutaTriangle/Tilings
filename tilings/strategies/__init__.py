@@ -29,6 +29,7 @@ from .requirement_insertion import (
     RequirementExtensionFactory,
     RequirementInsertionFactory,
     RootInsertionFactory,
+    SubobstructionInsertionFactory,
     TargetedCellInsertionFactory,
 )
 from .requirement_placement import (
@@ -71,6 +72,7 @@ __all__ = [
     "RequirementCorroborationFactory",
     "RootInsertionFactory",
     "RowAndColumnPlacementFactory",
+    "SubobstructionInsertionFactory",
     "TargetedCellInsertionFactory",
     # Decomposition
     "FactorFactory",

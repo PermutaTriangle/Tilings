@@ -614,6 +614,35 @@ class TileScopePack(StrategyPack):
         )
 
     @classmethod
+    def subobstruction_placements(cls, partial: bool = False) -> "TileScopePack":
+        name = "partial_" if partial else ""
+        name += "subobstruction_placements"
+        return TileScopePack(
+            initial_strats=[
+                strat.FactorFactory(),
+                strat.PointCorroborationFactory(),
+                strat.RequirementCorroborationFactory(),
+            ],
+            ver_strats=[
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
+            ],
+            inferral_strats=[
+                strat.RowColumnSeparationStrategy(),
+                strat.ObstructionTransitivityFactory(),
+            ],
+            expansion_strats=[
+                [
+                    strat.SubobstructionInsertionFactory(),
+                    strat.PatternPlacementFactory(partial=partial),
+                ],
+            ],
+            name=name,
+        )
+
+    @classmethod
     def point_and_row_and_col_placements(
         cls,
         length: int = 1,

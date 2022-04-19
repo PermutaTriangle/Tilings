@@ -9,7 +9,7 @@ from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.strategies.strategy import VerificationStrategy
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import Factor
+from tilings.algorithms import Factor, SubobstructionInferral
 
 Cell = Tuple[int, int]
 ListRequirement = Tuple[GriddedPerm, ...]
@@ -673,3 +673,16 @@ class TargetedCellInsertionFactory(AbstractRequirementInsertionFactory):
 
     def __str__(self) -> str:
         return "targeted cell insertions"
+
+
+class SubobstructionInsertionFactory(AbstractRequirementInsertionFactory):
+    """
+    Insert all subobstructions of the obstructions on the tiling.
+    """
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        for gp in SubobstructionInferral(tiling).potential_new_obs():
+            yield (gp,)
+
+    def __str__(self) -> str:
+        return "subobstruction insertion"

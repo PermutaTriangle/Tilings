@@ -84,6 +84,7 @@ def length_row_col_partial(pack):
 packs = (
     length(TileScopePack.all_the_strategies)
     + partial(TileScopePack.insertion_point_placements)
+    + partial(TileScopePack.subobstruction_placements)
     + row_col_partial(TileScopePack.insertion_row_and_col_placements)
     + row_col_partial(TileScopePack.insertion_point_row_and_col_placements)
     + length_maxnumreq_partial(TileScopePack.only_root_placements)
