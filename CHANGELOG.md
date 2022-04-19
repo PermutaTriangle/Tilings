@@ -37,6 +37,8 @@ swapped around a fusable row or column.
   lead to factoring out a verified sub tiling. 
 - `ComponentVerificationStrategy` which is added to component fusion packs. Other 
   verification strategies will stop verifying component assumptions.
+- `SubobstructionInsertionFactory` that inserts subobstructions and the pack
+  `TileScopePack.subobstruction_placements` which uses it. 
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
