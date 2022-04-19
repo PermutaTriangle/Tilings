@@ -309,6 +309,7 @@ class TileScopePack(StrategyPack):
             Point and/or Assumption Jumping
             Generalized Monotone Sliding
             Free Cell Reduction
+            Requirement corroboration
             Obstruction Inferral (unless obs_inferral_len = 0)
             Symmetries
         Will be made tracked or not, depending on preference.
