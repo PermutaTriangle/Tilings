@@ -635,10 +635,14 @@ class InsertionEncodingVerificationStrategy(TileScopeVerificationStrategy):
         from tilings.strategy_pack import TileScopePack
 
         if self.has_rightmost_insertion_encoding(comb_class):
-            return TileScopePack.regular_insertion_encoding(2)
-        if self.has_topmost_insertion_encoding(comb_class):
-            return TileScopePack.regular_insertion_encoding(3)
-        raise StrategyDoesNotApply("tiling does not has a regular insertion encoding")
+            pack = TileScopePack.regular_insertion_encoding(2)
+        elif self.has_topmost_insertion_encoding(comb_class):
+            pack = TileScopePack.regular_insertion_encoding(3)
+        else:
+            raise StrategyDoesNotApply(
+                "tiling does not has a regular insertion encoding"
+            )
+        return pack.add_initial(DetectComponentsStrategy())
 
     @staticmethod
     def has_rightmost_insertion_encoding(tiling: Tiling) -> bool:
@@ -655,12 +659,9 @@ class InsertionEncodingVerificationStrategy(TileScopeVerificationStrategy):
         )
 
     def verified(self, comb_class: Tiling) -> bool:
-        return not any(
-            isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions
-        ) and (
-            self.has_rightmost_insertion_encoding(comb_class)
-            or self.has_topmost_insertion_encoding(comb_class)
-        )
+        return self.has_rightmost_insertion_encoding(
+            comb_class
+        ) or self.has_topmost_insertion_encoding(comb_class)
 
     @staticmethod
     def formal_step() -> str:
@@ -727,12 +728,8 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
 
     def verified(self, comb_class: Tiling) -> bool:
         return (
-            (not self.no_factors or len(comb_class.find_factors()) == 1)
-            and MonotoneTreeEnumeration(comb_class).verified()
-            and not any(
-                isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions
-            )
-        )
+            not self.no_factors or len(comb_class.find_factors()) == 1
+        ) and MonotoneTreeEnumeration(comb_class).verified()
 
     @staticmethod
     def formal_step() -> str:

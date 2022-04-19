@@ -35,8 +35,7 @@ swapped around a fusable row or column.
 - `TileScopePack.remove_strategy` method that removes a strategy from a pack.
 - `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can 
   lead to factoring out a verified sub tiling. 
-- `ComponentVerificationStrategy` which is added to component fusion packs. Other 
-  verification strategies will stop verifying component assumptions.
+- `ComponentVerificationStrategy` which is added to component fusion packs. 
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
@@ -45,7 +44,7 @@ swapped around a fusable row or column.
 - `Factor` was not factoring correctly with respect to component assumptions.
 - `ComponentAssumption` are flipped when taking symmetries
 - `Tiling.get_minimum_value` fixed for component assumptions
-- `RearrangeCorroborationFactory` will ignore component assumptions
+- `RearrangeAssumptionFactory` will ignore component assumptions
 
 ### Changed
 - One by one verification will now only verify subclasses of the given basis.
