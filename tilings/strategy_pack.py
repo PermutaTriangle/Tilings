@@ -339,10 +339,10 @@ class TileScopePack(StrategyPack):
         except ValueError:
             pass
 
-        # try:
-        #     ks_pack = ks_pack.add_verification(strat.DatabaseVerificationStrategy())
-        # except ValueError:
-        #     pass
+        try:
+            ks_pack = ks_pack.add_verification(strat.DatabaseVerificationStrategy())
+        except ValueError:
+            pass
 
         try:
             ks_pack = ks_pack.add_initial(strat.DeflationFactory(tracked))
@@ -361,6 +361,11 @@ class TileScopePack(StrategyPack):
 
         try:
             ks_pack = ks_pack.add_initial(strat.CellReductionFactory(tracked))
+        except ValueError:
+            pass
+
+        try:
+            ks_pack = ks_pack.add_initial(strat.RequirementCorroborationFactory())
         except ValueError:
             pass
 
