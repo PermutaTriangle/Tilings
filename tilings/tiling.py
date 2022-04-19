@@ -46,6 +46,7 @@ from .algorithms import (
     guess_obstructions,
 )
 from .assumptions import (
+    ComponentAssumption,
     SkewComponentAssumption,
     SumComponentAssumption,
     TrackingAssumption,
@@ -1430,6 +1431,12 @@ class Tiling(CombinatorialClass):
         Return the minimum value that can be taken by the parameter.
         """
         assumption = self.get_assumption(parameter)
+        if isinstance(assumption, ComponentAssumption):
+            return (
+                1
+                if any(gp.pos[0] in self.positive_cells for gp in assumption.gps)
+                else 0
+            )
         return min(assumption.get_value(gp) for gp in self.minimal_gridded_perms())
 
     def maximum_length_of_minimum_gridded_perm(self) -> int:
