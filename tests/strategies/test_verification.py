@@ -22,6 +22,7 @@ from tilings.strategies import (
     OneByOneVerificationStrategy,
     ShortObstructionVerificationStrategy,
 )
+from tilings.strategies.detect_components import DetectComponentsStrategy
 from tilings.strategies.experimental_verification import SubclassVerificationStrategy
 from tilings.tilescope import TileScopePack
 
@@ -469,7 +470,9 @@ class TestLocalVerificationStrategy(CommonTest):
     def test_pack(self, strategy, enum_verified):
         assert strategy.pack(
             enum_verified[0]
-        ) == TileScopePack.regular_insertion_encoding(3)
+        ) == TileScopePack.regular_insertion_encoding(3).add_initial(
+            DetectComponentsStrategy()
+        )
         assert strategy.pack(enum_verified[1]).name == "factor pack"
         assert strategy.pack(enum_verified[2]).name == "factor pack"
 
@@ -658,7 +661,9 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
             strategy.pack(enum_verified[0])
         assert strategy.pack(
             enum_verified[1]
-        ) == TileScopePack.regular_insertion_encoding(3)
+        ) == TileScopePack.regular_insertion_encoding(3).add_initial(
+            DetectComponentsStrategy()
+        )
 
     @pytest.mark.timeout(30)
     def test_get_specification(self, strategy, enum_verified):
