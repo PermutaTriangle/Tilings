@@ -1,3 +1,5 @@
+import gc
+
 import pytest
 import sympy
 
@@ -30,6 +32,20 @@ row_and_col_placements_component_fusion_fusion = (
     .make_fusion(tracked=False)
 )
 reginsenc = TileScopePack.regular_insertion_encoding(3)
+
+
+def collect_before(func):
+    """
+    Run gc collection before running the test.
+
+    This ensure that the collection ran in the test won't take to much time.
+    """
+
+    def inner():
+        gc.collect()
+        func()
+
+    return inner
 
 
 @pytest.mark.timeout(20)
@@ -284,6 +300,7 @@ def test_from_tiling():
     assert sympy.simplify(spec.get_genf() - sympy.sympify("(1+x)/(1-x)")) == 0
 
 
+@collect_before
 @pytest.mark.timeout(5)
 def test_expansion():
     """
@@ -348,6 +365,7 @@ def test_domino():
     ]
 
 
+@collect_before
 @pytest.mark.timeout(60)
 def test_parallel_forest():
     expected_count = [1, 1, 2, 6, 22, 90, 394, 1806, 8558, 41586]
@@ -361,6 +379,7 @@ def test_parallel_forest():
         assert count == expected_count
 
 
+@collect_before
 @pytest.mark.timeout(15)
 def forest_expansion():
     """
