@@ -1,11 +1,16 @@
 from collections import Counter
 from functools import partial
 from itertools import combinations
-from typing import Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 import sympy
 
-from comb_spec_searcher import Constructor, Strategy, StrategyFactory
+from comb_spec_searcher import (
+    Constructor,
+    DisjointUnionStrategy,
+    Strategy,
+    StrategyFactory,
+)
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.typing import (
     Parameters,
@@ -18,7 +23,12 @@ from comb_spec_searcher.typing import (
     Terms,
 )
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import ComponentAssumption, TrackingAssumption
+from tilings.assumptions import (
+    ComponentAssumption,
+    SkewComponentAssumption,
+    SumComponentAssumption,
+    TrackingAssumption,
+)
 
 Cell = Tuple[int, int]
 
@@ -364,8 +374,6 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         The backward direction of the underlying bijection used for object
         generation and sampling.
         """
-        if children is None:
-            children = self.decomposition_function(comb_class)
         assert len(objs) == 1 and objs[0] is not None
         yield objs[0]
 
@@ -379,8 +387,6 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         The forward direction of the underlying bijection used for object
         generation and sampling.
         """
-        if children is None:
-            children = self.decomposition_function(comb_class)
         return (obj,)
 
     def to_jsonable(self) -> dict:
@@ -414,16 +420,112 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         return "↣"
 
 
+class ComponentToPointAssumptionStrategy(
+    DisjointUnionStrategy[Tiling, GriddedPerm],
+):
+    """A strategy that changes a component tracking assumption to a point
+    tracking assumption."""
+
+    def __init__(
+        self,
+        assumption: TrackingAssumption,
+        ignore_parent: bool = False,
+        workable: bool = False,
+    ):
+        assert isinstance(assumption, ComponentAssumption)
+        self.assumption = assumption
+        self.new_assumption = TrackingAssumption(assumption.gps)
+        super().__init__(
+            ignore_parent=ignore_parent,
+            inferrable=False,
+            possibly_empty=False,
+            workable=workable,
+        )
+
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
+        if self.assumption not in comb_class.assumptions:
+            raise StrategyDoesNotApply("Assumption not on tiling")
+        return (
+            comb_class.remove_assumption(self.assumption).add_assumption(
+                self.new_assumption
+            ),
+        )
+
+    def backward_map(
+        self,
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Iterator[GriddedPerm]:
+        assert len(objs) == 1 and objs[0] is not None
+        yield objs[0]
+
+    def forward_map(
+        self,
+        comb_class: Tiling,
+        obj: GriddedPerm,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Optional[GriddedPerm]]:
+        return (obj,)
+
+    def extra_parameters(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[Dict[str, str], ...]:
+        if not comb_class.extra_parameters:
+            return super().extra_parameters(comb_class, children)
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        child = children[0]
+        return (
+            {
+                comb_class.get_assumption_parameter(
+                    ass
+                ): child.get_assumption_parameter(
+                    self.new_assumption if ass == self.assumption else ass
+                )
+                for ass in comb_class.assumptions
+            },
+        )
+
+    def formal_step(self) -> str:
+        cells = ", ".join(str(gp.pos[0]) for gp in self.assumption.gps)
+        return f"change component assumption in cells {cells} to point assumption"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "ComponentToPointAssumptionStrategy":
+        return cls(**d)
+
+
 class RearrangeAssumptionFactory(StrategyFactory[Tiling]):
-    def __call__(self, comb_class: Tiling) -> Iterator[RearrangeAssumptionStrategy]:
-        assumptions = comb_class.assumptions
-        for ass1, ass2 in combinations(assumptions, 2):
-            if any(isinstance(ass, ComponentAssumption) for ass in (ass1, ass2)):
-                continue
+    def __call__(
+        self, comb_class: Tiling
+    ) -> Iterator[
+        Union[RearrangeAssumptionStrategy, ComponentToPointAssumptionStrategy]
+    ]:
+        points: List[TrackingAssumption] = []
+        components: List[TrackingAssumption] = []
+        for ass in comb_class.assumptions:
+            (points, components)[isinstance(ass, ComponentAssumption)].append(ass)
+
+        for ass1, ass2 in combinations(points, 2):
             if set(ass1.gps).issubset(set(ass2.gps)):
                 yield RearrangeAssumptionStrategy(ass2, ass1)
             if set(ass2.gps).issubset(set(ass1.gps)):
                 yield RearrangeAssumptionStrategy(ass1, ass2)
+
+        for ass in components:
+            if self.can_be_point_assumption(comb_class, ass):
+                yield ComponentToPointAssumptionStrategy(ass)
+
+    @staticmethod
+    def can_be_point_assumption(tiling: Tiling, assumption: TrackingAssumption) -> bool:
+        sub_tiling = tiling.sub_tiling(tuple(gp.pos[0] for gp in assumption.gps))
+        if isinstance(assumption, SumComponentAssumption):
+            return sub_tiling.is_increasing()
+        assert isinstance(assumption, SkewComponentAssumption)
+        return sub_tiling.is_decreasing()
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + "()"

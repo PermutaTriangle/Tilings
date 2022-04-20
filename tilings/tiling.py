@@ -1473,6 +1473,34 @@ class Tiling(CombinatorialClass):
             cell in increasing and cell in decreasing for cell in self.active_cells
         )
 
+    def is_increasing(self) -> bool:
+        """Returns true if all gridded perms are increasing."""
+        separated = self.row_and_column_separation()
+        components = separated.sum_decomposition()
+        if any(len(cells) > 1 for cells in components):
+            return False
+        cells = sorted(cells[0] for cells in components)
+        if any(b < a for a, b in zip(cells[:-1], cells[1:])):
+            return False
+        return all(
+            GriddedPerm.single_cell(Perm((1, 0)), cell) in separated.obstructions
+            for cell in cells
+        )
+
+    def is_decreasing(self) -> bool:
+        """Returns true if all gridded perms are decreasing."""
+        separated = self.row_and_column_separation()
+        components = separated.skew_decomposition()
+        if any(len(cells) > 1 for cells in components):
+            return False
+        cells = sorted(cells[0] for cells in components)
+        if any(b > a for a, b in zip(cells[:-1], cells[1:])):
+            return False
+        return all(
+            GriddedPerm.single_cell(Perm((0, 1)), cell) in separated.obstructions
+            for cell in cells
+        )
+
     def objects_of_size(self, n: int, **parameters: int) -> Iterator[GriddedPerm]:
         for gp in self.gridded_perms_of_length(n):
             if all(

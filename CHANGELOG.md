@@ -36,6 +36,8 @@ swapped around a fusable row or column.
 - `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can 
   lead to factoring out a verified sub tiling. 
 - `ComponentVerificationStrategy` which is added to component fusion packs. 
+- `ComponentToPointAssumptionStrategy` that changes component assumptions to point 
+  assumptions. These strategies are yielded in `RearrangeAssumptionFactory`.
 - `SubobstructionInsertionFactory` that inserts subobstructions and the pack
   `TileScopePack.subobstruction_placements` which uses it. 
 
