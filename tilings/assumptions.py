@@ -1,7 +1,7 @@
 import abc
 from importlib import import_module
 from itertools import chain
-from typing import TYPE_CHECKING, FrozenSet, Iterable, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Type
 
 from permuta import Perm
 
@@ -142,15 +142,12 @@ class ComponentAssumption(TrackingAssumption):
         """Return the components of a given tiling."""
 
     @abc.abstractmethod
-    def is_component(
-        self,
-        cells: List[Cell],
-        point_cells: FrozenSet[Cell],
-        positive_cells: FrozenSet[Cell],
-    ) -> bool:
-        """
-        Return True if cells form a component.
-        """
+    def opposite_tiling_decomposition(self, tiling: "Tiling") -> List[List[Cell]]:
+        """Return the alternative components of a given tiling."""
+
+    @abc.abstractmethod
+    def one_or_fewer_components(self, tiling: "Tiling", cell: Cell) -> bool:
+        """Return True if the cell contains one or fewer components."""
 
     def get_components(self, tiling: "Tiling") -> List[List[GriddedPerm]]:
         sub_tiling = tiling.sub_tiling(self.cells)
@@ -163,9 +160,39 @@ class ComponentAssumption(TrackingAssumption):
                 for cell in comp
             ]
             for comp in components
-            if self.is_component(
-                comp, separated_tiling.point_cells, separated_tiling.positive_cells
+            if self.is_component(comp, separated_tiling)
+        ]
+
+    def is_component(self, cells: List[Cell], tiling: "Tiling") -> bool:
+        """
+        Return True if cells form a component on the tiling.
+
+        Cells are assumed to have come from cell_decomposition.
+        """
+        sub_tiling = tiling.sub_tiling(cells)
+        skew_cells = self.opposite_tiling_decomposition(sub_tiling)
+
+        if any(
+            scells[0] in sub_tiling.positive_cells
+            and self.one_or_fewer_components(sub_tiling, scells[0])
+            for scells in skew_cells
+            if len(scells) == 1
+        ):
+            return True
+
+        def is_positive(scells) -> bool:
+            return any(
+                all(any(cell in gp.pos for cell in scells) for gp in req)
+                for req in sub_tiling.requirements
             )
+
+        return sum(1 for scells in skew_cells if is_positive(scells)) > 1
+
+    def cell_decomposition(self, tiling: "Tiling"):
+        sub_tiling = tiling.sub_tiling(self.cells)
+        return [
+            [sub_tiling.backward_map.map_cell(cell) for cell in comp]
+            for comp in self.tiling_decomposition(sub_tiling)
         ]
 
     def get_value(self, gp: GriddedPerm) -> int:
@@ -200,16 +227,12 @@ class SumComponentAssumption(ComponentAssumption):
         return tiling.sum_decomposition()
 
     @staticmethod
-    def is_component(
-        cells: List[Cell], point_cells: FrozenSet[Cell], positive_cells: FrozenSet[Cell]
-    ) -> bool:
-        if len(cells) == 2:
-            (x1, y1), (x2, y2) = sorted(cells)
-            if x1 != x2 and y1 > y2:  # is skew
-                return all(cell in positive_cells for cell in cells) or any(
-                    cell in point_cells for cell in cells
-                )
-        return False
+    def opposite_tiling_decomposition(tiling: "Tiling") -> List[List[Cell]]:
+        return tiling.skew_decomposition()
+
+    @staticmethod
+    def one_or_fewer_components(tiling: "Tiling", cell: Cell) -> bool:
+        return GriddedPerm.single_cell(Perm((0, 1)), cell) in tiling.obstructions
 
     def __str__(self):
         return f"can count sum components in cells {self.cells}"
@@ -228,16 +251,12 @@ class SkewComponentAssumption(ComponentAssumption):
         return tiling.skew_decomposition()
 
     @staticmethod
-    def is_component(
-        cells: List[Cell], point_cells: FrozenSet[Cell], positive_cells: FrozenSet[Cell]
-    ) -> bool:
-        if len(cells) == 2:
-            (x1, y1), (x2, y2) = sorted(cells)
-            if x1 != x2 and y1 < y2:  # is sum
-                return all(cell in positive_cells for cell in cells) or any(
-                    cell in point_cells for cell in cells
-                )
-        return False
+    def opposite_tiling_decomposition(tiling: "Tiling") -> List[List[Cell]]:
+        return tiling.sum_decomposition()
+
+    @staticmethod
+    def one_or_fewer_components(tiling: "Tiling", cell: Cell) -> bool:
+        return GriddedPerm.single_cell(Perm((1, 0)), cell) in tiling.obstructions
 
     def __str__(self):
         return f"can count skew components in cells {self.cells}"

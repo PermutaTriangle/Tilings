@@ -28,6 +28,7 @@ from tilings.algorithms.enumeration import (
 )
 from tilings.assumptions import ComponentAssumption
 from tilings.strategies import (
+    DetectComponentsStrategy,
     FactorFactory,
     FactorInsertionFactory,
     RemoveRequirementFactory,
@@ -128,9 +129,7 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
     @staticmethod
     def pack(comb_class: Tiling) -> StrategyPack:
         if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
-            raise InvalidOperationError(
-                "Can't find generating function with component assumption."
-            )
+            return ComponentVerificationStrategy.pack(comb_class)
         # pylint: disable=import-outside-toplevel
         from tilings.tilescope import TileScopePack
 
@@ -187,9 +186,7 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
         is_strict_subclass = any(
             tiling_class.is_subclass(cls) and cls != tiling_class for cls in sym_classes
         )
-        return is_strict_subclass or any(
-            isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions
-        )
+        return is_strict_subclass
 
     def get_genf(
         self, comb_class: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
@@ -235,6 +232,72 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
         if not self.basis:
             return "one by one verification"
         return f"One by one subclass of {Av(self.basis)}"
+
+
+class ComponentVerificationStrategy(TileScopeVerificationStrategy):
+    """Enumeration strategy for verifying 1x1s with component assumptions."""
+
+    @staticmethod
+    def pack(comb_class: Tiling) -> StrategyPack:
+        raise NotImplementedError("No pack for removing component assumption")
+
+    @staticmethod
+    def verified(comb_class: Tiling) -> bool:
+        return comb_class.dimensions == (1, 1) and any(
+            isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions
+        )
+
+    def decomposition_function(
+        self, comb_class: Tiling
+    ) -> Optional[Tuple[Tiling, ...]]:
+        """
+        The rule as the root as children if one of the cell of the tiling is the root.
+        """
+        if self.verified(comb_class):
+            return (comb_class.remove_assumptions(),)
+        return None
+
+    def shifts(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        return (0,)
+
+    @staticmethod
+    def formal_step() -> str:
+        return "component verified"
+
+    def get_genf(
+        self, comb_class: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
+    ) -> Expr:
+        raise NotImplementedError(
+            "Not implemented method to count objects for component verified"
+        )
+
+    def get_terms(self, comb_class: Tiling, n: int) -> Terms:
+        raise NotImplementedError(
+            "Not implemented method to count objects for component verified"
+        )
+
+    def generate_objects_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> Iterator[GriddedPerm]:
+        raise NotImplementedError(
+            "Not implemented method to generate objects for component verified tilings"
+        )
+
+    def random_sample_object_of_size(
+        self, comb_class: Tiling, n: int, **parameters: int
+    ) -> GriddedPerm:
+        raise NotImplementedError(
+            "Not implemented random sample for component verified tilings"
+        )
+
+    def __str__(self) -> str:
+        return "component verification"
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "ComponentVerificationStrategy":
+        return cls(**d)
 
 
 class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
@@ -309,13 +372,13 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
     """
 
     def pack(self, comb_class: Tiling) -> StrategyPack:
-        if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
-            raise InvalidOperationError(
-                "Can't find generating function with component assumption."
-            )
         return StrategyPack(
             name="LocallyFactorable",
-            initial_strats=[FactorFactory(), RequirementCorroborationFactory()],
+            initial_strats=[
+                FactorFactory(),
+                RequirementCorroborationFactory(),
+                DetectComponentsStrategy(),
+            ],
             inferral_strats=[],
             expansion_strats=[[FactorInsertionFactory()], [RemoveRequirementFactory()]],
             ver_strats=[
@@ -323,6 +386,7 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
                 OneByOneVerificationStrategy(
                     basis=self._basis, symmetry=self._symmetry
                 ),
+                ComponentVerificationStrategy(),
                 InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
                 LocalVerificationStrategy(no_factors=True),
@@ -331,18 +395,19 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
 
     @staticmethod
     def _pack_for_shift(comb_class: Tiling) -> StrategyPack:
-        if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
-            raise InvalidOperationError(
-                "Can't find generating function with component assumption."
-            )
         return StrategyPack(
             name="LocallyFactorable",
-            initial_strats=[FactorFactory(), RequirementCorroborationFactory()],
+            initial_strats=[
+                FactorFactory(),
+                RequirementCorroborationFactory(),
+                DetectComponentsStrategy(),
+            ],
             inferral_strats=[],
             expansion_strats=[[FactorInsertionFactory()]],
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                ComponentVerificationStrategy(),
                 InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
                 LocalVerificationStrategy(no_factors=True),
@@ -369,6 +434,14 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
             not comb_class.dimensions == (1, 1)
             and self._locally_factorable_obstructions(comb_class)
             and self._locally_factorable_requirements(comb_class)
+            and all(
+                not isinstance(ass, ComponentAssumption)
+                or (
+                    len(ass.gps) == 1
+                    and comb_class.only_cell_in_row_and_col(list(ass.cells)[0])
+                )
+                for ass in comb_class.assumptions
+            )
         )
 
     def decomposition_function(
@@ -429,7 +502,15 @@ class ElementaryVerificationStrategy(LocallyFactorableVerificationStrategy):
 
     @staticmethod
     def verified(comb_class: Tiling):
-        return comb_class.fully_isolated() and not comb_class.dimensions == (1, 1)
+        return (
+            comb_class.fully_isolated()
+            and not comb_class.dimensions == (1, 1)
+            and all(
+                len(ass.gps) == 1
+                for ass in comb_class.assumptions
+                if isinstance(ass, ComponentAssumption)
+            )
+        )
 
     @staticmethod
     def formal_step() -> str:
@@ -461,21 +542,17 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         except StrategyDoesNotApply:
             pass
         if self.no_factors:
-            raise InvalidOperationError("Cannot get a simpler specification")
-        if (
-            any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions)
-            and len(comb_class.find_factors()) == 1
-        ):
             raise InvalidOperationError(
-                "Can't find generating function with component assumption."
+                f"Cannot get a simpler specification for\n{comb_class}"
             )
         return StrategyPack(
-            initial_strats=[FactorFactory()],
+            initial_strats=[FactorFactory(), DetectComponentsStrategy()],
             inferral_strats=[],
             expansion_strats=[],
             ver_strats=[
                 BasicVerificationStrategy(),
                 OneByOneVerificationStrategy(),
+                ComponentVerificationStrategy(),
                 InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
                 LocalVerificationStrategy(no_factors=True),
@@ -488,6 +565,14 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
             comb_class.dimensions != (1, 1)
             and (not self.no_factors or len(comb_class.find_factors()) == 1)
             and LocalEnumeration(comb_class).verified()
+            and all(
+                not isinstance(ass, ComponentAssumption)
+                or (
+                    len(ass.gps) == 1
+                    and comb_class.only_cell_in_row_and_col(list(ass.cells)[0])
+                )
+                for ass in comb_class.assumptions
+            )
         )
 
     @staticmethod
@@ -546,18 +631,18 @@ class InsertionEncodingVerificationStrategy(TileScopeVerificationStrategy):
         super().__init__(ignore_parent=ignore_parent)
 
     def pack(self, comb_class: Tiling) -> StrategyPack:
-        if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
-            raise InvalidOperationError(
-                "Can't find generating function with component assumption."
-            )
         # pylint: disable=import-outside-toplevel
         from tilings.strategy_pack import TileScopePack
 
         if self.has_rightmost_insertion_encoding(comb_class):
-            return TileScopePack.regular_insertion_encoding(2)
-        if self.has_topmost_insertion_encoding(comb_class):
-            return TileScopePack.regular_insertion_encoding(3)
-        raise StrategyDoesNotApply("tiling does not has a regular insertion encoding")
+            pack = TileScopePack.regular_insertion_encoding(2)
+        elif self.has_topmost_insertion_encoding(comb_class):
+            pack = TileScopePack.regular_insertion_encoding(3)
+        else:
+            raise StrategyDoesNotApply(
+                "tiling does not has a regular insertion encoding"
+            )
+        return pack.add_initial(DetectComponentsStrategy())
 
     @staticmethod
     def has_rightmost_insertion_encoding(tiling: Tiling) -> bool:
@@ -622,10 +707,6 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
         super().__init__(ignore_parent=ignore_parent)
 
     def pack(self, comb_class: Tiling) -> StrategyPack:
-        if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
-            raise InvalidOperationError(
-                "Can't find generating function with component assumption."
-            )
         try:
             return InsertionEncodingVerificationStrategy().pack(comb_class)
         except StrategyDoesNotApply:

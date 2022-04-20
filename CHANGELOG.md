@@ -33,8 +33,11 @@ swapped around a fusable row or column.
   another cell empty. Also, the `PointCorroborationFactory`, which does this for 
   point or empty cells which is added to most packs.
 - `TileScopePack.remove_strategy` method that removes a strategy from a pack.
-- `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can
-  lead to factoring out a verified sub tiling.
+- `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can 
+  lead to factoring out a verified sub tiling. 
+- `ComponentVerificationStrategy` which is added to component fusion packs. 
+- `ComponentToPointAssumptionStrategy` that changes component assumptions to point 
+  assumptions. These strategies are yielded in `RearrangeAssumptionFactory`.
 - `StrategyPack.kitchen_sinkify` to add many experimental strategies to the pack
 - `SubobstructionInsertionFactory` that inserts subobstructions and the pack
   `TileScopePack.subobstruction_placements` which uses it. 
@@ -43,6 +46,10 @@ swapped around a fusable row or column.
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
 - Bug with sliding symmetries
 - The tiling initialiser was not removing duplicate/redundant requirements.
+- `Factor` was not factoring correctly with respect to component assumptions.
+- `ComponentAssumption` are flipped when taking symmetries
+- `Tiling.get_minimum_value` fixed for component assumptions
+- `RearrangeAssumptionFactory` will ignore component assumptions
 
 ### Changed
 - One by one verification will now only verify subclasses of the given basis.
@@ -62,6 +69,7 @@ swapped around a fusable row or column.
 - Don't reinitialise in the `Tiling.from_dict` method.
 - `GuidedSearcher` expands every symmetry
 - `TileScopePack.pattern_placements` factors as an initial strategy.
+- `is_component` method of assumptions updated to consider cell decomposition
 
 
 ### Deprecated
