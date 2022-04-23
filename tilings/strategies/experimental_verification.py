@@ -45,6 +45,51 @@ class NoRootCellVerificationStrategy(BasisAwareVerificationStrategy):
         return f"no Av({basis}) cell verification"
 
 
+class NonemptyCellVerificationStrategy(BasisAwareVerificationStrategy):
+    """
+    A strategy to mark as verified any tiling with fewer than a preset
+    number of nonempty cell. Possibly useful when search for a spec for a
+    non-1x1 tiling.
+    """
+
+    def __init__(
+        self,
+        allowed_nonempty_cells: int,
+        symmetry: bool = False,
+        ignore_parent: bool = True,
+    ):
+        self.allowed_nonempty_cells = allowed_nonempty_cells
+        super().__init__(symmetry=symmetry, ignore_parent=ignore_parent)
+
+    def verified(self, comb_class: Tiling):
+        """
+        verifies any tiling with at most [allowed_nonempty_cells] nonempty cells.
+        """
+        return len(comb_class.active_cells) <= self.allowed_nonempty_cells
+
+    def formal_step(self) -> str:
+        return f"tiling has at most {self.allowed_nonempty_cells} nonempty cells"
+
+    def __str__(self) -> str:
+        return f"at most {self.allowed_nonempty_cells} nonempty cells verification"
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(allowed_nonempty_cells="
+            f"{self.allowed_nonempty_cells})"
+        )
+
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["allowed_nonempty_cells"] = self.allowed_nonempty_cells
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "ShortObstructionVerificationStrategy":
+        allowed_nonempty_cells: int = d.pop("allowed_nonempty_cells")
+        return cls(allowed_nonempty_cells=allowed_nonempty_cells, **d)
+
+
 class ShortObstructionVerificationStrategy(BasisAwareVerificationStrategy):
     """
     A strategy to mark as verified any tiling whose crossing obstructions all have
