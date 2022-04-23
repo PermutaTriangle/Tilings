@@ -4,6 +4,7 @@ from .cell_reduction import CellReductionFactory
 from .deflation import DeflationFactory
 from .detect_components import DetectComponentsStrategy
 from .experimental_verification import (
+    NonemptyCellVerificationStrategy,
     NoRootCellVerificationStrategy,
     ShortObstructionVerificationStrategy,
     SubclassVerificationFactory,

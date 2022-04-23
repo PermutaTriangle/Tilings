@@ -16,6 +16,7 @@ from tilings.algorithms import Factor, SubclassVerificationAlgorithm
 from .abstract import BasisAwareVerificationStrategy
 
 __all__ = [
+    "NonemptyCellVerificationStrategy",
     "NoRootCellVerificationStrategy",
     "ShortObstructionVerificationStrategy",
     "SubclassVerificationFactory",
