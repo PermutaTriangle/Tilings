@@ -26,6 +26,7 @@ from tilings.algorithms import (
     Factor,
     FactorWithInterleaving,
     FactorWithMonotoneInterleaving,
+    InsaneFactor,
 )
 from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
@@ -386,6 +387,11 @@ class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
         )
 
 
+class InsaneFactorStrategy(FactorWithInterleavingStrategy):
+    def formal_step(self) -> str:
+        return "insane " + super().formal_step()
+
+
 class FactorFactory(StrategyFactory[Tiling]):
 
     FACTOR_ALGO_AND_CLASS = {
@@ -395,6 +401,7 @@ class FactorFactory(StrategyFactory[Tiling]):
             FactorWithMonotoneInterleavingStrategy,
         ),
         "all": (FactorWithInterleaving, FactorWithInterleavingStrategy),
+        "insane": (InsaneFactor, InsaneFactorStrategy),
     }
 
     def __init__(
@@ -421,6 +428,7 @@ class FactorFactory(StrategyFactory[Tiling]):
         self.tracked = tracked and self.factor_class in (
             FactorWithInterleavingStrategy,
             FactorWithMonotoneInterleaving,
+            InsaneFactorStrategy,
         )
 
     def __call__(self, comb_class: Tiling) -> Iterator[FactorStrategy]:
@@ -462,6 +470,8 @@ class FactorFactory(StrategyFactory[Tiling]):
             s = "factor with interleaving"
         elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
             s = "factor with monotone interleaving"
+        elif self.factor_class is InsaneFactorStrategy:
+            s = "insane factor with all the power!!"
         else:
             raise Exception("Invalid interleaving type")
         if self.unions:

@@ -1,5 +1,10 @@
 from .enumeration import DatabaseEnumeration, LocalEnumeration, MonotoneTreeEnumeration
-from .factor import Factor, FactorWithInterleaving, FactorWithMonotoneInterleaving
+from .factor import (
+    Factor,
+    FactorWithInterleaving,
+    FactorWithMonotoneInterleaving,
+    InsaneFactor,
+)
 from .fusion import ComponentFusion, Fusion
 from .gridded_perm_generation import GriddedPermsOnTiling
 from .gridded_perm_reduction import GriddedPermReduction
@@ -24,6 +29,7 @@ __all__ = [
     "Factor",
     "FactorWithInterleaving",
     "FactorWithMonotoneInterleaving",
+    "InsaneFactorStrategy",
     "ComponentFusion",
     "Fusion",
     "MinimalGriddedPerms",

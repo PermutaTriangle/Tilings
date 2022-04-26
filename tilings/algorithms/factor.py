@@ -279,3 +279,14 @@ class FactorWithInterleaving(Factor):
         self._unite_assumptions()
         self._unite_obstructions()
         self._unite_requirements()
+
+
+class InsaneFactor(FactorWithInterleaving):
+    def _unite_obstructions(self) -> None:
+        """
+        For each obstruction unite all the position of the obstruction only if the
+        obstruobstructions is of length 4 or more.
+        """
+        for ob in self._tiling.obstructions:
+            if len(ob) > 3:
+                self._unite_cells(ob.pos)

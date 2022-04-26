@@ -19,7 +19,7 @@ from comb_spec_searcher.typing import (
     Terms,
 )
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import FactorWithInterleaving
+from tilings.algorithms import InsaneFactor
 from tilings.assumptions import TrackingAssumption
 from tilings.misc import partitions_iterator
 
@@ -310,7 +310,7 @@ class AddInterleavingAssumptionFactory(StrategyFactory[Tiling]):
 
     # TODO: monotone?
     def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
-        factor_algo = FactorWithInterleaving(comb_class)
+        factor_algo = InsaneFactor(comb_class)
         if factor_algo.factorable():
             min_comp = tuple(tuple(part) for part in factor_algo.get_components())
             if self.unions:
