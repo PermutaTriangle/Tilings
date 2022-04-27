@@ -25,7 +25,7 @@ class TrackingAssumption:
     @classmethod
     def from_cells(cls, cells: Iterable[Cell]) -> "TrackingAssumption":
         gps = [GriddedPerm.single_cell((0,), cell) for cell in cells]
-        return TrackingAssumption(gps)
+        return cls(gps)
 
     def avoiding(
         self,

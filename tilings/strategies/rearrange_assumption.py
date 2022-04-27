@@ -493,9 +493,18 @@ class ComponentToPointAssumptionStrategy(
         cells = ", ".join(str(gp.pos[0]) for gp in self.assumption.gps)
         return f"change component assumption in cells {cells} to point assumption"
 
+    def to_jsonable(self) -> dict:
+        d: dict = super().to_jsonable()
+        d["assumption"] = self.assumption.to_jsonable()
+        return d
+
     @classmethod
     def from_dict(cls, d: dict) -> "ComponentToPointAssumptionStrategy":
-        return cls(ignore_parent=d["ignore_parent"], workable=d["workable"])
+        return cls(
+            assumption=TrackingAssumption.from_dict(d["assumption"]),
+            ignore_parent=d["ignore_parent"],
+            workable=d["workable"],
+        )
 
 
 class RearrangeAssumptionFactory(StrategyFactory[Tiling]):
