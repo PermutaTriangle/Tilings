@@ -495,7 +495,7 @@ class ComponentToPointAssumptionStrategy(
 
     @classmethod
     def from_dict(cls, d: dict) -> "ComponentToPointAssumptionStrategy":
-        return cls(**d)
+        return cls(ignore_parent=d["ignore_parent"], workable=d["workable"])
 
 
 class RearrangeAssumptionFactory(StrategyFactory[Tiling]):
