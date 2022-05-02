@@ -71,6 +71,9 @@ swapped around a fusable row or column.
 - `TileScopePack.pattern_placements` factors as an initial strategy.
 - `is_component` method of assumptions updated to consider cell decomposition
 
+### Removed
+- `AddInterleavingAssumptionsFactory`. The factor strategy now adds the relevant 
+  assumptions where necessary directly, lowering the number of CVs needed. 
 
 ### Deprecated
 - Python 3.7 is no longer supported
