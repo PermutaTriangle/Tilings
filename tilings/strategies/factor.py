@@ -227,6 +227,16 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
 
 
 class FactorWithInterleavingStrategy(FactorStrategy):
+    def __init__(
+        self,
+        partition: Iterable[Iterable[Cell]],
+        ignore_parent: bool = True,
+        workable: bool = True,
+        tracked: bool = True,
+    ):
+        super().__init__(partition, ignore_parent, workable)
+        self.tracked = tracked
+
     def formal_step(self) -> str:
         return "interleaving " + super().formal_step()
 
@@ -283,9 +293,9 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         return tuple(ass for ass in chain(col_assumptions, row_assumptions) if ass.gps)
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
-        return super().decomposition_function(
-            comb_class.add_assumptions(self.assumptions_to_add(comb_class))
-        )
+        if self.tracked:
+            comb_class = comb_class.add_assumptions(self.assumptions_to_add(comb_class))
+        return super().decomposition_function(comb_class)
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -300,6 +310,8 @@ class FactorWithInterleavingStrategy(FactorStrategy):
             )
             comb_class = comb_class.add_assumptions(assumptions)
         interleaving_parameters = self.interleaving_parameters(comb_class)
+        if interleaving_parameters and not self.tracked:
+            raise NotImplementedError("The interleaving factor was not tracked.")
         return Interleaving(
             comb_class,
             children,
@@ -441,8 +453,17 @@ class FactorFactory(StrategyFactory[Tiling]):
         interleaving = any(
             FactorWithInterleavingStrategy.interleaving_rows_and_cols(components)
         )
-        factor_strat = self.factor_class if interleaving else FactorStrategy
-        return factor_strat(
+        if interleaving:
+            return cast(
+                FactorStrategy,
+                self.factor_class(
+                    components,
+                    ignore_parent=self.ignore_parent,
+                    workable=workable,
+                    tracked=self.tracked,
+                ),
+            )
+        return FactorStrategy(
             components, ignore_parent=self.ignore_parent, workable=workable
         )
 
