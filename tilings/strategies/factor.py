@@ -1,8 +1,19 @@
 from collections import Counter
 from functools import reduce
-from itertools import chain
+from itertools import chain, combinations
 from operator import mul
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    cast,
+)
 
 from sympy import Eq, Function
 
@@ -12,14 +23,7 @@ from comb_spec_searcher import (
     StrategyFactory,
 )
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.typing import (
-    Parameters,
-    SubObjects,
-    SubRecs,
-    SubSamplers,
-    SubTerms,
-    Terms,
-)
+from comb_spec_searcher.typing import SubRecs, SubSamplers, SubTerms, Terms
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
@@ -43,6 +47,13 @@ __all__ = (
     "FactorWithInterleavingStrategy",
     "FactorWithMonotoneInterleavingStrategy",
 )
+
+TempGP = Tuple[
+    Tuple[
+        Tuple[Union[float, int], ...], Tuple[Union[float, int], ...], Tuple[Cell, ...]
+    ],
+    ...,
+]
 
 
 class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
@@ -210,11 +221,6 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
             return new_terms
         return interleaved_terms
 
-    def get_sub_objects(
-        self, subobjs: SubObjects, n: int
-    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
-        raise NotImplementedError
-
     def random_sample_sub_objects(
         self,
         parent_count: int,
@@ -236,6 +242,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
     ):
         super().__init__(partition, ignore_parent, workable)
         self.tracked = tracked
+        self.cols, self.rows = interleaving_rows_and_cols(self.partition)
 
     def formal_step(self) -> str:
         return "interleaving " + super().formal_step()
@@ -370,15 +377,129 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
-        raise NotImplementedError
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        gps_to_combine = tuple(
+            tiling.backward_map.map_gp(cast(GriddedPerm, gp))
+            for gp, tiling in zip(objs, children)
+        )
+        all_gps_to_combine: List[TempGP] = [
+            tuple(
+                (tuple(range(len(gp))), tuple(gp.patt), gp.pos) for gp in gps_to_combine
+            )
+        ]
+        for row in self.rows:
+            all_gps_to_combine = self._interleave_row(all_gps_to_combine, row)
+        for col in self.cols:
+            all_gps_to_combine = self._interleave_col(all_gps_to_combine, col)
 
-    def forward_map(
+        for interleaved_gps_to_combine in all_gps_to_combine:
+            temp = [
+                ((cell[0], idx), (cell[1], val))
+                for gp in interleaved_gps_to_combine
+                for idx, val, cell in zip(*gp)
+            ]
+            temp.sort()
+            new_pos = [(idx[0], val[0]) for idx, val in temp]
+            new_patt = Perm.to_standard(val for _, val in temp)
+            assert not GriddedPerm(new_patt, new_pos).contradictory()
+            yield GriddedPerm(new_patt, new_pos)
+
+    def _interleave_row(
         self,
-        comb_class: Tiling,
-        obj: GriddedPerm,
-        children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Tuple[GriddedPerm, ...]:
-        raise NotImplementedError
+        all_gps_to_combine: List[TempGP],
+        row: int,
+    ) -> List[TempGP]:
+        # pylint: disable=too-many-locals
+        res: List[TempGP] = []
+        for gps_to_combine in all_gps_to_combine:
+            row_points = tuple(
+                tuple(
+                    (idx, values[idx])
+                    for idx, cell in enumerate(position)
+                    if cell[1] == row
+                )
+                for _, values, position in gps_to_combine
+            )
+            total = sum(len(points) for points in row_points)
+            if total == 0:
+                res.append(gps_to_combine)
+                continue
+            min_val = min(val for _, val in chain(*row_points))
+            max_val = max(val for _, val in chain(*row_points)) + 1
+            temp_values = tuple(
+                min_val + i * (max_val - min_val) / total for i in range(total)
+            )
+            for partition in self._partitions(
+                set(temp_values), tuple(len(indices) for indices in row_points)
+            ):
+                new_gps_to_combine = []
+                for part, (indices, values, position), points in zip(
+                    partition, gps_to_combine, row_points
+                ):
+                    new_values = list(values)
+                    actual_indices = [
+                        idx for _, idx in sorted((val, idx) for idx, val in points)
+                    ]
+                    for idx, val in zip(actual_indices, sorted(part)):
+                        new_values[idx] = val
+                    new_gps_to_combine.append((indices, tuple(new_values), position))
+                res.append(tuple(new_gps_to_combine))
+        return res
+
+    def _interleave_col(
+        self,
+        all_gps_to_combine: List[TempGP],
+        col: int,
+    ):
+        # pylint: disable=too-many-locals
+        res: List[TempGP] = []
+        for gps_to_combine in all_gps_to_combine:
+            col_points = tuple(
+                tuple(
+                    (idx, indices[idx])
+                    for idx, cell in enumerate(position)
+                    if cell[0] == col
+                )
+                for indices, _, position in gps_to_combine
+            )
+            total = sum(len(points) for points in col_points)
+            if total == 0:
+                res.append(gps_to_combine)
+                continue
+            mindex = min(val for _, val in chain(*col_points))
+            maxdex = max(val for _, val in chain(*col_points)) + 1
+            temp_indices = tuple(
+                mindex + i * (maxdex - mindex) / total for i in range(total)
+            )
+            for partition in self._partitions(
+                set(temp_indices), tuple(len(indices) for indices in col_points)
+            ):
+                new_gps_to_combine = []
+                for part, (indices, values, position), points in zip(
+                    partition, gps_to_combine, col_points
+                ):
+                    new_indices = list(indices)
+                    for idx, new_idx in zip([idx for idx, _ in points], sorted(part)):
+                        new_indices[idx] = new_idx
+                    new_gps_to_combine.append((tuple(new_indices), values, position))
+                res.append(tuple(new_gps_to_combine))
+        return res
+
+    @staticmethod
+    def _partitions(
+        values: Set[float], size_of_parts: Tuple[int, ...]
+    ) -> Iterator[Tuple[Tuple[float, ...], ...]]:
+        if not size_of_parts:
+            if not values:
+                yield tuple()
+            return
+        size = size_of_parts[0]
+        for part in combinations(values, size):
+            for rest in FactorWithInterleavingStrategy._partitions(
+                values - set(part), size_of_parts[1:]
+            ):
+                yield (part,) + rest
 
     @staticmethod
     def get_eq_symbol() -> str:
