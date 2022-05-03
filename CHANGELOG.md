@@ -41,6 +41,8 @@ swapped around a fusable row or column.
 - `StrategyPack.kitchen_sinkify` to add many experimental strategies to the pack
 - `SubobstructionInsertionFactory` that inserts subobstructions and the pack
   `TileScopePack.subobstruction_placements` which uses it. 
+- `FactorWithInterleavingStrategy.backward_map` so you can now generate permutation 
+  from specifications using interleaving factors.
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
