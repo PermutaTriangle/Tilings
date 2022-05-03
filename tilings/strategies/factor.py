@@ -242,7 +242,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
     ):
         super().__init__(partition, ignore_parent, workable)
         self.tracked = tracked
-        self.cols, self.rows = interleaving_rows_and_cols(self.partition)
+        self.cols, self.rows = self.interleaving_rows_and_cols(self.partition)
 
     def formal_step(self) -> str:
         return "interleaving " + super().formal_step()
