@@ -16,7 +16,7 @@ from comb_spec_searcher.typing import (
 )
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import ComponentAssumption, TrackingAssumption
 
 Cell = Tuple[int, int]
 
@@ -111,10 +111,16 @@ class DeflationStrategy(Strategy[Tiling, GriddedPerm]):
             for req in tiling.requirements
             if not all(gp.pos[0] == self.cell and gp.is_single_cell() for gp in req)
         )
+        reduced_ass = sorted(
+            ass
+            for ass in tiling.assumptions
+            if not isinstance(ass, ComponentAssumption)
+            or GriddedPerm.point_perm(self.cell) not in ass.gps
+        )
         return Tiling(
             tiling.obstructions,
             reduced_reqs,
-            tiling.assumptions,
+            reduced_ass,
             remove_empty_rows_and_cols=False,
             derive_empty=False,
             simplify=False,
@@ -222,7 +228,7 @@ class DeflationFactory(StrategyFactory[Tiling]):
 
     def __call__(self, comb_class: Tiling) -> Iterator[DeflationStrategy]:
         for cell in comb_class.active_cells:
-            if not self._can_deflate_requirements(comb_class, cell):
+            if not self._can_deflate_requirements_and_assumptions(comb_class, cell):
                 continue
             if self.can_deflate(comb_class, cell, True):
                 yield DeflationStrategy(cell, True, self.tracked)
@@ -230,13 +236,18 @@ class DeflationFactory(StrategyFactory[Tiling]):
                 yield DeflationStrategy(cell, False, self.tracked)
 
     @staticmethod
-    def _can_deflate_requirements(tiling: Tiling, cell: Cell) -> bool:
+    def _can_deflate_requirements_and_assumptions(tiling: Tiling, cell: Cell) -> bool:
         def can_deflate_req_list(req: Tuple[GriddedPerm, ...]) -> bool:
             return all(gp.pos[0] == cell and gp.is_single_cell() for gp in req) or all(
                 len(list(gp.points_in_cell(cell))) < 2 for gp in req
             )
 
-        return all(can_deflate_req_list(req) for req in tiling.requirements)
+        return all(can_deflate_req_list(req) for req in tiling.requirements) and all(
+            not isinstance(ass, ComponentAssumption)
+            or GriddedPerm.point_perm(cell) not in ass.gps
+            or len(ass.gps) == 1
+            for ass in tiling.assumptions
+        )
 
     @staticmethod
     def can_deflate(tiling: Tiling, cell: Cell, sum_deflate: bool) -> bool:

@@ -16,7 +16,7 @@ from comb_spec_searcher.typing import (
 )
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import ComponentAssumption, TrackingAssumption
 
 Cell = Tuple[int, int]
 
@@ -109,10 +109,16 @@ class CellReductionStrategy(Strategy[Tiling, GriddedPerm]):
             for req in comb_class.requirements
             if not all(gp.pos[0] == self.cell and gp.is_single_cell() for gp in req)
         )
+        reduced_ass = sorted(
+            ass
+            for ass in comb_class.assumptions
+            if not isinstance(ass, ComponentAssumption)
+            or GriddedPerm.point_perm(self.cell) not in ass.gps
+        )
         reduced_tiling = Tiling(
             reduced_obs,
             reduced_reqs,
-            comb_class.assumptions,
+            reduced_ass,
             remove_empty_rows_and_cols=False,
             derive_empty=False,
             simplify=False,
@@ -235,11 +241,15 @@ class CellReductionFactory(StrategyFactory[Tiling]):
             if not (  # a finite cell
                 any(patt.is_increasing() for patt in cell_bases[cell][0])
                 and any(patt.is_decreasing() for patt in cell_bases[cell][0])
-            ) and self.can_reduce_cell_with_requirements(comb_class, cell):
+            ) and self.can_reduce_cell_with_requirements_and_assumptions(
+                comb_class, cell
+            ):
                 yield CellReductionStrategy(cell, True, self.tracked)
                 yield CellReductionStrategy(cell, False, self.tracked)
 
-    def can_reduce_cell_with_requirements(self, tiling: Tiling, cell: Cell) -> bool:
+    def can_reduce_cell_with_requirements_and_assumptions(
+        self, tiling: Tiling, cell: Cell
+    ) -> bool:
         return all(  # local
             all(gp.pos[0] == cell and gp.is_single_cell() for gp in req)
             or all(
@@ -250,6 +260,11 @@ class CellReductionFactory(StrategyFactory[Tiling]):
                 for gp in req
             )
             for req in tiling.requirements
+        ) and all(
+            not isinstance(ass, ComponentAssumption)
+            or GriddedPerm.point_perm(cell) not in ass.gps
+            or len(ass.gps) == 1
+            for ass in tiling.assumptions
         )
 
     @staticmethod
