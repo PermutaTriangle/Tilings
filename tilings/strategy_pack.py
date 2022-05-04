@@ -393,6 +393,14 @@ class TileScopePack(StrategyPack):
         if tracked:
             ks_pack = ks_pack.make_tracked()
 
+        ks_pack.expansion_strats = ks_pack.expansion_strats + (
+            (
+                strat.PointingStrategy(),
+                strat.UnfusionFactory(),
+                strat.DisjointFusionFactory(),
+            ),
+        )
+
         ks_pack.name += "_kitchen_sink"
 
         return ks_pack
