@@ -1,5 +1,5 @@
 from collections import Counter
-from itertools import chain, product
+from itertools import product
 from random import randint
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
@@ -19,11 +19,7 @@ from comb_spec_searcher.typing import (
     Terms,
 )
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import FactorWithInterleaving
 from tilings.assumptions import TrackingAssumption
-from tilings.misc import partitions_iterator
-
-from .factor import assumptions_to_add, interleaving_rows_and_cols
 
 Cell = Tuple[int, int]
 
@@ -44,7 +40,7 @@ class AddAssumptionsConstructor(Constructor):
         self.extra_parameters = extra_parameters
         #  the paramater that was added, to count we must sum over all possible values
         self.new_parameters = tuple(new_parameters)
-        self._child_param_map = self._build_child_param_map(parent, child)
+        self.child_param_map = self._build_child_param_map(parent, child)
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         rhs_func = rhs_funcs[0]
@@ -62,7 +58,7 @@ class AddAssumptionsConstructor(Constructor):
         self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
     ) -> Terms:
         assert len(subterms) == 1
-        return self._push_add_assumption(n, subterms[0], self._child_param_map)
+        return self._push_add_assumption(n, subterms[0], self.child_param_map)
 
     @staticmethod
     def _push_add_assumption(
@@ -94,7 +90,7 @@ class AddAssumptionsConstructor(Constructor):
         self, subobjs: SubObjects, n: int
     ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
         for param, gps in subobjs[0](n).items():
-            yield self._child_param_map(param), (gps,)
+            yield self.child_param_map(param), (gps,)
 
     def random_sample_sub_objects(
         self,
@@ -283,55 +279,3 @@ class AddAssumptionFactory(StrategyFactory[Tiling]):
     @classmethod
     def from_dict(cls, d: dict) -> "AddAssumptionFactory":
         return cls()
-
-
-class AddInterleavingAssumptionFactory(StrategyFactory[Tiling]):
-    def __init__(self, unions: bool = False):
-        self.unions = unions
-
-    @staticmethod
-    def strategy_from_components(
-        comb_class: Tiling, components: Tuple[Tuple[Cell, ...], ...]
-    ) -> Iterator[Rule]:
-        """
-        Yield an AddAssumption strategy for the given component if needed.
-        """
-        cols, rows = interleaving_rows_and_cols(components)
-        assumptions = set(
-            ass
-            for ass in chain.from_iterable(
-                assumptions_to_add(cells, cols, rows) for cells in components
-            )
-            if ass not in comb_class.assumptions
-        )
-        if assumptions:
-            strategy = AddAssumptionsStrategy(assumptions, workable=True)
-            yield strategy(comb_class)
-
-    # TODO: monotone?
-    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
-        factor_algo = FactorWithInterleaving(comb_class)
-        if factor_algo.factorable():
-            min_comp = tuple(tuple(part) for part in factor_algo.get_components())
-            if self.unions:
-                for partition in partitions_iterator(min_comp):
-                    components = tuple(
-                        tuple(chain.from_iterable(part)) for part in partition
-                    )
-                    yield from self.strategy_from_components(comb_class, components)
-            yield from self.strategy_from_components(comb_class, min_comp)
-
-    def __repr__(self) -> str:
-        return self.__class__.__name__ + "()"
-
-    def __str__(self) -> str:
-        return "add interleaving assumptions to factor"
-
-    def to_jsonable(self) -> dict:
-        d: dict = super().to_jsonable()
-        d["unions"] = self.unions
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "AddInterleavingAssumptionFactory":
-        return cls(**d)

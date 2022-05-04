@@ -126,11 +126,6 @@ class TileScopePack(StrategyPack):
             res = []
             for strategy in strats:
                 d = strategy.to_jsonable()
-                if "interleaving" in d:
-                    if not d["tracked"] and d["interleaving"] in ("all", "monotone"):
-                        res.append(
-                            strat.AddInterleavingAssumptionFactory(unions=d["unions"])
-                        )
                 if not d.get("tracked", True):
                     d["tracked"] = True
                     strategy = AbstractStrategy.from_dict(d)
@@ -218,8 +213,7 @@ class TileScopePack(StrategyPack):
         Return a new pack where the factor strategy is replaced with an
         interleaving factor strategy.
 
-        If unions is set to True it will overwrite unions on the strategy, and
-        also pass the argument to AddInterleavingAssumption method.
+        If unions is set to True it will overwrite unions on the strategy.
         """
 
         def replace_list(strats):
@@ -251,9 +245,6 @@ class TileScopePack(StrategyPack):
         )
 
         if tracked:
-            pack = pack.add_initial(
-                strat.AddInterleavingAssumptionFactory(unions=unions), apply_first=True
-            )
             pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
 
         return pack
