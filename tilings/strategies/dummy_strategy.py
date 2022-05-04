@@ -8,13 +8,13 @@ from .dummy_constructor import DummyConstructor
 
 class DummyStrategy(Strategy[Tiling, GriddedPerm]):
     def can_be_equivalent(self) -> bool:
-        pass
+        raise NotImplementedError
 
     def is_two_way(self, comb_class: Tiling) -> bool:
-        pass
+        raise NotImplementedError
 
     def is_reversible(self, comb_class: Tiling) -> bool:
-        pass
+        raise NotImplementedError
 
     def shifts(
         self,
@@ -23,12 +23,12 @@ class DummyStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> Tuple[int, ...]:
         if children is None:
             children = self.decomposition_function(comb_class)
-        pass
+        raise NotImplementedError
 
     def decomposition_function(
         self, comb_class: Tiling
     ) -> Optional[Tuple[Tiling, ...]]:
-        pass
+        raise NotImplementedError
 
     def formal_step(self) -> str:
         return "dummy strategy"

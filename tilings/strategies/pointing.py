@@ -1,5 +1,5 @@
 """
-The directionless point placement strategy that is counted 
+The directionless point placement strategy that is counted
 by the 'pointing' constructor.
 """
 from typing import Dict, Iterator, Optional, Tuple
@@ -28,6 +28,7 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> Tuple[int, ...]:
         if children is None:
             children = self.decomposition_function(comb_class)
+        assert children is not None
         return tuple(0 for _ in children)
 
     def decomposition_function(
