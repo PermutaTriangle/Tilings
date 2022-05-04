@@ -1,4 +1,4 @@
-from .assumption_insertion import AddAssumptionFactory, AddInterleavingAssumptionFactory
+from .assumption_insertion import AddAssumptionFactory
 from .assumption_splitting import SplittingStrategy
 from .cell_reduction import CellReductionFactory
 from .deflation import DeflationFactory
@@ -59,7 +59,6 @@ from .verification import (
 __all__ = [
     # Assumptions
     "AddAssumptionFactory",
-    "AddInterleavingAssumptionFactory",
     "DetectComponentsStrategy",
     "RearrangeAssumptionFactory",
     "SplittingStrategy",
