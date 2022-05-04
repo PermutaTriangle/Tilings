@@ -3,6 +3,7 @@ from .assumption_splitting import SplittingStrategy
 from .cell_reduction import CellReductionFactory
 from .deflation import DeflationFactory
 from .detect_components import DetectComponentsStrategy
+from .dummy_strategy import DummyStrategy
 from .experimental_verification import (
     NoRootCellVerificationStrategy,
     ShortObstructionVerificationStrategy,
@@ -18,6 +19,7 @@ from .obstruction_inferral import (
     SubobstructionInferralFactory,
 )
 from .point_jumping import AssumptionAndPointJumpingFactory
+from .pointing import PointingStrategy
 from .rearrange_assumption import RearrangeAssumptionFactory
 from .requirement_insertion import (
     CellInsertionFactory,
@@ -85,6 +87,8 @@ __all__ = [
     "SlidingFactory",
     # Experimental
     "AssumptionAndPointJumpingFactory",
+    "DummyStrategy",
+    "PointingStrategy",
     # Fusion
     "ComponentFusionFactory",
     "FusionFactory",

@@ -86,4 +86,4 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "PointingStrategy":
-        return cls(d)
+        return cls(**d)

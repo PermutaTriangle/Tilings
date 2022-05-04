@@ -17,6 +17,7 @@ from tilings.strategies import (
     ComponentFusionFactory,
     DatabaseVerificationStrategy,
     DeflationFactory,
+    DummyStrategy,
     ElementaryVerificationStrategy,
     EmptyCellInferralFactory,
     FactorFactory,
@@ -32,6 +33,7 @@ from tilings.strategies import (
     ObstructionTransitivityFactory,
     OneByOneVerificationStrategy,
     PatternPlacementFactory,
+    PointingStrategy,
     RearrangeAssumptionFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
@@ -465,6 +467,7 @@ strategy_objects = (
     + indices_and_row(PointJumpingStrategy)
     + [TargetedCellInsertionFactory()]
     + ignoreparent(SubobstructionInsertionFactory)
+    + [DummyStrategy(), PointingStrategy()]
 )
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))

@@ -31,7 +31,7 @@ class DummyStrategy(Strategy[Tiling, GriddedPerm]):
         pass
 
     def formal_step(self) -> str:
-        pass
+        return "dummy strategy"
 
     def constructor(
         self,
@@ -83,4 +83,4 @@ class DummyStrategy(Strategy[Tiling, GriddedPerm]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "DummyStrategy":
-        return cls(d)
+        return cls(**d)
