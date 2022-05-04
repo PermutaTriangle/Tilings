@@ -43,9 +43,11 @@ swapped around a fusable row or column.
   `TileScopePack.subobstruction_placements` which uses it. 
 - `FactorWithInterleavingStrategy.backward_map` so you can now generate permutation 
   from specifications using interleaving factors.
+- `DummyStrategy` that gives a quick template for making strategies. 
 - `PointingStrategy` that places points directionless in non-point cells. This is 
   a non-productive strategy so should be used with `RuleDBForest`.
-- `DummyStrategy` that gives a quick template for making strategies. 
+- `UnfusionFactory` that unfuses either all the rows or columns. Also non-productive.
+
 
 ### Fixed
 - `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.

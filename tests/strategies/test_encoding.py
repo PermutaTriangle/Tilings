@@ -50,6 +50,9 @@ from tilings.strategies import (
     SubobstructionInsertionFactory,
     SymmetriesFactory,
     TargetedCellInsertionFactory,
+    UnfusionColumnStrategy,
+    UnfusionFactory,
+    UnfusionRowStrategy,
 )
 from tilings.strategies.cell_reduction import CellReductionStrategy
 from tilings.strategies.deflation import DeflationStrategy
@@ -467,7 +470,13 @@ strategy_objects = (
     + indices_and_row(PointJumpingStrategy)
     + [TargetedCellInsertionFactory()]
     + ignoreparent(SubobstructionInsertionFactory)
-    + [DummyStrategy(), PointingStrategy()]
+    + [
+        DummyStrategy(),
+        PointingStrategy(),
+        UnfusionRowStrategy(),
+        UnfusionColumnStrategy(),
+        UnfusionFactory(),
+    ]
 )
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
