@@ -156,5 +156,5 @@ class UnfusionFactory(StrategyFactory[Tiling]):
         return self.__class__.__name__ + "()"
 
     @classmethod
-    def from_dict(cls, d: dict) -> "UnfusionStrategyFactory":
+    def from_dict(cls, d: dict) -> "UnfusionFactory":
         return cls()
