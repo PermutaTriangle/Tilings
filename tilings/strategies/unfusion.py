@@ -37,7 +37,6 @@ class UnfusionColumnStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> Tuple[int, ...]:
         if children is None:
             children = self.decomposition_function(comb_class)
-        print(self(comb_class))
         return tuple(0 for _ in range(self.width(comb_class)))
 
     def width(self, comb_class: Tiling) -> int:

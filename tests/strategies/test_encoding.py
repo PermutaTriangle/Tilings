@@ -17,6 +17,7 @@ from tilings.strategies import (
     ComponentFusionFactory,
     DatabaseVerificationStrategy,
     DeflationFactory,
+    DisjointFusionFactory,
     DummyStrategy,
     ElementaryVerificationStrategy,
     EmptyCellInferralFactory,
@@ -62,7 +63,11 @@ from tilings.strategies.factor import (
     FactorWithInterleavingStrategy,
     FactorWithMonotoneInterleavingStrategy,
 )
-from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
+from tilings.strategies.fusion import (
+    ComponentFusionStrategy,
+    DisjointFusionStrategy,
+    FusionStrategy,
+)
 from tilings.strategies.monotone_sliding import GeneralizedSlidingStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 from tilings.strategies.point_jumping import (
@@ -476,6 +481,9 @@ strategy_objects = (
         UnfusionRowStrategy(),
         UnfusionColumnStrategy(),
         UnfusionFactory(),
+        DisjointFusionFactory(),
+        DisjointFusionStrategy(row_idx=1),
+        DisjointFusionStrategy(col_idx=1),
     ]
 )
 

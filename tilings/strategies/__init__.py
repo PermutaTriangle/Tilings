@@ -10,7 +10,7 @@ from .experimental_verification import (
     SubclassVerificationFactory,
 )
 from .factor import FactorFactory
-from .fusion import ComponentFusionFactory, FusionFactory
+from .fusion import ComponentFusionFactory, DisjointFusionFactory, FusionFactory
 from .monotone_sliding import MonotoneSlidingFactory
 from .obstruction_inferral import (
     EmptyCellInferralFactory,
@@ -91,6 +91,7 @@ __all__ = [
     "PointingStrategy",
     # Fusion
     "ComponentFusionFactory",
+    "DisjointFusionFactory",
     "FusionFactory",
     "UnfusionColumnStrategy",
     "UnfusionRowStrategy",
