@@ -1,12 +1,142 @@
+from collections import Counter
 from itertools import chain
-from typing import Dict, Iterator, Optional, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Tuple
+
+import sympy
 
 from comb_spec_searcher import Strategy
+from comb_spec_searcher.strategies import Constructor
+from comb_spec_searcher.strategies.constructor import Complement, DisjointUnion
 from comb_spec_searcher.strategies.strategy import StrategyFactory
+from comb_spec_searcher.typing import (
+    CombinatorialClassType,
+    CombinatorialObjectType,
+    Parameters,
+    SubObjects,
+    SubRecs,
+    SubSamplers,
+    SubTerms,
+    Terms,
+)
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
 
-from .dummy_constructor import DummyConstructor
+
+class DivideByN(DisjointUnion[CombinatorialClassType, CombinatorialObjectType]):
+    """
+    A constructor that works as disjoint union
+    but divides the values by n + shift.
+    """
+
+    def __init__(
+        self,
+        parent: CombinatorialClassType,
+        children: Tuple[CombinatorialClassType, ...],
+        shift: int,
+        extra_parameters: Optional[Tuple[Dict[str, str], ...]] = None,
+    ):
+        self.shift = shift
+        self.initial_conditions = {
+            n: parent.get_terms(n) for n in range(1 - self.shift)
+        }
+        super().__init__(parent, children, extra_parameters)
+
+    def get_equation(
+        self, lhs_func: sympy.Function, rhs_funcs: Tuple[sympy.Function, ...]
+    ) -> sympy.Eq:
+        # TODO: d/dx [ x**shift * lhsfun ] / x**(shift - 1) = A + B + ...
+        raise NotImplementedError
+
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
+        if n + self.shift <= 0:
+            return self.initial_conditions[n]
+        terms = super().get_terms(parent_terms, subterms, n)
+        return Counter({key: value // (n + self.shift) for key, value in terms.items()})
+
+    def get_sub_objects(
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[
+        Tuple[Parameters, Tuple[List[Optional[CombinatorialObjectType]], ...]]
+    ]:
+        raise NotImplementedError
+
+    def random_sample_sub_objects(
+        self,
+        parent_count: int,
+        subsamplers: SubSamplers,
+        subrecs: SubRecs,
+        n: int,
+        **parameters: int,
+    ) -> Tuple[Optional[CombinatorialObjectType], ...]:
+        raise NotImplementedError
+
+    @staticmethod
+    def get_eq_symbol() -> str:
+        return "?"
+
+    def __str__(self):
+        return "divide by n"
+
+    def equiv(
+        self, other: Constructor, data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
+        raise NotImplementedError
+
+
+class ReverseDivideByN(Complement[CombinatorialClassType, CombinatorialObjectType]):
+    """
+    The complement version of DivideByN.
+    It works as Complement, but multiplies by n + shift the original left hand side.
+    """
+
+    def __init__(
+        self,
+        parent: CombinatorialClassType,
+        children: Tuple[CombinatorialClassType, ...],
+        idx: int,
+        shift: int,
+        extra_parameters: Optional[Tuple[Dict[str, str], ...]] = None,
+    ):
+        self.shift = shift
+        self.initial_conditions = {
+            n: children[idx].get_terms(n) for n in range(1 - self.shift)
+        }
+        super().__init__(parent, children, idx, extra_parameters)
+
+    def get_equation(
+        self, lhs_func: sympy.Function, rhs_funcs: Tuple[sympy.Function, ...]
+    ) -> sympy.Eq:
+        # TODO: rhs_funcs[0] should be a derivative etc, see DivideByN.get_equation.
+        raise NotImplementedError
+
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
+        if n + self.shift <= 0:
+            return self.initial_conditions[n]
+        parent_terms_mapped: Terms = Counter()
+        for param, value in subterms[0](n).items():
+            if value:
+                # This is the only change from complement
+                N = n + self.shift
+                assert N > 0
+                parent_terms_mapped[self._parent_param_map(param)] += value * N
+        children_terms = subterms[1:]
+        for child_terms, param_map in zip(children_terms, self._children_param_maps):
+            # we subtract from total
+            for param, value in child_terms(n).items():
+                mapped_param = self._parent_param_map(param_map(param))
+                parent_terms_mapped[mapped_param] -= value
+                assert parent_terms_mapped[mapped_param] >= 0
+                if parent_terms_mapped[mapped_param] == 0:
+                    parent_terms_mapped.pop(mapped_param)
+
+        return parent_terms_mapped
+
+    def __str__(self):
+        return "reverse divide by n"
 
 
 class UnfusionColumnStrategy(Strategy[Tiling, GriddedPerm]):
@@ -44,9 +174,7 @@ class UnfusionColumnStrategy(Strategy[Tiling, GriddedPerm]):
             return comb_class.dimensions[0]
         return comb_class.dimensions[1]
 
-    def decomposition_function(
-        self, comb_class: Tiling
-    ) -> Optional[Tuple[Tiling, ...]]:
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
         res = []
         for idx in range(self.width(comb_class)):
             if self.cols:
@@ -82,20 +210,20 @@ class UnfusionColumnStrategy(Strategy[Tiling, GriddedPerm]):
         self,
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> DummyConstructor:
+    ) -> DivideByN:
         if children is None:
             children = self.decomposition_function(comb_class)
-        return DummyConstructor()
+        return DivideByN(comb_class, children, len(children))
 
     def reverse_constructor(
         self,
         idx: int,
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> DummyConstructor:
+    ) -> ReverseDivideByN:
         if children is None:
             children = self.decomposition_function(comb_class)
-        return DummyConstructor()
+        return ReverseDivideByN(comb_class, children, idx, len(children))
 
     def backward_map(
         self,

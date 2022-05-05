@@ -5,10 +5,11 @@ by the 'pointing' constructor.
 from typing import Dict, Iterator, Optional, Tuple
 
 from comb_spec_searcher import Strategy
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta.misc import DIR_NONE
 from tilings import GriddedPerm, Tiling
 
-from .dummy_constructor import DummyConstructor
+from .unfusion import DivideByN, ReverseDivideByN
 
 
 class PointingStrategy(Strategy[Tiling, GriddedPerm]):
@@ -31,14 +32,13 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
         assert children is not None
         return tuple(0 for _ in children)
 
-    def decomposition_function(
-        self, comb_class: Tiling
-    ) -> Optional[Tuple[Tiling, ...]]:
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
         cells = comb_class.active_cells - comb_class.point_cells
         if cells:
             return tuple(
                 comb_class.place_point_in_cell(cell, DIR_NONE) for cell in cells
             )
+        raise StrategyDoesNotApply("The tiling is just point cells!")
 
     def formal_step(self) -> str:
         return "directionless point placement"
@@ -47,16 +47,20 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
         self,
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> DummyConstructor:
-        return DummyConstructor()
+    ) -> DivideByN:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        return DivideByN(comb_class, children, -len(comb_class.point_cells))
 
     def reverse_constructor(
         self,
         idx: int,
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> DummyConstructor:
-        return DummyConstructor()
+    ) -> ReverseDivideByN:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        return ReverseDivideByN(comb_class, children, idx, -len(comb_class.point_cells))
 
     def backward_map(
         self,
