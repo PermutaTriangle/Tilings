@@ -23,7 +23,6 @@ from comb_spec_searcher import (
     StrategyFactory,
 )
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.strategies.strategy import Strategy
 from comb_spec_searcher.typing import SubRecs, SubSamplers, SubTerms, Terms
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
