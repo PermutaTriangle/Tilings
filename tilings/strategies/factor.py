@@ -23,7 +23,14 @@ from comb_spec_searcher import (
     StrategyFactory,
 )
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from comb_spec_searcher.typing import SubRecs, SubSamplers, SubTerms, Terms
+from comb_spec_searcher.typing import (
+    Parameters,
+    SubObjects,
+    SubRecs,
+    SubSamplers,
+    SubTerms,
+    Terms,
+)
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import (
@@ -220,6 +227,14 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
                 new_terms[self.insertion_constructor.child_param_map(param)] += value
             return new_terms
         return interleaved_terms
+
+    def get_sub_objects(
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
+        for param, objs in super().get_sub_objects(subobjs, n):
+            if self.insertion_constructor:
+                param = self.insertion_constructor.child_param_map(param)
+            yield param, objs
 
     def random_sample_sub_objects(
         self,
