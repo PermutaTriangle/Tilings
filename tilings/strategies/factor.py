@@ -94,7 +94,9 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         ):
             for idx, child in enumerate(children):
                 # TODO: consider skew/sum
-                new_assumption = child.forward_map.map_assumption(assumption)
+                new_assumption = child.forward_map.map_assumption(assumption).avoiding(
+                    child.obstructions
+                )
                 if new_assumption.gps:
                     child_var = child.get_assumption_parameter(new_assumption)
                     extra_parameters[idx][parent_var] = child_var
