@@ -23,6 +23,7 @@ from comb_spec_searcher import (
     StrategyFactory,
 )
 from comb_spec_searcher.exception import StrategyDoesNotApply
+from comb_spec_searcher.strategies.strategy import Strategy
 from comb_spec_searcher.typing import SubRecs, SubSamplers, SubTerms, Terms
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
@@ -243,6 +244,12 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         super().__init__(partition, ignore_parent, workable)
         self.tracked = tracked
         self.cols, self.rows = self.interleaving_rows_and_cols(self.partition)
+
+    def is_two_way(self, comb_class: Tiling) -> bool:  # type: ignore
+        return self.is_reversible(comb_class)
+
+    def is_reversible(self, comb_class: Tiling) -> bool:  # type: ignore
+        return not bool(self.assumptions_to_add(comb_class))
 
     def formal_step(self) -> str:
         return "interleaving " + super().formal_step()
