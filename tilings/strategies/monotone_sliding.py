@@ -122,7 +122,7 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
                     comb_class.cell_basis()[(col, 0)][0],
                     comb_class.cell_basis()[(col + 1, 0)][0],
                 )
-                if len(local_cells[0]) == 1 and len(local_cells[0]) == 1:
+                if len(local_cells[0]) == 1 and len(local_cells[1]) == 1:
                     if (
                         local_cells[0][0].is_increasing()
                         and local_cells[1][0].is_increasing()
