@@ -2,13 +2,14 @@
 The directionless point placement strategy that is counted
 by the 'pointing' constructor.
 """
-from typing import Dict, Iterator, Optional, Tuple
+from typing import Dict, FrozenSet, Iterator, Optional, Tuple
 
 from comb_spec_searcher import Strategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta.misc import DIR_NONE
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
+from tilings.tiling import Cell
 
 from .unfusion import DivideByN, ReverseDivideByN
 
@@ -33,8 +34,16 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
         assert children is not None
         return tuple(0 for _ in children)
 
+    @staticmethod
+    def already_placed_cells(comb_class: Tiling) -> FrozenSet[Cell]:
+        return frozenset(
+            cell
+            for cell in comb_class.point_cells
+            if comb_class.only_cell_in_row_and_col(cell)
+        )
+
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
-        cells = comb_class.active_cells - comb_class.point_cells
+        cells = comb_class.active_cells - self.already_placed_cells(comb_class)
         if cells:
             return tuple(
                 comb_class.place_point_in_cell(cell, DIR_NONE) for cell in sorted(cells)
@@ -54,7 +63,7 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
         return DivideByN(
             comb_class,
             children,
-            -len(comb_class.point_cells),
+            -len(self.already_placed_cells(comb_class)),
             self.extra_parameters(comb_class, children),
         )
 
@@ -70,7 +79,7 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
             comb_class,
             children,
             idx,
-            -len(comb_class.point_cells),
+            -len(self.already_placed_cells(comb_class)),
             self.extra_parameters(comb_class, children),
         )
 
@@ -101,7 +110,7 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> Tuple[Dict[str, str], ...]:
         if children is None:
             children = self.decomposition_function(comb_class)
-        cells = comb_class.active_cells - comb_class.point_cells
+        cells = comb_class.active_cells - self.already_placed_cells(comb_class)
         algo = RequirementPlacement(comb_class, True, True)
         res = []
         for child, cell in zip(children, sorted(cells)):
