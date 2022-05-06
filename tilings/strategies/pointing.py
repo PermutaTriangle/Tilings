@@ -8,6 +8,7 @@ from comb_spec_searcher import Strategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta.misc import DIR_NONE
 from tilings import GriddedPerm, Tiling
+from tilings.algorithms import RequirementPlacement
 
 from .unfusion import DivideByN, ReverseDivideByN
 
@@ -36,7 +37,7 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
         cells = comb_class.active_cells - comb_class.point_cells
         if cells:
             return tuple(
-                comb_class.place_point_in_cell(cell, DIR_NONE) for cell in cells
+                comb_class.place_point_in_cell(cell, DIR_NONE) for cell in sorted(cells)
             )
         raise StrategyDoesNotApply("The tiling is just point cells!")
 
@@ -50,7 +51,12 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> DivideByN:
         if children is None:
             children = self.decomposition_function(comb_class)
-        return DivideByN(comb_class, children, -len(comb_class.point_cells))
+        return DivideByN(
+            comb_class,
+            children,
+            -len(comb_class.point_cells),
+            self.extra_parameters(comb_class, children),
+        )
 
     def reverse_constructor(
         self,
@@ -60,7 +66,13 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> ReverseDivideByN:
         if children is None:
             children = self.decomposition_function(comb_class)
-        return ReverseDivideByN(comb_class, children, idx, -len(comb_class.point_cells))
+        return ReverseDivideByN(
+            comb_class,
+            children,
+            idx,
+            -len(comb_class.point_cells),
+            self.extra_parameters(comb_class, children),
+        )
 
     def backward_map(
         self,
@@ -87,7 +99,24 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[Dict[str, str], ...]:
-        raise NotImplementedError
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        cells = comb_class.active_cells - comb_class.point_cells
+        algo = RequirementPlacement(comb_class, True, True)
+        res = []
+        for child, cell in zip(children, sorted(cells)):
+            params: Dict[str, str] = {}
+            mapped_assumptions = [
+                child.forward_map.map_assumption(ass).avoiding(child.obstructions)
+                for ass in algo.stretched_assumptions(cell)
+            ]
+            for ass, mapped_ass in zip(comb_class.assumptions, mapped_assumptions):
+                if mapped_ass.gps:
+                    params[
+                        comb_class.get_assumption_parameter(ass)
+                    ] = child.get_assumption_parameter(mapped_ass)
+            res.append(params)
+        return tuple(res)
 
     @classmethod
     def from_dict(cls, d: dict) -> "PointingStrategy":

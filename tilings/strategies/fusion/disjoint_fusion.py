@@ -1,6 +1,7 @@
 from typing import Iterator, Optional, Tuple
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta.misc import DIR_NONE
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
@@ -21,7 +22,13 @@ class DisjointFusionStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         if algo.fusable():
             fused_tiling = algo.fused_tiling()
-            res = [fused_tiling]
+            point_count = sum(algo.min_left_right_points())
+            if point_count == 0:
+                res = [fused_tiling]
+            elif point_count == 1:
+                res = []
+            else:
+                raise StrategyDoesNotApply("Can't handle case with both sides positive")
             for gp in algo.new_assumption().gps:
                 cell = gp.pos[0]
                 res.append(fused_tiling.place_point_in_cell(cell, DIR_NONE))

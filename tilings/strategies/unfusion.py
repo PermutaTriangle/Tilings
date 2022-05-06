@@ -213,7 +213,12 @@ class UnfusionColumnStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> DivideByN:
         if children is None:
             children = self.decomposition_function(comb_class)
-        return DivideByN(comb_class, children, len(children))
+        return DivideByN(
+            comb_class,
+            children,
+            len(children),
+            self.extra_parameters(comb_class, children),
+        )
 
     def reverse_constructor(
         self,
@@ -223,7 +228,13 @@ class UnfusionColumnStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> ReverseDivideByN:
         if children is None:
             children = self.decomposition_function(comb_class)
-        return ReverseDivideByN(comb_class, children, idx, len(children))
+        return ReverseDivideByN(
+            comb_class,
+            children,
+            idx,
+            len(children),
+            self.extra_parameters(comb_class, children),
+        )
 
     def backward_map(
         self,
@@ -252,7 +263,26 @@ class UnfusionColumnStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> Tuple[Dict[str, str], ...]:
         if children is None:
             children = self.decomposition_function(comb_class)
-        raise NotImplementedError
+        res = []
+        for idx in range(self.width(comb_class)):
+            if self.cols:
+                algo = Fusion(comb_class, col_idx=idx)
+            else:
+                algo = Fusion(comb_class, row_idx=idx)
+            params: Dict[str, str] = {}
+            for ass in comb_class.assumptions:
+                mapped_ass = ass.__class__(
+                    [
+                        children[idx].forward_map.map_gp(gp)
+                        for ass_gp in ass.gps
+                        for gp in algo.unfuse_gridded_perm(ass_gp)
+                    ]
+                )
+                params[comb_class.get_assumption_parameter(ass)] = children[
+                    idx
+                ].get_assumption_parameter(mapped_ass)
+            res.append(params)
+        return tuple(res)
 
     @classmethod
     def from_dict(cls, d: dict) -> "UnfusionColumnStrategy":
