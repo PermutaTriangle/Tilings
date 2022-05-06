@@ -244,6 +244,12 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         self.tracked = tracked
         self.cols, self.rows = self.interleaving_rows_and_cols(self.partition)
 
+    def is_two_way(self, comb_class: Tiling) -> bool:  # type: ignore
+        return self.is_reversible(comb_class)
+
+    def is_reversible(self, comb_class: Tiling) -> bool:  # type: ignore
+        return not bool(self.assumptions_to_add(comb_class))
+
     def formal_step(self) -> str:
         return "interleaving " + super().formal_step()
 
