@@ -3,13 +3,14 @@ from .assumption_splitting import SplittingStrategy
 from .cell_reduction import CellReductionFactory
 from .deflation import DeflationFactory
 from .detect_components import DetectComponentsStrategy
+from .dummy_strategy import DummyStrategy
 from .experimental_verification import (
     NoRootCellVerificationStrategy,
     ShortObstructionVerificationStrategy,
     SubclassVerificationFactory,
 )
 from .factor import FactorFactory
-from .fusion import ComponentFusionFactory, FusionFactory
+from .fusion import ComponentFusionFactory, DisjointFusionFactory, FusionFactory
 from .monotone_sliding import MonotoneSlidingFactory
 from .obstruction_inferral import (
     EmptyCellInferralFactory,
@@ -18,6 +19,7 @@ from .obstruction_inferral import (
     SubobstructionInferralFactory,
 )
 from .point_jumping import AssumptionAndPointJumpingFactory
+from .pointing import PointingStrategy
 from .rearrange_assumption import RearrangeAssumptionFactory
 from .requirement_insertion import (
     CellInsertionFactory,
@@ -41,6 +43,7 @@ from .requirement_placement import (
 from .row_and_col_separation import RowColumnSeparationStrategy
 from .sliding import SlidingFactory
 from .symmetry import SymmetriesFactory
+from .unfusion import UnfusionColumnStrategy, UnfusionFactory, UnfusionRowStrategy
 from .verification import (
     BasicVerificationStrategy,
     ComponentVerificationStrategy,
@@ -84,9 +87,15 @@ __all__ = [
     "SlidingFactory",
     # Experimental
     "AssumptionAndPointJumpingFactory",
+    "DummyStrategy",
+    "PointingStrategy",
     # Fusion
     "ComponentFusionFactory",
+    "DisjointFusionFactory",
     "FusionFactory",
+    "UnfusionColumnStrategy",
+    "UnfusionRowStrategy",
+    "UnfusionFactory",
     # Inferral
     "EmptyCellInferralFactory",
     "ObstructionInferralFactory",

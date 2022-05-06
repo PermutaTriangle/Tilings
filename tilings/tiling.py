@@ -756,7 +756,7 @@ class Tiling(CombinatorialClass):
         return sum(1 for (x, y) in self.active_cells if y == cell[1]) == 1
 
     def only_cell_in_row_and_col(self, cell: Cell) -> bool:
-        """Checks if the cell is the only active cell in the row."""
+        """Checks if the cell is the only active cell in the row and column."""
         return (
             sum(1 for (x, y) in self.active_cells if y == cell[1] or x == cell[0]) == 1
         )

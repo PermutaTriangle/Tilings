@@ -1,7 +1,7 @@
 from itertools import chain
 from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Tuple
 
-from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
+from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm
 from tilings.assumptions import TrackingAssumption
 
@@ -362,6 +362,9 @@ class RequirementPlacement:
         for cell in sorted(cells):
             stretched = self._stretched_obstructions_requirements_and_assumptions(cell)
             (obs, reqs, ass) = stretched
+            if direction == DIR_NONE:
+                res.append(self._tiling.__class__(obs, reqs, ass))
+                continue
             forced_obs = self.forced_obstructions_from_requirement(
                 gps, indices, cell, direction
             )

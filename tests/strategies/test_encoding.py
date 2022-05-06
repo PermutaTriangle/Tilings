@@ -17,6 +17,8 @@ from tilings.strategies import (
     ComponentFusionFactory,
     DatabaseVerificationStrategy,
     DeflationFactory,
+    DisjointFusionFactory,
+    DummyStrategy,
     ElementaryVerificationStrategy,
     EmptyCellInferralFactory,
     FactorFactory,
@@ -32,6 +34,7 @@ from tilings.strategies import (
     ObstructionTransitivityFactory,
     OneByOneVerificationStrategy,
     PatternPlacementFactory,
+    PointingStrategy,
     RearrangeAssumptionFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
@@ -48,6 +51,9 @@ from tilings.strategies import (
     SubobstructionInsertionFactory,
     SymmetriesFactory,
     TargetedCellInsertionFactory,
+    UnfusionColumnStrategy,
+    UnfusionFactory,
+    UnfusionRowStrategy,
 )
 from tilings.strategies.cell_reduction import CellReductionStrategy
 from tilings.strategies.deflation import DeflationStrategy
@@ -57,7 +63,11 @@ from tilings.strategies.factor import (
     FactorWithInterleavingStrategy,
     FactorWithMonotoneInterleavingStrategy,
 )
-from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
+from tilings.strategies.fusion import (
+    ComponentFusionStrategy,
+    DisjointFusionStrategy,
+    FusionStrategy,
+)
 from tilings.strategies.monotone_sliding import GeneralizedSlidingStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 from tilings.strategies.point_jumping import (
@@ -465,6 +475,16 @@ strategy_objects = (
     + indices_and_row(PointJumpingStrategy)
     + [TargetedCellInsertionFactory()]
     + ignoreparent(SubobstructionInsertionFactory)
+    + [
+        DummyStrategy(),
+        PointingStrategy(),
+        UnfusionRowStrategy(),
+        UnfusionColumnStrategy(),
+        UnfusionFactory(),
+        DisjointFusionFactory(),
+        DisjointFusionStrategy(row_idx=1),
+        DisjointFusionStrategy(col_idx=1),
+    ]
 )
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
