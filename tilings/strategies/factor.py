@@ -93,7 +93,6 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
             comb_class.extra_parameters, comb_class.assumptions
         ):
             for idx, child in enumerate(children):
-                # TODO: consider skew/sum
                 new_assumption = child.forward_map.map_assumption(assumption).avoiding(
                     child.obstructions
                 )
