@@ -14,6 +14,7 @@ from comb_spec_searcher.strategies.strategy_pack import StrategyPack
 from comb_spec_searcher.typing import CSSstrategy
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
+from tilings.strategies.detect_components import CountComponent
 
 __all__ = ["shift_from_spec"]
 
@@ -87,7 +88,9 @@ def shift_from_spec(
             res = 0
         elif isinstance(rule, VerificationRule):
             res = shift_from_spec(tiling, rule.pack(), symmetries)
-        elif isinstance(rule, Rule) and isinstance(rule.constructor, DisjointUnion):
+        elif isinstance(rule, Rule) and isinstance(
+            rule.constructor, (DisjointUnion, CountComponent)
+        ):
             children_reliance = [traverse(c) for c in rule.children]
             res = min([r for r in children_reliance if r is not None], default=None)
         elif isinstance(rule, Rule) and isinstance(rule.constructor, CartesianProduct):
