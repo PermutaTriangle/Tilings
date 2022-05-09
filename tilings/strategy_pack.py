@@ -397,7 +397,6 @@ class TileScopePack(StrategyPack):
             (
                 strat.PointingStrategy(),
                 strat.UnfusionFactory(),
-                strat.DisjointFusionFactory(),
             ),
         )
 
