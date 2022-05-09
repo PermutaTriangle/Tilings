@@ -280,28 +280,6 @@ class TileScopePack(StrategyPack):
             raise ValueError("Symmetries already turned on.")
         return super().add_symmetry(strat.SymmetriesFactory(), "symmetries")
 
-    def remove_strategy(self, strategy: CSSstrategy):
-        """remove the strategy from the pack"""
-        d = strategy.to_jsonable()
-
-        def replace_list(strats):
-            """Return a new list with the replaced fusion strat."""
-            res = []
-            for strategy in strats:
-                if not strategy.to_jsonable() == d:
-                    res.append(strategy)
-            return res
-
-        return self.__class__(
-            ver_strats=replace_list(self.ver_strats),
-            inferral_strats=replace_list(self.inferral_strats),
-            initial_strats=replace_list(self.initial_strats),
-            expansion_strats=list(map(replace_list, self.expansion_strats)),
-            name=self.name,
-            symmetries=replace_list(self.symmetries),
-            iterative=self.iterative,
-        )
-
     def kitchen_sinkify(  # pylint: disable=R0912
         self, short_obs_len: int, obs_inferral_len: int, tracked: bool
     ) -> "TileScopePack":
