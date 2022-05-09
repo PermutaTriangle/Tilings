@@ -32,7 +32,6 @@ swapped around a fusable row or column.
 - `PositiveCorroborationFactory` that inserts into cells which if positive makes 
   another cell empty. Also, the `PointCorroborationFactory`, which does this for 
   point or empty cells which is added to most packs.
-- `TileScopePack.remove_strategy` method that removes a strategy from a pack.
 - `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can 
   lead to factoring out a verified sub tiling. 
 - `ComponentVerificationStrategy` which is added to component fusion packs. 
