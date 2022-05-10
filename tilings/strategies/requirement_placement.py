@@ -675,6 +675,9 @@ class FusableRowAndColumnPlacementFactory(RowAndColumnPlacementFactory):
                 indices = tuple(0 for _ in gps)
                 yield tuple(gps), indices, direction
 
+    def __str__(self) -> str:
+        return "fusable " + super().__str__()
+
 
 class AllPlacementsFactory(AbstractRequirementPlacementFactory):
 
