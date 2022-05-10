@@ -295,6 +295,9 @@ class TileScopePack(StrategyPack):
             Requirement corroboration
             Obstruction Inferral (unless obs_inferral_len = 0)
             Symmetries
+            Point Pointing
+            Unfusion
+            Targeted Row/Col Placements when fusable
         Will be made tracked or not, depending on preference.
         Note that nothing is done with positive / point corroboration, requirement
         corroboration, or database verification.
@@ -375,6 +378,7 @@ class TileScopePack(StrategyPack):
             (
                 strat.PointingStrategy(),
                 strat.UnfusionFactory(),
+                strat.FusableRowAndColumnPlacementFactory(),
             ),
         )
 
