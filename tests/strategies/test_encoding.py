@@ -22,6 +22,7 @@ from tilings.strategies import (
     EmptyCellInferralFactory,
     FactorFactory,
     FactorInsertionFactory,
+    FusableRowAndColumnPlacementFactory,
     FusionFactory,
     InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
@@ -472,6 +473,7 @@ strategy_objects = (
     + ignoreparent(SubobstructionInsertionFactory)
     + [
         DummyStrategy(),
+        FusableRowAndColumnPlacementFactory(),
         PointingStrategy(),
         UnfusionRowStrategy(),
         UnfusionColumnStrategy(),
