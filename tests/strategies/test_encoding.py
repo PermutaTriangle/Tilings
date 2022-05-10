@@ -11,6 +11,7 @@ from tilings import GriddedPerm, TrackingAssumption
 from tilings.strategies import (
     AllPlacementsFactory,
     AssumptionAndPointJumpingFactory,
+    AssumptionPointingFactory,
     BasicVerificationStrategy,
     CellInsertionFactory,
     CellReductionFactory,
@@ -70,6 +71,7 @@ from tilings.strategies.point_jumping import (
     AssumptionJumpingStrategy,
     PointJumpingStrategy,
 )
+from tilings.strategies.pointing import AssumptionPointingStrategy
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
@@ -471,11 +473,19 @@ strategy_objects = (
     + [TargetedCellInsertionFactory()]
     + ignoreparent(SubobstructionInsertionFactory)
     + [
+        AssumptionPointingFactory(),
         DummyStrategy(),
         PointingStrategy(),
         UnfusionRowStrategy(),
         UnfusionColumnStrategy(),
         UnfusionFactory(),
+    ]
+    + [
+        AssumptionPointingStrategy(
+            TrackingAssumption(
+                [GriddedPerm((0,), [(0, 0)]), GriddedPerm((0,), [(1, 0)])]
+            )
+        )
     ]
 )
 
