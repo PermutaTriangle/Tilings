@@ -76,6 +76,8 @@ swapped around a fusable row or column.
 - `GuidedSearcher` expands every symmetry
 - `TileScopePack.pattern_placements` factors as an initial strategy.
 - `is_component` method of assumptions updated to consider cell decomposition
+- `AddAssumptionsStrategy.is_reverible` is now True when the assumption covers the 
+  whole tiling.
 
 ### Removed
 - `AddInterleavingAssumptionsFactory`. The factor strategy now adds the relevant 

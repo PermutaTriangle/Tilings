@@ -19,7 +19,7 @@ from comb_spec_searcher.typing import (
     Terms,
 )
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import ComponentAssumption, TrackingAssumption
 
 Cell = Tuple[int, int]
 
@@ -145,7 +145,11 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
 
     @staticmethod
     def is_reversible(comb_class: Tiling) -> bool:
-        return False
+        return all(
+            not isinstance(assumption, ComponentAssumption)
+            and frozenset(gp.pos[0] for gp in assumption.gps) == comb_class.active_cells
+            for assumption in comb_class.assumptions
+        )
 
     @staticmethod
     def shifts(
