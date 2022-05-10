@@ -143,12 +143,11 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
     def is_two_way(comb_class: Tiling):
         return False
 
-    @staticmethod
-    def is_reversible(comb_class: Tiling) -> bool:
+    def is_reversible(self, comb_class: Tiling) -> bool:
         return all(
             not isinstance(assumption, ComponentAssumption)
             and frozenset(gp.pos[0] for gp in assumption.gps) == comb_class.active_cells
-            for assumption in comb_class.assumptions
+            for assumption in self.assumptions
         )
 
     @staticmethod
