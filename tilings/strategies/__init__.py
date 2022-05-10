@@ -19,7 +19,7 @@ from .obstruction_inferral import (
     SubobstructionInferralFactory,
 )
 from .point_jumping import AssumptionAndPointJumpingFactory
-from .pointing import PointingStrategy
+from .pointing import AssumptionPointingFactory, PointingStrategy
 from .rearrange_assumption import RearrangeAssumptionFactory
 from .requirement_insertion import (
     CellInsertionFactory,
@@ -81,6 +81,12 @@ __all__ = [
     "FactorFactory",
     # Deflation
     "DeflationFactory",
+    # Derivatives
+    "AssumptionPointingFactory",
+    "PointingStrategy",
+    "UnfusionColumnStrategy",
+    "UnfusionRowStrategy",
+    "UnfusionFactory",
     # Equivalence
     "MonotoneSlidingFactory",
     "PatternPlacementFactory",
@@ -88,13 +94,9 @@ __all__ = [
     # Experimental
     "AssumptionAndPointJumpingFactory",
     "DummyStrategy",
-    "PointingStrategy",
     # Fusion
     "ComponentFusionFactory",
     "FusionFactory",
-    "UnfusionColumnStrategy",
-    "UnfusionRowStrategy",
-    "UnfusionFactory",
     # Inferral
     "EmptyCellInferralFactory",
     "ObstructionInferralFactory",
