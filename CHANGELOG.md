@@ -46,6 +46,7 @@ swapped around a fusable row or column.
 - `PointingStrategy` that places points directionless in non-point cells. This is 
   a non-productive strategy so should be used with `RuleDBForest`.
 - `UnfusionFactory` that unfuses either all the rows or columns. Also non-productive.
+- `FusableRowAndColumnPlacementFactory` places fusable rows and columns.
 
 
 ### Fixed

@@ -10,6 +10,7 @@ from comb_spec_searcher.strategies import Rule
 from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
+from tilings.algorithms.fusion import Fusion
 
 __all__ = [
     "PatternPlacementFactory",
@@ -632,6 +633,47 @@ class RowAndColumnPlacementFactory(AbstractRequirementPlacementFactory):
     @classmethod
     def from_dict(cls, d: dict) -> "RowAndColumnPlacementFactory":
         return cls(**d)
+
+
+class FusableRowAndColumnPlacementFactory(RowAndColumnPlacementFactory):
+    def req_indices_and_directions_to_place(
+        self, tiling: Tiling
+    ) -> Iterator[Tuple[Tuple[GriddedPerm, ...], Tuple[int, ...], int]]:
+        """
+        For each row, yield the gps with size one req for each cell in a row.
+        """
+        cols: Dict[int, Set[GriddedPerm]] = defaultdict(set)
+        rows: Dict[int, Set[GriddedPerm]] = defaultdict(set)
+        for cell in tiling.active_cells:
+            gp = GriddedPerm((0,), (cell,))
+            cols[cell[0]].add(gp)
+            rows[cell[1]].add(gp)
+        if self.place_col:
+            fusable_indices = set(
+                chain.from_iterable(
+                    (idx, idx + 1)
+                    for idx in range(tiling.dimensions[0] - 1)
+                    if Fusion(tiling, col_idx=idx).fusable()
+                )
+            )
+            fusable_cols = [cols[idx] for idx in fusable_indices]
+            col_dirs = tuple(d for d in self.dirs if d in (DIR_EAST, DIR_WEST))
+            for gps, direction in product(fusable_cols, col_dirs):
+                indices = tuple(0 for _ in gps)
+                yield tuple(gps), indices, direction
+        if self.place_row:
+            fusable_indices = set(
+                chain.from_iterable(
+                    (idx, idx + 1)
+                    for idx in range(tiling.dimensions[1] - 1)
+                    if Fusion(tiling, row_idx=idx).fusable()
+                )
+            )
+            fusable_rows = [rows[idx] for idx in fusable_indices]
+            row_dirs = tuple(d for d in self.dirs if d in (DIR_NORTH, DIR_SOUTH))
+            for gps, direction in product(fusable_rows, row_dirs):
+                indices = tuple(0 for _ in gps)
+                yield tuple(gps), indices, direction
 
 
 class AllPlacementsFactory(AbstractRequirementPlacementFactory):

@@ -36,6 +36,7 @@ from .requirement_insertion import (
 )
 from .requirement_placement import (
     AllPlacementsFactory,
+    FusableRowAndColumnPlacementFactory,
     PatternPlacementFactory,
     RequirementPlacementFactory,
     RowAndColumnPlacementFactory,
@@ -66,6 +67,7 @@ __all__ = [
     "AllPlacementsFactory",
     "CellInsertionFactory",
     "FactorInsertionFactory",
+    "FusableRowAndColumnPlacementFactory",
     "PointCorroborationFactory",
     "PositiveCorroborationFactory",
     "RemoveRequirementFactory",
