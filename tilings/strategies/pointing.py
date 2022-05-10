@@ -13,7 +13,7 @@ from comb_spec_searcher.typing import CombinatorialClassType, SubTerms, Terms
 from permuta.misc import DIR_NONE
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import ComponentAssumption, TrackingAssumption
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 from tilings.tiling import Cell
 
@@ -238,6 +238,7 @@ class AssumptionPointingStrategy(PointingStrategy):
         workable: bool = True,
     ):
         self.assumption = assumption
+        assert not isinstance(assumption, ComponentAssumption)
         self.cells = frozenset(gp.pos[0] for gp in assumption.gps)
         super().__init__(ignore_parent, inferrable, possibly_empty, workable)
 
@@ -324,7 +325,8 @@ class AssumptionPointingStrategy(PointingStrategy):
 class AssumptionPointingFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling) -> Iterator[AssumptionPointingStrategy]:
         for assumption in comb_class.assumptions:
-            yield AssumptionPointingStrategy(assumption)
+            if not isinstance(assumption, ComponentAssumption):
+                yield AssumptionPointingStrategy(assumption)
 
     def __str__(self) -> str:
         return "assumption pointing strategy"
