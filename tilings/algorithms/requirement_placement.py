@@ -350,7 +350,11 @@ class RequirementPlacement:
         return self.place_point_of_req((gp,), (idx,), direction)[0]
 
     def place_point_of_req(
-        self, gps: Iterable[GriddedPerm], indices: Iterable[int], direction: Dir
+        self,
+        gps: Iterable[GriddedPerm],
+        indices: Iterable[int],
+        direction: Dir,
+        include_not: bool = False,
     ) -> Tuple["Tiling", ...]:
         """
         Return the tilings, where the placed point corresponds to the directionmost
@@ -362,21 +366,22 @@ class RequirementPlacement:
         for cell in sorted(cells):
             stretched = self._stretched_obstructions_requirements_and_assumptions(cell)
             (obs, reqs, ass) = stretched
+            rem_req = self._remaining_requirement_from_requirement(gps, indices, cell)
+
             if direction == DIR_NONE:
-                res.append(self._tiling.__class__(obs, reqs, ass))
+                res.append(self._tiling.__class__(obs, reqs + [rem_req], ass))
+                if include_not:
+                    res.append(self._tiling.__class__(obs + rem_req, reqs, ass))
                 continue
+
             forced_obs = self.forced_obstructions_from_requirement(
                 gps, indices, cell, direction
             )
-
             reduced_obs = [o1 for o1 in obs if not any(o2 in o1 for o2 in forced_obs)]
-            new_obs = reduced_obs + forced_obs
-
-            rem_req = self._remaining_requirement_from_requirement(gps, indices, cell)
 
             res.append(
                 self._tiling.__class__(
-                    new_obs,
+                    reduced_obs + forced_obs,
                     reqs + [rem_req],
                     assumptions=ass,
                     already_minimized_obs=True,

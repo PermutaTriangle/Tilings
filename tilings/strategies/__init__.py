@@ -19,7 +19,11 @@ from .obstruction_inferral import (
     SubobstructionInferralFactory,
 )
 from .point_jumping import AssumptionAndPointJumpingFactory
-from .pointing import AssumptionPointingFactory, PointingStrategy
+from .pointing import (
+    AssumptionPointingFactory,
+    PointingStrategy,
+    RequirementPointingFactory,
+)
 from .rearrange_assumption import RearrangeAssumptionFactory
 from .requirement_insertion import (
     CellInsertionFactory,
@@ -86,6 +90,7 @@ __all__ = [
     # Derivatives
     "AssumptionPointingFactory",
     "PointingStrategy",
+    "RequirementPointingFactory",
     "UnfusionColumnStrategy",
     "UnfusionRowStrategy",
     "UnfusionFactory",
