@@ -1,5 +1,4 @@
 import abc
-from itertools import chain
 from typing import TYPE_CHECKING, Iterable, List, Optional, Set, Tuple
 
 from tilings import GriddedPerm
@@ -35,14 +34,9 @@ class ObstructionInferral(abc.ABC):
         if self._new_obs is not None:
             return self._new_obs
 
-        cells = set(cell for gp in chain(*self._tiling.requirements) for cell in gp.pos)
-        perms_to_check = tuple(
-            gp
-            for gp in self.potential_new_obs()
-            if any(cell in gp.pos for cell in cells)
-        )
+        perms_to_check = tuple(self.potential_new_obs())
         if not perms_to_check:
-            self._new_obs = tuple()
+            self._new_obs = []
             return self._new_obs
 
         max_len_of_perms_to_check = max(map(len, perms_to_check))
@@ -50,35 +44,19 @@ class ObstructionInferral(abc.ABC):
             self._tiling.maximum_length_of_minimum_gridded_perm()
             + max_len_of_perms_to_check
         )
-        # print(self._tiling)
-        # print("CHECKING")
-        # for gp in perms_to_check:
-        #     print("\t", gp)
-
         GP = GriddedPermsOnTiling(self._tiling).gridded_perms(
             max_length, place_at_most=max_len_of_perms_to_check
         )
         perms_left = set(perms_to_check)
-
         for gp in GP:
             to_remove: List[GriddedPerm] = []
             for perm in perms_left:
                 if gp.contains(perm):
                     to_remove.append(perm)
             perms_left.difference_update(to_remove)
-            if len(perms_left) == 0:
-                return
-        self._new_obs = tuple(sorted(perms_left))
-        return self._new_obs
-
-        if self._new_obs is not None:
-            return self._new_obs
-        newobs: List[GriddedPerm] = []
-        for ob in sorted(self.potential_new_obs(), key=len):
-            cont_newob = any(newob in ob for newob in newobs)
-            if not cont_newob and self.can_add_obstruction(ob, self._tiling):
-                newobs.append(ob)
-        self._new_obs = newobs
+            if not perms_left:
+                break
+        self._new_obs = sorted(perms_left)
         return self._new_obs
 
     @staticmethod
