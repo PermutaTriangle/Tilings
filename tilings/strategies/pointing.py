@@ -4,7 +4,17 @@ by the 'pointing' constructor.
 """
 from collections import Counter
 from itertools import product
-from typing import Callable, Dict, FrozenSet, Iterator, List, Optional, Tuple
+from typing import (
+    Callable,
+    Dict,
+    FrozenSet,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
 from comb_spec_searcher import Strategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -342,7 +352,79 @@ class AssumptionPointingFactory(StrategyFactory[Tiling]):
         return cls()
 
 
-class RequirementPointingStrategy(AssumptionPointingStrategy):
+class RequirementPointingStrategy(PointingStrategy):
+    def __init__(
+        self,
+        gps: Tuple[GriddedPerm, ...],
+        indices: Tuple[int, ...],
+        ignore_parent: bool = False,
+        inferrable: bool = True,
+        possibly_empty: bool = True,
+        workable: bool = True,
+    ):
+        assert len(gps) == len(indices)
+        self.gps = gps
+        self.indices = indices
+        super().__init__(ignore_parent, inferrable, possibly_empty, workable)
+
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
+        cells = self.cells_to_place(comb_class)
+        algo = RequirementPlacement(comb_class)
+        if cells:
+            return algo.place_point_of_req(
+                self.gps, self.indices, DIR_NONE, include_not=True, cells=cells
+            )
+        raise StrategyDoesNotApply("The assumption is just point cells!")
+
+    def formal_step(self) -> str:
+        return super().formal_step() + f" in {self.gps} at indices {self.indices}"
+
+    def extra_parameters(
+        self: Union[
+            "RequirementPointingStrategy", "RequirementAssumptionPointingStrategy"
+        ],
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Dict[str, str], ...]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        even_index = tuple(child for idx, child in enumerate(children) if idx % 2 == 0)
+        odd_index = tuple(child for idx, child in enumerate(children) if idx % 2 == 1)
+        res: List[Optional[Dict[str, str]]] = [None for _ in children]
+        for idx, param in enumerate(
+            PointingStrategy.extra_parameters(self, comb_class, even_index)
+        ):
+            res[2 * idx] = param
+        for idx, param in enumerate(
+            PointingStrategy.extra_parameters(self, comb_class, odd_index)
+        ):
+            res[2 * idx + 1] = param
+        cast(List[Dict[str, str]], res)
+        return tuple(cast(List[Dict[str, str]], res))
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["gps"] = [gp.to_jsonable() for gp in self.gps]
+        d["indices"] = self.indices
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "RequirementPointingStrategy":
+        return cls(
+            tuple(GriddedPerm.from_dict(gp) for gp in d.pop("gps")),
+            tuple(d.pop("indices")),
+            **d,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            self.__class__.__name__
+            + f"({self.gps}, {self.indices}, {self.ignore_parent}, "
+            f"{self.inferrable}, {self.possibly_empty}, {self.workable})"
+        )
+
+
+class RequirementAssumptionPointingStrategy(AssumptionPointingStrategy):
     def __init__(
         self,
         gps: Tuple[GriddedPerm, ...],
@@ -388,22 +470,10 @@ class RequirementPointingStrategy(AssumptionPointingStrategy):
         empty_params = ObstructionInferralStrategy(
             [GriddedPerm.point_perm(cell) for cell in self.cells_to_place(comb_class)]
         ).extra_parameters(comb_class)
-        even_index = tuple(
-            child for idx, child in enumerate(children[1:]) if idx % 2 == 0
+        rest = RequirementPointingStrategy.extra_parameters(
+            self, comb_class, children[1:]
         )
-        odd_index = tuple(
-            child for idx, child in enumerate(children[1:]) if idx % 2 == 1
-        )
-        res: List[Optional[Dict[str, str]]] = [None for _ in children[1:]]
-        for idx, param in enumerate(
-            PointingStrategy.extra_parameters(self, comb_class, even_index)
-        ):
-            res[2 * idx] = param
-        for idx, param in enumerate(
-            PointingStrategy.extra_parameters(self, comb_class, odd_index)
-        ):
-            res[2 * idx + 1] = param
-        return empty_params + tuple(res)
+        return empty_params + tuple(rest)
 
     def to_jsonable(self) -> dict:
         d = super().to_jsonable()
@@ -413,7 +483,7 @@ class RequirementPointingStrategy(AssumptionPointingStrategy):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "AssumptionPointingStrategy":
+    def from_dict(cls, d: dict) -> "RequirementAssumptionPointingStrategy":
         return cls(
             tuple(GriddedPerm.from_dict(gp) for gp in d.pop("gps")),
             tuple(d.pop("indices")),
@@ -434,13 +504,35 @@ class RequirementPointingFactory(StrategyFactory[Tiling]):
             Tiling(comb_class.obstructions).gridded_perms_of_length(2), [(0,), (1,)]
         ):
             gps = (gp,)
-            strategy = RequirementPointingStrategy(gps, indices)
-            parent = comb_class
-            if strategy.assumption not in comb_class.assumptions:
-                rule = AddAssumptionsStrategy([strategy.assumption])(comb_class)
-                yield rule
-                parent = rule.children[0]
-            yield strategy(parent)
+            untracked_strategy = RequirementPointingStrategy(gps, indices)
+            yield untracked_strategy(comb_class)
+            strategy = RequirementAssumptionPointingStrategy(gps, indices)
+            if untracked_strategy.cells_to_place(comb_class) != strategy.cells_to_place(
+                comb_class
+            ):
+                parent = comb_class
+                if strategy.assumption not in comb_class.assumptions:
+                    rule = AddAssumptionsStrategy([strategy.assumption])(comb_class)
+                    yield rule
+                    parent = rule.children[0]
+                yield strategy(parent)
+
+        # for gps in comb_class.requirements:
+        #     for indices in product(*[range(len(gp)) for gp in gps]):
+        #         untracked_strategy = RequirementPointingStrategy(gps, indices)
+        #         yield untracked_strategy(comb_class)
+        #         strategy = RequirementAssumptionPointingStrategy(gps, indices)
+        #         if untracked_strategy.cells_to_place(
+        #             comb_class
+        #         ) != strategy.cells_to_place(comb_class):
+        #             parent = comb_class
+        #             if strategy.assumption not in comb_class.assumptions:
+        #                 rule = AddAssumptionsStrategy([strategy.assumption])(
+        #                     comb_class
+        #                 )
+        #                 yield rule
+        #                 parent = rule.children[0]
+        #             yield strategy(parent)
 
     def __str__(self) -> str:
         return "requirement pointing strategy"

@@ -75,6 +75,7 @@ from tilings.strategies.point_jumping import (
 )
 from tilings.strategies.pointing import (
     AssumptionPointingStrategy,
+    RequirementAssumptionPointingStrategy,
     RequirementPointingStrategy,
 )
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
@@ -501,7 +502,14 @@ strategy_objects = (
                 GriddedPerm.single_cell((0, 1), (0, 0)),
             ),
             (0, 1),
-        )
+        ),
+        RequirementAssumptionPointingStrategy(
+            (
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+            ),
+            (0, 1),
+        ),
     ]
 )
 

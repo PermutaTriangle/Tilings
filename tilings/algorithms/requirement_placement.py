@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Tuple
+from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Optional, Tuple
 
 from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm
@@ -355,13 +355,17 @@ class RequirementPlacement:
         indices: Iterable[int],
         direction: Dir,
         include_not: bool = False,
+        cells: Optional[Iterable[Cell]] = None,
     ) -> Tuple["Tiling", ...]:
         """
         Return the tilings, where the placed point corresponds to the directionmost
         (the furtest in the given direction, ex: leftmost point) of an occurrence
         of any point idx, gp(idx) for gridded perms in gp, and idx in indices
         """
-        cells = frozenset(gp.pos[idx] for idx, gp in zip(indices, gps))
+        if cells is not None:
+            cells = frozenset(cells)
+        else:
+            cells = frozenset(gp.pos[idx] for idx, gp in zip(indices, gps))
         res = []
         for cell in sorted(cells):
             stretched = self._stretched_obstructions_requirements_and_assumptions(cell)
