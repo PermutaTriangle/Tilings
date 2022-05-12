@@ -260,6 +260,22 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         self.tracked = tracked
         self.cols, self.rows = self.interleaving_rows_and_cols(self.partition)
 
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["tracked"] = self.tracked
+        return d
+
+    def __repr__(self) -> str:
+        args = ", ".join(
+            [
+                f"partition={self.partition}",
+                f"ignore_parent={self.ignore_parent}",
+                f"workable={self.workable}",
+                f"tracked={self.tracked}",
+            ]
+        )
+        return f"{self.__class__.__name__}({args})"
+
     def is_two_way(self, comb_class: Tiling) -> bool:  # type: ignore
         return self.is_reversible(comb_class)
 
