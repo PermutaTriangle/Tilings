@@ -266,12 +266,6 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         return d
 
     def __repr__(self) -> str:
-        params = {
-            "partition": self.partition,
-            "ignore_parent": self.ignore_parent,
-            "workable": self.workable,
-            "tracked": self.tracked,
-        }
         args = ", ".join(
             [
                 f"partition={self.partition}",
