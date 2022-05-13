@@ -150,7 +150,7 @@ class RemoveAssumptionsConstructor(Constructor):
         subs: Dict[Symbol, Expr] = {
             var(child): var(parent) for parent, child in self.extra_parameters.items()
         }
-        subs[self.parameter] = sympy.abc.x
+        subs[var("x")] = var("x") * var(self.parameter)
         return Eq(lhs_func, rhs_func.subs(subs, simultaneous=True))
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
