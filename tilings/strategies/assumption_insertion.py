@@ -3,7 +3,6 @@ from itertools import product
 from random import randint
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
-import sympy
 from sympy import Eq, Expr, Function, Number, Symbol, var
 
 from comb_spec_searcher import Constructor, Strategy, StrategyFactory
