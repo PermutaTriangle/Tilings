@@ -125,6 +125,96 @@ class AddAssumptionsConstructor(Constructor):
         )
 
 
+class RemoveAssumptionsConstructor(Constructor):
+    """
+    The constructor used to count when a variable the same as n is removed.
+    """
+
+    def __init__(
+        self,
+        parent: Tiling,
+        child: Tiling,
+        parameter: str,
+        extra_parameters: Dict[str, str],
+    ):
+        #  parent parameter -> child parameter mapping
+        self.extra_parameters = extra_parameters
+        #  the paramater that was added, to count we must sum over all possible values
+        self.parameter = parameter
+        self.parameter_idx = parent.extra_parameters.index(self.parameter)
+        self.child_param_map = self._build_child_param_map(parent, child)
+
+    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
+        rhs_func = rhs_funcs[0]
+        subs: Dict[Symbol, Expr] = {
+            var(child): var(parent) for parent, child in self.extra_parameters.items()
+        }
+        subs[var("x")] = var("x") * var(self.parameter)
+        return Eq(lhs_func, rhs_func.subs(subs, simultaneous=True))
+
+    def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
+        raise NotImplementedError
+
+    def get_terms(
+        self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
+    ) -> Terms:
+        assert len(subterms) == 1
+        return self._push_add_assumption(n, subterms[0], self.child_param_map)
+
+    def _push_add_assumption(
+        self,
+        n: int,
+        child_terms: Callable[[int], Terms],
+        child_param_map: ParametersMap,
+    ) -> Terms:
+        new_terms: Terms = Counter()
+        for param, value in child_terms(n).items():
+            new_param = list(child_param_map(param))
+            new_param[self.parameter_idx] = n
+            new_terms[tuple(new_param)] += value
+        return new_terms
+
+    def _build_child_param_map(self, parent: Tiling, child: Tiling) -> ParametersMap:
+        parent_param_to_pos = {
+            param: pos for pos, param in enumerate(parent.extra_parameters)
+        }
+        child_param_to_parent_param = {v: k for k, v in self.extra_parameters.items()}
+        child_pos_to_parent_pos: Tuple[Tuple[int, ...], ...] = tuple(
+            (parent_param_to_pos[child_param_to_parent_param[param]],)
+            for param in child.extra_parameters
+        )
+        return self.build_param_map(
+            child_pos_to_parent_pos, len(parent.extra_parameters)
+        )
+
+    def get_sub_objects(
+        self, subobjs: SubObjects, n: int
+    ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
+        raise NotImplementedError
+
+    def random_sample_sub_objects(
+        self,
+        parent_count: int,
+        subsamplers: SubSamplers,
+        subrecs: SubRecs,
+        n: int,
+        **parameters: int,
+    ):
+        raise NotImplementedError
+
+    def equiv(
+        self, other: "Constructor", data: Optional[object] = None
+    ) -> Tuple[bool, Optional[object]]:
+        return (
+            isinstance(other, type(self))
+            and len(other.parameter) == len(self.parameter)
+            and AddAssumptionsConstructor.extra_params_equiv(
+                (self.extra_parameters,), (other.extra_parameters,)
+            ),
+            None,
+        )
+
+
 class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
     def __init__(self, assumptions: Iterable[TrackingAssumption], workable=False):
         self.assumptions = tuple(set(assumptions))
@@ -184,7 +274,23 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
-        raise NotImplementedError
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        assert idx == 0
+        child = children[idx]
+        assert len(self.assumptions) == 1
+        assumption = self.assumptions[0]
+        assert len(assumption.gps) == len(comb_class.active_cells)
+        parameter = child.get_assumption_parameter(self.assumptions[0])
+        extra_params = {
+            child.get_assumption_parameter(ass): comb_class.get_assumption_parameter(
+                ass
+            )
+            for ass in child.assumptions
+            if ass != assumption
+        }
+
+        return RemoveAssumptionsConstructor(child, comb_class, parameter, extra_params)
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
