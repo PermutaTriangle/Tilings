@@ -280,7 +280,6 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
         child = children[idx]
         assert len(self.assumptions) == 1
         assumption = self.assumptions[0]
-        print(assumption)
         assert len(assumption.gps) == len(comb_class.active_cells)
         parameter = child.get_assumption_parameter(self.assumptions[0])
         extra_params = {
