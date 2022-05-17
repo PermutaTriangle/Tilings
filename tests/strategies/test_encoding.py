@@ -41,6 +41,7 @@ from tilings.strategies import (
     RequirementExtensionFactory,
     RequirementInsertionFactory,
     RequirementPlacementFactory,
+    RequirementPointingFactory,
     RootInsertionFactory,
     RowAndColumnPlacementFactory,
     RowColumnSeparationStrategy,
@@ -72,7 +73,11 @@ from tilings.strategies.point_jumping import (
     AssumptionJumpingStrategy,
     PointJumpingStrategy,
 )
-from tilings.strategies.pointing import AssumptionPointingStrategy
+from tilings.strategies.pointing import (
+    AssumptionPointingStrategy,
+    RequirementAssumptionPointingStrategy,
+    RequirementPointingStrategy,
+)
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
@@ -498,6 +503,7 @@ strategy_objects = (
         DummyStrategy(),
         FusableRowAndColumnPlacementFactory(),
         PointingStrategy(),
+        RequirementPointingFactory(),
         UnfusionRowStrategy(),
         UnfusionColumnStrategy(),
         UnfusionFactory(),
@@ -508,6 +514,22 @@ strategy_objects = (
                 [GriddedPerm((0,), [(0, 0)]), GriddedPerm((0,), [(1, 0)])]
             )
         )
+    ]
+    + [
+        RequirementPointingStrategy(
+            (
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+            ),
+            (0, 1),
+        ),
+        RequirementAssumptionPointingStrategy(
+            (
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+            ),
+            (0, 1),
+        ),
     ]
 )
 

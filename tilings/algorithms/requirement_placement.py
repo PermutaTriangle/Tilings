@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Tuple
+from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Optional, Tuple
 
 from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm
@@ -350,33 +350,42 @@ class RequirementPlacement:
         return self.place_point_of_req((gp,), (idx,), direction)[0]
 
     def place_point_of_req(
-        self, gps: Iterable[GriddedPerm], indices: Iterable[int], direction: Dir
+        self,
+        gps: Iterable[GriddedPerm],
+        indices: Iterable[int],
+        direction: Dir,
+        include_not: bool = False,
+        cells: Optional[Iterable[Cell]] = None,
     ) -> Tuple["Tiling", ...]:
         """
         Return the tilings, where the placed point corresponds to the directionmost
         (the furtest in the given direction, ex: leftmost point) of an occurrence
         of any point idx, gp(idx) for gridded perms in gp, and idx in indices
         """
-        cells = frozenset(gp.pos[idx] for idx, gp in zip(indices, gps))
+        if cells is not None:
+            cells = frozenset(cells)
+        else:
+            cells = frozenset(gp.pos[idx] for idx, gp in zip(indices, gps))
         res = []
         for cell in sorted(cells):
             stretched = self._stretched_obstructions_requirements_and_assumptions(cell)
             (obs, reqs, ass) = stretched
+            rem_req = self._remaining_requirement_from_requirement(gps, indices, cell)
+
             if direction == DIR_NONE:
-                res.append(self._tiling.__class__(obs, reqs, ass))
+                res.append(self._tiling.__class__(obs, reqs + [rem_req], ass))
+                if include_not:
+                    res.append(self._tiling.__class__(obs + rem_req, reqs, ass))
                 continue
+
             forced_obs = self.forced_obstructions_from_requirement(
                 gps, indices, cell, direction
             )
-
             reduced_obs = [o1 for o1 in obs if not any(o2 in o1 for o2 in forced_obs)]
-            new_obs = reduced_obs + forced_obs
-
-            rem_req = self._remaining_requirement_from_requirement(gps, indices, cell)
 
             res.append(
                 self._tiling.__class__(
-                    new_obs,
+                    reduced_obs + forced_obs,
                     reqs + [rem_req],
                     assumptions=ass,
                     already_minimized_obs=True,
