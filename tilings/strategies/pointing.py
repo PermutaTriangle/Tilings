@@ -500,39 +500,20 @@ class RequirementAssumptionPointingStrategy(AssumptionPointingStrategy):
 
 class RequirementPointingFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
-        for gp, indices in product(
-            Tiling(comb_class.obstructions).gridded_perms_of_length(2), [(0,), (1,)]
-        ):
-            gps = (gp,)
-            untracked_strategy = RequirementPointingStrategy(gps, indices)
-            yield untracked_strategy(comb_class)
-            strategy = RequirementAssumptionPointingStrategy(gps, indices)
-            if untracked_strategy.cells_to_place(comb_class) != strategy.cells_to_place(
-                comb_class
-            ):
-                parent = comb_class
-                if strategy.assumption not in comb_class.assumptions:
-                    rule = AddAssumptionsStrategy([strategy.assumption])(comb_class)
-                    yield rule
-                    parent = rule.children[0]
-                yield strategy(parent)
-
-        # for gps in comb_class.requirements:
-        #     for indices in product(*[range(len(gp)) for gp in gps]):
-        #         untracked_strategy = RequirementPointingStrategy(gps, indices)
-        #         yield untracked_strategy(comb_class)
-        #         strategy = RequirementAssumptionPointingStrategy(gps, indices)
-        #         if untracked_strategy.cells_to_place(
-        #             comb_class
-        #         ) != strategy.cells_to_place(comb_class):
-        #             parent = comb_class
-        #             if strategy.assumption not in comb_class.assumptions:
-        #                 rule = AddAssumptionsStrategy([strategy.assumption])(
-        #                     comb_class
-        #                 )
-        #                 yield rule
-        #                 parent = rule.children[0]
-        #             yield strategy(parent)
+        for gps in comb_class.requirements:
+            for indices in product(*[range(len(gp)) for gp in gps]):
+                untracked_strategy = RequirementPointingStrategy(gps, indices)
+                yield untracked_strategy(comb_class)
+                strategy = RequirementAssumptionPointingStrategy(gps, indices)
+                if untracked_strategy.cells_to_place(
+                    comb_class
+                ) != strategy.cells_to_place(comb_class):
+                    parent = comb_class
+                    if strategy.assumption not in comb_class.assumptions:
+                        rule = AddAssumptionsStrategy([strategy.assumption])(comb_class)
+                        yield rule
+                        parent = rule.children[0]
+                    yield strategy(parent)
 
     def __str__(self) -> str:
         return "requirement pointing strategy"
