@@ -499,15 +499,22 @@ class RequirementAssumptionPointingStrategy(AssumptionPointingStrategy):
 
 
 class RequirementPointingFactory(StrategyFactory[Tiling]):
+    def __init__(self, max_cells: int = 4) -> None:
+        self.max_cells = max_cells
+        super().__init__()
+
     def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
         for gps in comb_class.requirements:
             for indices in product(*[range(len(gp)) for gp in gps]):
                 untracked_strategy = RequirementPointingStrategy(gps, indices)
-                yield untracked_strategy(comb_class)
+                if len(comb_class.active_cells) <= self.max_cells:
+                    yield untracked_strategy(comb_class)
                 strategy = RequirementAssumptionPointingStrategy(gps, indices)
-                if untracked_strategy.cells_to_place(
-                    comb_class
-                ) != strategy.cells_to_place(comb_class):
+                cells_to_place = strategy.cells_to_place(comb_class)
+                if (
+                    untracked_strategy.cells_to_place(comb_class) != cells_to_place
+                    and len(cells_to_place) <= self.max_cells
+                ):
                     parent = comb_class
                     if strategy.assumption not in comb_class.assumptions:
                         rule = AddAssumptionsStrategy([strategy.assumption])(comb_class)
