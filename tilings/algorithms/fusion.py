@@ -5,6 +5,7 @@ import collections
 from itertools import chain
 from typing import TYPE_CHECKING, Counter, Iterable, Iterator, List, Optional, Tuple
 
+from tilings.algorithms.minimal_gridded_perms import MinimalGriddedPerms
 from tilings.assumptions import (
     ComponentAssumption,
     SkewComponentAssumption,
@@ -407,20 +408,6 @@ class Fusion:
 
 
 class ComponentFusion(Fusion):
-    """
-    Component Fusion algorithm container class.
-
-    Fuse tiling it it can be unfused by drawing a line between any component.
-
-    Check if a fusion is valid and compute the fused tiling.
-
-    If `row_idx` is provided it attempts to fuse row `row_idx` with row
-    `row_idx+1`.
-
-    If `col_idx` is provided it attempts to fuse column `col_idx` with
-    column `col_idx+1`.
-    """
-
     def __init__(
         self,
         tiling: "Tiling",
@@ -430,10 +417,9 @@ class ComponentFusion(Fusion):
         tracked: bool = False,
         isolation_level: Optional[str] = None,
     ):
-        if tiling.requirements:
-            raise NotImplementedError(
-                "Component fusion does not handle " "requirements at the moment"
-            )
+        self._unfused_obs_and_reqs: Optional[
+            Tuple[Tuple[GriddedPerm, ...], Tuple[Tuple[GriddedPerm, ...], ...]]
+        ] = None
         super().__init__(
             tiling,
             row_idx=row_idx,
@@ -441,217 +427,349 @@ class ComponentFusion(Fusion):
             tracked=tracked,
             isolation_level=isolation_level,
         )
-        self._first_cell: Optional[Cell] = None
-        self._second_cell: Optional[Cell] = None
 
-    def _pre_check(self) -> bool:
-        """
-        Make a preliminary check before testing if the actual fusion is
-        possible.
-
-        Selects the two active cells to be fused. Rows or columns with more
-        than one active cell cannot be fused. Sets the attribute
-        `self._first_cell` and `self._second_cell`.
-        """
-        if self._fuse_row:
-            rows = (
-                self._tiling.cells_in_row(self._row_idx),
-                self._tiling.cells_in_row(self._row_idx + 1),
-            )
-        else:
-            rows = (
-                self._tiling.cells_in_col(self._col_idx),
-                self._tiling.cells_in_col(self._col_idx + 1),
-            )
-        has_a_long_row = any(len(row) > 1 for row in rows)
-        if has_a_long_row:
-            return False
-        first_cell = next(iter(rows[0]))
-        second_cell = next(iter(rows[1]))
-        cells_are_adjacent = (
-            first_cell[0] == second_cell[0] or first_cell[1] == second_cell[1]
+    @staticmethod
+    def min_gps(requirements: Iterable[Iterable[GriddedPerm]]):
+        requirements = tuple(
+            sorted(set(tuple(sorted(set(gps))) for gps in requirements))
         )
-        if not cells_are_adjacent:
-            return False
-        same_basis = (
-            self._tiling.cell_basis()[first_cell][0]
-            == self._tiling.cell_basis()[second_cell][0]
-        )
-        if not same_basis:
-            return False
-        self._first_cell = first_cell
-        self._second_cell = second_cell
-        return True
+        algo = MinimalGriddedPerms(tuple(), requirements)
+        return tuple(algo.minimal_gridded_perms())
 
-    @property
-    def first_cell(self) -> Cell:
-        """
-        The first cell of the fusion. This cell is in the bottommost row or the
-        leftmost column of the fusion.
-        """
-        if self._first_cell is not None:
-            return self._first_cell
-        if not self._pre_check():
-            raise RuntimeError(
-                "Pre-check failed. No component fusion " "possible and no first cell"
+    def fuse_gridded_perms(self, gps: Iterable[GriddedPerm]) -> Tuple[GriddedPerm, ...]:
+        return tuple(sorted(set(self.fuse_gridded_perm(gp) for gp in gps)))
+
+    def is_left_gp(self, gp: GriddedPerm):
+        if self._col_idx is not None:
+            return all(x <= self._col_idx for x, _ in gp.pos)
+        return all(y <= self._col_idx for _, y in gp.pos)
+
+    def is_right_gp(self, gp: GriddedPerm):
+        if self._col_idx is not None:
+            return all(x > self._col_idx for x, _ in gp.pos)
+        return all(y > self._col_idx for _, y in gp.pos)
+
+    def fused_tiling(self) -> "Tiling":
+        if self._fused_tiling is None:
+            obs = self.min_gps(
+                (
+                    self.fuse_gridded_perms(
+                        gp for gp in self._tiling.obstructions if self.is_left_gp(gp)
+                    ),
+                    self.fuse_gridded_perms(
+                        gp for gp in self._tiling.obstructions if self.is_right_gp(gp)
+                    ),
+                )
             )
-        assert self._first_cell is not None
-        return self._first_cell
-
-    @property
-    def second_cell(self) -> Cell:
-        """
-        The second cell of the fusion. This cell is in the topmost row or the
-        rightmost column of the fusion.
-        """
-        if self._second_cell is not None:
-            return self._second_cell
-        if not self._pre_check():
-            raise RuntimeError(
-                "Pre-check failed. No component fusion " "possible and no second cell"
+            reqs = tuple(
+                self.min_gps(
+                    (
+                        self.fuse_gridded_perms(
+                            gp for gp in req_list if self.is_left_gp(gp)
+                        ),
+                        self.fuse_gridded_perms(
+                            gp for gp in req_list if self.is_right_gp(gp)
+                        ),
+                    )
+                )
+                for req_list in self._tiling.requirements
             )
-        assert self._second_cell is not None
-        return self._second_cell
-
-    def has_crossing_len2_ob(self) -> bool:
-        """
-        Return True if the tiling contains a crossing length 2 obstruction
-        between `self.first_cell` and `self.second_cell`.
-        """
-        fcell = self.first_cell
-        scell = self.second_cell
-        if self._fuse_row:
-            possible_obs = [
-                GriddedPerm((0, 1), (fcell, scell)),
-                GriddedPerm((1, 0), (scell, fcell)),
-            ]
-        else:
-            possible_obs = [
-                GriddedPerm((0, 1), (fcell, scell)),
-                GriddedPerm((1, 0), (fcell, scell)),
-            ]
-        return any(ob in possible_obs for ob in self._tiling.obstructions)
-
-    def is_crossing_len2(self, gp: GriddedPerm) -> bool:
-        """
-        Return True if the gridded permutation `gp` is a length 2 obstruction
-        crossing between the first and second cell.
-        """
-        return (
-            len(gp) == 2
-            and gp.occupies(self.first_cell)
-            and gp.occupies(self.second_cell)
-        )
-
-    @property
-    def obstruction_fuse_counter(self) -> Counter[GriddedPerm]:
-        """
-        Counter of multiplicities of fused obstructions.
-
-        Crossing length 2 obstructions between first cell and second cell
-        are ignored.
-        """
-        if self._obstruction_fuse_counter is not None:
-            return self._obstruction_fuse_counter
-        obs = (ob for ob in self._tiling.obstructions if not self.is_crossing_len2(ob))
-        fuse_counter = self._fuse_counter(obs)
-        self._obstruction_fuse_counter = fuse_counter
-        return self._obstruction_fuse_counter
-
-    def obstructions_to_add(self) -> Iterator[GriddedPerm]:
-        """
-        Iterator over all the obstructions obtained by fusing obstructions of
-        the tiling and then unfusing it in all possible ways. Crossing length 2
-        obstructions between first cell and second cell are not processed.
-        """
-        return chain.from_iterable(
-            self.unfuse_gridded_perm(ob) for ob in self.obstruction_fuse_counter
-        )
-
-    def _can_component_fuse_assumption(self, assumption: TrackingAssumption) -> bool:
-        """
-        Return True if an assumption can be fused. That is, prefusion, the gps
-        do not touch the fuse region unless it is the correct sum or skew
-        assumption.
-        """
-        gps = [
-            GriddedPerm.point_perm(self.first_cell),
-            GriddedPerm.point_perm(self.second_cell),
-        ]
-        return (  # if right type
-            (
-                isinstance(assumption, SumComponentAssumption)
-                and self.is_sum_component_fusion()
+            ass = tuple(
+                ass.__class__((self.fuse_gridded_perm(gp) for gp in ass.gps))
+                for ass in self._tiling.assumptions
             )
-            or (
-                isinstance(assumption, SkewComponentAssumption)
-                and self.is_skew_component_fusion()
-            )  # or covers whole region or none of it
-            or all(gp in assumption.gps for gp in gps)
-            or all(gp not in assumption.gps for gp in gps)
-        )
+            if self._tracked:
+                ass = ass + (self.new_assumption(),)
+            self._fused_tiling = self._tiling.__class__(obs, reqs, ass)
+        return self._fused_tiling
 
-    def _can_fuse_set_of_gridded_perms(
-        self, fuse_counter: Counter[GriddedPerm]
-    ) -> bool:
-        raise NotImplementedError
-
-    def _is_valid_count(self, count: int, gp: GriddedPerm) -> bool:
-        raise NotImplementedError
+    def unfused_fused_obs_reqs(
+        self,
+    ) -> Tuple[Tuple[GriddedPerm, ...], Tuple[Tuple[GriddedPerm, ...], ...]]:
+        if self._unfused_obs_and_reqs is None:
+            fused_tiling = self.fused_tiling()
+            obs = tuple(
+                chain.from_iterable(
+                    self.unfuse_gridded_perm(gp) for gp in fused_tiling.obstructions
+                )
+            )
+            reqs = tuple(
+                tuple(chain.from_iterable(self.unfuse_gridded_perm(gp) for gp in req))
+                for req in fused_tiling.requirements
+            )
+            self._unfused_obs_and_reqs = obs, reqs
+        return self._unfused_obs_and_reqs
 
     def fusable(self) -> bool:
-        """
-        Return True if adjacent rows can be viewed as one row where you draw a
-        horizontal line through the components.
-        """
-        if not self._pre_check() or not self.has_crossing_len2_ob():
-            return False
-        new_tiling = self._tiling.add_obstructions(self.obstructions_to_add())
-
+        obs, reqs = self.unfused_fused_obs_reqs()
         return (
-            self._tiling == new_tiling
-            and self._check_isolation_level()
-            and all(
-                self._can_component_fuse_assumption(assumption)
-                for assumption in self._tiling.assumptions
+            self._tiling
+            == self._tiling.__class__(
+                self._tiling.obstructions + obs,
+                self._tiling.requirements + reqs,
+                self._tiling.assumptions,
             )
+            and self.has_suitable_extra_obs_and_reqs()
         )
 
-    def new_assumption(self) -> ComponentAssumption:
-        """
-        Return the assumption that needs to be counted in order to enumerate.
-        """
-        fcell = self.first_cell
-        gps = (GriddedPerm.single_cell((0,), fcell),)
-        if self.is_sum_component_fusion():
-            return SumComponentAssumption(gps)
-        return SkewComponentAssumption(gps)
+    def extra_obs_and_reqs(
+        self,
+    ) -> Tuple[Tuple[GriddedPerm, ...], Tuple[Tuple[GriddedPerm, ...], ...]]:
+        obs, reqs = self.unfused_fused_obs_reqs()
+        return tuple(ob for ob in self._tiling.obstructions if ob not in obs), tuple(
+            req for req in self._tiling.requirements if req not in reqs
+        )
 
-    def is_sum_component_fusion(self) -> bool:
-        """
-        Return true if is a sum component fusion
-        """
-        fcell = self.first_cell
-        scell = self.second_cell
-        if self._fuse_row:
-            sum_ob = GriddedPerm((1, 0), (scell, fcell))
-        else:
-            sum_ob = GriddedPerm((1, 0), (fcell, scell))
-        return sum_ob in self._tiling.obstructions
+    def has_suitable_extra_obs_and_reqs(self) -> bool:
+        obs, reqs = self.extra_obs_and_reqs()
 
-    def is_skew_component_fusion(self) -> bool:
-        """
-        Return true if is a skew component fusion
-        """
-        fcell = self.first_cell
-        scell = self.second_cell
-        if self._fuse_row:
-            skew_ob = GriddedPerm((0, 1), (fcell, scell))
-        else:
-            skew_ob = GriddedPerm((0, 1), (fcell, scell))
-        return skew_ob in self._tiling.obstructions
 
-    def __str__(self) -> str:
-        s = "ComponentFusion Algorithm for:\n"
-        s += str(self._tiling)
-        return s
+# class ComponentFusion(Fusion):
+#     """
+#     Component Fusion algorithm container class.
+
+#     Fuse tiling it it can be unfused by drawing a line between any component.
+
+#     Check if a fusion is valid and compute the fused tiling.
+
+#     If `row_idx` is provided it attempts to fuse row `row_idx` with row
+#     `row_idx+1`.
+
+#     If `col_idx` is provided it attempts to fuse column `col_idx` with
+#     column `col_idx+1`.
+#     """
+
+#     def __init__(
+#         self,
+#         tiling: "Tiling",
+#         *,
+#         row_idx: Optional[int] = None,
+#         col_idx: Optional[int] = None,
+#         tracked: bool = False,
+#         isolation_level: Optional[str] = None,
+#     ):
+#         if tiling.requirements:
+#             raise NotImplementedError(
+#                 "Component fusion does not handle " "requirements at the moment"
+#             )
+#         super().__init__(
+#             tiling,
+#             row_idx=row_idx,
+#             col_idx=col_idx,
+#             tracked=tracked,
+#             isolation_level=isolation_level,
+#         )
+#         self._first_cell: Optional[Cell] = None
+#         self._second_cell: Optional[Cell] = None
+
+#     def _pre_check(self) -> bool:
+#         """
+#         Make a preliminary check before testing if the actual fusion is
+#         possible.
+
+#         Selects the two active cells to be fused. Rows or columns with more
+#         than one active cell cannot be fused. Sets the attribute
+#         `self._first_cell` and `self._second_cell`.
+#         """
+#         if self._fuse_row:
+#             rows = (
+#                 self._tiling.cells_in_row(self._row_idx),
+#                 self._tiling.cells_in_row(self._row_idx + 1),
+#             )
+#         else:
+#             rows = (
+#                 self._tiling.cells_in_col(self._col_idx),
+#                 self._tiling.cells_in_col(self._col_idx + 1),
+#             )
+#         has_a_long_row = any(len(row) > 1 for row in rows)
+#         if has_a_long_row:
+#             return False
+#         first_cell = next(iter(rows[0]))
+#         second_cell = next(iter(rows[1]))
+#         cells_are_adjacent = (
+#             first_cell[0] == second_cell[0] or first_cell[1] == second_cell[1]
+#         )
+#         if not cells_are_adjacent:
+#             return False
+#         same_basis = (
+#             self._tiling.cell_basis()[first_cell][0]
+#             == self._tiling.cell_basis()[second_cell][0]
+#         )
+#         if not same_basis:
+#             return False
+#         self._first_cell = first_cell
+#         self._second_cell = second_cell
+#         return True
+
+#     @property
+#     def first_cell(self) -> Cell:
+#         """
+#         The first cell of the fusion. This cell is in the bottommost row or the
+#         leftmost column of the fusion.
+#         """
+#         if self._first_cell is not None:
+#             return self._first_cell
+#         if not self._pre_check():
+#             raise RuntimeError(
+#                 "Pre-check failed. No component fusion " "possible and no first cell"
+#             )
+#         assert self._first_cell is not None
+#         return self._first_cell
+
+#     @property
+#     def second_cell(self) -> Cell:
+#         """
+#         The second cell of the fusion. This cell is in the topmost row or the
+#         rightmost column of the fusion.
+#         """
+#         if self._second_cell is not None:
+#             return self._second_cell
+#         if not self._pre_check():
+#             raise RuntimeError(
+#                 "Pre-check failed. No component fusion " "possible and no second cell"
+#             )
+#         assert self._second_cell is not None
+#         return self._second_cell
+
+#     def has_crossing_len2_ob(self) -> bool:
+#         """
+#         Return True if the tiling contains a crossing length 2 obstruction
+#         between `self.first_cell` and `self.second_cell`.
+#         """
+#         fcell = self.first_cell
+#         scell = self.second_cell
+#         if self._fuse_row:
+#             possible_obs = [
+#                 GriddedPerm((0, 1), (fcell, scell)),
+#                 GriddedPerm((1, 0), (scell, fcell)),
+#             ]
+#         else:
+#             possible_obs = [
+#                 GriddedPerm((0, 1), (fcell, scell)),
+#                 GriddedPerm((1, 0), (fcell, scell)),
+#             ]
+#         return any(ob in possible_obs for ob in self._tiling.obstructions)
+
+#     def is_crossing_len2(self, gp: GriddedPerm) -> bool:
+#         """
+#         Return True if the gridded permutation `gp` is a length 2 obstruction
+#         crossing between the first and second cell.
+#         """
+#         return (
+#             len(gp) == 2
+#             and gp.occupies(self.first_cell)
+#             and gp.occupies(self.second_cell)
+#         )
+
+#     @property
+#     def obstruction_fuse_counter(self) -> Counter[GriddedPerm]:
+#         """
+#         Counter of multiplicities of fused obstructions.
+
+#         Crossing length 2 obstructions between first cell and second cell
+#         are ignored.
+#         """
+#         if self._obstruction_fuse_counter is not None:
+#             return self._obstruction_fuse_counter
+#         obs = (ob for ob in self._tiling.obstructions if not self.is_crossing_len2(ob))
+#         fuse_counter = self._fuse_counter(obs)
+#         self._obstruction_fuse_counter = fuse_counter
+#         return self._obstruction_fuse_counter
+
+#     def obstructions_to_add(self) -> Iterator[GriddedPerm]:
+#         """
+#         Iterator over all the obstructions obtained by fusing obstructions of
+#         the tiling and then unfusing it in all possible ways. Crossing length 2
+#         obstructions between first cell and second cell are not processed.
+#         """
+#         return chain.from_iterable(
+#             self.unfuse_gridded_perm(ob) for ob in self.obstruction_fuse_counter
+#         )
+
+#     def _can_component_fuse_assumption(self, assumption: TrackingAssumption) -> bool:
+#         """
+#         Return True if an assumption can be fused. That is, prefusion, the gps
+#         do not touch the fuse region unless it is the correct sum or skew
+#         assumption.
+#         """
+#         gps = [
+#             GriddedPerm.point_perm(self.first_cell),
+#             GriddedPerm.point_perm(self.second_cell),
+#         ]
+#         return (  # if right type
+#             (
+#                 isinstance(assumption, SumComponentAssumption)
+#                 and self.is_sum_component_fusion()
+#             )
+#             or (
+#                 isinstance(assumption, SkewComponentAssumption)
+#                 and self.is_skew_component_fusion()
+#             )  # or covers whole region or none of it
+#             or all(gp in assumption.gps for gp in gps)
+#             or all(gp not in assumption.gps for gp in gps)
+#         )
+
+#     def _can_fuse_set_of_gridded_perms(
+#         self, fuse_counter: Counter[GriddedPerm]
+#     ) -> bool:
+#         raise NotImplementedError
+
+#     def _is_valid_count(self, count: int, gp: GriddedPerm) -> bool:
+#         raise NotImplementedError
+
+#     def fusable(self) -> bool:
+#         """
+#         Return True if adjacent rows can be viewed as one row where you draw a
+#         horizontal line through the components.
+#         """
+#         if not self._pre_check() or not self.has_crossing_len2_ob():
+#             return False
+#         new_tiling = self._tiling.add_obstructions(self.obstructions_to_add())
+
+#         return (
+#             self._tiling == new_tiling
+#             and self._check_isolation_level()
+#             and all(
+#                 self._can_component_fuse_assumption(assumption)
+#                 for assumption in self._tiling.assumptions
+#             )
+#         )
+
+#     def new_assumption(self) -> ComponentAssumption:
+#         """
+#         Return the assumption that needs to be counted in order to enumerate.
+#         """
+#         fcell = self.first_cell
+#         gps = (GriddedPerm.single_cell((0,), fcell),)
+#         if self.is_sum_component_fusion():
+#             return SumComponentAssumption(gps)
+#         return SkewComponentAssumption(gps)
+
+#     def is_sum_component_fusion(self) -> bool:
+#         """
+#         Return true if is a sum component fusion
+#         """
+#         fcell = self.first_cell
+#         scell = self.second_cell
+#         if self._fuse_row:
+#             sum_ob = GriddedPerm((1, 0), (scell, fcell))
+#         else:
+#             sum_ob = GriddedPerm((1, 0), (fcell, scell))
+#         return sum_ob in self._tiling.obstructions
+
+#     def is_skew_component_fusion(self) -> bool:
+#         """
+#         Return true if is a skew component fusion
+#         """
+#         fcell = self.first_cell
+#         scell = self.second_cell
+#         if self._fuse_row:
+#             skew_ob = GriddedPerm((0, 1), (fcell, scell))
+#         else:
+#             skew_ob = GriddedPerm((0, 1), (fcell, scell))
+#         return skew_ob in self._tiling.obstructions
+
+#     def __str__(self) -> str:
+#         s = "ComponentFusion Algorithm for:\n"
+#         s += str(self._tiling)
+#         return s
