@@ -14,6 +14,8 @@ from typing import (
     Tuple,
 )
 
+from permuta import Perm
+from tilings.algorithms.map import RowColMap
 from tilings.algorithms.minimal_gridded_perms import MinimalGriddedPerms
 from tilings.assumptions import (
     ComponentAssumption,
@@ -549,8 +551,36 @@ class ComponentFusion(Fusion):
             sum(1 for _, y in gp.pos if y == self._row_idx + 1),
         )
 
-    def get_sk_from_gap_vector(self, vector: Tuple[int, int]):
-        pass
+    def get_sk_from_gap_vector(self, vector: Tuple[int, int]) -> Iterator[GriddedPerm]:
+        if not self._fuse_row:
+            row_map = RowColMap(
+                row_map={x: 0 for x in range(self._tiling.dimensions[1])},
+                col_map={0: 0},
+                is_identity=False,
+            )
+            col_pos = (self._col_idx,) * vector[0] + (self._col_idx + 1,) * vector[1]
+            Sk = (
+                GriddedPerm.single_cell(p, (0, 0)) for p in Perm.of_length(sum(vector))
+            )
+            for gp in row_map.preimage_gps(Sk):
+                new_pos = tuple((x, y) for (_, y), x in zip(gp.pos, col_pos))
+                yield GriddedPerm(gp.patt, new_pos)
+        else:
+            col_map = RowColMap(
+                row_map={0: 0},
+                col_map={x: 0 for x in range(self._tiling.dimensions[0])},
+                is_identity=False,
+            )
+            Sk = (
+                GriddedPerm.single_cell(p, (0, 0)) for p in Perm.of_length(sum(vector))
+            )
+            row_heights = (self._row_idx,) * vector[0] + (self._row_idx + 1,) * vector[
+                1
+            ]
+            for gp in col_map.preimage_gps(Sk):
+                row_pos = gp.patt.apply(row_heights)
+                new_pos = tuple((x, y) for (x, _), y in zip(gp.pos, row_pos))
+                yield GriddedPerm(gp.patt, new_pos)
 
     def is_finite_fusable(self) -> bool:
         obs, _ = self.extra_obs_and_reqs()
