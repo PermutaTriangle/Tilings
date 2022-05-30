@@ -302,9 +302,17 @@ class UnfusionRowStrategy(UnfusionColumnStrategy):
 
 
 class UnfusionFactory(StrategyFactory[Tiling]):
+    def __init__(self, max_width: int = 4, max_height: int = 4) -> None:
+        self.max_height = max_height
+        self.max_width = max_width
+        super().__init__()
+
     def __call__(self, comb_class: Tiling) -> Iterator[UnfusionColumnStrategy]:
-        yield UnfusionColumnStrategy()
-        yield UnfusionRowStrategy()
+        width, height = comb_class.dimensions
+        if width <= self.max_width:
+            yield UnfusionColumnStrategy()
+        if height <= self.max_height:
+            yield UnfusionRowStrategy()
 
     def __str__(self) -> str:
         return "unfusion strategy"
