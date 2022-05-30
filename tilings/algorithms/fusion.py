@@ -710,6 +710,8 @@ class FiniteFusion(Fusion):
                 ass.__class__([self.fuse_gridded_perm(gp) for gp in ass.gps])
                 for ass in self._tiling.assumptions
             )
+            if self._tracked:
+                fused_ass.add(self.new_assumption())
             self._fused_tiling = self._tiling.__class__(
                 fused_obs, fused_reqs, fused_ass
             )
