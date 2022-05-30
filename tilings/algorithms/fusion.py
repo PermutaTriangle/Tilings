@@ -3,7 +3,16 @@ The implementation of the fusion algorithm
 """
 import collections
 from itertools import chain
-from typing import TYPE_CHECKING, Counter, Iterable, Iterator, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Counter,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+)
 
 from tilings.algorithms.minimal_gridded_perms import MinimalGriddedPerms
 from tilings.assumptions import (
@@ -439,25 +448,34 @@ class ComponentFusion(Fusion):
     def fuse_gridded_perms(self, gps: Iterable[GriddedPerm]) -> Tuple[GriddedPerm, ...]:
         return tuple(sorted(set(self.fuse_gridded_perm(gp) for gp in gps)))
 
-    def is_left_gp(self, gp: GriddedPerm):
+    def is_left_gp(self, gp: GriddedPerm) -> bool:
         if self._col_idx is not None:
-            return all(x <= self._col_idx for x, _ in gp.pos)
-        return all(y <= self._col_idx for _, y in gp.pos)
+            return any(x == self._col_idx for x, _ in gp.pos)
+        return any(y == self._row_idx for _, y in gp.pos)
 
-    def is_right_gp(self, gp: GriddedPerm):
+    def is_right_gp(self, gp: GriddedPerm) -> bool:
         if self._col_idx is not None:
-            return all(x > self._col_idx for x, _ in gp.pos)
-        return all(y > self._col_idx for _, y in gp.pos)
+            return any(x == 1 + self._col_idx for x, _ in gp.pos)
+        return any(y == 1 + self._row_idx for _, y in gp.pos)
+
+    def is_in_fuse_region(self, gp: GriddedPerm) -> bool:
+        if self._col_idx is not None:
+            return all(x in (self._col_idx, self._col_idx + 1) for x, _ in gp.pos)
+        return all(y in (self._row_idx, self._row_idx + 1) for _, y in gp.pos)
 
     def fused_tiling(self) -> "Tiling":
         if self._fused_tiling is None:
             obs = self.min_gps(
                 (
                     self.fuse_gridded_perms(
-                        gp for gp in self._tiling.obstructions if self.is_left_gp(gp)
+                        gp
+                        for gp in self._tiling.obstructions
+                        if not self.is_left_gp(gp)
                     ),
                     self.fuse_gridded_perms(
-                        gp for gp in self._tiling.obstructions if self.is_right_gp(gp)
+                        gp
+                        for gp in self._tiling.obstructions
+                        if not self.is_right_gp(gp)
                     ),
                 )
             )
@@ -465,10 +483,10 @@ class ComponentFusion(Fusion):
                 self.min_gps(
                     (
                         self.fuse_gridded_perms(
-                            gp for gp in req_list if self.is_left_gp(gp)
+                            gp for gp in req_list if not self.is_left_gp(gp)
                         ),
                         self.fuse_gridded_perms(
-                            gp for gp in req_list if self.is_right_gp(gp)
+                            gp for gp in req_list if not self.is_right_gp(gp)
                         ),
                     )
                 )
@@ -509,7 +527,7 @@ class ComponentFusion(Fusion):
                 self._tiling.requirements + reqs,
                 self._tiling.assumptions,
             )
-            and self.has_suitable_extra_obs_and_reqs()
+            and self.is_finite_fusable()
         )
 
     def extra_obs_and_reqs(
@@ -520,8 +538,38 @@ class ComponentFusion(Fusion):
             req for req in self._tiling.requirements if req not in reqs
         )
 
-    def has_suitable_extra_obs_and_reqs(self) -> bool:
-        obs, reqs = self.extra_obs_and_reqs()
+    def get_vector_from_gp(self, gp: GriddedPerm) -> Tuple[int, int]:
+        if self._col_idx is not None:
+            return (
+                sum(1 for x, _ in gp.pos if x == self._col_idx),
+                sum(1 for x, _ in gp.pos if x == self._col_idx + 1),
+            )
+        return (
+            sum(1 for _, y in gp.pos if y == self._row_idx),
+            sum(1 for _, y in gp.pos if y == self._row_idx + 1),
+        )
+
+    def get_sk_from_gap_vector(self, vector: Tuple[int, int]):
+        pass
+
+    def is_finite_fusable(self) -> bool:
+        obs, _ = self.extra_obs_and_reqs()
+        gap_vectors: Set[Tuple[int, int]] = set()
+        for ob in obs:
+            if not self.is_in_fuse_region(ob):
+                return False
+            gap_vectors.add(self.get_vector_from_gp(ob))
+
+        # for vector in gap_vectors:
+        #     sk = a
+        #     if self._tiling.add_obstructions(sk) != self._tiling:
+        #         return False
+
+        return all(
+            self._tiling.add_obstructions(self.get_sk_from_gap_vector(vector))
+            == self._tiling
+            for vector in gap_vectors
+        )
 
 
 # class ComponentFusion(Fusion):
