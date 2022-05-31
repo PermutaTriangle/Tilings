@@ -34,6 +34,10 @@ from .unfusion import DivideByN, ReverseDivideByN
 
 
 class PointingStrategy(Strategy[Tiling, GriddedPerm]):
+    def __init__(self, max_cells: int = 4) -> None:
+        self.max_cells = max_cells
+        super().__init__()
+
     def can_be_equivalent(self) -> bool:
         return False
 
@@ -65,12 +69,15 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
         return comb_class.active_cells - self.already_placed_cells(comb_class)
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
-        cells = self.cells_to_place(comb_class)
-        if cells:
-            return tuple(
-                comb_class.place_point_in_cell(cell, DIR_NONE) for cell in sorted(cells)
-            )
-        raise StrategyDoesNotApply("The tiling is just point cells!")
+        if len(comb_class.active_cells) <= self.max_cells:
+            cells = self.cells_to_place(comb_class)
+            if cells:
+                return tuple(
+                    comb_class.place_point_in_cell(cell, DIR_NONE)
+                    for cell in sorted(cells)
+                )
+            raise StrategyDoesNotApply("The tiling is just point cells!")
+        raise StrategyDoesNotApply("Too many active cells.")
 
     def formal_step(self) -> str:
         return "directionless point placement"
@@ -336,10 +343,15 @@ class AssumptionPointingStrategy(PointingStrategy):
 
 
 class AssumptionPointingFactory(StrategyFactory[Tiling]):
+    def __init__(self, max_cells: int = 4) -> None:
+        self.max_cells = max_cells
+        super().__init__()
+
     def __call__(self, comb_class: Tiling) -> Iterator[AssumptionPointingStrategy]:
-        for assumption in comb_class.assumptions:
-            if not isinstance(assumption, ComponentAssumption):
-                yield AssumptionPointingStrategy(assumption)
+        if len(comb_class.active_cells) <= self.max_cells:
+            for assumption in comb_class.assumptions:
+                if not isinstance(assumption, ComponentAssumption):
+                    yield AssumptionPointingStrategy(assumption)
 
     def __str__(self) -> str:
         return "assumption pointing strategy"
