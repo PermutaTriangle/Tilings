@@ -27,7 +27,7 @@ class ObstructionInferral(abc.ABC):
         tiling if possible.
         """
 
-    def new_obs(self) -> List[GriddedPerm]:
+    def new_obs(self, yield_non_minimal=False) -> List[GriddedPerm]:
         """
         Returns the list of new obstructions that can be added to the tiling.
         """
@@ -44,9 +44,9 @@ class ObstructionInferral(abc.ABC):
             self._tiling.maximum_length_of_minimum_gridded_perm()
             + max_len_of_perms_to_check
         )
-        GP = GriddedPermsOnTiling(self._tiling).gridded_perms(
-            max_length, place_at_most=max_len_of_perms_to_check
-        )
+        GP = GriddedPermsOnTiling(
+            self._tiling, yield_non_minimal=yield_non_minimal
+        ).gridded_perms(max_length, place_at_most=max_len_of_perms_to_check)
         perms_left = set(perms_to_check)
         for gp in GP:
             to_remove: List[GriddedPerm] = []
