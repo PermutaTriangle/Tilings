@@ -16,7 +16,6 @@ from typing import (
 
 from permuta import Perm
 from tilings.algorithms.map import RowColMap
-from tilings.algorithms.minimal_gridded_perms import MinimalGriddedPerms
 from tilings.assumptions import (
     ComponentAssumption,
     SkewComponentAssumption,
@@ -666,6 +665,7 @@ class ComponentFusion(Fusion):
     def __str__(self) -> str:
         s = "ComponentFusion Algorithm for:\n"
         s += str(self._tiling)
+        return s
 
 
 class FiniteFusion(Fusion):
@@ -700,21 +700,29 @@ class FiniteFusion(Fusion):
             fused_obs = set(
                 self.fuse_gridded_perm(ob)
                 for ob in self._tiling.obstructions
-                if not ob in extra_obs
+                if ob not in extra_obs
             )
-            fused_reqs = set(
-                frozenset(self.fuse_gridded_perm(gp) for gp in req)
-                for req in self._tiling.requirements
-            )
-            fused_ass = set(
-                ass.__class__([self.fuse_gridded_perm(gp) for gp in ass.gps])
-                for ass in self._tiling.assumptions
-            )
-            if self._tracked:
-                fused_ass.add(self.new_assumption())
-            self._fused_tiling = self._tiling.__class__(
-                fused_obs, fused_reqs, fused_ass
-            )
+            if any(
+                ob.is_single_cell() and any(ob.get_points_row(self._row_idx))
+                for ob in fused_obs
+            ):
+                fused_reqs = set(
+                    frozenset(self.fuse_gridded_perm(gp) for gp in req)
+                    for req in self._tiling.requirements
+                )
+                fused_ass = set(
+                    ass.__class__([self.fuse_gridded_perm(gp) for gp in ass.gps])
+                    for ass in self._tiling.assumptions
+                )
+                if self._tracked:
+                    fused_ass.add(self.new_assumption())
+                self._fused_tiling = self._tiling.__class__(
+                    fused_obs, fused_reqs, fused_ass
+                )
+            else:
+                # in this case we will be creating an Av() cell, so it implies
+                # ordinary fusion is happening to a finite region.
+                self._fused_tiling = super().fused_tiling()
         return self._fused_tiling
 
     def unfused_fused_obs_reqs(
@@ -746,7 +754,6 @@ class FiniteFusion(Fusion):
         self,
     ) -> Set[GriddedPerm]:
         valid_gap_vectors = set(self.get_valid_gap_vectors())
-        print(valid_gap_vectors)
         return set(
             ob
             for ob in self._tiling.obstructions
@@ -811,4 +818,3 @@ class FiniteFusion(Fusion):
             if self.is_in_fuse_region(ob)
         }
         return filter(self.is_valid_gap_vector, gap_vectors)
-        return s
