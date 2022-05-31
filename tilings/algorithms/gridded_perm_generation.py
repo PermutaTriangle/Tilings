@@ -32,7 +32,7 @@ class GriddedPermsOnTiling:
     built by inserting points into the minimal gridded permutations.
     """
 
-    def __init__(self, tiling: "Tiling", yield_non_minimal=False):
+    def __init__(self, tiling: "Tiling", yield_non_minimal: bool = False):
         self._tiling = tiling
         self._minimal_gps = MinimalGriddedPerms(
             tiling.obstructions, tiling.requirements

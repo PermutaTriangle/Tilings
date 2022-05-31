@@ -27,7 +27,7 @@ class ObstructionInferral(abc.ABC):
         tiling if possible.
         """
 
-    def new_obs(self, yield_non_minimal=False) -> List[GriddedPerm]:
+    def new_obs(self, yield_non_minimal: bool = False) -> List[GriddedPerm]:
         """
         Returns the list of new obstructions that can be added to the tiling.
         """
