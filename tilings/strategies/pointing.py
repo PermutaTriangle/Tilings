@@ -350,6 +350,8 @@ class AssumptionPointingStrategy(PointingStrategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> "AssumptionPointingStrategy":
+        if "max_cells" in d:
+            d.pop("max_cells")
         assumption = TrackingAssumption.from_dict(d.pop("assumption"))
         return cls(assumption=assumption, **d)
 
@@ -385,6 +387,7 @@ class AssumptionPointingFactory(StrategyFactory[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "AssumptionPointingFactory":
+
         return cls(**d)
 
 
@@ -401,7 +404,7 @@ class RequirementPointingStrategy(PointingStrategy):
         assert len(gps) == len(indices)
         self.gps = gps
         self.indices = indices
-        super().__init__(ignore_parent, inferrable, possibly_empty, workable)
+        super().__init__(None, ignore_parent, inferrable, possibly_empty, workable)
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
         cells = self.cells_to_place(comb_class)
@@ -446,6 +449,8 @@ class RequirementPointingStrategy(PointingStrategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> "RequirementPointingStrategy":
+        if "max_cells" in d:
+            d.pop("max_cells")
         return cls(
             tuple(GriddedPerm.from_dict(gp) for gp in d.pop("gps")),
             tuple(d.pop("indices")),
@@ -520,6 +525,8 @@ class RequirementAssumptionPointingStrategy(AssumptionPointingStrategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> "RequirementAssumptionPointingStrategy":
+        if "max_cells" in d:
+            d.pop("max_cells")
         return cls(
             tuple(GriddedPerm.from_dict(gp) for gp in d.pop("gps")),
             tuple(d.pop("indices")),
