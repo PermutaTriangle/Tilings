@@ -556,7 +556,7 @@ class RequirementPointingFactory(StrategyFactory[Tiling]):
                 cells_to_place = strategy.cells_to_place(comb_class)
                 if (
                     untracked_strategy.cells_to_place(comb_class) != cells_to_place
-                    and len(cells_to_place) <= self.max_cells
+                    and 0 < len(cells_to_place) <= self.max_cells
                 ):
                     parent = comb_class
                     if strategy.assumption not in comb_class.assumptions:
