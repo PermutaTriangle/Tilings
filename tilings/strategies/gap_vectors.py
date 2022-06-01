@@ -125,7 +125,7 @@ class RemoveGapVectorFactory(StrategyFactory[Tiling]):
             )
 
     def __str__(self) -> str:
-        return f"{'tracked ' if self.tracked else ''} removed gap vectors"
+        return f"{'tracked ' if self.tracked else ''}removed gap vectors"
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + f"(tracked={self.tracked})"
@@ -293,7 +293,7 @@ class RelaxGapVectorFactory(StrategyFactory[Tiling]):
         return filter((0, 0).__ne__, filter(gv.__ne__, itertools.product(left, right)))
 
     def __str__(self) -> str:
-        return "relaxing gap vectos"
+        return f"{'tracked ' if self.tracked else ''}relaxing gap vectors"
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + f"(tracked={self.tracked})"
