@@ -829,3 +829,32 @@ class FiniteFusion(Fusion):
             if self.is_in_fuse_region(ob)
         }
         return filter(self.is_valid_gap_vector, gap_vectors)
+
+    def assumption_for_gap_vector(
+        self, gv: Tuple[int, int]
+    ) -> Iterator[TrackingAssumption]:
+        """
+        Returns the assumption that tracks the each row / column affected by the gap
+        vector.
+        """
+        if self._fuse_row:
+            if gv[0] != 0:
+                yield TrackingAssumption.from_cells(
+                    self._tiling.cells_in_row(self._row_idx)
+                )
+            if gv[1] != 0:
+                yield TrackingAssumption.from_cells(
+                    self._tiling.cells_in_row(self._row_idx + 1)
+                )
+        else:
+            if gv[0] != 0:
+                yield TrackingAssumption.from_cells(
+                    self._tiling.cells_in_col(self._col_idx)
+                )
+            if gv[1] != 0:
+                yield TrackingAssumption.from_cells(
+                    self._tiling.cells_in_col(self._col_idx + 1)
+                )
+
+    def assumptions_for_valid_gap_vectors(self) -> Iterator[TrackingAssumption]:
+        pass
