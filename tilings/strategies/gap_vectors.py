@@ -136,7 +136,7 @@ class RemoveGapVectorFactory(StrategyFactory[Tiling]):
         return cls(**d)
 
 
-class RelaxingGapStrategy(Strategy[Tiling, GriddedPerm]):
+class RelaxGapVectorStrategy(Strategy[Tiling, GriddedPerm]):
     """
     A strategy that relaxes the set of gap vector for which you have permutation on
     the tiling.
@@ -228,7 +228,7 @@ class RelaxingGapStrategy(Strategy[Tiling, GriddedPerm]):
         raise NotImplementedError
 
 
-class RelaxingGapFactory(StrategyFactory[Tiling]):
+class RelaxGapVectorFactory(StrategyFactory[Tiling]):
     def __init__(self, tracked: bool = False):
         self.tracked = tracked
 
@@ -247,7 +247,7 @@ class RelaxingGapFactory(StrategyFactory[Tiling]):
             for gv in smaller_gap_vectors:
                 sk = algo.get_sk_from_gap_vector(gv)
                 parent = comb_class.add_obstructions(sk)
-                strategy = RelaxingGapStrategy(
+                strategy = RelaxGapVectorStrategy(
                     comb_class, gv, row_idx=row_idx, tracked=self.tracked
                 )
                 if self.tracked:
@@ -270,7 +270,7 @@ class RelaxingGapFactory(StrategyFactory[Tiling]):
             for gv in smaller_gap_vectors:
                 sk = algo.get_sk_from_gap_vector(gv)
                 parent = comb_class.add_obstructions(sk)
-                strategy = RelaxingGapStrategy(
+                strategy = RelaxGapVectorStrategy(
                     comb_class, gv, col_idx=col_idx, tracked=self.tracked
                 )
                 if self.tracked:
@@ -300,5 +300,5 @@ class RelaxingGapFactory(StrategyFactory[Tiling]):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "RelaxingGapFactory":
+    def from_dict(cls, d: dict) -> "RelaxGapVectorFactory":
         return cls(**d)
