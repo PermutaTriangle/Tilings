@@ -694,6 +694,17 @@ class FiniteFusion(Fusion):
             return all(x in (self._col_idx, self._col_idx + 1) for x, _ in gp.pos)
         return all(y in (self._row_idx, self._row_idx + 1) for _, y in gp.pos)
 
+    def fuses_to_all_perm_cell(self, fused_obs: Set[GriddedPerm]) -> bool:
+        if self._fuse_row:
+            return not any(
+                ob.is_single_cell() and any(ob.get_points_row(self._row_idx))
+                for ob in fused_obs
+            )
+        return not any(
+            ob.is_single_cell() and any(ob.get_points_col(self._col_idx))
+            for ob in fused_obs
+        )
+
     def fused_tiling(self) -> "Tiling":
         if self._fused_tiling is None:
             extra_obs = self.extra_obs()
@@ -702,10 +713,7 @@ class FiniteFusion(Fusion):
                 for ob in self._tiling.obstructions
                 if ob not in extra_obs
             )
-            if any(
-                ob.is_single_cell() and any(ob.get_points_row(self._row_idx))
-                for ob in fused_obs
-            ):
+            if not self.fuses_to_all_perm_cell(fused_obs):
                 fused_reqs = set(
                     frozenset(self.fuse_gridded_perm(gp) for gp in req)
                     for req in self._tiling.requirements
@@ -744,10 +752,15 @@ class FiniteFusion(Fusion):
 
     def fusable(self) -> bool:
         obs, reqs = self.unfused_fused_obs_reqs()
+        reduced_obs = tuple(
+            o1 for o1 in obs if not any(o2 in o1 for o2 in self._tiling.obstructions)
+        )
         return self._tiling == self._tiling.__class__(
-            self._tiling.obstructions + obs,
+            self._tiling.obstructions + reduced_obs,
             self._tiling.requirements + reqs,
             self._tiling.assumptions,
+            already_minimized_obs=True,
+            remove_empty_rows_and_cols=False,
         )
 
     def extra_obs(
@@ -806,10 +819,8 @@ class FiniteFusion(Fusion):
                 yield GriddedPerm(gp.patt, new_pos)
 
     def is_valid_gap_vector(self, vector: Tuple[int, int]) -> bool:
-        return (
-            self._tiling.add_obstructions(self.get_sk_from_gap_vector(vector))
-            == self._tiling
-        )
+        sk = self.get_sk_from_gap_vector(vector)
+        return all(gp.contains(*self._tiling.obstructions) for gp in sk)
 
     def get_valid_gap_vectors(self) -> Iterator[Tuple[int, int]]:
         gap_vectors = {
