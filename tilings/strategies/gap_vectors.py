@@ -49,13 +49,17 @@ class RemoveGapVectorStrategy(Strategy[Tiling, GriddedPerm]):
             comb_class, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked
         )
         gvs = set(algo.get_valid_gap_vectors())
-        needed_ass = set(
-            itertools.chain.from_iterable(
-                algo.assumption_for_gap_vector(gv) for gv in gvs
+        if self.tracked:
+            needed_ass = set(
+                itertools.chain.from_iterable(
+                    algo.assumption_for_gap_vector(gv) for gv in gvs
+                )
             )
-        )
-        has_right_ass = all(ass in comb_class.assumptions for ass in needed_ass)
-        if has_right_ass and algo.fusable() and algo.get_valid_gap_vectors():
+            if not all(ass in comb_class.assumptions for ass in needed_ass):
+                raise StrategyDoesNotApply(
+                    "Do not have right assumption to remove gap vectors"
+                )
+        if algo.fusable() and algo.get_valid_gap_vectors():
             obs, req = algo.unfused_fused_obs_reqs()
             ass = comb_class.assumptions
             return (Tiling(obs, req, ass),)
