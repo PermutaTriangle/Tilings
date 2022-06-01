@@ -24,11 +24,19 @@ class RemoveGapVectorStrategy(Strategy[Tiling, GriddedPerm]):
         self.tracked = tracked
 
     def to_jsonable(self) -> dict:
-        raise NotImplementedError
+        d = super().to_jsonable()
+        d.pop("ignore_parent")
+        d.pop("inferrable")
+        d.pop("possibly_empty")
+        d.pop("workable")
+        d["row_idx"] = self.row_idx
+        d["col_idx"] = self.col_idx
+        d["tracked"] = self.tracked
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "RemoveGapVectorStrategy":
-        raise NotImplementedError
+        return cls(**d)
 
     def can_be_equivalent(self) -> bool:
         return False
@@ -167,11 +175,22 @@ class RelaxGapVectorStrategy(Strategy[Tiling, GriddedPerm]):
         self.parent = child.add_obstructions(algo.get_sk_from_gap_vector(gv))
 
     def to_jsonable(self) -> dict:
-        raise NotImplementedError
+        d = super().to_jsonable()
+        d.pop("ignore_parent")
+        d.pop("inferrable")
+        d.pop("possibly_empty")
+        d.pop("workable")
+        d["child"] = self.child.to_jsonable()
+        d["gv"] = self.gv
+        d["row_idx"] = self.row_idx
+        d["col_idx"] = self.col_idx
+        d["tracked"] = self.tracked
+        return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "RemoveGapVectorStrategy":
-        raise NotImplementedError
+    def from_dict(cls, d: dict) -> "RelaxGapVectorStrategy":
+        child = Tiling.from_dict(d.pop("child"))
+        return cls(child, **d)
 
     def can_be_equivalent(self) -> bool:
         return False
