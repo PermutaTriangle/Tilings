@@ -284,15 +284,9 @@ class RelaxingGapFactory(StrategyFactory[Tiling]):
                 yield strategy(parent)
 
     def smaller_gap_vector(self, gv: Tuple[int, int]) -> Iterator[Tuple[int, int]]:
-        if gv[0] == 0:
-            left = [0]
-        else:
-            left = list(range(1, gv[0] + 1))
-        if gv[1] == 0:
-            right = [0]
-        else:
-            right = list(range(1, gv[1] + 1))
-        return filter(gv.__ne__, itertools.product(left, right))
+        left = range(0, gv[0] + 1)
+        right = range(0, gv[1] + 1)
+        return filter((0, 0).__ne__, filter(gv.__ne__, itertools.product(left, right)))
 
     def __str__(self) -> str:
         return "relaxing gap vectos"
