@@ -32,17 +32,20 @@ class GriddedPermsOnTiling:
     built by inserting points into the minimal gridded permutations.
     """
 
-    def __init__(self, tiling: "Tiling"):
+    def __init__(self, tiling: "Tiling", yield_non_minimal: bool = False):
         self._tiling = tiling
         self._minimal_gps = MinimalGriddedPerms(
             tiling.obstructions, tiling.requirements
         )
+        self._yield_non_minimal = yield_non_minimal
         self._yielded_gridded_perms: Set[GriddedPerm] = set()
 
     def prepare_queue(self, size: int) -> List[QueuePacket]:
         queue: List[QueuePacket] = []
         heapify(queue)
-        for mgp in self._minimal_gps.minimal_gridded_perms():
+        for mgp in self._minimal_gps.minimal_gridded_perms(
+            yield_non_minimal=self._yield_non_minimal
+        ):
             if len(mgp) <= size:
                 packet = QueuePacket(mgp, (-1, -1), {}, 0)
                 heappush(queue, packet)

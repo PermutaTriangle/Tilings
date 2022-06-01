@@ -2,6 +2,7 @@ import abc
 from typing import TYPE_CHECKING, Iterable, List, Optional, Set, Tuple
 
 from tilings import GriddedPerm
+from tilings.algorithms.gridded_perm_generation import GriddedPermsOnTiling
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -26,18 +27,36 @@ class ObstructionInferral(abc.ABC):
         tiling if possible.
         """
 
-    def new_obs(self) -> List[GriddedPerm]:
+    def new_obs(self, yield_non_minimal: bool = False) -> List[GriddedPerm]:
         """
         Returns the list of new obstructions that can be added to the tiling.
         """
         if self._new_obs is not None:
             return self._new_obs
-        newobs: List[GriddedPerm] = []
-        for ob in sorted(self.potential_new_obs(), key=len):
-            cont_newob = any(newob in ob for newob in newobs)
-            if not cont_newob and self.can_add_obstruction(ob, self._tiling):
-                newobs.append(ob)
-        self._new_obs = newobs
+
+        perms_to_check = tuple(self.potential_new_obs())
+        if not perms_to_check:
+            self._new_obs = []
+            return self._new_obs
+
+        max_len_of_perms_to_check = max(map(len, perms_to_check))
+        max_length = (
+            self._tiling.maximum_length_of_minimum_gridded_perm()
+            + max_len_of_perms_to_check
+        )
+        GP = GriddedPermsOnTiling(
+            self._tiling, yield_non_minimal=yield_non_minimal
+        ).gridded_perms(max_length, place_at_most=max_len_of_perms_to_check)
+        perms_left = set(perms_to_check)
+        for gp in GP:
+            to_remove: List[GriddedPerm] = []
+            for perm in perms_left:
+                if gp.contains(perm):
+                    to_remove.append(perm)
+            perms_left.difference_update(to_remove)
+            if not perms_left:
+                break
+        self._new_obs = sorted(perms_left)
         return self._new_obs
 
     @staticmethod
