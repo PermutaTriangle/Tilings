@@ -34,9 +34,16 @@ from .unfusion import DivideByN, ReverseDivideByN
 
 
 class PointingStrategy(Strategy[Tiling, GriddedPerm]):
-    def __init__(self, max_cells: int = 4) -> None:
+    def __init__(
+        self,
+        max_cells: Optional[int] = 4,
+        ignore_parent: bool = False,
+        inferrable: bool = True,
+        possibly_empty: bool = True,
+        workable: bool = True,
+    ) -> None:
         self.max_cells = max_cells
-        super().__init__()
+        super().__init__(ignore_parent, inferrable, possibly_empty, workable)
 
     def can_be_equivalent(self) -> bool:
         return False
@@ -69,6 +76,7 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
         return comb_class.active_cells - self.already_placed_cells(comb_class)
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
+        assert self.max_cells is not None
         if len(comb_class.active_cells) <= self.max_cells:
             cells = self.cells_to_place(comb_class)
             if cells:
@@ -155,6 +163,17 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
                     ] = child.get_assumption_parameter(mapped_ass)
             res.append(params)
         return tuple(res)
+
+    def __repr__(self) -> str:
+        return (
+            self.__class__.__name__ + f"({self.max_cells}, {self.ignore_parent}, "
+            f"{self.inferrable}, {self.possibly_empty}, {self.workable})"
+        )
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["max_cells"] = self.max_cells
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "PointingStrategy":
@@ -260,7 +279,7 @@ class AssumptionPointingStrategy(PointingStrategy):
         self.assumption = assumption
         assert not isinstance(assumption, ComponentAssumption)
         self.cells = frozenset(gp.pos[0] for gp in assumption.gps)
-        super().__init__(ignore_parent, inferrable, possibly_empty, workable)
+        super().__init__(None, ignore_parent, inferrable, possibly_empty, workable)
 
     def cells_to_place(self, comb_class: Tiling) -> FrozenSet[Cell]:
         return super().cells_to_place(comb_class).intersection(self.cells)
@@ -357,11 +376,16 @@ class AssumptionPointingFactory(StrategyFactory[Tiling]):
         return "assumption pointing strategy"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "()"
+        return self.__class__.__name__ + f"({self.max_cells})"
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["max_cells"] = self.max_cells
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "AssumptionPointingFactory":
-        return cls()
+        return cls(**d)
 
 
 class RequirementPointingStrategy(PointingStrategy):
@@ -538,8 +562,13 @@ class RequirementPointingFactory(StrategyFactory[Tiling]):
         return "requirement pointing strategy"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "()"
+        return self.__class__.__name__ + f"({self.max_cells})"
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["max_cells"] = self.max_cells
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "RequirementPointingFactory":
-        return cls()
+        return cls(**d)
