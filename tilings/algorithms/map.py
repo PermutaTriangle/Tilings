@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Callable, Dict, Iterable, Iterator, List, Tupl
 from tilings.exception import InvalidOperationError
 
 if TYPE_CHECKING:
-    from tilings.assumptions import TrackingAssumption
+    from tilings.assumptions import Tiling, TrackingAssumption
     from tilings.griddedperm import GriddedPerm
 
 Cell = Tuple[int, int]
@@ -191,6 +191,23 @@ class RowColMap:
         """
         for gp in gps:
             yield from self.preimage_gp(gp)
+
+    def preimage_obstruction_and_requirements(
+        self, tiling: "Tiling"
+    ) -> Tuple[List["GriddedPerm"], List[List["GriddedPerm"]]]:
+        if tiling.assumptions:
+            raise NotImplementedError("Not implemented for tilings with assumptions")
+        obs = itertools.chain.from_iterable(
+            self.preimage_gp(ob) for ob in tiling.obstructions
+        )
+        reqs = (
+            itertools.chain.from_iterable(self.preimage_gp(req) for req in req_list)
+            for req_list in tiling.requirements
+        )
+        return list(obs), list(list(r) for r in reqs)
+
+    def preimage_tiling(self, tiling: "Tiling") -> "Tiling":
+        return tiling.__class__(*self.preimage_obstruction_and_requirements(tiling))
 
     # Other method
     def max_row(self) -> int:
