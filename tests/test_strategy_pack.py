@@ -84,6 +84,7 @@ def length_row_col_partial(pack):
 packs = (
     length(TileScopePack.all_the_strategies)
     + partial(TileScopePack.insertion_point_placements)
+    + partial(TileScopePack.subobstruction_placements)
     + row_col_partial(TileScopePack.insertion_row_and_col_placements)
     + row_col_partial(TileScopePack.insertion_point_row_and_col_placements)
     + length_maxnumreq_partial(TileScopePack.only_root_placements)
@@ -114,6 +115,10 @@ packs.extend(
     + [pack.add_initial(SlidingFactory()) for pack in packs]
     + [pack.add_initial(SlidingFactory(use_symmetries=True)) for pack in packs]
     + [pack.add_initial(AssumptionAndPointJumpingFactory()) for pack in packs]
+    + [
+        pack.kitchen_sinkify(short_obs_len=4, obs_inferral_len=2, tracked=True)
+        for pack in packs
+    ]
 )
 
 

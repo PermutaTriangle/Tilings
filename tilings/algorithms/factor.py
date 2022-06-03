@@ -78,8 +78,8 @@ class Factor:
         """
         for assumption in self._tiling.assumptions:
             if isinstance(assumption, ComponentAssumption):
-                for comp in assumption.get_components(self._tiling):
-                    self._unite_cells(chain.from_iterable(gp.pos for gp in comp))
+                for cells in assumption.cell_decomposition(self._tiling):
+                    self._unite_cells(cells)
             else:
                 for gp in assumption.gps:
                     self._unite_cells(gp.pos)

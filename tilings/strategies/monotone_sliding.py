@@ -3,7 +3,7 @@ from typing import Dict, Iterator, Optional, Tuple
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
-from tilings import GriddedPerm, Tiling, TrackingAssumption
+from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
 
 
@@ -23,10 +23,7 @@ class GeneralizedSlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         child = Tiling(
             self.slide_gps(comb_class.obstructions),
             map(self.slide_gps, comb_class.requirements),
-            [
-                TrackingAssumption(self.slide_gps(ass.gps))
-                for ass in comb_class.assumptions
-            ],
+            [ass.__class__(self.slide_gps(ass.gps)) for ass in comb_class.assumptions],
         )
         if self.rotate:
             child = child.rotate90()
@@ -68,7 +65,7 @@ class GeneralizedSlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 comb_class.get_assumption_parameter(
                     ass
                 ): child.get_assumption_parameter(
-                    TrackingAssumption(self.slide_gps(ass.gps))
+                    ass.__class__(self.slide_gps(ass.gps))
                 )
                 for ass in comb_class.assumptions
             },
@@ -125,7 +122,7 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
                     comb_class.cell_basis()[(col, 0)][0],
                     comb_class.cell_basis()[(col + 1, 0)][0],
                 )
-                if len(local_cells[0]) == 1 and len(local_cells[0]) == 1:
+                if len(local_cells[0]) == 1 and len(local_cells[1]) == 1:
                     if (
                         local_cells[0][0].is_increasing()
                         and local_cells[1][0].is_increasing()

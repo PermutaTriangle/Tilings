@@ -1,12 +1,18 @@
 import abc
 from functools import partial
 from itertools import chain, combinations
-from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, Type, cast
 
 from comb_spec_searcher import StrategyFactory, SymmetryStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
+from tilings.assumptions import (
+    ComponentAssumption,
+    SkewComponentAssumption,
+    SumComponentAssumption,
+    TrackingAssumption,
+)
 
 __all__ = ("SymmetriesFactory",)
 
@@ -20,6 +26,28 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         pass
 
+    @staticmethod
+    def assumption_type_transform(
+        assumption: TrackingAssumption,
+    ) -> Type[TrackingAssumption]:
+        pass
+
+    @staticmethod
+    def _assumption_type_swap(
+        assumption: TrackingAssumption,
+    ) -> Type[TrackingAssumption]:
+        if isinstance(assumption, ComponentAssumption):
+            if isinstance(assumption, SumComponentAssumption):
+                return SkewComponentAssumption
+            return SumComponentAssumption
+        return assumption.__class__
+
+    @staticmethod
+    def _assumption_type_identity(
+        assumption: TrackingAssumption,
+    ) -> Type[TrackingAssumption]:
+        return assumption.__class__
+
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
         return (
             Tiling(
@@ -31,7 +59,9 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
                     for req in comb_class.requirements
                 ),
                 tuple(
-                    ass.__class__(map(partial(self.gp_transform, comb_class), ass.gps))
+                    self.__class__.assumption_type_transform(ass)(
+                        map(partial(self.gp_transform, comb_class), ass.gps)
+                    )
                     for ass in comb_class.assumptions
                 ),
                 remove_empty_rows_and_cols=False,
@@ -51,7 +81,9 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         child = children[0]
         mapped_assumptions = tuple(
-            ass.__class__(tuple(self.gp_transform(comb_class, gp) for gp in ass.gps))
+            self.__class__.assumption_type_transform(ass)(
+                tuple(self.gp_transform(comb_class, gp) for gp in ass.gps)
+            )
             for ass in comb_class.assumptions
         )
         return (
@@ -105,6 +137,8 @@ class TilingReverse(TilingSymmetryStrategy):
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         return self.gp_transform(tiling, gp)
 
+    assumption_type_transform = TilingSymmetryStrategy._assumption_type_swap
+
     @staticmethod
     def formal_step() -> str:
         return "reverse of the tiling"
@@ -127,6 +161,8 @@ class TilingComplement(TilingSymmetryStrategy):
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         return self.gp_transform(tiling, gp)
 
+    assumption_type_transform = TilingSymmetryStrategy._assumption_type_swap
+
     @staticmethod
     def formal_step() -> str:
         return "complement of the tiling"
@@ -148,6 +184,8 @@ class TilingInverse(TilingSymmetryStrategy):
 
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         return self.gp_transform(tiling, gp)
+
+    assumption_type_transform = TilingSymmetryStrategy._assumption_type_identity
 
     @staticmethod
     def formal_step() -> str:
@@ -180,6 +218,8 @@ class TilingAntidiagonal(TilingSymmetryStrategy):
 
         return gp.antidiagonal(antidiagonal_cell)
 
+    assumption_type_transform = TilingSymmetryStrategy._assumption_type_identity
+
     @staticmethod
     def formal_step() -> str:
         return "antidiagonal of the tiling"
@@ -204,6 +244,8 @@ class TilingRotate90(TilingSymmetryStrategy):
             return (tiling.dimensions[0] - cell[1] - 1, cell[0])
 
         return gp.rotate270(rotate270_cell)
+
+    assumption_type_transform = TilingSymmetryStrategy._assumption_type_swap
 
     @staticmethod
     def formal_step() -> str:
@@ -230,6 +272,8 @@ class TilingRotate180(TilingSymmetryStrategy):
     def inverse_gp_transform(self, tiling: Tiling, gp: GriddedPerm) -> GriddedPerm:
         return self.gp_transform(tiling, gp)
 
+    assumption_type_transform = TilingSymmetryStrategy._assumption_type_identity
+
     @staticmethod
     def formal_step() -> str:
         return "rotate the tiling 180 degrees clockwise"
@@ -254,6 +298,8 @@ class TilingRotate270(TilingSymmetryStrategy):
             return (cell[1], tiling.dimensions[1] - cell[0] - 1)
 
         return gp.rotate90(rotate90_cell)
+
+    assumption_type_transform = TilingSymmetryStrategy._assumption_type_swap
 
     @staticmethod
     def formal_step() -> str:

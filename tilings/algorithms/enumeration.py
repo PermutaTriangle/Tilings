@@ -331,7 +331,7 @@ class DatabaseEnumeration(Enumeration):
     find the generating function and the minimal polynomial in the database.
     """
 
-    API_ROOT_URL = "https://api.combopal.ru.is"
+    API_ROOT_URL = "https://api.permpal.com"
     all_verified_tilings: FrozenSet[bytes] = frozenset()
     num_verified_request = 0
 

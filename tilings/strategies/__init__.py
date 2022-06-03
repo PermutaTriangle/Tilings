@@ -1,8 +1,9 @@
-from .assumption_insertion import AddAssumptionFactory, AddInterleavingAssumptionFactory
+from .assumption_insertion import AddAssumptionFactory
 from .assumption_splitting import SplittingStrategy
 from .cell_reduction import CellReductionFactory
 from .deflation import DeflationFactory
 from .detect_components import DetectComponentsStrategy
+from .dummy_strategy import DummyStrategy
 from .experimental_verification import (
     NoRootCellVerificationStrategy,
     ShortObstructionVerificationStrategy,
@@ -18,20 +19,28 @@ from .obstruction_inferral import (
     SubobstructionInferralFactory,
 )
 from .point_jumping import AssumptionAndPointJumpingFactory
+from .pointing import (
+    AssumptionPointingFactory,
+    PointingStrategy,
+    RequirementPointingFactory,
+)
 from .rearrange_assumption import RearrangeAssumptionFactory
 from .requirement_insertion import (
     CellInsertionFactory,
     FactorInsertionFactory,
+    PointCorroborationFactory,
     PositiveCorroborationFactory,
     RemoveRequirementFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
     RequirementInsertionFactory,
     RootInsertionFactory,
+    SubobstructionInsertionFactory,
     TargetedCellInsertionFactory,
 )
 from .requirement_placement import (
     AllPlacementsFactory,
+    FusableRowAndColumnPlacementFactory,
     PatternPlacementFactory,
     RequirementPlacementFactory,
     RowAndColumnPlacementFactory,
@@ -39,8 +48,10 @@ from .requirement_placement import (
 from .row_and_col_separation import RowColumnSeparationStrategy
 from .sliding import SlidingFactory
 from .symmetry import SymmetriesFactory
+from .unfusion import UnfusionColumnStrategy, UnfusionFactory, UnfusionRowStrategy
 from .verification import (
     BasicVerificationStrategy,
+    ComponentVerificationStrategy,
     DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
     InsertionEncodingVerificationStrategy,
@@ -53,7 +64,6 @@ from .verification import (
 __all__ = [
     # Assumptions
     "AddAssumptionFactory",
-    "AddInterleavingAssumptionFactory",
     "DetectComponentsStrategy",
     "RearrangeAssumptionFactory",
     "SplittingStrategy",
@@ -61,6 +71,8 @@ __all__ = [
     "AllPlacementsFactory",
     "CellInsertionFactory",
     "FactorInsertionFactory",
+    "FusableRowAndColumnPlacementFactory",
+    "PointCorroborationFactory",
     "PositiveCorroborationFactory",
     "RemoveRequirementFactory",
     "RequirementExtensionFactory",
@@ -69,17 +81,26 @@ __all__ = [
     "RequirementCorroborationFactory",
     "RootInsertionFactory",
     "RowAndColumnPlacementFactory",
+    "SubobstructionInsertionFactory",
     "TargetedCellInsertionFactory",
     # Decomposition
     "FactorFactory",
     # Deflation
     "DeflationFactory",
+    # Derivatives
+    "AssumptionPointingFactory",
+    "PointingStrategy",
+    "RequirementPointingFactory",
+    "UnfusionColumnStrategy",
+    "UnfusionRowStrategy",
+    "UnfusionFactory",
     # Equivalence
     "MonotoneSlidingFactory",
     "PatternPlacementFactory",
     "SlidingFactory",
     # Experimental
     "AssumptionAndPointJumpingFactory",
+    "DummyStrategy",
     # Fusion
     "ComponentFusionFactory",
     "FusionFactory",
@@ -95,6 +116,7 @@ __all__ = [
     "SymmetriesFactory",
     # Verification
     "BasicVerificationStrategy",
+    "ComponentVerificationStrategy",
     "DatabaseVerificationStrategy",
     "ElementaryVerificationStrategy",
     "LocallyFactorableVerificationStrategy",

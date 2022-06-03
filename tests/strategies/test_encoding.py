@@ -11,16 +11,19 @@ from tilings import GriddedPerm, TrackingAssumption
 from tilings.strategies import (
     AllPlacementsFactory,
     AssumptionAndPointJumpingFactory,
+    AssumptionPointingFactory,
     BasicVerificationStrategy,
     CellInsertionFactory,
     CellReductionFactory,
     ComponentFusionFactory,
     DatabaseVerificationStrategy,
     DeflationFactory,
+    DummyStrategy,
     ElementaryVerificationStrategy,
     EmptyCellInferralFactory,
     FactorFactory,
     FactorInsertionFactory,
+    FusableRowAndColumnPlacementFactory,
     FusionFactory,
     InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
@@ -32,11 +35,13 @@ from tilings.strategies import (
     ObstructionTransitivityFactory,
     OneByOneVerificationStrategy,
     PatternPlacementFactory,
+    PointingStrategy,
     RearrangeAssumptionFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
     RequirementInsertionFactory,
     RequirementPlacementFactory,
+    RequirementPointingFactory,
     RootInsertionFactory,
     RowAndColumnPlacementFactory,
     RowColumnSeparationStrategy,
@@ -45,8 +50,12 @@ from tilings.strategies import (
     SplittingStrategy,
     SubclassVerificationFactory,
     SubobstructionInferralFactory,
+    SubobstructionInsertionFactory,
     SymmetriesFactory,
     TargetedCellInsertionFactory,
+    UnfusionColumnStrategy,
+    UnfusionFactory,
+    UnfusionRowStrategy,
 )
 from tilings.strategies.cell_reduction import CellReductionStrategy
 from tilings.strategies.deflation import DeflationStrategy
@@ -63,6 +72,11 @@ from tilings.strategies.point_jumping import (
     AssumptionAndPointJumpingStrategy,
     AssumptionJumpingStrategy,
     PointJumpingStrategy,
+)
+from tilings.strategies.pointing import (
+    AssumptionPointingStrategy,
+    RequirementAssumptionPointingStrategy,
+    RequirementPointingStrategy,
 )
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
@@ -235,6 +249,26 @@ def partition_ignoreparent_workable(strategy):
     ]
 
 
+def partition_ignoreparent_workable_tracked(strategy):
+    return [
+        strategy(
+            partition=partition,
+            ignore_parent=ignore_parent,
+            workable=workable,
+            tracked=tracked,
+        )
+        for partition, ignore_parent, workable, tracked in product(
+            (
+                [[(2, 1), (0, 1)], [(1, 0)]],
+                (((0, 0), (0, 2)), ((0, 1),), ((3, 3), (4, 3))),
+            ),
+            (True, False),
+            (True, False),
+            (True, False),
+        )
+    ]
+
+
 def gps_ignoreparent(strategy):
     return [
         strategy(gps=gps, ignore_parent=ignore_parent)
@@ -367,8 +401,8 @@ strategy_objects = (
     + subreqs_partial_ignoreparent_dirs(RequirementPlacementFactory)
     + [SymmetriesFactory(), BasicVerificationStrategy(), EmptyCellInferralFactory()]
     + partition_ignoreparent_workable(FactorStrategy)
-    + partition_ignoreparent_workable(FactorWithInterleavingStrategy)
-    + partition_ignoreparent_workable(FactorWithMonotoneInterleavingStrategy)
+    + partition_ignoreparent_workable_tracked(FactorWithInterleavingStrategy)
+    + partition_ignoreparent_workable_tracked(FactorWithMonotoneInterleavingStrategy)
     + ignoreparent(DatabaseVerificationStrategy)
     + ignoreparent(LocallyFactorableVerificationStrategy)
     + ignoreparent(ElementaryVerificationStrategy)
@@ -463,6 +497,40 @@ strategy_objects = (
     + [MonotoneSlidingFactory(), GeneralizedSlidingStrategy(1)]
     + indices_and_row(PointJumpingStrategy)
     + [TargetedCellInsertionFactory()]
+    + ignoreparent(SubobstructionInsertionFactory)
+    + [
+        AssumptionPointingFactory(),
+        DummyStrategy(),
+        FusableRowAndColumnPlacementFactory(),
+        PointingStrategy(),
+        RequirementPointingFactory(),
+        UnfusionRowStrategy(),
+        UnfusionColumnStrategy(),
+        UnfusionFactory(),
+    ]
+    + [
+        AssumptionPointingStrategy(
+            TrackingAssumption(
+                [GriddedPerm((0,), [(0, 0)]), GriddedPerm((0,), [(1, 0)])]
+            )
+        )
+    ]
+    + [
+        RequirementPointingStrategy(
+            (
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+            ),
+            (0, 1),
+        ),
+        RequirementAssumptionPointingStrategy(
+            (
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+            ),
+            (0, 1),
+        ),
+    ]
 )
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))

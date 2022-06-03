@@ -9,7 +9,7 @@ from comb_spec_searcher.strategies import Rule
 from comb_spec_searcher.strategies.strategy import VerificationStrategy
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import Factor
+from tilings.algorithms import Factor, SubobstructionInferral
 
 Cell = Tuple[int, int]
 ListRequirement = Tuple[GriddedPerm, ...]
@@ -520,17 +520,18 @@ class RequirementCorroborationFactory(AbstractRequirementInsertionFactory):
 
 class PositiveCorroborationFactory(AbstractRequirementInsertionFactory):
     """
-    The point corroboration strategy.
+    The positive corroboration strategy.
 
-    The point corroboration strategy inserts points into any two point
-    or empty cells which can not both be a point, i.e., one is a point
+    The positive corroboration strategy inserts points into any two
+    cells which can not both be positive, i.e., one is positive
     and the other is empty.
     """
 
     def __init__(self, ignore_parent: bool = True):
         super().__init__(ignore_parent)
 
-    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+    @staticmethod
+    def cells_to_yield(tiling: Tiling) -> Set[Cell]:
         potential_cells: Set[Tuple[Cell, ...]] = set()
         cells_to_yield: Set[Cell] = set()
         for gp in tiling.obstructions:
@@ -543,9 +544,39 @@ class PositiveCorroborationFactory(AbstractRequirementInsertionFactory):
                         potential_cells.add(cells)
                 else:
                     cells_to_yield.update(gp.pos)
-        for cell in cells_to_yield:
+        return cells_to_yield
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        for cell in self.cells_to_yield(tiling):
             if cell not in tiling.point_cells:
                 yield (GriddedPerm.point_perm(cell),)
+
+    def __str__(self) -> str:
+        return "positive corroboration"
+
+
+class PointCorroborationFactory(PositiveCorroborationFactory):
+    """
+    The point corroboration strategy.
+
+    The point corroboration strategy inserts points into any two point
+    or empty cells which can not both be a point, i.e., one is a point
+    and the other is empty.
+    """
+
+    @staticmethod
+    def cells_to_yield(tiling: Tiling) -> Set[Cell]:
+        cell_basis = tiling.cell_basis()
+        point_or_empty_cells = set()
+        for cell, (patts, _) in cell_basis.items():
+            if patts == [Perm((0, 1)), Perm((1, 0))]:
+                point_or_empty_cells.add(cell)
+        point_or_empty_cells = point_or_empty_cells - tiling.point_cells
+        if point_or_empty_cells:
+            return point_or_empty_cells.intersection(
+                PositiveCorroborationFactory.cells_to_yield(tiling)
+            )
+        return set()
 
     def __str__(self) -> str:
         return "point corroboration"
@@ -642,3 +673,16 @@ class TargetedCellInsertionFactory(AbstractRequirementInsertionFactory):
 
     def __str__(self) -> str:
         return "targeted cell insertions"
+
+
+class SubobstructionInsertionFactory(AbstractRequirementInsertionFactory):
+    """
+    Insert all subobstructions of the obstructions on the tiling.
+    """
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        for gp in SubobstructionInferral(tiling).potential_new_obs():
+            yield (gp,)
+
+    def __str__(self) -> str:
+        return "subobstruction insertion"

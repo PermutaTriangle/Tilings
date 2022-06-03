@@ -39,8 +39,7 @@ class AssumptionOrPointJumpingStrategy(Strategy[Tiling, GriddedPerm]):
 
     def swapped_assumptions(self, tiling: Tiling) -> Tuple[TrackingAssumption, ...]:
         return tuple(
-            TrackingAssumption(map(self._swapped_gp, ass.gps))
-            for ass in tiling.assumptions
+            ass.__class__(map(self._swapped_gp, ass.gps)) for ass in tiling.assumptions
         )
 
     def _swapped_gp(self, gp: GriddedPerm) -> GriddedPerm:
@@ -140,9 +139,7 @@ class AssumptionAndPointJumpingStrategy(
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
-        gp = objs[0]
-        assert gp is not None
-        yield gp
+        raise NotImplementedError("not implemented map for assumption or point jumping")
 
     def forward_map(
         self,
@@ -150,7 +147,7 @@ class AssumptionAndPointJumpingStrategy(
         obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[Optional[GriddedPerm]]:
-        return (obj,)
+        raise NotImplementedError("not implemented map for assumption or point jumping")
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -231,7 +228,7 @@ class AssumptionJumpingStrategy(AssumptionOrPointJumpingStrategy):
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
-        raise NotImplementedError
+        raise NotImplementedError("not implemented map for assumption or point jumping")
 
     def forward_map(
         self,
@@ -239,7 +236,7 @@ class AssumptionJumpingStrategy(AssumptionOrPointJumpingStrategy):
         obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[Optional[GriddedPerm]]:
-        raise NotImplementedError
+        raise NotImplementedError("not implemented map for assumption or point jumping")
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -310,7 +307,7 @@ class PointJumpingStrategy(AssumptionOrPointJumpingStrategy):
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
-        raise NotImplementedError
+        raise NotImplementedError("not implemented map for assumption or point jumping")
 
     def forward_map(
         self,
@@ -318,7 +315,7 @@ class PointJumpingStrategy(AssumptionOrPointJumpingStrategy):
         obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[Optional[GriddedPerm]]:
-        raise NotImplementedError
+        raise NotImplementedError("not implemented map for assumption or point jumping")
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None

@@ -1,5 +1,4 @@
 """The cell reduction strategy."""
-from itertools import chain
 from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, cast
 
 import sympy
@@ -17,7 +16,7 @@ from comb_spec_searcher.typing import (
 )
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import ComponentAssumption, TrackingAssumption
 
 Cell = Tuple[int, int]
 
@@ -105,10 +104,21 @@ class CellReductionStrategy(Strategy[Tiling, GriddedPerm]):
             ]
             + [GriddedPerm.single_cell(extra, self.cell)]
         )
+        reduced_reqs = sorted(
+            req
+            for req in comb_class.requirements
+            if not all(gp.pos[0] == self.cell and gp.is_single_cell() for gp in req)
+        )
+        reduced_ass = sorted(
+            ass
+            for ass in comb_class.assumptions
+            if not isinstance(ass, ComponentAssumption)
+            or GriddedPerm.point_perm(self.cell) not in ass.gps
+        )
         reduced_tiling = Tiling(
             reduced_obs,
-            comb_class.requirements,
-            comb_class.assumptions,
+            reduced_reqs,
+            reduced_ass,
             remove_empty_rows_and_cols=False,
             derive_empty=False,
             simplify=False,
@@ -231,33 +241,54 @@ class CellReductionFactory(StrategyFactory[Tiling]):
             if not (  # a finite cell
                 any(patt.is_increasing() for patt in cell_bases[cell][0])
                 and any(patt.is_decreasing() for patt in cell_bases[cell][0])
+            ) and self.can_reduce_cell_with_requirements_and_assumptions(
+                comb_class, cell
             ):
                 yield CellReductionStrategy(cell, True, self.tracked)
                 yield CellReductionStrategy(cell, False, self.tracked)
 
-    @staticmethod
-    def reducible_cells(tiling: Tiling) -> Set[Cell]:
-        """Return the set of cells with at most one point in a crossing
-        gridded permutation touching them"""
-
-        def gp_in_row_and_col(gp: GriddedPerm, cell: Cell) -> bool:
-            """Return True if there are points touching a cell in the row and col of
-            cell that isn't cell itself."""
-            x, y = cell
-            return (
-                len(set(gp.pos[idx][1] for idx, _ in gp.get_points_col(x))) > 1
-                and len(set(gp.pos[idx][0] for idx, _ in gp.get_points_row(y))) > 1
+    def can_reduce_cell_with_requirements_and_assumptions(
+        self, tiling: Tiling, cell: Cell
+    ) -> bool:
+        return all(  # local
+            all(gp.pos[0] == cell and gp.is_single_cell() for gp in req)
+            or all(
+                # at most one point in cell
+                sum(1 for _ in gp.points_in_cell(cell)) < 2
+                # no gp in row and col
+                and not self.gp_in_row_and_col(gp, cell)
+                for gp in req
             )
+            for req in tiling.requirements
+        ) and all(
+            not isinstance(ass, ComponentAssumption)
+            or GriddedPerm.point_perm(cell) not in ass.gps
+            or len(ass.gps) == 1
+            for ass in tiling.assumptions
+        )
 
-        gps: Iterator[GriddedPerm] = chain(tiling.obstructions, *tiling.requirements)
+    @staticmethod
+    def gp_in_row_and_col(gp: GriddedPerm, cell: Cell) -> bool:
+        """Return True if there are points touching a cell in the row and col of
+        cell that isn't cell itself."""
+        x, y = cell
+        return (
+            len(set(gp.pos[idx][1] for idx, _ in gp.get_points_col(x))) > 1
+            and len(set(gp.pos[idx][0] for idx, _ in gp.get_points_row(y))) > 1
+        )
+
+    def reducible_cells(self, tiling: Tiling) -> Set[Cell]:
+        """Return the set of non-monotone cells with at most one point in a crossing
+        obstrution touching them, and no obstruction touching a cell in the row and
+        a cell in the column."""
         cells = set(tiling.active_cells) - set(tiling.point_cells)
-        for gp in gps:
+        for gp in tiling.obstructions:
             if not cells:
                 break
             if not gp.is_localized():
                 seen = set()
                 for cell in gp.pos:
-                    if cell in seen or gp_in_row_and_col(gp, cell):
+                    if cell in seen or self.gp_in_row_and_col(gp, cell):
                         cells.discard(cell)
                     seen.add(cell)
             elif len(gp) == 2:

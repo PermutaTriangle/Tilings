@@ -1,8 +1,19 @@
 from collections import Counter
 from functools import reduce
-from itertools import chain
+from itertools import chain, combinations
 from operator import mul
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    cast,
+)
 
 from sympy import Eq, Function
 
@@ -30,6 +41,10 @@ from tilings.algorithms import (
 from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
 from tilings.misc import multinomial, partitions_iterator
+from tilings.strategies.assumption_insertion import (
+    AddAssumptionsConstructor,
+    AddAssumptionsStrategy,
+)
 
 Cell = Tuple[int, int]
 
@@ -40,6 +55,13 @@ __all__ = (
     "FactorWithMonotoneInterleavingStrategy",
 )
 
+TempGP = Tuple[
+    Tuple[
+        Tuple[Union[float, int], ...], Tuple[Union[float, int], ...], Tuple[Cell, ...]
+    ],
+    ...,
+]
+
 
 class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
     def __init__(
@@ -49,7 +71,9 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         workable: bool = True,
     ):
         self.partition = tuple(sorted(tuple(sorted(p)) for p in partition))
-        inferrable = any(interleaving_rows_and_cols(self.partition))
+        inferrable = any(
+            FactorWithInterleavingStrategy.interleaving_rows_and_cols(self.partition)
+        )
         super().__init__(
             ignore_parent=ignore_parent, workable=workable, inferrable=inferrable
         )
@@ -69,8 +93,9 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
             comb_class.extra_parameters, comb_class.assumptions
         ):
             for idx, child in enumerate(children):
-                # TODO: consider skew/sum
-                new_assumption = child.forward_map.map_assumption(assumption)
+                new_assumption = child.forward_map.map_assumption(assumption).avoiding(
+                    child.obstructions
+                )
                 if new_assumption.gps:
                     child_var = child.get_assumption_parameter(new_assumption)
                     extra_parameters[idx][parent_var] = child_var
@@ -156,64 +181,6 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
 # interleavings of a factor. They are also used by AddInterleavingAssumptionStrategy.
 
 
-def interleaving_rows_and_cols(
-    partition: Tuple[Tuple[Cell, ...], ...]
-) -> Tuple[Set[int], Set[int]]:
-    """
-    Return the set of cols and the set of rows that are being interleaved when
-    factoring with partition.
-    """
-    cols: Set[int] = set()
-    rows: Set[int] = set()
-    x_seen: Set[int] = set()
-    y_seen: Set[int] = set()
-    for part in partition:
-        cols.update(x for x, _ in part if x in x_seen)
-        rows.update(y for _, y in part if y in y_seen)
-        x_seen.update(x for x, _ in part)
-        y_seen.update(y for _, y in part)
-    return cols, rows
-
-
-def assumptions_to_add(
-    cells: Tuple[Cell, ...], cols: Set[int], rows: Set[int]
-) -> Tuple[TrackingAssumption, ...]:
-    """
-    Return the assumptions that should be tracked in the set of cells if we are
-    interleaving the given rows and cols.
-    """
-    col_assumptions = [
-        TrackingAssumption(
-            [GriddedPerm.point_perm(cell) for cell in cells if x == cell[0]]
-        )
-        for x in cols
-    ]
-    row_assumptions = [
-        TrackingAssumption(
-            [GriddedPerm.point_perm(cell) for cell in cells if y == cell[1]]
-        )
-        for y in rows
-    ]
-    return tuple(ass for ass in chain(col_assumptions, row_assumptions) if ass.gps)
-
-
-def contains_interleaving_assumptions(
-    comb_class: Tiling, partition: Tuple[Tuple[Cell, ...], ...]
-) -> bool:
-    """
-    Return True if the parent tiling contains all of the necessary tracking
-    assumptions needed to count the interleavings, and therefore the
-    children too.
-    """
-    cols, rows = interleaving_rows_and_cols(partition)
-    return all(
-        ass in comb_class.assumptions
-        for ass in chain.from_iterable(
-            assumptions_to_add(cells, cols, rows) for cells in partition
-        )
-    )
-
-
 class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
     def __init__(
         self,
@@ -221,6 +188,7 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
         children: Iterable[Tiling],
         extra_parameters: Tuple[Dict[str, str], ...],
         interleaving_parameters: Iterable[Tuple[str, ...]],
+        insertion_constructor: Optional[AddAssumptionsConstructor],
     ):
         super().__init__(parent, children, extra_parameters)
         self.interleaving_parameters = tuple(interleaving_parameters)
@@ -228,6 +196,7 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
             tuple(parent.extra_parameters.index(k) for k in parameters)
             for parameters in interleaving_parameters
         )
+        self.insertion_constructor = insertion_constructor
 
     @staticmethod
     def is_equivalence() -> bool:
@@ -253,12 +222,20 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
                 1,
             )
             interleaved_terms[parameters] += multiplier * value
+        if self.insertion_constructor:
+            new_terms: Terms = Counter()
+            for param, value in interleaved_terms.items():
+                new_terms[self.insertion_constructor.child_param_map(param)] += value
+            return new_terms
         return interleaved_terms
 
     def get_sub_objects(
         self, subobjs: SubObjects, n: int
     ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
-        raise NotImplementedError
+        for param, objs in super().get_sub_objects(subobjs, n):
+            if self.insertion_constructor:
+                param = self.insertion_constructor.child_param_map(param)
+            yield param, objs
 
     def random_sample_sub_objects(
         self,
@@ -272,32 +249,136 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
 
 
 class FactorWithInterleavingStrategy(FactorStrategy):
+    def __init__(
+        self,
+        partition: Iterable[Iterable[Cell]],
+        ignore_parent: bool = True,
+        workable: bool = True,
+        tracked: bool = True,
+    ):
+        super().__init__(partition, ignore_parent, workable)
+        self.tracked = tracked
+        self.cols, self.rows = self.interleaving_rows_and_cols(self.partition)
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["tracked"] = self.tracked
+        return d
+
+    def __repr__(self) -> str:
+        args = ", ".join(
+            [
+                f"partition={self.partition}",
+                f"ignore_parent={self.ignore_parent}",
+                f"workable={self.workable}",
+                f"tracked={self.tracked}",
+            ]
+        )
+        return f"{self.__class__.__name__}({args})"
+
+    def is_two_way(self, comb_class: Tiling) -> bool:  # type: ignore
+        return self.is_reversible(comb_class)
+
+    def is_reversible(self, comb_class: Tiling) -> bool:  # type: ignore
+        return not bool(self.assumptions_to_add(comb_class))
+
     def formal_step(self) -> str:
         return "interleaving " + super().formal_step()
+
+    def assumptions_to_add(self, comb_class: Tiling) -> Tuple[TrackingAssumption, ...]:
+        """Return the set of assumptions that need to be added to"""
+        cols, rows = self.interleaving_rows_and_cols(self.partition)
+        return tuple(
+            ass
+            for ass in chain.from_iterable(
+                self._assumptions_to_add(cells, cols, rows) for cells in self.partition
+            )
+            if ass not in comb_class.assumptions
+        )
+
+    @staticmethod
+    def interleaving_rows_and_cols(
+        partition: Tuple[Tuple[Cell, ...], ...]
+    ) -> Tuple[Set[int], Set[int]]:
+        """
+        Return the set of cols and the set of rows that are being interleaved when
+        factoring with partition.
+        """
+        cols: Set[int] = set()
+        rows: Set[int] = set()
+        x_seen: Set[int] = set()
+        y_seen: Set[int] = set()
+        for part in partition:
+            cols.update(x for x, _ in part if x in x_seen)
+            rows.update(y for _, y in part if y in y_seen)
+            x_seen.update(x for x, _ in part)
+            y_seen.update(y for _, y in part)
+        return cols, rows
+
+    @staticmethod
+    def _assumptions_to_add(
+        cells: Tuple[Cell, ...], cols: Set[int], rows: Set[int]
+    ) -> Tuple[TrackingAssumption, ...]:
+        """
+        Return the assumptions that should be tracked in the set of cells if we are
+        interleaving the given rows and cols.
+        """
+        col_assumptions = [
+            TrackingAssumption(
+                [GriddedPerm.point_perm(cell) for cell in cells if x == cell[0]]
+            )
+            for x in cols
+        ]
+        row_assumptions = [
+            TrackingAssumption(
+                [GriddedPerm.point_perm(cell) for cell in cells if y == cell[1]]
+            )
+            for y in rows
+        ]
+        return tuple(ass for ass in chain(col_assumptions, row_assumptions) if ass.gps)
+
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
+        if self.tracked:
+            comb_class = comb_class.add_assumptions(self.assumptions_to_add(comb_class))
+        return super().decomposition_function(comb_class)
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Interleaving:
         if children is None:
             children = self.decomposition_function(comb_class)
-        try:
-            interleaving_parameters = self.interleaving_parameters(comb_class)
-        except ValueError as e:
-            # must be untracked
-            raise NotImplementedError("The interleaving factor was not tracked.") from e
+        assumptions = self.assumptions_to_add(comb_class)
+        insertion_constructor = None
+        if assumptions:
+            insertion_constructor = AddAssumptionsStrategy(assumptions).constructor(
+                comb_class
+            )
+            comb_class = comb_class.add_assumptions(assumptions)
+        interleaving_parameters = self.interleaving_parameters(comb_class)
+        if interleaving_parameters and not self.tracked:
+            raise NotImplementedError("The interleaving factor was not tracked.")
         return Interleaving(
             comb_class,
             children,
             self.extra_parameters(comb_class, children),
             interleaving_parameters,
+            insertion_constructor,
         )
+
+    def reverse_constructor(
+        self,
+        idx: int,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ):
+        raise NotImplementedError
 
     def interleaving_parameters(self, comb_class: Tiling) -> List[Tuple[str, ...]]:
         """
         Return the parameters on the parent tiling that needed to be interleaved.
         """
         res: List[Tuple[str, ...]] = []
-        cols, rows = interleaving_rows_and_cols(self.partition)
+        cols, rows = self.interleaving_rows_and_cols(self.partition)
         for x in cols:
             assumptions = [
                 TrackingAssumption(
@@ -334,15 +415,129 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
-        raise NotImplementedError
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        gps_to_combine = tuple(
+            tiling.backward_map.map_gp(cast(GriddedPerm, gp))
+            for gp, tiling in zip(objs, children)
+        )
+        all_gps_to_combine: List[TempGP] = [
+            tuple(
+                (tuple(range(len(gp))), tuple(gp.patt), gp.pos) for gp in gps_to_combine
+            )
+        ]
+        for row in self.rows:
+            all_gps_to_combine = self._interleave_row(all_gps_to_combine, row)
+        for col in self.cols:
+            all_gps_to_combine = self._interleave_col(all_gps_to_combine, col)
 
-    def forward_map(
+        for interleaved_gps_to_combine in all_gps_to_combine:
+            temp = [
+                ((cell[0], idx), (cell[1], val))
+                for gp in interleaved_gps_to_combine
+                for idx, val, cell in zip(*gp)
+            ]
+            temp.sort()
+            new_pos = [(idx[0], val[0]) for idx, val in temp]
+            new_patt = Perm.to_standard(val for _, val in temp)
+            assert not GriddedPerm(new_patt, new_pos).contradictory()
+            yield GriddedPerm(new_patt, new_pos)
+
+    def _interleave_row(
         self,
-        comb_class: Tiling,
-        obj: GriddedPerm,
-        children: Optional[Tuple[Tiling, ...]] = None,
-    ) -> Tuple[GriddedPerm, ...]:
-        raise NotImplementedError
+        all_gps_to_combine: List[TempGP],
+        row: int,
+    ) -> List[TempGP]:
+        # pylint: disable=too-many-locals
+        res: List[TempGP] = []
+        for gps_to_combine in all_gps_to_combine:
+            row_points = tuple(
+                tuple(
+                    (idx, values[idx])
+                    for idx, cell in enumerate(position)
+                    if cell[1] == row
+                )
+                for _, values, position in gps_to_combine
+            )
+            total = sum(len(points) for points in row_points)
+            if total == 0:
+                res.append(gps_to_combine)
+                continue
+            min_val = min(val for _, val in chain(*row_points))
+            max_val = max(val for _, val in chain(*row_points)) + 1
+            temp_values = tuple(
+                min_val + i * (max_val - min_val) / total for i in range(total)
+            )
+            for partition in self._partitions(
+                set(temp_values), tuple(len(indices) for indices in row_points)
+            ):
+                new_gps_to_combine = []
+                for part, (indices, values, position), points in zip(
+                    partition, gps_to_combine, row_points
+                ):
+                    new_values = list(values)
+                    actual_indices = [
+                        idx for _, idx in sorted((val, idx) for idx, val in points)
+                    ]
+                    for idx, val in zip(actual_indices, sorted(part)):
+                        new_values[idx] = val
+                    new_gps_to_combine.append((indices, tuple(new_values), position))
+                res.append(tuple(new_gps_to_combine))
+        return res
+
+    def _interleave_col(
+        self,
+        all_gps_to_combine: List[TempGP],
+        col: int,
+    ):
+        # pylint: disable=too-many-locals
+        res: List[TempGP] = []
+        for gps_to_combine in all_gps_to_combine:
+            col_points = tuple(
+                tuple(
+                    (idx, indices[idx])
+                    for idx, cell in enumerate(position)
+                    if cell[0] == col
+                )
+                for indices, _, position in gps_to_combine
+            )
+            total = sum(len(points) for points in col_points)
+            if total == 0:
+                res.append(gps_to_combine)
+                continue
+            mindex = min(val for _, val in chain(*col_points))
+            maxdex = max(val for _, val in chain(*col_points)) + 1
+            temp_indices = tuple(
+                mindex + i * (maxdex - mindex) / total for i in range(total)
+            )
+            for partition in self._partitions(
+                set(temp_indices), tuple(len(indices) for indices in col_points)
+            ):
+                new_gps_to_combine = []
+                for part, (indices, values, position), points in zip(
+                    partition, gps_to_combine, col_points
+                ):
+                    new_indices = list(indices)
+                    for idx, new_idx in zip([idx for idx, _ in points], sorted(part)):
+                        new_indices[idx] = new_idx
+                    new_gps_to_combine.append((tuple(new_indices), values, position))
+                res.append(tuple(new_gps_to_combine))
+        return res
+
+    @staticmethod
+    def _partitions(
+        values: Set[float], size_of_parts: Tuple[int, ...]
+    ) -> Iterator[Tuple[Tuple[float, ...], ...]]:
+        if not size_of_parts:
+            if not values:
+                yield tuple()
+            return
+        size = size_of_parts[0]
+        for part in combinations(values, size):
+            for rest in FactorWithInterleavingStrategy._partitions(
+                values - set(part), size_of_parts[1:]
+            ):
+                yield (part,) + rest
 
     @staticmethod
     def get_eq_symbol() -> str:
@@ -353,29 +548,8 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         return "*"
 
 
-class MonotoneInterleaving(Interleaving):
-    pass
-
-
 class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
-    def constructor(
-        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
-    ) -> MonotoneInterleaving:
-        if children is None:
-            children = self.decomposition_function(comb_class)
-        try:
-            interleaving_parameters = self.interleaving_parameters(comb_class)
-        except ValueError as e:
-            # must be untracked
-            raise NotImplementedError(
-                "The monotone interleaving was not tracked."
-            ) from e
-        return MonotoneInterleaving(
-            comb_class,
-            children,
-            self.extra_parameters(comb_class, children),
-            interleaving_parameters,
-        )
+    pass
 
 
 class FactorFactory(StrategyFactory[Tiling]):
@@ -424,14 +598,8 @@ class FactorFactory(StrategyFactory[Tiling]):
                     components = tuple(
                         tuple(chain.from_iterable(part)) for part in partition
                     )
-                    if not self.tracked or contains_interleaving_assumptions(
-                        comb_class, components
-                    ):
-                        yield self._build_strategy(components, workable=False)
-            if not self.tracked or contains_interleaving_assumptions(
-                comb_class, min_comp
-            ):
-                yield self._build_strategy(min_comp, workable=self.workable)
+                    yield self._build_strategy(components, workable=False)
+            yield self._build_strategy(min_comp, workable=self.workable)
 
     def _build_strategy(
         self, components: Tuple[Tuple[Cell, ...], ...], workable: bool
@@ -441,9 +609,20 @@ class FactorFactory(StrategyFactory[Tiling]):
 
         It ensure that a plain factor rule is returned.
         """
-        interleaving = any(interleaving_rows_and_cols(components))
-        factor_strat = self.factor_class if interleaving else FactorStrategy
-        return factor_strat(
+        interleaving = any(
+            FactorWithInterleavingStrategy.interleaving_rows_and_cols(components)
+        )
+        if interleaving:
+            return cast(
+                FactorStrategy,
+                self.factor_class(
+                    components,
+                    ignore_parent=self.ignore_parent,
+                    workable=workable,
+                    tracked=self.tracked,
+                ),
+            )
+        return FactorStrategy(
             components, ignore_parent=self.ignore_parent, workable=workable
         )
 
