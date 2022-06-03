@@ -377,6 +377,7 @@ class TileScopePack(StrategyPack):
         ks_pack.expansion_strats = ks_pack.expansion_strats + (
             (
                 strat.AssumptionPointingFactory(),
+                strat.RequirementPointingFactory(),
                 strat.PointingStrategy(),
                 strat.UnfusionFactory(),
                 strat.FusableRowAndColumnPlacementFactory(),
