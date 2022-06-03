@@ -646,7 +646,9 @@ class Tiling(CombinatorialClass):
         """Returns a new tiling with the added assumption."""
         return self.add_assumptions((assumption,))
 
-    def add_assumptions(self, assumptions: Iterable[TrackingAssumption]) -> "Tiling":
+    def add_assumptions(
+        self, assumptions: Iterable[TrackingAssumption], clean: bool = True
+    ) -> "Tiling":
         """Returns a new tiling with the added assumptions."""
         tiling = Tiling(
             self._obstructions,
@@ -657,7 +659,8 @@ class Tiling(CombinatorialClass):
             simplify=False,
             sorted_input=True,
         )
-        tiling.clean_assumptions()
+        if clean:
+            tiling.clean_assumptions()
         return tiling
 
     def remove_assumption(self, assumption: TrackingAssumption):
@@ -680,7 +683,7 @@ class Tiling(CombinatorialClass):
         tiling.clean_assumptions()
         return tiling
 
-    def remove_assumptions(self):
+    def remove_assumptions(self) -> "Tiling":
         """
         Return the tiling with all assumptions removed.
         """
