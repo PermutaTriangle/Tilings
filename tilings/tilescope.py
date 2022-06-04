@@ -534,6 +534,8 @@ class TrackedClassDB(ClassDB[Tiling]):
             if compressed_key not in self.tilings_to_label:
                 self.add(key)
             info: Optional[Info] = self.classdb._get_info(underlying_label)
+            if info is None:
+                raise ValueError("Invalid key")
             info = Info(
                 key,
                 self.tilings_to_label[compressed_key],
