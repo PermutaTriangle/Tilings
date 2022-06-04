@@ -114,7 +114,7 @@ class LimitedAssumptionTileScope(TileScope):
             **kwargs,
         )
 
-    def _rules_from_strategy(
+    def _rules_from_strategy(  # type: ignore
         self, comb_class: CombinatorialClassType, strategy: CSSstrategy
     ) -> Iterator[AbstractRule]:
         """
@@ -544,6 +544,8 @@ class TrackedClassDB(ClassDB[Tiling]):
                 raise KeyError("Key not in ClassDB")
             underlying_label, cells = self._decompress_key(self.label_to_tilings[key])
             info = self.classdb.label_to_info.get(underlying_label)
+            if info is None:
+                raise ValueError("Invalid key")
             info = Info(
                 self.classdb.get_class(underlying_label).add_assumptions(
                     (TrackingAssumption.from_cells(c) for c in cells), clean=False
