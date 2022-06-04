@@ -447,7 +447,7 @@ class TrackedClassDB(ClassDB[Tiling]):
             """
             bytes_needed = max(math.ceil(n.bit_length() / 8), 1)
             result: List[int] = [bytes_needed]
-            while n >= 2 ** 8:
+            while n >= 2**8:
                 result.append(n & 0xFF)
                 n = n >> 8
             result.append(n)
