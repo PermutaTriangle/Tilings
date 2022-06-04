@@ -533,7 +533,7 @@ class TrackedClassDB(ClassDB[Tiling]):
             compressed_key = self._compress_key(actual_key)
             if compressed_key not in self.tilings_to_label:
                 self.add(key)
-            info = self.classdb._get_info(underlying_label)
+            info: Optional[Info] = self.classdb._get_info(underlying_label)
             info = Info(
                 key,
                 self.tilings_to_label[compressed_key],
