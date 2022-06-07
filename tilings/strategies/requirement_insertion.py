@@ -400,7 +400,7 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
         extra_basis: Optional[List[Perm]] = None,
         limited_insertion: bool = True,
         ignore_parent: bool = False,
-        allow_factorable_insertions: bool = False,
+        allow_factorable_insertions: bool = True,
     ) -> None:
         self.limited_insertion = limited_insertion
         self.allow_factorable_insertions = allow_factorable_insertions

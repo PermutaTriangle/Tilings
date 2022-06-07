@@ -5,17 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-
-## [3.1.0] - 2022-01-17
 ### Added
-- `Tiling.remove_requirement` method that removes a requirement from a tiling.
-- `RemoveRequirementFactory` which adds the rules where we insert a requirement to a
-tiling after we first remove that requirement. This is added to
-`LocallyFactorableVerificationStrategy.pack`.
-- The tiling initialiser will now add factors of obstructions if it is implied by
-multiple different obs and one requirement list of size possibly greater than one.
-Previously it was only doing the case where a single ob's factor is implied by a
-requirement.
 - added `TileScopePack.requirement_and_row_and_col_placements`
 - `AssumptionAndPointJumpingFactory` which adds rules where requirements and/or
   assumptions are swapped around a fusable row or column.
@@ -49,21 +39,13 @@ swapped around a fusable row or column.
 - `UnfusionFactory` that unfuses either all the rows or columns. Also non-productive.
 - `FusableRowAndColumnPlacementFactory` places fusable rows and columns.
 
-
 ### Fixed
-- `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
-- Bug with sliding symmetries
-- The tiling initialiser was not removing duplicate/redundant requirements.
 - `Factor` was not factoring correctly with respect to component assumptions.
 - `ComponentAssumption` are flipped when taking symmetries
 - `Tiling.get_minimum_value` fixed for component assumptions
 - `RearrangeAssumptionFactory` will ignore component assumptions
 
 ### Changed
-- One by one verification will now only verify subclasses of the given basis.
-- Verification strategies no longer ignore parent
-- `TrackedSearcher` now uses a `TrackedQueue` and is able to work with all packs
-   and new future strategies.
 - `TileScopePack.make_tracked` will add the appropriate tracking methods for
   interleaving factors and make strategies tracked if it can be.
 - The `GriddedPermReduction` limits the size of obstructions it tries to infer in
@@ -80,10 +62,35 @@ swapped around a fusable row or column.
 - `is_component` method of assumptions updated to consider cell decomposition
 - `AddAssumptionsStrategy.is_reverible` is now True when the assumption covers the 
   whole tiling.
+- The default behavior for `RequirementInsertion` is to allow insertion of factorable
+  requirements
 
 ### Removed
 - `AddInterleavingAssumptionsFactory`. The factor strategy now adds the relevant 
   assumptions where necessary directly, lowering the number of CVs needed. 
+
+
+## [3.1.0] - 2022-01-17
+### Added
+- `Tiling.remove_requirement` method that removes a requirement from a tiling.
+- `RemoveRequirementFactory` which adds the rules where we insert a requirement to a
+tiling after we first remove that requirement. This is added to
+`LocallyFactorableVerificationStrategy.pack`.
+- The tiling initialiser will now add factors of obstructions if it is implied by
+multiple different obs and one requirement list of size possibly greater than one.
+Previously it was only doing the case where a single ob's factor is implied by a
+requirement.
+
+### Fixed
+- `ForgetTrackedSearcher` was not retroactively applying strategies that had a `basis`.
+- Bug with sliding symmetries
+- The tiling initialiser was not removing duplicate/redundant requirements.
+
+### Changed
+- One by one verification will now only verify subclasses of the given basis.
+- Verification strategies no longer ignore parent
+- `TrackedSearcher` now uses a `TrackedQueue` and is able to work with all packs
+   and new future strategies.
 
 ### Deprecated
 - Python 3.7 is no longer supported
