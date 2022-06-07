@@ -124,7 +124,7 @@ class LimitedAssumptionTileScope(TileScope):
                     comb_class, strategy_generator, label
                 ):
                     if all(
-                        num_child_assumptions(child.assumptions) <= self.max_assumptions
+                        num_child_assumptions(child) <= self.max_assumptions
                         for child in rule.children
                     ):
                         self.add_rule(start_label, end_labels, rule)
