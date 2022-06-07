@@ -19,23 +19,23 @@ swapped around a fusable row or column.
   cell.
 - `CellReductionFactory` which changes a cell to monotone if at most one point of
   any crossing gp touches that cell.
-- `PositiveCorroborationFactory` that inserts into cells which if positive makes 
-  another cell empty. Also, the `PointCorroborationFactory`, which does this for 
+- `PositiveCorroborationFactory` that inserts into cells which if positive makes
+  another cell empty. Also, the `PointCorroborationFactory`, which does this for
   point or empty cells which is added to most packs.
-- `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can 
-  lead to factoring out a verified sub tiling. 
-- `ComponentVerificationStrategy` which is added to component fusion packs. 
-- `ComponentToPointAssumptionStrategy` that changes component assumptions to point 
+- `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can
+  lead to factoring out a verified sub tiling.
+- `ComponentVerificationStrategy` which is added to component fusion packs.
+- `ComponentToPointAssumptionStrategy` that changes component assumptions to point
   assumptions. These strategies are yielded in `RearrangeAssumptionFactory`.
 - `StrategyPack.kitchen_sinkify` to add many experimental strategies to the pack
 - `SubobstructionInsertionFactory` that inserts subobstructions and the pack
-  `TileScopePack.subobstruction_placements` which uses it. 
-- `FactorWithInterleavingStrategy.backward_map` so you can now generate permutation 
+  `TileScopePack.subobstruction_placements` which uses it.
+- `FactorWithInterleavingStrategy.backward_map` so you can now generate permutation
   from specifications using interleaving factors.
-- `DummyStrategy` that gives a quick template for making strategies. 
-- `PointingStrategy`, `AssumptionPointingFactory` and `RequirementPointingFactory` 
-  that place points directionless in non-point cells. This are a non-productive 
-  strategy so should be used with `RuleDBForest`. 
+- `DummyStrategy` that gives a quick template for making strategies.
+- `PointingStrategy`, `AssumptionPointingFactory` and `RequirementPointingFactory`
+  that place points directionless in non-point cells. This are a non-productive
+  strategy so should be used with `RuleDBForest`.
 - `UnfusionFactory` that unfuses either all the rows or columns. Also non-productive.
 - `FusableRowAndColumnPlacementFactory` places fusable rows and columns.
 
@@ -60,14 +60,15 @@ swapped around a fusable row or column.
 - `GuidedSearcher` expands every symmetry
 - `TileScopePack.pattern_placements` factors as an initial strategy.
 - `is_component` method of assumptions updated to consider cell decomposition
-- `AddAssumptionsStrategy.is_reverible` is now True when the assumption covers the 
+- `AddAssumptionsStrategy.is_reverible` is now True when the assumption covers the
   whole tiling.
 - The default behavior for `RequirementInsertion` is to allow insertion of factorable
   requirements
+- Assumptions that cover a whole tiling do not count against the max_assumptions limit
 
 ### Removed
-- `AddInterleavingAssumptionsFactory`. The factor strategy now adds the relevant 
-  assumptions where necessary directly, lowering the number of CVs needed. 
+- `AddInterleavingAssumptionsFactory`. The factor strategy now adds the relevant
+  assumptions where necessary directly, lowering the number of CVs needed.
 
 
 ## [3.1.0] - 2022-01-17

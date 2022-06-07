@@ -108,6 +108,14 @@ class LimitedAssumptionTileScope(TileScope):
         strategies, but only add rules whose children all satisfy the max_assumptions
         requirement.
         """
+
+        def num_child_assumptions(child: Tiling) -> int:
+            return sum(
+                1
+                for ass in child.assumptions
+                if len(ass.gps) != len(child.active_cells)
+            )
+
         if inferral:
             self._inferral_expand(comb_class, label, strategies)
         else:
@@ -116,7 +124,7 @@ class LimitedAssumptionTileScope(TileScope):
                     comb_class, strategy_generator, label
                 ):
                     if all(
-                        len(child.assumptions) <= self.max_assumptions
+                        num_child_assumptions(child) <= self.max_assumptions
                         for child in rule.children
                     ):
                         self.add_rule(start_label, end_labels, rule)
