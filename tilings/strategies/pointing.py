@@ -88,7 +88,7 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
         raise StrategyDoesNotApply("Too many active cells.")
 
     def formal_step(self) -> str:
-        return "directionless point placement"
+        return f"directionless point placement (<= {self.max_cells} cells)"
 
     def constructor(
         self,
@@ -375,7 +375,7 @@ class AssumptionPointingFactory(StrategyFactory[Tiling]):
                     yield AssumptionPointingStrategy(assumption)
 
     def __str__(self) -> str:
-        return "assumption pointing strategy"
+        return f"assumption pointing strategy (<= {self.max_cells} cells)"
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + f"({self.max_cells})"
@@ -566,7 +566,7 @@ class RequirementPointingFactory(StrategyFactory[Tiling]):
                     yield strategy(parent)
 
     def __str__(self) -> str:
-        return "requirement pointing strategy"
+        return f"requirement pointing strategy (<= {self.max_cells} cells)"
 
     def __repr__(self) -> str:
         return self.__class__.__name__ + f"({self.max_cells})"
