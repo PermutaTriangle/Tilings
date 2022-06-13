@@ -365,7 +365,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
 
 
 class FusionFactory(StrategyFactory[Tiling]):
-    def __init__(self, tracked: bool = True, isolation_level: Optional[str] = None):
+    def __init__(self, tracked: bool = False, isolation_level: Optional[str] = None):
         self.tracked = tracked
         self.isolation_level = isolation_level
 

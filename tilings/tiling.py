@@ -7,6 +7,7 @@ from itertools import chain, filterfalse, product
 from operator import mul, xor
 from typing import (
     Callable,
+    DefaultDict,
     Dict,
     FrozenSet,
     Iterable,
@@ -113,6 +114,18 @@ class Tiling(CombinatorialClass):
             we pass this through to GriddedPermReduction
         """
         self._cached_properties: CachedProperties = {}
+
+        assumption_cells: Set[Cell] = set()
+        for ass in assumptions:
+            for gp in ass.gps:
+                for cell in gp.pos:
+                    assumption_cells.add(cell)
+        assumptions = tuple(
+            sorted(
+                TrackingAssumption([GriddedPerm.single_cell((0,), cell)])
+                for cell in assumption_cells
+            )
+        )
 
         super().__init__()
         if sorted_input:
@@ -1079,7 +1092,7 @@ class Tiling(CombinatorialClass):
         self,
         cells: Iterable[Cell],
         factors: bool = False,
-        add_assumptions: Iterable[TrackingAssumption] = tuple(),
+        # add_assumptions: Iterable[TrackingAssumption] = tuple(),
     ) -> "Tiling":
         """Return the tiling using only the obstructions and requirements
         completely contained in the given cells. If factors is set to True,
@@ -1096,19 +1109,35 @@ class Tiling(CombinatorialClass):
             if (factors and req[0].pos[0] in cells)
             or all(c in cells for c in chain.from_iterable(r.pos for r in req))
         )
+        assert all(
+            len(ass.gps) == 1 and len(ass.gps[0].patt) == 1 for ass in self.assumptions
+        )
+        toggles: DefaultDict[Cell, int] = defaultdict(int)
+        for pt_cell in self.point_cells:
+            if pt_cell in cells:
+                continue
+            for cell in cells:
+                # if [cell] is below-right or above-left of [pt_cell], toggle
+                if (cell[0] > pt_cell[0] and cell[1] < pt_cell[1]) or (
+                    cell[0] < pt_cell[0] and cell[1] > pt_cell[1]
+                ):
+                    toggles[cell] = 1 - toggles[cell]
+        already_tracked_cells = tuple(ass.gps[0].pos[0] for ass in self.assumptions)
         assumptions = tuple(
-            ass.__class__(
-                gp
-                for gp in ass.gps
-                if (factors and gp.pos[0] in cells) or all(c in cells for c in gp.pos)
-            )
-            for ass in self.assumptions
-        ) + tuple(add_assumptions)
+            TrackingAssumption([GriddedPerm.single_cell((0,), cell)])
+            for cell in already_tracked_cells
+            if cell in cells and toggles[cell] == 0
+        ) + tuple(
+            TrackingAssumption([GriddedPerm.single_cell((0,), cell)])
+            for cell in cells
+            if cell not in already_tracked_cells and toggles[cell] == 1
+        )
+
         # TODO: check sum/skew assumptions
         return self.__class__(
             obstructions,
             requirements,
-            tuple(sorted(set(ass for ass in assumptions if ass.gps))),
+            tuple(sorted(assumptions)),
             simplify=False,
             sorted_input=True,
         )

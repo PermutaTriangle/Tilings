@@ -51,6 +51,7 @@ class Fusion:
         self._obstruction_fuse_counter: Optional[Counter[GriddedPerm]] = None
         self._requirements_fuse_counters: Optional[List[Counter[GriddedPerm]]] = None
         self._tracked = tracked  # add a TrackingAssumption to the region being tracked.
+        assert not tracked
         self._positive_left = False
         self._positive_right = False
         if row_idx is None and col_idx is not None:
@@ -366,16 +367,25 @@ class Fusion:
             self._can_fuse_set_of_gridded_perms(counter)
             for counter in self.requirements_fuse_counters
         )
-        ass_fusable = all(
-            self._can_fuse_assumption(assumption, counter)
-            for assumption, counter in zip(
-                self._tiling.assumptions, self.assumptions_fuse_counters
-            )
-        )
+        # ass_fusable = all(
+        #     self._can_fuse_assumption(assumption, counter)
+        #     for assumption, counter in zip(
+        #         self._tiling.assumptions, self.assumptions_fuse_counters
+        #     )
+        # )
+        opposite_cells = [ass.gps[0].pos[0] for ass in self._tiling.assumptions]
+        if self._fuse_row is not None:
+            bools = [(col, row)) in opposite_cells for col in self._tiling.dimensions[0] for row in [self._row_idx, self._row_idx+1]]
+            if (not all(bools)) and any(bools):
+                return False
+        if self._fuse_col is not None:
+            bools = [(col, row)) in opposite_cells for row in self._tiling.dimensions[1] for col in [self._col_idx, self._col_idx+1]]
+            if (not all(bools)) and any(bools):
+                return False
         return (
             obs_fusable
             and req_fusable
-            and ass_fusable
+            # and ass_fusable
             and self._check_isolation_level()
         )
 
