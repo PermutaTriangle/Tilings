@@ -44,6 +44,8 @@ swapped around a fusable row or column.
 - `ComponentAssumption` are flipped when taking symmetries
 - `Tiling.get_minimum_value` fixed for component assumptions
 - `RearrangeAssumptionFactory` will ignore component assumptions
+- `GriddedPermReduction.minimal_reqs` was removing requirements if they 
+  were duplicates.
 
 ### Changed
 - `TileScopePack.make_tracked` will add the appropriate tracking methods for
