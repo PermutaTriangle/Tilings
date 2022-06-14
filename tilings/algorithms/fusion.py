@@ -374,14 +374,24 @@ class Fusion:
         #     )
         # )
         opposite_cells = [ass.gps[0].pos[0] for ass in self._tiling.assumptions]
-        if self._fuse_row is not None:
-            bools = [(col, row)) in opposite_cells for col in self._tiling.dimensions[0] for row in [self._row_idx, self._row_idx+1]]
-            if (not all(bools)) and any(bools):
-                return False
-        if self._fuse_col is not None:
-            bools = [(col, row)) in opposite_cells for row in self._tiling.dimensions[1] for col in [self._col_idx, self._col_idx+1]]
-            if (not all(bools)) and any(bools):
-                return False
+        if self._fuse_row:
+            bools = [
+                cell in opposite_cells
+                for cell in self._tiling.cells_in_row(self._row_idx).union(
+                    self._tiling.cells_in_row(self._row_idx + 1)
+                )
+            ]
+        else:
+            bools = [
+                cell in opposite_cells
+                for cell in self._tiling.cells_in_col(self._col_idx).union(
+                    self._tiling.cells_in_col(self._col_idx + 1)
+                )
+            ]
+
+        if (not all(bools)) and any(bools):
+            return False
+
         return (
             obs_fusable
             and req_fusable
