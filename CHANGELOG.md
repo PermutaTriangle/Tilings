@@ -38,6 +38,9 @@ swapped around a fusable row or column.
   strategy so should be used with `RuleDBForest`.
 - `UnfusionFactory` that unfuses either all the rows or columns. Also non-productive.
 - `FusableRowAndColumnPlacementFactory` places fusable rows and columns.
+- added the option `ignore_full_tiling_assumptions` to `LimitedAssumptionTileScope`
+  and therefore also to `TrackedSearcher`. If set to `True`, then full-tiling
+  assumptions do not count against the `max_assumptions` cap. The default is `False`.
 
 ### Fixed
 - `Factor` was not factoring correctly with respect to component assumptions.

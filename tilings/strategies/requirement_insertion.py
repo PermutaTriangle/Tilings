@@ -462,7 +462,7 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
         d.pop("extra_basis")
         limited_insertion = d.pop("limited_insertion")
         maxreqlen = d.pop("maxreqlen")
-        allow_factorable_insertions = d.pop("allow_factorable_insertions")
+        allow_factorable_insertions = d.pop("allow_factorable_insertions", False)
         return cls(
             maxreqlen=maxreqlen,
             extra_basis=extra_basis,
