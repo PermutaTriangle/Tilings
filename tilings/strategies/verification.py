@@ -1,5 +1,5 @@
 from collections import Counter, defaultdict
-from functools import cached_property, reduce
+from functools import reduce
 from itertools import chain
 from operator import mul
 from typing import Callable, Dict, Iterator, Optional, Tuple, cast
@@ -158,7 +158,7 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
                 res = factor
         return Eq(res, 0)
 
-    @cached_property
+    @property
     def no_req_tiling(self) -> Tiling:
         return self.comb_class.__class__(
             self.comb_class.obstructions, tuple(), self.comb_class.assumptions
