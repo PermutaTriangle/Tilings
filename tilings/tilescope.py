@@ -91,10 +91,12 @@ class LimitedAssumptionTileScope(TileScope):
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
         max_assumptions: int,
+        ignore_full_tiling_assumptions: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(start_class, strategy_pack, **kwargs)
         self.max_assumptions = max_assumptions
+        self.ignore_full_tiling_assumptions = ignore_full_tiling_assumptions
 
     def _expand(
         self,
@@ -113,7 +115,8 @@ class LimitedAssumptionTileScope(TileScope):
             return sum(
                 1
                 for ass in child.assumptions
-                if len(ass.gps) != len(child.active_cells)
+                if (not self.ignore_full_tiling_assumptions)
+                or len(ass.gps) != len(child.active_cells)
             )
 
         if inferral:
