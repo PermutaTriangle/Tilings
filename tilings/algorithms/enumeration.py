@@ -7,6 +7,7 @@ import requests
 from sympy import Expr, Function, Symbol, diff, simplify, sympify, var
 
 from comb_spec_searcher.utils import taylor_expand
+from permuta import Av
 from permuta.permutils.symmetry import lex_min
 from tilings.exception import InvalidOperationError
 from tilings.griddedperm import GriddedPerm
@@ -125,10 +126,12 @@ class LocalEnumeration(Enumeration):
             uri = f"https://permpal.com/perms/raw_data_json/basis/{basis_str}"
             request = requests.get(uri)
             if request.status_code == 404:
-                raise NotImplementedError(
-                    f"Don't know generating function for:\n{self.tiling}"
-                )
+                raise NotImplementedError(f"No entry on permpal for {Av(basis)}")
             data = request.json()
+            if data["generating_function_sympy"] is None:
+                raise NotImplementedError(
+                    f"No explicit generating function on permpal for {Av(basis)}"
+                )
             return sympify(data["generating_function_sympy"])
         gf = None
         if MonotoneTreeEnumeration(self.tiling).verified():

@@ -143,6 +143,8 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
             return super().get_equation(get_function, funcs)
         data = request.json()
         min_poly = data["min_poly_maple"]
+        if min_poly is None:
+            raise NotImplementedError(f"No min poly on permpal for {Av(basis)}")
         min_poly = min_poly.replace("^", "**").replace("F(x)", "F")
         lhs, _ = min_poly.split("=")
         # We now need to worry about the requirements. The min poly we got is
