@@ -67,6 +67,8 @@ swapped around a fusable row or column.
 - The default behavior for `RequirementInsertion` is to allow insertion of factorable
   requirements
 - Assumptions that cover a whole tiling do not count against the max_assumptions limit
+- `OneByOneVerificationStrategy` will look up permpal.com to find the generating
+  functions and min polys.
 
 ### Removed
 - `AddInterleavingAssumptionsFactory`. The factor strategy now adds the relevant
