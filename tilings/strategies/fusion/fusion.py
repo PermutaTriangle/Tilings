@@ -1,5 +1,5 @@
 from collections import defaultdict
-from itertools import islice
+from itertools import chain, islice
 from random import randint
 from typing import Dict, Iterator, List, Optional, Set, Tuple, cast
 
@@ -10,6 +10,7 @@ from comb_spec_searcher.typing import Objects
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
 
+from ..pointing import DivideByK
 from .constructor import FusionConstructor, ReverseFusionConstructor
 
 
@@ -232,6 +233,21 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             right_sided_params,
             _,
         ) = self.left_right_both_sided_parameters(comb_class)
+        if not left_sided_params and not right_sided_params:
+            fused_assumption = algo.new_assumption()
+            unfused_assumption = fused_assumption.__class__(
+                chain.from_iterable(
+                    algo.unfuse_gridded_perm(gp) for gp in fused_assumption.gps
+                )
+            )
+            assert unfused_assumption in comb_class.assumptions
+            return DivideByK(
+                comb_class,
+                children,
+                1,
+                comb_class.get_assumption_parameter(unfused_assumption),
+                self.extra_parameters(comb_class, children),
+            )
         return ReverseFusionConstructor(
             comb_class,
             child,
