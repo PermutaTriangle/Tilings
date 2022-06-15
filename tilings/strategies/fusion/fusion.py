@@ -158,7 +158,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked
         )
 
-    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
         algo = self.fusion_algorithm(comb_class)
         if algo.fusable():
             return (algo.fused_tiling(),)
@@ -218,6 +218,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         if not self.tracked:
             # constructor only enumerates when tracked.
             raise NotImplementedError("The fusion strategy was not tracked.")
+        if children is None:
+            children = self.decomposition_function(comb_class)
         # Need to recompute some info to count, so ignoring passed in children
         algo = self.fusion_algorithm(comb_class)
         if not algo.fusable():
