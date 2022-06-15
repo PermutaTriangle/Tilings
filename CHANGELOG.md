@@ -69,6 +69,8 @@ swapped around a fusable row or column.
   whole tiling.
 - The default behavior for `RequirementInsertion` is to allow insertion of factorable
   requirements
+- `OneByOneVerificationStrategy` will look up permpal.com to find the generating
+  functions and min polys.
 
 ### Removed
 - `AddInterleavingAssumptionsFactory`. The factor strategy now adds the relevant
