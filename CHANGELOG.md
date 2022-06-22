@@ -24,6 +24,8 @@ swapped around a fusable row or column.
   point or empty cells which is added to most packs.
 - `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can
   lead to factoring out a verified sub tiling.
+- `BasisPatternInsertionFactory` which inserts permutations which are contained in
+  every pattern in the basis
 - `ComponentVerificationStrategy` which is added to component fusion packs.
 - `ComponentToPointAssumptionStrategy` that changes component assumptions to point
   assumptions. These strategies are yielded in `RearrangeAssumptionFactory`.

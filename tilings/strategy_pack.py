@@ -44,6 +44,9 @@ class TileScopePack(StrategyPack):
                     if strategy.basis:
                         logger.warning("Basis changed in %s", strategy)
                     res.append(strategy.change_basis(basis))
+                elif hasattr(strategy, "change_basis"):
+                    logger.warning("Basis changed in %s", strategy)
+                    res.append(strategy.change_basis(basis))
                 else:
                     res.append(strategy)
             return res
@@ -727,6 +730,35 @@ class TileScopePack(StrategyPack):
             expansion_strats=[
                 [
                     strat.SubobstructionInsertionFactory(),
+                    strat.PatternPlacementFactory(partial=partial),
+                ],
+            ],
+            name=name,
+        )
+
+    @classmethod
+    def basis_pattern_insertions(cls, partial: bool = False) -> "TileScopePack":
+        name = "partial_" if partial else ""
+        name += "subobstruction_placements"
+        return TileScopePack(
+            initial_strats=[
+                strat.FactorFactory(),
+                strat.PointCorroborationFactory(),
+                strat.RequirementCorroborationFactory(),
+            ],
+            ver_strats=[
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
+            ],
+            inferral_strats=[
+                strat.RowColumnSeparationStrategy(),
+                strat.ObstructionTransitivityFactory(),
+            ],
+            expansion_strats=[
+                [
+                    strat.BasisPatternInsertionFactory(),
                     strat.PatternPlacementFactory(partial=partial),
                 ],
             ],
