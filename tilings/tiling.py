@@ -1,5 +1,6 @@
 # pylint: disable=too-many-lines
 import json
+import subprocess
 from array import array
 from collections import Counter, defaultdict
 from functools import reduce
@@ -103,6 +104,7 @@ class Tiling(CombinatorialClass):
         simplify: bool = True,
         sorted_input: bool = False,
         already_minimized_obs: bool = False,
+        check=True,
     ) -> None:
         """
         - if remove_empty_rows_and_cols, then remove empty rows and columns.
@@ -112,6 +114,37 @@ class Tiling(CombinatorialClass):
         - already_minimized_obs indicates if the obstructions are already minimized
             we pass this through to GriddedPermReduction
         """
+
+        # with open("tiling_data.pkl", "wb") as f:
+        #     pickle.dump(
+        #         (
+        #             obstructions,
+        #             requirements,
+        #             assumptions,
+        #             remove_empty_rows_and_cols,
+        #             derive_empty,
+        #             simplify,
+        #             sorted_input,
+        #             already_minimized_obs,
+        #         ),
+        #         f,
+        #     )
+
+        obstructions = tuple(obstructions)
+        requirements = tuple(tuple(req) for req in requirements)
+        assumptions = tuple(assumptions)
+
+        tiling_data = (
+            tuple(ob.to_jsonable() for ob in obstructions),
+            tuple(tuple(r.to_jsonable() for r in req) for req in requirements),
+            tuple(ass.to_jsonable() for ass in assumptions),
+            remove_empty_rows_and_cols,
+            derive_empty,
+            simplify,
+            sorted_input,
+            already_minimized_obs,
+        )
+
         self._cached_properties: CachedProperties = {}
 
         super().__init__()
@@ -161,6 +194,21 @@ class Tiling(CombinatorialClass):
             self._cached_properties["point_cells"] = frozenset()
             self._cached_properties["positive_cells"] = frozenset()
             self._cached_properties["possibly_empty"] = frozenset()
+
+        if check:
+            # print(f"Checking\n{self}")
+            # res = (
+            #     subprocess.run(["python3", "checktiling.py"], capture_output=True)
+            #     .stdout.decode()
+            #     .strip()
+            # )
+
+            # assert repr(self) == res, f"{repr(self)}\n{res}"
+            # print("done\n\n")
+
+            with open("tiling_data.txt", "a") as f:
+                f.write(json.dumps(tiling_data) + "\n")
+                f.write(repr(self) + "\n")
 
     @classmethod
     def from_perms(
