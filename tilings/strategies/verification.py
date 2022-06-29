@@ -224,15 +224,10 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
             and len(comb_class.requirements[0]) == 1
             and len(comb_class.requirements[0][0]) <= 2
         ):
-            if basis in ([Perm((0, 1, 2))], [Perm((2, 1, 0))]):
-                # Av(123) or Av(321) - use fusion!
-                return (
-                    TileScopePack.row_and_col_placements(row_only=True)
-                    .make_fusion(tracked=True)
-                    .add_basis(basis)
-                )
-            if (Perm((0, 1, 2)) in basis or Perm((2, 1, 0)) in basis) and all(
-                len(p) <= 4 for p in basis
+            if (
+                (Perm((0, 1, 2)) in basis or Perm((2, 1, 0)) in basis)
+                and all(len(p) <= 4 for p in basis)
+                and len(basis) > 1
             ):
                 # is a subclass of Av(123) avoiding patterns of length <= 4
                 # experimentally showed that such clsses always terminates
@@ -316,7 +311,7 @@ class ComponentVerificationStrategy(TileScopeVerificationStrategy):
 
     @staticmethod
     def pack(comb_class: Tiling) -> StrategyPack:
-        raise NotImplementedError("No pack for removing component assumption")
+        raise InvalidOperationError("No pack for removing component assumption")
 
     @staticmethod
     def verified(comb_class: Tiling) -> bool:
