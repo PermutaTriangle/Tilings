@@ -19,7 +19,11 @@ from comb_spec_searcher.typing import (
     Terms,
 )
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import ComponentAssumption, TrackingAssumption
+from tilings.assumptions import (
+    ComponentAssumption,
+    OppositeParityAssumption,
+    TrackingAssumption,
+)
 
 Cell = Tuple[int, int]
 
@@ -247,7 +251,13 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
         return (0,)
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
-        if any(assumption in comb_class.assumptions for assumption in self.assumptions):
+        if any(
+            assumption in comb_class.assumptions
+            and not isinstance(assumption, OppositeParityAssumption)
+            for assumption in self.assumptions
+        ):
+            print(comb_class)
+            print(self.assumptions)
             raise StrategyDoesNotApply("The assumption is already on the tiling.")
         return (comb_class.add_assumptions(self.assumptions),)
 
@@ -371,7 +381,14 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
 class AddAssumptionFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
         for assumption in comb_class.assumptions:
+            if isinstance(assumption, OppositeParityAssumption):
+                continue
             without = comb_class.remove_assumption(assumption)
+            # if without.dimensions == (1, 2):
+            #     print("=" * 50)
+            #     print(comb_class)
+            #     print(f"adding {assumption} to")
+            #     print(without)
             strategy = AddAssumptionsStrategy((assumption,))
             yield strategy(without)
 

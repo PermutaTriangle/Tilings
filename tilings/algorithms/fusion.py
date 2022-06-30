@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Counter, Iterable, Iterator, List, Optional, T
 
 from tilings.assumptions import (
     ComponentAssumption,
+    OppositeParityAssumption,
     SkewComponentAssumption,
     SumComponentAssumption,
     TrackingAssumption,
@@ -51,7 +52,6 @@ class Fusion:
         self._obstruction_fuse_counter: Optional[Counter[GriddedPerm]] = None
         self._requirements_fuse_counters: Optional[List[Counter[GriddedPerm]]] = None
         self._tracked = tracked  # add a TrackingAssumption to the region being tracked.
-        assert not tracked
         self._positive_left = False
         self._positive_right = False
         if row_idx is None and col_idx is not None:
@@ -367,13 +367,19 @@ class Fusion:
             self._can_fuse_set_of_gridded_perms(counter)
             for counter in self.requirements_fuse_counters
         )
-        # ass_fusable = all(
-        #     self._can_fuse_assumption(assumption, counter)
-        #     for assumption, counter in zip(
-        #         self._tiling.assumptions, self.assumptions_fuse_counters
-        #     )
-        # )
-        opposite_cells = [ass.gps[0].pos[0] for ass in self._tiling.assumptions]
+        ass_fusable = all(
+            self._can_fuse_assumption(assumption, counter)
+            for assumption, counter in zip(
+                self._tiling.assumptions, self.assumptions_fuse_counters
+            )
+            if not isinstance(assumption, OppositeParityAssumption)
+        )
+
+        opposite_cells = [
+            ass.gps[0].pos[0]
+            for ass in self._tiling.assumptions
+            if isinstance(ass, OppositeParityAssumption)
+        ]
         if self._fuse_row:
             bools = [
                 cell in opposite_cells
@@ -395,7 +401,7 @@ class Fusion:
         return (
             obs_fusable
             and req_fusable
-            # and ass_fusable
+            and ass_fusable
             and self._check_isolation_level()
         )
 

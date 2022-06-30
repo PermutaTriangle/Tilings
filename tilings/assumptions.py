@@ -21,6 +21,7 @@ class TrackingAssumption:
 
     def __init__(self, gps: Iterable[GriddedPerm]):
         self.gps = tuple(sorted(set(gps)))
+        self.cells = frozenset(gp.pos[0] for gp in self.gps)
 
     @classmethod
     def from_cells(cls, cells: Iterable[Cell]) -> "TrackingAssumption":
@@ -263,3 +264,35 @@ class SkewComponentAssumption(ComponentAssumption):
 
     def __hash__(self) -> int:
         return hash(self.gps)
+
+
+class OppositeParityAssumption(TrackingAssumption):
+    def __str__(self):
+        assert len(self.cells) == 1
+        return f"opposite parity in cell {list(self.cells)[0]}"
+
+    def to_jsonable(self) -> dict:
+        """Return a dictionary form of the assumption."""
+        c = self.__class__
+        return {
+            "class_module": c.__module__,
+            "assumption": c.__name__,
+            "gps": [gp.to_jsonable() for gp in self.gps],
+        }
+
+    def __eq__(self, other) -> bool:
+        if other.__class__ == OppositeParityAssumption:
+            return bool(self.gps == other.gps)
+        return NotImplemented
+
+    def __lt__(self, other) -> bool:
+        # if isinstance(other, OppositeParityAssumption):
+        key_self = (self.__class__.__name__, self.gps)
+        key_other = (other.__class__.__name__, other.gps)
+        return key_self < key_other
+
+    def __hash__(self) -> int:
+        return hash("parity" + str(self.gps))
+
+    def __repr__(self) -> str:
+        return self.__class__.__name__ + f"({self.gps})"

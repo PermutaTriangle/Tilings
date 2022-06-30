@@ -38,7 +38,7 @@ from tilings.algorithms import (
     FactorWithInterleaving,
     FactorWithMonotoneInterleaving,
 )
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import OppositeParityAssumption, TrackingAssumption
 from tilings.exception import InvalidOperationError
 from tilings.misc import multinomial, partitions_iterator
 from tilings.strategies.assumption_insertion import (
@@ -79,7 +79,9 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         )
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
-        return tuple(comb_class.sub_tiling(cells) for cells in self.partition)
+        return tuple(
+            comb_class.sub_tiling_toggle_parity(cells) for cells in self.partition
+        )
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -96,7 +98,10 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
                 new_assumption = child.forward_map.map_assumption(assumption).avoiding(
                     child.obstructions
                 )
-                if new_assumption.gps:
+                if (
+                    not isinstance(new_assumption, OppositeParityAssumption)
+                    and new_assumption.gps
+                ):
                     child_var = child.get_assumption_parameter(new_assumption)
                     extra_parameters[idx][parent_var] = child_var
         return extra_parameters

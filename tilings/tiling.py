@@ -48,6 +48,7 @@ from .algorithms import (
 )
 from .assumptions import (
     ComponentAssumption,
+    OppositeParityAssumption,
     SkewComponentAssumption,
     SumComponentAssumption,
     TrackingAssumption,
@@ -113,18 +114,37 @@ class Tiling(CombinatorialClass):
         - already_minimized_obs indicates if the obstructions are already minimized
             we pass this through to GriddedPermReduction
         """
+
+        assumptions = sorted(list(set(assumptions)))
+
+        assert len(assumptions) == len(set(assumptions)), (
+            obstructions,
+            requirements,
+            assumptions,
+        )
+
         self._cached_properties: CachedProperties = {}
 
         assumption_cells: Set[Cell] = set()
         for ass in assumptions:
+            if not isinstance(ass, OppositeParityAssumption):
+                continue
             for gp in ass.gps:
                 for cell in gp.pos:
                     assumption_cells.add(cell)
-        assumptions = tuple(
+        full_parity_assumptions = tuple(
             sorted(
-                TrackingAssumption([GriddedPerm.single_cell((0,), cell)])
+                OppositeParityAssumption([GriddedPerm.single_cell((0,), cell)])
                 for cell in assumption_cells
             )
+        )
+        assumptions = sorted(
+            [
+                ass
+                for ass in assumptions
+                if not isinstance(ass, OppositeParityAssumption)
+            ]
+            + list(full_parity_assumptions)
         )
 
         super().__init__()
@@ -433,8 +453,10 @@ class Tiling(CombinatorialClass):
         if self.assumptions:
             result.extend(split_16bit(len(self.assumptions)))
             for assumption in self.assumptions:
-                if isinstance(assumption, SkewComponentAssumption):
+                if isinstance(assumption, OppositeParityAssumption):
                     result.append(2)
+                # if isinstance(assumption, SkewComponentAssumption):
+                #     result.append(2)
                 elif isinstance(assumption, SumComponentAssumption):
                     result.append(1)
                 elif isinstance(assumption, TrackingAssumption):
@@ -472,14 +494,18 @@ class Tiling(CombinatorialClass):
             ngps = merge_8bit(arr[offset], arr[offset + 1])
             offset += 2
             res = []
+            # print("ngps:", ngps)
             for _ in range(ngps):
                 pattlen = arr[offset]
+                # print("pattlen:", pattlen)
                 offset += 1
                 res.append(GriddedPerm.decompress(arr[offset : offset + 3 * pattlen]))
+                # print(res[-1])
                 offset += 3 * pattlen
             return res, offset
 
         arr = array("B", b)
+        # print(arr)
         obstructions, offset = recreate_gp_list(0)
 
         nreqs = merge_8bit(arr[offset], arr[offset + 1])
@@ -495,7 +521,9 @@ class Tiling(CombinatorialClass):
             offset += 2
             for _ in range(nassumptions):
                 assumption_type = arr[offset]
+                # print(assumption_type)
                 offset += 1
+                # print(arr[offset:])
                 gps, offset = recreate_gp_list(offset)
                 if assumption_type == 0:
                     # tracking
@@ -503,9 +531,12 @@ class Tiling(CombinatorialClass):
                 elif assumption_type == 1:
                     # sum
                     assumptions.append(SumComponentAssumption(gps))
+                # elif assumption_type == 2:
+                #     # skew
+                #     assumptions.append(SkewComponentAssumption(gps))
                 elif assumption_type == 2:
                     # skew
-                    assumptions.append(SkewComponentAssumption(gps))
+                    assumptions.append(OppositeParityAssumption(gps))
                 else:
                     raise ValueError("Invalid assumption type.")
         return cls(
@@ -1092,7 +1123,7 @@ class Tiling(CombinatorialClass):
         self,
         cells: Iterable[Cell],
         factors: bool = False,
-        # add_assumptions: Iterable[TrackingAssumption] = tuple(),
+        add_assumptions: Iterable[TrackingAssumption] = tuple(),
     ) -> "Tiling":
         """Return the tiling using only the obstructions and requirements
         completely contained in the given cells. If factors is set to True,
@@ -1109,8 +1140,60 @@ class Tiling(CombinatorialClass):
             if (factors and req[0].pos[0] in cells)
             or all(c in cells for c in chain.from_iterable(r.pos for r in req))
         )
+        assumptions = tuple(
+            ass.__class__(
+                gp
+                for gp in ass.gps
+                if (factors and gp.pos[0] in cells) or all(c in cells for c in gp.pos)
+            )
+            for ass in self.assumptions
+        ) + tuple(add_assumptions)
+
+        # TODO: check sum/skew assumptions
+        return self.__class__(
+            obstructions,
+            requirements,
+            tuple(sorted(set(ass for ass in assumptions if ass.gps))),
+            simplify=False,
+            sorted_input=True,
+        )
+
+    def sub_tiling_toggle_parity(
+        self,
+        cells: Iterable[Cell],
+        factors: bool = False,
+    ) -> "Tiling":
+        cells = list(cells)
+        # print(f"called with cells={cells}on\n{self}")
+        """Return the tiling using only the obstructions and requirements
+        completely contained in the given cells. If factors is set to True,
+        then it assumes that the first cells confirms if a gridded perm uses only
+        the cells."""
+        obstructions = tuple(
+            ob
+            for ob in self.obstructions
+            if (factors and ob.pos[0] in cells) or all(c in cells for c in ob.pos)
+        )
+        requirements = Tiling.sort_requirements(
+            req
+            for req in self.requirements
+            if (factors and req[0].pos[0] in cells)
+            or all(c in cells for c in chain.from_iterable(r.pos for r in req))
+        )
+        regular_assumptions = tuple(
+            ass.__class__(
+                gp
+                for gp in ass.gps
+                if (factors and gp.pos[0] in cells) or all(c in cells for c in gp.pos)
+            )
+            for ass in self.assumptions
+            if not isinstance(ass, OppositeParityAssumption)
+        )
+
         assert all(
-            len(ass.gps) == 1 and len(ass.gps[0].patt) == 1 for ass in self.assumptions
+            len(ass.gps) == 1 and len(ass.gps[0].patt) == 1
+            for ass in self.assumptions
+            if isinstance(ass, OppositeParityAssumption)
         )
         toggles: DefaultDict[Cell, int] = defaultdict(int)
         for pt_cell in self.point_cells:
@@ -1122,22 +1205,37 @@ class Tiling(CombinatorialClass):
                     cell[0] < pt_cell[0] and cell[1] > pt_cell[1]
                 ):
                     toggles[cell] = 1 - toggles[cell]
-        already_tracked_cells = tuple(ass.gps[0].pos[0] for ass in self.assumptions)
-        assumptions = tuple(
-            TrackingAssumption([GriddedPerm.single_cell((0,), cell)])
+        already_tracked_cells = tuple(
+            ass.gps[0].pos[0]
+            for ass in self.assumptions
+            if isinstance(ass, OppositeParityAssumption)
+        )
+        parity_assumptions = tuple(
+            OppositeParityAssumption([GriddedPerm.single_cell((0,), cell)])
             for cell in already_tracked_cells
             if cell in cells and toggles[cell] == 0
         ) + tuple(
-            TrackingAssumption([GriddedPerm.single_cell((0,), cell)])
+            OppositeParityAssumption([GriddedPerm.single_cell((0,), cell)])
             for cell in cells
             if cell not in already_tracked_cells and toggles[cell] == 1
         )
+        # print("assumptions:", sorted(regular_assumptions + parity_assumptions))
+        # print(
+        #     "result:",
+        #     self.__class__(
+        #         obstructions,
+        #         requirements,
+        #         tuple(sorted(regular_assumptions + parity_assumptions)),
+        #         simplify=False,
+        #         sorted_input=True,
+        #     ),
+        # )
 
         # TODO: check sum/skew assumptions
         return self.__class__(
             obstructions,
             requirements,
-            tuple(sorted(assumptions)),
+            tuple(sorted(regular_assumptions + parity_assumptions)),
             simplify=False,
             sorted_input=True,
         )

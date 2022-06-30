@@ -26,6 +26,7 @@ from comb_spec_searcher.rule_db.abstract import RuleDBAbstract
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
+from tilings.assumptions import OppositeParityAssumption
 from tilings.strategy_pack import TileScopePack
 
 __all__ = ("TileScope", "TileScopePack", "LimitedAssumptionTileScope", "GuidedSearcher")
@@ -114,6 +115,7 @@ class LimitedAssumptionTileScope(TileScope):
                 1
                 for ass in child.assumptions
                 if len(ass.gps) != len(child.active_cells)
+                and not isinstance(ass, OppositeParityAssumption)
             )
 
         if inferral:

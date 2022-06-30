@@ -25,6 +25,7 @@ from comb_spec_searcher.typing import (
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import (
     ComponentAssumption,
+    OppositeParityAssumption,
     SkewComponentAssumption,
     SumComponentAssumption,
     TrackingAssumption,
@@ -516,6 +517,8 @@ class RearrangeAssumptionFactory(StrategyFactory[Tiling]):
         points: List[TrackingAssumption] = []
         components: List[TrackingAssumption] = []
         for ass in comb_class.assumptions:
+            if isinstance(ass, OppositeParityAssumption):
+                continue
             (points, components)[isinstance(ass, ComponentAssumption)].append(ass)
 
         for ass1, ass2 in combinations(points, 2):
