@@ -3,7 +3,16 @@ The implementation of the fusion algorithm
 """
 import collections
 from itertools import chain
-from typing import TYPE_CHECKING, Counter, Iterable, Iterator, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Counter,
+    FrozenSet,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+)
 
 from tilings.assumptions import (
     ComponentAssumption,
@@ -279,6 +288,12 @@ class Fusion:
         are all contained entirely on the left of the fusion region, entirely
         on the right, or split in every possible way.
         """
+        left, right = self._left_fuse_region(), self._right_fuse_region()
+        cells = set(gp.pos[0] for gp in assumption.gps)
+        if (left.intersection(cells) and not left.issubset(cells)) or (
+            right.intersection(cells) and not right.issubset(cells)
+        ):
+            return False
         return self._can_fuse_set_of_gridded_perms(fuse_counter) or (
             not isinstance(assumption, ComponentAssumption)
             and (
@@ -286,6 +301,16 @@ class Fusion:
                 and self._is_one_sided_assumption(assumption)
             )
         )
+
+    def _left_fuse_region(self) -> FrozenSet[Cell]:
+        if self._fuse_row:
+            return self._tiling.cells_in_row(self._row_idx)
+        return self._tiling.cells_in_col(self._col_idx)
+
+    def _right_fuse_region(self) -> FrozenSet[Cell]:
+        if self._fuse_row:
+            return self._tiling.cells_in_row(self._row_idx + 1)
+        return self._tiling.cells_in_col(self._col_idx + 1)
 
     def _is_one_sided_assumption(self, assumption: TrackingAssumption) -> bool:
         """

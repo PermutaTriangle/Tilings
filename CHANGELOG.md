@@ -38,12 +38,17 @@ swapped around a fusable row or column.
   strategy so should be used with `RuleDBForest`.
 - `UnfusionFactory` that unfuses either all the rows or columns. Also non-productive.
 - `FusableRowAndColumnPlacementFactory` places fusable rows and columns.
+- added the option `ignore_full_tiling_assumptions` to `LimitedAssumptionTileScope`
+  and therefore also to `TrackedSearcher`. If set to `True`, then full-tiling
+  assumptions do not count against the `max_assumptions` cap. The default is `False`.
 
 ### Fixed
 - `Factor` was not factoring correctly with respect to component assumptions.
 - `ComponentAssumption` are flipped when taking symmetries
 - `Tiling.get_minimum_value` fixed for component assumptions
 - `RearrangeAssumptionFactory` will ignore component assumptions
+- `GriddedPermReduction.minimal_reqs` was removing requirements if they 
+  were duplicates.
 
 ### Changed
 - `TileScopePack.make_tracked` will add the appropriate tracking methods for
@@ -64,7 +69,8 @@ swapped around a fusable row or column.
   whole tiling.
 - The default behavior for `RequirementInsertion` is to allow insertion of factorable
   requirements
-- Assumptions that cover a whole tiling do not count against the max_assumptions limit
+- `OneByOneVerificationStrategy` will look up permpal.com to find the generating
+  functions and min polys.
 
 ### Removed
 - `AddInterleavingAssumptionsFactory`. The factor strategy now adds the relevant

@@ -2,9 +2,10 @@ from collections import Counter, defaultdict
 from functools import reduce
 from itertools import chain
 from operator import mul
-from typing import Dict, Iterator, Optional, Tuple, cast
+from typing import Callable, Dict, Iterator, Optional, Tuple, cast
 
-from sympy import Expr, Function, var
+import requests
+from sympy import Eq, Expr, Function, solve, sympify, var
 
 from comb_spec_searcher import (
     AtomStrategy,
@@ -13,11 +14,13 @@ from comb_spec_searcher import (
     VerificationStrategy,
 )
 from comb_spec_searcher.exception import InvalidOperationError, StrategyDoesNotApply
+from comb_spec_searcher.strategies import VerificationRule
 from comb_spec_searcher.typing import Objects, Terms
 from permuta import Av, Perm
 from permuta.permutils import (
     is_insertion_encodable_maximum,
     is_insertion_encodable_rightmost,
+    lex_min,
 )
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import locally_factorable_shift
@@ -125,6 +128,69 @@ class BasicVerificationStrategy(AtomStrategy):
         return f"{self.__class__.__name__}()"
 
 
+class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
+    def get_equation(
+        self,
+        get_function: Callable[[Tiling], Function],
+        funcs: Optional[Dict[Tiling, Function]] = None,
+    ) -> Eq:
+        # Find the minimal polynomial for the underlying class
+        basis = [ob.patt for ob in self.comb_class.obstructions]
+        basis_str = "_".join(map(str, lex_min(basis)))
+        uri = f"https://permpal.com/perms/raw_data_json/basis/{basis_str}"
+        request = requests.get(uri)
+        if request.status_code == 404:
+            return super().get_equation(get_function, funcs)
+        data = request.json()
+        min_poly = data["min_poly_maple"]
+        if min_poly is None:
+            raise NotImplementedError(f"No min poly on permpal for {Av(basis)}")
+        min_poly = min_poly.replace("^", "**").replace("F(x)", "F")
+        lhs, _ = min_poly.split("=")
+        # We now need to worry about the requirements. The min poly we got is
+        # for the class with requirements.
+        eq = Eq(self.without_req_genf(self.comb_class), get_function(self.comb_class))
+        subs = solve([eq], var("F"), dict=True)[0]
+        if self.comb_class.assumptions:
+            subs["x"] = var("x") * var("k_0")
+        res, _ = sympify(lhs).subs(subs, simultaneous=True).as_numer_denom()
+        # Pick the unique factor that contains F
+        for factor in res.as_ordered_factors():
+            if factor.atoms(Function):
+                res = factor
+        return Eq(res, 0)
+
+    @property
+    def no_req_tiling(self) -> Tiling:
+        return self.comb_class.__class__(
+            self.comb_class.obstructions, tuple(), self.comb_class.assumptions
+        )
+
+    def without_req_genf(self, tiling: Tiling):
+        """
+        Find the equation for the tiling in terms of F, the generating
+        function where the reqs are reomoved from tiling.
+        """
+        if tiling == self.no_req_tiling:
+            return var("F")
+        if tiling.requirements:
+            reqs = tiling.requirements[0]
+            avoided = tiling.__class__(
+                tiling.obstructions + reqs,
+                tiling.requirements[1:],
+                tiling.assumptions,
+            )
+            without = tiling.__class__(
+                tiling.obstructions,
+                tiling.requirements[1:],
+                tiling.assumptions,
+            )
+            avgf = self.without_req_genf(avoided)
+            wogf = self.without_req_genf(without)
+            return wogf - avgf
+        return LocalEnumeration(tiling).get_genf()
+
+
 class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
     @staticmethod
     def pack(comb_class: Tiling) -> StrategyPack:
@@ -158,15 +224,10 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
             and len(comb_class.requirements[0]) == 1
             and len(comb_class.requirements[0][0]) <= 2
         ):
-            if basis in ([Perm((0, 1, 2))], [Perm((2, 1, 0))]):
-                # Av(123) or Av(321) - use fusion!
-                return (
-                    TileScopePack.row_and_col_placements(row_only=True)
-                    .make_fusion(tracked=True)
-                    .add_basis(basis)
-                )
-            if (Perm((0, 1, 2)) in basis or Perm((2, 1, 0)) in basis) and all(
-                len(p) <= 4 for p in basis
+            if (
+                (Perm((0, 1, 2)) in basis or Perm((2, 1, 0)) in basis)
+                and all(len(p) <= 4 for p in basis)
+                and len(basis) > 1
             ):
                 # is a subclass of Av(123) avoiding patterns of length <= 4
                 # experimentally showed that such clsses always terminates
@@ -175,6 +236,17 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
             "Cannot get a specification for one by one verification for "
             f"subclass Av({basis})"
         )
+
+    def __call__(
+        self,
+        comb_class: Tiling,
+        children: Tuple[Tiling, ...] = None,
+    ) -> OneByOneVerificationRule:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("The combinatorial class is not verified")
+        return OneByOneVerificationRule(self, comb_class, children)
 
     def verified(self, comb_class: Tiling) -> bool:
         if not comb_class.dimensions == (1, 1):
@@ -239,7 +311,7 @@ class ComponentVerificationStrategy(TileScopeVerificationStrategy):
 
     @staticmethod
     def pack(comb_class: Tiling) -> StrategyPack:
-        raise NotImplementedError("No pack for removing component assumption")
+        raise InvalidOperationError("No pack for removing component assumption")
 
     @staticmethod
     def verified(comb_class: Tiling) -> bool:

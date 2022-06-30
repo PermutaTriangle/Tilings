@@ -169,7 +169,7 @@ class GriddedPermReduction:
                     (
                         gps
                         for gps in islice(requirements, idx + 1, None)
-                        if gps != requirement
+                        if sorted(gps) != sorted(requirement)
                     ),
                 ),
             ):
