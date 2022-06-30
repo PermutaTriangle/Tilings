@@ -389,11 +389,13 @@ class PatternPlacementFactory(AbstractRequirementPlacementFactory):
                 for direction in self.dirs:
                     yield gps, indices, direction
         else:
-            subgps = set(
-                chain.from_iterable(
-                    req[0].all_subperms(proper=False)
-                    for req in tiling.requirements
-                    if len(req) == 1
+            subgps = sorted(
+                set(
+                    chain.from_iterable(
+                        req[0].all_subperms(proper=False)
+                        for req in tiling.requirements
+                        if len(req) == 1
+                    )
                 )
             )
             for gp in subgps:

@@ -152,7 +152,7 @@ class Tiling(CombinatorialClass):
             self._obstructions = (GriddedPerm.empty_perm(),)
             self._requirements = tuple()
             self._assumptions = tuple()
-            self._cached_properties["active_cells"] = frozenset()
+            self._cached_properties["active_cells"] = list(frozenset())
             self._cached_properties["backward_map"] = RowColMap.identity((0, 0))
             self._cached_properties["cell_basis"] = {(0, 0): ([Perm()], [])}
             self._cached_properties["dimensions"] = (1, 1)
@@ -221,8 +221,8 @@ class Tiling(CombinatorialClass):
             )
             self._obstructions = new_point_obstructions + non_point_obstructions
 
-        self._cached_properties["active_cells"] = frozenset(active_cells)
-        self._cached_properties["empty_cells"] = frozenset(empty_cells)
+        self._cached_properties["active_cells"] = sorted(frozenset(active_cells))
+        self._cached_properties["empty_cells"] = sorted(frozenset(empty_cells))
         self._cached_properties["dimensions"] = dimensions
 
     def _simplify_griddedperms(self, already_minimized_obs=False) -> None:
@@ -275,15 +275,19 @@ class Tiling(CombinatorialClass):
                     for assumption in self._assumptions
                 )
             )
-            self._cached_properties["active_cells"] = frozenset(
-                forward_map.map_cell(cell)
-                for cell in self._cached_properties["active_cells"]
-                if forward_map.is_mappable_cell(cell)
+            self._cached_properties["active_cells"] = sorted(
+                frozenset(
+                    forward_map.map_cell(cell)
+                    for cell in self._cached_properties["active_cells"]
+                    if forward_map.is_mappable_cell(cell)
+                )
             )
-            self._cached_properties["empty_cells"] = frozenset(
-                forward_map.map_cell(cell)
-                for cell in self._cached_properties["empty_cells"]
-                if forward_map.is_mappable_cell(cell)
+            self._cached_properties["empty_cells"] = sorted(
+                frozenset(
+                    forward_map.map_cell(cell)
+                    for cell in self._cached_properties["empty_cells"]
+                    if forward_map.is_mappable_cell(cell)
+                )
             )
             self._cached_properties["dimensions"] = (
                 forward_map.max_col() + 1,
@@ -1678,8 +1682,12 @@ class Tiling(CombinatorialClass):
                 for ob in self._obstructions
                 if ob.is_localized() and len(ob) == 2
             )
-            point_cells = frozenset(
-                cell for cell in self.positive_cells if local_length2_obcells[cell] == 2
+            point_cells = sorted(
+                frozenset(
+                    cell
+                    for cell in self.positive_cells
+                    if local_length2_obcells[cell] == 2
+                )
             )
             self._cached_properties["point_cells"] = point_cells
             return point_cells
@@ -1693,10 +1701,12 @@ class Tiling(CombinatorialClass):
         try:
             return self._cached_properties["positive_cells"]
         except KeyError:
-            positive_cells = frozenset(
-                union_reduce(
-                    intersection_reduce(req.pos for req in reqs)
-                    for reqs in self._requirements
+            positive_cells = sorted(
+                frozenset(
+                    union_reduce(
+                        intersection_reduce(req.pos for req in reqs)
+                        for reqs in self._requirements
+                    )
                 )
             )
             self._cached_properties["positive_cells"] = positive_cells
@@ -1711,7 +1721,9 @@ class Tiling(CombinatorialClass):
         try:
             return self._cached_properties["possibly_empty"]
         except KeyError:
-            possibly_empty = self.active_cells - self.positive_cells
+            possibly_empty = sorted(
+                [cell for cell in self.active_cells if cell not in self.positive_cells]
+            )
             self._cached_properties["possibly_empty"] = possibly_empty
             return possibly_empty
 
