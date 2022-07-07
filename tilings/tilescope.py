@@ -83,14 +83,11 @@ class TileScope(CombinatorialSpecificationSearcher):
         super().__init__(
             start_class=start_tiling,
             strategy_pack=strategy_pack,
+            classdb=classdb,
             ruledb=ruledb,
             expand_verified=expand_verified,
             debug=debug,
         )
-        if isinstance(classdb, TrackedClassDB):
-            # reset to tracked classdb
-            self.classdb = classdb
-            self.start_label = self.classdb.get_label(start_tiling)
 
 
 class LimitedAssumptionTileScope(TileScope):
