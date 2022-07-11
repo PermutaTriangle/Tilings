@@ -51,6 +51,7 @@ class TileScope(CombinatorialSpecificationSearcher):
         strategy_pack: TileScopePack,
         ruledb: Optional[RuleDBAbstract] = None,
         classdb: Optional[ClassDB] = None,
+        classqueue: Optional[CSSQueue] = None,
         expand_verified: bool = False,
         debug: bool = False,
     ) -> None:
@@ -85,6 +86,7 @@ class TileScope(CombinatorialSpecificationSearcher):
             strategy_pack=strategy_pack,
             classdb=classdb,
             ruledb=ruledb,
+            classqueue=classqueue,
             expand_verified=expand_verified,
             debug=debug,
         )
@@ -220,14 +222,11 @@ class TrackedSearcher(LimitedAssumptionTileScope):
             start_class,
             strategy_pack,
             max_assumptions=max_assumptions,
+            classqueue=TrackedQueue(
+                cast(TileScopePack, strategy_pack), self, delay_next
+            ),
             **kwargs,
         )
-        # reset to the trackedqueue!
-        self.classqueue = cast(
-            DefaultQueue,
-            TrackedQueue(cast(TileScopePack, self.strategy_pack), self, delay_next),
-        )  # TODO: make CSS accept a CSSQueue as a kwarg
-        self.classqueue.add(self.start_label)
 
 
 class TrackedDefaultQueue(DefaultQueue):
