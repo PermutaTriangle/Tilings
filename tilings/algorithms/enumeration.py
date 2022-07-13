@@ -7,6 +7,8 @@ import requests
 from sympy import Expr, Function, Symbol, diff, simplify, sympify, var
 
 from comb_spec_searcher.utils import taylor_expand
+from permuta import Av
+from permuta.permutils.symmetry import lex_min
 from tilings.exception import InvalidOperationError
 from tilings.griddedperm import GriddedPerm
 from tilings.misc import is_tree
@@ -119,20 +121,18 @@ class LocalEnumeration(Enumeration):
                 return 1
             if self.tiling == self.tiling.__class__.from_string("01_10"):
                 return 1 + x
-            if self.tiling in (
-                self.tiling.__class__.from_string("01"),
-                self.tiling.__class__.from_string("10"),
-            ):
-                return 1 / (1 - x)
-            if self.tiling in (
-                self.tiling.__class__.from_string("123"),
-                self.tiling.__class__.from_string("321"),
-            ):
-                return sympify("-1/2*(sqrt(-4*x + 1) - 1)/x")
-            # TODO: should this create a spec as in the strategy?
-            raise NotImplementedError(
-                f"Look up the combopal database for:\n{self.tiling}"
-            )
+            basis = [ob.patt for ob in self.tiling.obstructions]
+            basis_str = "_".join(map(str, lex_min(basis)))
+            uri = f"https://permpal.com/perms/raw_data_json/basis/{basis_str}"
+            request = requests.get(uri)
+            if request.status_code == 404:
+                raise NotImplementedError(f"No entry on permpal for {Av(basis)}")
+            data = request.json()
+            if data["generating_function_sympy"] is None:
+                raise NotImplementedError(
+                    f"No explicit generating function on permpal for {Av(basis)}"
+                )
+            return sympify(data["generating_function_sympy"])
         gf = None
         if MonotoneTreeEnumeration(self.tiling).verified():
             gf = MonotoneTreeEnumeration(self.tiling).get_genf()

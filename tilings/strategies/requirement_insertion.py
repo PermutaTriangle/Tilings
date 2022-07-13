@@ -400,8 +400,10 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
         extra_basis: Optional[List[Perm]] = None,
         limited_insertion: bool = True,
         ignore_parent: bool = False,
+        allow_factorable_insertions: bool = True,
     ) -> None:
         self.limited_insertion = limited_insertion
+        self.allow_factorable_insertions = allow_factorable_insertions
         super().__init__(maxreqlen, extra_basis, ignore_parent)
 
     def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
@@ -414,7 +416,7 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
         )
         for length in range(1, self.maxreqlen + 1):
             for gp in obs_tiling.gridded_perms_of_length(length):
-                if len(gp.factors()) == 1 and all(
+                if (self.allow_factorable_insertions or len(gp.factors()) == 1) and all(
                     p not in gp.patt for p in self.extra_basis
                 ):
                     yield (GriddedPerm(gp.patt, gp.pos),)
@@ -440,6 +442,7 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
                 f"extra_basis={self.extra_basis!r}",
                 f"limited_insertion={self.limited_insertion}",
                 f"ignore_parent={self.ignore_parent}",
+                f"allow_factorable_insertions={self.allow_factorable_insertions}",
             ]
         )
         return f"{self.__class__.__name__}({args})"
@@ -447,6 +450,7 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
         d["limited_insertion"] = self.limited_insertion
+        d["allow_factorable_insertions"] = self.allow_factorable_insertions
         return d
 
     @classmethod
@@ -458,10 +462,12 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
         d.pop("extra_basis")
         limited_insertion = d.pop("limited_insertion")
         maxreqlen = d.pop("maxreqlen")
+        allow_factorable_insertions = d.pop("allow_factorable_insertions", False)
         return cls(
             maxreqlen=maxreqlen,
             extra_basis=extra_basis,
             limited_insertion=limited_insertion,
+            allow_factorable_insertions=allow_factorable_insertions,
             **d,
         )
 

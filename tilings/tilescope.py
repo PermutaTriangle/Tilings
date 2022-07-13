@@ -103,6 +103,7 @@ class LimitedAssumptionTileScope(TileScope):
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
         max_assumptions: int,
+        ignore_full_tiling_assumptions: bool = False,
         **kwargs,
     ) -> None:
         self.max_assumptions = max_assumptions
@@ -112,6 +113,7 @@ class LimitedAssumptionTileScope(TileScope):
             classdb=TrackedClassDB(),
             **kwargs,
         )
+        self.ignore_full_tiling_assumptions = ignore_full_tiling_assumptions
 
     def _rules_from_strategy(  # type: ignore
         self, comb_class: CombinatorialClassType, strategy: CSSstrategy
@@ -125,7 +127,8 @@ class LimitedAssumptionTileScope(TileScope):
             return sum(
                 1
                 for ass in child.assumptions
-                if len(ass.gps) != len(child.active_cells)
+                if (not self.ignore_full_tiling_assumptions)
+                or len(ass.gps) != len(child.active_cells)
             )
 
         for rule in super()._rules_from_strategy(comb_class, strategy):
