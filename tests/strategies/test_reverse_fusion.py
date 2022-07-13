@@ -1,7 +1,12 @@
+import logging
+
 import pytest
+from logzero import logger
 
 from tilings import GriddedPerm, Tiling, TrackingAssumption
 from tilings.strategies.fusion import FusionStrategy
+
+LOGGER = logging.getLogger(__name__)
 
 
 def reverse_fusion_rules():
@@ -89,7 +94,7 @@ def test_sanity_check(rule):
         assert rule.sanity_check(length)
 
 
-def test_test_positive_reverse_fusion():
+def test_test_positive_reverse_fusion(caplog):
     t = Tiling(
         obstructions=[
             GriddedPerm((0, 1), [(0, 0), (0, 0)]),
@@ -102,5 +107,11 @@ def test_test_positive_reverse_fusion():
     rule = FusionStrategy(col_idx=0, tracked=True)(t)
     assert rule.is_reversible()
     reverse_rule = rule.to_reverse_rule(0)
-    with pytest.raises(NotImplementedError):
+    logger.propagate = True
+    with caplog.at_level(logging.WARNING):
         reverse_rule.sanity_check(4)
+        assert len(caplog.records) == 2
+        assert (
+            "Skipping sanity checking counts" in caplog.text
+            and "Skipping sanity checking generation" in caplog.text
+        )
