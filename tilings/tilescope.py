@@ -1,3 +1,4 @@
+import itertools
 import math
 from array import array
 from collections import Counter
@@ -36,7 +37,8 @@ from tilings.strategy_pack import TileScopePack
 __all__ = ("TileScope", "TileScopePack", "LimitedAssumptionTileScope", "GuidedSearcher")
 
 Cell = Tuple[int, int]
-TrackedClassDBKey = Tuple[int, Tuple[Tuple[Cell, ...], ...]]
+TrackedClassAssumption = Tuple[int, Tuple[Cell, ...]]
+TrackedClassDBKey = Tuple[int, Tuple[TrackedClassAssumption, ...]]
 
 
 class TileScope(CombinatorialSpecificationSearcher):
@@ -405,6 +407,8 @@ class TrackedClassDB(ClassDB[Tiling]):
         self.classdb = ClassDB(Tiling)
         self.label_to_tilings: List[bytes] = []
         self.tilings_to_label: Dict[bytes, int] = {}
+        self.assumption_type_to_int: Dict[type, int] = {}
+        self.int_to_assumption_type: List[type] = []
 
     def __iter__(self) -> Iterator[int]:
         for key in self.label_to_info:
@@ -412,9 +416,7 @@ class TrackedClassDB(ClassDB[Tiling]):
 
     def __contains__(self, key: Key) -> bool:
         if isinstance(key, Tiling):
-            actual_key = self.classdb.get_label(key.remove_assumptions()), tuple(
-                ass.get_cells() for ass in key.assumptions
-            )
+            actual_key = self.tiling_to_key(key)
             compressed_key = self._compress_key(actual_key)
             return self.tilings_to_label.get(compressed_key) is not None
         if isinstance(key, int):
@@ -429,6 +431,42 @@ class TrackedClassDB(ClassDB[Tiling]):
             self.classdb == other.classdb
             and self.label_to_tilings == other.label_to_tilings
             and self.tilings_to_label == other.tilings_to_label
+        )
+
+    def tiling_to_key(self, tiling: Tiling) -> TrackedClassDBKey:
+        """
+        Converts a tiling to its corresponding key.
+        """
+        underlying_label = self.classdb.get_label(tiling.remove_assumptions())
+        assumption_keys = tuple(
+            self.assumption_to_key(ass) for ass in tiling.assumptions
+        )
+        return (underlying_label, assumption_keys)
+
+    def assumption_to_key(self, ass: TrackingAssumption) -> TrackedClassAssumption:
+        """
+        Determines the type of the assumption and retrieves the int representing
+        that type from the appropriate class variables, and then apprends the cells.
+        """
+        try:
+            ass_type_int = self.assumption_type_to_int[type(ass)]
+        except KeyError:
+            ass_type_int = len(self.int_to_assumption_type)
+            assert ass_type_int < 256
+            self.int_to_assumption_type.append(type(ass))
+            self.assumption_type_to_int[type(ass)] = ass_type_int
+        return (ass_type_int, ass.get_cells())
+
+    def key_to_tiling(self, key: TrackedClassDBKey) -> Tiling:
+        """
+        Converts a key back to a Tiling.
+        """
+        return self.classdb.get_class(key[0]).add_assumptions(
+            (
+                self.int_to_assumption_type[ass_key[0]].from_cells(ass_key[1])
+                for ass_key in key[1]
+            ),
+            clean=False,
         )
 
     @staticmethod
@@ -452,18 +490,22 @@ class TrackedClassDB(ClassDB[Tiling]):
             result.append(n)
             return result
 
-        def _compress_tuple_of_cells(cells: Tuple[Cell, ...]) -> List[int]:
-            result: List[int] = []
+        def _compress_assumption(ass_key: TrackedClassAssumption) -> List[int]:
+            type_int, cells = ass_key
+            assert type_int < 256
             assert len(cells) < 256
+            assert all(cell[0] < 256 and cell[1] < 256 for cell in cells)
+
+            result = [type_int]
             result.append(len(cells))
-            for cell in cells:
-                assert max(cell) < 256
-                result.extend(cell)
+            result.extend(itertools.chain(*cells))
             return result
 
         result: List[int] = int_to_bytes(key[0])
         result.extend(
-            int_val for cells in key[1] for int_val in _compress_tuple_of_cells(cells)
+            itertools.chain.from_iterable(
+                _compress_assumption(ass_key) for ass_key in key[1]
+            )
         )
         compressed_key = array("B", result).tobytes()
         # assert TrackedClassDB._decompress_key(compressed_key) == key
@@ -480,6 +522,16 @@ class TrackedClassDB(ClassDB[Tiling]):
             for idx in range(1, len(n)):
                 result |= n[idx] << (8 * idx)
             return cast(int, result)
+
+        # def _decompress_assumption(compressed_ass: array) -> TrackedClassAssumption:
+        #     vals = iter(compressed_ass)
+        #     return (
+        #         next(vals),
+        #         tuple(
+        #             (next(vals), next(vals))
+        #             for _ in range((len(compressed_ass) - 1) // 2)
+        #         ),
+        #     )
 
         def _decompress_tuple_of_cells(
             compressed_cells: array,
@@ -502,37 +554,47 @@ class TrackedClassDB(ClassDB[Tiling]):
 
         tuples_of_cells = []
         while offset < len(vals):
-            num_cells = vals[offset]
-            offset += 1
+            type_int, num_cells = vals[offset : offset + 2]
+            offset += 2
             tuples_of_cells.append(
-                _decompress_tuple_of_cells(vals[offset : offset + 2 * num_cells])
+                (
+                    type_int,
+                    _decompress_tuple_of_cells(vals[offset : offset + 2 * num_cells]),
+                )
             )
             offset += 2 * num_cells
 
         return (label, tuple(tuples_of_cells))
 
     def add(self, comb_class: ClassKey, compressed: bool = False) -> None:
+        """
+        Adds a Tiling to the classdb
+        """
         if compressed:
             raise NotImplementedError
         if isinstance(comb_class, Tiling):
-            underlying_label = self.classdb.get_label(comb_class.remove_assumptions())
-            cells = tuple(ass.get_cells() for ass in comb_class.assumptions)
-            key = underlying_label, cells
+            key = self.tiling_to_key(comb_class)
             compressed_key = self._compress_key(key)
             if compressed_key not in self.tilings_to_label:
                 self.label_to_tilings.append(compressed_key)
                 self.tilings_to_label[compressed_key] = len(self.tilings_to_label)
+            # if comb_class != self._get_info(len(self.label_to_tilings) - 1).comb_class:
+            #     print(comb_class)
+            #     print(self._get_info(len(self.label_to_tilings) - 1).comb_class)
+            #     assert False
 
     def _get_info(self, key: Key) -> Info:
+        """
+        Return the "Info" object corresponding to the key, which is
+        either a Tiling or an integer
+        """
         # pylint: disable=protected-access
         if isinstance(key, Tiling):
-            underlying_label = self.classdb.get_label(key.remove_assumptions())
-            cells = tuple(ass.get_cells() for ass in key.assumptions)
-            actual_key = (underlying_label, cells)
+            actual_key = self.tiling_to_key(key)
             compressed_key = self._compress_key(actual_key)
             if compressed_key not in self.tilings_to_label:
                 self.add(key)
-            info: Optional[Info] = self.classdb._get_info(underlying_label)
+            info: Optional[Info] = self.classdb._get_info(actual_key[0])
             if info is None:
                 raise ValueError("Invalid key")
             info = Info(
@@ -543,14 +605,12 @@ class TrackedClassDB(ClassDB[Tiling]):
         elif isinstance(key, int):
             if not 0 <= key < len(self.label_to_tilings):
                 raise KeyError("Key not in ClassDB")
-            underlying_label, cells = self._decompress_key(self.label_to_tilings[key])
-            info = self.classdb.label_to_info.get(underlying_label)
+            tiling_key = self._decompress_key(self.label_to_tilings[key])
+            info = self.classdb.label_to_info.get(tiling_key[0])
             if info is None:
                 raise ValueError("Invalid key")
             info = Info(
-                self.classdb.get_class(underlying_label).add_assumptions(
-                    (TrackingAssumption.from_cells(c) for c in cells), clean=False
-                ),
+                self.key_to_tiling(tiling_key),
                 key,
                 info.empty,
             )
@@ -567,11 +627,14 @@ class TrackedClassDB(ClassDB[Tiling]):
 
     def is_empty(self, comb_class: Tiling, label: Optional[int] = None) -> bool:
         """
-        Return True if combinatorial class is empty set, False if not.
+        Return True if combinatorial class is set to be empty, False if not.
         """
         return bool(self.classdb.is_empty(comb_class.remove_assumptions()))
 
     def set_empty(self, key: Key, empty: bool = True) -> None:
+        """
+        Set a class to be empty.
+        """
         if isinstance(key, int):
             if 0 <= key < len(self.label_to_tilings):
                 underlying_label, _ = self._decompress_key(self.label_to_tilings[key])
@@ -586,6 +649,6 @@ class TrackedClassDB(ClassDB[Tiling]):
         status = self.classdb.status()
         status = status.replace("combinatorial classes", "underlying tilings")
         tilings = "\n\tTotal number of tilings found is"
-        tilings += f" {len(self.label_to_tilings)}"
+        tilings += f" {len(self.label_to_tilings):,d}"
         status = status.replace("ClassDB status:", "TrackedClassDB status:" + tilings)
-        return status
+        return status + "\n"
