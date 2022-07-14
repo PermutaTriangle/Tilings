@@ -12,6 +12,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Type,
     Union,
     cast,
 )
@@ -407,8 +408,8 @@ class TrackedClassDB(ClassDB[Tiling]):
         self.classdb = ClassDB(Tiling)
         self.label_to_tilings: List[bytes] = []
         self.tilings_to_label: Dict[bytes, int] = {}
-        self.assumption_type_to_int: Dict[type, int] = {}
-        self.int_to_assumption_type: List[type] = []
+        self.assumption_type_to_int: Dict[Type[TrackingAssumption], int] = {}
+        self.int_to_assumption_type: List[Type[TrackingAssumption]] = []
 
     def __iter__(self) -> Iterator[int]:
         for key in self.label_to_info:
@@ -421,7 +422,6 @@ class TrackedClassDB(ClassDB[Tiling]):
             return self.tilings_to_label.get(compressed_key) is not None
         if isinstance(key, int):
             return 0 <= key < len(self.label_to_tilings)
-            # return self.label_to_tilings.get(key) is not None
         raise ValueError("Invalid key")
 
     def __eq__(self, other: object) -> bool:
@@ -508,7 +508,6 @@ class TrackedClassDB(ClassDB[Tiling]):
             )
         )
         compressed_key = array("B", result).tobytes()
-        # assert TrackedClassDB._decompress_key(compressed_key) == key
         return compressed_key
 
     @staticmethod
@@ -522,16 +521,6 @@ class TrackedClassDB(ClassDB[Tiling]):
             for idx in range(1, len(n)):
                 result |= n[idx] << (8 * idx)
             return cast(int, result)
-
-        # def _decompress_assumption(compressed_ass: array) -> TrackedClassAssumption:
-        #     vals = iter(compressed_ass)
-        #     return (
-        #         next(vals),
-        #         tuple(
-        #             (next(vals), next(vals))
-        #             for _ in range((len(compressed_ass) - 1) // 2)
-        #         ),
-        #     )
 
         def _decompress_tuple_of_cells(
             compressed_cells: array,
@@ -578,10 +567,6 @@ class TrackedClassDB(ClassDB[Tiling]):
             if compressed_key not in self.tilings_to_label:
                 self.label_to_tilings.append(compressed_key)
                 self.tilings_to_label[compressed_key] = len(self.tilings_to_label)
-            # if comb_class != self._get_info(len(self.label_to_tilings) - 1).comb_class:
-            #     print(comb_class)
-            #     print(self._get_info(len(self.label_to_tilings) - 1).comb_class)
-            #     assert False
 
     def _get_info(self, key: Key) -> Info:
         """
