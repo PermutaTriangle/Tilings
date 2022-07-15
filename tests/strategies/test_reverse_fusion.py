@@ -94,7 +94,7 @@ def test_sanity_check(rule):
         assert rule.sanity_check(length)
 
 
-def test_test_positive_reverse_fusion(caplog):
+def test_positive_reverse_fusion(caplog):
     t = Tiling(
         obstructions=[
             GriddedPerm((0, 1), [(0, 0), (0, 0)]),
