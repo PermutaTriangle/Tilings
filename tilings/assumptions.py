@@ -1,7 +1,7 @@
 import abc
 from importlib import import_module
 from itertools import chain
-from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Type, TypeVar
 
 from permuta import Perm
 
@@ -11,6 +11,8 @@ Cell = Tuple[int, int]
 
 if TYPE_CHECKING:
     from tilings import Tiling
+
+AssumptionClass = TypeVar("AssumptionClass", bound="Assumption")
 
 
 class Assumption:
@@ -25,15 +27,17 @@ class Assumption:
         self.cells = frozenset(gp.pos[0] for gp in self.gps)
 
     @classmethod
-    def from_cells(cls, cells: Iterable[Cell]) -> "Assumption":
+    def from_cells(
+        cls: Type[AssumptionClass], cells: Iterable[Cell]
+    ) -> AssumptionClass:
         gps = [GriddedPerm.single_cell((0,), cell) for cell in cells]
         return cls(gps)
 
     def avoiding(
-        self,
+        self: AssumptionClass,
         obstructions: Iterable[GriddedPerm],
         active_cells: Optional[Iterable[Cell]] = None,
-    ) -> "Assumption":
+    ) -> AssumptionClass:
         """
         Return the tracking absumption where all of the gridded perms avoiding
         the obstructions are removed. If active_cells is not None, then any
@@ -61,7 +65,7 @@ class Assumption:
         }
 
     @classmethod
-    def from_dict(cls, d: dict) -> "TrackingAssumption":
+    def from_dict(cls, d: dict) -> "Assumption":
         """Return the assumption from the json dict representation."""
         module = import_module(d["class_module"])
         AssClass: Type["TrackingAssumption"] = getattr(module, d["assumption"])

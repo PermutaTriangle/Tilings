@@ -1,7 +1,7 @@
 from collections import Counter
 from functools import partial
 from itertools import combinations
-from typing import Callable, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Callable, Dict, Iterator, List, Optional, Tuple, Union, cast
 
 import sympy
 
@@ -24,6 +24,7 @@ from comb_spec_searcher.typing import (
 )
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import (
+    Assumption,
     ComponentAssumption,
     SkewComponentAssumption,
     SumComponentAssumption,
@@ -353,11 +354,13 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         res: Dict[str, str] = {}
         child = children[0]
         for parent_ass, parent_param in zip(
-            comb_class.assumptions, comb_class.extra_parameters
+            comb_class.tracking_assumptions, comb_class.extra_parameters
         ):
             if parent_ass == self.assumption:
                 continue
-            child_param = child.extra_parameters[child.assumptions.index(parent_ass)]
+            child_param = child.extra_parameters[
+                child.tracking_assumptions.index(parent_ass)
+            ]
             res[parent_param] = child_param
         return (res,)
 
@@ -410,8 +413,10 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "RearrangeAssumptionStrategy":
-        assumption = TrackingAssumption.from_dict(d.pop("assumption"))
-        sub_assumption = TrackingAssumption.from_dict(d.pop("sub_assumption"))
+        assumption = cast(TrackingAssumption, Assumption.from_dict(d.pop("assumption")))
+        sub_assumption = cast(
+            TrackingAssumption, Assumption.from_dict(d.pop("sub_assumption"))
+        )
         assert not d
         return cls(assumption, sub_assumption)
 
@@ -485,7 +490,7 @@ class ComponentToPointAssumptionStrategy(
                 ): child.get_assumption_parameter(
                     self.new_assumption if ass == self.assumption else ass
                 )
-                for ass in comb_class.assumptions
+                for ass in comb_class.tracking_assumptions
             },
         )
 
@@ -501,7 +506,7 @@ class ComponentToPointAssumptionStrategy(
     @classmethod
     def from_dict(cls, d: dict) -> "ComponentToPointAssumptionStrategy":
         return cls(
-            assumption=TrackingAssumption.from_dict(d["assumption"]),
+            assumption=cast(TrackingAssumption, Assumption.from_dict(d["assumption"])),
             ignore_parent=d["ignore_parent"],
             workable=d["workable"],
         )
@@ -515,7 +520,7 @@ class RearrangeAssumptionFactory(StrategyFactory[Tiling]):
     ]:
         points: List[TrackingAssumption] = []
         components: List[TrackingAssumption] = []
-        for ass in comb_class.assumptions:
+        for ass in comb_class.tracking_assumptions:
             (points, components)[isinstance(ass, ComponentAssumption)].append(ass)
 
         for ass1, ass2 in combinations(points, 2):

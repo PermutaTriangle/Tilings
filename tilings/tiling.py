@@ -88,7 +88,7 @@ CachedProperties = TypedDict(
     total=False,
 )
 
-Assumptions = [
+ASSUMPTIONS = [
     TrackingAssumption,
     SumComponentAssumption,
     SkewComponentAssumption,
@@ -96,7 +96,7 @@ Assumptions = [
     OddCountAssumption,
     EqualParityAssumption,
     OppositeParityAssumption,
-]
+]  # DO NOT CHANGE THE ORDER OF THIS LIST
 
 
 class Tiling(CombinatorialClass):
@@ -332,7 +332,7 @@ class Tiling(CombinatorialClass):
         TODO: this should remove points that are placed, and other requirements
         that are contained in every gridded perm.
         """
-        res: List[TrackingAssumption] = []
+        res: List[Assumption] = []
         for assumption in self.assumptions:
             ass = assumption.avoiding(self._obstructions, self.active_cells)
             if ass.gps:
@@ -437,7 +437,7 @@ class Tiling(CombinatorialClass):
             result.extend(split_16bit(len(self.assumptions)))
             for assumption in self.assumptions:
                 try:
-                    ass_idx = Assumptions.index(type(assumption))
+                    ass_idx = ASSUMPTIONS.index(type(assumption))
                 except ValueError as e:
                     raise ValueError("Not a valid assumption.") from e
                 result.append(ass_idx)
@@ -498,7 +498,7 @@ class Tiling(CombinatorialClass):
                 offset += 1
                 gps, offset = recreate_gp_list(offset)
                 try:
-                    ass_class = Assumptions[assumption_type]
+                    ass_class = ASSUMPTIONS[assumption_type]
                 except IndexError as e:
                     raise IndexError("Invalid assumption type.") from e
                 assumptions.append(ass_class(gps))

@@ -13,7 +13,8 @@ from typing import (
     Tuple,
 )
 
-from tilings import GriddedPerm, TrackingAssumption
+from tilings import GriddedPerm
+from tilings.assumptions import TrackingAssumption
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
@@ -34,6 +35,8 @@ class Sliding:
 
     def slidable_pairs(self) -> Iterable[Tuple[int, int]]:
         """Yield the column pairs possible to slide."""
+        if self.tiling.predicate_assumptions:
+            raise NotImplementedError("Not implemented sliding for predicates")
         for av_12, av_123 in product(*self._fast_filter()):
             if self._slide_check_for_pair(av_12, av_123):
                 yield av_12, av_123
@@ -384,6 +387,7 @@ class Sliding:
 
     def _swap_assumptions(self, c1: int, c2: int) -> Iterable[TrackingAssumption]:
         for assumption in self.tiling.assumptions:
+            assert isinstance(assumption, TrackingAssumption)
             assert all(len(gp) == 1 for gp in assumption.gps)
             yield Sliding.slide_assumption(assumption, c1, c2)
 

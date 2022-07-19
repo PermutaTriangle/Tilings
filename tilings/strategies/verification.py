@@ -63,25 +63,27 @@ class BasicVerificationStrategy(AtomStrategy):
 
     @staticmethod
     def get_terms(comb_class: CombinatorialClass, n: int) -> Terms:
-        if not isinstance(comb_class, Tiling):
+        if not isinstance(comb_class, Tiling) or comb_class.predicate_assumptions:
             raise NotImplementedError
         gp = next(comb_class.minimal_gridded_perms())
         if n == len(gp):
             parameters = tuple(
-                assumption.get_value(gp) for assumption in comb_class.assumptions
+                assumption.get_value(gp)
+                for assumption in comb_class.tracking_assumptions
             )
             return Counter([parameters])
         return Counter()
 
     @staticmethod
     def get_objects(comb_class: CombinatorialClass, n: int) -> Objects:
-        if not isinstance(comb_class, Tiling):
+        if not isinstance(comb_class, Tiling) or comb_class.predicate_assumptions:
             raise NotImplementedError
         res: Objects = defaultdict(list)
         gp = next(comb_class.minimal_gridded_perms())
         if n == len(gp):
             parameters = tuple(
-                assumption.get_value(gp) for assumption in comb_class.assumptions
+                assumption.get_value(gp)
+                for assumption in comb_class.tracking_assumptions
             )
             res[parameters].append(gp)
         return res
@@ -113,12 +115,12 @@ class BasicVerificationStrategy(AtomStrategy):
     ) -> Expr:
         if not self.verified(comb_class):
             raise StrategyDoesNotApply("Can't find generating functon for non-atom.")
-        if not isinstance(comb_class, Tiling):
+        if not isinstance(comb_class, Tiling) or comb_class.predicate_assumptions:
             raise NotImplementedError
         cast(Tiling, comb_class)
         gp = next(comb_class.minimal_gridded_perms())
         expected = {"x": len(gp)}
-        for assumption in comb_class.assumptions:
+        for assumption in comb_class.tracking_assumptions:
             expected[
                 comb_class.get_assumption_parameter(assumption)
             ] = assumption.get_value(gp)
@@ -151,7 +153,7 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
         # for the class with requirements.
         eq = Eq(self.without_req_genf(self.comb_class), get_function(self.comb_class))
         subs = solve([eq], var("F"), dict=True)[0]
-        if self.comb_class.assumptions:
+        if self.comb_class.tracking_assumptions:
             subs["x"] = var("x") * var("k_0")
         res, _ = sympify(lhs).subs(subs, simultaneous=True).as_numer_denom()
         # Pick the unique factor that contains F

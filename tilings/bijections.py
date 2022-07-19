@@ -78,13 +78,18 @@ class _AssumptionPathTracker:
         self.assumptions1, self.assumptions2 = self._init_assumptions()
 
     def _init_assumptions(self) -> Tuple[AssumptionLabels, AssumptionLabels]:
+        if (
+            self.r1.comb_class.predicate_assumptions
+            or self.r2.comb_class.predicate_assumptions
+        ):
+            raise NotImplementedError("not implemented bijections for predicates")
         a1: AssumptionLabels = {}
         a2: AssumptionLabels = {}
         # If any label at root, we store them at the first label
         if self.r1.comb_class.assumptions:
-            a1[self.nxt_label] = set(self.r1.comb_class.assumptions)
+            a1[self.nxt_label] = set(self.r1.comb_class.tracking_assumptions)
         if self.r2.comb_class.assumptions:
-            a2[self.nxt_label] = set(self.r2.comb_class.assumptions)
+            a2[self.nxt_label] = set(self.r2.comb_class.tracking_assumptions)
         # Increment next label if root had any assumptions
         self.nxt_label = max(len(a1), len(a2))
         return a1, a2
@@ -171,9 +176,11 @@ class _AssumptionPathTracker:
         assumptions: AssumptionLabels,
     ) -> Set[TrackingAssumption]:
         """The assumption in the current class that don't correspond to any label."""
+        if rule.comb_class.predicate_assumptions:
+            raise NotImplementedError("Not implemented bijections for predicates")
         return set(
             assumption
-            for assumption in rule.comb_class.assumptions
+            for assumption in rule.comb_class.tracking_assumptions
             if all(assumption not in v for v in assumptions.values())
         )
 

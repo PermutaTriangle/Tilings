@@ -227,6 +227,8 @@ class DeflationFactory(StrategyFactory[Tiling]):
         super().__init__()
 
     def __call__(self, comb_class: Tiling) -> Iterator[DeflationStrategy]:
+        if comb_class.predicate_assumptions:
+            raise NotImplementedError("Not implemented deflation for predicates")
         for cell in comb_class.active_cells:
             if not self._can_deflate_requirements_and_assumptions(comb_class, cell):
                 continue

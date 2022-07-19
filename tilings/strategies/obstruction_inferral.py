@@ -45,7 +45,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         child = children[0]
         params: Dict[str, str] = {}
-        for assumption in comb_class.assumptions:
+        for assumption in comb_class.tracking_assumptions:
             mapped_assumption = child.forward_map.map_assumption(assumption).avoiding(
                 child.obstructions
             )

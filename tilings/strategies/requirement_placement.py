@@ -11,6 +11,7 @@ from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
 from tilings.algorithms.fusion import Fusion
+from tilings.assumptions import TrackingAssumption
 
 __all__ = [
     "PatternPlacementFactory",
@@ -91,7 +92,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         extra_parameters: Tuple[Dict[str, str], ...] = tuple({} for _ in children)
         if self.include_empty:
             child = children[0]
-            for assumption in comb_class.assumptions:
+            for assumption in comb_class.tracking_assumptions:
                 mapped_assumption = child.forward_map.map_assumption(
                     assumption
                 ).avoiding(child.obstructions)
@@ -105,9 +106,10 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             mapped_assumptions = [
                 child.forward_map.map_assumption(ass).avoiding(child.obstructions)
                 for ass in algo.stretched_assumptions(cell)
+                if isinstance(ass, TrackingAssumption)
             ]
             for assumption, mapped_assumption in zip(
-                comb_class.assumptions, mapped_assumptions
+                comb_class.tracking_assumptions, mapped_assumptions
             ):
                 if mapped_assumption.gps:
                     parent_var = comb_class.get_assumption_parameter(assumption)

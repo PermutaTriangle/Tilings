@@ -1,7 +1,7 @@
 from collections import Counter
 from itertools import product
 from random import randint
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
 from sympy import Eq, Expr, Function, Number, Symbol, var
 
@@ -19,7 +19,7 @@ from comb_spec_searcher.typing import (
     Terms,
 )
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import ComponentAssumption, TrackingAssumption
+from tilings.assumptions import Assumption, ComponentAssumption, TrackingAssumption
 
 Cell = Tuple[int, int]
 
@@ -257,7 +257,7 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(comb_class)
             if children is None:
-                raise StrategyDoesNotApply("Can't split the tracking assumption")
+                raise StrategyDoesNotApply("Can't add the tracking assumption")
         new_parameters = [
             children[0].get_assumption_parameter(ass) for ass in self.assumptions
         ]
@@ -286,7 +286,7 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
             child.get_assumption_parameter(ass): comb_class.get_assumption_parameter(
                 ass
             )
-            for ass in child.assumptions
+            for ass in child.tracking_assumptions
             if ass != assumption
         }
 
@@ -305,7 +305,7 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
                 comb_class.get_assumption_parameter(
                     ass
                 ): child.get_assumption_parameter(ass)
-                for ass in comb_class.assumptions
+                for ass in comb_class.tracking_assumptions
             },
         )
 
@@ -354,7 +354,10 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "AddAssumptionsStrategy":
-        assumptions = [TrackingAssumption.from_dict(ass) for ass in d["assumptions"]]
+        assumptions = [
+            cast(TrackingAssumption, Assumption.from_dict(ass))
+            for ass in d["assumptions"]
+        ]
         return cls(assumptions)
 
     @staticmethod
@@ -370,7 +373,7 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
 
 class AddAssumptionFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
-        for assumption in comb_class.assumptions:
+        for assumption in comb_class.tracking_assumptions:
             without = comb_class.remove_assumption(assumption)
             strategy = AddAssumptionsStrategy((assumption,))
             yield strategy(without)
