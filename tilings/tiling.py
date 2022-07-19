@@ -46,7 +46,13 @@ from .algorithms import (
     guess_obstructions,
 )
 from .assumptions import (
+    Assumption,
     ComponentAssumption,
+    EqualParityAssumption,
+    EvenCountAssumption,
+    OddCountAssumption,
+    OppositeParityAssumption,
+    PredicateAssumption,
     SkewComponentAssumption,
     SumComponentAssumption,
     TrackingAssumption,
@@ -82,6 +88,16 @@ CachedProperties = TypedDict(
     total=False,
 )
 
+Assumptions = [
+    TrackingAssumption,
+    SumComponentAssumption,
+    SkewComponentAssumption,
+    EvenCountAssumption,
+    OddCountAssumption,
+    EqualParityAssumption,
+    OppositeParityAssumption,
+]
+
 
 class Tiling(CombinatorialClass):
     """Tiling class.
@@ -97,7 +113,7 @@ class Tiling(CombinatorialClass):
         self,
         obstructions: Iterable[GriddedPerm] = tuple(),
         requirements: Iterable[Iterable[GriddedPerm]] = tuple(),
-        assumptions: Iterable[TrackingAssumption] = tuple(),
+        assumptions: Iterable[Assumption] = tuple(),
         remove_empty_rows_and_cols: bool = True,
         derive_empty: bool = True,
         simplify: bool = True,
@@ -420,14 +436,11 @@ class Tiling(CombinatorialClass):
         if self.assumptions:
             result.extend(split_16bit(len(self.assumptions)))
             for assumption in self.assumptions:
-                if isinstance(assumption, SkewComponentAssumption):
-                    result.append(2)
-                elif isinstance(assumption, SumComponentAssumption):
-                    result.append(1)
-                elif isinstance(assumption, TrackingAssumption):
-                    result.append(0)
-                else:
-                    raise ValueError("Not a valid assumption.")
+                try:
+                    ass_idx = Assumptions.index(type(assumption))
+                except ValueError as e:
+                    raise ValueError("Not a valid assumption.") from e
+                result.append(ass_idx)
                 result.extend(split_16bit(len(assumption.gps)))
                 result.extend(
                     chain.from_iterable(
@@ -484,17 +497,11 @@ class Tiling(CombinatorialClass):
                 assumption_type = arr[offset]
                 offset += 1
                 gps, offset = recreate_gp_list(offset)
-                if assumption_type == 0:
-                    # tracking
-                    assumptions.append(TrackingAssumption(gps))
-                elif assumption_type == 1:
-                    # sum
-                    assumptions.append(SumComponentAssumption(gps))
-                elif assumption_type == 2:
-                    # skew
-                    assumptions.append(SkewComponentAssumption(gps))
-                else:
-                    raise ValueError("Invalid assumption type.")
+                try:
+                    ass_class = Assumptions[assumption_type]
+                except IndexError as e:
+                    raise IndexError("Invalid assumption type.") from e
+                assumptions.append(ass_class(gps))
         return cls(
             obstructions=obstructions,
             requirements=requirements,
@@ -541,7 +548,7 @@ class Tiling(CombinatorialClass):
         serialized Tiling object."""
         obstructions = map(GriddedPerm.from_dict, d["obstructions"])
         requirements = map(lambda x: map(GriddedPerm.from_dict, x), d["requirements"])
-        assumptions = map(TrackingAssumption.from_dict, d.get("assumptions", []))
+        assumptions = map(Assumption.from_dict, d.get("assumptions", []))
         return cls(
             obstructions=obstructions,
             requirements=requirements,
@@ -642,11 +649,11 @@ class Tiling(CombinatorialClass):
             sorted_input=True,
         )
 
-    def add_assumption(self, assumption: TrackingAssumption) -> "Tiling":
+    def add_assumption(self, assumption: Assumption) -> "Tiling":
         """Returns a new tiling with the added assumption."""
         return self.add_assumptions((assumption,))
 
-    def add_assumptions(self, assumptions: Iterable[TrackingAssumption]) -> "Tiling":
+    def add_assumptions(self, assumptions: Iterable[Assumption]) -> "Tiling":
         """Returns a new tiling with the added assumptions."""
         tiling = Tiling(
             self._obstructions,
@@ -700,7 +707,10 @@ class Tiling(CombinatorialClass):
         """
         if not self.assumptions:
             return self
-        assumptions = [ass.remove_components(self) for ass in self.assumptions]
+        assumptions = [
+            ass.remove_components(self) if isinstance(ass, TrackingAssumption) else ass
+            for ass in self.assumptions
+        ]
         tiling = self.__class__(
             self._obstructions,
             self._requirements,
@@ -1390,21 +1400,23 @@ class Tiling(CombinatorialClass):
 
     @property
     def extra_parameters(self) -> Tuple[str, ...]:
-        return tuple(f"k_{i}" for i in range(len(self._assumptions)))
+        return tuple(f"k_{i}" for i in range(len(self.tracking_assumptions)))
 
     def get_parameters(self, obj: GriddedPerm) -> Parameters:
-        return tuple(ass.get_value(obj) for ass in self.assumptions)
+        return tuple(ass.get_value(obj) for ass in self.tracking_assumptions)
 
     def possible_parameters(self, n: int) -> Iterator[Dict[str, int]]:
         if any(
             len(gp) > 1
-            for gp in chain.from_iterable(ass.gps for ass in self.assumptions)
+            for gp in chain.from_iterable(ass.gps for ass in self.tracking_assumptions)
         ):
             raise NotImplementedError(
                 "possible parameters only implemented for assumptions with "
                 "size one gridded perms"
             )
-        parameters = [self.get_assumption_parameter(ass) for ass in self.assumptions]
+        parameters = [
+            self.get_assumption_parameter(ass) for ass in self.tracking_assumptions
+        ]
         for values in product(*[range(n + 1) for _ in parameters]):
             yield dict(zip(parameters, values))
 
@@ -1415,7 +1427,7 @@ class Tiling(CombinatorialClass):
         Raise ValueError if the assumptions is not on the tiling.
         """
         try:
-            idx = self._assumptions.index(assumption)
+            idx = self.tracking_assumptions.index(assumption)
         except ValueError as e:
             raise ValueError(
                 f"following assumption not on tiling: '{assumption}'"
@@ -1424,7 +1436,7 @@ class Tiling(CombinatorialClass):
 
     def get_assumption(self, parameter: str) -> TrackingAssumption:
         idx = parameter.split("_")[1]
-        return self.assumptions[int(idx)]
+        return self.tracking_assumptions[int(idx)]
 
     def get_minimum_value(self, parameter: str) -> int:
         """
@@ -1442,6 +1454,7 @@ class Tiling(CombinatorialClass):
     def maximum_length_of_minimum_gridded_perm(self) -> int:
         """Returns the maximum length of the minimum gridded permutation that
         can be gridded on the tiling.
+        TODO: this method ignores predicates so is a lower bound
         """
         return sum(max(map(len, reqs)) for reqs in self.requirements)
 
@@ -1451,8 +1464,12 @@ class Tiling(CombinatorialClass):
         Tiling is empty if it has been inferred to be contradictory due to
         contradicting requirements and obstructions or no gridded permutation
         can be gridded on the tiling.
+
+        TODO: this method ignores predicates
         """
-        if any(ob.is_empty() for ob in self.obstructions):
+        if any(ob.is_empty() for ob in self.obstructions) or any(
+            not ass.can_be_satisfied(self) for ass in self.predicate_assumptions
+        ):
             return True
         if len(self.requirements) <= 1:
             return False
@@ -1544,7 +1561,12 @@ class Tiling(CombinatorialClass):
             if maxlen is not None
             else self.maximum_length_of_minimum_gridded_perm()
         )
-        yield from GriddedPermsOnTiling(self).gridded_perms(maxlen)
+        yield from filter(
+            self._satisfies_predicates, GriddedPermsOnTiling(self).gridded_perms(maxlen)
+        )
+
+    def _satisfies_predicates(self, gp: GriddedPerm) -> bool:
+        return all(ass.satisfies(gp) for ass in self.predicate_assumptions)
 
     def enmerate_gp_up_to(self, max_length: int) -> List[int]:
         """Count gridded perms of each length up to a max length."""
@@ -1565,6 +1587,7 @@ class Tiling(CombinatorialClass):
     def minimal_gridded_perms(self) -> Iterator[GriddedPerm]:
         """
         An iterator over all minimal gridded permutations.
+        TODO: this method ignores predicates
         """
         MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
         yield from MGP.minimal_gridded_perms()
@@ -1597,7 +1620,10 @@ class Tiling(CombinatorialClass):
         )
 
     def minimum_size_of_object(self) -> int:
-        """Return the size of the smallest gridded perm contained on the tiling."""
+        """
+        Return the size of the smallest gridded perm contained on the tiling.
+        TODO: this ignores predicates
+        """
         if not self.requirements:
             return 0
         if len(self.requirements) == 1:
@@ -1730,8 +1756,20 @@ class Tiling(CombinatorialClass):
         return len(self._requirements)
 
     @property
-    def assumptions(self) -> Tuple[TrackingAssumption, ...]:
+    def assumptions(self) -> Tuple[Assumption, ...]:
         return self._assumptions
+
+    @property
+    def tracking_assumptions(self) -> Tuple[TrackingAssumption, ...]:
+        return tuple(
+            ass for ass in self._assumptions if isinstance(ass, TrackingAssumption)
+        )
+
+    @property
+    def predicate_assumptions(self) -> Tuple[PredicateAssumption, ...]:
+        return tuple(
+            ass for ass in self._assumptions if isinstance(ass, PredicateAssumption)
+        )
 
     def total_assumptions(self) -> int:
         return len(self._assumptions)

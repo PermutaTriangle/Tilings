@@ -13,17 +13,19 @@ if TYPE_CHECKING:
     from tilings import Tiling
 
 
-class TrackingAssumption:
+class Assumption:
     """
-    An assumption used to keep track of the occurrences of a set of gridded
-    permutations.
+    An abstract class for assumption made on tilings. This consists of
+    a set of cells that are passed around according to forward and
+    backward maps of strategies.
     """
 
     def __init__(self, gps: Iterable[GriddedPerm]):
         self.gps = tuple(sorted(set(gps)))
+        self.cells = frozenset(gp.pos[0] for gp in self.gps)
 
     @classmethod
-    def from_cells(cls, cells: Iterable[Cell]) -> "TrackingAssumption":
+    def from_cells(cls, cells: Iterable[Cell]) -> "Assumption":
         gps = [GriddedPerm.single_cell((0,), cell) for cell in cells]
         return cls(gps)
 
@@ -31,7 +33,7 @@ class TrackingAssumption:
         self,
         obstructions: Iterable[GriddedPerm],
         active_cells: Optional[Iterable[Cell]] = None,
-    ) -> "TrackingAssumption":
+    ) -> "Assumption":
         """
         Return the tracking absumption where all of the gridded perms avoiding
         the obstructions are removed. If active_cells is not None, then any
@@ -48,6 +50,49 @@ class TrackingAssumption:
                 )
             )
         return self.__class__(tuple(gp for gp in self.gps if gp.avoids(*obstructions)))
+
+    def to_jsonable(self) -> dict:
+        """Return a dictionary form of the assumption."""
+        c = self.__class__
+        return {
+            "class_module": c.__module__,
+            "assumption": c.__name__,
+            "gps": [gp.to_jsonable() for gp in self.gps],
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "TrackingAssumption":
+        """Return the assumption from the json dict representation."""
+        module = import_module(d["class_module"])
+        AssClass: Type["TrackingAssumption"] = getattr(module, d["assumption"])
+        assert issubclass(AssClass, Assumption), "Not a valid Assumption"
+        gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
+        return AssClass(gps)
+
+    def __eq__(self, other) -> bool:
+        if other.__class__ == self.__class__:
+            return bool(self.gps == other.gps)
+        return NotImplemented
+
+    def __lt__(self, other) -> bool:
+        if isinstance(other, Assumption):
+            key_self = (self.__class__.__name__, self.gps)
+            key_other = (other.__class__.__name__, other.gps)
+            return key_self < key_other
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(hash(self.gps) + hash(self.__class__.__name__))
+
+    def __repr__(self) -> str:
+        return self.__class__.__name__ + f"({self.gps})"
+
+
+class TrackingAssumption(Assumption):
+    """
+    An assumption used to keep track of the occurrences of a set of gridded
+    permutations.
+    """
 
     def get_value(self, gp: GriddedPerm) -> int:
         """
@@ -73,45 +118,7 @@ class TrackingAssumption:
         gps_to_remove = set(chain.from_iterable(self.get_components(tiling)))
         return self.__class__(gp for gp in self.gps if gp not in gps_to_remove)
 
-    def to_jsonable(self) -> dict:
-        """Return a dictionary form of the assumption."""
-        c = self.__class__
-        return {
-            "class_module": c.__module__,
-            "assumption": c.__name__,
-            "gps": [gp.to_jsonable() for gp in self.gps],
-        }
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "TrackingAssumption":
-        """Return the assumption from the json dict representation."""
-        module = import_module(d["class_module"])
-        AssClass: Type["TrackingAssumption"] = getattr(module, d["assumption"])
-        assert issubclass(
-            AssClass, TrackingAssumption
-        ), "Not a valid TrackingAssumption"
-        gps = [GriddedPerm.from_dict(gp) for gp in d["gps"]]
-        return AssClass(gps)
-
-    def __eq__(self, other) -> bool:
-        if other.__class__ == TrackingAssumption:
-            return bool(self.gps == other.gps)
-        return NotImplemented
-
-    def __lt__(self, other) -> bool:
-        if isinstance(other, TrackingAssumption):
-            key_self = (self.__class__.__name__, self.gps)
-            key_other = (other.__class__.__name__, other.gps)
-            return key_self < key_other
-        return NotImplemented
-
-    def __hash__(self) -> int:
-        return hash(self.gps)
-
-    def __repr__(self) -> str:
-        return self.__class__.__name__ + f"({self.gps})"
-
-    def __str__(self):
+    def __str__(self) -> str:
         if all(len(gp) == 1 for gp in self.gps):
             cells = ", ".join(str(gp.pos[0]) for gp in self.gps)
             return f"can count points in cell{'s' if len(self.gps) > 1 else ''} {cells}"
@@ -131,7 +138,6 @@ class ComponentAssumption(TrackingAssumption):
     def __init__(self, gps: Iterable[GriddedPerm]):
         super().__init__(gps)
         assert all(len(gp) == 1 for gp in self.gps)
-        self.cells = frozenset(gp.pos[0] for gp in self.gps)
 
     @abc.abstractmethod
     def decomposition(self, perm: Perm) -> List[Perm]:
@@ -202,19 +208,8 @@ class ComponentAssumption(TrackingAssumption):
         subgp = gp.get_gridded_perm_in_cells(self.cells)
         return len(self.decomposition(subgp.patt))
 
-    def __eq__(self, other) -> bool:
-        if isinstance(other, ComponentAssumption) and self.__class__ == other.__class__:
-            return bool(self.gps == other.gps)
-        return NotImplemented
-
-    def __repr__(self) -> str:
-        return self.__class__.__name__ + f"({self.gps})"
-
-    def __str__(self):
+    def __str__(self) -> str:
         return f"can count components in cells {self.cells}"
-
-    def __hash__(self) -> int:
-        return hash(self.gps)
 
 
 class SumComponentAssumption(ComponentAssumption):
@@ -234,11 +229,8 @@ class SumComponentAssumption(ComponentAssumption):
     def one_or_fewer_components(tiling: "Tiling", cell: Cell) -> bool:
         return GriddedPerm.single_cell(Perm((0, 1)), cell) in tiling.obstructions
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"can count sum components in cells {self.cells}"
-
-    def __hash__(self) -> int:
-        return hash(self.gps)
 
 
 class SkewComponentAssumption(ComponentAssumption):
@@ -258,8 +250,89 @@ class SkewComponentAssumption(ComponentAssumption):
     def one_or_fewer_components(tiling: "Tiling", cell: Cell) -> bool:
         return GriddedPerm.single_cell(Perm((1, 0)), cell) in tiling.obstructions
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"can count skew components in cells {self.cells}"
 
-    def __hash__(self) -> int:
-        return hash(self.gps)
+
+class PredicateAssumption(Assumption):
+    """
+    An assumption that checks some boolean holds for the sub gridded
+    permutation at the cells.
+    """
+
+    def satisfies(self, gp: GriddedPerm) -> bool:
+        """Return True if sub gp at cells satisfies the predicate."""
+        return self._gp_satisfies(gp.get_gridded_perm_in_cells(self.cells))
+
+    @abc.abstractmethod
+    def _gp_satisfies(self, gp: GriddedPerm) -> bool:
+        """Return True if gp satisfies the predicate."""
+
+    @abc.abstractmethod
+    def can_be_satisfied(self, tiling: "Tiling") -> bool:
+        """
+        Return True if the predicate can be satisfied by some gridded
+        perm on the tiling.
+        """
+
+
+class OddCountAssumption(PredicateAssumption):
+    """There is an odd number of points at the cells"""
+
+    def can_be_satisfied(self, tiling: "Tiling") -> bool:
+        return True
+
+    def _gp_satisfies(self, gp: GriddedPerm) -> bool:
+        return bool(len(gp) % 2)
+
+    def __str__(self) -> str:
+        return "odd number of points in cells {self.cells}"
+
+
+class EvenCountAssumption(PredicateAssumption):
+    """There is an even number of points at the cells"""
+
+    def can_be_satisfied(self, tiling: "Tiling") -> bool:
+        return True
+
+    def _gp_satisfies(self, gp: GriddedPerm) -> bool:
+        return not bool(len(gp) % 2)
+
+    def __str__(self) -> str:
+        return "even number of points in cells {self.cells}"
+
+
+class EqualParityAssumption(PredicateAssumption):
+    def can_be_satisfied(self, tiling: "Tiling") -> bool:
+        return True
+
+    def satisfies(self, gp: GriddedPerm) -> bool:
+        return all(
+            idx % 2 == val % 2
+            for idx, val in enumerate(gp.patt)
+            if gp.pos[idx] in self.cells
+        )
+
+    def _gp_satisies(self, gp: GriddedPerm) -> bool:
+        raise NotImplementedError
+
+    def __str__(self) -> str:
+        return "points are equal parity in cells {self.cells}"
+
+
+class OppositeParityAssumption(PredicateAssumption):
+    def can_be_satisfied(self, tiling: "Tiling") -> bool:
+        return True
+
+    def satisfies(self, gp: GriddedPerm) -> bool:
+        return all(
+            idx % 2 != val % 2
+            for idx, val in enumerate(gp.patt)
+            if gp.pos[idx] in self.cells
+        )
+
+    def _gp_satisies(self, gp: GriddedPerm) -> bool:
+        raise NotImplementedError
+
+    def __str__(self) -> str:
+        return "points are opposite parity in cells {self.cells}"
