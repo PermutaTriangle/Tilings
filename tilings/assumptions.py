@@ -1,7 +1,17 @@
 import abc
 from importlib import import_module
 from itertools import chain
-from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from permuta import Perm
 
@@ -13,6 +23,7 @@ if TYPE_CHECKING:
     from tilings import Tiling
 
 AssumptionClass = TypeVar("AssumptionClass", bound="Assumption")
+CountAssumption = Union["OddCountAssumption", "EvenCountAssumption"]
 
 
 class Assumption:
@@ -77,6 +88,9 @@ class Assumption:
         if other.__class__ == self.__class__:
             return bool(self.gps == other.gps)
         return NotImplemented
+
+    def __len__(self) -> int:
+        return len(self.gps)
 
     def __lt__(self, other) -> bool:
         if isinstance(other, Assumption):
@@ -279,6 +293,13 @@ class PredicateAssumption(Assumption):
         perm on the tiling.
         """
 
+    def refinements(self) -> Iterator[Tuple["PredicateAssumption", ...]]:
+        """
+        Yield tuples of Assumption that such that the predicate
+        satisfies a gp iff all refined predicates satisfies a gp.
+        """
+        yield (self,)
+
 
 class OddCountAssumption(PredicateAssumption):
     """There is an odd number of points at the cells"""
@@ -289,8 +310,33 @@ class OddCountAssumption(PredicateAssumption):
     def _gp_satisfies(self, gp: GriddedPerm) -> bool:
         return bool(len(gp) % 2)
 
+    def refinements(self) -> Iterator[Tuple[CountAssumption, ...]]:
+        """
+        Yield tuples of single cell Odd/Even CountAssumption that
+        combine to match the parity.
+        """
+        yield from self._refinements(list(self.cells), True)
+
+    @staticmethod
+    def helper_refinements(
+        cells: List[Cell], odd: bool
+    ) -> Iterator[Tuple[CountAssumption, ...]]:
+        cell = cells.pop()
+        if cells:
+            for refinement in OddCountAssumption.helper_refinements(list(cells), odd):
+                yield (EvenCountAssumption.from_cells([cell]),) + refinement
+            for refinement in OddCountAssumption.helper_refinements(
+                list(cells), not odd
+            ):
+                yield (OddCountAssumption.from_cells([cell]),) + refinement
+
+        elif odd:
+            yield (OddCountAssumption.from_cells([cell]),)
+        else:
+            yield (EvenCountAssumption.from_cells([cell]),)
+
     def __str__(self) -> str:
-        return "odd number of points in cells {self.cells}"
+        return f"odd number of points in cells {self.cells}"
 
 
 class EvenCountAssumption(PredicateAssumption):
@@ -302,8 +348,15 @@ class EvenCountAssumption(PredicateAssumption):
     def _gp_satisfies(self, gp: GriddedPerm) -> bool:
         return not bool(len(gp) % 2)
 
+    def refinements(self) -> Iterator[Tuple[CountAssumption, ...]]:
+        """
+        Yield tuples of single cell Odd/Even CountAssumption that
+        combine to match the parity.
+        """
+        yield from OddCountAssumption.helper_refinements(list(self.cells), False)
+
     def __str__(self) -> str:
-        return "even number of points in cells {self.cells}"
+        return f"even number of points in cells {self.cells}"
 
 
 class EqualParityAssumption(PredicateAssumption):
@@ -320,8 +373,11 @@ class EqualParityAssumption(PredicateAssumption):
     def _gp_satisies(self, gp: GriddedPerm) -> bool:
         raise NotImplementedError
 
+    def refinements(self) -> Iterator[Tuple["EqualParityAssumption", ...]]:
+        yield tuple(EqualParityAssumption.from_cells([cell]) for cell in self.cells)
+
     def __str__(self) -> str:
-        return "points are equal parity in cells {self.cells}"
+        return f"points are equal parity in cells {self.cells}"
 
 
 class OppositeParityAssumption(PredicateAssumption):
@@ -338,5 +394,8 @@ class OppositeParityAssumption(PredicateAssumption):
     def _gp_satisies(self, gp: GriddedPerm) -> bool:
         raise NotImplementedError
 
+    def refinements(self) -> Iterator[Tuple["OppositeParityAssumption", ...]]:
+        yield tuple(OppositeParityAssumption.from_cells([cell]) for cell in self.cells)
+
     def __str__(self) -> str:
-        return "points are opposite parity in cells {self.cells}"
+        return f"points are opposite parity in cells {self.cells}"
