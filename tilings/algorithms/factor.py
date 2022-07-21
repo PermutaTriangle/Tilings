@@ -76,6 +76,10 @@ class Factor:
         """
         For each TrackingAssumption unite all the positions of the gridded perms.
         """
+        if any(len(ass.cells) > 1 for ass in self._tiling.predicate_assumptions):
+            # DO NOT FACTOR
+            self._unite_cells(self._tiling.active_cells)
+            return
         for assumption in self._tiling.assumptions:
             if isinstance(assumption, ComponentAssumption):
                 for cells in assumption.cell_decomposition(self._tiling):

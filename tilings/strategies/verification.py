@@ -63,7 +63,7 @@ class BasicVerificationStrategy(AtomStrategy):
 
     @staticmethod
     def get_terms(comb_class: CombinatorialClass, n: int) -> Terms:
-        if not isinstance(comb_class, Tiling) or comb_class.predicate_assumptions:
+        if not isinstance(comb_class, Tiling):
             raise NotImplementedError
         gp = next(comb_class.minimal_gridded_perms())
         if n == len(gp):

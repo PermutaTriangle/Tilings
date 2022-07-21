@@ -1117,21 +1117,42 @@ class Tiling(CombinatorialClass):
             or all(c in cells for c in chain.from_iterable(r.pos for r in req))
         )
         assumptions = tuple(
-            ass.__class__(
-                gp
-                for gp in ass.gps
-                if (factors and gp.pos[0] in cells) or all(c in cells for c in gp.pos)
-            )
-            for ass in self.assumptions
+            self.factored_assumption(ass, cells, factors) for ass in self.assumptions
         ) + tuple(add_assumptions)
         # TODO: check sum/skew assumptions
         return self.__class__(
             obstructions,
             requirements,
             tuple(sorted(set(ass for ass in assumptions if ass.gps))),
-            simplify=False,
+            simplify=bool(self.predicate_assumptions),
             sorted_input=True,
         )
+
+    def factored_assumption(
+        self, assumption: Assumption, cells: Iterable[Cell], factors: bool = False
+    ) -> Assumption:
+        if isinstance(
+            assumption, (TrackingAssumption, OddCountAssumption, EvenCountAssumption)
+        ):
+            return assumption.__class__(
+                gp
+                for gp in assumption.gps
+                if (factors and gp.pos[0] in cells) or all(c in cells for c in gp.pos)
+            )
+        assert all(len(ass.cells) == 1 for ass in self.predicate_assumptions)
+        ass_x, ass_y = next(iter(assumption.cells))
+        odd_cells = set(
+            cell
+            for cell in self.active_cells
+            if OddCountAssumption.from_cells([cell]) in self.assumptions
+        ) - set(cells)
+        odd_below = bool(sum(1 for _, y in odd_cells if y < ass_y) % 2)
+        odd_left = bool(sum(1 for x, _ in odd_cells if x < ass_x) % 2)
+        if odd_below == odd_left:
+            return assumption
+        elif isinstance(assumption, EqualParityAssumption):
+            return OppositeParityAssumption(assumption.gps)
+        return EqualParityAssumption(assumption.gps)
 
     def find_factors(self, interleaving: str = "none") -> Tuple["Tiling", ...]:
         """
