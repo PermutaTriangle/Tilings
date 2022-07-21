@@ -37,6 +37,7 @@ from tilings.strategies import (
     RemoveRequirementFactory,
     RequirementCorroborationFactory,
 )
+from tilings.strategies.predicate_refinement import RefinePredicatesStrategy
 
 from .abstract import BasisAwareVerificationStrategy
 
@@ -219,13 +220,19 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
             ]
         ):
             # subclass of Av(231) or a symmetry, use point placements!
-            return TileScopePack.point_and_row_and_col_placements().add_verification(
-                BasicVerificationStrategy(), replace=True
+            return (
+                TileScopePack.point_and_row_and_col_placements()
+                .add_verification(BasicVerificationStrategy(), replace=True)
+                .add_initial(RefinePredicatesStrategy(), apply_first=True)
             )
         if is_insertion_encodable_maximum(basis):
-            return TileScopePack.regular_insertion_encoding(3)
+            return TileScopePack.regular_insertion_encoding(3).add_initial(
+                RefinePredicatesStrategy(), apply_first=True
+            )
         if is_insertion_encodable_rightmost(basis):
-            return TileScopePack.regular_insertion_encoding(2)
+            return TileScopePack.regular_insertion_encoding(2).add_initial(
+                RefinePredicatesStrategy(), apply_first=True
+            )
         # if it is the class or positive class
         if not comb_class.requirements or (
             len(comb_class.requirements) == 1
@@ -239,7 +246,11 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
             ):
                 # is a subclass of Av(123) avoiding patterns of length <= 4
                 # experimentally showed that such clsses always terminates
-                return TileScopePack.row_and_col_placements().add_basis(basis)
+                return (
+                    TileScopePack.row_and_col_placements()
+                    .add_basis(basis)
+                    .add_initial(RefinePredicatesStrategy(), apply_first=True)
+                )
         raise InvalidOperationError(
             "Cannot get a specification for one by one verification for "
             f"subclass Av({basis})"
@@ -626,7 +637,11 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
                 f"Cannot get a simpler specification for\n{comb_class}"
             )
         return StrategyPack(
-            initial_strats=[FactorFactory(), DetectComponentsStrategy()],
+            initial_strats=[
+                RefinePredicatesStrategy(),
+                FactorFactory(),
+                DetectComponentsStrategy(),
+            ],
             inferral_strats=[],
             expansion_strats=[],
             ver_strats=[
@@ -715,9 +730,13 @@ class InsertionEncodingVerificationStrategy(TileScopeVerificationStrategy):
         from tilings.strategy_pack import TileScopePack
 
         if self.has_rightmost_insertion_encoding(comb_class):
-            pack = TileScopePack.regular_insertion_encoding(2)
+            pack = TileScopePack.regular_insertion_encoding(2).add_initial(
+                RefinePredicatesStrategy(), apply_first=True
+            )
         elif self.has_topmost_insertion_encoding(comb_class):
-            pack = TileScopePack.regular_insertion_encoding(3)
+            pack = TileScopePack.regular_insertion_encoding(3).add_initial(
+                RefinePredicatesStrategy(), apply_first=True
+            )
         else:
             raise StrategyDoesNotApply(
                 "tiling does not has a regular insertion encoding"
