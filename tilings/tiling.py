@@ -1507,7 +1507,7 @@ class Tiling(CombinatorialClass):
         MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
         return all(
             False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True)
-        ) or all(False for _ in self.gridded_perms(self.minimum_size_of_object() + 2))
+        ) or all(False for _ in self.gridded_perms(self.minimum_size_of_object() + 4))
 
     def is_finite(self) -> bool:
         """Returns True if all active cells have finite basis."""
