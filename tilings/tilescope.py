@@ -53,7 +53,7 @@ class TileScope(CombinatorialSpecificationSearcher):
         debug: bool = False,
     ) -> None:
         """Initialise TileScope."""
-        start_tiling, basis = self._get_start_tiling(start_class)
+        start_tiling, basis = self.get_start_tiling(start_class)
 
         if start_tiling.dimensions == (1, 1):
             logger.debug("Fixing basis in basis aware verification strategies.")
@@ -69,17 +69,17 @@ class TileScope(CombinatorialSpecificationSearcher):
             debug=debug,
         )
 
-    def _get_start_tiling(
-        self, start_class: Union[str, Iterable[Perm], Tiling]
+    @staticmethod
+    def get_start_tiling(
+        start_class: Union[str, Iterable[Perm], Tiling]
     ) -> Tuple[Tiling, Optional[Basis]]:
         """Return the start tiling implied by the input."""
+        basis: Optional[Basis] = None
         if isinstance(start_class, str):
             basis = Basis.from_string(start_class)
         elif isinstance(start_class, Tiling):
             if start_class.dimensions == (1, 1):
                 basis = Basis(*[o.patt for o in start_class.obstructions])
-            else:
-                basis = None
             start_tiling = start_class
         else:
             try:
@@ -90,6 +90,7 @@ class TileScope(CombinatorialSpecificationSearcher):
                 ) from e
 
         if not isinstance(start_class, Tiling):
+            assert basis is not None
             start_tiling = Tiling(
                 obstructions=[GriddedPerm.single_cell(patt, (0, 0)) for patt in basis]
             )
@@ -464,7 +465,7 @@ class OddOrEvenStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "OddOrEvenStrategy":
-        return cls(**d)
+        return cls()
 
 
 class ParityScope(TrackedSearcher):
@@ -487,10 +488,11 @@ class ParityScope(TrackedSearcher):
         end_labels = tuple(self.classdb.get_label(child) for child in rule.children)
         self.add_rule(self.start_label, end_labels, rule)
 
-    def _get_start_tiling(
-        self, start_class: Union[str, Iterable[Perm], Tiling]
-    ) -> Tiling:
-        start_tiling, basis = super()._get_start_tiling(start_class)
+    @staticmethod
+    def get_start_tiling(
+        start_class: Union[str, Iterable[Perm], Tiling]
+    ) -> Tuple[Tiling, Optional[Basis]]:
+        start_tiling, basis = TileScope.get_start_tiling(start_class)
         return (
             start_tiling.add_assumption(
                 EqualParityAssumption.from_cells(start_tiling.active_cells)
