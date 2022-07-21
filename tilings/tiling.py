@@ -1150,7 +1150,7 @@ class Tiling(CombinatorialClass):
         odd_left = bool(sum(1 for x, _ in odd_cells if x < ass_x) % 2)
         if odd_below == odd_left:
             return assumption
-        elif isinstance(assumption, EqualParityAssumption):
+        if isinstance(assumption, EqualParityAssumption):
             return OppositeParityAssumption(assumption.gps)
         return EqualParityAssumption(assumption.gps)
 

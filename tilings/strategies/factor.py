@@ -90,7 +90,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         extra_parameters: Tuple[Dict[str, str], ...] = tuple({} for _ in children)
         for parent_var, assumption in zip(
-            comb_class.extra_parameters, comb_class.assumptions
+            comb_class.extra_parameters, comb_class.tracking_assumptions
         ):
             for idx, child in enumerate(children):
                 new_assumption = child.forward_map.map_assumption(assumption).avoiding(

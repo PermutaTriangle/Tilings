@@ -176,7 +176,9 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         new_ass = algo.new_assumption()
         fused_assumptions = (
             ass.__class__(gps)
-            for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
+            for ass, gps in zip(
+                comb_class.tracking_assumptions, algo.assumptions_fuse_counters
+            )
         )
         return new_ass in fused_assumptions
 
@@ -270,7 +272,9 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         child = children[0]
         mapped_assumptions = [
             child.forward_map.map_assumption(ass.__class__(gps))
-            for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
+            for ass, gps in zip(
+                comb_class.tracking_assumptions, algo.assumptions_fuse_counters
+            )
         ]
         return (
             {
@@ -287,7 +291,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         right_sided_params: Set[str] = set()
         both_sided_params: Set[str] = set()
         algo = self.fusion_algorithm(comb_class)
-        for assumption in comb_class.assumptions:
+        for assumption in comb_class.tracking_assumptions:
             parent_var = comb_class.get_assumption_parameter(assumption)
             left_sided = algo.is_left_sided_assumption(assumption)
             right_sided = algo.is_right_sided_assumption(assumption)

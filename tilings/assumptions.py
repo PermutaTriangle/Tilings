@@ -295,8 +295,10 @@ class PredicateAssumption(Assumption):
 
     def refinements(self) -> Iterator[Tuple["PredicateAssumption", ...]]:
         """
-        Yield tuples of Assumption that such that the predicate
-        satisfies a gp iff all refined predicates satisfies a gp.
+        A refinement is a tuple of Assumptions. This yields a set
+        of refinements with the property that a gp satisfies this
+        predicate if and only if it satisfies exactly one refinement
+        in the set.
         """
         yield (self,)
 
@@ -370,7 +372,7 @@ class EqualParityAssumption(PredicateAssumption):
             if gp.pos[idx] in self.cells
         )
 
-    def _gp_satisies(self, gp: GriddedPerm) -> bool:
+    def _gp_satisfies(self, gp: GriddedPerm) -> bool:
         raise NotImplementedError
 
     def refinements(self) -> Iterator[Tuple["EqualParityAssumption", ...]]:
@@ -391,7 +393,7 @@ class OppositeParityAssumption(PredicateAssumption):
             if gp.pos[idx] in self.cells
         )
 
-    def _gp_satisies(self, gp: GriddedPerm) -> bool:
+    def _gp_satisfies(self, gp: GriddedPerm) -> bool:
         raise NotImplementedError
 
     def refinements(self) -> Iterator[Tuple["OppositeParityAssumption", ...]]:
