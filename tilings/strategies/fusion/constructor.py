@@ -74,7 +74,10 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         both_sided_parameters: Iterable[str],
         min_left: int,
         min_right: int,
+        odd_left: Optional[bool] = None,
+        odd_right: Optional[bool] = None,
     ):
+        self.odd_left_right = odd_left, odd_right
         # parent -> child parameters
         self.extra_parameters = extra_parameters
         # the reverse of the above list, although different parent parameters could
@@ -130,11 +133,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             if k in self.right_sided_parameters
         )
         self.fuse_parameter_index = child.extra_parameters.index(self.fuse_parameter)
-        child_pos_to_parent_pos = tuple(
-            index_mapping[idx] for idx in range(len(child.extra_parameters))
-        )
         self.children_param_map = self.build_param_map(
-            child_pos_to_parent_pos, len(parent.extra_parameters)
+            tuple(index_mapping[idx] for idx in range(len(child.extra_parameters))),
+            len(parent.extra_parameters),
         )
 
     def _init_checked(self):
@@ -256,6 +257,18 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             params: List[int], value: int, left_points: int, fuse_region_points: int
         ) -> None:
             """Update new terms if there is enough points on the left and right."""
+            odd_left, odd_right = self.odd_left_right
+            if odd_left is not None:
+                if odd_left and left_points % 2 == 0:
+                    return
+                if not odd_left and left_points % 2 == 1:
+                    return
+            if odd_right is not None:
+                right_points = fuse_region_points - left_points
+                if odd_right and right_points % 2 == 0:
+                    return
+                if not odd_right and right_points % 2 == 1:
+                    return
             if (
                 min_left <= left_points
                 and min_right <= fuse_region_points - left_points

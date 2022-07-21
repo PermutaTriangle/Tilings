@@ -373,11 +373,12 @@ class TrackedQueue(CSSQueue):
             f"Queue {idx}" for idx in range(len(self.queues) - 1)
         )
         underlying = ("underlying",) + tuple(
-            self._underlyng_labels_per_level[level] for level in range(len(self.queues))
+            str(self._underlyng_labels_per_level[level])
+            for level in range(len(self.queues))
         )
         table.append(underlying)
         all_labels = ("all labels",) + tuple(
-            self._all_labels_per_level[level] for level in range(len(self.queues))
+            str(self._all_labels_per_level[level]) for level in range(len(self.queues))
         )
         table.append(all_labels)
         table = [headers] + table

@@ -295,7 +295,7 @@ class Fusion:
         are all contained entirely on the left of the fusion region, entirely
         on the right, or split in every possible way.
         """
-        left, right = self._left_fuse_region(), self._right_fuse_region()
+        left, right = self.left_fuse_region(), self.right_fuse_region()
         cells = set(gp.pos[0] for gp in assumption.gps)
         if (left.intersection(cells) and not left.issubset(cells)) or (
             right.intersection(cells) and not right.issubset(cells)
@@ -309,12 +309,12 @@ class Fusion:
             )
         )
 
-    def _left_fuse_region(self) -> FrozenSet[Cell]:
+    def left_fuse_region(self) -> FrozenSet[Cell]:
         if self._fuse_row:
             return self._tiling.cells_in_row(self._row_idx)
         return self._tiling.cells_in_col(self._col_idx)
 
-    def _right_fuse_region(self) -> FrozenSet[Cell]:
+    def right_fuse_region(self) -> FrozenSet[Cell]:
         if self._fuse_row:
             return self._tiling.cells_in_row(self._row_idx + 1)
         return self._tiling.cells_in_col(self._col_idx + 1)
@@ -422,7 +422,7 @@ class Fusion:
                 equal.add(next(iter(ass.cells)))
             elif isinstance(ass, OppositeParityAssumption):
                 opposite.add(next(iter(ass.cells)))
-        left = self._left_fuse_region()
+        left = self.left_fuse_region()
         for (x, y) in left:
             xn, yn = x, y
             if self._fuse_row:
@@ -467,7 +467,7 @@ class Fusion:
         return assumption.__class__(self.fuse_gridded_perm(gp) for gp in assumption.gps)
 
     def fused_predicates(self) -> Iterator[PredicateAssumption]:
-        left, right = self._left_fuse_region(), self._right_fuse_region()
+        left, right = self.left_fuse_region(), self.right_fuse_region()
         odd_fused_cells: Dict[Cell, bool] = collections.defaultdict(bool)
         for predicate in self._tiling.predicate_assumptions:
             if isinstance(predicate, (EqualParityAssumption, OppositeParityAssumption)):
@@ -477,14 +477,14 @@ class Fusion:
                 cell = next(iter(predicate.cells), None)
                 assert cell is not None
                 if cell in left:
-                    odd_fused_cells[cell] |= isinstance(predicate, OddCountAssumption)
+                    odd_fused_cells[cell] ^= isinstance(predicate, OddCountAssumption)
                 elif cell in right:
                     (x, y) = cell
                     if self._fuse_row:
                         y -= 1
                     else:
                         x -= 1
-                    odd_fused_cells[(x, y)] |= isinstance(predicate, OddCountAssumption)
+                    odd_fused_cells[(x, y)] ^= isinstance(predicate, OddCountAssumption)
                 else:
                     yield self.fuse_assumption(predicate)
         for cell, odd in odd_fused_cells.items():
