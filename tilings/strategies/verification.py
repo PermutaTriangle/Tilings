@@ -66,7 +66,9 @@ class BasicVerificationStrategy(AtomStrategy):
         if not isinstance(comb_class, Tiling):
             raise NotImplementedError
         gp = next(comb_class.minimal_gridded_perms())
-        if n == len(gp):
+        if all(
+            pred.satisfies(gp) for pred in comb_class.predicate_assumptions
+        ) and n == len(gp):
             parameters = tuple(
                 assumption.get_value(gp)
                 for assumption in comb_class.tracking_assumptions
@@ -80,7 +82,9 @@ class BasicVerificationStrategy(AtomStrategy):
             raise NotImplementedError
         res: Objects = defaultdict(list)
         gp = next(comb_class.minimal_gridded_perms())
-        if n == len(gp):
+        if all(
+            pred.satisfies(gp) for pred in comb_class.predicate_assumptions
+        ) and n == len(gp):
             parameters = tuple(
                 assumption.get_value(gp)
                 for assumption in comb_class.tracking_assumptions
@@ -115,10 +119,12 @@ class BasicVerificationStrategy(AtomStrategy):
     ) -> Expr:
         if not self.verified(comb_class):
             raise StrategyDoesNotApply("Can't find generating functon for non-atom.")
-        if not isinstance(comb_class, Tiling) or comb_class.predicate_assumptions:
+        if not isinstance(comb_class, Tiling):
             raise NotImplementedError
         cast(Tiling, comb_class)
         gp = next(comb_class.minimal_gridded_perms())
+        if not all(pred.satisfies(gp) for pred in comb_class.predicate_assumptions):
+            return Expr(0)
         expected = {"x": len(gp)}
         for assumption in comb_class.tracking_assumptions:
             expected[
