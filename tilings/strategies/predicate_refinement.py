@@ -30,7 +30,7 @@ class RefinePredicatesStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         raise StrategyDoesNotApply
 
     def formal_step(self) -> str:
-        return "odd/even analysis"
+        return "predicate refinement"
 
     def backward_map(
         self,

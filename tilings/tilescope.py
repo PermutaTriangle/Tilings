@@ -23,9 +23,16 @@ from comb_spec_searcher import (
 )
 from comb_spec_searcher.class_queue import CSSQueue, DefaultQueue, WorkPacket
 from comb_spec_searcher.rule_db.abstract import RuleDBAbstract
+from comb_spec_searcher.strategies.strategy import DisjointUnionStrategy
 from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
+from tilings.assumptions import (
+    EqualParityAssumption,
+    EvenCountAssumption,
+    OddCountAssumption,
+)
+from tilings.strategies.predicate_refinement import RefinePredicatesStrategy
 from tilings.strategy_pack import TileScopePack
 
 __all__ = ("TileScope", "TileScopePack", "LimitedAssumptionTileScope", "GuidedSearcher")
@@ -45,13 +52,34 @@ class TileScope(CombinatorialSpecificationSearcher):
         expand_verified: bool = False,
         debug: bool = False,
     ) -> None:
-
         """Initialise TileScope."""
+        start_tiling, basis = self._get_start_tiling(start_class)
+
+        if start_tiling.dimensions == (1, 1):
+            logger.debug("Fixing basis in basis aware verification strategies.")
+            assert isinstance(basis, Basis)
+            strategy_pack = strategy_pack.add_basis(basis)
+        strategy_pack = strategy_pack.setup_subclass_verification(start_tiling)
+
+        super().__init__(
+            start_class=start_tiling,
+            strategy_pack=strategy_pack,
+            ruledb=ruledb,
+            expand_verified=expand_verified,
+            debug=debug,
+        )
+
+    def _get_start_tiling(
+        self, start_class: Union[str, Iterable[Perm], Tiling]
+    ) -> Tuple[Tiling, Optional[Basis]]:
+        """Return the start tiling implied by the input."""
         if isinstance(start_class, str):
             basis = Basis.from_string(start_class)
         elif isinstance(start_class, Tiling):
             if start_class.dimensions == (1, 1):
                 basis = Basis(*[o.patt for o in start_class.obstructions])
+            else:
+                basis = None
             start_tiling = start_class
         else:
             try:
@@ -65,19 +93,7 @@ class TileScope(CombinatorialSpecificationSearcher):
             start_tiling = Tiling(
                 obstructions=[GriddedPerm.single_cell(patt, (0, 0)) for patt in basis]
             )
-
-        if start_tiling.dimensions == (1, 1):
-            logger.debug("Fixing basis in basis aware verification strategies.")
-            strategy_pack = strategy_pack.add_basis(basis)
-        strategy_pack = strategy_pack.setup_subclass_verification(start_tiling)
-
-        super().__init__(
-            start_class=start_tiling,
-            strategy_pack=strategy_pack,
-            ruledb=ruledb,
-            expand_verified=expand_verified,
-            debug=debug,
-        )
+        return start_tiling, basis
 
 
 class LimitedAssumptionTileScope(TileScope):
@@ -114,7 +130,7 @@ class LimitedAssumptionTileScope(TileScope):
         def num_child_assumptions(child: Tiling) -> int:
             return sum(
                 1
-                for ass in child.assumptions
+                for ass in child.tracking_assumptions
                 if (not self.ignore_full_tiling_assumptions)
                 or len(ass.gps) != len(child.active_cells)
             )
@@ -386,3 +402,98 @@ class TrackedQueue(CSSQueue):
                 return next(queue)
             except StopIteration:
                 continue
+
+
+class OddOrEvenStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
+    def __init__(self):
+        super().__init__(True, True, True, True)
+
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, Tiling]:
+        return (
+            comb_class.add_assumption(
+                EvenCountAssumption.from_cells(comb_class.active_cells)
+            ),
+            comb_class.add_assumption(
+                OddCountAssumption.from_cells(comb_class.active_cells)
+            ),
+        )
+
+    def formal_step(self) -> str:
+        return "has an odd or even number of points"
+
+    def backward_map(
+        self,
+        comb_class: Tiling,
+        objs: Tuple[Optional[GriddedPerm], ...],
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Iterator[GriddedPerm]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        gp = objs[0]
+        assert gp is not None
+        yield gp
+
+    def forward_map(
+        self,
+        comb_class: Tiling,
+        obj: GriddedPerm,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Optional[GriddedPerm], ...]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        if len(obj) % 2:
+            return (obj, None)
+        return (None, obj)
+
+    def extra_parameters(
+        self,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Tuple[Dict[str, str], ...]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        return tuple(
+            {
+                comb_class.get_assumption_parameter(
+                    ass
+                ): child.get_assumption_parameter(ass)
+                for ass in comb_class.tracking_assumptions
+            }
+            for child in children
+        )
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "OddOrEvenStrategy":
+        return cls(**d)
+
+
+class ParityScope(TrackedSearcher):
+    def __init__(
+        self,
+        start_class: Union[str, Iterable[Perm], Tiling],
+        strategy_pack: TileScopePack,
+        max_assumptions: int,
+        delay_next: bool = False,
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            start_class,
+            strategy_pack.add_initial(RefinePredicatesStrategy(), apply_first=True),
+            max_assumptions,
+            delay_next,
+            **kwargs,
+        )
+        rule = OddOrEvenStrategy()(self.start_class)
+        end_labels = tuple(self.classdb.get_label(child) for child in rule.children)
+        self.add_rule(self.start_label, end_labels, rule)
+
+    def _get_start_tiling(
+        self, start_class: Union[str, Iterable[Perm], Tiling]
+    ) -> Tiling:
+        start_tiling, basis = super()._get_start_tiling(start_class)
+        return (
+            start_tiling.add_assumption(
+                EqualParityAssumption.from_cells(start_tiling.active_cells)
+            ),
+            basis,
+        )
