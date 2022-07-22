@@ -1,7 +1,7 @@
 from collections import defaultdict
 from itertools import chain, islice
 from random import randint
-from typing import Dict, Iterator, List, Optional, Set, Tuple, cast
+from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, cast
 
 from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -30,7 +30,7 @@ class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
         return cast(FusionConstructor, super().constructor)
 
     @staticmethod
-    def is_equivalence() -> bool:
+    def is_equivalence(is_empty: Optional[Callable[[Tiling], bool]] = None) -> bool:
         return False
 
     def _ensure_level_objects(self, n: int) -> None:
