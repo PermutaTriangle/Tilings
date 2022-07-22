@@ -63,8 +63,9 @@ class RefinePredicatesStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             {
                 comb_class.get_assumption_parameter(
                     ass
-                ): child.get_assumption_parameter(ass)
+                ): child.get_assumption_parameter(child.forward_map.map_assumption(ass))
                 for ass in comb_class.tracking_assumptions
+                if child.forward_map.map_assumption(ass).gps
             }
             for child in children
         )

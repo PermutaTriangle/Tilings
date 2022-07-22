@@ -317,7 +317,7 @@ class OddCountAssumption(PredicateAssumption):
         Yield tuples of single cell Odd/Even CountAssumption that
         combine to match the parity.
         """
-        yield from self.helper_refinements(list(self.cells), True)
+        yield from self.helper_refinements(sorted(self.cells), True)
 
     @staticmethod
     def helper_refinements(
@@ -355,7 +355,7 @@ class EvenCountAssumption(PredicateAssumption):
         Yield tuples of single cell Odd/Even CountAssumption that
         combine to match the parity.
         """
-        yield from OddCountAssumption.helper_refinements(list(self.cells), False)
+        yield from OddCountAssumption.helper_refinements(sorted(self.cells), False)
 
     def __str__(self) -> str:
         return f"even number of points in cells {self.cells}"

@@ -81,6 +81,29 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
         return tuple(comb_class.sub_tiling(cells) for cells in self.partition)
 
+    def shifts(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        min_points = []
+        for child in children:
+            try:
+                min_point = len(
+                    next(
+                        child.gridded_perms(
+                            child.maximum_length_of_minimum_gridded_perm() + 4
+                        )
+                    )
+                )
+            except StopIteration:
+                min_point = child.minimum_size_of_object()
+            min_points.append(min_point)
+        point_sum = sum(min_points)
+        return tuple(point_sum - mpoint for mpoint in min_points)
+
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
