@@ -130,6 +130,20 @@ class Tiling(CombinatorialClass):
         """
         self._cached_properties: CachedProperties = {}
 
+        reqs = list(requirements)
+        assumptions = list(assumptions)
+        for ass in assumptions:
+            if isinstance(ass, OddCountAssumption):
+                to_add = tuple(map(GriddedPerm.point_perm, ass.cells))
+                if to_add not in requirements:
+                    reqs.append(to_add)
+                    sorted_input = False
+                    simplify = True
+                    derive_empty = True
+                    remove_empty_rows_and_cols = True
+
+        requirements = reqs
+
         super().__init__()
         if sorted_input:
             # Set of obstructions
