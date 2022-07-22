@@ -199,7 +199,7 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
         self.insertion_constructor = insertion_constructor
 
     @staticmethod
-    def is_equivalence() -> bool:
+    def is_equivalence(is_empty: Optional[Callable[[Tiling], bool]] = None) -> bool:
         return False
 
     @staticmethod
