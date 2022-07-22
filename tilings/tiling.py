@@ -1502,11 +1502,13 @@ class Tiling(CombinatorialClass):
             not ass.can_be_satisfied(self) for ass in self.predicate_assumptions
         ):
             return True
-        # if len(self.requirements) <= 1:
-        #     return False
+        # return self.experimental_is_empty()
+        if len(self.requirements) <= 1:
+            return False
         MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
-        if all(False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True)):
-            return True
+        return all(False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True))
+
+    def experimental_is_empty(self) -> bool:
         return all(False for _ in self.gridded_perms(self.minimum_size_of_object() + 4))
 
     def is_finite(self) -> bool:

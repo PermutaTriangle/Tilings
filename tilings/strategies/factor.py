@@ -280,7 +280,10 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         return self.is_reversible(comb_class)
 
     def is_reversible(self, comb_class: Tiling) -> bool:  # type: ignore
-        return not bool(self.assumptions_to_add(comb_class))
+        return (
+            not bool(self.assumptions_to_add(comb_class))
+            and not comb_class.experimental_is_empty()
+        )
 
     def formal_step(self) -> str:
         return "interleaving " + super().formal_step()

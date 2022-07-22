@@ -5,7 +5,7 @@ from operator import mul
 from typing import Callable, Dict, Iterator, Optional, Tuple, cast
 
 import requests
-from sympy import Eq, Expr, Function, solve, sympify, var
+from sympy import Eq, Expr, Function, Number, solve, sympify, var
 
 from comb_spec_searcher import (
     AtomStrategy,
@@ -125,7 +125,7 @@ class BasicVerificationStrategy(AtomStrategy):
         cast(Tiling, comb_class)
         gp = next(comb_class.minimal_gridded_perms())
         if not all(pred.satisfies(gp) for pred in comb_class.predicate_assumptions):
-            return Expr(0)
+            return Number(0)
         expected = {"x": len(gp)}
         for assumption in comb_class.tracking_assumptions:
             expected[
