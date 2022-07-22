@@ -263,6 +263,10 @@ class Tiling(CombinatorialClass):
             all(GriddedPerm.point_perm(cell) in GPR.obstructions for cell in ass.cells)
             for ass in self.predicate_assumptions
             if isinstance(ass, OddCountAssumption)
+        ) or any(
+            next(iter(ass.cells)) in self.point_cells
+            for ass in self.predicate_assumptions
+            if isinstance(ass, EvenCountAssumption) and len(ass) == 1
         ):
             self.set_empty()
         else:
