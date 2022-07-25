@@ -168,16 +168,17 @@ class Tiling(CombinatorialClass):
             # Remove gridded perms that avoid obstructions from assumptions
             if simplify:
                 self.clean_assumptions()
+            if self._predicates_imply_empty():
+                self.set_empty()
+            else:
+                # Fill empty
+                if derive_empty:
+                    if "empty_cells" not in self._cached_properties:
+                        self._prepare_properties()
 
-            # Fill empty
-            if derive_empty:
-                if "empty_cells" not in self._cached_properties:
-                    self._prepare_properties()
-
-            # Remove empty rows and empty columns
-            if remove_empty_rows_and_cols:
-                self._remove_empty_rows_and_cols()
-            # TODO: check predicates and set_empty if relevant
+                # Remove empty rows and empty columns
+                if remove_empty_rows_and_cols:
+                    self._remove_empty_rows_and_cols()
         else:
             self.set_empty()
 
@@ -273,8 +274,6 @@ class Tiling(CombinatorialClass):
         if self._predicates_imply_empty():
             self.set_empty()
             return
-        else:
-            self._cached_properties = {}
         GPR = GriddedPermReduction(
             self.obstructions,
             self.requirements,
@@ -285,11 +284,9 @@ class Tiling(CombinatorialClass):
         self._requirements = GPR.requirements
         if self._predicates_imply_empty():
             self.set_empty()
-        else:
-            self._cached_properties = {}
 
     def _predicates_imply_empty(self) -> bool:
-        return any(
+        res = any(
             all(cell in self.empty_cells for cell in ass.cells)
             for ass in self.predicate_assumptions
             if isinstance(ass, OddCountAssumption)
@@ -298,6 +295,8 @@ class Tiling(CombinatorialClass):
             for ass in self.predicate_assumptions
             if isinstance(ass, EvenCountAssumption) and len(ass) == 1
         )
+        self._cached_properties = {}
+        return res
 
     def _remove_empty_rows_and_cols(self) -> None:
         """Remove empty rows and columns."""
