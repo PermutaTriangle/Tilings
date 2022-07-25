@@ -81,6 +81,15 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
         return tuple(comb_class.sub_tiling(cells) for cells in self.partition)
 
+    def is_two_way(self, comb_class: Tiling) -> bool:  # type: ignore
+        return self.is_reversible(comb_class)
+
+    def is_reversible(self, comb_class: Tiling) -> bool:  # type: ignore
+        return (
+            not bool(self.assumptions_to_add(comb_class))
+            and not comb_class.experimental_is_empty()
+        )
+
     def shifts(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[int, ...]:
@@ -298,15 +307,6 @@ class FactorWithInterleavingStrategy(FactorStrategy):
             ]
         )
         return f"{self.__class__.__name__}({args})"
-
-    def is_two_way(self, comb_class: Tiling) -> bool:  # type: ignore
-        return self.is_reversible(comb_class)
-
-    def is_reversible(self, comb_class: Tiling) -> bool:  # type: ignore
-        return (
-            not bool(self.assumptions_to_add(comb_class))
-            and not comb_class.experimental_is_empty()
-        )
 
     def formal_step(self) -> str:
         return "interleaving " + super().formal_step()

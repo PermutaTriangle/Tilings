@@ -128,6 +128,7 @@ class Tiling(CombinatorialClass):
         - already_minimized_obs indicates if the obstructions are already minimized
             we pass this through to GriddedPermReduction
         """
+        simplify = True  # TODO: this is too strong
         self._cached_properties: CachedProperties = {}
 
         reqs = list(requirements)
