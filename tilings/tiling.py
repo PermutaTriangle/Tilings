@@ -235,6 +235,10 @@ class Tiling(CombinatorialClass):
             cell
             for cell in product(range(dimensions[0]), range(dimensions[1]))
             if cell not in active_cells
+        ) + tuple(
+            gp.pos[0]
+            for gp in self.obstructions
+            if len(gp) == 1 and gp.pos[0] in active_cells
         )
 
         # If the first obstruction is the empty perm, we shouldn't do any of this.
@@ -266,27 +270,34 @@ class Tiling(CombinatorialClass):
         respective lists. If any requirement list is empty, then the tiling is
         empty.
         """
-
+        if self._predicates_imply_empty():
+            self.set_empty()
+            return
+        else:
+            self._cached_properties = {}
         GPR = GriddedPermReduction(
             self.obstructions,
             self.requirements,
             sorted_input=True,
             already_minimized_obs=already_minimized_obs,
         )
-        if any(
-            all(GriddedPerm.point_perm(cell) in GPR.obstructions for cell in ass.cells)
+        self._obstructions = GPR.obstructions
+        self._requirements = GPR.requirements
+        if self._predicates_imply_empty():
+            self.set_empty()
+        else:
+            self._cached_properties = {}
+
+    def _predicates_imply_empty(self) -> bool:
+        return any(
+            all(cell in self.empty_cells for cell in ass.cells)
             for ass in self.predicate_assumptions
             if isinstance(ass, OddCountAssumption)
         ) or any(
             next(iter(ass.cells)) in self.point_cells
             for ass in self.predicate_assumptions
             if isinstance(ass, EvenCountAssumption) and len(ass) == 1
-        ):
-            self.set_empty()
-        else:
-            self._obstructions = GPR.obstructions
-            self._requirements = GPR.requirements
-            self._cached_properties = {}
+        )
 
     def _remove_empty_rows_and_cols(self) -> None:
         """Remove empty rows and columns."""
