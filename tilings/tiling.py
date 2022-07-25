@@ -286,6 +286,7 @@ class Tiling(CombinatorialClass):
         else:
             self._obstructions = GPR.obstructions
             self._requirements = GPR.requirements
+            self._cached_properties = {}
 
     def _remove_empty_rows_and_cols(self) -> None:
         """Remove empty rows and columns."""
