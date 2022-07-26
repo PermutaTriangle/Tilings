@@ -151,16 +151,24 @@ class Tiling(CombinatorialClass):
             self._obstructions = tuple(obstructions)
             # Set of requirement lists
             self._requirements = tuple(tuple(r) for r in requirements)
-            # Set of assumptions
-            self._assumptions = tuple(assumptions)
         else:
             # Set of obstructions
             self._obstructions = tuple(sorted(obstructions))
             # Set of requirement lists
             self._requirements = Tiling.sort_requirements(requirements)
-            # Set of assumptions
-            self._assumptions = tuple(sorted(assumptions))
-
+        # Set of assumptions
+        _assumptions: List[Assumption] = []
+        for ass in assumptions:
+            if (
+                isinstance(ass, (EqualParityAssumption, OppositeParityAssumption))
+                and len(ass) > 1
+            ):
+                _assumptions.extend(
+                    ass.__class__.from_cells([cell]) for cell in ass.cells
+                )
+            else:
+                _assumptions.append(ass)
+        self._assumptions = tuple(sorted(_assumptions))
         # Simplify the set of obstructions and the set of requirement lists
         if simplify:
             self._simplify_griddedperms(already_minimized_obs=already_minimized_obs)
@@ -707,7 +715,7 @@ class Tiling(CombinatorialClass):
         tiling.clean_assumptions()
         return tiling
 
-    def remove_assumption(self, assumption: TrackingAssumption):
+    def remove_assumption(self, assumption: Assumption):
         """Returns a new tiling with assumption removed."""
         try:
             idx = self._assumptions.index(assumption)
@@ -1539,7 +1547,13 @@ class Tiling(CombinatorialClass):
         return all(False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True))
 
     def experimental_is_empty(self) -> bool:
-        return all(False for _ in self.gridded_perms(self.minimum_size_of_object() + 4))
+        try:
+            return all(
+                False for _ in self.gridded_perms(self.minimum_size_of_object() + 4)
+            )
+        except StopIteration:
+            # underlying tiling is empty
+            return True
 
     def is_finite(self) -> bool:
         """Returns True if all active cells have finite basis."""

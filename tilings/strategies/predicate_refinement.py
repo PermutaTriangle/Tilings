@@ -4,6 +4,7 @@ from typing import Dict, Iterator, Optional, Tuple
 from comb_spec_searcher import DisjointUnionStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
+from tilings.assumptions import EvenCountAssumption, OddCountAssumption
 
 
 class RefinePredicatesStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
@@ -17,17 +18,17 @@ class RefinePredicatesStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         super().__init__(ignore_parent, inferrable, possibly_empty, workable)
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
-        if comb_class.predicate_assumptions:
-            without_predicates = comb_class.remove_assumptions().add_assumptions(
-                comb_class.tracking_assumptions
+        try:
+            assumption_to_refine = next(
+                ass for ass in comb_class.predicate_assumptions if ass.can_be_refined()
             )
+            without_predicate = comb_class.remove_assumption(assumption_to_refine)
             children = []
-            for assumptions in product(
-                *[ass.refinements() for ass in comb_class.predicate_assumptions]
-            ):
-                children.append(without_predicates.add_assumptions(chain(*assumptions)))
+            for assumptions in assumption_to_refine.refinements():
+                children.append(without_predicate.add_assumptions(assumptions))
             return tuple(children)
-        raise StrategyDoesNotApply
+        except StopIteration:
+            raise StrategyDoesNotApply
 
     def formal_step(self) -> str:
         return "predicate refinement"

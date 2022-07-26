@@ -85,10 +85,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         return self.is_reversible(comb_class)
 
     def is_reversible(self, comb_class: Tiling) -> bool:  # type: ignore
-        return (
-            not bool(self.assumptions_to_add(comb_class))
-            and not comb_class.experimental_is_empty()
-        )
+        return not comb_class.experimental_is_empty()
 
     def shifts(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -307,6 +304,9 @@ class FactorWithInterleavingStrategy(FactorStrategy):
             ]
         )
         return f"{self.__class__.__name__}({args})"
+
+    def is_reversible(self, comb_class: Tiling) -> bool:  # type: ignore
+        return not bool(self.assumptions_to_add(comb_class))
 
     def formal_step(self) -> str:
         return "interleaving " + super().formal_step()

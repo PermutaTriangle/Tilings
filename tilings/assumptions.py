@@ -293,6 +293,11 @@ class PredicateAssumption(Assumption):
         perm on the tiling.
         """
 
+    def can_be_refined(self) -> bool:
+        """Return True if it can be refined, i.e., refinements yields at
+        least one new thing."""
+        return False
+
     def refinements(self) -> Iterator[Tuple["PredicateAssumption", ...]]:
         """
         A refinement is a tuple of Assumptions. This yields a set
@@ -311,6 +316,9 @@ class OddCountAssumption(PredicateAssumption):
 
     def _gp_satisfies(self, gp: GriddedPerm) -> bool:
         return bool(len(gp) % 2)
+
+    def can_be_refined(self) -> bool:
+        return len(self) > 1
 
     def refinements(self) -> Iterator[Tuple[CountAssumption, ...]]:
         """
@@ -350,6 +358,9 @@ class EvenCountAssumption(PredicateAssumption):
     def _gp_satisfies(self, gp: GriddedPerm) -> bool:
         return not bool(len(gp) % 2)
 
+    def can_be_refined(self) -> bool:
+        return len(self) > 1
+
     def refinements(self) -> Iterator[Tuple[CountAssumption, ...]]:
         """
         Yield tuples of single cell Odd/Even CountAssumption that
@@ -375,6 +386,9 @@ class EqualParityAssumption(PredicateAssumption):
     def _gp_satisfies(self, gp: GriddedPerm) -> bool:
         raise NotImplementedError
 
+    def can_be_refined(self) -> bool:
+        return len(self) > 1
+
     def refinements(self) -> Iterator[Tuple["EqualParityAssumption", ...]]:
         yield tuple(EqualParityAssumption.from_cells([cell]) for cell in self.cells)
 
@@ -395,6 +409,9 @@ class OppositeParityAssumption(PredicateAssumption):
 
     def _gp_satisfies(self, gp: GriddedPerm) -> bool:
         raise NotImplementedError
+
+    def can_be_refined(self) -> bool:
+        return len(self) > 1
 
     def refinements(self) -> Iterator[Tuple["OppositeParityAssumption", ...]]:
         yield tuple(OppositeParityAssumption.from_cells([cell]) for cell in self.cells)
