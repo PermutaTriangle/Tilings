@@ -178,6 +178,11 @@ class Tiling(CombinatorialClass):
             if simplify:
                 self.clean_assumptions()
             if self._predicates_imply_empty():
+                # if (
+                #     not self.experimental_is_empty()
+                #     and self._rectangular_predicate_implications()
+                # ):
+                #     print(self)
                 self.set_empty()
             else:
                 # Fill empty
@@ -280,9 +285,18 @@ class Tiling(CombinatorialClass):
         respective lists. If any requirement list is empty, then the tiling is
         empty.
         """
-        if self._predicates_imply_empty():
-            self.set_empty()
-            return
+        # if self._predicates_imply_empty():
+        #     if (
+        #         not self.experimental_is_empty()
+        #         and self._rectangular_predicate_implications()
+        #     ):
+        #         print("HERE")
+        #         for i in range(4):
+        #             for obj in self.objects_of_size(i):
+        #                 print(obj)
+        #         print(self)
+        #     self.set_empty()
+        #     return
         GPR = GriddedPermReduction(
             self.obstructions,
             self.requirements,
@@ -292,20 +306,162 @@ class Tiling(CombinatorialClass):
         self._obstructions = GPR.obstructions
         self._requirements = GPR.requirements
         if self._predicates_imply_empty():
+            # if (
+            #     not self.experimental_is_empty()
+            #     and self._rectangular_predicate_implications()
+            # ):
+            #     for obj in self.gridded_perms(self.minimum_size_of_object() + 4):
+            #         print(obj)
+            #     print(self)
             self.set_empty()
 
     def _predicates_imply_empty(self) -> bool:
-        res = any(
-            all(cell in self.empty_cells for cell in ass.cells)
-            for ass in self.predicate_assumptions
-            if isinstance(ass, OddCountAssumption)
-        ) or any(
-            next(iter(ass.cells)) in self.point_cells
-            for ass in self.predicate_assumptions
-            if isinstance(ass, EvenCountAssumption) and len(ass) == 1
+        res = (
+            any(
+                all(cell in self.empty_cells for cell in ass.cells)
+                for ass in self.predicate_assumptions
+                if isinstance(ass, OddCountAssumption)
+            )
+            or any(
+                next(iter(ass.cells)) in self.point_cells
+                for ass in self.predicate_assumptions
+                if isinstance(ass, EvenCountAssumption) and len(ass) == 1
+            )
+            or self._rectangular_predicate_implications()
         )
         self._cached_properties = {}
         return res
+
+    def _rectangular_predicate_implications(self) -> bool:
+        predicates = self.predicate_assumptions
+        if not predicates or any(len(pred) > 1 for pred in predicates):
+            return False
+
+        def _get_cells(predicate_type):
+            return set(
+                chain.from_iterable(
+                    pred.cells
+                    for pred in predicates
+                    if isinstance(pred, predicate_type)
+                )
+            )
+
+        odd_cells = _get_cells(OddCountAssumption)
+        even_cells = _get_cells(EvenCountAssumption)
+        if odd_cells.intersection(even_cells):
+            # print(1)
+            return True
+        if odd_cells.union(even_cells) != set(self.active_cells):
+            return False
+        equal_cells = _get_cells(EqualParityAssumption)
+        opposite_cells = _get_cells(OppositeParityAssumption)
+        if equal_cells.intersection(opposite_cells):
+            # print(2)
+            return True
+        if equal_cells.union(opposite_cells) != set(self.active_cells):
+            return False
+        for rectangle in self._get_rectangular_regions():
+            odd = bool(sum(1 for cell in rectangle if cell in odd_cells) % 2)
+            mindex = min(x for x, _ in rectangle)
+            minval = min(y for _, y in rectangle)
+            toggle = bool(
+                (
+                    sum(1 for x, _ in odd_cells if x < mindex)
+                    + sum(1 for _, y in odd_cells if y < minval)
+                )
+                % 2
+            )
+            # opposite parity => even length
+            if (not toggle and all(cell in opposite_cells for cell in rectangle)) or (
+                toggle and all(cell in equal_cells for cell in rectangle)
+            ):
+                if odd:
+                    # print(rectangle)
+                    # print(3)
+                    return True
+            if len(rectangle) == 1:
+                cell = next(iter(rectangle))
+                basis = self.cell_basis()[cell][0]
+                if Perm((0, 1)) in basis:
+                    # equal parity implies odd size or size 0
+                    if cell in self.positive_cells:
+                        if (toggle and cell in opposite_cells) or (
+                            not toggle and cell in equal_cells
+                        ):
+                            if cell in even_cells:
+                                # print(rectangle)
+                                # print(basis)
+                                # print(5)
+                                return True
+                            # TODO: this implies that the cell is empty. add ob?
+                if Perm((1, 0)) in basis:
+                    # equal parity unless size 0
+                    if cell in self.positive_cells:
+                        if (not toggle and cell in opposite_cells) or (
+                            toggle and cell in equal_cells
+                        ):
+                            # print(rectangle)
+                            # print(basis)
+                            # print(6)
+                            return True
+        return False
+
+    def _get_rectangular_regions(self) -> Iterator[Set[Cell]]:
+        """
+        Yield rectangular regions which do not interleave with
+        other cells in its cols or rows outside of the region.
+        """
+        to_process = set(self.active_cells)
+        rectangle_by_cells: Dict[Cell, Set[Cell]] = dict()
+        filled_rectangles: List[Set[Cell]] = []
+        while to_process:
+            rectangle: Set[Cell] = set()
+            cells_to_process = set([to_process.pop()])
+            processed_rows: Set[int] = set()
+            processed_cols: Set[int] = set()
+            while cells_to_process:
+                x, y = cells_to_process.pop()
+                if x not in processed_cols:
+                    processed_cols.add(x)
+                    col_cells = self.cells_in_col(x)
+                    rectangle.update(col_cells)
+                    cells_to_process.update(col_cells)
+                if y not in processed_rows:
+                    processed_rows.add(y)
+                    row_cells = self.cells_in_row(y)
+                    rectangle.update(row_cells)
+                    cells_to_process.update(row_cells)
+            to_process -= rectangle
+            filled_in_rectangle = self._fill_rectangle(rectangle)
+            for cell in rectangle:
+                rectangle_by_cells[cell] = filled_in_rectangle
+            filled_rectangles.append(filled_in_rectangle)
+        for filled_rectangle in filled_rectangles:
+            res = filled_rectangle
+            old_res: Optional[Set[Cell]] = None
+            while old_res != res:
+                old_res = res
+                res = self._fill_rectangle(
+                    union_reduce((rectangle_by_cells[cell] for cell in res))
+                )
+            yield res
+        # TODO: consider the unions of the above?
+
+    def _fill_rectangle(self, rectangle: Set[Cell]) -> Set[Cell]:
+        """
+        Return the smallest rectangular region that contains all of
+        the cells and does not interleave with any cell in its rows
+        or columns outside the rectangle.
+        """
+        min_x = min(x for x, _ in rectangle)
+        max_x = max(x for x, _ in rectangle)
+        min_y = min(y for _, y in rectangle)
+        max_y = max(y for _, y in rectangle)
+        return set(
+            (x, y)
+            for (x, y) in self.active_cells
+            if min_x <= x <= max_x or min_y <= y <= max_y
+        )
 
     def _remove_empty_rows_and_cols(self) -> None:
         """Remove empty rows and columns."""
