@@ -296,7 +296,10 @@ class Tiling(CombinatorialClass):
 
     def _predicates_imply_empty(self) -> bool:
         res = any(
-            all(cell in self.empty_cells for cell in ass.cells)
+            all(
+                cell in self.empty_cells or cell not in self.active_cells
+                for cell in ass.cells
+            )
             for ass in self.predicate_assumptions
             if isinstance(ass, OddCountAssumption)
         ) or any(
