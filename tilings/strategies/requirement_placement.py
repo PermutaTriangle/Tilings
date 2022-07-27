@@ -56,8 +56,8 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self._placed_cells = tuple(
             sorted(set(gp.pos[idx] for idx, gp in zip(self.indices, self.gps)))
         )
-        possibly_empty = self.include_empty or len(self.gps) > 1
-        super().__init__(ignore_parent=ignore_parent, possibly_empty=possibly_empty)
+        # possibly_empty = self.include_empty or len(self.gps) > 1
+        super().__init__(ignore_parent=ignore_parent, possibly_empty=True)
 
     def _placed_cell(self, idx: int) -> Cell:
         """Return the cell placed given the index of the child."""

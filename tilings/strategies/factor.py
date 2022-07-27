@@ -75,7 +75,10 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
             FactorWithInterleavingStrategy.interleaving_rows_and_cols(self.partition)
         )
         super().__init__(
-            ignore_parent=ignore_parent, workable=workable, inferrable=inferrable
+            ignore_parent=ignore_parent,
+            workable=workable,
+            inferrable=inferrable,
+            possibly_empty=True,
         )
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
