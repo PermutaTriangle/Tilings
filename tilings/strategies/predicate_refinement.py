@@ -1,5 +1,5 @@
 from itertools import chain, product
-from typing import Dict, Iterator, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -41,7 +41,8 @@ class RefinePredicatesStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     ) -> Iterator[GriddedPerm]:
         if children is None:
             children = self.decomposition_function(comb_class)
-        raise NotImplementedError
+        idx = DisjointUnionStrategy.backward_map_index(objs)
+        yield children[idx].backward_map.map_gp(cast(GriddedPerm, objs[idx]))
 
     def forward_map(
         self,
@@ -51,7 +52,15 @@ class RefinePredicatesStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     ) -> Tuple[Optional[GriddedPerm], ...]:
         if children is None:
             children = self.decomposition_function(comb_class)
-        raise NotImplementedError
+        res: List[Optional[GriddedPerm]] = []
+        for child in children:
+            if child.forward_map.is_mappable_gp(obj):
+                gp = child.forward_map.map_gp(obj)
+                if all(ass.satisfies(gp) for ass in child.predicate_assumptions):
+                    res.append(gp)
+                    continue
+            res.append(None)
+        return tuple(res)
 
     def extra_parameters(
         self,
