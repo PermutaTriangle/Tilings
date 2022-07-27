@@ -706,16 +706,24 @@ class Tiling(CombinatorialClass):
 
     def add_assumptions(self, assumptions: Iterable[Assumption]) -> "Tiling":
         """Returns a new tiling with the added assumptions."""
+        assumptions = tuple(assumptions)
+        remove_empty_rows_and_cols = False
+        derive_empty = False
+        simplify = False
+        if any(isinstance(ass, PredicateAssumption) for ass in assumptions):
+            remove_empty_rows_and_cols = True
+            derive_empty = True
+            simplify = True
         tiling = Tiling(
             self._obstructions,
             self._requirements,
-            self._assumptions + tuple(assumptions),
-            remove_empty_rows_and_cols=False,
-            derive_empty=False,
-            simplify=False,
-            sorted_input=True,
+            self._assumptions + assumptions,
+            remove_empty_rows_and_cols=remove_empty_rows_and_cols,
+            derive_empty=derive_empty,
+            simplify=simplify,
         )
-        tiling.clean_assumptions()
+        if not simplify:
+            tiling.clean_assumptions()
         return tiling
 
     def remove_assumption(self, assumption: Assumption):

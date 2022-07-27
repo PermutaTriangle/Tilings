@@ -242,6 +242,12 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
+    def odd_even_left_right_satisfied(self, left_points: int, right_points: int):
+        odd_left, odd_right = self.odd_left_right
+        return (odd_left is None or bool(left_points % 2) == odd_left) and (
+            odd_right is None or bool(right_points % 2) == odd_right
+        )
+
     def get_terms(
         self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
     ) -> Terms:
@@ -257,21 +263,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             params: List[int], value: int, left_points: int, fuse_region_points: int
         ) -> None:
             """Update new terms if there is enough points on the left and right."""
-            odd_left, odd_right = self.odd_left_right
-            if odd_left is not None:
-                if odd_left and left_points % 2 == 0:
-                    return
-                if not odd_left and left_points % 2 == 1:
-                    return
-            if odd_right is not None:
-                right_points = fuse_region_points - left_points
-                if odd_right and right_points % 2 == 0:
-                    return
-                if not odd_right and right_points % 2 == 1:
-                    return
+            right_points = fuse_region_points - left_points
             if (
                 min_left <= left_points
-                and min_right <= fuse_region_points - left_points
+                and min_right <= right_points
+                and self.odd_even_left_right_satisfied(left_points, right_points)
             ):
                 new_terms[tuple(params)] += value
 
@@ -369,7 +365,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         for number_left_points in range(min_left_points, max_left_points + 1):
             for number_right_points in range(min_right_points, max_right_points + 1):
                 both = number_left_points + number_right_points
-                if both < min_both_points:
+                if both < min_both_points or self.odd_even_left_right_satisfied(
+                    number_left_points, number_right_points
+                ):
                     continue
                 if both > max_both_points:
                     break
