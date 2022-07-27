@@ -26,7 +26,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     def __init__(self):
         super().__init__(
-            ignore_parent=True, inferrable=True, possibly_empty=False, workable=True
+            ignore_parent=True, inferrable=True, possibly_empty=True, workable=True
         )
 
     def forward_cell_map(self, tiling: Tiling) -> CellMap:
