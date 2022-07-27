@@ -50,9 +50,13 @@ class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
             ) -> None:
                 """Update new terms if there is enough points on the left and right."""
                 gp = next(unfused_gps)
+                right_points = fuse_region_points - left_points
                 if (
                     min_left <= left_points
-                    and min_right <= fuse_region_points - left_points
+                    and min_right <= right_points
+                    and self.constructor.odd_even_left_right_satisfied(
+                        left_points, right_points
+                    )
                 ):
                     res[tuple(params)].append(gp)
 

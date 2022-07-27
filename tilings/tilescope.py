@@ -34,6 +34,7 @@ from tilings.assumptions import (
 )
 from tilings.strategies.predicate_refinement import RefinePredicatesStrategy
 from tilings.strategy_pack import TileScopePack
+from tilings.tiling import set_debug
 
 __all__ = ("TileScope", "TileScopePack", "LimitedAssumptionTileScope", "GuidedSearcher")
 
@@ -53,6 +54,8 @@ class TileScope(CombinatorialSpecificationSearcher):
         debug: bool = False,
     ) -> None:
         """Initialise TileScope."""
+        if debug:
+            set_debug()
         start_tiling, basis = self.get_start_tiling(start_class)
 
         if start_tiling.dimensions == (1, 1):

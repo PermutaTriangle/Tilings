@@ -293,11 +293,13 @@ class PredicateAssumption(Assumption):
         perm on the tiling.
         """
 
+    @abc.abstractmethod
     def can_be_refined(self) -> bool:
         """Return True if it can be refined, i.e., refinements yields at
         least one new thing."""
         return False
 
+    @abc.abstractmethod
     def refinements(self) -> Iterator[Tuple["PredicateAssumption", ...]]:
         """
         A refinement is a tuple of Assumptions. This yields a set

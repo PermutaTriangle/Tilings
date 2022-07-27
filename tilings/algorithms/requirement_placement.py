@@ -1,4 +1,4 @@
-from itertools import chain
+from itertools import chain, filterfalse
 from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Optional, Tuple
 
 from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
@@ -377,15 +377,19 @@ class RequirementPlacement:
                 if include_not:
                     res.append(self._tiling.__class__(obs + rem_req, reqs, ass))
                 continue
-
             forced_obs = self.forced_obstructions_from_requirement(
                 gps, indices, cell, direction
             )
+            forced_obs = [
+                o1
+                for o1 in forced_obs
+                if not any(o2 in o1 for o2 in filterfalse(o1.__eq__, forced_obs))
+            ]
             reduced_obs = [o1 for o1 in obs if not any(o2 in o1 for o2 in forced_obs)]
-
+            reduced_obs.extend(filterfalse(reduced_obs.__contains__, forced_obs))
             res.append(
                 self._tiling.__class__(
-                    reduced_obs + forced_obs,
+                    reduced_obs,
                     reqs + [rem_req],
                     assumptions=ass,
                     already_minimized_obs=True,

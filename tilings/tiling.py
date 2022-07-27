@@ -64,6 +64,14 @@ from .misc import intersection_reduce, union_reduce
 
 __all__ = ["Tiling"]
 
+DEBUG = False
+
+
+def set_debug(debug: bool = True):
+    # pylint: disable=global-statement
+    global DEBUG
+    DEBUG = debug
+
 
 Cell = Tuple[int, int]
 ReqList = Tuple[GriddedPerm, ...]
@@ -119,6 +127,7 @@ class Tiling(CombinatorialClass):
         simplify: bool = True,
         sorted_input: bool = False,
         already_minimized_obs: bool = False,
+        checked: bool = False,
     ) -> None:
         """
         - if remove_empty_rows_and_cols, then remove empty rows and columns.
@@ -128,7 +137,6 @@ class Tiling(CombinatorialClass):
         - already_minimized_obs indicates if the obstructions are already minimized
             we pass this through to GriddedPermReduction
         """
-        simplify = True  # TODO: this is too strong
         self._cached_properties: CachedProperties = {}
 
         reqs = list(requirements)
@@ -145,30 +153,9 @@ class Tiling(CombinatorialClass):
 
         requirements = reqs
 
-        super().__init__()
-        if sorted_input:
-            # Set of obstructions
-            self._obstructions = tuple(obstructions)
-            # Set of requirement lists
-            self._requirements = tuple(tuple(r) for r in requirements)
-        else:
-            # Set of obstructions
-            self._obstructions = tuple(sorted(obstructions))
-            # Set of requirement lists
-            self._requirements = Tiling.sort_requirements(requirements)
-        # Set of assumptions
-        _assumptions: List[Assumption] = []
-        for ass in assumptions:
-            if (
-                isinstance(ass, (EqualParityAssumption, OppositeParityAssumption))
-                and len(ass) > 1
-            ):
-                _assumptions.extend(
-                    ass.__class__.from_cells([cell]) for cell in ass.cells
-                )
-            else:
-                _assumptions.append(ass)
-        self._assumptions = tuple(sorted(_assumptions))
+        self._set_obstructions_requirements_and_assumptions(
+            obstructions, requirements, assumptions, sorted_input
+        )
         # Simplify the set of obstructions and the set of requirement lists
         if simplify:
             self._simplify_griddedperms(already_minimized_obs=already_minimized_obs)
@@ -195,6 +182,49 @@ class Tiling(CombinatorialClass):
                     self._remove_empty_rows_and_cols()
         else:
             self.set_empty()
+
+        self._check_init(checked)
+
+    def _set_obstructions_requirements_and_assumptions(
+        self,
+        obstructions: Iterable[GriddedPerm],
+        requirements: Iterable[Iterable[GriddedPerm]],
+        assumptions: Iterable[Assumption],
+        sorted_input: bool,
+    ):
+        if sorted_input:
+            # Set of obstructions
+            self._obstructions = tuple(obstructions)
+            # Set of requirement lists
+            self._requirements = tuple(tuple(r) for r in requirements)
+        else:
+            # Set of obstructions
+            self._obstructions = tuple(sorted(obstructions))
+            # Set of requirement lists
+            self._requirements = Tiling.sort_requirements(requirements)
+        # Set of assumptions
+        _assumptions: List[Assumption] = []
+        for ass in assumptions:
+            if (
+                isinstance(ass, (EqualParityAssumption, OppositeParityAssumption))
+                and len(ass) > 1
+            ):
+                _assumptions.extend(
+                    ass.__class__.from_cells([cell]) for cell in ass.cells
+                )
+            else:
+                _assumptions.append(ass)
+        self._assumptions = tuple(sorted(_assumptions))
+
+    def _check_init(self, checked: bool):
+        if DEBUG and not checked:
+            redone = Tiling(
+                self._obstructions, self._requirements, self._assumptions, checked=True
+            )
+            if redone != self:
+                print(self)
+                print(redone)
+                assert 0
 
     def set_empty(self):
         self._obstructions = (GriddedPerm.empty_perm(),)
@@ -318,7 +348,10 @@ class Tiling(CombinatorialClass):
     def _predicates_imply_empty(self) -> bool:
         res = (
             any(
-                all(cell in self.empty_cells for cell in ass.cells)
+                all(
+                    cell in self.empty_cells or cell not in self.active_cells
+                    for cell in ass.cells
+                )
                 for ass in self.predicate_assumptions
                 if isinstance(ass, OddCountAssumption)
             )
@@ -859,16 +892,24 @@ class Tiling(CombinatorialClass):
 
     def add_assumptions(self, assumptions: Iterable[Assumption]) -> "Tiling":
         """Returns a new tiling with the added assumptions."""
+        assumptions = tuple(assumptions)
+        remove_empty_rows_and_cols = False
+        derive_empty = False
+        simplify = False
+        if any(isinstance(ass, PredicateAssumption) for ass in assumptions):
+            remove_empty_rows_and_cols = True
+            derive_empty = True
+            simplify = True
         tiling = Tiling(
             self._obstructions,
             self._requirements,
-            self._assumptions + tuple(assumptions),
-            remove_empty_rows_and_cols=False,
-            derive_empty=False,
-            simplify=False,
-            sorted_input=True,
+            self._assumptions + assumptions,
+            remove_empty_rows_and_cols=remove_empty_rows_and_cols,
+            derive_empty=derive_empty,
+            simplify=simplify,
         )
-        tiling.clean_assumptions()
+        if not simplify:
+            tiling.clean_assumptions()
         return tiling
 
     def remove_assumption(self, assumption: Assumption):

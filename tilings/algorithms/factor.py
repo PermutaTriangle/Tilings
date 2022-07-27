@@ -159,6 +159,8 @@ class Factor:
         Returns a list of all the irreducible factors of the tiling.
         Each factor is a tuple (obstructions, requirements)
         """
+        if self._tiling.predicate_assumptions:
+            raise NotImplementedError
         if self._factors_obs_and_reqs is not None:
             return self._factors_obs_and_reqs
         if self._tiling.is_empty():
@@ -174,7 +176,7 @@ class Factor:
             # TODO: consider skew/sum assumptions
             assumptions = tuple(
                 ass.__class__(gp for gp in ass.gps if gp.pos[0] in component)
-                for ass in self._tiling.assumptions
+                for ass in self._tiling.tracking_assumptions
             )
             factors.append(
                 (
