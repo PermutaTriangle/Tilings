@@ -1,10 +1,8 @@
-from itertools import chain, product
 from typing import Dict, Iterator, List, Optional, Tuple, cast
 
 from comb_spec_searcher import DisjointUnionStrategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from tilings import GriddedPerm, Tiling
-from tilings.assumptions import EvenCountAssumption, OddCountAssumption
 
 
 class RefinePredicatesStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
@@ -27,8 +25,8 @@ class RefinePredicatesStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             for assumptions in assumption_to_refine.refinements():
                 children.append(without_predicate.add_assumptions(assumptions))
             return tuple(children)
-        except StopIteration:
-            raise StrategyDoesNotApply
+        except StopIteration as e:
+            raise StrategyDoesNotApply from e
 
     def formal_step(self) -> str:
         return "predicate refinement"
