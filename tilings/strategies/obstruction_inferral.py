@@ -21,7 +21,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     def __init__(self, gps: Iterable[GriddedPerm]):
         self.gps = tuple(sorted(gps))
         super().__init__(
-            ignore_parent=True, inferrable=True, possibly_empty=False, workable=True
+            ignore_parent=True, inferrable=True, possibly_empty=True, workable=True
         )
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
