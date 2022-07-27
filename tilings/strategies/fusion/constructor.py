@@ -365,13 +365,14 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         for number_left_points in range(min_left_points, max_left_points + 1):
             for number_right_points in range(min_right_points, max_right_points + 1):
                 both = number_left_points + number_right_points
-                if both < min_both_points or self.odd_even_left_right_satisfied(
-                    number_left_points, number_right_points
-                ):
+                if both < min_both_points:
                     continue
                 if both > max_both_points:
                     break
-                yield number_left_points, number_right_points
+                if self.odd_even_left_right_satisfied(
+                    number_left_points, number_right_points
+                ):
+                    yield number_left_points, number_right_points
 
     def _min_max_points_by_fuse_parameters(
         self, n: int, **parameters: int
