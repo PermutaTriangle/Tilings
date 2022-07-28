@@ -1748,6 +1748,30 @@ class Tiling(CombinatorialClass):
                     to_add, self._requirements
                 ):
                     return self.add_list_requirement(to_add).is_empty()
+            if isinstance(ass, (EvenCountAssumption, OddCountAssumption)):
+                min_size = sum(1 for cell in ass.cells if cell in self.positive_cells)
+                odd = bool(min_size % 2)
+                if (odd and isinstance(ass, OddCountAssumption)) or (
+                    not odd and isinstance(ass, EvenCountAssumption)
+                ):
+                    continue
+                min_size += 1
+                tiling = Tiling(
+                    [
+                        GriddedPerm.single_cell(Perm.identity(min_size + 1), cell)
+                        for cell in ass.cells
+                    ],
+                    remove_empty_rows_and_cols=False,
+                    simplify=False,
+                )
+                reqs = tuple(tiling.objects_of_size(min_size))
+                if not GPR.requirement_implied_by_some_requirement(
+                    reqs, self._requirements
+                ):
+                    return self.add_list_requirement(
+                        tiling.objects_of_size(min_size)
+                    ).is_empty()
+
         return False
 
     def experimental_is_empty(self) -> bool:
