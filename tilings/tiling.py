@@ -2,7 +2,7 @@
 import json
 from array import array
 from collections import Counter, defaultdict
-from functools import reduce
+from functools import lru_cache, reduce
 from itertools import chain, filterfalse, product
 from operator import mul, xor
 from typing import (
@@ -1728,6 +1728,7 @@ class Tiling(CombinatorialClass):
         """
         return sum(max(map(len, reqs)) for reqs in self.requirements)
 
+    @lru_cache(10000)
     def is_empty(self) -> bool:
         """Checks if the tiling is empty.
 
@@ -1742,7 +1743,7 @@ class Tiling(CombinatorialClass):
         ):
             return True
         # return self.experimental_is_empty()
-        if len(self.requirements) <= 1:
+        if not self.predicate_assumptions and len(self.requirements) <= 1:
             return False
         MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
         if all(False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True)):
