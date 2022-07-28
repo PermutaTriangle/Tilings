@@ -4,7 +4,11 @@ from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set,
 
 from permuta.misc import UnionFind
 from tilings import GriddedPerm
-from tilings.assumptions import ComponentAssumption, TrackingAssumption
+from tilings.assumptions import (
+    ComponentAssumption,
+    PredicateAssumption,
+    TrackingAssumption,
+)
 from tilings.misc import partitions_iterator
 
 if TYPE_CHECKING:
@@ -84,6 +88,8 @@ class Factor:
             if isinstance(assumption, ComponentAssumption):
                 for cells in assumption.cell_decomposition(self._tiling):
                     self._unite_cells(cells)
+            elif isinstance(assumption, PredicateAssumption):
+                self._unite_cells(assumption.cells)
             else:
                 for gp in assumption.gps:
                     self._unite_cells(gp.pos)
