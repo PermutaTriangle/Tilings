@@ -1749,7 +1749,10 @@ class Tiling(CombinatorialClass):
                 ):
                     return self.add_list_requirement(to_add).is_empty()
             if isinstance(ass, (EvenCountAssumption, OddCountAssumption)):
-                min_size = sum(1 for cell in ass.cells if cell in self.positive_cells)
+                min_size = sum(
+                    min(map(len, self.cell_basis()[cell][1]), default=0)
+                    for cell in ass.cells
+                )
                 odd = bool(min_size % 2)
                 if (odd and isinstance(ass, OddCountAssumption)) or (
                     not odd and isinstance(ass, EvenCountAssumption)
@@ -1768,16 +1771,26 @@ class Tiling(CombinatorialClass):
                 if not GPR.requirement_implied_by_some_requirement(
                     reqs, self._requirements
                 ):
-                    return self.add_list_requirement(
-                        tiling.objects_of_size(min_size)
-                    ).is_empty()
+                    return self.add_list_requirement(reqs).is_empty()
+
+        # if self.experimental_is_empty(4):
+        #     if not self.experimental_is_empty(5):
+        #         print(self)
+        #         print(repr(self))
+        #         print(5)
+        #     elif not self.experimental_is_empty(6):
+        #         print(self)
+        #         print(repr(self))
+        #         print(6)
+        #     else:
+        #         return True
 
         return False
 
-    def experimental_is_empty(self) -> bool:
+    def experimental_is_empty(self, bound: int = 4) -> bool:
         try:
             return all(
-                False for _ in self.gridded_perms(self.minimum_size_of_object() + 4)
+                False for _ in self.gridded_perms(self.minimum_size_of_object() + bound)
             )
         except StopIteration:
             # underlying tiling is empty
