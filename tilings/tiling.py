@@ -139,20 +139,6 @@ class Tiling(CombinatorialClass):
         """
         self._cached_properties: CachedProperties = {}
 
-        reqs = list(requirements)
-        assumptions = list(assumptions)
-        for ass in assumptions:
-            if isinstance(ass, OddCountAssumption):
-                to_add = tuple(map(GriddedPerm.point_perm, ass.cells))
-                if to_add not in requirements:
-                    reqs.append(to_add)
-                    sorted_input = False
-                    simplify = True
-                    derive_empty = True
-                    remove_empty_rows_and_cols = True
-
-        requirements = reqs
-
         self._set_obstructions_requirements_and_assumptions(
             obstructions, requirements, assumptions, sorted_input
         )
@@ -165,11 +151,6 @@ class Tiling(CombinatorialClass):
             if simplify:
                 self.clean_assumptions()
             if self._predicates_imply_empty():
-                # if (
-                #     not self.experimental_is_empty()
-                #     and self._rectangular_predicate_implications()
-                # ):
-                #     print(self)
                 self.set_empty()
             else:
                 # Fill empty
@@ -315,18 +296,6 @@ class Tiling(CombinatorialClass):
         respective lists. If any requirement list is empty, then the tiling is
         empty.
         """
-        # if self._predicates_imply_empty():
-        #     if (
-        #         not self.experimental_is_empty()
-        #         and self._rectangular_predicate_implications()
-        #     ):
-        #         print("HERE")
-        #         for i in range(4):
-        #             for obj in self.objects_of_size(i):
-        #                 print(obj)
-        #         print(self)
-        #     self.set_empty()
-        #     return
         GPR = GriddedPermReduction(
             self.obstructions,
             self.requirements,
@@ -336,13 +305,6 @@ class Tiling(CombinatorialClass):
         self._obstructions = GPR.obstructions
         self._requirements = GPR.requirements
         if self._predicates_imply_empty():
-            # if (
-            #     not self.experimental_is_empty()
-            #     and self._rectangular_predicate_implications()
-            # ):
-            #     for obj in self.gridded_perms(self.minimum_size_of_object() + 4):
-            #         print(obj)
-            #     print(self)
             self.set_empty()
 
     def _predicates_imply_empty(self) -> bool:
@@ -382,61 +344,65 @@ class Tiling(CombinatorialClass):
         odd_cells = _get_cells(OddCountAssumption)
         even_cells = _get_cells(EvenCountAssumption)
         if odd_cells.intersection(even_cells):
-            # print(1)
             return True
         if odd_cells.union(even_cells) != set(self.active_cells):
             return False
         equal_cells = _get_cells(EqualParityAssumption)
         opposite_cells = _get_cells(OppositeParityAssumption)
         if equal_cells.intersection(opposite_cells):
-            # print(2)
             return True
         if equal_cells.union(opposite_cells) != set(self.active_cells):
             return False
-        for rectangle in self._get_rectangular_regions():
-            odd = bool(sum(1 for cell in rectangle if cell in odd_cells) % 2)
-            mindex = min(x for x, _ in rectangle)
-            minval = min(y for _, y in rectangle)
-            toggle = bool(
-                (
-                    sum(1 for x, _ in odd_cells if x < mindex)
-                    + sum(1 for _, y in odd_cells if y < minval)
-                )
-                % 2
+        return any(
+            self._contradictory_rectangle(
+                rectangle, odd_cells, even_cells, opposite_cells, equal_cells
             )
-            # opposite parity => even length
-            if (not toggle and all(cell in opposite_cells for cell in rectangle)) or (
-                toggle and all(cell in equal_cells for cell in rectangle)
-            ):
-                if odd:
-                    # print(rectangle)
-                    # print(3)
-                    return True
-            if len(rectangle) == 1:
-                cell = next(iter(rectangle))
-                basis = self.cell_basis()[cell][0]
-                if Perm((0, 1)) in basis:
-                    # equal parity implies odd size or size 0
-                    if cell in self.positive_cells:
-                        if (toggle and cell in opposite_cells) or (
-                            not toggle and cell in equal_cells
-                        ):
-                            if cell in even_cells:
-                                # print(rectangle)
-                                # print(basis)
-                                # print(5)
-                                return True
-                            # TODO: this implies that the cell is empty. add ob?
-                if Perm((1, 0)) in basis:
-                    # equal parity unless size 0
-                    if cell in self.positive_cells:
-                        if (not toggle and cell in opposite_cells) or (
-                            toggle and cell in equal_cells
-                        ):
-                            # print(rectangle)
-                            # print(basis)
-                            # print(6)
+            for rectangle in self._get_rectangular_regions()
+        )
+
+    def _contradictory_rectangle(
+        self,
+        rectangle: Set[Cell],
+        odd_cells: Set[Cell],
+        even_cells: Set[Cell],
+        opposite_cells: Set[Cell],
+        equal_cells: Set[Cell],
+    ) -> bool:
+        odd = bool(sum(1 for cell in rectangle if cell in odd_cells) % 2)
+        mindex = min(x for x, _ in rectangle)
+        minval = min(y for _, y in rectangle)
+        toggle = bool(
+            (
+                sum(1 for x, _ in odd_cells if x < mindex)
+                + sum(1 for _, y in odd_cells if y < minval)
+            )
+            % 2
+        )
+        # opposite parity => even length
+        if (not toggle and all(cell in opposite_cells for cell in rectangle)) or (
+            toggle and all(cell in equal_cells for cell in rectangle)
+        ):
+            if odd:
+                return True
+        if len(rectangle) == 1:
+            cell = next(iter(rectangle))
+            basis = self.cell_basis()[cell][0]
+            if Perm((0, 1)) in basis:
+                # equal parity implies odd size or size 0
+                if cell in self.positive_cells:
+                    if (toggle and cell in opposite_cells) or (
+                        not toggle and cell in equal_cells
+                    ):
+                        if cell in even_cells:
                             return True
+                        # TODO: this implies that the cell is empty. add ob?
+            if Perm((1, 0)) in basis:
+                # equal parity unless size 0
+                if cell in self.positive_cells:
+                    if (not toggle and cell in opposite_cells) or (
+                        toggle and cell in equal_cells
+                    ):
+                        return True
         return False
 
     def _get_rectangular_regions(self) -> Iterator[Set[Cell]]:
@@ -445,7 +411,7 @@ class Tiling(CombinatorialClass):
         other cells in its cols or rows outside of the region.
         """
         to_process = set(self.active_cells)
-        rectangle_by_cells: Dict[Cell, Set[Cell]] = dict()
+        rectangle_by_cells: Dict[Cell, Set[Cell]] = {}
         filled_rectangles: List[Set[Cell]] = []
         while to_process:
             rectangle: Set[Cell] = set()
@@ -453,17 +419,17 @@ class Tiling(CombinatorialClass):
             processed_rows: Set[int] = set()
             processed_cols: Set[int] = set()
             while cells_to_process:
-                x, y = cells_to_process.pop()
-                if x not in processed_cols:
-                    processed_cols.add(x)
-                    col_cells = self.cells_in_col(x)
-                    rectangle.update(col_cells)
-                    cells_to_process.update(col_cells)
-                if y not in processed_rows:
-                    processed_rows.add(y)
-                    row_cells = self.cells_in_row(y)
-                    rectangle.update(row_cells)
-                    cells_to_process.update(row_cells)
+                cell = cells_to_process.pop()
+                if cell[0] not in processed_cols:
+                    processed_cols.add(cell[0])
+                    cells = self.cells_in_col(cell[0])
+                    rectangle.update(cells)
+                    cells_to_process.update(cells)
+                if cell[1] not in processed_rows:
+                    processed_rows.add(cell[1])
+                    cells = self.cells_in_row(cell[1])
+                    rectangle.update(cells)
+                    cells_to_process.update(cells)
             to_process -= rectangle
             filled_in_rectangle = self._fill_rectangle(rectangle)
             for cell in rectangle:
@@ -1748,6 +1714,9 @@ class Tiling(CombinatorialClass):
         MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
         if all(False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True)):
             return True
+        return self._is_empty_after_expansion()
+
+    def _is_empty_after_expansion(self) -> bool:
         factors = self.find_factors()
         if len(factors) > 1:
             return any(f.is_empty() for f in factors)
@@ -1775,12 +1744,10 @@ class Tiling(CombinatorialClass):
             )
             if isinstance(ass, OddCountAssumption):
                 to_add = tuple(map(GriddedPerm.point_perm, ass.cells))
-                if not GPR._requirement_implied_by_some_requirement(
+                if not GPR.requirement_implied_by_some_requirement(
                     to_add, self._requirements
                 ):
                     return self.add_list_requirement(to_add).is_empty()
-        # if self.experimental_is_empty():
-        #     print(self)
         return False
 
     def experimental_is_empty(self) -> bool:
