@@ -1400,6 +1400,8 @@ class Tiling(CombinatorialClass):
         set 'all' then cells on the same row or columns don't need to be in
         the same factor.
         """
+        if any(len(ass) > 1 for ass in self.predicate_assumptions):
+            return (self,)
         factor_class = {
             "none": Factor,
             "monotone": FactorWithMonotoneInterleaving,
@@ -1411,7 +1413,9 @@ class Tiling(CombinatorialClass):
             raise InvalidOperationError(
                 f"interleaving option must be in {list(factor_class.keys())}"
             )
-        return factor.factors()
+        return tuple(
+            self.sub_tiling(component) for component in factor.get_components()
+        )
 
     def row_and_column_separation(self) -> "Tiling":
         """
@@ -1741,7 +1745,42 @@ class Tiling(CombinatorialClass):
         if len(self.requirements) <= 1:
             return False
         MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
-        return all(False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True))
+        if all(False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True)):
+            return True
+        factors = self.find_factors()
+        if len(factors) > 1:
+            return any(f.is_empty() for f in factors)
+
+        rcs = self.row_and_column_separation()
+        if rcs != self:
+            return rcs.is_empty()
+
+        try:
+            assumption_to_refine = next(
+                ass for ass in self.predicate_assumptions if ass.can_be_refined()
+            )
+            without_predicate = self.remove_assumption(assumption_to_refine)
+            return all(
+                without_predicate.add_assumptions(assumptions).is_empty()
+                for assumptions in assumption_to_refine.refinements()
+            )
+        except StopIteration:
+            # nothing can be refined
+            pass
+
+        for ass in self._assumptions:
+            GPR = GriddedPermReduction(
+                tuple(), self._requirements, manual=True, sorted_input=True
+            )
+            if isinstance(ass, OddCountAssumption):
+                to_add = tuple(map(GriddedPerm.point_perm, ass.cells))
+                if not GPR._requirement_implied_by_some_requirement(
+                    to_add, self._requirements
+                ):
+                    return self.add_list_requirement(to_add).is_empty()
+        # if self.experimental_is_empty():
+        #     print(self)
+        return False
 
     def experimental_is_empty(self) -> bool:
         try:
