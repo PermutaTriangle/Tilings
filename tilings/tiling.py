@@ -1766,6 +1766,7 @@ class Tiling(CombinatorialClass):
                     ],
                     remove_empty_rows_and_cols=False,
                     simplify=False,
+                    checked=True,
                 )
                 reqs = tuple(tiling.objects_of_size(min_size))
                 if not GPR.requirement_implied_by_some_requirement(
