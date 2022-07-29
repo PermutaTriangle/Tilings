@@ -228,6 +228,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         if not self.tracked:
             # constructor only enumerates when tracked.
             raise NotImplementedError("The fusion strategy was not tracked.")
+        if comb_class.predicate_assumptions:
+            raise NotImplementedError("can't handle predicates")
         if children is None:
             children = self.decomposition_function(comb_class)
         # Need to recompute some info to count, so ignoring passed in children
