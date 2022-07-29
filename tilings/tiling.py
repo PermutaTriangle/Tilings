@@ -15,6 +15,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    cast,
 )
 
 import sympy
@@ -138,6 +139,7 @@ class Tiling(CombinatorialClass):
             we pass this through to GriddedPermReduction
         """
         self._cached_properties: CachedProperties = {}
+        self._compress_cache: Optional[bytes] = None
 
         self._set_obstructions_requirements_and_assumptions(
             obstructions, requirements, assumptions, sorted_input
@@ -618,6 +620,9 @@ class Tiling(CombinatorialClass):
         size. The obstructions are compressed and concatenated to the list, as
         are the requirement lists."""
 
+        if self._compress_cache is not None:
+            return self._compress_cache
+
         def split_16bit(n) -> Tuple[int, int]:
             """
             Takes a 16 bit integer and splits it into
@@ -651,7 +656,8 @@ class Tiling(CombinatorialClass):
                     )
                 )
         res = array("B", result)
-        return res.tobytes()
+        self._compress_cache = res.tobytes()
+        return self._compress_cache
 
     @classmethod
     def from_bytes(cls, b: bytes) -> "Tiling":
@@ -1695,7 +1701,7 @@ class Tiling(CombinatorialClass):
         return sum(max(map(len, reqs)) for reqs in self.requirements)
 
     @lru_cache(10000)
-    def is_empty(self) -> bool:
+    def is_empty(self, experimental_bound: Optional[int] = 4) -> bool:
         """Checks if the tiling is empty.
 
         Tiling is empty if it has been inferred to be contradictory due to
@@ -1704,6 +1710,7 @@ class Tiling(CombinatorialClass):
 
         TODO: this method ignores predicates
         """
+
         if any(ob.is_empty() for ob in self.obstructions) or any(
             not ass.can_be_satisfied(self) for ass in self.predicate_assumptions
         ):
@@ -1720,7 +1727,26 @@ class Tiling(CombinatorialClass):
             return True
         if any(self._satisfies_predicates(gp) for gp in gps):
             return False
-        return self._is_empty_after_expansion()
+
+        # before doing all the expansion stuff, check the empty db (if applicable)
+        try:
+            db = Tiling.empty_db  # type: ignore
+
+            results: Dict[Optional[int], bool] = db.get(self.to_bytes(), {})
+            if experimental_bound not in results:
+                # print("computing new for bound", experimental_bound)
+                # print(self)
+                is_empty_result = self._is_empty_after_expansion(experimental_bound)
+                results[experimental_bound] = is_empty_result
+                db[self.to_bytes()] = results
+            # else:
+            # print("result already exists for bound", experimental_bound)
+            # print(self)
+
+            return results[experimental_bound]
+
+        except AttributeError:
+            return self._is_empty_after_expansion(experimental_bound)
 
     def _is_empty_after_expansion(
         self, experimental_bound: Optional[int] = None
@@ -1816,6 +1842,7 @@ class Tiling(CombinatorialClass):
         return False
 
     def smarter_experimental_is_empty(self, bound: int = 4) -> bool:
+        print(bound)
         GP = GriddedPermsOnTiling(self, yield_non_minimal=True)
         return all(
             False
