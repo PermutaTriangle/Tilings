@@ -1712,16 +1712,23 @@ class Tiling(CombinatorialClass):
         if not self.predicate_assumptions and len(self.requirements) <= 1:
             return False
         MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
-        if all(False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True)):
+        gps = MGP.minimal_gridded_perms(yield_non_minimal=True)
+        try:
+            if self._satisfies_predicates(next(gps)):
+                return False
+        except StopIteration:
             return True
+        if any(self._satisfies_predicates(gp) for gp in gps):
+            return False
         return self._is_empty_after_expansion()
 
     def _is_empty_after_expansion(self) -> bool:
+        # TODO: consider doing all this as an initial factory
         factors = self.find_factors()
         if len(factors) > 1:
             return any(f.is_empty() for f in factors)
-
-        rcs = self.row_and_column_separation()
+        rcs = self.obstruction_transitivity()
+        rcs = rcs.row_and_column_separation()
         if rcs != self:
             return rcs.is_empty()
 
@@ -1757,31 +1764,62 @@ class Tiling(CombinatorialClass):
         if self != tiling:
             return tiling.is_empty()
 
-        # if self.experimental_is_empty(0):
-        #     if not self.experimental_is_empty(1):
-        #         bound = 1
-        #         print(self)
-        #         print(repr(self))
-        #         print("+", bound, "smallest:", self.minimum_size_of_object() + bound)
-        #     elif not self.experimental_is_empty(2):
-        #         bound = 2
-        #         print(self)
-        #         print(repr(self))
-        #         print("+", bound, "smallest:", self.minimum_size_of_object() + bound)
-        #     elif not self.experimental_is_empty(3):
-        #         bound = 3
-        #         print(self)
-        #         print(repr(self))
-        #         print("+", bound, "smallest:", self.minimum_size_of_object() + bound)
-        #     elif not self.experimental_is_empty(4):
-        #         bound = 4
-        #         print(self)
-        #         print(repr(self))
-        #         print("+", bound, "smallest:", self.minimum_size_of_object() + bound)
+        for cell in tiling.point_cells:
+            if not tiling.only_cell_in_row_and_col(cell):
+                return self.place_point_in_cell(cell, 0).is_empty()
+
+        # def print_bound(bound):
+        #     print(self)
+        #     print(repr(self))
+        #     print(
+        #         "+",
+        #         bound,
+        #         "smallest:",
+        #         self.maximum_length_of_minimum_gridded_perm() + bound,
+        #     )
+        #     GP = GriddedPermsOnTiling(self, yield_non_minimal=True)
+        #     for gp in filter(
+        #         self._satisfies_predicates,
+        #         GP.gridded_perms(
+        #             self.maximum_length_of_minimum_gridded_perm() + bound,
+        #             place_at_most=bound,
+        #         ),
+        #     ):
+        #         print(gp)
+        #         break
+
+        # if self.smarter_experimental_is_empty(0):
+        #     if not self.smarter_experimental_is_empty(1):
+        #         print_bound(1)
+        #     elif not self.smarter_experimental_is_empty(2):
+        #         print_bound(2)
+        #     elif not self.smarter_experimental_is_empty(3):
+        #         print_bound(3)
+        #     elif not self.smarter_experimental_is_empty(4):
+        #         print_bound(4)
+        #     elif not self.smarter_experimental_is_empty(5):
+        #         print_bound(5)
+        #     elif not self.smarter_experimental_is_empty(6):
+        #         print_bound(6)
         #     else:
         #         return True
+        # else:
+        #     print_bound(0)
 
         return False
+
+    def smarter_experimental_is_empty(self, bound: int = 4) -> bool:
+        GP = GriddedPermsOnTiling(self, yield_non_minimal=True)
+        return all(
+            False
+            for _ in filter(
+                self._satisfies_predicates,
+                GP.gridded_perms(
+                    self.maximum_length_of_minimum_gridded_perm() + bound,
+                    place_at_most=bound,
+                ),
+            )
+        )
 
     def experimental_is_empty(self, bound: int = 4) -> bool:
         try:
