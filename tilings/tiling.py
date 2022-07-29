@@ -1722,15 +1722,17 @@ class Tiling(CombinatorialClass):
             return False
         return self._is_empty_after_expansion()
 
-    def _is_empty_after_expansion(self) -> bool:
+    def _is_empty_after_expansion(
+        self, experimental_bound: Optional[int] = None
+    ) -> bool:
         # TODO: consider doing all this as an initial factory
         factors = self.find_factors()
         if len(factors) > 1:
-            return any(f.is_empty() for f in factors)
+            return any(f.is_empty(experimental_bound) for f in factors)
         rcs = self.obstruction_transitivity()
         rcs = rcs.row_and_column_separation()
         if rcs != self:
-            return rcs.is_empty()
+            return rcs.is_empty(experimental_bound)
 
         try:
             assumption_to_refine = next(
@@ -1738,7 +1740,9 @@ class Tiling(CombinatorialClass):
             )
             without_predicate = self.remove_assumption(assumption_to_refine)
             return all(
-                without_predicate.add_assumptions(assumptions).is_empty()
+                without_predicate.add_assumptions(assumptions).is_empty(
+                    experimental_bound
+                )
                 for assumptions in assumption_to_refine.refinements()
             )
         except StopIteration:
@@ -1762,11 +1766,11 @@ class Tiling(CombinatorialClass):
         MGPS = MGP.odd_even_minimal_gridded_perms(odd_cells, even_cells)
         tiling = self.add_list_requirement(MGPS)
         if self != tiling:
-            return tiling.is_empty()
+            return tiling.is_empty(experimental_bound)
 
-        for cell in tiling.point_cells:
-            if not tiling.only_cell_in_row_and_col(cell):
-                return self.place_point_in_cell(cell, 0).is_empty()
+        # for cell in tiling.point_cells:
+        #     if not tiling.only_cell_in_row_and_col(cell):
+        #         return self.place_point_in_cell(cell, 0).is_empty()
 
         # def print_bound(bound):
         #     print(self)
@@ -1805,6 +1809,9 @@ class Tiling(CombinatorialClass):
         #         return True
         # else:
         #     print_bound(0)
+
+        if experimental_bound is not None:
+            return self.smarter_experimental_is_empty(bound=experimental_bound)
 
         return False
 
