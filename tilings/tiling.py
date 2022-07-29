@@ -1737,52 +1737,47 @@ class Tiling(CombinatorialClass):
         except StopIteration:
             # nothing can be refined
             pass
-
-        for ass in self._assumptions:
-            GPR = GriddedPermReduction(
-                tuple(), self._requirements, manual=True, sorted_input=True
+        odd_cells = set(
+            chain.from_iterable(
+                ass.cells
+                for ass in self._assumptions
+                if isinstance(ass, OddCountAssumption)
             )
-            if isinstance(ass, OddCountAssumption):
-                to_add = tuple(map(GriddedPerm.point_perm, ass.cells))
-                if not GPR.requirement_implied_by_some_requirement(
-                    to_add, self._requirements
-                ):
-                    return self.add_list_requirement(to_add).is_empty()
-            if isinstance(ass, (EvenCountAssumption, OddCountAssumption)):
-                min_size = sum(
-                    min(map(len, self.cell_basis()[cell][1]), default=0)
-                    for cell in ass.cells
-                )
-                odd = bool(min_size % 2)
-                if (odd and isinstance(ass, OddCountAssumption)) or (
-                    not odd and isinstance(ass, EvenCountAssumption)
-                ):
-                    continue
-                min_size += 1
-                tiling = Tiling(
-                    [
-                        GriddedPerm.single_cell(Perm.identity(min_size + 1), cell)
-                        for cell in ass.cells
-                    ],
-                    remove_empty_rows_and_cols=False,
-                    simplify=False,
-                    checked=True,
-                )
-                reqs = tuple(tiling.objects_of_size(min_size))
-                if not GPR.requirement_implied_by_some_requirement(
-                    reqs, self._requirements
-                ):
-                    return self.add_list_requirement(reqs).is_empty()
+        )
+        even_cells = set(
+            chain.from_iterable(
+                ass.cells
+                for ass in self._assumptions
+                if isinstance(ass, EvenCountAssumption)
+            )
+        )
+        MGP = MinimalGriddedPerms(self._obstructions, self._requirements)
+        MGPS = MGP.odd_even_minimal_gridded_perms(odd_cells, even_cells)
+        tiling = self.add_list_requirement(MGPS)
+        if self != tiling:
+            return tiling.is_empty()
 
-        # if self.experimental_is_empty(4):
-        #     if not self.experimental_is_empty(5):
+        # if self.experimental_is_empty(0):
+        #     if not self.experimental_is_empty(1):
+        #         bound = 1
         #         print(self)
         #         print(repr(self))
-        #         print(5)
-        #     elif not self.experimental_is_empty(6):
+        #         print("+", bound, "smallest:", self.minimum_size_of_object() + bound)
+        #     elif not self.experimental_is_empty(2):
+        #         bound = 2
         #         print(self)
         #         print(repr(self))
-        #         print(6)
+        #         print("+", bound, "smallest:", self.minimum_size_of_object() + bound)
+        #     elif not self.experimental_is_empty(3):
+        #         bound = 3
+        #         print(self)
+        #         print(repr(self))
+        #         print("+", bound, "smallest:", self.minimum_size_of_object() + bound)
+        #     elif not self.experimental_is_empty(4):
+        #         bound = 4
+        #         print(self)
+        #         print(repr(self))
+        #         print("+", bound, "smallest:", self.minimum_size_of_object() + bound)
         #     else:
         #         return True
 
