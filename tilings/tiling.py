@@ -1695,7 +1695,7 @@ class Tiling(CombinatorialClass):
         return sum(max(map(len, reqs)) for reqs in self.requirements)
 
     @lru_cache(10000)
-    def is_empty(self) -> bool:
+    def is_empty(self, experimental_bound: Optional[int] = None) -> bool:
         """Checks if the tiling is empty.
 
         Tiling is empty if it has been inferred to be contradictory due to
@@ -1720,7 +1720,7 @@ class Tiling(CombinatorialClass):
             return True
         if any(self._satisfies_predicates(gp) for gp in gps):
             return False
-        return self._is_empty_after_expansion()
+        return self._is_empty_after_expansion(experimental_bound)
 
     def _is_empty_after_expansion(
         self, experimental_bound: Optional[int] = None
