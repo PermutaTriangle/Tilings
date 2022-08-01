@@ -9,7 +9,7 @@ from comb_spec_searcher.strategies import NonBijectiveRule, Rule
 from comb_spec_searcher.typing import Objects
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
-from tilings.assumptions import OddCountAssumption
+from tilings.assumptions import EvenCountAssumption, OddCountAssumption
 
 from ..pointing import DivideByK
 from .constructor import FusionConstructor, ReverseFusionConstructor
@@ -209,6 +209,15 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         assert children is None or children == (child,)
         min_left, min_right = algo.min_left_right_points()
         left, right = algo.left_fuse_region(), algo.right_fuse_region()
+        odd_left, odd_right = None, None
+        if OddCountAssumption.from_cells(left) in comb_class.assumptions:
+            odd_left = True
+        elif EvenCountAssumption.from_cells(left) in comb_class.assumptions:
+            odd_left = False
+        if OddCountAssumption.from_cells(right) in comb_class.assumptions:
+            odd_right = True
+        if EvenCountAssumption.from_cells(right) in comb_class.assumptions:
+            odd_right = False
         return FusionConstructor(
             comb_class,
             child,
@@ -217,8 +226,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             *self.left_right_both_sided_parameters(comb_class),
             min_left,
             min_right,
-            odd_left=(OddCountAssumption.from_cells(left) in comb_class.assumptions),
-            odd_right=(OddCountAssumption.from_cells(right) in comb_class.assumptions),
+            odd_left=odd_left,
+            odd_right=odd_right,
         )
 
     def reverse_constructor(  # pylint: disable=no-self-use

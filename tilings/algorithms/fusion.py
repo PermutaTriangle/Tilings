@@ -423,6 +423,13 @@ class Fusion:
             elif isinstance(ass, OppositeParityAssumption):
                 opposite.add(next(iter(ass.cells)))
         left = self.left_fuse_region()
+        if len(left) > 1:
+            # TODO: can't fuse things like
+            #  O | O
+            #  - + -
+            #  O | O
+            # need entire rows/columns to be tracked as odd.
+            return False
         for (x, y) in left:
             xn, yn = x, y
             if self._fuse_row:
