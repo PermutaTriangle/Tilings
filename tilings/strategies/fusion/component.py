@@ -5,7 +5,6 @@ from comb_spec_searcher.strategies import Rule
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import ComponentFusion
 
-from .constructor import FusionConstructor
 from .fusion import FusionStrategy
 
 
@@ -39,7 +38,7 @@ class ComponentFusionStrategy(FusionStrategy):
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
-    ) -> FusionConstructor:
+    ) -> Constructor:
         if self.tracked and self.is_positive_or_empty_fusion(comb_class):
             raise NotImplementedError(
                 "Can't count positive or empty fusion. Try a cell insertion!"

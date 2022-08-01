@@ -177,6 +177,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         return False
 
     def is_reversible(self, comb_class: Tiling) -> bool:
+        if comb_class.predicate_assumptions:
+            return False
         algo = self.fusion_algorithm(comb_class)
         new_ass = algo.new_assumption()
         fused_assumptions = (
@@ -195,7 +197,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
-    ) -> FusionConstructor:
+    ) -> Constructor:
         if not self.tracked:
             # constructor only enumerates when tracked.
             raise NotImplementedError("The fusion strategy was not tracked.")
