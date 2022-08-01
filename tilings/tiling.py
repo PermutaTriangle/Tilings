@@ -873,9 +873,12 @@ class Tiling(CombinatorialClass):
             remove_empty_rows_and_cols=remove_empty_rows_and_cols,
             derive_empty=derive_empty,
             simplify=simplify,
+            checked=True,
         )
         if not simplify:
             tiling.clean_assumptions()
+        if DEBUG:
+            tiling._check_init(False)
         return tiling
 
     def remove_assumption(self, assumption: Assumption):

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from itertools import chain, islice
+from itertools import chain, islice, product
 from random import randint
 from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, cast
 
@@ -410,6 +410,8 @@ class FusionFactory(StrategyFactory[Tiling]):
         return self.__class__(tracked=True, isolation_level=self.isolation_level)
 
     def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
+        from tilings.strategies.fusion.unfusion import UnfusionStrategy
+
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
             algo = Fusion(
@@ -423,6 +425,17 @@ class FusionFactory(StrategyFactory[Tiling]):
                 yield FusionStrategy(row_idx=row_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
+                for left, right, both in product(
+                    (True, False), (True, False), (True, False)
+                ):
+                    if left or right or both:
+                        yield UnfusionStrategy(
+                            row_idx=row_idx,
+                            tracked=self.tracked,
+                            left=left,
+                            right=right,
+                            both=both,
+                        )(fused_tiling)
         for col_idx in range(cols - 1):
             algo = Fusion(
                 comb_class,
@@ -435,6 +448,17 @@ class FusionFactory(StrategyFactory[Tiling]):
                 yield FusionStrategy(col_idx=col_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
+                for left, right, both in product(
+                    (True, False), (True, False), (True, False)
+                ):
+                    if left or right or both:
+                        yield UnfusionStrategy(
+                            col_idx=col_idx,
+                            tracked=self.tracked,
+                            left=left,
+                            right=right,
+                            both=both,
+                        )(fused_tiling)
 
     def __str__(self) -> str:
         if self.tracked:

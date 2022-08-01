@@ -149,8 +149,8 @@ class UnfusionStrategy(FusionStrategy):
         fused_tiling, unfused_tiling = comb_class, children[0]
         # Need to recompute some info to count, so ignoring passed in children
         algo = self.fusion_algorithm(unfused_tiling)
-        if not algo.fusable():
-            raise StrategyDoesNotApply("Strategy does not apply")
+        # if not algo.fusable():
+        #     raise StrategyDoesNotApply("Strategy does not apply")
         if algo.min_left_right_points() != (0, 0):
             raise NotImplementedError(
                 "Reverse positive fusion counting not implemented"
