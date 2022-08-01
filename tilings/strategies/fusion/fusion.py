@@ -419,6 +419,7 @@ class FusionFactory(StrategyFactory[Tiling]):
         return self.__class__(tracked=True, isolation_level=self.isolation_level)
 
     def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
+        # pylint: disable=import-outside-toplevel
         from tilings.strategies.fusion.unfusion import UnfusionStrategy
 
         cols, rows = comb_class.dimensions

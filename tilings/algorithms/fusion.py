@@ -457,7 +457,9 @@ class Fusion:
             assumptions.extend(self.fused_predicates())
             if self._tracked:
                 assumptions.append(self.new_assumption())
-            requirements = list(list(fc) for fc in self.requirements_fuse_counters)
+            requirements: List[Iterable[GriddedPerm]] = list(
+                list(fc) for fc in self.requirements_fuse_counters
+            )
             if self._positive_left or self._positive_right:
                 new_positive_requirement = self.new_positive_requirement()
                 requirements = requirements + [new_positive_requirement]
