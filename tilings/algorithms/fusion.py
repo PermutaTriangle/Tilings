@@ -443,7 +443,7 @@ class Fusion:
                 return False
         return True
 
-    def fused_tiling(self) -> "Tiling":
+    def fused_tiling(self, add_odd_req: bool = True) -> "Tiling":
         """
         Return the fused tiling.
         """
@@ -463,6 +463,8 @@ class Fusion:
             if self._positive_left or self._positive_right:
                 new_positive_requirement = self.new_positive_requirement()
                 requirements = requirements + [new_positive_requirement]
+            if add_odd_req and self.is_odd_next_to_odd_fusion():
+                requirements += [map(GriddedPerm.point_perm, self.left_fuse_region())]
             self._fused_tiling = self._tiling.__class__(
                 obstructions=self.obstruction_fuse_counter.keys(),
                 requirements=requirements,
@@ -471,6 +473,17 @@ class Fusion:
                 already_minimized_obs=True,
             )
         return self._fused_tiling
+
+    def clear_fused_tiling(self) -> None:
+        self._fused_tiling = None
+
+    def is_odd_next_to_odd_fusion(self) -> bool:
+        return (
+            OddCountAssumption.from_cells(self.left_fuse_region())
+            in self._tiling.assumptions
+            and OddCountAssumption.from_cells(self.right_fuse_region())
+            in self._tiling.assumptions
+        )
 
     def fuse_assumption(self, assumption: AssumptionClass) -> AssumptionClass:
         return assumption.__class__(self.fuse_gridded_perm(gp) for gp in assumption.gps)

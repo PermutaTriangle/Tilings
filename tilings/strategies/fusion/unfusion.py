@@ -216,18 +216,37 @@ class UnfusionStrategy(FusionStrategy):
         raise NotImplementedError
 
 
-# if __name__ == "__main__":
-#     t = Tiling.from_string("123").add_assumption(
-#         TrackingAssumption.from_cells([(0, 0)])
-#     )
-#     for left in (True, False):
-#         for right in (True, False):
-#             for both in (True, False):
-#                 if left or right or both:
-#                     strat = UnfusionStrategy(
-#                         0, None, True, left=left, right=right, both=both
-#                     )
-#                     rule = strat(t)
-#                     for i in range(6):
-#                         print(i, rule.sanity_check(i))
-#                         # rule.sanity_check(i)
+if __name__ == "__main__":
+    from tilings.assumptions import OddCountAssumption, OppositeParityAssumption
+    from tilings.strategies import FusionFactory
+
+    t = Tiling(
+        obstructions=[
+            GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0))),
+            GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (1, 0))),
+            GriddedPerm((0, 1, 2), ((0, 0), (1, 0), (1, 0))),
+            GriddedPerm((0, 1, 2), ((1, 0), (1, 0), (1, 0))),
+        ],
+        assumptions=[
+            TrackingAssumption.from_cells([(0, 0)]),
+            OddCountAssumption.from_cells([(0, 0)]),
+            OddCountAssumption.from_cells([(1, 0)]),
+            OppositeParityAssumption.from_cells([(0, 0)]),
+            OppositeParityAssumption.from_cells([(1, 0)]),
+        ],
+    )
+
+    for rule in FusionFactory()(t):
+        print(rule)
+    # print(t)
+    # for left in (True, False):
+    #     for right in (True, False):
+    #         for both in (True, False):
+    #             if left or right or both:
+    #                 strat = UnfusionStrategy(
+    #                     0, None, True, left=left, right=right, both=both
+    #                 )
+    #                 rule = strat(t)
+    #                 for i in range(6):
+    #                     print(i, rule.sanity_check(i))
+    #                     # rule.sanity_check(i)

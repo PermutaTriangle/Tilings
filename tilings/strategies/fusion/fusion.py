@@ -10,6 +10,7 @@ from comb_spec_searcher.typing import Objects
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
 from tilings.assumptions import EvenCountAssumption, OddCountAssumption
+from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 
 from ..pointing import DivideByK
 from .constructor import FusionConstructor, ReverseFusionConstructor
@@ -177,8 +178,6 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         return False
 
     def is_reversible(self, comb_class: Tiling) -> bool:
-        if comb_class.predicate_assumptions:
-            return False
         algo = self.fusion_algorithm(comb_class)
         new_ass = algo.new_assumption()
         fused_assumptions = (
@@ -419,9 +418,6 @@ class FusionFactory(StrategyFactory[Tiling]):
         return self.__class__(tracked=True, isolation_level=self.isolation_level)
 
     def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
-        # pylint: disable=import-outside-toplevel
-        from tilings.strategies.fusion.unfusion import UnfusionStrategy
-
         cols, rows = comb_class.dimensions
         for row_idx in range(rows - 1):
             algo = Fusion(
@@ -435,17 +431,10 @@ class FusionFactory(StrategyFactory[Tiling]):
                 yield FusionStrategy(row_idx=row_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
-                for left, right, both in product(
-                    (True, False), (True, False), (True, False)
-                ):
-                    if left or right or both:
-                        yield UnfusionStrategy(
-                            row_idx=row_idx,
-                            tracked=self.tracked,
-                            left=left,
-                            right=right,
-                            both=both,
-                        )(fused_tiling)
+                # yield from self._all_unfusion_rules(True, row_idx, fused_tiling)
+                if algo.is_odd_next_to_odd_fusion():
+                    yield self._extra_cell_insertion_rule(algo)
+
         for col_idx in range(cols - 1):
             algo = Fusion(
                 comb_class,
@@ -458,17 +447,47 @@ class FusionFactory(StrategyFactory[Tiling]):
                 yield FusionStrategy(col_idx=col_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
-                for left, right, both in product(
-                    (True, False), (True, False), (True, False)
-                ):
-                    if left or right or both:
-                        yield UnfusionStrategy(
-                            col_idx=col_idx,
-                            tracked=self.tracked,
-                            left=left,
-                            right=right,
-                            both=both,
-                        )(fused_tiling)
+                # yield from self._all_unfusion_rules(False, col_idx, fused_tiling)
+                if algo.is_odd_next_to_odd_fusion():
+                    yield self._extra_cell_insertion_rule(algo)
+
+    def _all_unfusion_rules(
+        self, row: bool, idx: int, tiling: Tiling
+    ) -> Iterator[Rule]:
+        # pylint: disable=import-outside-toplevel
+        from tilings.strategies.fusion.unfusion import UnfusionStrategy
+
+        for left, right, both in product((True, False), (True, False), (True, False)):
+            if left or right or both:
+                if row:
+                    yield UnfusionStrategy(
+                        row_idx=idx,
+                        tracked=self.tracked,
+                        left=left,
+                        right=right,
+                        both=both,
+                    )(tiling)
+                else:
+                    yield UnfusionStrategy(
+                        col_idx=idx,
+                        tracked=self.tracked,
+                        left=left,
+                        right=right,
+                        both=both,
+                    )(tiling)
+
+    @staticmethod
+    def _extra_cell_insertion_rule(algo: Fusion) -> Rule:
+        algo.clear_fused_tiling()
+        fused = algo.fused_tiling(add_odd_req=False)
+        algo.clear_fused_tiling()
+        cells = [
+            fused.forward_map.map_cell(cell)
+            for cell in filter(
+                fused.forward_map.is_mappable_cell, algo.left_fuse_region()
+            )
+        ]
+        return RequirementInsertionStrategy(map(GriddedPerm.point_perm, cells))(fused)
 
     def __str__(self) -> str:
         if self.tracked:
