@@ -434,8 +434,11 @@ class OddOrEvenStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     ) -> Iterator[GriddedPerm]:
         if children is None:
             children = self.decomposition_function(comb_class)
-        gp = next((gp for gp in objs if gp is not None))
-        yield gp
+        try:
+            gp = next((gp for gp in objs if gp is not None))
+            yield gp
+        except StopIteration as e:
+            raise ValueError from e
 
     def forward_map(
         self,

@@ -48,7 +48,11 @@ from .requirement_placement import (
 from .row_and_col_separation import RowColumnSeparationStrategy
 from .sliding import SlidingFactory
 from .symmetry import SymmetriesFactory
-from .unfusion import UnfusionColumnStrategy, UnfusionFactory, UnfusionRowStrategy
+from .unfusion import (
+    UnfusionColumnStrategy,
+    UnfusionRowColumnFactory,
+    UnfusionRowStrategy,
+)
 from .verification import (
     BasicVerificationStrategy,
     ComponentVerificationStrategy,
@@ -93,7 +97,7 @@ __all__ = [
     "RequirementPointingFactory",
     "UnfusionColumnStrategy",
     "UnfusionRowStrategy",
-    "UnfusionFactory",
+    "UnfusionRowColumnFactory",
     # Equivalence
     "MonotoneSlidingFactory",
     "PatternPlacementFactory",

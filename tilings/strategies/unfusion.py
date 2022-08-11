@@ -301,7 +301,7 @@ class UnfusionRowStrategy(UnfusionColumnStrategy):
         super().__init__(ignore_parent, inferrable, possibly_empty, workable, cols)
 
 
-class UnfusionFactory(StrategyFactory[Tiling]):
+class UnfusionRowColumnFactory(StrategyFactory[Tiling]):
     def __init__(self, max_width: int = 4, max_height: int = 4) -> None:
         self.max_height = max_height
         self.max_width = max_width
@@ -321,5 +321,5 @@ class UnfusionFactory(StrategyFactory[Tiling]):
         return self.__class__.__name__ + "()"
 
     @classmethod
-    def from_dict(cls, d: dict) -> "UnfusionFactory":
+    def from_dict(cls, d: dict) -> "UnfusionRowColumnFactory":
         return cls()

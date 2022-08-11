@@ -164,7 +164,7 @@ class Tiling(CombinatorialClass):
         else:
             self.set_empty()
 
-        self._check_init(checked)
+        self.check_init(checked)
 
     def _set_obstructions_requirements_and_assumptions(
         self,
@@ -197,7 +197,7 @@ class Tiling(CombinatorialClass):
                 _assumptions.append(ass)
         self._assumptions = tuple(sorted(_assumptions))
 
-    def _check_init(self, checked: bool):
+    def check_init(self, checked: bool):
         if DEBUG and not checked:
             redone = Tiling(
                 self._obstructions, self._requirements, self._assumptions, checked=True
@@ -873,9 +873,12 @@ class Tiling(CombinatorialClass):
             remove_empty_rows_and_cols=remove_empty_rows_and_cols,
             derive_empty=derive_empty,
             simplify=simplify,
+            checked=True,
         )
         if not simplify:
             tiling.clean_assumptions()
+        if DEBUG:
+            tiling.check_init(False)
         return tiling
 
     def remove_assumption(self, assumption: Assumption):
@@ -1704,6 +1707,7 @@ class Tiling(CombinatorialClass):
 
         TODO: this method ignores predicates
         """
+        # pylint: disable = arguments-differ
         if any(ob.is_empty() for ob in self.obstructions) or any(
             not ass.can_be_satisfied(self) for ass in self.predicate_assumptions
         ):

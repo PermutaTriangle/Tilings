@@ -1,5 +1,5 @@
 from collections import defaultdict
-from itertools import chain, islice
+from itertools import chain, islice, product
 from random import randint
 from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, cast
 
@@ -9,7 +9,8 @@ from comb_spec_searcher.strategies import NonBijectiveRule, Rule
 from comb_spec_searcher.typing import Objects
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
-from tilings.assumptions import OddCountAssumption
+from tilings.assumptions import EvenCountAssumption, OddCountAssumption
+from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 
 from ..pointing import DivideByK
 from .constructor import FusionConstructor, ReverseFusionConstructor
@@ -195,7 +196,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
-    ) -> FusionConstructor:
+    ) -> Constructor:
         if not self.tracked:
             # constructor only enumerates when tracked.
             raise NotImplementedError("The fusion strategy was not tracked.")
@@ -207,6 +208,15 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         assert children is None or children == (child,)
         min_left, min_right = algo.min_left_right_points()
         left, right = algo.left_fuse_region(), algo.right_fuse_region()
+        odd_left, odd_right = None, None
+        if OddCountAssumption.from_cells(left) in comb_class.assumptions:
+            odd_left = True
+        elif EvenCountAssumption.from_cells(left) in comb_class.assumptions:
+            odd_left = False
+        if OddCountAssumption.from_cells(right) in comb_class.assumptions:
+            odd_right = True
+        if EvenCountAssumption.from_cells(right) in comb_class.assumptions:
+            odd_right = False
         return FusionConstructor(
             comb_class,
             child,
@@ -215,8 +225,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             *self.left_right_both_sided_parameters(comb_class),
             min_left,
             min_right,
-            odd_left=(OddCountAssumption.from_cells(left) in comb_class.assumptions),
-            odd_right=(OddCountAssumption.from_cells(right) in comb_class.assumptions),
+            odd_left=odd_left,
+            odd_right=odd_right,
         )
 
     def reverse_constructor(  # pylint: disable=no-self-use
@@ -421,6 +431,10 @@ class FusionFactory(StrategyFactory[Tiling]):
                 yield FusionStrategy(row_idx=row_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
+                # yield from self._all_unfusion_rules(True, row_idx, fused_tiling)
+                if algo.is_odd_next_to_odd_fusion():
+                    yield self._extra_cell_insertion_rule(algo)
+
         for col_idx in range(cols - 1):
             algo = Fusion(
                 comb_class,
@@ -433,6 +447,47 @@ class FusionFactory(StrategyFactory[Tiling]):
                 yield FusionStrategy(col_idx=col_idx, tracked=self.tracked)(
                     comb_class, (fused_tiling,)
                 )
+                # yield from self._all_unfusion_rules(False, col_idx, fused_tiling)
+                if algo.is_odd_next_to_odd_fusion():
+                    yield self._extra_cell_insertion_rule(algo)
+
+    def _all_unfusion_rules(
+        self, row: bool, idx: int, tiling: Tiling
+    ) -> Iterator[Rule]:
+        # pylint: disable=import-outside-toplevel
+        from tilings.strategies.fusion.unfusion import UnfusionStrategy
+
+        for left, right, both in product((True, False), (True, False), (True, False)):
+            if left or right or both:
+                if row:
+                    yield UnfusionStrategy(
+                        row_idx=idx,
+                        tracked=self.tracked,
+                        left=left,
+                        right=right,
+                        both=both,
+                    )(tiling)
+                else:
+                    yield UnfusionStrategy(
+                        col_idx=idx,
+                        tracked=self.tracked,
+                        left=left,
+                        right=right,
+                        both=both,
+                    )(tiling)
+
+    @staticmethod
+    def _extra_cell_insertion_rule(algo: Fusion) -> Rule:
+        algo.clear_fused_tiling()
+        fused = algo.fused_tiling(add_odd_req=False)
+        algo.clear_fused_tiling()
+        cells = [
+            fused.forward_map.map_cell(cell)
+            for cell in filter(
+                fused.forward_map.is_mappable_cell, algo.left_fuse_region()
+            )
+        ]
+        return RequirementInsertionStrategy(map(GriddedPerm.point_perm, cells))(fused)
 
     def __str__(self) -> str:
         if self.tracked:

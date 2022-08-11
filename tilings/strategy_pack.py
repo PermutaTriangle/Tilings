@@ -379,7 +379,7 @@ class TileScopePack(StrategyPack):
                 strat.AssumptionPointingFactory(),
                 strat.RequirementPointingFactory(),
                 strat.PointingStrategy(),
-                strat.UnfusionFactory(),
+                strat.UnfusionRowColumnFactory(),
                 strat.FusableRowAndColumnPlacementFactory(),
             ),
         )

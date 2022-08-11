@@ -1,8 +1,10 @@
 import abc
 from typing import TYPE_CHECKING, Iterable, List, Optional, Set, Tuple
 
+from permuta import Perm
 from tilings import GriddedPerm
 from tilings.algorithms.gridded_perm_generation import GriddedPermsOnTiling
+from tilings.assumptions import OddCountAssumption
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -39,13 +41,35 @@ class ObstructionInferral(abc.ABC):
             self._new_obs = []
             return self._new_obs
 
+        extra_reqs = []
+        assumptions = list(self._tiling.assumptions)
+        for ass in assumptions:
+            if isinstance(ass, OddCountAssumption) and len(ass.cells) == 1:
+                to_add = [GriddedPerm.single_cell(Perm((0,)), next(iter(ass.cells)))]
+                if to_add not in self._tiling.requirements:
+                    extra_reqs.append(to_add)
+
+        fake_tiling = self._tiling.__class__(
+            self._tiling.obstructions,
+            self._tiling.requirements + tuple(extra_reqs),
+            self._tiling.assumptions,
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=False,
+            already_minimized_obs=True,
+            checked=True,
+        )
+
         max_len_of_perms_to_check = max(map(len, perms_to_check))
         max_length = (
-            self._tiling.maximum_length_of_minimum_gridded_perm()
+            fake_tiling.maximum_length_of_minimum_gridded_perm()
             + max_len_of_perms_to_check
         )
+
         GP = GriddedPermsOnTiling(
-            self._tiling, yield_non_minimal=yield_non_minimal
+            fake_tiling,
+            yield_non_minimal=yield_non_minimal,
         ).gridded_perms(max_length, place_at_most=max_len_of_perms_to_check)
         perms_left = set(perms_to_check)
         for gp in GP:
@@ -122,8 +146,8 @@ class AllObstructionInferral(ObstructionInferral):
         """
         Iterator over all possible obstruction of `self.obstruction_length`.
         """
-        if not self._tiling.requirements:
-            return []
+        # if not self._tiling.requirements:
+        #     return []
         no_req_tiling = self._tiling.__class__(self._tiling.obstructions)
         n = self._obs_len
         pot_obs = filter(self.not_required, no_req_tiling.gridded_perms(n))
