@@ -124,7 +124,11 @@ class ObstructionInferralFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling) -> Iterator[ObstructionInferralStrategy]:
         gps = self.new_obs(comb_class)
         if gps:
-            yield ObstructionInferralStrategy(gps)
+            OIS = ObstructionInferralStrategy(gps)
+            # print("=" * 30)
+            # print(comb_class)
+            # print(OIS.decomposition_function(comb_class)[0])
+            yield OIS
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
