@@ -272,8 +272,8 @@ class GriddedPerm(CombinatorialObject):
                 )
 
     def extend(self, c: int, r: int) -> Iterator["GriddedPerm"]:
-        """Add n+1 to all possible positions in perm and all allowed positions given that
-        placement."""
+        """Add n+1 to all possible positions in perm and all allowed positions given
+        that placement."""
         n = len(self)
         if n == 0:
             yield from (
