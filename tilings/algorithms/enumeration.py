@@ -124,7 +124,7 @@ class LocalEnumeration(Enumeration):
             basis = [ob.patt for ob in self.tiling.obstructions]
             basis_str = "_".join(map(str, lex_min(basis)))
             uri = f"https://permpal.com/perms/raw_data_json/basis/{basis_str}"
-            request = requests.get(uri)
+            request = requests.get(uri, timeout=10)
             if request.status_code == 404:
                 raise NotImplementedError(f"No entry on permpal for {Av(basis)}")
             data = request.json()
@@ -345,7 +345,7 @@ class DatabaseEnumeration(Enumeration):
         """
         if not DatabaseEnumeration.all_verified_tilings:
             uri = f"{cls.API_ROOT_URL}/all_verified_tilings"
-            response = requests.get(uri)
+            response = requests.get(uri, timeout=10)
             response.raise_for_status()
             compressed_tilings = map(bytes.fromhex, response.json())
             cls.all_verified_tilings = frozenset(compressed_tilings)
@@ -357,7 +357,7 @@ class DatabaseEnumeration(Enumeration):
         """
         key = self.tiling.to_bytes().hex()
         search_url = f"{DatabaseEnumeration.API_ROOT_URL}/verified_tiling/key/{key}"
-        r = requests.get(search_url)
+        r = requests.get(search_url, timeout=10)
         if r.status_code == 404:
             return None
         r.raise_for_status()

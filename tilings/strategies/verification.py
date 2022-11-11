@@ -138,7 +138,7 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
         basis = [ob.patt for ob in self.comb_class.obstructions]
         basis_str = "_".join(map(str, lex_min(basis)))
         uri = f"https://permpal.com/perms/raw_data_json/basis/{basis_str}"
-        request = requests.get(uri)
+        request = requests.get(uri, timeout=10)
         if request.status_code == 404:
             return super().get_equation(get_function, funcs)
         data = request.json()
