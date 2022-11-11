@@ -139,8 +139,7 @@ class TilingReverse(TilingSymmetryStrategy):
 
     assumption_type_transform = TilingSymmetryStrategy._assumption_type_swap
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "reverse of the tiling"
 
     def __str__(self) -> str:
@@ -163,8 +162,7 @@ class TilingComplement(TilingSymmetryStrategy):
 
     assumption_type_transform = TilingSymmetryStrategy._assumption_type_swap
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "complement of the tiling"
 
     def __str__(self) -> str:
@@ -187,8 +185,7 @@ class TilingInverse(TilingSymmetryStrategy):
 
     assumption_type_transform = TilingSymmetryStrategy._assumption_type_identity
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "inverse of the tiling"
 
     def __str__(self) -> str:
@@ -220,8 +217,7 @@ class TilingAntidiagonal(TilingSymmetryStrategy):
 
     assumption_type_transform = TilingSymmetryStrategy._assumption_type_identity
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "antidiagonal of the tiling"
 
     def __str__(self) -> str:
@@ -247,8 +243,7 @@ class TilingRotate90(TilingSymmetryStrategy):
 
     assumption_type_transform = TilingSymmetryStrategy._assumption_type_swap
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "rotate the tiling 90 degrees clockwise"
 
     def __str__(self) -> str:
@@ -274,8 +269,7 @@ class TilingRotate180(TilingSymmetryStrategy):
 
     assumption_type_transform = TilingSymmetryStrategy._assumption_type_identity
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "rotate the tiling 180 degrees clockwise"
 
     def __str__(self) -> str:
@@ -301,8 +295,7 @@ class TilingRotate270(TilingSymmetryStrategy):
 
     assumption_type_transform = TilingSymmetryStrategy._assumption_type_swap
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "rotate the tiling 270 degrees clockwise"
 
     def __str__(self) -> str:

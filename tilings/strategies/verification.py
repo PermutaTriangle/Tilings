@@ -61,8 +61,7 @@ class BasicVerificationStrategy(AtomStrategy):
     TODO: can this be moved to the CSS atom strategy?
     """
 
-    @staticmethod
-    def get_terms(comb_class: CombinatorialClass, n: int) -> Terms:
+    def get_terms(self, comb_class: CombinatorialClass, n: int) -> Terms:
         if not isinstance(comb_class, Tiling):
             raise NotImplementedError
         gp = next(comb_class.minimal_gridded_perms())
@@ -73,8 +72,7 @@ class BasicVerificationStrategy(AtomStrategy):
             return Counter([parameters])
         return Counter()
 
-    @staticmethod
-    def get_objects(comb_class: CombinatorialClass, n: int) -> Objects:
+    def get_objects(self, comb_class: CombinatorialClass, n: int) -> Objects:
         if not isinstance(comb_class, Tiling):
             raise NotImplementedError
         res: Objects = defaultdict(list)
@@ -95,15 +93,14 @@ class BasicVerificationStrategy(AtomStrategy):
         """
         yield from comb_class.objects_of_size(n, **parameters)
 
-    @staticmethod
     def random_sample_object_of_size(
-        comb_class: CombinatorialClass, n: int, **parameters: int
+        self, comb_class: CombinatorialClass, n: int, **parameters: int
     ) -> GriddedPerm:
         """
         Verification strategies must contain a method to sample the objects.
         """
         key = tuple(y for _, y in sorted(parameters.items()))
-        if BasicVerificationStrategy.get_terms(comb_class, n).get(key):
+        if BasicVerificationStrategy().get_terms(comb_class, n).get(key):
             return cast(GriddedPerm, next(comb_class.objects_of_size(n, **parameters)))
 
     def get_genf(
@@ -192,10 +189,9 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
 
 
 class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
-    @staticmethod
-    def pack(comb_class: Tiling) -> StrategyPack:
+    def pack(self, comb_class: Tiling) -> StrategyPack:
         if any(isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions):
-            return ComponentVerificationStrategy.pack(comb_class)
+            return ComponentVerificationStrategy().pack(comb_class)
         # pylint: disable=import-outside-toplevel
         from tilings.tilescope import TileScopePack
 
@@ -275,12 +271,10 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
         except InvalidOperationError:
             return LocalEnumeration(comb_class).get_genf(funcs=funcs)
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "tiling is a subclass of the original tiling"
 
-    @staticmethod
-    def get_terms(comb_class: Tiling, n: int) -> Terms:
+    def get_terms(self, comb_class: Tiling, n: int) -> Terms:
         raise NotImplementedError(
             "Not implemented method to count objects for one by one verified tilings"
         )
@@ -309,12 +303,10 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
 class ComponentVerificationStrategy(TileScopeVerificationStrategy):
     """Enumeration strategy for verifying 1x1s with component assumptions."""
 
-    @staticmethod
-    def pack(comb_class: Tiling) -> StrategyPack:
+    def pack(self, comb_class: Tiling) -> StrategyPack:
         raise InvalidOperationError("No pack for removing component assumption")
 
-    @staticmethod
-    def verified(comb_class: Tiling) -> bool:
+    def verified(self, comb_class: Tiling) -> bool:
         return comb_class.dimensions == (1, 1) and any(
             isinstance(ass, ComponentAssumption) for ass in comb_class.assumptions
         )
@@ -334,8 +326,7 @@ class ComponentVerificationStrategy(TileScopeVerificationStrategy):
     ) -> Tuple[int, ...]:
         return (0,)
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "component verified"
 
     def get_genf(
@@ -380,19 +371,16 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
     can always find the generating function by looking up the database.
     """
 
-    @staticmethod
-    def pack(comb_class: Tiling) -> StrategyPack:
+    def pack(self, comb_class: Tiling) -> StrategyPack:
         # TODO: check database for tiling
         raise InvalidOperationError(
             "Cannot get a specification for a tiling in the database"
         )
 
-    @staticmethod
-    def verified(comb_class: Tiling):
+    def verified(self, comb_class: Tiling):
         return DatabaseEnumeration(comb_class).verified()
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "tiling is in the database"
 
     def get_genf(
@@ -402,8 +390,7 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
             raise StrategyDoesNotApply("tiling is not in the database")
         return DatabaseEnumeration(comb_class).get_genf()
 
-    @staticmethod
-    def get_terms(comb_class: Tiling, n: int) -> Terms:
+    def get_terms(self, comb_class: Tiling, n: int) -> Terms:
         raise NotImplementedError(
             "Not implemented method to count objects for database verified tilings"
         )
@@ -550,8 +537,7 @@ class LocallyFactorableVerificationStrategy(BasisAwareVerificationStrategy):
         assert shift is not None
         return (shift,)
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "tiling is locally factorable"
 
     def __str__(self) -> str:
@@ -572,8 +558,7 @@ class ElementaryVerificationStrategy(LocallyFactorableVerificationStrategy):
     verified tiling.
     """
 
-    @staticmethod
-    def verified(comb_class: Tiling):
+    def verified(self, comb_class: Tiling):
         return (
             comb_class.fully_isolated()
             and not comb_class.dimensions == (1, 1)
@@ -584,8 +569,7 @@ class ElementaryVerificationStrategy(LocallyFactorableVerificationStrategy):
             )
         )
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "tiling is elementary verified"
 
     @classmethod
@@ -647,8 +631,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
             )
         )
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "tiling is locally enumerable"
 
     @classmethod
@@ -670,8 +653,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
         except InvalidOperationError:
             return LocalEnumeration(comb_class).get_genf(funcs=funcs)
 
-    @staticmethod
-    def get_terms(comb_class: Tiling, n: int) -> Terms:
+    def get_terms(self, comb_class: Tiling, n: int) -> Terms:
         raise NotImplementedError(
             "Not implemented method to count objects for locally verified tilings"
         )
@@ -735,16 +717,14 @@ class InsertionEncodingVerificationStrategy(TileScopeVerificationStrategy):
             comb_class
         ) or self.has_topmost_insertion_encoding(comb_class)
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "tiling has a regular insertion encoding"
 
     @classmethod
     def from_dict(cls, d: dict) -> "InsertionEncodingVerificationStrategy":
         return cls(**d)
 
-    @staticmethod
-    def get_terms(comb_class: Tiling, n: int) -> Terms:
+    def get_terms(self, comb_class: Tiling, n: int) -> Terms:
         raise NotImplementedError(
             "Not implemented method to count objects for insertion encoding "
             "verified tilings"
@@ -803,8 +783,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
             not self.no_factors or len(comb_class.find_factors()) == 1
         ) and MonotoneTreeEnumeration(comb_class).verified()
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "tiling is a monotone tree"
 
     @classmethod
@@ -821,8 +800,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
         except InvalidOperationError:
             return MonotoneTreeEnumeration(comb_class).get_genf(funcs=funcs)
 
-    @staticmethod
-    def get_terms(comb_class: Tiling, n: int) -> Terms:
+    def get_terms(self, comb_class: Tiling, n: int) -> Terms:
         raise NotImplementedError(
             "Not implemented method to count objects for monotone tree "
             "verified tilings"

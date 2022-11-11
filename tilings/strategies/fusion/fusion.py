@@ -29,8 +29,9 @@ class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
     def constructor(self) -> FusionConstructor:
         return cast(FusionConstructor, super().constructor)
 
-    @staticmethod
-    def is_equivalence(is_empty: Optional[Callable[[Tiling], bool]] = None) -> bool:
+    def is_equivalence(
+        self, is_empty: Optional[Callable[[Tiling], bool]] = None
+    ) -> bool:
         return False
 
     def _ensure_level_objects(self, n: int) -> None:
@@ -163,12 +164,10 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         if algo.fusable():
             return (algo.fused_tiling(),)
 
-    @staticmethod
-    def can_be_equivalent() -> bool:
+    def can_be_equivalent(self) -> bool:
         return False
 
-    @staticmethod
-    def is_two_way(comb_class: Tiling):
+    def is_two_way(self, comb_class: Tiling):
         return False
 
     def is_reversible(self, comb_class: Tiling) -> bool:
@@ -180,9 +179,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         )
         return new_ass in fused_assumptions
 
-    @staticmethod
     def shifts(
-        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[int, ...]:
         return (0,)
 

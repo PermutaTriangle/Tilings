@@ -87,8 +87,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         """Return the algorithm class using tiling."""
         return RowColSeparation(tiling)
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         """Return formal step."""
         return "row and column separation"
 

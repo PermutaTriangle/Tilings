@@ -617,6 +617,10 @@ class GriddedPerm(CombinatorialObject):
         """Return the svg code to plot the GriddedPerm."""
         i_scale = int(image_scale * 10)
         val_to_pos, (m_x, m_y) = self._get_plot_pos()
+        points = " ".join(
+            f"{x * 10},{(m_y - y) * 10}"
+            for x, y in (val_to_pos[val] for val in self.patt)
+        )
         return "".join(
             [
                 (
@@ -641,15 +645,8 @@ class GriddedPerm(CombinatorialObject):
                 ),
                 "\n",
                 (
-                    lambda path: (
-                        f'<polyline points="{path}" fill="none" '
-                        'stroke="black" stroke-width="0.65" />\n'
-                    )
-                )(
-                    " ".join(
-                        f"{x * 10},{(m_y - y) * 10}"
-                        for x, y in (val_to_pos[val] for val in self.patt)
-                    )
+                    f'<polyline points="{points}" fill="none" '
+                    'stroke="black" stroke-width="0.65" />\n'
                 ),
                 "\n".join(
                     (

@@ -156,16 +156,13 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             workable=workable,
         )
 
-    @staticmethod
-    def can_be_equivalent() -> bool:
+    def can_be_equivalent(self) -> bool:
         return False
 
-    @staticmethod
-    def is_two_way(comb_class: Tiling):
+    def is_two_way(self, comb_class: Tiling):
         return False
 
-    @staticmethod
-    def is_reversible(comb_class: Tiling):
+    def is_reversible(self, comb_class: Tiling):
         return False
 
     def shifts(
@@ -313,8 +310,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> Constructor:
         raise NotImplementedError
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "splitting the assumptions"
 
     def backward_map(
