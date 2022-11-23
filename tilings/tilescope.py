@@ -387,3 +387,4 @@ class TrackedQueue(CSSQueue):
                 return next(queue)
             except StopIteration:
                 continue
+        raise StopIteration("No elements in queue")

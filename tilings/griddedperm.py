@@ -120,7 +120,7 @@ class GriddedPerm(CombinatorialObject):
                 return min(indices)
             if direction == DIR_SOUTH:
                 return min((self._patt[idx], idx) for idx in indices)[1]
-            raise ValueError("You're lost, no valid direction")
+        raise ValueError("You're lost, no valid direction")
 
     def forced_point_of_requirement(
         self, gps: Tuple["GriddedPerm", ...], indices: Tuple[int, ...], direction: int

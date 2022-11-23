@@ -102,6 +102,11 @@ class BasicVerificationStrategy(AtomStrategy):
         key = tuple(y for _, y in sorted(parameters.items()))
         if BasicVerificationStrategy().get_terms(comb_class, n).get(key):
             return cast(GriddedPerm, next(comb_class.objects_of_size(n, **parameters)))
+        raise (
+            NotImplementedError(
+                "Verification strategy did not contain a method to sample the objects"
+            )
+        )
 
     def get_genf(
         self,
@@ -236,7 +241,7 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
     def __call__(
         self,
         comb_class: Tiling,
-        children: Tuple[Tiling, ...] = None,
+        children: Optional[Tuple[Tiling, ...]] = None,
     ) -> OneByOneVerificationRule:
         if children is None:
             children = self.decomposition_function(comb_class)

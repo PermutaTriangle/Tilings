@@ -146,7 +146,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def __call__(
         self,
         comb_class: Tiling,
-        children: Tuple[Tiling, ...] = None,
+        children: Optional[Tuple[Tiling, ...]] = None,
     ) -> FusionRule:
         if children is None:
             children = self.decomposition_function(comb_class)
@@ -163,6 +163,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         if algo.fusable():
             return (algo.fused_tiling(),)
+        raise (AttributeError("Trying to fuse a tiling that does not fuse"))
 
     def can_be_equivalent(self) -> bool:
         return False
@@ -319,7 +320,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-        left_points: int = None,
+        left_points: Optional[int] = None,
     ) -> Iterator[GriddedPerm]:
         """
         The backward direction of the underlying bijection used for object
