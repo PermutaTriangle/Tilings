@@ -1,7 +1,7 @@
 import abc
 from collections import deque
 from itertools import chain
-from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Dict, FrozenSet, Iterable, Optional
 
 import requests
 from sympy import Expr, Function, Symbol, diff, simplify, sympify, var
@@ -42,6 +42,7 @@ class Enumeration(abc.ABC):
         """
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
+        raise NotImplementedError
 
     def __repr__(self) -> str:
         return "Enumeration for:\n" + str(self.tiling)
@@ -90,12 +91,12 @@ class LocalEnumeration(Enumeration):
         all_cells = chain.from_iterable(gp.pos for gp in req_iter)
         return all(c == cell for c in all_cells)
 
-    def get_genf(self, **kwargs) -> Expr:
+    def get_genf(self, **kwargs) -> Any:
         # pylint: disable=too-many-return-statements
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
 
-        funcs: Optional[Dict["Tiling", Function]] = kwargs.get("funcs")
+        funcs: Optional[Dict["Tiling", Any]] = kwargs.get("funcs")
         if funcs is None:
             funcs = {}
         if self.tiling.requirements:

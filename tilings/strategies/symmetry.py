@@ -30,7 +30,7 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
     def assumption_type_transform(
         assumption: TrackingAssumption,
     ) -> Type[TrackingAssumption]:
-        pass
+        raise NotImplementedError
 
     @staticmethod
     def _assumption_type_swap(
