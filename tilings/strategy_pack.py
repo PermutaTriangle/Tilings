@@ -101,7 +101,6 @@ class TileScopePack(StrategyPack):
                             )
                             printed_log = True
                     if not printed_log:
-                        reveal_type(strategy.perms_to_check)
                         logger.info(
                             "SubclassVerification set up to check the subclasses: "
                             "Av(%s)",

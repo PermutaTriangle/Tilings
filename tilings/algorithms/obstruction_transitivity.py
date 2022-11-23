@@ -28,7 +28,7 @@ class ObstructionTransitivity:
         self._rowineq: Optional[Dict[int, Set[Tuple[int, int]]]] = None
         self._positive_cells_col: Optional[Dict[int, List[int]]] = None
         self._positive_cells_row: Optional[Dict[int, List[int]]] = None
-        self._new_ineq = None
+        self._new_ineq: Optional[List[Tuple[Tuple[int, int], Tuple[int, int]]]] = None
 
     def positive_cells_col(self, col_index: int) -> List[int]:
         """
@@ -136,9 +136,7 @@ class ObstructionTransitivity:
         )
 
     @staticmethod
-    def ineq_closure(
-        positive_cells: Iterable[Cell], ineqs: Set[Tuple[Cell, Cell]]
-    ) -> Set[Tuple[Cell, Cell]]:
+    def ineq_closure(positive_cells: Iterable[int], ineqs: Set[Cell]) -> Set[Cell]:
         """
         Computes the transitive closure over positive cells.
 
@@ -148,8 +146,8 @@ class ObstructionTransitivity:
 
         The list of new inequalities is returned.
         """
-        gtlist: Dict[Cell, List[Cell]] = defaultdict(list)
-        ltlist: Dict[Cell, List[Cell]] = defaultdict(list)
+        gtlist: Dict[int, List[int]] = defaultdict(list)
+        ltlist: Dict[int, List[int]] = defaultdict(list)
         for left, right in ineqs:
             ltlist[left].append(right)
             gtlist[right].append(left)
@@ -172,13 +170,15 @@ class ObstructionTransitivity:
                     to_analyse.add(gt)
         return newineqs
 
-    def new_ineq(self):
+    def new_ineq(
+        self,
+    ) -> List[Tuple[Tuple[int, int], Tuple[int, int]]]:
         """
         Compute the new inequalities.
         """
         if self._new_ineq is not None:
             return self._new_ineq
-        newineqs = []
+        newineqs: List[Tuple[Tuple[int, int], Tuple[int, int]]] = []
         ncol, nrow = self._tiling.dimensions
         for col in range(ncol):
             ineqs = self.ineq_col(col)

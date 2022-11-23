@@ -1,4 +1,5 @@
 import json
+from array import array
 from itertools import chain, combinations, islice, product, tee
 from typing import Callable, Dict, FrozenSet, Iterable, Iterator, List, Optional, Tuple
 
@@ -120,7 +121,8 @@ class GriddedPerm(CombinatorialObject):
                 return min(indices)
             if direction == DIR_SOUTH:
                 return min((self._patt[idx], idx) for idx in indices)[1]
-        raise ValueError("You're lost, no valid direction")
+            raise ValueError("You're lost, no valid direction")
+        raise ValueError("The gridded perm does not occupy the cell")
 
     def forced_point_of_requirement(
         self, gps: Tuple["GriddedPerm", ...], indices: Tuple[int, ...], direction: int
@@ -355,7 +357,7 @@ class GriddedPerm(CombinatorialObject):
         return list(chain(self._patt, chain.from_iterable(self._pos)))
 
     @classmethod
-    def decompress(cls, array: List[int]) -> "GriddedPerm":
+    def decompress(cls, array: array[int]) -> "GriddedPerm":
         """Decompresses a list of integers in the form outputted by the
         compress method and constructs an Obstruction."""
         n, it = len(array) // 3, iter(array)
