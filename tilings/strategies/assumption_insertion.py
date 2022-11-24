@@ -1,7 +1,7 @@
 from collections import Counter
 from itertools import product
 from random import randint
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
 from sympy import Eq, Expr, Function, Number, Symbol, var
 
@@ -44,7 +44,7 @@ class AddAssumptionsConstructor(Constructor):
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         rhs_func = rhs_funcs[0]
-        subs: Dict[Symbol, Expr] = {
+        subs: Dict[Any, Expr] = {
             var(child): var(parent) for parent, child in self.extra_parameters.items()
         }
         for k in self.new_parameters:

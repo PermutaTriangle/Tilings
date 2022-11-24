@@ -111,6 +111,7 @@ class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
                         )
                     except StopIteration:
                         assert 0, "something went wrong"
+        raise RuntimeError("The for-loop for randomly sampling objects was empty")
 
     def _forward_order(
         self,

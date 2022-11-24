@@ -32,9 +32,11 @@ class TileScopePack(StrategyPack):
         basis = tuple(basis)
         symmetry = bool(self.symmetries)
 
-        def replace_list(strats):
+        def replace_list(
+            strats: Tuple[Union[AbstractStrategy, StrategyFactory], ...]
+        ) -> List[Union[AbstractStrategy, StrategyFactory]]:
             """Return a new list with the replaced 1x1 strat."""
-            res = []
+            res: List[Union[AbstractStrategy, StrategyFactory]] = []
             for strategy in strats:
                 if isinstance(strategy, BasisAwareVerificationStrategy):
                     if strategy.basis:
