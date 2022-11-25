@@ -31,7 +31,7 @@ Cell = Tuple[int, int]
 
 class Split(Constructor):
     """
-    The constructor used to cound when a variable is counted by some multiple
+    The constructor used to count when a variable is counted by some multiple
     disjoint subvariables.
     """
 

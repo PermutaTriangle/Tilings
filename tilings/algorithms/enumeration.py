@@ -4,7 +4,7 @@ from itertools import chain
 from typing import TYPE_CHECKING, Any, Dict, FrozenSet, Iterable, Optional
 
 import requests
-from sympy import Expr, Function, Symbol, diff, simplify, sympify, var
+from sympy import Expr, Symbol, diff, simplify, sympify, var
 
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Av

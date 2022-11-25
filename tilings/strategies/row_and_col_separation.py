@@ -51,8 +51,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         rcs = self.row_col_sep_algorithm(comb_class)
         if rcs.separable():
             return (rcs.separated_tiling(),)
-        else:
-            return None
+        return None
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None

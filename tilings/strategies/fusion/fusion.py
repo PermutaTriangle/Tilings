@@ -164,7 +164,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         if algo.fusable():
             return (algo.fused_tiling(),)
-        raise (AttributeError("Trying to fuse a tiling that does not fuse"))
+        raise AttributeError("Trying to fuse a tiling that does not fuse")
 
     def can_be_equivalent(self) -> bool:
         return False
