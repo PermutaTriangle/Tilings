@@ -92,14 +92,14 @@ def shift_from_spec(
             rule.constructor, (DisjointUnion, CountComponent)
         ):
             children_reliance = [traverse(c) for c in rule.children]
-            res = min([r for r in children_reliance if r is not None], default=None)
+            res = min((r for r in children_reliance if r is not None), default=None)
         elif isinstance(rule, Rule) and isinstance(rule.constructor, CartesianProduct):
             min_points = [len(next(c.minimal_gridded_perms())) for c in rule.children]
             point_sum = sum(min_points)
             shifts = [point_sum - mpoint for mpoint in min_points]
             children_reliance = [traverse(c) for c in rule.children]
             res = min(
-                [r + s for r, s in zip(children_reliance, shifts) if r is not None],
+                (r + s for r, s in zip(children_reliance, shifts) if r is not None),
                 default=None,
             )
         else:

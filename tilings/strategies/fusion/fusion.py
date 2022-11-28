@@ -29,8 +29,9 @@ class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
     def constructor(self) -> FusionConstructor:
         return cast(FusionConstructor, super().constructor)
 
-    @staticmethod
-    def is_equivalence(is_empty: Optional[Callable[[Tiling], bool]] = None) -> bool:
+    def is_equivalence(
+        self, is_empty: Optional[Callable[[Tiling], bool]] = None
+    ) -> bool:
         return False
 
     def _ensure_level_objects(self, n: int) -> None:
@@ -110,6 +111,7 @@ class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
                         )
                     except StopIteration:
                         assert 0, "something went wrong"
+        raise RuntimeError("The for-loop for randomly sampling objects was empty")
 
     def _forward_order(
         self,
@@ -145,7 +147,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def __call__(
         self,
         comb_class: Tiling,
-        children: Tuple[Tiling, ...] = None,
+        children: Optional[Tuple[Tiling, ...]] = None,
     ) -> FusionRule:
         if children is None:
             children = self.decomposition_function(comb_class)
@@ -162,13 +164,12 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         if algo.fusable():
             return (algo.fused_tiling(),)
+        raise AttributeError("Trying to fuse a tiling that does not fuse")
 
-    @staticmethod
-    def can_be_equivalent() -> bool:
+    def can_be_equivalent(self) -> bool:
         return False
 
-    @staticmethod
-    def is_two_way(comb_class: Tiling):
+    def is_two_way(self, comb_class: Tiling):
         return False
 
     def is_reversible(self, comb_class: Tiling) -> bool:
@@ -180,9 +181,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         )
         return new_ass in fused_assumptions
 
-    @staticmethod
     def shifts(
-        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[int, ...]:
         return (0,)
 
@@ -321,7 +321,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-        left_points: int = None,
+        left_points: Optional[int] = None,
     ) -> Iterator[GriddedPerm]:
         """
         The backward direction of the underlying bijection used for object

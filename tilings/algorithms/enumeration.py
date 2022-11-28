@@ -1,10 +1,10 @@
 import abc
 from collections import deque
 from itertools import chain
-from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Dict, FrozenSet, Iterable, Optional
 
 import requests
-from sympy import Expr, Function, Symbol, diff, simplify, sympify, var
+from sympy import Expr, Symbol, diff, simplify, sympify, var
 
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Av
@@ -42,6 +42,7 @@ class Enumeration(abc.ABC):
         """
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
+        raise NotImplementedError
 
     def __repr__(self) -> str:
         return "Enumeration for:\n" + str(self.tiling)
@@ -90,12 +91,12 @@ class LocalEnumeration(Enumeration):
         all_cells = chain.from_iterable(gp.pos for gp in req_iter)
         return all(c == cell for c in all_cells)
 
-    def get_genf(self, **kwargs) -> Expr:
+    def get_genf(self, **kwargs) -> Any:
         # pylint: disable=too-many-return-statements
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
 
-        funcs: Optional[Dict["Tiling", Function]] = kwargs.get("funcs")
+        funcs: Optional[Dict["Tiling", Any]] = kwargs.get("funcs")
         if funcs is None:
             funcs = {}
         if self.tiling.requirements:
@@ -124,7 +125,7 @@ class LocalEnumeration(Enumeration):
             basis = [ob.patt for ob in self.tiling.obstructions]
             basis_str = "_".join(map(str, lex_min(basis)))
             uri = f"https://permpal.com/perms/raw_data_json/basis/{basis_str}"
-            request = requests.get(uri)
+            request = requests.get(uri, timeout=10)
             if request.status_code == 404:
                 raise NotImplementedError(f"No entry on permpal for {Av(basis)}")
             data = request.json()
@@ -203,7 +204,7 @@ class MonotoneTreeEnumeration(Enumeration):
         col_cells = self.tiling.cells_in_col(cell[0])
         return (c for c in visited if (c in row_cells or c in col_cells))
 
-    def get_genf(self, **kwargs) -> Expr:
+    def get_genf(self, **kwargs) -> Any:
         # pylint: disable=too-many-locals
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
@@ -242,7 +243,9 @@ class MonotoneTreeEnumeration(Enumeration):
             else:
                 F = self._interleave_fixed_lengths(F_tracked, cell, minlen, maxlen)
             visited.add(cell)
-        F = simplify(F.subs({v: 1 for v in F.free_symbols if v != x}))
+        F = simplify(
+            F.subs({v: 1 for v in F.free_symbols if v != x})
+        )  # type: ignore[operator]
         # A simple test to warn us if the code is wrong
         if __debug__:
             lhs = taylor_expand(F, n=6)
@@ -345,7 +348,7 @@ class DatabaseEnumeration(Enumeration):
         """
         if not DatabaseEnumeration.all_verified_tilings:
             uri = f"{cls.API_ROOT_URL}/all_verified_tilings"
-            response = requests.get(uri)
+            response = requests.get(uri, timeout=10)
             response.raise_for_status()
             compressed_tilings = map(bytes.fromhex, response.json())
             cls.all_verified_tilings = frozenset(compressed_tilings)
@@ -357,7 +360,7 @@ class DatabaseEnumeration(Enumeration):
         """
         key = self.tiling.to_bytes().hex()
         search_url = f"{DatabaseEnumeration.API_ROOT_URL}/verified_tiling/key/{key}"
-        r = requests.get(search_url)
+        r = requests.get(search_url, timeout=10)
         if r.status_code == 404:
             return None
         r.raise_for_status()
@@ -377,7 +380,7 @@ class DatabaseEnumeration(Enumeration):
             DatabaseEnumeration.load_verified_tiling()
         return self._get_tiling_entry() is not None
 
-    def get_genf(self, **kwargs) -> Expr:
+    def get_genf(self, **kwargs) -> Any:
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
         return sympify(self._get_tiling_entry()["genf"])
