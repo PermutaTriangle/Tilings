@@ -2,7 +2,7 @@ from collections import Counter, defaultdict
 from functools import reduce
 from itertools import chain
 from operator import mul
-from typing import Callable, Dict, Iterator, Optional, Tuple, cast
+from typing import Any, Callable, Dict, Iterator, Optional, Tuple, cast
 
 import requests
 from sympy import Eq, Expr, Function, solve, sympify, var
@@ -112,7 +112,7 @@ class BasicVerificationStrategy(AtomStrategy):
         self,
         comb_class: CombinatorialClass,
         funcs: Optional[Dict[CombinatorialClass, Function]] = None,
-    ) -> Expr:
+    ) -> Any:
         if not self.verified(comb_class):
             raise StrategyDoesNotApply("Can't find generating functon for non-atom.")
         if not isinstance(comb_class, Tiling):
@@ -263,7 +263,7 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
 
     def get_genf(
         self, comb_class: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
-    ) -> Expr:
+    ) -> Any:
         if not self.verified(comb_class):
             raise StrategyDoesNotApply("tiling not 1x1 verified")
         if len(comb_class.obstructions) == 1 and comb_class.obstructions[0] in (
@@ -390,7 +390,7 @@ class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
 
     def get_genf(
         self, comb_class: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
-    ) -> Expr:
+    ) -> Any:
         if not self.verified(comb_class):
             raise StrategyDoesNotApply("tiling is not in the database")
         return DatabaseEnumeration(comb_class).get_genf()
@@ -645,7 +645,7 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
 
     def get_genf(
         self, comb_class: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
-    ) -> Expr:
+    ) -> Any:
         if not self.verified(comb_class):
             raise StrategyDoesNotApply("tiling not locally verified")
         if len(comb_class.obstructions) == 1 and comb_class.obstructions[0] in (
@@ -797,7 +797,7 @@ class MonotoneTreeVerificationStrategy(TileScopeVerificationStrategy):
 
     def get_genf(
         self, comb_class: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
-    ) -> Expr:
+    ) -> Any:
         if not self.verified(comb_class):
             raise StrategyDoesNotApply("tiling not locally verified")
         try:

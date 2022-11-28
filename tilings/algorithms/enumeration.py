@@ -204,7 +204,7 @@ class MonotoneTreeEnumeration(Enumeration):
         col_cells = self.tiling.cells_in_col(cell[0])
         return (c for c in visited if (c in row_cells or c in col_cells))
 
-    def get_genf(self, **kwargs) -> Expr:
+    def get_genf(self, **kwargs) -> Any:
         # pylint: disable=too-many-locals
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
@@ -243,7 +243,9 @@ class MonotoneTreeEnumeration(Enumeration):
             else:
                 F = self._interleave_fixed_lengths(F_tracked, cell, minlen, maxlen)
             visited.add(cell)
-        F = simplify(F.subs({v: 1 for v in F.free_symbols if v != x}))
+        F = simplify(
+            F.subs({v: 1 for v in F.free_symbols if v != x})
+        )  # type: ignore[operator]
         # A simple test to warn us if the code is wrong
         if __debug__:
             lhs = taylor_expand(F, n=6)
@@ -378,7 +380,7 @@ class DatabaseEnumeration(Enumeration):
             DatabaseEnumeration.load_verified_tiling()
         return self._get_tiling_entry() is not None
 
-    def get_genf(self, **kwargs) -> Expr:
+    def get_genf(self, **kwargs) -> Any:
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
         return sympify(self._get_tiling_entry()["genf"])
