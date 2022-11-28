@@ -357,10 +357,10 @@ class GriddedPerm(CombinatorialObject):
         return list(chain(self._patt, chain.from_iterable(self._pos)))
 
     @classmethod
-    def decompress(cls, array: array[int]) -> "GriddedPerm":
+    def decompress(cls, arr: array[int]) -> "GriddedPerm":
         """Decompresses a list of integers in the form outputted by the
         compress method and constructs an Obstruction."""
-        n, it = len(array) // 3, iter(array)
+        n, it = len(arr) // 3, iter(arr)
         return cls(
             Perm(next(it) for _ in range(n)), ((next(it), next(it)) for _ in range(n))
         )
