@@ -209,7 +209,9 @@ class AssumptionJumpingStrategy(AssumptionOrPointJumpingStrategy):
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Constructor for assumption jumping is not implemented"
+        )
 
     def reverse_constructor(
         self,
@@ -217,7 +219,9 @@ class AssumptionJumpingStrategy(AssumptionOrPointJumpingStrategy):
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Reverse constructor for assumption jumping is not implemented."
+        )
 
     def backward_map(
         self,
@@ -238,7 +242,9 @@ class AssumptionJumpingStrategy(AssumptionOrPointJumpingStrategy):
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
-        raise NotImplementedError
+        raise NotImplementedError(
+            "extra_parameters not implemented for assumption jumping"
+        )
 
     def formal_step(self) -> str:
         row_or_col = "rows" if self.row else "cols"
@@ -279,7 +285,7 @@ class PointJumpingStrategy(AssumptionOrPointJumpingStrategy):
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
-        raise NotImplementedError
+        raise NotImplementedError("Constructor not implemented for point jumping")
 
     def reverse_constructor(
         self,
@@ -287,7 +293,9 @@ class PointJumpingStrategy(AssumptionOrPointJumpingStrategy):
         comb_class: Tiling,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Constructor:
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Reverse contructor not implemented for point jumping"
+        )
 
     def backward_map(
         self,
@@ -308,7 +316,7 @@ class PointJumpingStrategy(AssumptionOrPointJumpingStrategy):
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
-        raise NotImplementedError
+        raise NotImplementedError("not implemented extra_parameters for point jumping")
 
     def formal_step(self) -> str:
         row_or_col = "rows" if self.row else "cols"
