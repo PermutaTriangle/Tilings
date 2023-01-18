@@ -166,7 +166,7 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
         lhs = get_function(self.comb_class)
         if degree(res, lhs) == 1:
             # solve for rational gf
-            rhs = solve([Eq(res, 0)], lhs, dict=True)[0]
+            rhs = solve([Eq(res, 0)], lhs, dict=True)[0][lhs]
         else:
             # or add F to both sides
             rhs = collect(res + lhs, lhs)
