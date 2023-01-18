@@ -72,7 +72,8 @@ swapped around a fusable row or column.
 - The default behavior for `RequirementInsertion` is to allow insertion of factorable
   requirements
 - `OneByOneVerificationStrategy` will look up permpal.com to find the generating
-  functions and min polys.
+  functions and min polys, and also use permpal specs for counting, sampling and
+  generating objects. 
 
 ### Removed
 - `AddInterleavingAssumptionsFactory`. The factor strategy now adds the relevant
