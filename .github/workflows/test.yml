@@ -9,16 +9,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python: 3.10
+          - python: "3.10"
             toxenv: flake8
             os: ubuntu-latest
-          - python: 3.10
+          - python: "3.10"
             toxenv: mypy
             os: ubuntu-latest
-          - python: 3.10
+          - python: "3.10"
             toxenv: pylint
             os: ubuntu-latest
-          - python: 3.10
+          - python: "3.10"
             toxenv: black
             os: ubuntu-latest
 
