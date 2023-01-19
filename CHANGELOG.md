@@ -51,6 +51,7 @@ swapped around a fusable row or column.
   were duplicates.
 - `RequirementPlacement` algorithm didn't minimise obstructions correctly when
   placing size 2 or higher gridded perms.
+- added missing condition in `MonotoneSlidingFactory` for consecutive values
 
 ### Changed
 - `TileScopePack.make_tracked` will add the appropriate tracking methods for

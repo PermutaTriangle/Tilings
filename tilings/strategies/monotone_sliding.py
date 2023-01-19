@@ -117,6 +117,7 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
             comb_class = comb_class.rotate270()
             rotate = True
         if comb_class.dimensions[1] == 1 and not comb_class.requirements:
+            # TODO: allow requirements outside of sliding region
             for col in range(comb_class.dimensions[0] - 1):
                 local_cells = (
                     comb_class.cell_basis()[(col, 0)][0],
@@ -126,10 +127,12 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
                     if (
                         local_cells[0][0].is_increasing()
                         and local_cells[1][0].is_increasing()
+                        and self.consecutive_value(col, comb_class)
                     ) or (
                         (
                             local_cells[0][0].is_decreasing()
                             and local_cells[1][0].is_decreasing()
+                            and self.consecutive_value(col, comb_class, False)
                         )
                     ):
                         shortest = (
@@ -150,6 +153,23 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
                         )
                         if comb_class == comb_class.add_obstructions(unfused_obs):
                             yield GeneralizedSlidingStrategy(col, rotate)
+
+    def consecutive_value(self, col: int, tiling: Tiling, incr: bool = True) -> bool:
+        """
+        Return True if the values in the column are consecutive,
+        and increasing or decreasing if incr is True or False.
+        """
+        for gp in tiling.obstructions:
+            if any(x not in (col, col + 1) for x, _ in gp.pos):
+                points = chain(gp.get_points_col(col), gp.get_points_col(col + 1))
+                values = [y for _, y in points]
+                if incr and not all(x + 1 == y for x, y in zip(values, values[1:])):
+                    return False
+                elif not incr and not all(
+                    x - 1 == y for x, y in zip(values, values[1:])
+                ):
+                    return False
+        return True
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"
