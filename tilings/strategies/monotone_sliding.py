@@ -1,8 +1,9 @@
 from itertools import chain
-from typing import Dict, Iterator, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
+from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
 
@@ -116,6 +117,50 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
         ):
             comb_class = comb_class.rotate270()
             rotate = True
+
+        def valid_monotone_sliding_region(
+            local_cells: Tuple[List[Perm], List[Perm]], comb_class: Tiling
+        ) -> bool:
+            """
+            Return True if the region is a possible valid monotone sliding region.
+
+            That is:
+                - neighbouring cells are both increasing or decreasing.
+                - the values of non-local obstructions in sliding region are
+                  monotone and consecutive in value.
+            """
+            return (len(local_cells[0]) == 1 and len(local_cells[1]) == 1) and (
+                (  # both cells are increasing, and consecutive values are increasing
+                    local_cells[0][0].is_increasing()
+                    and local_cells[1][0].is_increasing()
+                    and consecutive_value(col, comb_class)
+                )
+                or (  # both cells are decreasing, and consecutive values are decreasing
+                    (
+                        local_cells[0][0].is_decreasing()
+                        and local_cells[1][0].is_decreasing()
+                        and consecutive_value(col, comb_class, False)
+                    )
+                )
+            )
+
+        def consecutive_value(col: int, tiling: Tiling, incr: bool = True) -> bool:
+            """
+            Return True if the values in the column are consecutive,
+            and increasing or decreasing if incr is True or False.
+            """
+            for gp in tiling.obstructions:
+                if any(x not in (col, col + 1) for x, _ in gp.pos):
+                    points = chain(gp.get_points_col(col), gp.get_points_col(col + 1))
+                    values = [y for _, y in points]
+                    if incr and not all(x + 1 == y for x, y in zip(values, values[1:])):
+                        return False
+                    if not incr and not all(
+                        x - 1 == y for x, y in zip(values, values[1:])
+                    ):
+                        return False
+            return True
+
         if comb_class.dimensions[1] == 1 and not comb_class.requirements:
             # TODO: allow requirements outside of sliding region
             for col in range(comb_class.dimensions[0] - 1):
@@ -123,53 +168,26 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
                     comb_class.cell_basis()[(col, 0)][0],
                     comb_class.cell_basis()[(col + 1, 0)][0],
                 )
-                if len(local_cells[0]) == 1 and len(local_cells[1]) == 1:
-                    if (
-                        local_cells[0][0].is_increasing()
-                        and local_cells[1][0].is_increasing()
-                        and self.consecutive_value(col, comb_class)
-                    ) or (
-                        (
-                            local_cells[0][0].is_decreasing()
-                            and local_cells[1][0].is_decreasing()
-                            and self.consecutive_value(col, comb_class, False)
+                if valid_monotone_sliding_region(local_cells, comb_class):
+                    # Check the fusability condition
+                    shortest = (
+                        col
+                        if len(local_cells[0][0]) <= len(local_cells[1][0])
+                        else col + 1
+                    )
+                    algo = Fusion(comb_class, col_idx=col)
+                    fused_obs = tuple(
+                        algo.fuse_gridded_perm(gp)
+                        for gp in comb_class.obstructions
+                        if not all(x == shortest for x, _ in gp.pos)
+                    )
+                    unfused_obs = tuple(
+                        chain.from_iterable(
+                            algo.unfuse_gridded_perm(gp) for gp in fused_obs
                         )
-                    ):
-                        shortest = (
-                            col
-                            if len(local_cells[0][0]) <= len(local_cells[1][0])
-                            else col + 1
-                        )
-                        algo = Fusion(comb_class, col_idx=col)
-                        fused_obs = tuple(
-                            algo.fuse_gridded_perm(gp)
-                            for gp in comb_class.obstructions
-                            if not all(x == shortest for x, _ in gp.pos)
-                        )
-                        unfused_obs = tuple(
-                            chain.from_iterable(
-                                algo.unfuse_gridded_perm(gp) for gp in fused_obs
-                            )
-                        )
-                        if comb_class == comb_class.add_obstructions(unfused_obs):
-                            yield GeneralizedSlidingStrategy(col, rotate)
-
-    def consecutive_value(self, col: int, tiling: Tiling, incr: bool = True) -> bool:
-        """
-        Return True if the values in the column are consecutive,
-        and increasing or decreasing if incr is True or False.
-        """
-        for gp in tiling.obstructions:
-            if any(x not in (col, col + 1) for x, _ in gp.pos):
-                points = chain(gp.get_points_col(col), gp.get_points_col(col + 1))
-                values = [y for _, y in points]
-                if incr and not all(x + 1 == y for x, y in zip(values, values[1:])):
-                    return False
-                elif not incr and not all(
-                    x - 1 == y for x, y in zip(values, values[1:])
-                ):
-                    return False
-        return True
+                    )
+                    if comb_class == comb_class.add_obstructions(unfused_obs):
+                        yield GeneralizedSlidingStrategy(col, rotate)
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"
