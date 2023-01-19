@@ -34,10 +34,10 @@ setup(
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     long_description=read("README.rst"),
     install_requires=[
-        "comb-spec-searcher==4.1.0",
+        "comb-spec-searcher==4.2.0",
         "permuta==2.2.0",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     include_package_data=True,
     classifiers=[
         "Development Status :: 5 - Production/Stable",
