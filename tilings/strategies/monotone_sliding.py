@@ -3,6 +3,7 @@ from typing import Dict, Iterator, List, Optional, Tuple
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
+from comb_spec_searcher.strategies import Rule
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
@@ -19,6 +20,16 @@ class GeneralizedSlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self.rotate = rotate
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
+        if self.can_slide(comb_class):
+            return (self.slide_tiling(comb_class),)
+        raise StrategyDoesNotApply(f"Sliding idx {self.idx} does not apply")
+
+    def can_slide(self, comb_class: Tiling) -> bool:
+        return MonotoneSlidingFactory.can_slide_col(
+            self.idx, comb_class.rotate270() if self.rotate else comb_class
+        )
+
+    def slide_tiling(self, comb_class: Tiling) -> Tiling:
         if self.rotate:
             comb_class = comb_class.rotate270()
         child = Tiling(
@@ -28,7 +39,7 @@ class GeneralizedSlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         )
         if self.rotate:
             child = child.rotate90()
-        return (child,)
+        return child
 
     def formal_step(self) -> str:
         return f"Sliding index {self.idx}"
@@ -108,7 +119,8 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
     This is only looks at n x 1 and 1 x n tilings.
     """
 
-    def __call__(self, comb_class: Tiling) -> Iterator[GeneralizedSlidingStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
+        parent = comb_class
         rotate = False
         if (
             not comb_class.dimensions[1] == 1
@@ -118,31 +130,54 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
             comb_class = comb_class.rotate270()
             rotate = True
 
-        def valid_monotone_sliding_region(
-            local_cells: Tuple[List[Perm], List[Perm]], comb_class: Tiling
-        ) -> bool:
-            """
-            Return True if the region is a possible valid monotone sliding region.
+        if comb_class.dimensions[1] == 1 and not comb_class.requirements:
+            # TODO: allow requirements outside of sliding region
+            for col in range(comb_class.dimensions[0] - 1):
+                if self.can_slide_col(col, comb_class):
+                    strategy = GeneralizedSlidingStrategy(col, rotate)
+                    child = strategy.slide_tiling(parent)
+                    yield strategy(parent, (child,))
 
-            That is:
-                - neighbouring cells are both increasing or decreasing.
-                - the values of non-local obstructions in sliding region are
-                  monotone and consecutive in value.
-            """
-            return (len(local_cells[0]) == 1 and len(local_cells[1]) == 1) and (
-                (  # both cells are increasing, and consecutive values are increasing
-                    local_cells[0][0].is_increasing()
-                    and local_cells[1][0].is_increasing()
-                    and consecutive_value(col, comb_class)
-                )
-                or (  # both cells are decreasing, and consecutive values are decreasing
-                    (
-                        local_cells[0][0].is_decreasing()
-                        and local_cells[1][0].is_decreasing()
-                        and consecutive_value(col, comb_class, False)
-                    )
-                )
+    @staticmethod
+    def can_slide_col(col: int, comb_class: Tiling) -> bool:
+        """
+        Return True if the column can be slid.
+        """
+        local_cells = (
+            comb_class.cell_basis()[(col, 0)][0],
+            comb_class.cell_basis()[(col + 1, 0)][0],
+        )
+        if MonotoneSlidingFactory.valid_monotone_sliding_region(
+            col, local_cells, comb_class
+        ):
+            # Check the fusability condition
+            shortest = (
+                col if len(local_cells[0][0]) <= len(local_cells[1][0]) else col + 1
             )
+            algo = Fusion(comb_class, col_idx=col)
+            fused_obs = tuple(
+                algo.fuse_gridded_perm(gp)
+                for gp in comb_class.obstructions
+                if not all(x == shortest for x, _ in gp.pos)
+            )
+            unfused_obs = tuple(
+                chain.from_iterable(algo.unfuse_gridded_perm(gp) for gp in fused_obs)
+            )
+            return comb_class == comb_class.add_obstructions(unfused_obs)
+        return False
+
+    @staticmethod
+    def valid_monotone_sliding_region(
+        col: int, local_cells: Tuple[List[Perm], List[Perm]], comb_class: Tiling
+    ) -> bool:
+        """
+        Return True if the region is a possible valid monotone sliding region.
+
+        That is:
+            - neighbouring cells are both increasing or decreasing.
+            - the values of non-local obstructions in sliding region are
+            monotone and consecutive in value.
+        """
 
         def consecutive_value(col: int, tiling: Tiling, incr: bool = True) -> bool:
             """
@@ -161,33 +196,20 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
                         return False
             return True
 
-        if comb_class.dimensions[1] == 1 and not comb_class.requirements:
-            # TODO: allow requirements outside of sliding region
-            for col in range(comb_class.dimensions[0] - 1):
-                local_cells = (
-                    comb_class.cell_basis()[(col, 0)][0],
-                    comb_class.cell_basis()[(col + 1, 0)][0],
+        return (len(local_cells[0]) == 1 and len(local_cells[1]) == 1) and (
+            (  # both cells are increasing, and consecutive values are increasing
+                local_cells[0][0].is_increasing()
+                and local_cells[1][0].is_increasing()
+                and consecutive_value(col, comb_class)
+            )
+            or (  # both cells are decreasing, and consecutive values are decreasing
+                (
+                    local_cells[0][0].is_decreasing()
+                    and local_cells[1][0].is_decreasing()
+                    and consecutive_value(col, comb_class, False)
                 )
-                if valid_monotone_sliding_region(local_cells, comb_class):
-                    # Check the fusability condition
-                    shortest = (
-                        col
-                        if len(local_cells[0][0]) <= len(local_cells[1][0])
-                        else col + 1
-                    )
-                    algo = Fusion(comb_class, col_idx=col)
-                    fused_obs = tuple(
-                        algo.fuse_gridded_perm(gp)
-                        for gp in comb_class.obstructions
-                        if not all(x == shortest for x, _ in gp.pos)
-                    )
-                    unfused_obs = tuple(
-                        chain.from_iterable(
-                            algo.unfuse_gridded_perm(gp) for gp in fused_obs
-                        )
-                    )
-                    if comb_class == comb_class.add_obstructions(unfused_obs):
-                        yield GeneralizedSlidingStrategy(col, rotate)
+            )
+        )
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"
