@@ -116,5 +116,7 @@ def test_sliding_factory():
 def test_monotone_sliding_factory():
     assert list(MonotoneSlidingFactory()(noslidetiling1)) == []
     assert list(MonotoneSlidingFactory()(noslidetiling2)) == []
-    for strategy in MonotoneSlidingFactory()(tiling):
-        assert sanity_checker([strategy(tiling)])
+    assert sanity_checker(MonotoneSlidingFactory()(tiling))
+    assert sanity_checker(MonotoneSlidingFactory()(tiling.rotate90()))
+    assert sanity_checker(MonotoneSlidingFactory()(tiling.rotate180()))
+    assert sanity_checker(MonotoneSlidingFactory()(tiling.rotate270()))
