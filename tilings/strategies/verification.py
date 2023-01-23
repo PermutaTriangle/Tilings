@@ -344,7 +344,10 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
 
     def get_terms(self, comb_class: Tiling, n: int) -> Terms:
         terms = super().get_terms(comb_class.remove_assumptions(), n)
-        if comb_class.requirements:
+        if (
+            comb_class.requirements
+            and self.get_specification(comb_class).root != comb_class
+        ):
             if len(comb_class.requirements) == 1:
                 comp_spec = self.get_complement_spec(comb_class.remove_assumptions())
             else:
