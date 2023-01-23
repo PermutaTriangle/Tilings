@@ -355,7 +355,7 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
                     "Not implemented counting for one by one with two or more reqs"
                 )
             comp_terms = comp_spec.get_terms(n)
-            terms = Counter({a: b - comp_terms[a] for a, b in terms.items()})
+            terms = Counter({tuple(): terms[tuple()] - comp_terms[tuple()]})
         if comb_class.assumptions:
             assert comb_class.assumptions == (TrackingAssumption.from_cells([(0, 0)]),)
             terms = Counter({(n,): terms[tuple()]})
