@@ -343,7 +343,7 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
         return "tiling is a subclass of the original tiling"
 
     def get_terms(self, comb_class: Tiling, n: int) -> Terms:
-        terms = super().get_terms(comb_class, n)
+        terms = super().get_terms(comb_class.remove_assumptions(), n)
         if comb_class.requirements:
             if len(comb_class.requirements) == 1:
                 comp_spec = self.get_complement_spec(comb_class.remove_assumptions())
