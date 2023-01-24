@@ -125,7 +125,7 @@ class LimitedAssumptionTileScope(TileScope):
         Yield all the rules given by a strategy/strategy factory whose children all
         satisfy the max_assumptions constraint.
         """
-
+        # pylint: disable=arguments-differ
         def num_child_assumptions(child: Tiling) -> int:
             return sum(
                 1
