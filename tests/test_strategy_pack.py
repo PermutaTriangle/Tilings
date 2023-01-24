@@ -85,6 +85,7 @@ packs = (
     length(TileScopePack.all_the_strategies)
     + partial(TileScopePack.insertion_point_placements)
     + partial(TileScopePack.subobstruction_placements)
+    + partial(TileScopePack.basis_pattern_insertions)
     + row_col_partial(TileScopePack.insertion_row_and_col_placements)
     + row_col_partial(TileScopePack.insertion_point_row_and_col_placements)
     + length_maxnumreq_partial(TileScopePack.only_root_placements)

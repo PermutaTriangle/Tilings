@@ -26,6 +26,7 @@ from .pointing import (
 )
 from .rearrange_assumption import RearrangeAssumptionFactory
 from .requirement_insertion import (
+    BasisPatternInsertionFactory,
     CellInsertionFactory,
     FactorInsertionFactory,
     PointCorroborationFactory,
@@ -69,6 +70,7 @@ __all__ = [
     "SplittingStrategy",
     # Batch
     "AllPlacementsFactory",
+    "BasisPatternInsertionFactory",
     "CellInsertionFactory",
     "FactorInsertionFactory",
     "FusableRowAndColumnPlacementFactory",
