@@ -197,7 +197,7 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
         x_var = "x"
         if params:
             assert len(params) == 1
-            x_var += "*" + params[0].replace("_", "")
+            x_var += "*" + params[0]
         basis = [ob.patt for ob in tiling.obstructions]
         return Symbol(f"F_{Av(basis)}({x_var})")
 
