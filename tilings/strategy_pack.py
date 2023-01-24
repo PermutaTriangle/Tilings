@@ -744,7 +744,7 @@ class TileScopePack(StrategyPack):
     @classmethod
     def basis_pattern_insertions(cls, partial: bool = False) -> "TileScopePack":
         name = "partial_" if partial else ""
-        name += "subobstruction_placements"
+        name += "basis_pattern_insertions"
         return TileScopePack(
             initial_strats=[
                 strat.FactorFactory(),

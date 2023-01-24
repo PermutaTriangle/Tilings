@@ -702,11 +702,12 @@ class BasisPatternInsertionFactory(AbstractRequirementInsertionFactory):
     def __init__(
         self,
         basis: Optional[Iterable[Perm]] = None,
+        ignore_parent: bool = False,
     ):
         self.basis: Tuple[Perm, ...] = tuple(basis) if basis is not None else tuple()
         self.perms = self.get_patterns()
         self.maxreqlen = max(map(len, self.perms), default=0)
-        super().__init__()
+        super().__init__(ignore_parent=ignore_parent)
 
     def get_patterns(self) -> Set[Perm]:
         res: Set[Perm] = set()
