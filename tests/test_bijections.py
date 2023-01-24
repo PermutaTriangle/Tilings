@@ -82,7 +82,8 @@ def _tester(basis1: str, basis2: str, max_size=7):
 def _import_css_example():
     r = requests.get(
         "https://raw.githubusercontent.com/PermutaTriangle"
-        "/comb_spec_searcher/develop/example.py"
+        "/comb_spec_searcher/develop/example.py",
+        timeout=5,
     )
     r.raise_for_status()
     exec(r.text[: r.text.find("pack = StrategyPack(")], globals())

@@ -1,5 +1,5 @@
 from heapq import heapify, heappop, heappush
-from typing import TYPE_CHECKING, Dict, List, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from tilings.griddedperm import GriddedPerm
 
@@ -53,7 +53,7 @@ class GriddedPermsOnTiling:
                 break
         return queue
 
-    def gridded_perms(self, size: int, place_at_most: int = None):
+    def gridded_perms(self, size: int, place_at_most: Optional[int] = None):
         if place_at_most is None:
             place_at_most = size
         queue = self.prepare_queue(size)

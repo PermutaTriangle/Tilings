@@ -109,7 +109,7 @@ class ObstructionInferralFactory(StrategyFactory[Tiling]):
     recompute new_obs which is needed for the strategy.
     """
 
-    def __init__(self, maxlen: int = 3):
+    def __init__(self, maxlen: Optional[int] = 3):
         self.maxlen = maxlen
         super().__init__()
 

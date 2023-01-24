@@ -184,7 +184,7 @@ class GuidedSearcher(TileScope):
 
     @classmethod
     def from_uri(cls, URI: str) -> "GuidedSearcher":
-        response = requests.get(URI)
+        response = requests.get(URI, timeout=10)
         spec = CombinatorialSpecification.from_dict(response.json()["specification"])
         pack = TileScopePack.from_dict(response.json()["pack"]).make_tracked()
         return cls.from_spec(spec, pack)
@@ -356,11 +356,12 @@ class TrackedQueue(CSSQueue):
             f"Queue {idx}" for idx in range(len(self.queues) - 1)
         )
         underlying = ("underlying",) + tuple(
-            self._underlyng_labels_per_level[level] for level in range(len(self.queues))
+            str(self._underlyng_labels_per_level[level])
+            for level in range(len(self.queues))
         )
         table.append(underlying)
         all_labels = ("all labels",) + tuple(
-            self._all_labels_per_level[level] for level in range(len(self.queues))
+            str(self._all_labels_per_level[level]) for level in range(len(self.queues))
         )
         table.append(all_labels)
         table = [headers] + table
@@ -386,3 +387,4 @@ class TrackedQueue(CSSQueue):
                 return next(queue)
             except StopIteration:
                 continue
+        raise StopIteration("No elements in queue")
