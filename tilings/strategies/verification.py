@@ -5,7 +5,7 @@ from operator import mul
 from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Tuple, cast
 
 import requests
-from sympy import Eq, Expr, Function, collect, degree, solve, sympify, var
+from sympy import Eq, Expr, Function, Symbol, collect, degree, solve, sympify, var
 
 from comb_spec_searcher import (
     AtomStrategy,
@@ -148,7 +148,10 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
         data = request.json()
         min_poly = data["min_poly_maple"]
         if min_poly is None:
-            raise NotImplementedError(f"No min poly on permpal for {Av(basis)}")
+            return Eq(
+                get_function(self.comb_class),
+                self.tiling_to_symbol_eq(self.comb_class),
+            )
         min_poly = min_poly.replace("^", "**").replace("F(x)", "F")
         lhs, _ = min_poly.split("=")
         # We now need to worry about the requirements. The min poly we got is
@@ -171,6 +174,32 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
             # or add F to both sides
             rhs = collect(res + lhs, lhs)
         return Eq(lhs, rhs)
+
+    def tiling_to_symbol_eq(self, tiling: Tiling) -> Any:
+        """
+        Find the equation for the tiling in terms of F_C's, where C are
+        permutation classes.
+        """
+        if tiling.requirements:
+            reqs = tiling.requirements[0]
+            avoided = tiling.__class__(
+                tiling.obstructions + reqs,
+                tiling.requirements[1:],
+                tiling.assumptions,
+            )
+            without = tiling.__class__(
+                tiling.obstructions,
+                tiling.requirements[1:],
+                tiling.assumptions,
+            )
+            return self.tiling_to_symbol_eq(without) - self.tiling_to_symbol_eq(avoided)
+        params = self.comb_class.extra_parameters
+        x_var = "x"
+        if params:
+            assert len(params) == 1
+            x_var += "*" + params[0].replace("_", "")
+        basis = [ob.patt for ob in tiling.obstructions]
+        return Symbol(f"F_{Av(basis)}({x_var})")
 
     @property
     def no_req_tiling(self) -> Tiling:
