@@ -197,7 +197,7 @@ class GuidedSearcher(TileScope):
 
     @classmethod
     def from_uri(cls, URI: str) -> "GuidedSearcher":
-        response = requests.get(URI)
+        response = requests.get(URI, timeout=10)
         spec = CombinatorialSpecification.from_dict(response.json()["specification"])
         pack = TileScopePack.from_dict(response.json()["pack"]).make_tracked()
         return cls.from_spec(spec, pack)
@@ -400,6 +400,7 @@ class TrackedQueue(CSSQueue):
                 return next(queue)
             except StopIteration:
                 continue
+        raise StopIteration("No elements in queue")
 
 
 class TrackedClassDB(ClassDB[Tiling]):

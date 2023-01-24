@@ -17,7 +17,7 @@ import enum
 from collections import Counter, defaultdict
 from functools import reduce
 from operator import mul
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 import sympy
 
@@ -176,7 +176,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 "left or right containing more than one point"
             )
         rhs_func = rhs_funcs[0]
-        subs: Dict[str, sympy.Expr] = {
+        subs: Dict[str, Any] = {
             child: reduce(mul, [sympy.var(k) for k in parent_vars], 1)
             for child, parent_vars in self.reversed_extra_parameters.items()
         }
