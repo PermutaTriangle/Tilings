@@ -1,7 +1,7 @@
 from collections import defaultdict
-from itertools import islice
+from itertools import chain, islice
 from random import randint
-from typing import Dict, Iterator, List, Optional, Set, Tuple, cast
+from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, cast
 
 from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -10,6 +10,7 @@ from comb_spec_searcher.typing import Objects
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
 
+from ..pointing import DivideByK
 from .constructor import FusionConstructor, ReverseFusionConstructor
 
 
@@ -28,8 +29,9 @@ class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
     def constructor(self) -> FusionConstructor:
         return cast(FusionConstructor, super().constructor)
 
-    @staticmethod
-    def is_equivalence() -> bool:
+    def is_equivalence(
+        self, is_empty: Optional[Callable[[Tiling], bool]] = None
+    ) -> bool:
         return False
 
     def _ensure_level_objects(self, n: int) -> None:
@@ -109,6 +111,7 @@ class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
                         )
                     except StopIteration:
                         assert 0, "something went wrong"
+        raise RuntimeError("The for-loop for randomly sampling objects was empty")
 
     def _forward_order(
         self,
@@ -144,7 +147,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
     def __call__(
         self,
         comb_class: Tiling,
-        children: Tuple[Tiling, ...] = None,
+        children: Optional[Tuple[Tiling, ...]] = None,
     ) -> FusionRule:
         if children is None:
             children = self.decomposition_function(comb_class)
@@ -157,17 +160,16 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked
         )
 
-    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
+    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
         algo = self.fusion_algorithm(comb_class)
         if algo.fusable():
             return (algo.fused_tiling(),)
+        raise AttributeError("Trying to fuse a tiling that does not fuse")
 
-    @staticmethod
-    def can_be_equivalent() -> bool:
+    def can_be_equivalent(self) -> bool:
         return False
 
-    @staticmethod
-    def is_two_way(comb_class: Tiling):
+    def is_two_way(self, comb_class: Tiling):
         return False
 
     def is_reversible(self, comb_class: Tiling) -> bool:
@@ -179,9 +181,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         )
         return new_ass in fused_assumptions
 
-    @staticmethod
     def shifts(
-        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[int, ...]:
         return (0,)
 
@@ -217,6 +218,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         if not self.tracked:
             # constructor only enumerates when tracked.
             raise NotImplementedError("The fusion strategy was not tracked.")
+        if children is None:
+            children = self.decomposition_function(comb_class)
         # Need to recompute some info to count, so ignoring passed in children
         algo = self.fusion_algorithm(comb_class)
         if not algo.fusable():
@@ -232,6 +235,21 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             right_sided_params,
             _,
         ) = self.left_right_both_sided_parameters(comb_class)
+        if not left_sided_params and not right_sided_params:
+            fused_assumption = algo.new_assumption()
+            unfused_assumption = fused_assumption.__class__(
+                chain.from_iterable(
+                    algo.unfuse_gridded_perm(gp) for gp in fused_assumption.gps
+                )
+            )
+            assert unfused_assumption in comb_class.assumptions
+            return DivideByK(
+                comb_class,
+                children,
+                1,
+                comb_class.get_assumption_parameter(unfused_assumption),
+                self.extra_parameters(comb_class, children),
+            )
         return ReverseFusionConstructor(
             comb_class,
             child,
@@ -303,7 +321,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         comb_class: Tiling,
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
-        left_points: int = None,
+        left_points: Optional[int] = None,
     ) -> Iterator[GriddedPerm]:
         """
         The backward direction of the underlying bijection used for object

@@ -91,10 +91,12 @@ class LimitedAssumptionTileScope(TileScope):
         start_class: Union[str, Iterable[Perm], Tiling],
         strategy_pack: TileScopePack,
         max_assumptions: int,
+        ignore_full_tiling_assumptions: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(start_class, strategy_pack, **kwargs)
         self.max_assumptions = max_assumptions
+        self.ignore_full_tiling_assumptions = ignore_full_tiling_assumptions
 
     def _expand(
         self,
@@ -113,7 +115,8 @@ class LimitedAssumptionTileScope(TileScope):
             return sum(
                 1
                 for ass in child.assumptions
-                if len(ass.gps) != len(child.active_cells)
+                if (not self.ignore_full_tiling_assumptions)
+                or len(ass.gps) != len(child.active_cells)
             )
 
         if inferral:
@@ -124,7 +127,7 @@ class LimitedAssumptionTileScope(TileScope):
                     comb_class, strategy_generator, label
                 ):
                     if all(
-                        num_child_assumptions(child.assumptions) <= self.max_assumptions
+                        num_child_assumptions(child) <= self.max_assumptions
                         for child in rule.children
                     ):
                         self.add_rule(start_label, end_labels, rule)
@@ -181,7 +184,7 @@ class GuidedSearcher(TileScope):
 
     @classmethod
     def from_uri(cls, URI: str) -> "GuidedSearcher":
-        response = requests.get(URI)
+        response = requests.get(URI, timeout=10)
         spec = CombinatorialSpecification.from_dict(response.json()["specification"])
         pack = TileScopePack.from_dict(response.json()["pack"]).make_tracked()
         return cls.from_spec(spec, pack)
@@ -353,11 +356,12 @@ class TrackedQueue(CSSQueue):
             f"Queue {idx}" for idx in range(len(self.queues) - 1)
         )
         underlying = ("underlying",) + tuple(
-            self._underlyng_labels_per_level[level] for level in range(len(self.queues))
+            str(self._underlyng_labels_per_level[level])
+            for level in range(len(self.queues))
         )
         table.append(underlying)
         all_labels = ("all labels",) + tuple(
-            self._all_labels_per_level[level] for level in range(len(self.queues))
+            str(self._all_labels_per_level[level]) for level in range(len(self.queues))
         )
         table.append(all_labels)
         table = [headers] + table
@@ -383,3 +387,4 @@ class TrackedQueue(CSSQueue):
                 return next(queue)
             except StopIteration:
                 continue
+        raise StopIteration("No elements in queue")

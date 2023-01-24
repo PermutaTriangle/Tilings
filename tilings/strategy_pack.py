@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Iterable, List, Optional, Union
+from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Union
 
 from logzero import logger
 
@@ -32,9 +32,11 @@ class TileScopePack(StrategyPack):
         basis = tuple(basis)
         symmetry = bool(self.symmetries)
 
-        def replace_list(strats):
+        def replace_list(
+            strats: Tuple[Union[AbstractStrategy, StrategyFactory], ...]
+        ) -> List[Union[AbstractStrategy, StrategyFactory]]:
             """Return a new list with the replaced 1x1 strat."""
-            res = []
+            res: List[Union[AbstractStrategy, StrategyFactory]] = []
             for strategy in strats:
                 if isinstance(strategy, BasisAwareVerificationStrategy):
                     if strategy.basis:
@@ -68,11 +70,13 @@ class TileScopePack(StrategyPack):
            has length strictly smaller than the maximum length cell basis element.
         """
 
-        def replace_list(strats):
+        def replace_list(
+            strats: Tuple[Union[AbstractStrategy, StrategyFactory], ...]
+        ) -> List[Union[AbstractStrategy, StrategyFactory]]:
             """
             Find subclass verification and alter its perms_to_check variable.
             """
-            res = []
+            res: List[Union[AbstractStrategy, StrategyFactory]] = []
             for strategy in strats:
                 if isinstance(strategy, strat.SubclassVerificationFactory):
                     printed_log = False
@@ -99,6 +103,7 @@ class TileScopePack(StrategyPack):
                             )
                             printed_log = True
                     if not printed_log:
+                        assert strategy.perms_to_check is not None
                         logger.info(
                             "SubclassVerification set up to check the subclasses: "
                             "Av(%s)",
@@ -377,6 +382,7 @@ class TileScopePack(StrategyPack):
         ks_pack.expansion_strats = ks_pack.expansion_strats + (
             (
                 strat.AssumptionPointingFactory(),
+                strat.RequirementPointingFactory(),
                 strat.PointingStrategy(),
                 strat.UnfusionFactory(),
                 strat.FusableRowAndColumnPlacementFactory(),

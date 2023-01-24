@@ -2,7 +2,7 @@ from collections import defaultdict
 from functools import reduce
 from itertools import product
 from operator import mul
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from sympy import Eq, Function, var
 
@@ -31,7 +31,7 @@ Cell = Tuple[int, int]
 
 class Split(Constructor):
     """
-    The constructor used to cound when a variable is counted by some multiple
+    The constructor used to count when a variable is counted by some multiple
     disjoint subvariables.
     """
 
@@ -40,7 +40,7 @@ class Split(Constructor):
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         rhs_func = rhs_funcs[0]
-        subs: Dict[var, List[var]] = defaultdict(list)
+        subs: Dict[Any, List[Any]] = defaultdict(list)
         for parent, children in self.split_parameters.items():
             for child in children:
                 subs[var(child)].append(var(parent))
@@ -156,16 +156,13 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             workable=workable,
         )
 
-    @staticmethod
-    def can_be_equivalent() -> bool:
+    def can_be_equivalent(self) -> bool:
         return False
 
-    @staticmethod
-    def is_two_way(comb_class: Tiling):
+    def is_two_way(self, comb_class: Tiling):
         return False
 
-    @staticmethod
-    def is_reversible(comb_class: Tiling):
+    def is_reversible(self, comb_class: Tiling):
         return False
 
     def shifts(
@@ -313,8 +310,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> Constructor:
         raise NotImplementedError
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "splitting the assumptions"
 
     def backward_map(
