@@ -27,6 +27,10 @@ class TrackingAssumption:
         gps = [GriddedPerm.single_cell((0,), cell) for cell in cells]
         return cls(gps)
 
+    def get_cells(self) -> Tuple[Cell, ...]:
+        assert all(len(gp) == 1 for gp in self.gps)
+        return tuple(gp.pos[0] for gp in self.gps)
+
     def avoiding(
         self,
         obstructions: Iterable[GriddedPerm],
