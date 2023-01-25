@@ -234,8 +234,7 @@ class Interleaving(CartesianProduct[Tiling, GriddedPerm]):
     def is_equivalence(is_empty: Optional[Callable[[Tiling], bool]] = None) -> bool:
         return False
 
-    @staticmethod
-    def get_equation(lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
+    def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         raise NotImplementedError
 
     def get_terms(
@@ -308,7 +307,10 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         )
         return f"{self.__class__.__name__}({args})"
 
-    def is_reversible(self, comb_class: Tiling) -> bool:  # type: ignore
+    def is_two_way(self, comb_class: Tiling) -> bool:  # pylint: disable=W0221
+        return self.is_reversible(comb_class)
+
+    def is_reversible(self, comb_class: Tiling) -> bool:  # pylint: disable=W0221
         return not bool(self.assumptions_to_add(comb_class))
 
     def formal_step(self) -> str:
@@ -642,8 +644,9 @@ class FactorFactory(StrategyFactory[Tiling]):
             FactorWithInterleavingStrategy.interleaving_rows_and_cols(components)
         )
         if interleaving:
+            # pylint: disable=E1123
             return cast(
-                FactorStrategy,
+                FactorWithInterleavingStrategy,
                 self.factor_class(
                     components,
                     ignore_parent=self.ignore_parent,

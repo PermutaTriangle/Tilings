@@ -44,6 +44,10 @@ class Assumption:
         gps = [GriddedPerm.single_cell((0,), cell) for cell in cells]
         return cls(gps)
 
+    def get_cells(self) -> Tuple[Cell, ...]:
+        assert all(len(gp) == 1 for gp in self.gps)
+        return tuple(gp.pos[0] for gp in self.gps)
+
     def avoiding(
         self: AssumptionClass,
         obstructions: Iterable[GriddedPerm],
@@ -231,20 +235,16 @@ class ComponentAssumption(TrackingAssumption):
 
 
 class SumComponentAssumption(ComponentAssumption):
-    @staticmethod
-    def decomposition(perm: Perm) -> List[Perm]:
+    def decomposition(self, perm: Perm) -> List[Perm]:
         return perm.sum_decomposition()  # type: ignore
 
-    @staticmethod
-    def tiling_decomposition(tiling: "Tiling") -> List[List[Cell]]:
+    def tiling_decomposition(self, tiling: "Tiling") -> List[List[Cell]]:
         return tiling.sum_decomposition()
 
-    @staticmethod
-    def opposite_tiling_decomposition(tiling: "Tiling") -> List[List[Cell]]:
+    def opposite_tiling_decomposition(self, tiling: "Tiling") -> List[List[Cell]]:
         return tiling.skew_decomposition()
 
-    @staticmethod
-    def one_or_fewer_components(tiling: "Tiling", cell: Cell) -> bool:
+    def one_or_fewer_components(self, tiling: "Tiling", cell: Cell) -> bool:
         return GriddedPerm.single_cell(Perm((0, 1)), cell) in tiling.obstructions
 
     def __str__(self) -> str:
@@ -252,20 +252,16 @@ class SumComponentAssumption(ComponentAssumption):
 
 
 class SkewComponentAssumption(ComponentAssumption):
-    @staticmethod
-    def decomposition(perm: Perm) -> List[Perm]:
+    def decomposition(self, perm: Perm) -> List[Perm]:
         return perm.skew_decomposition()  # type: ignore
 
-    @staticmethod
-    def tiling_decomposition(tiling: "Tiling") -> List[List[Cell]]:
+    def tiling_decomposition(self, tiling: "Tiling") -> List[List[Cell]]:
         return tiling.skew_decomposition()
 
-    @staticmethod
-    def opposite_tiling_decomposition(tiling: "Tiling") -> List[List[Cell]]:
+    def opposite_tiling_decomposition(self, tiling: "Tiling") -> List[List[Cell]]:
         return tiling.sum_decomposition()
 
-    @staticmethod
-    def one_or_fewer_components(tiling: "Tiling", cell: Cell) -> bool:
+    def one_or_fewer_components(self, tiling: "Tiling", cell: Cell) -> bool:
         return GriddedPerm.single_cell(Perm((1, 0)), cell) in tiling.obstructions
 
     def __str__(self) -> str:

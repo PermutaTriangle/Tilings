@@ -99,16 +99,13 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
 
 
 class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
-    @staticmethod
-    def can_be_equivalent() -> bool:
+    def can_be_equivalent(self) -> bool:
         return False
 
-    @staticmethod
-    def is_two_way(comb_class: Tiling):
+    def is_two_way(self, comb_class: Tiling):
         return False
 
-    @staticmethod
-    def is_reversible(comb_class: Tiling):
+    def is_reversible(self, comb_class: Tiling):
         return False
 
     def shifts(
@@ -172,12 +169,11 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
                 ] = child.get_assumption_parameter(mapped_assumption)
         return (extra_parameters,)
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "removing exact components"
 
-    @staticmethod
     def backward_map(
+        self,
         comb_class: Tiling,
         objs: Tuple[Optional[GriddedPerm], ...],
         children: Optional[Tuple[Tiling, ...]] = None,
@@ -189,8 +185,8 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
         assert isinstance(objs[0], GriddedPerm)
         yield objs[0]
 
-    @staticmethod
     def forward_map(
+        self,
         comb_class: Tiling,
         obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,

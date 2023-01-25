@@ -520,7 +520,7 @@ class ComponentFusion(Fusion):
     ):
         if tiling.requirements:
             raise NotImplementedError(
-                "Component fusion does not handle " "requirements at the moment"
+                "Component fusion does not handle requirements at the moment"
             )
         super().__init__(
             tiling,
@@ -581,7 +581,7 @@ class ComponentFusion(Fusion):
             return self._first_cell
         if not self._pre_check():
             raise RuntimeError(
-                "Pre-check failed. No component fusion " "possible and no first cell"
+                "Pre-check failed. No component fusion possible and no first cell"
             )
         assert self._first_cell is not None
         return self._first_cell
@@ -596,7 +596,7 @@ class ComponentFusion(Fusion):
             return self._second_cell
         if not self._pre_check():
             raise RuntimeError(
-                "Pre-check failed. No component fusion " "possible and no second cell"
+                "Pre-check failed. No component fusion possible and no second cell"
             )
         assert self._second_cell is not None
         return self._second_cell

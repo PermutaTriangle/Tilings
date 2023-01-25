@@ -1,7 +1,7 @@
 from collections import Counter
 from itertools import product
 from random import randint
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple, cast
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, cast
 
 from sympy import Eq, Expr, Function, Number, Symbol, var
 
@@ -44,7 +44,7 @@ class AddAssumptionsConstructor(Constructor):
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         rhs_func = rhs_funcs[0]
-        subs: Dict[Symbol, Expr] = {
+        subs: Dict[Any, Expr] = {
             var(child): var(parent) for parent, child in self.extra_parameters.items()
         }
         for k in self.new_parameters:
@@ -225,12 +225,10 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
             workable=workable,
         )
 
-    @staticmethod
-    def can_be_equivalent() -> bool:
+    def can_be_equivalent(self) -> bool:
         return False
 
-    @staticmethod
-    def is_two_way(comb_class: Tiling):
+    def is_two_way(self, comb_class: Tiling):
         return False
 
     def is_reversible(self, comb_class: Tiling) -> bool:
@@ -240,9 +238,8 @@ class AddAssumptionsStrategy(Strategy[Tiling, GriddedPerm]):
             for assumption in self.assumptions
         )
 
-    @staticmethod
     def shifts(
-        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[int, ...]:
         return (0,)
 

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Iterable, List, Optional, Union
+from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Union
 
 from logzero import logger
 
@@ -32,9 +32,11 @@ class TileScopePack(StrategyPack):
         basis = tuple(basis)
         symmetry = bool(self.symmetries)
 
-        def replace_list(strats):
+        def replace_list(
+            strats: Tuple[Union[AbstractStrategy, StrategyFactory], ...]
+        ) -> List[Union[AbstractStrategy, StrategyFactory]]:
             """Return a new list with the replaced 1x1 strat."""
-            res = []
+            res: List[Union[AbstractStrategy, StrategyFactory]] = []
             for strategy in strats:
                 if isinstance(strategy, BasisAwareVerificationStrategy):
                     if strategy.basis:
@@ -43,6 +45,9 @@ class TileScopePack(StrategyPack):
                 elif isinstance(strategy, strat.SymmetriesFactory):
                     if strategy.basis:
                         logger.warning("Basis changed in %s", strategy)
+                    res.append(strategy.change_basis(basis))
+                elif hasattr(strategy, "change_basis"):
+                    logger.warning("Basis changed in %s", strategy)
                     res.append(strategy.change_basis(basis))
                 else:
                     res.append(strategy)
@@ -68,11 +73,13 @@ class TileScopePack(StrategyPack):
            has length strictly smaller than the maximum length cell basis element.
         """
 
-        def replace_list(strats):
+        def replace_list(
+            strats: Tuple[Union[AbstractStrategy, StrategyFactory], ...]
+        ) -> List[Union[AbstractStrategy, StrategyFactory]]:
             """
             Find subclass verification and alter its perms_to_check variable.
             """
-            res = []
+            res: List[Union[AbstractStrategy, StrategyFactory]] = []
             for strategy in strats:
                 if isinstance(strategy, strat.SubclassVerificationFactory):
                     printed_log = False
@@ -99,6 +106,7 @@ class TileScopePack(StrategyPack):
                             )
                             printed_log = True
                     if not printed_log:
+                        assert strategy.perms_to_check is not None
                         logger.info(
                             "SubclassVerification set up to check the subclasses: "
                             "Av(%s)",
@@ -727,6 +735,35 @@ class TileScopePack(StrategyPack):
             expansion_strats=[
                 [
                     strat.SubobstructionInsertionFactory(),
+                    strat.PatternPlacementFactory(partial=partial),
+                ],
+            ],
+            name=name,
+        )
+
+    @classmethod
+    def basis_pattern_insertions(cls, partial: bool = False) -> "TileScopePack":
+        name = "partial_" if partial else ""
+        name += "basis_pattern_insertions"
+        return TileScopePack(
+            initial_strats=[
+                strat.FactorFactory(),
+                strat.PointCorroborationFactory(),
+                strat.RequirementCorroborationFactory(),
+            ],
+            ver_strats=[
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
+            ],
+            inferral_strats=[
+                strat.RowColumnSeparationStrategy(),
+                strat.ObstructionTransitivityFactory(),
+            ],
+            expansion_strats=[
+                [
+                    strat.BasisPatternInsertionFactory(),
                     strat.PatternPlacementFactory(partial=partial),
                 ],
             ],

@@ -100,12 +100,12 @@ class AllObstructionInferral(ObstructionInferral):
     obstruction of length up to obstruction_length which can be added.
     """
 
-    def __init__(self, tiling: "Tiling", obstruction_length: int) -> None:
+    def __init__(self, tiling: "Tiling", obstruction_length: Optional[int]) -> None:
         super().__init__(tiling)
         self._obs_len = obstruction_length
 
     @property
-    def obstruction_length(self) -> int:
+    def obstruction_length(self) -> Optional[int]:
         return self._obs_len
 
     def not_required(self, gp: GriddedPerm) -> bool:

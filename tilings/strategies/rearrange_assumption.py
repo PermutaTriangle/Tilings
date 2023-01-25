@@ -286,21 +286,17 @@ class RearrangeAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
         self.sub_assumption = sub_assumption
         super().__init__()
 
-    @staticmethod
-    def can_be_equivalent() -> bool:
+    def can_be_equivalent(self) -> bool:
         return False
 
-    @staticmethod
-    def is_two_way(comb_class: Tiling) -> bool:
+    def is_two_way(self, comb_class: Tiling) -> bool:
         return True
 
-    @staticmethod
-    def is_reversible(comb_class: Tiling) -> bool:
+    def is_reversible(self, comb_class: Tiling) -> bool:
         return True
 
-    @staticmethod
     def shifts(
-        comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[int, ...]:
         return (0,)
 

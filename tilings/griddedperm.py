@@ -1,4 +1,5 @@
 import json
+from array import array
 from itertools import chain, combinations, islice, product, tee
 from typing import Callable, Dict, FrozenSet, Iterable, Iterator, List, Optional, Tuple
 
@@ -121,6 +122,7 @@ class GriddedPerm(CombinatorialObject):
             if direction == DIR_SOUTH:
                 return min((self._patt[idx], idx) for idx in indices)[1]
             raise ValueError("You're lost, no valid direction")
+        raise ValueError("The gridded perm does not occupy the cell")
 
     def forced_point_of_requirement(
         self, gps: Tuple["GriddedPerm", ...], indices: Tuple[int, ...], direction: int
@@ -272,8 +274,8 @@ class GriddedPerm(CombinatorialObject):
                 )
 
     def extend(self, c: int, r: int) -> Iterator["GriddedPerm"]:
-        """Add n+1 to all possible positions in perm and all allowed positions given that
-        placement."""
+        """Add n+1 to all possible positions in perm and all allowed positions given
+        that placement."""
         n = len(self)
         if n == 0:
             yield from (
@@ -355,10 +357,10 @@ class GriddedPerm(CombinatorialObject):
         return list(chain(self._patt, chain.from_iterable(self._pos)))
 
     @classmethod
-    def decompress(cls, array: List[int]) -> "GriddedPerm":
+    def decompress(cls, arr: array) -> "GriddedPerm":
         """Decompresses a list of integers in the form outputted by the
         compress method and constructs an Obstruction."""
-        n, it = len(array) // 3, iter(array)
+        n, it = len(arr) // 3, iter(arr)
         return cls(
             Perm(next(it) for _ in range(n)), ((next(it), next(it)) for _ in range(n))
         )
@@ -617,6 +619,10 @@ class GriddedPerm(CombinatorialObject):
         """Return the svg code to plot the GriddedPerm."""
         i_scale = int(image_scale * 10)
         val_to_pos, (m_x, m_y) = self._get_plot_pos()
+        points = " ".join(
+            f"{x * 10},{(m_y - y) * 10}"
+            for x, y in (val_to_pos[val] for val in self.patt)
+        )
         return "".join(
             [
                 (
@@ -641,15 +647,8 @@ class GriddedPerm(CombinatorialObject):
                 ),
                 "\n",
                 (
-                    lambda path: (
-                        f'<polyline points="{path}" fill="none" '
-                        'stroke="black" stroke-width="0.65" />\n'
-                    )
-                )(
-                    " ".join(
-                        f"{x * 10},{(m_y - y) * 10}"
-                        for x, y in (val_to_pos[val] for val in self.patt)
-                    )
+                    f'<polyline points="{points}" fill="none" '
+                    'stroke="black" stroke-width="0.65" />\n'
                 ),
                 "\n".join(
                     (

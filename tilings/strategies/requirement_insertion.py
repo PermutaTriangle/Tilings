@@ -692,3 +692,63 @@ class SubobstructionInsertionFactory(AbstractRequirementInsertionFactory):
 
     def __str__(self) -> str:
         return "subobstruction insertion"
+
+
+class BasisPatternInsertionFactory(AbstractRequirementInsertionFactory):
+    """
+    Insert all requirements that are a subpattern of every pattern in the basis.
+    """
+
+    def __init__(
+        self,
+        basis: Optional[Iterable[Perm]] = None,
+        ignore_parent: bool = False,
+    ):
+        self.basis: Tuple[Perm, ...] = tuple(basis) if basis is not None else tuple()
+        self.perms = self.get_patterns()
+        self.maxreqlen = max(map(len, self.perms), default=0)
+        super().__init__(ignore_parent=ignore_parent)
+
+    def get_patterns(self) -> Set[Perm]:
+        res: Set[Perm] = set()
+        to_process: Iterable[Perm] = self.basis
+        while to_process:
+            to_process = set(
+                (
+                    perm.remove(idx)
+                    for perm in to_process
+                    for idx in perm
+                    if len(perm) > 1
+                )
+            )
+            res.update(to_process)
+        return set(
+            perm for perm in res if all(patt.contains(perm) for patt in self.basis)
+        )
+
+    def change_basis(
+        self,
+        basis: Iterable[Perm],
+    ) -> "BasisPatternInsertionFactory":
+        """
+        Return the version of the strategy with the given basis instead
+        of the current one.
+        """
+        return self.__class__(tuple(basis))
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        obs_tiling = Tiling(
+            tiling.obstructions,
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
+        )
+        for length in range(1, self.maxreqlen + 1):
+            for gp in obs_tiling.gridded_perms_of_length(length):
+                if gp.patt in self.perms:
+                    yield (gp,)
+
+    def __str__(self) -> str:
+        patts = "{" + ", ".join(map(str, sorted(self.perms))) + "}"
+        return f"insertions with permutations {patts}"

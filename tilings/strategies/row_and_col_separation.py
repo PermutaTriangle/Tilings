@@ -45,11 +45,14 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             forward_cell_map, backward_cell_map = res
         return forward_cell_map, backward_cell_map
 
-    def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
+    def decomposition_function(
+        self, comb_class: Tiling
+    ) -> Optional[Tuple[Tiling, ...]]:
         """Return the separated tiling if it separates, otherwise None."""
         rcs = self.row_col_sep_algorithm(comb_class)
         if rcs.separable():
             return (rcs.separated_tiling(),)
+        return None
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -88,8 +91,7 @@ class RowColumnSeparationStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         """Return the algorithm class using tiling."""
         return RowColSeparation(tiling)
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         """Return formal step."""
         return "row and column separation"
 

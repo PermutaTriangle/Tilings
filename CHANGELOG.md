@@ -24,6 +24,8 @@ swapped around a fusable row or column.
   point or empty cells which is added to most packs.
 - `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can
   lead to factoring out a verified sub tiling.
+- `BasisPatternInsertionFactory` which inserts permutations which are contained in
+  every pattern in the basis
 - `ComponentVerificationStrategy` which is added to component fusion packs.
 - `ComponentToPointAssumptionStrategy` that changes component assumptions to point
   assumptions. These strategies are yielded in `RearrangeAssumptionFactory`.
@@ -38,9 +40,7 @@ swapped around a fusable row or column.
   strategy so should be used with `RuleDBForest`.
 - `UnfusionFactory` that unfuses either all the rows or columns. Also non-productive.
 - `FusableRowAndColumnPlacementFactory` places fusable rows and columns.
-- added the option `ignore_full_tiling_assumptions` to `LimitedAssumptionTileScope`
-  and therefore also to `TrackedSearcher`. If set to `True`, then full-tiling
-  assumptions do not count against the `max_assumptions` cap. The default is `False`.
+- `TrackedClassDB` used by `TrackedSearcher`
 
 ### Fixed
 - `Factor` was not factoring correctly with respect to component assumptions.
@@ -51,6 +51,9 @@ swapped around a fusable row or column.
   were duplicates.
 - `RequirementPlacement` algorithm didn't minimise obstructions correctly when
   placing size 2 or higher gridded perms.
+- added missing condition in `MonotoneSlidingFactory` for consecutive 
+  values. Previous rules failing this condition will now raise 
+  `StrategyDoesNotApply` if it fails this condition.
 
 ### Changed
 - `TileScopePack.make_tracked` will add the appropriate tracking methods for
@@ -72,7 +75,8 @@ swapped around a fusable row or column.
 - The default behavior for `RequirementInsertion` is to allow insertion of factorable
   requirements
 - `OneByOneVerificationStrategy` will look up permpal.com to find the generating
-  functions and min polys.
+  functions and min polys, and also use permpal specs for counting, sampling and
+  generating objects. 
 
 ### Removed
 - `AddInterleavingAssumptionsFactory`. The factor strategy now adds the relevant

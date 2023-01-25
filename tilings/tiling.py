@@ -6,6 +6,7 @@ from functools import lru_cache, reduce
 from itertools import chain, filterfalse, product
 from operator import mul, xor
 from typing import (
+    Any,
     Callable,
     Dict,
     FrozenSet,
@@ -874,7 +875,7 @@ class Tiling(CombinatorialClass):
             derive_empty=derive_empty,
             simplify=simplify,
         )
-        if not simplify:
+        if simplify:
             tiling.clean_assumptions()
         return tiling
 
@@ -898,7 +899,7 @@ class Tiling(CombinatorialClass):
         tiling.clean_assumptions()
         return tiling
 
-    def remove_assumptions(self):
+    def remove_assumptions(self) -> "Tiling":
         """
         Return the tiling with all assumptions removed.
         """
@@ -1892,7 +1893,7 @@ class Tiling(CombinatorialClass):
             if len(gp) == length:
                 yield gp
 
-    def initial_conditions(self, check: int = 6) -> List[sympy.Expr]:
+    def initial_conditions(self, check: int = 6) -> List[Any]:
         """
         Returns a list with the initial conditions to size `check` of the
         CombinatorialClass.
@@ -2233,7 +2234,7 @@ class Tiling(CombinatorialClass):
             requirements=[[GriddedPerm((0,), ((i, p[i]),))] for i in range(len(p))]
         )
 
-    def get_genf(self, *args, **kwargs) -> sympy.Expr:
+    def get_genf(self, *args, **kwargs) -> Any:
         # pylint: disable=import-outside-toplevel
         if self.is_empty():
             return sympy.sympify(0)
