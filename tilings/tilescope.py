@@ -34,6 +34,7 @@ from comb_spec_searcher.typing import CombinatorialClassType, CSSstrategy
 from permuta import Basis, Perm
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import (
+    Assumption,
     EqualParityAssumption,
     EvenCountAssumption,
     OddCountAssumption,
@@ -74,11 +75,6 @@ class TileScope(CombinatorialSpecificationSearcher):
         if start_tiling.dimensions == (1, 1):
             logger.debug("Fixing basis in basis aware verification strategies.")
             assert isinstance(basis, Basis)
-            strategy_pack = strategy_pack.add_basis(basis)
-        strategy_pack = strategy_pack.setup_subclass_verification(start_tiling)
-
-        if start_tiling.dimensions == (1, 1):
-            logger.debug("Fixing basis in basis aware verification strategies.")
             strategy_pack = strategy_pack.add_basis(basis)
         strategy_pack = strategy_pack.setup_subclass_verification(start_tiling)
 
@@ -434,8 +430,8 @@ class TrackedClassDB(ClassDB[Tiling]):
         self.classdb = ClassDB(Tiling)
         self.label_to_tilings: List[bytes] = []
         self.tilings_to_label: Dict[bytes, int] = {}
-        self.assumption_type_to_int: Dict[Type[TrackingAssumption], int] = {}
-        self.int_to_assumption_type: List[Type[TrackingAssumption]] = []
+        self.assumption_type_to_int: Dict[Type[Assumption], int] = {}
+        self.int_to_assumption_type: List[Type[Assumption]] = []
 
     def __iter__(self) -> Iterator[int]:
         for key in self.label_to_info:
@@ -469,7 +465,7 @@ class TrackedClassDB(ClassDB[Tiling]):
         )
         return (underlying_label, assumption_keys)
 
-    def assumption_to_key(self, ass: TrackingAssumption) -> TrackedClassAssumption:
+    def assumption_to_key(self, ass: Assumption) -> TrackedClassAssumption:
         """
         Determines the type of the assumption and retrieves the int representing
         that type from the appropriate class variables, and then apprends the cells.
@@ -690,8 +686,11 @@ class OddOrEvenStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     ) -> Iterator[GriddedPerm]:
         if children is None:
             children = self.decomposition_function(comb_class)
-        gp = next((gp for gp in objs if gp is not None))
-        yield gp
+        try:
+            gp = next((gp for gp in objs if gp is not None))
+            yield gp
+        except StopIteration:
+            return StopIteration
 
     def forward_map(
         self,

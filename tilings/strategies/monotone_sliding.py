@@ -3,6 +3,7 @@ from typing import Dict, Iterator, List, Optional, Tuple
 
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
+from comb_spec_searcher.strategies import Rule
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
@@ -118,7 +119,7 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
     This is only looks at n x 1 and 1 x n tilings.
     """
 
-    def __call__(self, comb_class: Tiling) -> Iterator[GeneralizedSlidingStrategy]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule[Tiling, GriddedPerm]]:
         if comb_class.predicate_assumptions:
             raise NotImplementedError("Not implemented sliding for predicates")
         parent = comb_class

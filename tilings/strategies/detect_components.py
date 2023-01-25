@@ -117,8 +117,7 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply
         return (0,)
 
-    @staticmethod
-    def decomposition_function(comb_class: Tiling) -> Optional[Tuple[Tiling]]:
+    def decomposition_function(self, comb_class: Tiling) -> Optional[Tuple[Tiling]]:
         if not comb_class.tracking_assumptions:
             return None
         return (comb_class.remove_components_from_assumptions(),)

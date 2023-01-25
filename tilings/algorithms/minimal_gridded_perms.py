@@ -548,7 +548,7 @@ class MinimalGriddedPerms:
         self, odd_cells: Set[Cell], even_cells: Set[Cell]
     ) -> Set[GriddedPerm]:
         if odd_cells.intersection(even_cells):
-            return
+            return set()
 
         def cell_count(gp: GriddedPerm, cell: Cell) -> int:
             return sum(1 for _ in filter(cell.__eq__, gp.pos))

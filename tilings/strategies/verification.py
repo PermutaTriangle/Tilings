@@ -5,7 +5,18 @@ from operator import mul
 from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Tuple, cast
 
 import requests
-from sympy import Eq, Expr, Function, Symbol, collect, degree, solve, sympify, var
+from sympy import (
+    Eq,
+    Expr,
+    Function,
+    Number,
+    Symbol,
+    collect,
+    degree,
+    solve,
+    sympify,
+    var,
+)
 
 from comb_spec_searcher import (
     AtomStrategy,
@@ -60,10 +71,6 @@ TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
 
 
 class BasicVerificationStrategy(AtomStrategy):
-    """
-    TODO: can this be moved to the CSS atom strategy?
-    """
-
     def get_terms(self, comb_class: CombinatorialClass, n: int) -> Terms:
         if not isinstance(comb_class, Tiling):
             raise NotImplementedError
@@ -78,8 +85,7 @@ class BasicVerificationStrategy(AtomStrategy):
             return Counter([parameters])
         return Counter()
 
-    @staticmethod
-    def get_objects(comb_class: CombinatorialClass, n: int) -> Objects:
+    def get_objects(self, comb_class: CombinatorialClass, n: int) -> Objects:
         if not isinstance(comb_class, Tiling) or comb_class.predicate_assumptions:
             raise NotImplementedError
         res: Objects = defaultdict(list)
@@ -284,7 +290,11 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
             try:
                 self._spec[comb_class] = super().get_specification(comb_class)
             except InvalidOperationError as e:
-                if len(comb_class.requirements) > 1 or comb_class.dimensions != (1, 1):
+                if (
+                    len(comb_class.requirements) > 1
+                    or comb_class.dimensions != (1, 1)
+                    or comb_class.predicate_assumptions
+                ):
                     raise e
                 self._spec[comb_class] = self._spec_from_permpal(comb_class)
         return self._spec[comb_class]
@@ -438,9 +448,11 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
     ) -> GriddedPerm:
         if comb_class.assumptions:
             assert (
-                len(comb_class.assumptions) == 1
+                len(comb_class.tracking_assumptions) == 1
                 and parameters[
-                    comb_class.get_assumption_parameter(comb_class.assumptions[0])
+                    comb_class.get_assumption_parameter(
+                        comb_class.tracking_assumptions[0]
+                    )
                 ]
                 == n
             )

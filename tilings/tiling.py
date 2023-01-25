@@ -853,17 +853,19 @@ class Tiling(CombinatorialClass):
             sorted_input=True,
         )
 
-    def add_assumption(self, assumption: Assumption) -> "Tiling":
+    def add_assumption(self, assumption: Assumption, clean: bool = True) -> "Tiling":
         """Returns a new tiling with the added assumption."""
-        return self.add_assumptions((assumption,))
+        return self.add_assumptions((assumption,), clean)
 
-    def add_assumptions(self, assumptions: Iterable[Assumption]) -> "Tiling":
+    def add_assumptions(
+        self, assumptions: Iterable[Assumption], clean: bool = True
+    ) -> "Tiling":
         """Returns a new tiling with the added assumptions."""
         assumptions = tuple(assumptions)
         remove_empty_rows_and_cols = False
         derive_empty = False
         simplify = False
-        if any(isinstance(ass, PredicateAssumption) for ass in assumptions):
+        if clean and any(isinstance(ass, PredicateAssumption) for ass in assumptions):
             remove_empty_rows_and_cols = True
             derive_empty = True
             simplify = True
