@@ -41,6 +41,7 @@ from tilings.assumptions import (
     TrackingAssumption,
 )
 from tilings.strategies.predicate_refinement import RefinePredicatesStrategy
+from tilings.strategies.verification import BasicVerificationStrategy
 from tilings.strategy_pack import TileScopePack
 from tilings.tiling import set_debug
 
@@ -735,9 +736,14 @@ class ParityScope(TrackedSearcher):
         delay_next: bool = False,
         **kwargs,
     ) -> None:
+        strategy_pack = strategy_pack.add_initial(
+            RefinePredicatesStrategy(), apply_first=True
+        )
+        strategy_pack.ver_strats = (BasicVerificationStrategy(),)
+        strategy_pack.name = "parity_" + strategy_pack.name
         super().__init__(
             start_class,
-            strategy_pack.add_initial(RefinePredicatesStrategy(), apply_first=True),
+            strategy_pack,
             max_assumptions,
             delay_next,
             **kwargs,
