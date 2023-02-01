@@ -256,8 +256,8 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
             CombinatorialSpecification, CombinatorialSpecification.from_dict(spec_json)
         )
         if spec.root != Tiling(tiling.obstructions):
-            for strategy in SymmetriesFactory()(tiling.remove_assumptions()):
-                rule = strategy(tiling.remove_assumptions())
+            for strategy in SymmetriesFactory()(Tiling(tiling.obstructions)):
+                rule = strategy(Tiling(tiling.obstructions))
                 if rule.children[0] == spec.root:
                     break
             else:
