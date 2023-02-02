@@ -719,7 +719,7 @@ class ElementaryVerificationStrategy(LocallyFactorableVerificationStrategy):
         return "elementary verification"
 
 
-class LocalVerificationStrategy(TileScopeVerificationStrategy):
+class LocalVerificationStrategy(BasisAwareVerificationStrategy):
     """
     The local verified strategy.
 
@@ -727,9 +727,15 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
     localized, i.e. in a single cell and the tiling is not 1x1.
     """
 
-    def __init__(self, ignore_parent: bool = False, no_factors: bool = False):
+    def __init__(
+        self,
+        basis: Optional[Iterable[Perm]] = None,
+        symmetry: bool = False,
+        ignore_parent: bool = False,
+        no_factors: bool = False,
+    ):
         self.no_factors = no_factors
-        super().__init__(ignore_parent=ignore_parent)
+        super().__init__(basis, symmetry, ignore_parent)
 
     def pack(self, comb_class: Tiling) -> StrategyPack:
         try:
@@ -746,11 +752,11 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
             expansion_strats=[],
             ver_strats=[
                 BasicVerificationStrategy(),
-                OneByOneVerificationStrategy(),
+                OneByOneVerificationStrategy(self.basis, self._symmetry),
                 ComponentVerificationStrategy(),
                 InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
-                LocalVerificationStrategy(no_factors=True),
+                LocalVerificationStrategy(self.basis, self._symmetry, no_factors=True),
             ],
             name="factor pack",
         )
