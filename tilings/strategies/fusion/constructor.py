@@ -711,7 +711,11 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
         extra_parameters: Dict[str, str],
         left_sided_parameters: Tuple[str, ...],
         right_sided_parameters: Tuple[str, ...],
+        left_points: int,
+        right_points: int,
     ):
+        self.left_points = left_points
+        self.right_points = right_points
         left_fuse_index = self.get_left_fuse_index(
             left_sided_parameters, fuse_parameter, extra_parameters, t_unfuse
         )
@@ -845,12 +849,19 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
         child_terms = subterms[0](n)
         for param, value in child_terms.items():
             new_param = self.forward_map(param)
+            if not self.satisfies_positive_left_right(param):
+                continue
             new_value = value - child_terms[self.a_map(param)]
             assert new_value >= 0
             if new_value > 0:
                 assert new_param not in terms or new_value == terms[new_param]
                 terms[new_param] = new_value
         return terms
+
+    def satisfies_positive_left_right(self, param: Parameters) -> bool:
+        return all(
+            param[idx] >= self.left_points for idx in self.left_sided_index
+        ) and all(param[idx] >= self.right_points for idx in self.right_sided_index)
 
     def get_equation(
         self, lhs_func: sympy.Function, rhs_funcs: Tuple[sympy.Function, ...]
