@@ -224,10 +224,6 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         algo = self.fusion_algorithm(comb_class)
         if not algo.fusable():
             raise StrategyDoesNotApply("Strategy does not apply")
-        if algo.min_left_right_points() != (0, 0):
-            raise NotImplementedError(
-                "Reverse positive fusion counting not implemented"
-            )
         child = algo.fused_tiling()
         assert children is None or children == (child,)
         (
@@ -236,6 +232,10 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             _,
         ) = self.left_right_both_sided_parameters(comb_class)
         if not left_sided_params and not right_sided_params:
+            if algo.min_left_right_points() != (0, 0):
+                raise NotImplementedError(
+                    "Reverse positive fusion counting not implemented"
+                )
             fused_assumption = algo.new_assumption()
             unfused_assumption = fused_assumption.__class__(
                 chain.from_iterable(
@@ -250,6 +250,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
                 comb_class.get_assumption_parameter(unfused_assumption),
                 self.extra_parameters(comb_class, children),
             )
+        left_points, right_points = algo.min_left_right_points()
         return ReverseFusionConstructor(
             comb_class,
             child,
@@ -257,6 +258,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             self.extra_parameters(comb_class, children)[0],
             tuple(left_sided_params),
             tuple(right_sided_params),
+            left_points,
+            right_points,
         )
 
     def extra_parameters(

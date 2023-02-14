@@ -711,7 +711,11 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
         extra_parameters: Dict[str, str],
         left_sided_parameters: Tuple[str, ...],
         right_sided_parameters: Tuple[str, ...],
+        left_points: int,
+        right_points: int,
     ):
+        self.left_points = left_points
+        self.right_points = right_points
         left_fuse_index = self.get_left_fuse_index(
             left_sided_parameters, fuse_parameter, extra_parameters, t_unfuse
         )
@@ -818,6 +822,18 @@ class ReverseFusionConstructor(Constructor[Tiling, GriddedPerm]):
         for pvalue, fuse_idxs in zip(param, self.unfuse_pos_to_fuse_pos):
             for fuse_idx in fuse_idxs:
                 new_param[fuse_idx] += pvalue
+                if (
+                    self.type == ReverseFusionConstructor.Type.LEFT_ONLY
+                    and self.right_points
+                    and fuse_idx in self.left_sided_index
+                ):
+                    new_param[fuse_idx] += 1
+                elif (
+                    self.type == ReverseFusionConstructor.Type.RIGHT_ONLY
+                    and self.left_points
+                    and fuse_idx in self.right_sided_index
+                ):
+                    new_param[fuse_idx] += 1
         return tuple(new_param)
 
     def a_map(self, param: Parameters) -> Parameters:
