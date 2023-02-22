@@ -199,7 +199,8 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
             assert len(params) == 1
             x_var += "*" + params[0]
         basis = [ob.patt for ob in tiling.obstructions]
-        return Symbol(f"F_{Av(basis)}({x_var})")
+        one_based_basis = ",".join(("".join(str(i + 1) for i in b) for b in basis))
+        return Symbol(f"F_Av({one_based_basis})({x_var})")
 
     @property
     def no_req_tiling(self) -> Tiling:
