@@ -25,6 +25,7 @@ from .pointing import (
     RequirementPointingFactory,
 )
 from .rearrange_assumption import RearrangeAssumptionFactory
+from .relax_assumption import RelaxAssumptionFactory
 from .requirement_insertion import (
     BasisPatternInsertionFactory,
     CellInsertionFactory,
@@ -102,6 +103,7 @@ __all__ = [
     "SlidingFactory",
     # Experimental
     "AssumptionAndPointJumpingFactory",
+    "RelaxAssumptionFactory",
     "DummyStrategy",
     # Fusion
     "ComponentFusionFactory",
