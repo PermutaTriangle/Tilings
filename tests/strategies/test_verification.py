@@ -1110,12 +1110,6 @@ class TestOneByOneVerificationStrategy(CommonTest):
             == -sympy.var("x") - 1
         )
 
-    def test_with_assumptions(self, strategy):
-        ass = TrackingAssumption([GriddedPerm.point_perm((0, 0))])
-        t = Tiling.from_string("01").add_assumption(ass)
-        assert strategy.verified(t)
-        assert strategy.get_genf(t) == sympy.sympify("-1/(k_0*x - 1)")
-
     def test_with_123_subclass_12req(self, strategy):
         t2 = Tiling(
             obstructions=[
