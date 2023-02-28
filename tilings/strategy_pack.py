@@ -306,6 +306,7 @@ class TileScopePack(StrategyPack):
             Point Pointing
             Unfusion
             Targeted Row/Col Placements when fusable
+            Relax assumptions
         Will be made tracked or not, depending on preference.
         Note that nothing is done with positive / point corroboration, requirement
         corroboration, or database verification.
@@ -361,6 +362,11 @@ class TileScopePack(StrategyPack):
 
         try:
             ks_pack = ks_pack.add_initial(strat.RequirementCorroborationFactory())
+        except ValueError:
+            pass
+
+        try:
+            ks_pack = ks_pack.add_initial(strat.RelaxAssumptionFactory())
         except ValueError:
             pass
 
