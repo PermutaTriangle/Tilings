@@ -1,7 +1,11 @@
+import pytest
+
+from comb_spec_searcher.strategies.rule import EquivalencePathRule
 from tilings import GriddedPerm, Tiling, TrackingAssumption
 from tilings.bijections import _TermCacher
 from tilings.strategies.factor import FactorStrategy
 from tilings.strategies.fusion import FusionStrategy
+from tilings.strategies.obstruction_inferral import ObstructionInferralFactory
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 
 
@@ -644,3 +648,28 @@ def test_req_placement_equiv_with_assumptions():
             )
         ).constructor
     )[0]
+
+
+def test_complement_multiple_params():
+    t = Tiling(
+        [
+            GriddedPerm.single_cell((0, 1, 2), (0, 0)),
+            GriddedPerm.single_cell((0, 1, 2), (1, 0)),
+            GriddedPerm((0, 1), ((0, 0), (1, 0))),
+            GriddedPerm((1, 0), ((0, 0), (1, 0))),
+        ],
+        [[GriddedPerm.point_perm((0, 0))]],
+        [
+            TrackingAssumption.from_cells([(0, 0), (1, 0)]),
+            TrackingAssumption.from_cells([(0, 0)]),
+        ],
+    )
+    for strategy in ObstructionInferralFactory()(t):
+        rule = strategy(t)
+        assert not rule.to_reverse_rule(0).is_equivalence()
+        with pytest.raises(AssertionError):
+            EquivalencePathRule([rule.to_reverse_rule(0)])
+
+        for i in range(4):
+            assert rule.sanity_check(i)
+            assert rule.to_reverse_rule(0).sanity_check(i)
