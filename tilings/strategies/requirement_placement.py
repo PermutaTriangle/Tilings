@@ -46,6 +46,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         own_row: bool = True,
         ignore_parent: bool = False,
         include_empty: bool = False,
+        is_reversible: bool = True,
     ):
         self.gps = tuple(gps)
         self.indices = tuple(indices)
@@ -55,8 +56,12 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self._placed_cells = tuple(
             sorted(set(gp.pos[idx] for idx, gp in zip(self.indices, self.gps)))
         )
+        self.is_reversible = is_reversible
         possibly_empty = self.include_empty or len(self.gps) > 1
         super().__init__(ignore_parent=ignore_parent, possibly_empty=possibly_empty)
+
+    def is_reversible(self, comb_class: Tiling) -> bool:
+        return self.is_reversible
 
     def _placed_cell(self, idx: int) -> Cell:
         """Return the cell placed given the index of the child."""
@@ -282,12 +287,14 @@ class AbstractRequirementPlacementFactory(StrategyFactory[Tiling]):
         ignore_parent: bool = False,
         dirs: Iterable[int] = tuple(DIRS),
         include_empty: bool = False,
+        is_reversible: bool = True,
     ):
         assert all(d in DIRS for d in dirs), "Got an invalid direction"
         self.partial = partial
         self.ignore_parent = ignore_parent
         self.dirs = tuple(dirs)
         self.include_empty = include_empty
+        self.is_reversible = is_reversible
 
     @abc.abstractmethod
     def req_indices_and_directions_to_place(
@@ -327,6 +334,7 @@ class AbstractRequirementPlacementFactory(StrategyFactory[Tiling]):
                     own_col=req_placement.own_col,
                     ignore_parent=self.ignore_parent,
                     include_empty=self.include_empty,
+                    is_reversible=self.is_reversible,
                 )
                 children = req_placement.place_point_of_req(gps, indices, direction)
                 if self.include_empty:
