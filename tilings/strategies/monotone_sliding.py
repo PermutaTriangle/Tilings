@@ -4,9 +4,12 @@ from typing import Dict, Iterator, List, Optional, Tuple
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
+from comb_spec_searcher.strategies.rule import EquivalencePathRule
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
+
+from .symmetry import TilingRotate90, TilingRotate270
 
 
 class GeneralizedSlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
@@ -70,7 +73,16 @@ class GeneralizedSlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             if children is None:
                 raise StrategyDoesNotApply("Strategy does not apply")
         if self.rotate:
-            raise NotImplementedError("Not implemented counting for columns")
+            rules: List[Rule[Tiling, GriddedPerm]] = []
+            parent = comb_class
+            for strategy in [
+                TilingRotate270(),
+                GeneralizedSlidingStrategy(self.idx, False),
+                TilingRotate90(),
+            ]:
+                rules.append(strategy(parent))
+                parent = rules[-1].children[0]
+            return EquivalencePathRule(rules).constructor.extra_parameters
         child = children[0]
         return (
             {
