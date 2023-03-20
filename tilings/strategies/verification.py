@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from collections import Counter, defaultdict
 from functools import reduce
 from itertools import chain

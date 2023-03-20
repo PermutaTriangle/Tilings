@@ -47,6 +47,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         own_row: bool = True,
         ignore_parent: bool = False,
         include_empty: bool = False,
+        possibly_empty: bool = False,
     ):
         self.gps = tuple(gps)
         self.indices = tuple(indices)
@@ -56,8 +57,8 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self._placed_cells = tuple(
             sorted(set(gp.pos[idx] for idx, gp in zip(self.indices, self.gps)))
         )
-        # possibly_empty = self.include_empty or len(self.gps) > 1
-        super().__init__(ignore_parent=ignore_parent, possibly_empty=True)
+        possibly_empty = self.include_empty or len(self.gps) > 1 or possibly_empty
+        super().__init__(ignore_parent=ignore_parent, possibly_empty=possibly_empty)
 
     def _placed_cell(self, idx: int) -> Cell:
         """Return the cell placed given the index of the child."""
@@ -244,7 +245,8 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             f"indices={self.indices}, direction={self.direction}, "
             f"own_col={self.own_col}, own_row={self.own_row}, "
             f"ignore_parent={self.ignore_parent}, "
-            f"include_empty={self.include_empty})"
+            f"include_empty={self.include_empty},"
+            f"possibly_empty={self.possibly_empty})"
         )
 
     def to_jsonable(self) -> dict:
@@ -252,7 +254,6 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         d: dict = super().to_jsonable()
         d.pop("workable")
         d.pop("inferrable")
-        d.pop("possibly_empty")
         d["gps"] = tuple(gp.to_jsonable() for gp in self.gps)
         d["indices"] = self.indices
         d["direction"] = self.direction
@@ -329,6 +330,7 @@ class AbstractRequirementPlacementFactory(StrategyFactory[Tiling]):
                     own_col=req_placement.own_col,
                     ignore_parent=self.ignore_parent,
                     include_empty=self.include_empty,
+                    possibly_empty=bool(comb_class.predicate_assumptions),
                 )
                 children = req_placement.place_point_of_req(gps, indices, direction)
                 if self.include_empty:

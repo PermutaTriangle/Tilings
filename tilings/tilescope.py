@@ -38,7 +38,6 @@ from tilings.assumptions import (
     EqualParityAssumption,
     EvenCountAssumption,
     OddCountAssumption,
-    TrackingAssumption,
 )
 from tilings.strategies.predicate_refinement import RefinePredicatesStrategy
 from tilings.strategies.verification import BasicVerificationStrategy
@@ -719,6 +718,8 @@ class OddOrEvenStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 ): child.get_assumption_parameter(ass)
                 for ass in comb_class.tracking_assumptions
             }
+            if not child.is_empty()
+            else {}
             for child in children
         )
 

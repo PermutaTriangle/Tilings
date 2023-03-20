@@ -24,6 +24,7 @@ from tilings.strategies import (
 )
 from tilings.strategies.detect_components import DetectComponentsStrategy
 from tilings.strategies.experimental_verification import SubclassVerificationStrategy
+from tilings.strategies.predicate_refinement import RefinePredicatesStrategy
 from tilings.tilescope import TileScopePack
 
 
@@ -472,6 +473,8 @@ class TestLocalVerificationStrategy(CommonTest):
             enum_verified[0]
         ) == TileScopePack.regular_insertion_encoding(3).add_initial(
             DetectComponentsStrategy()
+        ).add_initial(
+            RefinePredicatesStrategy(), apply_first=True
         )
         assert strategy.pack(enum_verified[1]).name == "factor pack"
         assert strategy.pack(enum_verified[2]).name == "factor pack"
@@ -663,6 +666,8 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
             enum_verified[1]
         ) == TileScopePack.regular_insertion_encoding(3).add_initial(
             DetectComponentsStrategy()
+        ).add_initial(
+            RefinePredicatesStrategy(), apply_first=True
         )
 
     @pytest.mark.timeout(30)
@@ -999,23 +1004,35 @@ class TestOneByOneVerificationStrategy(CommonTest):
             enum_verified[0]
         ) == TileScopePack.point_and_row_and_col_placements().add_verification(
             BasicVerificationStrategy(), replace=True
+        ).add_initial(
+            RefinePredicatesStrategy(), apply_first=True
         )
         assert strategy.pack(enum_verified[1]) in (
-            TileScopePack.regular_insertion_encoding(2),
-            TileScopePack.regular_insertion_encoding(3),
+            TileScopePack.regular_insertion_encoding(2).add_initial(
+                RefinePredicatesStrategy(), apply_first=True
+            ),
+            TileScopePack.regular_insertion_encoding(3).add_initial(
+                RefinePredicatesStrategy(), apply_first=True
+            ),
         )
 
         assert strategy.pack(
             enum_verified[2]
-        ) == TileScopePack.regular_insertion_encoding(3)
+        ) == TileScopePack.regular_insertion_encoding(3).add_initial(
+            RefinePredicatesStrategy(), apply_first=True
+        )
 
         assert strategy.pack(
             enum_verified[3]
-        ) == TileScopePack.regular_insertion_encoding(2)
+        ) == TileScopePack.regular_insertion_encoding(2).add_initial(
+            RefinePredicatesStrategy(), apply_first=True
+        )
         assert strategy.pack(
             enum_verified[4]
         ) == TileScopePack.row_and_col_placements().add_basis(
             [Perm((0, 1, 2)), Perm((2, 3, 0, 1))]
+        ).add_initial(
+            RefinePredicatesStrategy(), apply_first=True
         )
 
         # assert strategy.pack(

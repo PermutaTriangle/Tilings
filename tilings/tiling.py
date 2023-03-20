@@ -196,7 +196,7 @@ class Tiling(CombinatorialClass):
                 )
             else:
                 _assumptions.append(ass)
-        self._assumptions = tuple(sorted(_assumptions))
+        self._assumptions = tuple(sorted(set(_assumptions)))
 
     def _check_init(self, checked: bool):
         if DEBUG and not checked:
