@@ -306,6 +306,7 @@ class TileScopePack(StrategyPack):
             Point Pointing
             Unfusion
             Targeted Row/Col Placements when fusable
+            Relax assumptions
         Will be made tracked or not, depending on preference.
         Note that nothing is done with positive / point corroboration, requirement
         corroboration, or database verification.
@@ -320,55 +321,46 @@ class TileScopePack(StrategyPack):
             symmetries=self.symmetries,
             iterative=self.iterative,
         )
-
         if short_obs_len > 0:
+            ver_strats: List[CSSstrategy] = [
+                strat.ShortObstructionVerificationStrategy(short_obs_len)
+            ]
+        else:
+            ver_strats = []
+        ver_strats += [
+            strat.NoRootCellVerificationStrategy(),
+            strat.DatabaseVerificationStrategy(),
+        ]
+
+        for strategy in ver_strats:
             try:
-                ks_pack = ks_pack.add_verification(
-                    strat.ShortObstructionVerificationStrategy(short_obs_len)
-                )
+                ks_pack = ks_pack.add_verification(strategy)
             except ValueError:
                 pass
 
-        try:
-            ks_pack = ks_pack.add_verification(strat.NoRootCellVerificationStrategy())
-        except ValueError:
-            pass
-
-        try:
-            ks_pack = ks_pack.add_verification(strat.DatabaseVerificationStrategy())
-        except ValueError:
-            pass
-
-        try:
-            ks_pack = ks_pack.add_initial(strat.DeflationFactory(tracked))
-        except ValueError:
-            pass
-
-        try:
-            ks_pack = ks_pack.add_initial(strat.AssumptionAndPointJumpingFactory())
-        except ValueError:
-            pass
-
-        try:
-            ks_pack = ks_pack.add_initial(strat.MonotoneSlidingFactory())
-        except ValueError:
-            pass
-
-        try:
-            ks_pack = ks_pack.add_initial(strat.CellReductionFactory(tracked))
-        except ValueError:
-            pass
-
-        try:
-            ks_pack = ks_pack.add_initial(strat.RequirementCorroborationFactory())
-        except ValueError:
-            pass
+        initial_strats: List[CSSstrategy] = [
+            strat.DeflationFactory(tracked),
+            strat.AssumptionAndPointJumpingFactory(),
+            strat.MonotoneSlidingFactory(),
+            strat.CellReductionFactory(tracked),
+            strat.RequirementCorroborationFactory(),
+            strat.RelaxAssumptionFactory(),
+        ]
+        for strategy in initial_strats:
+            try:
+                ks_pack = ks_pack.add_initial(strategy)
+            except ValueError:
+                pass
 
         if obs_inferral_len > 0:
+            inf_strats: List[CSSstrategy] = [
+                strat.ObstructionInferralFactory(obs_inferral_len)
+            ]
+        else:
+            inf_strats = []
+        for strategy in inf_strats:
             try:
-                ks_pack = ks_pack.add_inferral(
-                    strat.ObstructionInferralFactory(obs_inferral_len)
-                )
+                ks_pack = ks_pack.add_inferral(strategy)
             except ValueError:
                 pass
 
