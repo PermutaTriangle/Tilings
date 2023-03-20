@@ -71,7 +71,7 @@ class AssumptionOrPointJumpingStrategy(Strategy[Tiling, GriddedPerm]):
         return x, y
 
     def _swap_assumption(self, assumption: TrackingAssumption) -> TrackingAssumption:
-        return TrackingAssumption(self._swapped_gp(gp) for gp in assumption.gps)
+        return assumption.__class__(self._swapped_gp(gp) for gp in assumption.gps)
 
     @abc.abstractmethod
     def backward_map(

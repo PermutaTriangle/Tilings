@@ -41,6 +41,7 @@ swapped around a fusable row or column.
 - `UnfusionFactory` that unfuses either all the rows or columns. Also non-productive.
 - `FusableRowAndColumnPlacementFactory` places fusable rows and columns.
 - `TrackedClassDB` used by `TrackedSearcher`
+- counting for `GeneralizedSlidingStrategy` of rows (i.e., `rotate=True`)
 
 ### Fixed
 - `Factor` was not factoring correctly with respect to component assumptions.
@@ -55,6 +56,7 @@ swapped around a fusable row or column.
   values. Previous rules failing this condition will now raise 
   `StrategyDoesNotApply` if it fails this condition.
 - `LocalVerificationStrategy` needs to be a `BasisAwareVerificationStrategy`
+- `PointJumping` maps component assumption to component assumptions.
 
 ### Changed
 - `TileScopePack.make_tracked` will add the appropriate tracking methods for
