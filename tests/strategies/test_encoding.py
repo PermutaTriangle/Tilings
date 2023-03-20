@@ -37,6 +37,7 @@ from tilings.strategies import (
     PatternPlacementFactory,
     PointingStrategy,
     RearrangeAssumptionFactory,
+    RelaxAssumptionFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
     RequirementInsertionFactory,
@@ -507,6 +508,7 @@ strategy_objects = (
         UnfusionRowStrategy(),
         UnfusionColumnStrategy(),
         UnfusionFactory(),
+        RelaxAssumptionFactory(),
     ]
     + [
         AssumptionPointingStrategy(
