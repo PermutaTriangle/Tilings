@@ -72,7 +72,7 @@ class AssumptionOrPointJumpingStrategy(Strategy[Tiling, GriddedPerm]):
         return x, y
 
     def _swap_assumption(self, assumption: TrackingAssumption) -> TrackingAssumption:
-        return TrackingAssumption(self._swapped_gp(gp) for gp in assumption.gps)
+        return assumption.__class__(self._swapped_gp(gp) for gp in assumption.gps)
 
     @abc.abstractmethod
     def backward_map(
@@ -153,8 +153,6 @@ class AssumptionAndPointJumpingStrategy(
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> Tuple[Dict[str, str], ...]:
-        if not comb_class.extra_parameters:
-            raise ValueError("This tiling does not have assumptions")
         if children is None:
             children = self.decomposition_function(comb_class)
             if children is None:

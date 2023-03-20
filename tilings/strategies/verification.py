@@ -213,9 +213,10 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
         x_var = "x"
         if params:
             assert len(params) == 1
-            x_var += "*" + params[0].replace("_", "")
+            x_var += "*" + params[0]
         basis = [ob.patt for ob in tiling.obstructions]
-        return Symbol(f"F_{Av(basis)}({x_var})")
+        one_based_basis = ",".join(("".join(str(i + 1) for i in b) for b in basis))
+        return Symbol(f"F_Av({one_based_basis})({x_var})")
 
     @property
     def no_req_tiling(self) -> Tiling:
@@ -271,9 +272,10 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
         spec = cast(
             CombinatorialSpecification, CombinatorialSpecification.from_dict(spec_json)
         )
-        if spec.root != Tiling(tiling.obstructions):
-            for strategy in SymmetriesFactory()(tiling.remove_assumptions()):
-                rule = strategy(tiling.remove_assumptions())
+        actual_class = Tiling(tiling.obstructions)
+        if spec.root != actual_class:
+            for strategy in SymmetriesFactory()(actual_class):
+                rule = strategy(actual_class)
                 if rule.children[0] == spec.root:
                     break
             else:
@@ -750,7 +752,7 @@ class ElementaryVerificationStrategy(LocallyFactorableVerificationStrategy):
         return "elementary verification"
 
 
-class LocalVerificationStrategy(TileScopeVerificationStrategy):
+class LocalVerificationStrategy(BasisAwareVerificationStrategy):
     """
     The local verified strategy.
 
@@ -758,9 +760,15 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
     localized, i.e. in a single cell and the tiling is not 1x1.
     """
 
-    def __init__(self, ignore_parent: bool = False, no_factors: bool = False):
+    def __init__(
+        self,
+        basis: Optional[Iterable[Perm]] = None,
+        symmetry: bool = False,
+        ignore_parent: bool = False,
+        no_factors: bool = False,
+    ):
         self.no_factors = no_factors
-        super().__init__(ignore_parent=ignore_parent)
+        super().__init__(basis, symmetry, ignore_parent)
 
     def pack(self, comb_class: Tiling) -> StrategyPack:
         try:
@@ -781,11 +789,11 @@ class LocalVerificationStrategy(TileScopeVerificationStrategy):
             expansion_strats=[],
             ver_strats=[
                 BasicVerificationStrategy(),
-                OneByOneVerificationStrategy(),
+                OneByOneVerificationStrategy(self.basis, self._symmetry),
                 ComponentVerificationStrategy(),
                 InsertionEncodingVerificationStrategy(),
                 MonotoneTreeVerificationStrategy(no_factors=True),
-                LocalVerificationStrategy(no_factors=True),
+                LocalVerificationStrategy(self.basis, self._symmetry, no_factors=True),
             ],
             name="factor pack",
         )
