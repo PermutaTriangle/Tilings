@@ -86,9 +86,13 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         return tuple(comb_class.sub_tiling(cells) for cells in self.partition)
 
     def is_two_way(self, comb_class: Tiling) -> bool:  # type: ignore
+        if not comb_class.predicate_assumptions:
+            return True
         return self.is_reversible(comb_class)
 
     def is_reversible(self, comb_class: Tiling) -> bool:  # type: ignore
+        if not comb_class.predicate_assumptions:
+            return True
         return not comb_class.experimental_is_empty()
 
     def shifts(

@@ -1723,7 +1723,9 @@ class Tiling(CombinatorialClass):
             return True
         if any(self._satisfies_predicates(gp) for gp in gps):
             return False
-        return self._is_empty_after_expansion(experimental_bound)
+        if self.predicate_assumptions:
+            return self._is_empty_after_expansion(experimental_bound)
+        return True
 
     def _is_empty_after_expansion(
         self, experimental_bound: Optional[int] = None
