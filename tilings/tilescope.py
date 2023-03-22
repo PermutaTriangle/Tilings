@@ -764,3 +764,13 @@ class ParityScope(TrackedSearcher):
             ),
             basis,
         )
+
+    def _get_specification_rules(
+        self, smallest: bool = False, minimization_time_limit: float = 10
+    ) -> Iterator[AbstractRule]:
+        pack = self.strategy_pack
+        self.strategy_pack = pack.add_initial(OddOrEvenStrategy(), apply_first=True)
+        yield from self.ruledb.get_specification_rules(
+            smallest=smallest, minimization_time_limit=minimization_time_limit
+        )
+        self.strategy_pack = pack

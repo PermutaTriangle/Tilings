@@ -1994,6 +1994,19 @@ class Tiling(CombinatorialClass):
             return min(len(gp) for gp in self.requirements[0])
         return len(next(self.minimal_gridded_perms()))
 
+    def min_size(self) -> int:
+        try:
+            min_point = len(
+                next(
+                    self.gridded_perms(
+                        self.maximum_length_of_minimum_gridded_perm() + 4
+                    )
+                )
+            )
+        except StopIteration:
+            min_point = self.minimum_size_of_object()
+        return min_point
+
     def is_point_or_empty_cell(self, cell: Cell) -> bool:
         point_or_empty_obs = (
             GriddedPerm((0, 1), (cell, cell)),
