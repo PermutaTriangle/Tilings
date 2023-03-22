@@ -87,7 +87,7 @@ class BasicVerificationStrategy(AtomStrategy):
         return Counter()
 
     def get_objects(self, comb_class: CombinatorialClass, n: int) -> Objects:
-        if not isinstance(comb_class, Tiling) or comb_class.predicate_assumptions:
+        if not isinstance(comb_class, Tiling):
             raise NotImplementedError
         res: Objects = defaultdict(list)
         gp = next(comb_class.minimal_gridded_perms())
