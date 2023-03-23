@@ -1,5 +1,4 @@
 import pytest
-import sympy
 
 from comb_spec_searcher import CombinatorialSpecification
 from tilings.tilescope import ParityScope, TileScopePack

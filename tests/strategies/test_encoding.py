@@ -320,14 +320,14 @@ def gps_indices_direction_owncol_ownrow_ignoreparent_includeempty_possibly_empty
             direction=direction,
             own_col=own_col,
             own_row=own_row,
-            ignore_parent=ignore_parent,
-            include_empty=include_empty,
-            possibly_empty=possibly_empty,
+            ignore_parent=ign_par,
+            include_empty=inc_empty,
+            possibly_empty=pos_empty,
         )
         for (
             gps,
             indices,
-        ), direction, own_col, own_row, ignore_parent, include_empty, possibly_empty in product(
+        ), direction, own_col, own_row, ign_par, inc_empty, pos_empty in product(
             (
                 ((GriddedPerm((0,), ((0, 0),)),), (0,)),
                 ((GriddedPerm.single_cell((0, 1, 2), (2, 1)),), (1,)),
