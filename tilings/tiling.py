@@ -998,8 +998,6 @@ class Tiling(CombinatorialClass):
             symmetries.add(t)
             symmetries.add(t.inverse())
             t = t.rotate90()
-            if t in symmetries:
-                break
         return symmetries
 
     def column_reverse(self, column: int) -> "Tiling":
