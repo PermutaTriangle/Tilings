@@ -57,6 +57,7 @@ swapped around a fusable row or column.
   `StrategyDoesNotApply` if it fails this condition.
 - `LocalVerificationStrategy` needs to be a `BasisAwareVerificationStrategy`
 - `PointJumping` maps component assumption to component assumptions.
+- `Tiling.all_symmetries` had a premature break statement that was removed
 
 ### Changed
 - `TileScopePack.make_tracked` will add the appropriate tracking methods for
