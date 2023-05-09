@@ -303,8 +303,8 @@ class UnfusionRowStrategy(UnfusionColumnStrategy):
 
 class UnfusionFactory(StrategyFactory[Tiling]):
     def __init__(self, max_width: int = 4, max_height: int = 4) -> None:
-        self.max_height = max_height
         self.max_width = max_width
+        self.max_height = max_height
         super().__init__()
 
     def __call__(self, comb_class: Tiling) -> Iterator[UnfusionColumnStrategy]:
@@ -318,8 +318,17 @@ class UnfusionFactory(StrategyFactory[Tiling]):
         return "unfusion strategy"
 
     def __repr__(self) -> str:
-        return self.__class__.__name__ + "()"
+        return (
+            self.__class__.__name__
+            + f"(max_width={self.max_width}, max_height={self.max_height})"
+        )
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["max_width"] = self.max_width
+        d["max_height"] = self.max_height
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "UnfusionFactory":
-        return cls()
+        return cls(max_width=d["max_width"], max_height=d["max_height"])
