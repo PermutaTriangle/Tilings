@@ -81,6 +81,8 @@ swapped around a fusable row or column.
 - `OneByOneVerificationStrategy` will look up permpal.com to find the generating
   functions and min polys, and also use permpal specs for counting, sampling and
   generating objects. 
+- The `kitchen_sinkify` function on `TileScopePack` now takes a level between 1 and 5
+  as input, which is used to determine how crazy the added strategies should be.
 
 ### Removed
 - `AddInterleavingAssumptionsFactory`. The factor strategy now adds the relevant

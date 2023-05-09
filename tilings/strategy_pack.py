@@ -289,7 +289,11 @@ class TileScopePack(StrategyPack):
         return super().add_symmetry(strat.SymmetriesFactory(), "symmetries")
 
     def kitchen_sinkify(  # pylint: disable=R0912
-        self, short_obs_len: int, obs_inferral_len: int, tracked: bool
+        self,
+        short_obs_len: int,
+        obs_inferral_len: int,
+        tracked: bool,
+        level: int,
     ) -> "TileScopePack":
         """
         Create a new pack with the following added:
@@ -310,7 +314,25 @@ class TileScopePack(StrategyPack):
         Will be made tracked or not, depending on preference.
         Note that nothing is done with positive / point corroboration, requirement
         corroboration, or database verification.
+
+        Different stratgies will be added at different levels
+        Level 1: short obs, no root cell, database verification, symmetries,
+                    obs inferral, interleaving factor without unions
+        Level 2: deflation, point/assumption jumping, sliding, free cell reduction,
+                    req corrob, targeted row/col placements, relax assumptions,
+                    interleaving factor with unions
+        Level 3: unfusion 1,1
+        Level 4: unfusion 2,2, pointing mc=4, assumption mc=8
+        Level 5: unfusion 4,4, pointing mc=6, assumption mc=8, requirement pt, mc=4
         """
+
+        assert level in (
+            1,
+            2,
+            3,
+            4,
+            5,
+        ), "Level must be an int between 1 and 5 inclusive"
 
         ks_pack = self.__class__(
             ver_strats=self.ver_strats,
@@ -327,6 +349,7 @@ class TileScopePack(StrategyPack):
             ]
         else:
             ver_strats = []
+
         ver_strats += [
             strat.NoRootCellVerificationStrategy(),
             strat.DatabaseVerificationStrategy(),
@@ -338,19 +361,20 @@ class TileScopePack(StrategyPack):
             except ValueError:
                 pass
 
-        initial_strats: List[CSSstrategy] = [
-            strat.DeflationFactory(tracked),
-            strat.AssumptionAndPointJumpingFactory(),
-            strat.MonotoneSlidingFactory(),
-            strat.CellReductionFactory(tracked),
-            strat.RequirementCorroborationFactory(),
-            strat.RelaxAssumptionFactory(),
-        ]
-        for strategy in initial_strats:
-            try:
-                ks_pack = ks_pack.add_initial(strategy)
-            except ValueError:
-                pass
+        if level >= 2:
+            initial_strats: List[CSSstrategy] = [
+                strat.DeflationFactory(tracked),
+                strat.AssumptionAndPointJumpingFactory(),
+                strat.MonotoneSlidingFactory(),
+                strat.CellReductionFactory(tracked),
+                strat.RequirementCorroborationFactory(),
+                strat.RelaxAssumptionFactory(),
+            ]
+            for strategy in initial_strats:
+                try:
+                    ks_pack = ks_pack.add_initial(strategy)
+                except ValueError:
+                    pass
 
         if obs_inferral_len > 0:
             inf_strats: List[CSSstrategy] = [
@@ -364,7 +388,7 @@ class TileScopePack(StrategyPack):
             except ValueError:
                 pass
 
-        ks_pack = ks_pack.make_interleaving(tracked=tracked, unions=True)
+        ks_pack = ks_pack.make_interleaving(tracked=tracked, unions=(level > 1))
 
         try:
             ks_pack = ks_pack.add_all_symmetry()
@@ -374,17 +398,38 @@ class TileScopePack(StrategyPack):
         if tracked:
             ks_pack = ks_pack.make_tracked()
 
-        ks_pack.expansion_strats = ks_pack.expansion_strats + (
-            (
-                strat.AssumptionPointingFactory(),
-                strat.RequirementPointingFactory(),
-                strat.PointingStrategy(),
-                strat.UnfusionFactory(),
-                strat.FusableRowAndColumnPlacementFactory(),
-            ),
-        )
+        if level == 2:
+            ks_pack.expansion_strats = ks_pack.expansion_strats + (
+                (strat.FusableRowAndColumnPlacementFactory(),),
+            )
+        elif level == 3:
+            ks_pack.expansion_strats = ks_pack.expansion_strats + (
+                (
+                    strat.UnfusionFactory(1, 1),
+                    strat.FusableRowAndColumnPlacementFactory(),
+                ),
+            )
+        elif level == 4:
+            ks_pack.expansion_strats = ks_pack.expansion_strats + (
+                (
+                    strat.AssumptionPointingFactory(8),
+                    strat.PointingStrategy(4),
+                    strat.UnfusionFactory(2, 2),
+                    strat.FusableRowAndColumnPlacementFactory(),
+                ),
+            )
+        elif level == 5:
+            ks_pack.expansion_strats = ks_pack.expansion_strats + (
+                (
+                    strat.AssumptionPointingFactory(8),
+                    strat.RequirementPointingFactory(4),
+                    strat.PointingStrategy(6),
+                    strat.UnfusionFactory(4, 4),
+                    strat.FusableRowAndColumnPlacementFactory(),
+                ),
+            )
 
-        ks_pack.name += "_kitchen_sink"
+        ks_pack.name += f"_kitchen_sink_level_{level}"
 
         return ks_pack
 
