@@ -82,10 +82,10 @@ def expanded_spec(
         ver_strats=pack.ver_strats,
         name=pack.name,
     )
-    # pack = pack.remove_strategy(MonotoneTreeVerificationStrategy()).make_interleaving(
-    #     tracked=False, unions=False
-    # )
-    # pack = pack.remove_strategy(LocalVerificationStrategy())
+    pack = pack.remove_strategy(MonotoneTreeVerificationStrategy()).make_interleaving(
+        tracked=False, unions=False
+    )
+    pack = pack.remove_strategy(LocalVerificationStrategy())
     pack = pack.add_verification(NoBasisVerification(symmetries), apply_first=True)
     with TmpLoggingLevel(logging.WARN):
         css = CombinatorialSpecificationSearcher(tiling, pack)
