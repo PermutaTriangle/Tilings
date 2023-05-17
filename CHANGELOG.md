@@ -58,6 +58,8 @@ swapped around a fusable row or column.
 - `LocalVerificationStrategy` needs to be a `BasisAwareVerificationStrategy`
 - `PointJumping` maps component assumption to component assumptions.
 - `Tiling.all_symmetries` had a premature break statement that was removed
+- `shift_from_spec` method would previously fail if any tiling had two or 
+  more interleaving cells.
 
 ### Changed
 - `TileScopePack.make_tracked` will add the appropriate tracking methods for
