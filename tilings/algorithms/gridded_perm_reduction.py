@@ -162,7 +162,7 @@ class GriddedPermReduction:
         for idx, requirement in enumerate(requirements):
             if not all(requirement):
                 continue
-            if self._requirement_implied_by_some_requirement(
+            if self.requirement_implied_by_some_requirement(
                 requirement,
                 chain(
                     islice(requirements, idx),
@@ -306,7 +306,7 @@ class GriddedPermReduction:
             for requirement in requirements
         )
 
-    def _requirement_implied_by_some_requirement(
+    def requirement_implied_by_some_requirement(
         self,
         requirement: Requirement,
         requirements: Iterable[Requirement],

@@ -232,6 +232,8 @@ class CellReductionFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling) -> Iterator[CellReductionStrategy]:
         if comb_class.dimensions == (1, 1):
             return
+        if comb_class.predicate_assumptions:
+            raise NotImplementedError("Not implemented cell reduction for predicates")
         cell_bases = comb_class.cell_basis()
         for cell in self.reducible_cells(comb_class):
             if not (  # a finite cell

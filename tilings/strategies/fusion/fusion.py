@@ -9,6 +9,7 @@ from comb_spec_searcher.strategies import NonBijectiveRule, Rule
 from comb_spec_searcher.typing import Objects
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion
+from tilings.assumptions import EvenCountAssumption, OddCountAssumption
 
 from ..pointing import DivideByK
 from .constructor import FusionConstructor, ReverseFusionConstructor
@@ -50,9 +51,13 @@ class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
             ) -> None:
                 """Update new terms if there is enough points on the left and right."""
                 gp = next(unfused_gps)
+                right_points = fuse_region_points - left_points
                 if (
                     min_left <= left_points
-                    and min_right <= fuse_region_points - left_points
+                    and min_right <= right_points
+                    and self.constructor.odd_even_left_right_satisfied(
+                        left_points, right_points
+                    )
                 ):
                     res[tuple(params)].append(gp)
 
@@ -177,7 +182,9 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         new_ass = algo.new_assumption()
         fused_assumptions = (
             ass.__class__(gps)
-            for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
+            for ass, gps in zip(
+                comb_class.tracking_assumptions, algo.assumptions_fuse_counters
+            )
         )
         return new_ass in fused_assumptions
 
@@ -199,6 +206,16 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         child = algo.fused_tiling()
         assert children is None or children == (child,)
         min_left, min_right = algo.min_left_right_points()
+        left, right = algo.left_fuse_region(), algo.right_fuse_region()
+        odd_left, odd_right = None, None
+        if OddCountAssumption.from_cells(left) in comb_class.assumptions:
+            odd_left = True
+        elif EvenCountAssumption.from_cells(left) in comb_class.assumptions:
+            odd_left = False
+        if OddCountAssumption.from_cells(right) in comb_class.assumptions:
+            odd_right = True
+        elif EvenCountAssumption.from_cells(right) in comb_class.assumptions:
+            odd_right = False
         return FusionConstructor(
             comb_class,
             child,
@@ -207,6 +224,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
             *self.left_right_both_sided_parameters(comb_class),
             min_left,
             min_right,
+            odd_left=odd_left,
+            odd_right=odd_right,
         )
 
     def reverse_constructor(  # pylint: disable=no-self-use
@@ -218,6 +237,8 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         if not self.tracked:
             # constructor only enumerates when tracked.
             raise NotImplementedError("The fusion strategy was not tracked.")
+        if comb_class.predicate_assumptions:
+            raise NotImplementedError("can't handle predicates")
         if children is None:
             children = self.decomposition_function(comb_class)
         # Need to recompute some info to count, so ignoring passed in children
@@ -273,7 +294,9 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         child = children[0]
         mapped_assumptions = [
             child.forward_map.map_assumption(ass.__class__(gps))
-            for ass, gps in zip(comb_class.assumptions, algo.assumptions_fuse_counters)
+            for ass, gps in zip(
+                comb_class.tracking_assumptions, algo.assumptions_fuse_counters
+            )
         ]
         return (
             {
@@ -290,7 +313,7 @@ class FusionStrategy(Strategy[Tiling, GriddedPerm]):
         right_sided_params: Set[str] = set()
         both_sided_params: Set[str] = set()
         algo = self.fusion_algorithm(comb_class)
-        for assumption in comb_class.assumptions:
+        for assumption in comb_class.tracking_assumptions:
             parent_var = comb_class.get_assumption_parameter(assumption)
             left_sided = algo.is_left_sided_assumption(assumption)
             right_sided = algo.is_right_sided_assumption(assumption)

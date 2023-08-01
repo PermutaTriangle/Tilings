@@ -203,7 +203,7 @@ def test_rule(seperable_tiling1, not_separable_tilings):
     assert rule.ignore_parent
     assert rule.workable
     assert isinstance(rule.constructor, DisjointUnion)
-    assert not rule.possibly_empty
+    assert rule.possibly_empty
     assert (
         RowColumnSeparationStrategy().decomposition_function(not_separable_tilings[0])
         is None

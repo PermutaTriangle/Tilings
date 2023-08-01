@@ -4,7 +4,11 @@ from typing import TYPE_CHECKING, Dict, Iterable, Iterator, List, Optional, Set,
 
 from permuta.misc import UnionFind
 from tilings import GriddedPerm
-from tilings.assumptions import ComponentAssumption, TrackingAssumption
+from tilings.assumptions import (
+    ComponentAssumption,
+    PredicateAssumption,
+    TrackingAssumption,
+)
 from tilings.misc import partitions_iterator
 
 if TYPE_CHECKING:
@@ -76,10 +80,16 @@ class Factor:
         """
         For each TrackingAssumption unite all the positions of the gridded perms.
         """
+        if any(len(ass.cells) > 1 for ass in self._tiling.predicate_assumptions):
+            # DO NOT FACTOR
+            self._unite_cells(self._tiling.active_cells)
+            return
         for assumption in self._tiling.assumptions:
             if isinstance(assumption, ComponentAssumption):
                 for cells in assumption.cell_decomposition(self._tiling):
                     self._unite_cells(cells)
+            elif isinstance(assumption, PredicateAssumption):
+                self._unite_cells(assumption.cells)
             else:
                 for gp in assumption.gps:
                     self._unite_cells(gp.pos)
@@ -155,6 +165,8 @@ class Factor:
         Returns a list of all the irreducible factors of the tiling.
         Each factor is a tuple (obstructions, requirements)
         """
+        if self._tiling.predicate_assumptions:
+            raise NotImplementedError
         if self._factors_obs_and_reqs is not None:
             return self._factors_obs_and_reqs
         if self._tiling.is_empty():
@@ -170,7 +182,7 @@ class Factor:
             # TODO: consider skew/sum assumptions
             assumptions = tuple(
                 ass.__class__(gp for gp in ass.gps if gp.pos[0] in component)
-                for ass in self._tiling.assumptions
+                for ass in self._tiling.tracking_assumptions
             )
             factors.append(
                 (

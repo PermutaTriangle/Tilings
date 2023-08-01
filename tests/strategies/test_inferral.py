@@ -191,7 +191,7 @@ def test_row_col_sep(tiling1):
     assert isinstance(rule.constructor, DisjointUnion)
     assert rule.formal_step == "row and column separation"
     assert rule.inferrable
-    assert not rule.possibly_empty
+    assert rule.possibly_empty
     assert rule.ignore_parent
     assert rule.workable
     assert rule.children[0] == Tiling(

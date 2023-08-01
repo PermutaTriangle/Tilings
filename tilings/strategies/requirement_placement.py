@@ -11,6 +11,7 @@ from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
 from tilings.algorithms.fusion import Fusion
+from tilings.assumptions import TrackingAssumption
 
 __all__ = [
     "PatternPlacementFactory",
@@ -46,6 +47,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         own_row: bool = True,
         ignore_parent: bool = False,
         include_empty: bool = False,
+        possibly_empty: bool = False,
     ):
         self.gps = tuple(gps)
         self.indices = tuple(indices)
@@ -55,7 +57,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self._placed_cells = tuple(
             sorted(set(gp.pos[idx] for idx, gp in zip(self.indices, self.gps)))
         )
-        possibly_empty = self.include_empty or len(self.gps) > 1
+        possibly_empty = self.include_empty or len(self.gps) > 1 or possibly_empty
         super().__init__(ignore_parent=ignore_parent, possibly_empty=possibly_empty)
 
     def _placed_cell(self, idx: int) -> Cell:
@@ -91,7 +93,7 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         extra_parameters: Tuple[Dict[str, str], ...] = tuple({} for _ in children)
         if self.include_empty:
             child = children[0]
-            for assumption in comb_class.assumptions:
+            for assumption in comb_class.tracking_assumptions:
                 mapped_assumption = child.forward_map.map_assumption(
                     assumption
                 ).avoiding(child.obstructions)
@@ -105,9 +107,10 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             mapped_assumptions = [
                 child.forward_map.map_assumption(ass).avoiding(child.obstructions)
                 for ass in algo.stretched_assumptions(cell)
+                if isinstance(ass, TrackingAssumption)
             ]
             for assumption, mapped_assumption in zip(
-                comb_class.assumptions, mapped_assumptions
+                comb_class.tracking_assumptions, mapped_assumptions
             ):
                 if mapped_assumption.gps:
                     parent_var = comb_class.get_assumption_parameter(assumption)
@@ -242,7 +245,8 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             f"indices={self.indices}, direction={self.direction}, "
             f"own_col={self.own_col}, own_row={self.own_row}, "
             f"ignore_parent={self.ignore_parent}, "
-            f"include_empty={self.include_empty})"
+            f"include_empty={self.include_empty},"
+            f"possibly_empty={self.possibly_empty})"
         )
 
     def to_jsonable(self) -> dict:
@@ -250,7 +254,6 @@ class RequirementPlacementStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         d: dict = super().to_jsonable()
         d.pop("workable")
         d.pop("inferrable")
-        d.pop("possibly_empty")
         d["gps"] = tuple(gp.to_jsonable() for gp in self.gps)
         d["indices"] = self.indices
         d["direction"] = self.direction
@@ -327,6 +330,7 @@ class AbstractRequirementPlacementFactory(StrategyFactory[Tiling]):
                     own_col=req_placement.own_col,
                     ignore_parent=self.ignore_parent,
                     include_empty=self.include_empty,
+                    possibly_empty=bool(comb_class.predicate_assumptions),
                 )
                 children = req_placement.place_point_of_req(gps, indices, direction)
                 if self.include_empty:

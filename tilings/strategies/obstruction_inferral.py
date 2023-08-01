@@ -18,10 +18,13 @@ __all__ = [
 
 
 class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
-    def __init__(self, gps: Iterable[GriddedPerm]):
+    def __init__(self, gps: Iterable[GriddedPerm], possibly_empty: bool = False):
         self.gps = tuple(sorted(gps))
         super().__init__(
-            ignore_parent=True, inferrable=True, possibly_empty=False, workable=True
+            ignore_parent=True,
+            inferrable=True,
+            possibly_empty=possibly_empty,
+            workable=True,
         )
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
@@ -45,7 +48,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         child = children[0]
         params: Dict[str, str] = {}
-        for assumption in comb_class.assumptions:
+        for assumption in comb_class.tracking_assumptions:
             mapped_assumption = child.forward_map.map_assumption(assumption).avoiding(
                 child.obstructions
             )
@@ -76,7 +79,10 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return (children[0].forward_map.map_gp(obj),)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(gps={self.gps})"
+        return (
+            f"{self.__class__.__name__}(gps={self.gps}, "
+            f"possibly_empty={self.possibly_empty})"
+        )
 
     def __str__(self) -> str:
         return self.formal_step()
@@ -88,7 +94,6 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         d: dict = super().to_jsonable()
         d.pop("ignore_parent")
         d.pop("inferrable")
-        d.pop("possibly_empty")
         d.pop("workable")
         d["gps"] = [gp.to_jsonable() for gp in self.gps]
         return d
@@ -96,8 +101,7 @@ class ObstructionInferralStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     @classmethod
     def from_dict(cls, d: dict) -> "ObstructionInferralStrategy":
         gps = [GriddedPerm.from_dict(gp) for gp in d.pop("gps")]
-        assert not d
-        return cls(gps=gps)
+        return cls(gps=gps, **d)
 
 
 class ObstructionInferralFactory(StrategyFactory[Tiling]):
@@ -124,7 +128,9 @@ class ObstructionInferralFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling) -> Iterator[ObstructionInferralStrategy]:
         gps = self.new_obs(comb_class)
         if gps:
-            yield ObstructionInferralStrategy(gps)
+            yield ObstructionInferralStrategy(
+                gps, possibly_empty=bool(comb_class.predicate_assumptions)
+            )
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()

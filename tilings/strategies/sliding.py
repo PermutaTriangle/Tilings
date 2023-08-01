@@ -211,7 +211,7 @@ class SlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                         ass, self.av_12, self.av_123, maps.g_map, maps.g_inv
                     )
                 )
-                for ass in comb_class.assumptions
+                for ass in comb_class.tracking_assumptions
             },
         )
 
@@ -262,6 +262,8 @@ class SlidingFactory(StrategyFactory[Tiling]):
         self.use_symmetries = use_symmetries
 
     def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
+        if comb_class.predicate_assumptions:
+            raise NotImplementedError("Not implemented sliding for predicates")
         if comb_class.dimensions[0] > 1 and comb_class.dimensions[1] == 1:
             sliding = Sliding(comb_class)
             for pair in sliding.slidable_pairs():
