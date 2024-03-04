@@ -35,7 +35,7 @@ setup(
     long_description=read("README.rst"),
     install_requires=[
         "comb-spec-searcher==4.2.0",
-        "permuta==2.2.0",
+        "permuta==2.3.0",
     ],
     python_requires=">=3.8",
     include_package_data=True,
