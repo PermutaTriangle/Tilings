@@ -398,7 +398,7 @@ class _RowColSeparationSingleApplication:
         )
 
     @staticmethod
-    def _get_cell_map(row_order, col_order):
+    def _get_cell_map(row_order, col_order) -> Dict[Cell, Cell]:
         """
         Return the position of the according to the given row_order and
         col_order.
@@ -406,13 +406,14 @@ class _RowColSeparationSingleApplication:
         This method does not account for any cleaning occuring in the initializer. For
         the complete cell map use `get_cell_map`.
         """
-        cell_map = {}
+        cell_map: Dict[Cell, Cell] = {}
+        row_map: Dict[Cell, int] = {}
         for i, row in enumerate(row_order):
             for cell in row:
-                cell_map[cell] = (None, i)
+                row_map[cell] = i
         for i, col in enumerate(col_order):
             for cell in col:
-                cell_map[cell] = (i, cell_map[cell][1])
+                cell_map[cell] = (i, row_map[cell])
         return cell_map
 
     def map_obstructions(self, cell_map):

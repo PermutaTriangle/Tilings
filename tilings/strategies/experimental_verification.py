@@ -16,11 +16,33 @@ from tilings.algorithms import Factor, SubclassVerificationAlgorithm
 from .abstract import BasisAwareVerificationStrategy
 
 __all__ = [
+    "NoRootCellVerificationStrategy",
     "ShortObstructionVerificationStrategy",
     "SubclassVerificationFactory",
 ]
 
 TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
+
+
+class NoRootCellVerificationStrategy(BasisAwareVerificationStrategy):
+    """
+    A strategy to mark as verified any tiling that does not contain the root
+    basis localized in a cell. Tilings with dimensions 1x1 are ignored.
+    """
+
+    def verified(self, comb_class: Tiling):
+        return comb_class.dimensions != (1, 1) and all(
+            frozenset(obs) not in self.symmetries
+            for obs, _ in comb_class.cell_basis().values()
+        )
+
+    def formal_step(self) -> str:
+        basis = ", ".join(str(p) for p in self.basis)
+        return f"tiling has no Av({basis}) cell"
+
+    def __str__(self) -> str:
+        basis = ", ".join(str(p) for p in self.basis)
+        return f"no Av({basis}) cell verification"
 
 
 class ShortObstructionVerificationStrategy(BasisAwareVerificationStrategy):

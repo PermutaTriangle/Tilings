@@ -184,7 +184,8 @@ def test_is_isolated(simpleob, isolatedob):
 
 
 def test_forced_point_index(singlecellob):
-    assert singlecellob.forced_point_index((1, 1), DIR_SOUTH) is None
+    with pytest.raises(ValueError):
+        singlecellob.forced_point_index((1, 1), DIR_SOUTH)
     assert singlecellob.forced_point_index((2, 2), DIR_WEST) == 0
     assert singlecellob.forced_point_index((2, 2), DIR_SOUTH) == 1
     assert singlecellob.forced_point_index((2, 2), DIR_NORTH) == 2

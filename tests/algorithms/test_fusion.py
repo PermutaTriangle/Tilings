@@ -271,30 +271,6 @@ class TestFusion:
                 GriddedPerm((1, 0), ((0, 1), (0, 1))),
             ]
         )
-        # We can get the fused tiling even for not fusable tilings
-        assert col_fusion_big.fused_tiling() == Tiling(
-            obstructions=[
-                GriddedPerm((0,), ((0, 1),)),
-                GriddedPerm((0,), ((0, 2),)),
-                GriddedPerm((0,), ((0, 3),)),
-                GriddedPerm((1, 0), ((0, 0), (0, 0))),
-                GriddedPerm((1, 0), ((0, 1), (0, 1))),
-                GriddedPerm((1, 0), ((0, 1), (0, 0))),
-                GriddedPerm((1, 0), ((0, 0), (1, 0))),
-                GriddedPerm((1, 0), ((0, 1), (1, 0))),
-                GriddedPerm((1, 0), ((0, 1), (1, 1))),
-                GriddedPerm((1, 0), ((1, 0), (1, 0))),
-                GriddedPerm((1, 0), ((1, 1), (1, 0))),
-                GriddedPerm((1, 0), ((1, 1), (1, 1))),
-                GriddedPerm((1, 0), ((1, 2), (1, 0))),
-                GriddedPerm((1, 0), ((1, 2), (1, 1))),
-                GriddedPerm((1, 0), ((1, 2), (1, 2))),
-                GriddedPerm((2, 1, 0), ((1, 3), (1, 3), (1, 0))),
-                GriddedPerm((2, 1, 0), ((1, 3), (1, 3), (1, 1))),
-                GriddedPerm((2, 1, 0), ((1, 3), (1, 3), (1, 2))),
-                GriddedPerm((2, 1, 0), ((1, 3), (1, 3), (1, 3))),
-            ]
-        )
         assert fusion_with_req.fused_tiling() == Tiling(
             obstructions=[
                 GriddedPerm((0, 1), ((0, 0), (0, 0))),

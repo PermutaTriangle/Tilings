@@ -129,12 +129,44 @@ class MinimalGriddedPerms:
                 return True
         return False
 
-    def _prepare_queue(self, queue: List[QueuePacket]) -> Iterator[GriddedPerm]:
+    def _product_requirements(
+        self, max_length_to_build: Optional[int] = None
+    ) -> Iterator[GPTuple]:
+        if max_length_to_build is None:
+            yield from product(*self.requirements)
+            return
+
+        def _rec_product_requirements(
+            requirements: Reqs, counter: Dict[Cell, int]
+        ) -> Iterator[GPTuple]:
+            if len(requirements) == 0:
+                yield tuple()
+                return
+            reqs = requirements[0]
+            rest = requirements[1:]
+            for gp in reqs:
+                gpcounter = Counter(gp.pos)
+                new_counter = Counter(
+                    {
+                        cell: max(gpcounter[cell], counter[cell])
+                        for cell in chain(gpcounter, counter)
+                    }
+                )
+                assert max_length_to_build is not None
+                if sum(new_counter.values()) <= max_length_to_build:
+                    for gps in _rec_product_requirements(rest, new_counter):
+                        yield (gp,) + gps
+
+        yield from _rec_product_requirements(self.requirements, Counter())
+
+    def _prepare_queue(
+        self, queue: List[QueuePacket], max_length_to_build: Optional[int] = None
+    ) -> Iterator[GriddedPerm]:
         """Add cell counters with gridded permutations to the queue.
         The function yields all initial_gp that satisfy the requirements."""
         if len(self.requirements) <= 1:
             return
-        for gps in product(*self.requirements):
+        for gps in self._product_requirements(max_length_to_build):
             # try to stitch together as much of the independent cells of the
             # gridded permutation together first
             initial_gp = self.initial_gp(*gps)
@@ -379,7 +411,7 @@ class MinimalGriddedPerms:
             yield idx, nextgp
 
     def minimal_gridded_perms(
-        self, yield_non_minimal: bool = False
+        self, yield_non_minimal: bool = False, max_length_to_build: Optional[int] = None
     ) -> Iterator[GriddedPerm]:
         """
         Yield all minimal gridded perms on the tiling.
@@ -388,6 +420,9 @@ class MinimalGriddedPerms:
         that are non-minimal, found by the initial_gp method. Even though it
         may not be minimal, this is useful when trying to determine whether or
         not a tiling is empty.
+
+        If `max_length_to_build` it will only try to build minimal gridded
+        perms of size shorter than this.
         """
         if not self.requirements:
             if GriddedPerm.empty_perm() not in self.obstructions:
@@ -404,7 +439,7 @@ class MinimalGriddedPerms:
 
         initial_gps_to_auto_yield: Dict[int, Set[GriddedPerm]] = defaultdict(set)
         yielded: Set[GriddedPerm] = set()
-        for gp in self._prepare_queue(queue):
+        for gp in self._prepare_queue(queue, max_length_to_build):
             if yield_non_minimal:
                 yielded.add(gp)
                 yield gp
@@ -453,7 +488,9 @@ class MinimalGriddedPerms:
                         # perm containing it.
                         yielded.add(nextgp)
                         yield nextgp
-                    else:
+                    elif (
+                        max_length_to_build is None or len(nextgp) < max_length_to_build
+                    ):
                         # Update the minimum index that we inserted a
                         # a point into each cell.
                         next_mindices = {

@@ -1,7 +1,7 @@
-from itertools import chain
-from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Tuple
+from itertools import chain, filterfalse
+from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Optional, Tuple
 
-from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
+from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm
 from tilings.assumptions import TrackingAssumption
 
@@ -301,6 +301,14 @@ class RequirementPlacement:
         """
         placed_cell = self._placed_cell(cell)
         res = []
+        if cell in self._tiling.point_cells:
+            x, y = placed_cell
+            if self.own_row:
+                res.append(GriddedPerm.point_perm((x, y + 1)))
+                res.append(GriddedPerm.point_perm((x, y - 1)))
+            if self.own_col:
+                res.append(GriddedPerm.point_perm((x + 1, y)))
+                res.append(GriddedPerm.point_perm((x - 1, y)))
         for idx, gp in zip(indices, gps):
             # if cell is farther in the direction than gp[idx], then don't need
             # to avoid any of the stretched grided perms
@@ -342,30 +350,46 @@ class RequirementPlacement:
         return self.place_point_of_req((gp,), (idx,), direction)[0]
 
     def place_point_of_req(
-        self, gps: Iterable[GriddedPerm], indices: Iterable[int], direction: Dir
+        self,
+        gps: Iterable[GriddedPerm],
+        indices: Iterable[int],
+        direction: Dir,
+        include_not: bool = False,
+        cells: Optional[Iterable[Cell]] = None,
     ) -> Tuple["Tiling", ...]:
         """
         Return the tilings, where the placed point corresponds to the directionmost
         (the furtest in the given direction, ex: leftmost point) of an occurrence
         of any point idx, gp(idx) for gridded perms in gp, and idx in indices
         """
-        cells = frozenset(gp.pos[idx] for idx, gp in zip(indices, gps))
+        if cells is not None:
+            cells = frozenset(cells)
+        else:
+            cells = frozenset(gp.pos[idx] for idx, gp in zip(indices, gps))
         res = []
         for cell in sorted(cells):
             stretched = self._stretched_obstructions_requirements_and_assumptions(cell)
             (obs, reqs, ass) = stretched
+            rem_req = self._remaining_requirement_from_requirement(gps, indices, cell)
+
+            if direction == DIR_NONE:
+                res.append(self._tiling.__class__(obs, reqs + [rem_req], ass))
+                if include_not:
+                    res.append(self._tiling.__class__(obs + rem_req, reqs, ass))
+                continue
             forced_obs = self.forced_obstructions_from_requirement(
                 gps, indices, cell, direction
             )
-
+            forced_obs = [
+                o1
+                for o1 in forced_obs
+                if not any(o2 in o1 for o2 in filterfalse(o1.__eq__, forced_obs))
+            ]
             reduced_obs = [o1 for o1 in obs if not any(o2 in o1 for o2 in forced_obs)]
-            new_obs = reduced_obs + forced_obs
-
-            rem_req = self._remaining_requirement_from_requirement(gps, indices, cell)
-
+            reduced_obs.extend(filterfalse(reduced_obs.__contains__, forced_obs))
             res.append(
                 self._tiling.__class__(
-                    new_obs,
+                    reduced_obs,
                     reqs + [rem_req],
                     assumptions=ass,
                     already_minimized_obs=True,

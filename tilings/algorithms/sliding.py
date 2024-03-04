@@ -61,6 +61,9 @@ class Sliding:
             requirements=self.tiling.requirements,
             obstructions=obstructions,
             assumptions=self._swap_assumptions(av_12, av_123),
+            derive_empty=False,
+            remove_empty_rows_and_cols=False,
+            simplify=False,
         )
 
     @staticmethod

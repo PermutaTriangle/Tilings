@@ -161,7 +161,10 @@ def test_obstruction_inferral(tiling1, tiling_not_inf):
         requirements=((GriddedPerm((1, 0), ((1, 0), (1, 0))),),),
     )
     assert isinstance(rule.constructor, DisjointUnion)
-    assert rule.formal_step == "added the obstructions {01: (0, 0), (0, 0)}"
+    assert (
+        rule.formal_step == "added the obstructions {01: (0, 0), (0, 0),"
+        " 021: (0, 0), (0, 0), (1, 0), 120: (0, 0), (0, 0), (1, 0)}"
+    )
     assert rule.inferrable
     assert not rule.possibly_empty
     assert rule.ignore_parent

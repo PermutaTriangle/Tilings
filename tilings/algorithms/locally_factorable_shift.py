@@ -7,13 +7,15 @@ from comb_spec_searcher import (
     CombinatorialSpecification,
     CombinatorialSpecificationSearcher,
 )
-from comb_spec_searcher.strategies.constructor import CartesianProduct, DisjointUnion
+from comb_spec_searcher.strategies.constructor import DisjointUnion
 from comb_spec_searcher.strategies.rule import Rule, VerificationRule
 from comb_spec_searcher.strategies.strategy import VerificationStrategy
 from comb_spec_searcher.strategies.strategy_pack import StrategyPack
 from comb_spec_searcher.typing import CSSstrategy
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
+from tilings.strategies.detect_components import CountComponent
+from tilings.strategies.factor import FactorStrategy
 
 __all__ = ["shift_from_spec"]
 
@@ -59,7 +61,31 @@ def expanded_spec(
     """
     Return a spec where any tiling that does not have the basis in one cell is
     verified.
+
+    A locally factorable tiling can always result in a spec where the
+    verified leaves are one by one if we remove the local verification
+    and monotone tree verification strategies and instead use the
+    interleaving factors. As we only care about the shift, we can
+    tailor our packs to find this.
     """
+    # pylint: disable=import-outside-toplevel
+    from tilings.strategies.verification import (
+        LocalVerificationStrategy,
+        MonotoneTreeVerificationStrategy,
+    )
+    from tilings.tilescope import TileScopePack
+
+    pack = TileScopePack(
+        initial_strats=pack.initial_strats,
+        inferral_strats=pack.inferral_strats,
+        expansion_strats=pack.expansion_strats,
+        ver_strats=pack.ver_strats,
+        name=pack.name,
+    )
+    pack = pack.remove_strategy(MonotoneTreeVerificationStrategy()).make_interleaving(
+        tracked=False, unions=False
+    )
+    pack = pack.remove_strategy(LocalVerificationStrategy())
     pack = pack.add_verification(NoBasisVerification(symmetries), apply_first=True)
     with TmpLoggingLevel(logging.WARN):
         css = CombinatorialSpecificationSearcher(tiling, pack)
@@ -86,19 +112,25 @@ def shift_from_spec(
         elif t.dimensions == (1, 1):
             res = 0
         elif isinstance(rule, VerificationRule):
-            res = shift_from_spec(tiling, rule.pack(), symmetries)
-        elif isinstance(rule, Rule) and isinstance(rule.constructor, DisjointUnion):
-            children_reliance = [traverse(c) for c in rule.children]
-            res = min([r for r in children_reliance if r is not None], default=None)
-        elif isinstance(rule, Rule) and isinstance(rule.constructor, CartesianProduct):
+            raise ValueError(
+                "this should be unreachable, looks like JP, HU "
+                "and CB misunderstood the code."
+            )
+        elif isinstance(rule, Rule) and isinstance(rule.strategy, FactorStrategy):
             min_points = [len(next(c.minimal_gridded_perms())) for c in rule.children]
             point_sum = sum(min_points)
             shifts = [point_sum - mpoint for mpoint in min_points]
             children_reliance = [traverse(c) for c in rule.children]
             res = min(
-                [r + s for r, s in zip(children_reliance, shifts) if r is not None],
+                (r + s for r, s in zip(children_reliance, shifts) if r is not None),
                 default=None,
             )
+        elif isinstance(rule, Rule) and isinstance(
+            rule.constructor, (DisjointUnion, CountComponent)
+        ):
+            children_reliance = [traverse(c) for c in rule.children]
+            res = min((r for r in children_reliance if r is not None), default=None)
+
         else:
             raise NotImplementedError(rule)
         traverse_cache[t] = res

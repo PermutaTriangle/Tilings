@@ -2212,29 +2212,7 @@ def test_partial_place_row(obs_inf_til):
 def test_partial_place_col(obs_inf_til):
     assert set(obs_inf_til.partial_place_col(0, 0)) == set(
         [
-            Tiling(
-                obstructions=(
-                    GriddedPerm((0,), ((1, 0),)),
-                    GriddedPerm((0,), ((1, 2),)),
-                    GriddedPerm((0, 1), ((0, 1), (0, 1))),
-                    GriddedPerm((0, 1), ((0, 1), (1, 1))),
-                    GriddedPerm((0, 1), ((1, 1), (1, 1))),
-                    GriddedPerm((1, 0), ((0, 0), (0, 0))),
-                    GriddedPerm((1, 0), ((0, 1), (0, 1))),
-                    GriddedPerm((1, 0), ((0, 1), (1, 1))),
-                    GriddedPerm((1, 0), ((1, 1), (1, 1))),
-                    GriddedPerm((0, 2, 1), ((0, 0), (0, 2), (0, 2))),
-                    GriddedPerm((0, 3, 2, 1), ((0, 0), (0, 2), (0, 1), (0, 0))),
-                    GriddedPerm((0, 3, 2, 1), ((0, 1), (0, 2), (0, 2), (0, 2))),
-                    GriddedPerm((0, 3, 2, 1), ((0, 2), (0, 2), (0, 2), (0, 2))),
-                    GriddedPerm((1, 0, 3, 2), ((0, 2), (0, 1), (0, 2), (0, 2))),
-                    GriddedPerm((1, 0, 3, 2), ((0, 2), (0, 2), (0, 2), (0, 2))),
-                ),
-                requirements=(
-                    (GriddedPerm((0,), ((1, 1),)),),
-                    (GriddedPerm((1, 0), ((0, 1), (0, 0))),),
-                ),
-            ),
+            Tiling([GriddedPerm(tuple(), tuple())]),
             Tiling(
                 obstructions=(
                     GriddedPerm((0,), ((1, 1),)),
@@ -2402,19 +2380,16 @@ class TestGetGenf:
 
 
 def test_enmerate_gp_up_to():
-    assert (
-        Tiling(
-            obstructions=(
-                GriddedPerm((0, 1), ((1, 2), (1, 2))),
-                GriddedPerm((1, 0), ((1, 2), (1, 2))),
-                GriddedPerm((0, 2, 1), ((0, 1), (0, 1), (0, 1))),
-                GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (2, 0))),
-            ),
-            requirements=((GriddedPerm((0,), ((1, 2),)),),),
-            assumptions=(),
-        ).enmerate_gp_up_to(8)
-        == [0, 1, 2, 5, 14, 42, 132, 429, 1430]
-    )
+    assert Tiling(
+        obstructions=(
+            GriddedPerm((0, 1), ((1, 2), (1, 2))),
+            GriddedPerm((1, 0), ((1, 2), (1, 2))),
+            GriddedPerm((0, 2, 1), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm((0, 2, 1), ((2, 0), (2, 0), (2, 0))),
+        ),
+        requirements=((GriddedPerm((0,), ((1, 2),)),),),
+        assumptions=(),
+    ).enmerate_gp_up_to(8) == [0, 1, 2, 5, 14, 42, 132, 429, 1430]
 
 
 def test_column_reverse():
