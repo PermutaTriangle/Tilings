@@ -8,6 +8,7 @@ from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.assumptions import (
+    Assumption,
     ComponentAssumption,
     SkewComponentAssumption,
     SumComponentAssumption,
@@ -28,14 +29,14 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
 
     @staticmethod
     def assumption_type_transform(
-        assumption: TrackingAssumption,
-    ) -> Type[TrackingAssumption]:
+        assumption: Assumption,
+    ) -> Type[Assumption]:
         raise NotImplementedError
 
     @staticmethod
     def _assumption_type_swap(
-        assumption: TrackingAssumption,
-    ) -> Type[TrackingAssumption]:
+        assumption: Assumption,
+    ) -> Type[Assumption]:
         if isinstance(assumption, ComponentAssumption):
             if isinstance(assumption, SumComponentAssumption):
                 return SkewComponentAssumption
@@ -44,8 +45,8 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
 
     @staticmethod
     def _assumption_type_identity(
-        assumption: TrackingAssumption,
-    ) -> Type[TrackingAssumption]:
+        assumption: Assumption,
+    ) -> Type[Assumption]:
         return assumption.__class__
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
@@ -81,10 +82,13 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         child = children[0]
         mapped_assumptions = tuple(
-            self.__class__.assumption_type_transform(ass)(
-                tuple(self.gp_transform(comb_class, gp) for gp in ass.gps)
+            cast(
+                TrackingAssumption,
+                self.__class__.assumption_type_transform(ass)(
+                    tuple(self.gp_transform(comb_class, gp) for gp in ass.gps)
+                ),
             )
-            for ass in comb_class.assumptions
+            for ass in comb_class.tracking_assumptions
         )
         return (
             {
@@ -92,7 +96,7 @@ class TilingSymmetryStrategy(SymmetryStrategy[Tiling, GriddedPerm]):
                     assumption
                 ): child.get_assumption_parameter(mapped_assumption)
                 for assumption, mapped_assumption in zip(
-                    comb_class.assumptions, mapped_assumptions
+                    comb_class.tracking_assumptions, mapped_assumptions
                 )
             },
         )
@@ -336,6 +340,8 @@ class SymmetriesFactory(StrategyFactory[Tiling]):
         super().__init__()
 
     def __call__(self, tiling: Tiling) -> Iterator[TilingSymmetryStrategy]:
+        if tiling.predicate_assumptions:
+            raise NotImplementedError("Not implemented symmetries for predicates")
         underlying_patts = set(gp.patt for gp in tiling.obstructions)
         if (
             self._basis is None

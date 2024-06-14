@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from collections import Counter, defaultdict
 from functools import reduce
 from itertools import chain
@@ -5,7 +6,18 @@ from operator import mul
 from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Tuple, cast
 
 import requests
-from sympy import Eq, Expr, Function, Symbol, collect, degree, solve, sympify, var
+from sympy import (
+    Eq,
+    Expr,
+    Function,
+    Number,
+    Symbol,
+    collect,
+    degree,
+    solve,
+    sympify,
+    var,
+)
 
 from comb_spec_searcher import (
     AtomStrategy,
@@ -39,6 +51,7 @@ from tilings.strategies import (
     RequirementCorroborationFactory,
     SymmetriesFactory,
 )
+from tilings.strategies.predicate_refinement import RefinePredicatesStrategy
 
 from .abstract import BasisAwareVerificationStrategy
 
@@ -59,17 +72,16 @@ TileScopeVerificationStrategy = VerificationStrategy[Tiling, GriddedPerm]
 
 
 class BasicVerificationStrategy(AtomStrategy):
-    """
-    TODO: can this be moved to the CSS atom strategy?
-    """
-
     def get_terms(self, comb_class: CombinatorialClass, n: int) -> Terms:
         if not isinstance(comb_class, Tiling):
             raise NotImplementedError
         gp = next(comb_class.minimal_gridded_perms())
-        if n == len(gp):
+        if all(
+            pred.satisfies(gp) for pred in comb_class.predicate_assumptions
+        ) and n == len(gp):
             parameters = tuple(
-                assumption.get_value(gp) for assumption in comb_class.assumptions
+                assumption.get_value(gp)
+                for assumption in comb_class.tracking_assumptions
             )
             return Counter([parameters])
         return Counter()
@@ -79,9 +91,12 @@ class BasicVerificationStrategy(AtomStrategy):
             raise NotImplementedError
         res: Objects = defaultdict(list)
         gp = next(comb_class.minimal_gridded_perms())
-        if n == len(gp):
+        if all(
+            pred.satisfies(gp) for pred in comb_class.predicate_assumptions
+        ) and n == len(gp):
             parameters = tuple(
-                assumption.get_value(gp) for assumption in comb_class.assumptions
+                assumption.get_value(gp)
+                for assumption in comb_class.tracking_assumptions
             )
             res[parameters].append(gp)
         return res
@@ -121,8 +136,10 @@ class BasicVerificationStrategy(AtomStrategy):
             raise NotImplementedError
         cast(Tiling, comb_class)
         gp = next(comb_class.minimal_gridded_perms())
+        if not all(pred.satisfies(gp) for pred in comb_class.predicate_assumptions):
+            return Number(0)
         expected = {"x": len(gp)}
-        for assumption in comb_class.assumptions:
+        for assumption in comb_class.tracking_assumptions:
             expected[
                 comb_class.get_assumption_parameter(assumption)
             ] = assumption.get_value(gp)
@@ -158,7 +175,7 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
         # for the class with requirements.
         eq = Eq(self.without_req_genf(self.comb_class), get_function(self.comb_class))
         subs = solve([eq], var("F"), dict=True)[0]
-        if self.comb_class.assumptions:
+        if self.comb_class.tracking_assumptions:
             subs["x"] = var("x") * var("k_0")
         res, _ = sympify(lhs).subs(subs, simultaneous=True).as_numer_denom()
         # Pick the unique factor that contains F
@@ -276,7 +293,11 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
             try:
                 self._spec[comb_class] = super().get_specification(comb_class)
             except InvalidOperationError as e:
-                if len(comb_class.requirements) > 1 or comb_class.dimensions != (1, 1):
+                if (
+                    len(comb_class.requirements) > 1
+                    or comb_class.dimensions != (1, 1)
+                    or comb_class.predicate_assumptions
+                ):
                     raise e
                 self._spec[comb_class] = self._spec_from_permpal(comb_class)
         return self._spec[comb_class]
@@ -306,13 +327,19 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
             ]
         ):
             # subclass of Av(231) or a symmetry, use point placements!
-            return TileScopePack.point_and_row_and_col_placements().add_verification(
-                BasicVerificationStrategy(), replace=True
+            return (
+                TileScopePack.point_and_row_and_col_placements()
+                .add_verification(BasicVerificationStrategy(), replace=True)
+                .add_initial(RefinePredicatesStrategy(), apply_first=True)
             )
         if is_insertion_encodable_maximum(basis):
-            return TileScopePack.regular_insertion_encoding(3)
+            return TileScopePack.regular_insertion_encoding(3).add_initial(
+                RefinePredicatesStrategy(), apply_first=True
+            )
         if is_insertion_encodable_rightmost(basis):
-            return TileScopePack.regular_insertion_encoding(2)
+            return TileScopePack.regular_insertion_encoding(2).add_initial(
+                RefinePredicatesStrategy(), apply_first=True
+            )
         # if it is the class or positive class
         if not comb_class.requirements or (
             len(comb_class.requirements) == 1
@@ -326,7 +353,11 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
             ):
                 # is a subclass of Av(123) avoiding patterns of length <= 4
                 # experimentally showed that such clsses always terminates
-                return TileScopePack.row_and_col_placements().add_basis(basis)
+                return (
+                    TileScopePack.row_and_col_placements()
+                    .add_basis(basis)
+                    .add_initial(RefinePredicatesStrategy(), apply_first=True)
+                )
         raise InvalidOperationError(
             "Cannot get a specification for one by one verification for "
             f"subclass Av({basis})"
@@ -420,9 +451,11 @@ class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
     ) -> GriddedPerm:
         if comb_class.assumptions:
             assert (
-                len(comb_class.assumptions) == 1
+                len(comb_class.tracking_assumptions) == 1
                 and parameters[
-                    comb_class.get_assumption_parameter(comb_class.assumptions[0])
+                    comb_class.get_assumption_parameter(
+                        comb_class.tracking_assumptions[0]
+                    )
                 ]
                 == n
             )
@@ -748,7 +781,11 @@ class LocalVerificationStrategy(BasisAwareVerificationStrategy):
                 f"Cannot get a simpler specification for\n{comb_class}"
             )
         return StrategyPack(
-            initial_strats=[FactorFactory(), DetectComponentsStrategy()],
+            initial_strats=[
+                RefinePredicatesStrategy(),
+                FactorFactory(),
+                DetectComponentsStrategy(),
+            ],
             inferral_strats=[],
             expansion_strats=[],
             ver_strats=[
@@ -835,9 +872,13 @@ class InsertionEncodingVerificationStrategy(TileScopeVerificationStrategy):
         from tilings.strategy_pack import TileScopePack
 
         if self.has_rightmost_insertion_encoding(comb_class):
-            pack = TileScopePack.regular_insertion_encoding(2)
+            pack = TileScopePack.regular_insertion_encoding(2).add_initial(
+                RefinePredicatesStrategy(), apply_first=True
+            )
         elif self.has_topmost_insertion_encoding(comb_class):
-            pack = TileScopePack.regular_insertion_encoding(3)
+            pack = TileScopePack.regular_insertion_encoding(3).add_initial(
+                RefinePredicatesStrategy(), apply_first=True
+            )
         else:
             raise StrategyDoesNotApply(
                 "tiling does not has a regular insertion encoding"

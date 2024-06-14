@@ -21,6 +21,7 @@ from comb_spec_searcher.utils import compositions
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import factor
 from tilings.assumptions import (
+    Assumption,
     SkewComponentAssumption,
     SumComponentAssumption,
     TrackingAssumption,
@@ -175,14 +176,17 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         return (0,)
 
     def decomposition_function(self, comb_class: Tiling) -> Optional[Tuple[Tiling]]:
-        if not comb_class.assumptions:
+        if not comb_class.tracking_assumptions:
             return None
         components = self.factor_class(comb_class.remove_assumptions()).get_components()
         if len(components) == 1:
             return None
-        new_assumptions: List[TrackingAssumption] = []
+        new_assumptions: List[Assumption] = []
         for ass in comb_class.assumptions:
-            new_assumptions.extend(self._split_assumption(ass, components))
+            if not isinstance(ass, TrackingAssumption):
+                new_assumptions.append(ass)
+            else:
+                new_assumptions.extend(self._split_assumption(ass, components))
         new_tiling = Tiling(
             comb_class.obstructions,
             comb_class.requirements,
@@ -294,7 +298,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         child = children[0]
         split_parameters: Dict[str, Tuple[str, ...]] = {"n": ("n",)}
         components = self.factor_class(comb_class.remove_assumptions()).get_components()
-        for idx, assumption in enumerate(comb_class.assumptions):
+        for idx, assumption in enumerate(comb_class.tracking_assumptions):
             split_assumptions = self._split_assumption(assumption, components)
             child_vars = tuple(
                 sorted(f"k_{child.assumptions.index(ass)}" for ass in split_assumptions)

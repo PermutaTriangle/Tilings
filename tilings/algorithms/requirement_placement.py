@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, List, Optional, Tup
 
 from permuta.misc import DIR_EAST, DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import Assumption
 
 if TYPE_CHECKING:
     from tilings import Tiling
@@ -13,7 +13,7 @@ Dir = int
 ListRequirement = List[GriddedPerm]
 ObsCache = Dict[Cell, List[GriddedPerm]]
 ReqsCache = Dict[Cell, List[ListRequirement]]
-AssCache = Dict[Cell, List[TrackingAssumption]]
+AssCache = Dict[Cell, List[Assumption]]
 
 
 class RequirementPlacement:
@@ -244,7 +244,7 @@ class RequirementPlacement:
             ]
         return self._stretched_requirements_cache[cell]
 
-    def stretched_assumptions(self, cell: Cell) -> List[TrackingAssumption]:
+    def stretched_assumptions(self, cell: Cell) -> List[Assumption]:
         """
         Return all of the stretched assumptions that are created if placing a
         point in the given cell.
@@ -258,7 +258,7 @@ class RequirementPlacement:
 
     def _stretched_obstructions_requirements_and_assumptions(
         self, cell: Cell
-    ) -> Tuple[List[GriddedPerm], List[ListRequirement], List[TrackingAssumption]]:
+    ) -> Tuple[List[GriddedPerm], List[ListRequirement], List[Assumption]]:
         """
         Return all of the stretched obstruction and requirements assuming that
         a point is placed in cell.

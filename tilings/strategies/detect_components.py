@@ -118,7 +118,7 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
         return (0,)
 
     def decomposition_function(self, comb_class: Tiling) -> Optional[Tuple[Tiling]]:
-        if not comb_class.assumptions:
+        if not comb_class.tracking_assumptions:
             return None
         return (comb_class.remove_components_from_assumptions(),)
 
@@ -131,7 +131,7 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Can't detect components")
 
         removed_components: Dict[str, int] = {}
-        for ass in comb_class.assumptions:
+        for ass in comb_class.tracking_assumptions:
             value = len(ass.get_components(comb_class))
             if value:
                 k = comb_class.get_assumption_parameter(ass)
@@ -160,7 +160,7 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         extra_parameters: Dict[str, str] = {}
         child = children[0]
-        for assumption in comb_class.assumptions:
+        for assumption in comb_class.tracking_assumptions:
             mapped_assumption = assumption.remove_components(comb_class)
             if mapped_assumption.gps:
                 extra_parameters[

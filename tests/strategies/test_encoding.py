@@ -236,33 +236,41 @@ def pointonly_partial_ignoreparent_dirs(strategy):
     ]
 
 
-def partition_ignoreparent_workable(strategy):
+def partition_ignoreparent_workable_possibly_empty(strategy):
     return [
-        strategy(partition=partition, ignore_parent=ignore_parent, workable=workable)
-        for partition, ignore_parent, workable in product(
+        strategy(
+            partition=partition,
+            ignore_parent=ignore_parent,
+            workable=workable,
+            possibly_empty=possibly_empty,
+        )
+        for partition, ignore_parent, workable, possibly_empty in product(
             (
                 [[(2, 1), (0, 1)], [(1, 0)]],
                 (((0, 0), (0, 2)), ((0, 1),), ((3, 3), (4, 3))),
             ),
+            (True, False),
             (True, False),
             (True, False),
         )
     ]
 
 
-def partition_ignoreparent_workable_tracked(strategy):
+def partition_ignoreparent_workable_possibly_empty_tracked(strategy):
     return [
         strategy(
             partition=partition,
             ignore_parent=ignore_parent,
             workable=workable,
+            possibly_empty=possibly_empty,
             tracked=tracked,
         )
-        for partition, ignore_parent, workable, tracked in product(
+        for partition, ignore_parent, workable, possibly_empty, tracked in product(
             (
                 [[(2, 1), (0, 1)], [(1, 0)]],
                 (((0, 0), (0, 2)), ((0, 1),), ((3, 3), (4, 3))),
             ),
+            (True, False),
             (True, False),
             (True, False),
             (True, False),
@@ -302,7 +310,9 @@ def gps_ignoreparent_limited(factory):
     ]
 
 
-def gps_indices_direction_owncol_ownrow_ignoreparent_includeempty(strategy):
+def gps_indices_direction_owncol_ownrow_ignoreparent_includeempty_possibly_empty(
+    strategy,
+):
     return [
         strategy(
             gps=gps,
@@ -310,13 +320,14 @@ def gps_indices_direction_owncol_ownrow_ignoreparent_includeempty(strategy):
             direction=direction,
             own_col=own_col,
             own_row=own_row,
-            ignore_parent=ignore_parent,
-            include_empty=include_empty,
+            ignore_parent=ign_par,
+            include_empty=inc_empty,
+            possibly_empty=pos_empty,
         )
         for (
             gps,
             indices,
-        ), direction, own_col, own_row, ignore_parent, include_empty in product(
+        ), direction, own_col, own_row, ign_par, inc_empty, pos_empty in product(
             (
                 ((GriddedPerm((0,), ((0, 0),)),), (0,)),
                 ((GriddedPerm.single_cell((0, 1, 2), (2, 1)),), (1,)),
@@ -329,6 +340,7 @@ def gps_indices_direction_owncol_ownrow_ignoreparent_includeempty(strategy):
                 ),
             ),
             (DIR_EAST, DIR_WEST, DIR_NORTH, DIR_SOUTH),
+            (True, False),
             (True, False),
             (True, False),
             (True, False),
@@ -401,9 +413,13 @@ strategy_objects = (
     + maxreqlen_extrabasis_ignoreparent(RequirementInsertionFactory)
     + subreqs_partial_ignoreparent_dirs(RequirementPlacementFactory)
     + [SymmetriesFactory(), BasicVerificationStrategy(), EmptyCellInferralFactory()]
-    + partition_ignoreparent_workable(FactorStrategy)
-    + partition_ignoreparent_workable_tracked(FactorWithInterleavingStrategy)
-    + partition_ignoreparent_workable_tracked(FactorWithMonotoneInterleavingStrategy)
+    + partition_ignoreparent_workable_possibly_empty(FactorStrategy)
+    + partition_ignoreparent_workable_possibly_empty_tracked(
+        FactorWithInterleavingStrategy
+    )
+    + partition_ignoreparent_workable_possibly_empty_tracked(
+        FactorWithMonotoneInterleavingStrategy
+    )
     + ignoreparent(DatabaseVerificationStrategy)
     + ignoreparent(LocallyFactorableVerificationStrategy)
     + ignoreparent(ElementaryVerificationStrategy)
@@ -445,7 +461,7 @@ strategy_objects = (
     + ignoreparent(RequirementCorroborationFactory)
     + gps_ignoreparent(RequirementInsertionStrategy)
     + gps_ignoreparent_limited(RequirementInsertionFactory)
-    + gps_indices_direction_owncol_ownrow_ignoreparent_includeempty(
+    + gps_indices_direction_owncol_ownrow_ignoreparent_includeempty_possibly_empty(
         RequirementPlacementStrategy
     )
     + maxreqlen_extrabasis_ignoreparent_maxnumreq(RootInsertionFactory)
@@ -475,7 +491,14 @@ strategy_objects = (
         DeflationStrategy((4, 1), False, False),
     ]
     + [ComponentFusionFactory()]
-    + [ObstructionInferralStrategy([GriddedPerm((0, 1, 2), ((0, 0), (1, 1), (1, 2)))])]
+    + [
+        ObstructionInferralStrategy(
+            [GriddedPerm((0, 1, 2), ((0, 0), (1, 1), (1, 2)))], possibly_empty=True
+        ),
+        ObstructionInferralStrategy(
+            [GriddedPerm((0, 1, 2), ((0, 0), (1, 1), (1, 2)))], possibly_empty=False
+        ),
+    ]
     + [
         SplittingStrategy(),
         SplittingStrategy("none"),

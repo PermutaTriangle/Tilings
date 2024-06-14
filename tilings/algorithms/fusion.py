@@ -6,6 +6,7 @@ from itertools import chain
 from typing import (
     TYPE_CHECKING,
     Counter,
+    Dict,
     FrozenSet,
     Iterable,
     Iterator,
@@ -15,7 +16,14 @@ from typing import (
 )
 
 from tilings.assumptions import (
+    Assumption,
+    AssumptionClass,
     ComponentAssumption,
+    EqualParityAssumption,
+    EvenCountAssumption,
+    OddCountAssumption,
+    OppositeParityAssumption,
+    PredicateAssumption,
     SkewComponentAssumption,
     SumComponentAssumption,
     TrackingAssumption,
@@ -248,7 +256,7 @@ class Fusion:
             return self._assumptions_fuse_counters
         counters = [
             self._fuse_counter(assumption.gps)
-            for assumption in self._tiling.assumptions
+            for assumption in self._tiling.tracking_assumptions
         ]
         self._assumptions_fuse_counters = counters
         return self._assumptions_fuse_counters
@@ -287,7 +295,7 @@ class Fusion:
         are all contained entirely on the left of the fusion region, entirely
         on the right, or split in every possible way.
         """
-        left, right = self._left_fuse_region(), self._right_fuse_region()
+        left, right = self.left_fuse_region(), self.right_fuse_region()
         cells = set(gp.pos[0] for gp in assumption.gps)
         if (left.intersection(cells) and not left.issubset(cells)) or (
             right.intersection(cells) and not right.issubset(cells)
@@ -301,12 +309,12 @@ class Fusion:
             )
         )
 
-    def _left_fuse_region(self) -> FrozenSet[Cell]:
+    def left_fuse_region(self) -> FrozenSet[Cell]:
         if self._fuse_row:
             return self._tiling.cells_in_row(self._row_idx)
         return self._tiling.cells_in_col(self._col_idx)
 
-    def _right_fuse_region(self) -> FrozenSet[Cell]:
+    def right_fuse_region(self) -> FrozenSet[Cell]:
         if self._fuse_row:
             return self._tiling.cells_in_row(self._row_idx + 1)
         return self._tiling.cells_in_col(self._col_idx + 1)
@@ -359,7 +367,7 @@ class Fusion:
         return len(
             [
                 assumption
-                for assumption in self._tiling.assumptions
+                for assumption in self._tiling.tracking_assumptions
                 if all(cell in fusing_cells for gp in assumption.gps for cell in gp.pos)
             ]
         )
@@ -394,7 +402,7 @@ class Fusion:
         ass_fusable = all(
             self._can_fuse_assumption(assumption, counter)
             for assumption, counter in zip(
-                self._tiling.assumptions, self.assumptions_fuse_counters
+                self._tiling.tracking_assumptions, self.assumptions_fuse_counters
             )
         )
         return (
@@ -402,19 +410,44 @@ class Fusion:
             and req_fusable
             and ass_fusable
             and self._check_isolation_level()
+            and self.predicate_fusable()
         )
+
+    def predicate_fusable(self) -> bool:
+        if any(len(ass.cells) > 1 for ass in self._tiling.predicate_assumptions):
+            return False
+        equal, opposite = set(), set()
+        for ass in self._tiling.predicate_assumptions:
+            if isinstance(ass, EqualParityAssumption):
+                equal.add(next(iter(ass.cells)))
+            elif isinstance(ass, OppositeParityAssumption):
+                opposite.add(next(iter(ass.cells)))
+        left = self.left_fuse_region()
+        for (x, y) in left:
+            xn, yn = x, y
+            if self._fuse_row:
+                yn += 1
+            else:
+                xn += 1
+            cell, neighbour = (x, y), (xn, yn)
+            if (cell in equal and neighbour in opposite) or (
+                cell in opposite and neighbour in equal
+            ):
+                return False
+        return True
 
     def fused_tiling(self) -> "Tiling":
         """
         Return the fused tiling.
         """
         if self._fused_tiling is None:
-            assumptions = [
+            assumptions: List[Assumption] = [
                 ass.__class__(gps)
                 for ass, gps in zip(
-                    self._tiling.assumptions, self.assumptions_fuse_counters
+                    self._tiling.tracking_assumptions, self.assumptions_fuse_counters
                 )
             ]
+            assumptions.extend(self.fused_predicates())
             if self._tracked:
                 assumptions.append(self.new_assumption())
             requirements = list(list(fc) for fc in self.requirements_fuse_counters)
@@ -429,6 +462,36 @@ class Fusion:
                 already_minimized_obs=True,
             )
         return self._fused_tiling
+
+    def fuse_assumption(self, assumption: AssumptionClass) -> AssumptionClass:
+        return assumption.__class__(self.fuse_gridded_perm(gp) for gp in assumption.gps)
+
+    def fused_predicates(self) -> Iterator[PredicateAssumption]:
+        left, right = self.left_fuse_region(), self.right_fuse_region()
+        odd_fused_cells: Dict[Cell, bool] = collections.defaultdict(bool)
+        for predicate in self._tiling.predicate_assumptions:
+            if isinstance(predicate, (EqualParityAssumption, OppositeParityAssumption)):
+                yield self.fuse_assumption(predicate)
+            else:
+                assert isinstance(predicate, (OddCountAssumption, EvenCountAssumption))
+                cell = next(iter(predicate.cells), None)
+                assert cell is not None
+                if cell in left:
+                    odd_fused_cells[cell] ^= isinstance(predicate, OddCountAssumption)
+                elif cell in right:
+                    (x, y) = cell
+                    if self._fuse_row:
+                        y -= 1
+                    else:
+                        x -= 1
+                    odd_fused_cells[(x, y)] ^= isinstance(predicate, OddCountAssumption)
+                else:
+                    yield self.fuse_assumption(predicate)
+        for cell, odd in odd_fused_cells.items():
+            if odd:
+                yield OddCountAssumption.from_cells([cell])
+            else:
+                yield EvenCountAssumption.from_cells([cell])
 
 
 class ComponentFusion(Fusion):
@@ -629,7 +692,11 @@ class ComponentFusion(Fusion):
         Return True if adjacent rows can be viewed as one row where you draw a
         horizontal line through the components.
         """
-        if not self._pre_check() or not self.has_crossing_len2_ob():
+        if (
+            not self._pre_check()
+            or not self.has_crossing_len2_ob()
+            or self._tiling.predicate_assumptions
+        ):
             return False
         new_tiling = self._tiling.add_obstructions(self.obstructions_to_add())
 
@@ -638,7 +705,7 @@ class ComponentFusion(Fusion):
             and self._check_isolation_level()
             and all(
                 self._can_component_fuse_assumption(assumption)
-                for assumption in self._tiling.assumptions
+                for assumption in self._tiling.tracking_assumptions
             )
         )
 

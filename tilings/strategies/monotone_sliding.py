@@ -91,7 +91,7 @@ class GeneralizedSlidingStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
                 ): child.get_assumption_parameter(
                     ass.__class__(self.slide_gps(ass.gps))
                 )
-                for ass in comb_class.assumptions
+                for ass in comb_class.tracking_assumptions
             },
         )
 
@@ -131,7 +131,9 @@ class MonotoneSlidingFactory(StrategyFactory[Tiling]):
     This is only looks at n x 1 and 1 x n tilings.
     """
 
-    def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
+    def __call__(self, comb_class: Tiling) -> Iterator[Rule[Tiling, GriddedPerm]]:
+        if comb_class.predicate_assumptions:
+            raise NotImplementedError("Not implemented sliding for predicates")
         parent = comb_class
         rotate = False
         if (

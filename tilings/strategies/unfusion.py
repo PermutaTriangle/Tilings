@@ -270,7 +270,7 @@ class UnfusionColumnStrategy(Strategy[Tiling, GriddedPerm]):
             else:
                 algo = Fusion(comb_class, row_idx=idx)
             params: Dict[str, str] = {}
-            for ass in comb_class.assumptions:
+            for ass in comb_class.tracking_assumptions:
                 mapped_ass = ass.__class__(
                     [
                         children[idx].forward_map.map_gp(gp)

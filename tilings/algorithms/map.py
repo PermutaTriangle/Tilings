@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Dict, Tuple
 from tilings.exception import InvalidOperationError
 
 if TYPE_CHECKING:
-    from tilings.assumptions import TrackingAssumption
+    from tilings.assumptions import AssumptionClass
     from tilings.griddedperm import GriddedPerm
 
 Cell = Tuple[int, int]
@@ -70,7 +70,7 @@ class RowColMap:
         """
         return gp.__class__(gp.patt, map(self.map_cell, gp.pos))
 
-    def map_assumption(self, assumption: "TrackingAssumption") -> "TrackingAssumption":
+    def map_assumption(self, assumption: "AssumptionClass") -> "AssumptionClass":
         """
         Map the assumption according to the map.
 

@@ -543,3 +543,42 @@ class MinimalGriddedPerms:
             if not yielded_subgridded_perm(gp):
                 yielded.add(gp)
                 yield gp
+
+    def odd_even_minimal_gridded_perms(
+        self, odd_cells: Set[Cell], even_cells: Set[Cell]
+    ) -> Set[GriddedPerm]:
+        if odd_cells.intersection(even_cells):
+            return set()
+
+        def cell_count(gp: GriddedPerm, cell: Cell) -> int:
+            return sum(1 for _ in filter(cell.__eq__, gp.pos))
+
+        def satisfies_odd_even(gp: GriddedPerm):
+            return all(bool(cell_count(gp, cell) % 2) for cell in odd_cells) and all(
+                not bool(cell_count(gp, cell) % 2) for cell in even_cells
+            )
+
+        def insert_point(gp: GriddedPerm, cell: Cell) -> Iterator[GriddedPerm]:
+            for _, griddedperm in self.insert_point(gp, cell, -1):
+                yield griddedperm
+
+        to_process = set(self.minimal_gridded_perms())
+        res: Set[GriddedPerm] = set()
+        while to_process:
+            gp = to_process.pop()
+            if satisfies_odd_even(gp):
+                res.add(gp)
+            insert = set()
+            for cell in odd_cells:
+                if not bool(cell_count(gp, cell) % 2):
+                    insert.add(cell)
+            for cell in even_cells:
+                if bool(cell_count(gp, cell) % 2):
+                    insert.add(cell)
+            gps = set([gp])
+            while insert:
+                cell = insert.pop()
+                gps = set(chain.from_iterable(insert_point(gp, cell) for gp in gps))
+            res.update(gps)
+        assert all(satisfies_odd_even(gp) for gp in res)
+        return res

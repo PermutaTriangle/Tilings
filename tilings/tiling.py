@@ -2,7 +2,7 @@
 import json
 from array import array
 from collections import Counter, defaultdict
-from functools import reduce
+from functools import lru_cache, reduce
 from itertools import chain, filterfalse, product
 from operator import mul, xor
 from typing import (
@@ -47,7 +47,13 @@ from .algorithms import (
     guess_obstructions,
 )
 from .assumptions import (
+    Assumption,
     ComponentAssumption,
+    EqualParityAssumption,
+    EvenCountAssumption,
+    OddCountAssumption,
+    OppositeParityAssumption,
+    PredicateAssumption,
     SkewComponentAssumption,
     SumComponentAssumption,
     TrackingAssumption,
@@ -58,6 +64,14 @@ from .gui_launcher import run_gui
 from .misc import intersection_reduce, union_reduce
 
 __all__ = ["Tiling"]
+
+DEBUG = False
+
+
+def set_debug(debug: bool = True):
+    # pylint: disable=global-statement
+    global DEBUG
+    DEBUG = debug
 
 
 Cell = Tuple[int, int]
@@ -83,6 +97,16 @@ CachedProperties = TypedDict(
     total=False,
 )
 
+ASSUMPTIONS = [
+    TrackingAssumption,
+    SumComponentAssumption,
+    SkewComponentAssumption,
+    EvenCountAssumption,
+    OddCountAssumption,
+    EqualParityAssumption,
+    OppositeParityAssumption,
+]  # DO NOT CHANGE THE ORDER OF THIS LIST
+
 
 class Tiling(CombinatorialClass):
     """Tiling class.
@@ -98,12 +122,13 @@ class Tiling(CombinatorialClass):
         self,
         obstructions: Iterable[GriddedPerm] = tuple(),
         requirements: Iterable[Iterable[GriddedPerm]] = tuple(),
-        assumptions: Iterable[TrackingAssumption] = tuple(),
+        assumptions: Iterable[Assumption] = tuple(),
         remove_empty_rows_and_cols: bool = True,
         derive_empty: bool = True,
         simplify: bool = True,
         sorted_input: bool = False,
         already_minimized_obs: bool = False,
+        checked: bool = False,
     ) -> None:
         """
         - if remove_empty_rows_and_cols, then remove empty rows and columns.
@@ -115,22 +140,9 @@ class Tiling(CombinatorialClass):
         """
         self._cached_properties: CachedProperties = {}
 
-        super().__init__()
-        if sorted_input:
-            # Set of obstructions
-            self._obstructions = tuple(obstructions)
-            # Set of requirement lists
-            self._requirements = tuple(tuple(r) for r in requirements)
-            # Set of assumptions
-            self._assumptions = tuple(assumptions)
-        else:
-            # Set of obstructions
-            self._obstructions = tuple(sorted(obstructions))
-            # Set of requirement lists
-            self._requirements = Tiling.sort_requirements(requirements)
-            # Set of assumptions
-            self._assumptions = tuple(sorted(assumptions))
-
+        self._set_obstructions_requirements_and_assumptions(
+            obstructions, requirements, assumptions, sorted_input
+        )
         # Simplify the set of obstructions and the set of requirement lists
         if simplify:
             self._simplify_griddedperms(already_minimized_obs=already_minimized_obs)
@@ -139,29 +151,76 @@ class Tiling(CombinatorialClass):
             # Remove gridded perms that avoid obstructions from assumptions
             if simplify:
                 self.clean_assumptions()
+            if self._predicates_imply_empty():
+                self.set_empty()
+            else:
+                # Fill empty
+                if derive_empty:
+                    if "empty_cells" not in self._cached_properties:
+                        self._prepare_properties()
 
-            # Fill empty
-            if derive_empty:
-                if "empty_cells" not in self._cached_properties:
-                    self._prepare_properties()
-
-            # Remove empty rows and empty columns
-            if remove_empty_rows_and_cols:
-                self._remove_empty_rows_and_cols()
-
+                # Remove empty rows and empty columns
+                if remove_empty_rows_and_cols:
+                    self._remove_empty_rows_and_cols()
         else:
-            self._obstructions = (GriddedPerm.empty_perm(),)
-            self._requirements = tuple()
-            self._assumptions = tuple()
-            self._cached_properties["active_cells"] = frozenset()
-            self._cached_properties["backward_map"] = RowColMap.identity((0, 0))
-            self._cached_properties["cell_basis"] = {(0, 0): ([Perm()], [])}
-            self._cached_properties["dimensions"] = (1, 1)
-            self._cached_properties["empty_cells"] = frozenset([(0, 0)])
-            self._cached_properties["forward_map"] = RowColMap.identity((0, 0))
-            self._cached_properties["point_cells"] = frozenset()
-            self._cached_properties["positive_cells"] = frozenset()
-            self._cached_properties["possibly_empty"] = frozenset()
+            self.set_empty()
+
+        self._check_init(checked)
+
+    def _set_obstructions_requirements_and_assumptions(
+        self,
+        obstructions: Iterable[GriddedPerm],
+        requirements: Iterable[Iterable[GriddedPerm]],
+        assumptions: Iterable[Assumption],
+        sorted_input: bool,
+    ):
+        if sorted_input:
+            # Set of obstructions
+            self._obstructions = tuple(obstructions)
+            # Set of requirement lists
+            self._requirements = tuple(tuple(r) for r in requirements)
+        else:
+            # Set of obstructions
+            self._obstructions = tuple(sorted(obstructions))
+            # Set of requirement lists
+            self._requirements = Tiling.sort_requirements(requirements)
+        # Set of assumptions
+        _assumptions: List[Assumption] = []
+        for ass in assumptions:
+            if (
+                isinstance(ass, (EqualParityAssumption, OppositeParityAssumption))
+                and len(ass) > 1
+            ):
+                _assumptions.extend(
+                    ass.__class__.from_cells([cell]) for cell in ass.cells
+                )
+            else:
+                _assumptions.append(ass)
+        self._assumptions = tuple(sorted(set(_assumptions)))
+
+    def _check_init(self, checked: bool):
+        if DEBUG and not checked:
+            redone = Tiling(
+                self._obstructions, self._requirements, self._assumptions, checked=True
+            )
+            if redone != self:
+                print(self)
+                print(redone)
+                assert 0
+
+    def set_empty(self):
+        self._obstructions = (GriddedPerm.empty_perm(),)
+        self._requirements = tuple()
+        self._assumptions = tuple()
+        self._cached_properties["active_cells"] = frozenset()
+        self._cached_properties["backward_map"] = RowColMap.identity((0, 0))
+        self._cached_properties["cell_basis"] = {(0, 0): ([Perm()], [])}
+        self._cached_properties["dimensions"] = (1, 1)
+        self._cached_properties["empty_cells"] = frozenset([(0, 0)])
+        self._cached_properties["forward_map"] = RowColMap.identity((0, 0))
+        self._cached_properties["point_cells"] = frozenset()
+        self._cached_properties["positive_cells"] = frozenset()
+        self._cached_properties["possibly_empty"] = frozenset()
 
     @classmethod
     def from_perms(
@@ -203,6 +262,10 @@ class Tiling(CombinatorialClass):
             cell
             for cell in product(range(dimensions[0]), range(dimensions[1]))
             if cell not in active_cells
+        ) + tuple(
+            gp.pos[0]
+            for gp in self.obstructions
+            if len(gp) == 1 and gp.pos[0] in active_cells
         )
 
         # If the first obstruction is the empty perm, we shouldn't do any of this.
@@ -240,9 +303,165 @@ class Tiling(CombinatorialClass):
             sorted_input=True,
             already_minimized_obs=already_minimized_obs,
         )
-
         self._obstructions = GPR.obstructions
         self._requirements = GPR.requirements
+        if self._predicates_imply_empty():
+            self.set_empty()
+
+    def _predicates_imply_empty(self) -> bool:
+        res = (
+            any(
+                all(
+                    cell in self.empty_cells or cell not in self.active_cells
+                    for cell in ass.cells
+                )
+                for ass in self.predicate_assumptions
+                if isinstance(ass, OddCountAssumption)
+            )
+            or any(
+                next(iter(ass.cells)) in self.point_cells
+                for ass in self.predicate_assumptions
+                if isinstance(ass, EvenCountAssumption) and len(ass) == 1
+            )
+            or self._rectangular_predicate_implications()
+        )
+        self._cached_properties = {}
+        return res
+
+    def _rectangular_predicate_implications(self) -> bool:
+        predicates = self.predicate_assumptions
+        if not predicates or any(len(pred) > 1 for pred in predicates):
+            return False
+
+        def _get_cells(predicate_type):
+            return set(
+                chain.from_iterable(
+                    pred.cells
+                    for pred in predicates
+                    if isinstance(pred, predicate_type)
+                )
+            )
+
+        odd_cells = _get_cells(OddCountAssumption)
+        even_cells = _get_cells(EvenCountAssumption)
+        if odd_cells.intersection(even_cells):
+            return True
+        if odd_cells.union(even_cells) != set(self.active_cells):
+            return False
+        equal_cells = _get_cells(EqualParityAssumption)
+        opposite_cells = _get_cells(OppositeParityAssumption)
+        if equal_cells.intersection(opposite_cells):
+            return True
+        if equal_cells.union(opposite_cells) != set(self.active_cells):
+            return False
+        return any(
+            self._contradictory_rectangle(
+                rectangle, odd_cells, even_cells, opposite_cells, equal_cells
+            )
+            for rectangle in self._get_rectangular_regions()
+        )
+
+    def _contradictory_rectangle(
+        self,
+        rectangle: Set[Cell],
+        odd_cells: Set[Cell],
+        even_cells: Set[Cell],
+        opposite_cells: Set[Cell],
+        equal_cells: Set[Cell],
+    ) -> bool:
+        odd = bool(sum(1 for cell in rectangle if cell in odd_cells) % 2)
+        mindex = min(x for x, _ in rectangle)
+        minval = min(y for _, y in rectangle)
+        toggle = bool(
+            (
+                sum(1 for x, _ in odd_cells if x < mindex)
+                + sum(1 for _, y in odd_cells if y < minval)
+            )
+            % 2
+        )
+        # opposite parity => even length
+        if (not toggle and all(cell in opposite_cells for cell in rectangle)) or (
+            toggle and all(cell in equal_cells for cell in rectangle)
+        ):
+            if odd:
+                return True
+        if len(rectangle) == 1:
+            cell = next(iter(rectangle))
+            basis = self.cell_basis()[cell][0]
+            if Perm((0, 1)) in basis:
+                # equal parity implies odd size or size 0
+                if cell in self.positive_cells:
+                    if (toggle and cell in opposite_cells) or (
+                        not toggle and cell in equal_cells
+                    ):
+                        if cell in even_cells:
+                            return True
+                        # TODO: this implies that the cell is empty. add ob?
+            if Perm((1, 0)) in basis:
+                # equal parity unless size 0
+                if cell in self.positive_cells:
+                    if (not toggle and cell in opposite_cells) or (
+                        toggle and cell in equal_cells
+                    ):
+                        return True
+        return False
+
+    def _get_rectangular_regions(self) -> Iterator[Set[Cell]]:
+        """
+        Yield rectangular regions which do not interleave with
+        other cells in its cols or rows outside of the region.
+        """
+        to_process = set(self.active_cells)
+        rectangle_by_cells: Dict[Cell, Set[Cell]] = {}
+        filled_rectangles: List[Set[Cell]] = []
+        while to_process:
+            rectangle: Set[Cell] = set()
+            cells_to_process = set([to_process.pop()])
+            processed_rows: Set[int] = set()
+            processed_cols: Set[int] = set()
+            while cells_to_process:
+                cell = cells_to_process.pop()
+                if cell[0] not in processed_cols:
+                    processed_cols.add(cell[0])
+                    cells = self.cells_in_col(cell[0])
+                    rectangle.update(cells)
+                    cells_to_process.update(cells)
+                if cell[1] not in processed_rows:
+                    processed_rows.add(cell[1])
+                    cells = self.cells_in_row(cell[1])
+                    rectangle.update(cells)
+                    cells_to_process.update(cells)
+            to_process -= rectangle
+            filled_in_rectangle = self._fill_rectangle(rectangle)
+            for cell in rectangle:
+                rectangle_by_cells[cell] = filled_in_rectangle
+            filled_rectangles.append(filled_in_rectangle)
+        for filled_rectangle in filled_rectangles:
+            res = filled_rectangle
+            old_res: Optional[Set[Cell]] = None
+            while old_res != res:
+                old_res = res
+                res = self._fill_rectangle(
+                    union_reduce((rectangle_by_cells[cell] for cell in res))
+                )
+            yield res
+        # TODO: consider the unions of the above?
+
+    def _fill_rectangle(self, rectangle: Set[Cell]) -> Set[Cell]:
+        """
+        Return the smallest rectangular region that contains all of
+        the cells and does not interleave with any cell in its rows
+        or columns outside the rectangle.
+        """
+        min_x = min(x for x, _ in rectangle)
+        max_x = max(x for x, _ in rectangle)
+        min_y = min(y for _, y in rectangle)
+        max_y = max(y for _, y in rectangle)
+        return set(
+            (x, y)
+            for (x, y) in self.active_cells
+            if min_x <= x <= max_x or min_y <= y <= max_y
+        )
 
     def _remove_empty_rows_and_cols(self) -> None:
         """Remove empty rows and columns."""
@@ -317,7 +536,7 @@ class Tiling(CombinatorialClass):
         TODO: this should remove points that are placed, and other requirements
         that are contained in every gridded perm.
         """
-        res: List[TrackingAssumption] = []
+        res: List[Assumption] = []
         for assumption in self.assumptions:
             ass = assumption.avoiding(self._obstructions, self.active_cells)
             if ass.gps:
@@ -421,14 +640,11 @@ class Tiling(CombinatorialClass):
         if self.assumptions:
             result.extend(split_16bit(len(self.assumptions)))
             for assumption in self.assumptions:
-                if isinstance(assumption, SkewComponentAssumption):
-                    result.append(2)
-                elif isinstance(assumption, SumComponentAssumption):
-                    result.append(1)
-                elif isinstance(assumption, TrackingAssumption):
-                    result.append(0)
-                else:
-                    raise ValueError("Not a valid assumption.")
+                try:
+                    ass_idx = ASSUMPTIONS.index(type(assumption))
+                except ValueError as e:
+                    raise ValueError("Not a valid assumption.") from e
+                result.append(ass_idx)
                 result.extend(split_16bit(len(assumption.gps)))
                 result.extend(
                     chain.from_iterable(
@@ -485,17 +701,11 @@ class Tiling(CombinatorialClass):
                 assumption_type = arr[offset]
                 offset += 1
                 gps, offset = recreate_gp_list(offset)
-                if assumption_type == 0:
-                    # tracking
-                    assumptions.append(TrackingAssumption(gps))
-                elif assumption_type == 1:
-                    # sum
-                    assumptions.append(SumComponentAssumption(gps))
-                elif assumption_type == 2:
-                    # skew
-                    assumptions.append(SkewComponentAssumption(gps))
-                else:
-                    raise ValueError("Invalid assumption type.")
+                try:
+                    ass_class = ASSUMPTIONS[assumption_type]
+                except IndexError as e:
+                    raise IndexError("Invalid assumption type.") from e
+                assumptions.append(ass_class(gps))
         return cls(
             obstructions=obstructions,
             requirements=requirements,
@@ -542,7 +752,7 @@ class Tiling(CombinatorialClass):
         serialized Tiling object."""
         obstructions = map(GriddedPerm.from_dict, d["obstructions"])
         requirements = map(lambda x: map(GriddedPerm.from_dict, x), d["requirements"])
-        assumptions = map(TrackingAssumption.from_dict, d.get("assumptions", []))
+        assumptions = map(Assumption.from_dict, d.get("assumptions", []))
         return cls(
             obstructions=obstructions,
             requirements=requirements,
@@ -643,28 +853,35 @@ class Tiling(CombinatorialClass):
             sorted_input=True,
         )
 
-    def add_assumption(self, assumption: TrackingAssumption) -> "Tiling":
+    def add_assumption(self, assumption: Assumption, clean: bool = True) -> "Tiling":
         """Returns a new tiling with the added assumption."""
-        return self.add_assumptions((assumption,))
+        return self.add_assumptions((assumption,), clean)
 
     def add_assumptions(
-        self, assumptions: Iterable[TrackingAssumption], clean: bool = True
+        self, assumptions: Iterable[Assumption], clean: bool = True
     ) -> "Tiling":
         """Returns a new tiling with the added assumptions."""
+        assumptions = tuple(assumptions)
+        remove_empty_rows_and_cols = False
+        derive_empty = False
+        simplify = False
+        if clean and any(isinstance(ass, PredicateAssumption) for ass in assumptions):
+            remove_empty_rows_and_cols = True
+            derive_empty = True
+            simplify = True
         tiling = Tiling(
             self._obstructions,
             self._requirements,
-            self._assumptions + tuple(assumptions),
-            remove_empty_rows_and_cols=False,
-            derive_empty=False,
-            simplify=False,
-            sorted_input=True,
+            self._assumptions + assumptions,
+            remove_empty_rows_and_cols=remove_empty_rows_and_cols,
+            derive_empty=derive_empty,
+            simplify=simplify,
         )
-        if clean:
+        if simplify:
             tiling.clean_assumptions()
         return tiling
 
-    def remove_assumption(self, assumption: TrackingAssumption):
+    def remove_assumption(self, assumption: Assumption):
         """Returns a new tiling with assumption removed."""
         try:
             idx = self._assumptions.index(assumption)
@@ -704,7 +921,10 @@ class Tiling(CombinatorialClass):
         """
         if not self.assumptions:
             return self
-        assumptions = [ass.remove_components(self) for ass in self.assumptions]
+        assumptions = [
+            ass.remove_components(self) if isinstance(ass, TrackingAssumption) else ass
+            for ass in self.assumptions
+        ]
         tiling = self.__class__(
             self._obstructions,
             self._requirements,
@@ -1099,21 +1319,42 @@ class Tiling(CombinatorialClass):
             or all(c in cells for c in chain.from_iterable(r.pos for r in req))
         )
         assumptions = tuple(
-            ass.__class__(
-                gp
-                for gp in ass.gps
-                if (factors and gp.pos[0] in cells) or all(c in cells for c in gp.pos)
-            )
-            for ass in self.assumptions
+            self.factored_assumption(ass, cells, factors) for ass in self.assumptions
         ) + tuple(add_assumptions)
         # TODO: check sum/skew assumptions
         return self.__class__(
             obstructions,
             requirements,
             tuple(sorted(set(ass for ass in assumptions if ass.gps))),
-            simplify=False,
+            simplify=bool(self.predicate_assumptions),
             sorted_input=True,
         )
+
+    def factored_assumption(
+        self, assumption: Assumption, cells: Iterable[Cell], factors: bool = False
+    ) -> Assumption:
+        if isinstance(
+            assumption, (TrackingAssumption, OddCountAssumption, EvenCountAssumption)
+        ):
+            return assumption.__class__(
+                gp
+                for gp in assumption.gps
+                if (factors and gp.pos[0] in cells) or all(c in cells for c in gp.pos)
+            )
+        assert all(len(ass.cells) == 1 for ass in self.predicate_assumptions)
+        ass_x, ass_y = next(iter(assumption.cells))
+        odd_cells = set(
+            cell
+            for cell in self.active_cells
+            if OddCountAssumption.from_cells([cell]) in self.assumptions
+        ) - set(cells)
+        odd_below = bool(sum(1 for _, y in odd_cells if y < ass_y) % 2)
+        odd_left = bool(sum(1 for x, _ in odd_cells if x < ass_x) % 2)
+        if odd_below == odd_left:
+            return assumption
+        if isinstance(assumption, EqualParityAssumption):
+            return OppositeParityAssumption(assumption.gps)
+        return EqualParityAssumption(assumption.gps)
 
     def find_factors(self, interleaving: str = "none") -> Tuple["Tiling", ...]:
         """
@@ -1126,6 +1367,8 @@ class Tiling(CombinatorialClass):
         set 'all' then cells on the same row or columns don't need to be in
         the same factor.
         """
+        if any(len(ass) > 1 for ass in self.predicate_assumptions):
+            return (self,)
         factor_class = {
             "none": Factor,
             "monotone": FactorWithMonotoneInterleaving,
@@ -1137,7 +1380,9 @@ class Tiling(CombinatorialClass):
             raise InvalidOperationError(
                 f"interleaving option must be in {list(factor_class.keys())}"
             )
-        return factor.factors()
+        return tuple(
+            self.sub_tiling(component) for component in factor.get_components()
+        )
 
     def row_and_column_separation(self) -> "Tiling":
         """
@@ -1392,21 +1637,23 @@ class Tiling(CombinatorialClass):
 
     @property
     def extra_parameters(self) -> Tuple[str, ...]:
-        return tuple(f"k_{i}" for i in range(len(self._assumptions)))
+        return tuple(f"k_{i}" for i in range(len(self.tracking_assumptions)))
 
     def get_parameters(self, obj: GriddedPerm) -> Parameters:
-        return tuple(ass.get_value(obj) for ass in self.assumptions)
+        return tuple(ass.get_value(obj) for ass in self.tracking_assumptions)
 
     def possible_parameters(self, n: int) -> Iterator[Dict[str, int]]:
         if any(
             len(gp) > 1
-            for gp in chain.from_iterable(ass.gps for ass in self.assumptions)
+            for gp in chain.from_iterable(ass.gps for ass in self.tracking_assumptions)
         ):
             raise NotImplementedError(
                 "possible parameters only implemented for assumptions with "
                 "size one gridded perms"
             )
-        parameters = [self.get_assumption_parameter(ass) for ass in self.assumptions]
+        parameters = [
+            self.get_assumption_parameter(ass) for ass in self.tracking_assumptions
+        ]
         for values in product(*[range(n + 1) for _ in parameters]):
             yield dict(zip(parameters, values))
 
@@ -1417,7 +1664,7 @@ class Tiling(CombinatorialClass):
         Raise ValueError if the assumptions is not on the tiling.
         """
         try:
-            idx = self._assumptions.index(assumption)
+            idx = self.tracking_assumptions.index(assumption)
         except ValueError as e:
             raise ValueError(
                 f"following assumption not on tiling: '{assumption}'"
@@ -1426,7 +1673,7 @@ class Tiling(CombinatorialClass):
 
     def get_assumption(self, parameter: str) -> TrackingAssumption:
         idx = parameter.split("_")[1]
-        return self.assumptions[int(idx)]
+        return self.tracking_assumptions[int(idx)]
 
     def get_minimum_value(self, parameter: str) -> int:
         """
@@ -1444,22 +1691,154 @@ class Tiling(CombinatorialClass):
     def maximum_length_of_minimum_gridded_perm(self) -> int:
         """Returns the maximum length of the minimum gridded permutation that
         can be gridded on the tiling.
+        TODO: this method ignores predicates so is a lower bound
         """
         return sum(max(map(len, reqs)) for reqs in self.requirements)
 
-    def is_empty(self) -> bool:
+    @lru_cache(10000)
+    def is_empty(self, experimental_bound: Optional[int] = None) -> bool:
         """Checks if the tiling is empty.
 
         Tiling is empty if it has been inferred to be contradictory due to
         contradicting requirements and obstructions or no gridded permutation
         can be gridded on the tiling.
+
+        TODO: this method ignores predicates
         """
-        if any(ob.is_empty() for ob in self.obstructions):
+        if any(ob.is_empty() for ob in self.obstructions) or any(
+            not ass.can_be_satisfied(self) for ass in self.predicate_assumptions
+        ):
             return True
-        if len(self.requirements) <= 1:
+        # return self.experimental_is_empty()
+        if not self.predicate_assumptions and len(self.requirements) <= 1:
             return False
         MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
-        return all(False for _ in MGP.minimal_gridded_perms(yield_non_minimal=True))
+        gps = MGP.minimal_gridded_perms(yield_non_minimal=True)
+        try:
+            if self._satisfies_predicates(next(gps)):
+                return False
+        except StopIteration:
+            return True
+        if any(self._satisfies_predicates(gp) for gp in gps):
+            return False
+        if self.predicate_assumptions:
+            return self._is_empty_after_expansion(experimental_bound)
+        return True
+
+    def _is_empty_after_expansion(
+        self, experimental_bound: Optional[int] = None
+    ) -> bool:
+        # TODO: consider doing all this as an initial factory
+        factors = self.find_factors()
+        if len(factors) > 1:
+            return any(f.is_empty(experimental_bound) for f in factors)
+        rcs = self.obstruction_transitivity()
+        rcs = rcs.row_and_column_separation()
+        if rcs != self:
+            return rcs.is_empty(experimental_bound)
+
+        try:
+            assumption_to_refine = next(
+                ass for ass in self.predicate_assumptions if ass.can_be_refined()
+            )
+            without_predicate = self.remove_assumption(assumption_to_refine)
+            return all(
+                without_predicate.add_assumptions(assumptions).is_empty(
+                    experimental_bound
+                )
+                for assumptions in assumption_to_refine.refinements()
+            )
+        except StopIteration:
+            # nothing can be refined
+            pass
+        odd_cells = set(
+            chain.from_iterable(
+                ass.cells
+                for ass in self._assumptions
+                if isinstance(ass, OddCountAssumption)
+            )
+        )
+        even_cells = set(
+            chain.from_iterable(
+                ass.cells
+                for ass in self._assumptions
+                if isinstance(ass, EvenCountAssumption)
+            )
+        )
+        MGP = MinimalGriddedPerms(self._obstructions, self._requirements)
+        MGPS = MGP.odd_even_minimal_gridded_perms(odd_cells, even_cells)
+        tiling = self.add_list_requirement(MGPS)
+        if self != tiling:
+            return tiling.is_empty(experimental_bound)
+
+        # for cell in tiling.point_cells:
+        #     if not tiling.only_cell_in_row_and_col(cell):
+        #         return self.place_point_in_cell(cell, 0).is_empty()
+
+        # def print_bound(bound):
+        #     print(self)
+        #     print(repr(self))
+        #     print(
+        #         "+",
+        #         bound,
+        #         "smallest:",
+        #         self.maximum_length_of_minimum_gridded_perm() + bound,
+        #     )
+        #     GP = GriddedPermsOnTiling(self, yield_non_minimal=True)
+        #     for gp in filter(
+        #         self._satisfies_predicates,
+        #         GP.gridded_perms(
+        #             self.maximum_length_of_minimum_gridded_perm() + bound,
+        #             place_at_most=bound,
+        #         ),
+        #     ):
+        #         print(gp)
+        #         break
+
+        # if self.smarter_experimental_is_empty(0):
+        #     if not self.smarter_experimental_is_empty(1):
+        #         print_bound(1)
+        #     elif not self.smarter_experimental_is_empty(2):
+        #         print_bound(2)
+        #     elif not self.smarter_experimental_is_empty(3):
+        #         print_bound(3)
+        #     elif not self.smarter_experimental_is_empty(4):
+        #         print_bound(4)
+        #     elif not self.smarter_experimental_is_empty(5):
+        #         print_bound(5)
+        #     elif not self.smarter_experimental_is_empty(6):
+        #         print_bound(6)
+        #     else:
+        #         return True
+        # else:
+        #     print_bound(0)
+
+        if experimental_bound is not None:
+            return self.smarter_experimental_is_empty(bound=experimental_bound)
+
+        return False
+
+    def smarter_experimental_is_empty(self, bound: int = 4) -> bool:
+        GP = GriddedPermsOnTiling(self, yield_non_minimal=True)
+        return all(
+            False
+            for _ in filter(
+                self._satisfies_predicates,
+                GP.gridded_perms(
+                    self.maximum_length_of_minimum_gridded_perm() + bound,
+                    place_at_most=bound,
+                ),
+            )
+        )
+
+    def experimental_is_empty(self, bound: int = 4) -> bool:
+        try:
+            return all(
+                False for _ in self.gridded_perms(self.minimum_size_of_object() + bound)
+            )
+        except StopIteration:
+            # underlying tiling is empty
+            return True
 
     def is_finite(self) -> bool:
         """Returns True if all active cells have finite basis."""
@@ -1546,7 +1925,12 @@ class Tiling(CombinatorialClass):
             if maxlen is not None
             else self.maximum_length_of_minimum_gridded_perm()
         )
-        yield from GriddedPermsOnTiling(self).gridded_perms(maxlen)
+        yield from filter(
+            self._satisfies_predicates, GriddedPermsOnTiling(self).gridded_perms(maxlen)
+        )
+
+    def _satisfies_predicates(self, gp: GriddedPerm) -> bool:
+        return all(ass.satisfies(gp) for ass in self.predicate_assumptions)
 
     def enmerate_gp_up_to(self, max_length: int) -> List[int]:
         """Count gridded perms of each length up to a max length."""
@@ -1567,6 +1951,7 @@ class Tiling(CombinatorialClass):
     def minimal_gridded_perms(self) -> Iterator[GriddedPerm]:
         """
         An iterator over all minimal gridded permutations.
+        TODO: this method ignores predicates
         """
         MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
         yield from MGP.minimal_gridded_perms()
@@ -1599,12 +1984,28 @@ class Tiling(CombinatorialClass):
         )
 
     def minimum_size_of_object(self) -> int:
-        """Return the size of the smallest gridded perm contained on the tiling."""
+        """
+        Return the size of the smallest gridded perm contained on the tiling.
+        TODO: this ignores predicates
+        """
         if not self.requirements:
             return 0
         if len(self.requirements) == 1:
             return min(len(gp) for gp in self.requirements[0])
         return len(next(self.minimal_gridded_perms()))
+
+    def min_size(self) -> int:
+        try:
+            min_point = len(
+                next(
+                    self.gridded_perms(
+                        self.maximum_length_of_minimum_gridded_perm() + 4
+                    )
+                )
+            )
+        except StopIteration:
+            min_point = self.minimum_size_of_object()
+        return min_point
 
     def is_point_or_empty_cell(self, cell: Cell) -> bool:
         point_or_empty_obs = (
@@ -1732,8 +2133,20 @@ class Tiling(CombinatorialClass):
         return len(self._requirements)
 
     @property
-    def assumptions(self) -> Tuple[TrackingAssumption, ...]:
+    def assumptions(self) -> Tuple[Assumption, ...]:
         return self._assumptions
+
+    @property
+    def tracking_assumptions(self) -> Tuple[TrackingAssumption, ...]:
+        return tuple(
+            ass for ass in self._assumptions if isinstance(ass, TrackingAssumption)
+        )
+
+    @property
+    def predicate_assumptions(self) -> Tuple[PredicateAssumption, ...]:
+        return tuple(
+            ass for ass in self._assumptions if isinstance(ass, PredicateAssumption)
+        )
 
     def total_assumptions(self) -> int:
         return len(self._assumptions)

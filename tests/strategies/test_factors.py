@@ -200,6 +200,9 @@ def test_rule(
     assert all(rule.inferrable for rule in factor_with_int_rules)
     assert all(len(rule.strategy.partition) == len(rule.children) for rule in all_rules)
     assert all(rule.workable for rule in all_rules)
+    for rule in all_rules:
+        print(rule)
+        print(rule.possibly_empty)
     assert all(not rule.possibly_empty for rule in all_rules)
     assert all(rule.ignore_parent for rule in all_rules)
     assert not list(FactorFactory(interleaving="all")(not_fact_tiling))

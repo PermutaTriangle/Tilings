@@ -1,6 +1,6 @@
 import abc
 from itertools import chain
-from typing import Dict, Iterator, Optional, Tuple
+from typing import Dict, Iterator, Optional, Tuple, cast
 
 from comb_spec_searcher import Constructor
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -39,7 +39,8 @@ class AssumptionOrPointJumpingStrategy(Strategy[Tiling, GriddedPerm]):
 
     def swapped_assumptions(self, tiling: Tiling) -> Tuple[TrackingAssumption, ...]:
         return tuple(
-            ass.__class__(map(self._swapped_gp, ass.gps)) for ass in tiling.assumptions
+            cast(TrackingAssumption, ass.__class__(map(self._swapped_gp, ass.gps)))
+            for ass in tiling.assumptions
         )
 
     def _swapped_gp(self, gp: GriddedPerm) -> GriddedPerm:
@@ -162,7 +163,7 @@ class AssumptionAndPointJumpingStrategy(
                 comb_class.get_assumption_parameter(
                     ass
                 ): child.get_assumption_parameter(self._swap_assumption(ass))
-                for ass in comb_class.assumptions
+                for ass in comb_class.tracking_assumptions
             },
         )
 
@@ -330,6 +331,10 @@ class AssumptionAndPointJumpingFactory(StrategyFactory[Tiling]):
     def __call__(
         self, comb_class: Tiling
     ) -> Iterator[AssumptionOrPointJumpingStrategy]:
+        if comb_class.predicate_assumptions:
+            raise NotImplementedError(
+                "not implemented jumping strategies for predicates"
+            )
         cols, rows = comb_class.dimensions
         gps_to_be_swapped = chain(
             *comb_class.requirements, *[ass.gps for ass in comb_class.assumptions]

@@ -25,7 +25,7 @@ from comb_spec_searcher.typing import CombinatorialClassType, SubTerms, Terms
 from permuta.misc import DIR_NONE
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import RequirementPlacement
-from tilings.assumptions import ComponentAssumption, TrackingAssumption
+from tilings.assumptions import Assumption, ComponentAssumption, TrackingAssumption
 from tilings.strategies.assumption_insertion import AddAssumptionsStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 from tilings.tiling import Cell
@@ -155,8 +155,11 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
             mapped_assumptions = [
                 child.forward_map.map_assumption(ass).avoiding(child.obstructions)
                 for ass in algo.stretched_assumptions(cell)
+                if isinstance(ass, TrackingAssumption)
             ]
-            for ass, mapped_ass in zip(comb_class.assumptions, mapped_assumptions):
+            for ass, mapped_ass in zip(
+                comb_class.tracking_assumptions, mapped_assumptions
+            ):
                 if mapped_ass.gps:
                     params[
                         comb_class.get_assumption_parameter(ass)
@@ -352,7 +355,7 @@ class AssumptionPointingStrategy(PointingStrategy):
     def from_dict(cls, d: dict) -> "AssumptionPointingStrategy":
         if "max_cells" in d:
             d.pop("max_cells")
-        assumption = TrackingAssumption.from_dict(d.pop("assumption"))
+        assumption = cast(TrackingAssumption, Assumption.from_dict(d.pop("assumption")))
         return cls(assumption=assumption, **d)
 
     def __repr__(self) -> str:
@@ -370,7 +373,7 @@ class AssumptionPointingFactory(StrategyFactory[Tiling]):
 
     def __call__(self, comb_class: Tiling) -> Iterator[AssumptionPointingStrategy]:
         if len(comb_class.active_cells) <= self.max_cells:
-            for assumption in comb_class.assumptions:
+            for assumption in comb_class.tracking_assumptions:
                 if not isinstance(assumption, ComponentAssumption):
                     yield AssumptionPointingStrategy(assumption)
 

@@ -69,17 +69,54 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         partition: Iterable[Iterable[Cell]],
         ignore_parent: bool = True,
         workable: bool = True,
+        possibly_empty: bool = False,
     ):
         self.partition = tuple(sorted(tuple(sorted(p)) for p in partition))
         inferrable = any(
             FactorWithInterleavingStrategy.interleaving_rows_and_cols(self.partition)
         )
         super().__init__(
-            ignore_parent=ignore_parent, workable=workable, inferrable=inferrable
+            ignore_parent=ignore_parent,
+            workable=workable,
+            inferrable=inferrable,
+            possibly_empty=possibly_empty,
         )
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, ...]:
         return tuple(comb_class.sub_tiling(cells) for cells in self.partition)
+
+    def is_two_way(self, comb_class: Tiling) -> bool:  # type: ignore
+        if not comb_class.predicate_assumptions:
+            return True
+        return self.is_reversible(comb_class)
+
+    def is_reversible(self, comb_class: Tiling) -> bool:  # type: ignore
+        if not comb_class.predicate_assumptions:
+            return True
+        return not comb_class.experimental_is_empty()
+
+    def shifts(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> Tuple[int, ...]:
+        if children is None:
+            children = self.decomposition_function(comb_class)
+            if children is None:
+                raise StrategyDoesNotApply("Strategy does not apply")
+        min_points = []
+        for child in children:
+            try:
+                min_point = len(
+                    next(
+                        child.gridded_perms(
+                            child.maximum_length_of_minimum_gridded_perm() + 4
+                        )
+                    )
+                )
+            except StopIteration:
+                min_point = child.minimum_size_of_object()
+            min_points.append(min_point)
+        point_sum = sum(min_points)
+        return tuple(point_sum - mpoint for mpoint in min_points)
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -90,7 +127,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
                 raise StrategyDoesNotApply("Strategy does not apply")
         extra_parameters: Tuple[Dict[str, str], ...] = tuple({} for _ in children)
         for parent_var, assumption in zip(
-            comb_class.extra_parameters, comb_class.assumptions
+            comb_class.extra_parameters, comb_class.tracking_assumptions
         ):
             for idx, child in enumerate(children):
                 new_assumption = child.forward_map.map_assumption(assumption).avoiding(
@@ -153,6 +190,7 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
             [
                 f"partition={self.partition}",
                 f"ignore_parent={self.ignore_parent}",
+                f"possibly_empty={self.possibly_empty}",
                 f"workable={self.workable}",
             ]
         )
@@ -164,7 +202,6 @@ class FactorStrategy(CartesianProductStrategy[Tiling, GriddedPerm]):
         """Return a dictionary form of the strategy."""
         d: dict = super().to_jsonable()
         d.pop("inferrable")
-        d.pop("possibly_empty")
         d["partition"] = self.partition
         return d
 
@@ -253,9 +290,10 @@ class FactorWithInterleavingStrategy(FactorStrategy):
         partition: Iterable[Iterable[Cell]],
         ignore_parent: bool = True,
         workable: bool = True,
+        possibly_empty: bool = False,
         tracked: bool = True,
     ):
-        super().__init__(partition, ignore_parent, workable)
+        super().__init__(partition, ignore_parent, workable, possibly_empty)
         self.tracked = tracked
         self.cols, self.rows = self.interleaving_rows_and_cols(self.partition)
 
@@ -270,6 +308,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
                 f"partition={self.partition}",
                 f"ignore_parent={self.ignore_parent}",
                 f"workable={self.workable}",
+                f"possibly_empty={self.possibly_empty}",
                 f"tracked={self.tracked}",
             ]
         )
@@ -597,11 +636,22 @@ class FactorFactory(StrategyFactory[Tiling]):
                     components = tuple(
                         tuple(chain.from_iterable(part)) for part in partition
                     )
-                    yield self._build_strategy(components, workable=False)
-            yield self._build_strategy(min_comp, workable=self.workable)
+                    yield self._build_strategy(
+                        components,
+                        workable=False,
+                        possibly_empty=bool(comb_class.predicate_assumptions),
+                    )
+            yield self._build_strategy(
+                min_comp,
+                workable=self.workable,
+                possibly_empty=bool(comb_class.predicate_assumptions),
+            )
 
     def _build_strategy(
-        self, components: Tuple[Tuple[Cell, ...], ...], workable: bool
+        self,
+        components: Tuple[Tuple[Cell, ...], ...],
+        workable: bool,
+        possibly_empty: bool,
     ) -> FactorStrategy:
         """
         Build the factor strategy for the given components.
@@ -619,11 +669,15 @@ class FactorFactory(StrategyFactory[Tiling]):
                     components,
                     ignore_parent=self.ignore_parent,
                     workable=workable,
+                    possibly_empty=possibly_empty,
                     tracked=self.tracked,
                 ),
             )
         return FactorStrategy(
-            components, ignore_parent=self.ignore_parent, workable=workable
+            components,
+            ignore_parent=self.ignore_parent,
+            workable=workable,
+            possibly_empty=possibly_empty,
         )
 
     def __str__(self) -> str:

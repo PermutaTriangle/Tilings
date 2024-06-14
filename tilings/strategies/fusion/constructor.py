@@ -74,7 +74,10 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
         both_sided_parameters: Iterable[str],
         min_left: int,
         min_right: int,
+        odd_left: Optional[bool] = None,
+        odd_right: Optional[bool] = None,
     ):
+        self.odd_left_right = odd_left, odd_right
         # parent -> child parameters
         self.extra_parameters = extra_parameters
         # the reverse of the above list, although different parent parameters could
@@ -130,11 +133,9 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             if k in self.right_sided_parameters
         )
         self.fuse_parameter_index = child.extra_parameters.index(self.fuse_parameter)
-        child_pos_to_parent_pos = tuple(
-            index_mapping[idx] for idx in range(len(child.extra_parameters))
-        )
         self.children_param_map = self.build_param_map(
-            child_pos_to_parent_pos, len(parent.extra_parameters)
+            tuple(index_mapping[idx] for idx in range(len(child.extra_parameters))),
+            len(parent.extra_parameters),
         )
 
     def _init_checked(self):
@@ -241,6 +242,12 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
         raise NotImplementedError
 
+    def odd_even_left_right_satisfied(self, left_points: int, right_points: int):
+        odd_left, odd_right = self.odd_left_right
+        return (odd_left is None or bool(left_points % 2) == odd_left) and (
+            odd_right is None or bool(right_points % 2) == odd_right
+        )
+
     def get_terms(
         self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
     ) -> Terms:
@@ -256,9 +263,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             params: List[int], value: int, left_points: int, fuse_region_points: int
         ) -> None:
             """Update new terms if there is enough points on the left and right."""
+            right_points = fuse_region_points - left_points
             if (
                 min_left <= left_points
-                and min_right <= fuse_region_points - left_points
+                and min_right <= right_points
+                and self.odd_even_left_right_satisfied(left_points, right_points)
             ):
                 new_terms[tuple(params)] += value
 
@@ -360,7 +369,10 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                     continue
                 if both > max_both_points:
                     break
-                yield number_left_points, number_right_points
+                if self.odd_even_left_right_satisfied(
+                    number_left_points, number_right_points
+                ):
+                    yield number_left_points, number_right_points
 
     def _min_max_points_by_fuse_parameters(
         self, n: int, **parameters: int
