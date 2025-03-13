@@ -301,6 +301,8 @@ def test_expansion():
     """
     pack = TileScopePack.only_root_placements(3, 1)
     css = TileScope("132", pack)
+    print(pack)
+    print(css)
     spec = css.auto_search(smallest=True)
     spec = spec.expand_verified()
     assert sum(1 for rule in spec if isinstance(rule, ReverseRule)) == 1
