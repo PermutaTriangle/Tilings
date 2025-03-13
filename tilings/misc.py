@@ -137,8 +137,7 @@ def algorithm_u(ns: Sequence[T], m: int):
         if mu == 2:
             yield visit(n, a)
         else:
-            for v in f(mu - 1, nu - 1, (mu + sigma) % 2, n, a):
-                yield v
+            yield from f(mu - 1, nu - 1, (mu + sigma) % 2, n, a)
         if nu == mu + 1:
             a[mu] = mu - 1
             yield visit(n, a)
@@ -151,19 +150,15 @@ def algorithm_u(ns: Sequence[T], m: int):
             else:
                 a[mu] = mu - 1
             if (a[nu] + sigma) % 2 == 1:
-                for v in b(mu, nu - 1, 0, n, a):
-                    yield v
+                yield from b(mu, nu - 1, 0, n, a)
             else:
-                for v in f(mu, nu - 1, 0, n, a):
-                    yield v
+                yield from f(mu, nu - 1, 0, n, a)
             while a[nu] > 0:
                 a[nu] = a[nu] - 1
                 if (a[nu] + sigma) % 2 == 1:
-                    for v in b(mu, nu - 1, 0, n, a):
-                        yield v
+                    yield from b(mu, nu - 1, 0, n, a)
                 else:
-                    for v in f(mu, nu - 1, 0, n, a):
-                        yield v
+                    yield from f(mu, nu - 1, 0, n, a)
 
     def b(mu, nu, sigma, n, a):
         if nu == mu + 1:
@@ -174,19 +169,15 @@ def algorithm_u(ns: Sequence[T], m: int):
             a[mu] = 0
         elif nu > mu + 1:
             if (a[nu] + sigma) % 2 == 1:
-                for v in f(mu, nu - 1, 0, n, a):
-                    yield v
+                yield from f(mu, nu - 1, 0, n, a)
             else:
-                for v in b(mu, nu - 1, 0, n, a):
-                    yield v
+                yield from b(mu, nu - 1, 0, n, a)
             while a[nu] < mu - 1:
                 a[nu] = a[nu] + 1
                 if (a[nu] + sigma) % 2 == 1:
-                    for v in f(mu, nu - 1, 0, n, a):
-                        yield v
+                    yield from f(mu, nu - 1, 0, n, a)
                 else:
-                    for v in b(mu, nu - 1, 0, n, a):
-                        yield v
+                    yield from b(mu, nu - 1, 0, n, a)
             if (mu + sigma) % 2 == 1:
                 a[nu - 1] = 0
             else:
@@ -194,8 +185,7 @@ def algorithm_u(ns: Sequence[T], m: int):
         if mu == 2:
             yield visit(n, a)
         else:
-            for v in b(mu - 1, nu - 1, (mu + sigma) % 2, n, a):
-                yield v
+            yield from b(mu - 1, nu - 1, (mu + sigma) % 2, n, a)
 
     n = len(ns)
     a = [0] * (n + 1)

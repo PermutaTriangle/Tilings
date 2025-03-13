@@ -248,7 +248,7 @@ class MonotoneTreeEnumeration(Enumeration):
         if __debug__:
             lhs = taylor_expand(F, n=6)
             rhs = [len(list(self.tiling.objects_of_size(i))) for i in range(7)]
-        assert lhs == rhs, f"Bad genf\n{lhs}\n{rhs}"
+            assert lhs == rhs, f"Bad genf\n{lhs}\n{rhs}"
         return F
 
     @staticmethod
