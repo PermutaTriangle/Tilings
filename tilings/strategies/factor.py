@@ -648,6 +648,8 @@ class FactorFactory(StrategyFactory[Tiling]):
             interleaving = "all"
         elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
             interleaving = "monotone"
+        else:
+            raise ValueError("Invalid interleaving type")
         args = ", ".join(
             [
                 f"interleaving={interleaving!r}",
@@ -667,6 +669,9 @@ class FactorFactory(StrategyFactory[Tiling]):
             interleaving = "all"
         elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
             interleaving = "monotone"
+        else:
+            raise ValueError("Invalid interleaving type")
+
         d["interleaving"] = interleaving
         d["unions"] = self.unions
         d["ignore_parent"] = self.ignore_parent

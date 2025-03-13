@@ -357,6 +357,8 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             interleaving = "all"
         elif self.factor_class is factor.FactorWithMonotoneInterleaving:
             interleaving = "monotone"
+        else:
+            raise ValueError("Unknown factor class")
         args = ", ".join(
             [
                 f"interleaving={interleaving!r}",

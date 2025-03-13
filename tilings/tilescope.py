@@ -60,21 +60,23 @@ class TileScope(CombinatorialSpecificationSearcher):
     ) -> None:
 
         """Initialise TileScope."""
-        if isinstance(start_class, str):
-            basis = Basis.from_string(start_class)
-        elif isinstance(start_class, Tiling):
-            if start_class.dimensions == (1, 1):
-                basis = Basis(*[o.patt for o in start_class.obstructions])
+        if isinstance(start_class, Tiling):
             start_tiling = start_class
+            if start_tiling.dimensions == (1, 1):
+                basis = Basis(*[o.patt for o in start_tiling.obstructions])
         else:
-            try:
-                basis = Basis(*start_class)
-            except TypeError as e:
-                raise ValueError(
-                    "start class must be a string, an iterable of Perm or a tiling"
-                ) from e
+            # Handle the non-Tiling cases
+            if isinstance(start_class, str):
+                basis = Basis.from_string(start_class)
+            else:
+                try:
+                    basis = Basis(*start_class)
+                except TypeError as e:
+                    raise ValueError(
+                        "start class must be a string, an iterable of Perm or a tiling"
+                    ) from e
 
-        if not isinstance(start_class, Tiling):
+            # Now create start_tiling from basis
             start_tiling = Tiling(
                 obstructions=[GriddedPerm.single_cell(patt, (0, 0)) for patt in basis]
             )
@@ -413,8 +415,7 @@ class TrackedClassDB(ClassDB[Tiling]):
         self.int_to_assumption_type: List[Type[TrackingAssumption]] = []
 
     def __iter__(self) -> Iterator[int]:
-        for key in self.label_to_info:
-            yield key
+        yield from self.label_to_info
 
     def __contains__(self, key: Key) -> bool:
         if isinstance(key, Tiling):
@@ -624,8 +625,12 @@ class TrackedClassDB(ClassDB[Tiling]):
         if isinstance(key, int):
             if 0 <= key < len(self.label_to_tilings):
                 underlying_label, _ = self._decompress_key(self.label_to_tilings[key])
-        if isinstance(key, Tiling):
+            else:
+                raise ValueError("Invalid key")
+        elif isinstance(key, Tiling):
             underlying_label = self.classdb.get_label(key.remove_assumptions())
+        else:
+            raise ValueError("Invalid key")
         self.classdb.set_empty(underlying_label, empty)
 
     def status(self) -> str:

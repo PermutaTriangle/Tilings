@@ -380,7 +380,7 @@ class TileScopePack(StrategyPack):
             except ValueError:
                 pass
 
-        ks_pack = ks_pack.make_interleaving(tracked=tracked, unions=(level > 1))
+        ks_pack = ks_pack.make_interleaving(tracked=tracked, unions=level > 1)
 
         try:
             ks_pack = ks_pack.add_all_symmetry()
