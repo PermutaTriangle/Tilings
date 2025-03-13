@@ -276,12 +276,6 @@ class TileScopePack(StrategyPack):
             strat.ElementaryVerificationStrategy(), "elementary"
         )
 
-    def make_database(self) -> "TileScopePack":
-        """
-        Create a new pack by adding database verification to the current pack.
-        """
-        return self.add_verification(strat.DatabaseVerificationStrategy(), "database")
-
     def add_all_symmetry(self) -> "TileScopePack":
         """Create a new pack by turning on symmetry on the current pack."""
         if self.symmetries:
@@ -299,7 +293,6 @@ class TileScopePack(StrategyPack):
         Create a new pack with the following added:
             Short Obs verification (unless short_obs_len = 0)
             No Root Cell verification
-            Database verification
             Deflation
             Point and/or Assumption Jumping
             Generalized Monotone Sliding
@@ -313,10 +306,10 @@ class TileScopePack(StrategyPack):
             Relax assumptions
         Will be made tracked or not, depending on preference.
         Note that nothing is done with positive / point corroboration, requirement
-        corroboration, or database verification.
+        corroboration.
 
         Different stratgies will be added at different levels
-        Level 1: short obs, no root cell, database verification, symmetries,
+        Level 1: short obs, no root cell, symmetries,
                     obs inferral, interleaving factor without unions
         Level 2: deflation, point/assumption jumping, sliding, free cell reduction,
                     req corrob, targeted row/col placements, relax assumptions,
@@ -352,7 +345,6 @@ class TileScopePack(StrategyPack):
 
         ver_strats += [
             strat.NoRootCellVerificationStrategy(),
-            strat.DatabaseVerificationStrategy(),
         ]
 
         for strategy in ver_strats:

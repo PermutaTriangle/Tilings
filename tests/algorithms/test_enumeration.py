@@ -5,11 +5,7 @@ import sympy
 
 from comb_spec_searcher.utils import taylor_expand
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import (
-    DatabaseEnumeration,
-    LocalEnumeration,
-    MonotoneTreeEnumeration,
-)
+from tilings.algorithms import LocalEnumeration, MonotoneTreeEnumeration
 from tilings.exception import InvalidOperationError
 
 
@@ -439,36 +435,3 @@ class TestMonotoneTreeEnumeration(CommonTest):
         expected_enum = [0, 1, 5, 17, 50, 138, 370, 979, 2575, 6755, 17700]
         assert enum.verified()
         assert taylor_expand(enum.get_genf()) == expected_enum
-
-
-class TestDatabaseEnumeration(CommonTest):
-    @pytest.fixture
-    def enum_verified(self):
-        t = Tiling.from_string("123_132_231")
-        return DatabaseEnumeration(t)
-
-    @pytest.fixture
-    def enum_not_verified(self):
-        t = Tiling.from_string("1324")
-        return DatabaseEnumeration(t)
-
-    def test_get_genf(self, enum_verified):
-        assert enum_verified.get_genf() == sympy.sympify(
-            "(x**2 - x + 1)/(x**2 - 2*x + 1)"
-        )
-
-    @pytest.mark.slow
-    def test_load_verified_tilings(self):
-        DatabaseEnumeration.load_verified_tiling()
-        assert DatabaseEnumeration.all_verified_tilings
-        sample = next(iter(DatabaseEnumeration.all_verified_tilings))
-        Tiling.from_bytes(sample)
-
-    def test_verification_with_cache(self):
-        t = Tiling.from_string("123_132_231")
-        DatabaseEnumeration.all_verified_tilings = frozenset()
-        assert DatabaseEnumeration(t).verified()
-        DatabaseEnumeration.all_verified_tilings = frozenset([1, 2, 3, 4])
-        assert not DatabaseEnumeration(t).verified()
-        DatabaseEnumeration.all_verified_tilings = frozenset([t.to_bytes()])
-        assert DatabaseEnumeration(t).verified()

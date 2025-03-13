@@ -54,7 +54,6 @@ from .unfusion import UnfusionColumnStrategy, UnfusionFactory, UnfusionRowStrate
 from .verification import (
     BasicVerificationStrategy,
     ComponentVerificationStrategy,
-    DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
     InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
@@ -121,7 +120,6 @@ __all__ = [
     # Verification
     "BasicVerificationStrategy",
     "ComponentVerificationStrategy",
-    "DatabaseVerificationStrategy",
     "ElementaryVerificationStrategy",
     "LocallyFactorableVerificationStrategy",
     "LocalVerificationStrategy",

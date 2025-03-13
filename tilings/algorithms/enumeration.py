@@ -1,7 +1,7 @@
 import abc
 from collections import deque
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Dict, FrozenSet, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional
 
 import requests
 from sympy import Expr, Symbol, diff, simplify, sympify, var
@@ -137,8 +137,6 @@ class LocalEnumeration(Enumeration):
         gf = None
         if MonotoneTreeEnumeration(self.tiling).verified():
             gf = MonotoneTreeEnumeration(self.tiling).get_genf()
-        if DatabaseEnumeration(self.tiling).verified():
-            gf = DatabaseEnumeration(self.tiling).get_genf()
         if gf is not None:
             funcs[self.tiling] = gf
             return gf
@@ -324,63 +322,3 @@ class MonotoneTreeEnumeration(Enumeration):
         else:
             raise RuntimeError("Unexpected number of requirements")
         return minlen, maxlen
-
-
-class DatabaseEnumeration(Enumeration):
-    """
-    Enumeration strategy for a tilings that are in the database.
-
-    There is not always a specification for a tiling in the database but you can always
-    find the generating function and the minimal polynomial in the database.
-    """
-
-    API_ROOT_URL = "https://api.permpal.com"
-    all_verified_tilings: FrozenSet[bytes] = frozenset()
-    num_verified_request = 0
-
-    @classmethod
-    def load_verified_tiling(cls):
-        """
-        Load all the verified tiling in the attribute `all_verified_tilings` of
-        the class.
-
-        That speeds up the verification test.
-        """
-        if not DatabaseEnumeration.all_verified_tilings:
-            uri = f"{cls.API_ROOT_URL}/all_verified_tilings"
-            response = requests.get(uri, timeout=10)
-            response.raise_for_status()
-            compressed_tilings = map(bytes.fromhex, response.json())
-            cls.all_verified_tilings = frozenset(compressed_tilings)
-
-    def _get_tiling_entry(self):
-        """
-        Retrieve the tiling entry from the database. Returns None if the tiling
-        is not in the database.
-        """
-        key = self.tiling.to_bytes().hex()
-        search_url = f"{DatabaseEnumeration.API_ROOT_URL}/verified_tiling/key/{key}"
-        r = requests.get(search_url, timeout=10)
-        if r.status_code == 404:
-            return None
-        r.raise_for_status()
-        return r.json()
-
-    def verified(self):
-        """
-        Check if a tiling is verified.
-
-        After a 100 checks it loads all the saved tiling from the database to
-        speed up future requests.
-        """
-        DatabaseEnumeration.num_verified_request += 1
-        if DatabaseEnumeration.all_verified_tilings:
-            return self.tiling.to_bytes() in DatabaseEnumeration.all_verified_tilings
-        if DatabaseEnumeration.num_verified_request > 10:
-            DatabaseEnumeration.load_verified_tiling()
-        return self._get_tiling_entry() is not None
-
-    def get_genf(self, **kwargs) -> Any:
-        if not self.verified():
-            raise InvalidOperationError("The tiling is not verified")
-        return sympify(self._get_tiling_entry()["genf"])

@@ -82,8 +82,6 @@ def build_pack(args: argparse.Namespace) -> TileScopePack:
     pack = pack_builder(**kwargs)
     if args.fusion:
         pack = pack.make_fusion()
-    if args.database:
-        pack = pack.make_database()
     if args.symmetries:
         pack = pack.add_all_symmetry()
     if args.elementary:
@@ -137,12 +135,6 @@ parser_tree.add_argument(
 )
 parser_tree.add_argument(
     "-f", "--fusion", action="store_true", help="Adds fusion to the pack."
-)
-parser_tree.add_argument(
-    "-d",
-    "--database",
-    action="store_true",
-    help="Adds database verification to the pack.",
 )
 parser_tree.add_argument(
     "-s", "--symmetries", action="store_true", help="Adds symmetries to the pack"

@@ -16,7 +16,6 @@ from tilings.strategies import (
     CellInsertionFactory,
     CellReductionFactory,
     ComponentFusionFactory,
-    DatabaseVerificationStrategy,
     DeflationFactory,
     DummyStrategy,
     ElementaryVerificationStrategy,
@@ -404,7 +403,6 @@ strategy_objects = (
     + partition_ignoreparent_workable(FactorStrategy)
     + partition_ignoreparent_workable_tracked(FactorWithInterleavingStrategy)
     + partition_ignoreparent_workable_tracked(FactorWithMonotoneInterleavingStrategy)
-    + ignoreparent(DatabaseVerificationStrategy)
     + ignoreparent(LocallyFactorableVerificationStrategy)
     + ignoreparent(ElementaryVerificationStrategy)
     + ignoreparent(LocalVerificationStrategy)

@@ -25,11 +25,7 @@ from permuta.permutils import (
 )
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import locally_factorable_shift
-from tilings.algorithms.enumeration import (
-    DatabaseEnumeration,
-    LocalEnumeration,
-    MonotoneTreeEnumeration,
-)
+from tilings.algorithms.enumeration import LocalEnumeration, MonotoneTreeEnumeration
 from tilings.assumptions import ComponentAssumption, TrackingAssumption
 from tilings.strategies import (
     DetectComponentsStrategy,
@@ -47,7 +43,6 @@ x = var("x")
 __all__ = [
     "BasicVerificationStrategy",
     "OneByOneVerificationStrategy",
-    "DatabaseVerificationStrategy",
     "LocallyFactorableVerificationStrategy",
     "ElementaryVerificationStrategy",
     "LocalVerificationStrategy",
@@ -500,60 +495,6 @@ class ComponentVerificationStrategy(TileScopeVerificationStrategy):
 
     @classmethod
     def from_dict(cls, d: dict) -> "ComponentVerificationStrategy":
-        return cls(**d)
-
-
-class DatabaseVerificationStrategy(TileScopeVerificationStrategy):
-    """
-    Enumeration strategy for a tilings that are in the database.
-
-    There is not always a specification for a tiling in the database but you
-    can always find the generating function by looking up the database.
-    """
-
-    def pack(self, comb_class: Tiling) -> StrategyPack:
-        # TODO: check database for tiling
-        raise InvalidOperationError(
-            "Cannot get a specification for a tiling in the database"
-        )
-
-    def verified(self, comb_class: Tiling):
-        return DatabaseEnumeration(comb_class).verified()
-
-    def formal_step(self) -> str:
-        return "tiling is in the database"
-
-    def get_genf(
-        self, comb_class: Tiling, funcs: Optional[Dict[Tiling, Function]] = None
-    ) -> Any:
-        if not self.verified(comb_class):
-            raise StrategyDoesNotApply("tiling is not in the database")
-        return DatabaseEnumeration(comb_class).get_genf()
-
-    def get_terms(self, comb_class: Tiling, n: int) -> Terms:
-        raise NotImplementedError(
-            "Not implemented method to count objects for database verified tilings"
-        )
-
-    def generate_objects_of_size(
-        self, comb_class: Tiling, n: int, **parameters: int
-    ) -> Iterator[GriddedPerm]:
-        raise NotImplementedError(
-            "Not implemented method to generate objects for database verified tilings"
-        )
-
-    def random_sample_object_of_size(
-        self, comb_class: Tiling, n: int, **parameters: int
-    ) -> GriddedPerm:
-        raise NotImplementedError(
-            "Not implemented random sample for database verified tilings"
-        )
-
-    def __str__(self) -> str:
-        return "database verification"
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "DatabaseVerificationStrategy":
         return cls(**d)
 
 

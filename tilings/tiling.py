@@ -1842,7 +1842,6 @@ class Tiling(CombinatorialClass):
             return sympy.sympify(0)
         from .strategies import (
             BasicVerificationStrategy,
-            DatabaseVerificationStrategy,
             InsertionEncodingVerificationStrategy,
             LocallyFactorableVerificationStrategy,
             LocalVerificationStrategy,
@@ -1856,7 +1855,6 @@ class Tiling(CombinatorialClass):
             LocallyFactorableVerificationStrategy(),
             InsertionEncodingVerificationStrategy(),
             MonotoneTreeVerificationStrategy(),
-            DatabaseVerificationStrategy(),
             LocalVerificationStrategy(),
         ]
         for enum_strat in enum_stragies:

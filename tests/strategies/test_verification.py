@@ -12,7 +12,6 @@ from tilings import GriddedPerm, Tiling
 from tilings.assumptions import TrackingAssumption
 from tilings.strategies import (
     BasicVerificationStrategy,
-    DatabaseVerificationStrategy,
     ElementaryVerificationStrategy,
     InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
@@ -918,29 +917,6 @@ class TestElementaryVerificationStrategy(CommonTest):
                 )
             )
             == 0
-        )
-
-
-class TestDatabaseVerificationStrategy(CommonTest):
-    @pytest.fixture
-    def strategy(self):
-        return DatabaseVerificationStrategy()
-
-    @pytest.fixture
-    def formal_step(self):
-        return "tiling is in the database"
-
-    @pytest.fixture
-    def enum_verified(self):
-        return [Tiling.from_string("123_132_231")]
-
-    @pytest.fixture
-    def enum_not_verified(self):
-        return [Tiling.from_string("1324")]
-
-    def test_get_genf(self, strategy, enum_verified):
-        assert strategy.get_genf(enum_verified[0]) == sympy.sympify(
-            "(x**2 - x + 1)/(x**2 - 2*x + 1)"
         )
 
 
