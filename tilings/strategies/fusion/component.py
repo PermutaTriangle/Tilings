@@ -1,15 +1,16 @@
 from typing import Iterator, Optional, Tuple
 
-from comb_spec_searcher import StrategyFactory
+from comb_spec_searcher import Constructor, StrategyFactory
 from comb_spec_searcher.strategies import Rule
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import ComponentFusion, Fusion
+from tilings.algorithms import ComponentFusion
 
+from .constructor import FusionConstructor
 from .fusion import FusionStrategy
 
 
 class ComponentFusionStrategy(FusionStrategy):
-    def fusion_algorithm(self, tiling: Tiling) -> Fusion:
+    def fusion_algorithm(self, tiling: Tiling) -> ComponentFusion:
         return ComponentFusion(
             tiling, row_idx=self.row_idx, col_idx=self.col_idx, tracked=self.tracked
         )
@@ -31,6 +32,31 @@ class ComponentFusionStrategy(FusionStrategy):
         generation and sampling.
         """
         raise NotImplementedError
+
+    def is_positive_or_empty_fusion(self, tiling: Tiling) -> bool:
+        algo = self.fusion_algorithm(tiling)
+        return sum(1 for ob in tiling.obstructions if algo.is_crossing_len2(ob)) > 1
+
+    def constructor(
+        self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
+    ) -> FusionConstructor:
+        if self.tracked and self.is_positive_or_empty_fusion(comb_class):
+            raise NotImplementedError(
+                "Can't count positive or empty fusion. Try a cell insertion!"
+            )
+        return super().constructor(comb_class, children)
+
+    def reverse_constructor(  # pylint: disable=no-self-use
+        self,
+        idx: int,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> Constructor:
+        if self.tracked and self.is_positive_or_empty_fusion(comb_class):
+            raise NotImplementedError(
+                "Can't count positive or empty fusion. Try a cell insertion!"
+            )
+        return super().reverse_constructor(idx, comb_class, children)
 
 
 class ComponentFusionFactory(StrategyFactory[Tiling]):

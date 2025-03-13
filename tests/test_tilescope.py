@@ -1,3 +1,5 @@
+import gc
+
 import pytest
 import sympy
 
@@ -13,7 +15,7 @@ from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import GuidedSearcher, TileScope
 
 point_placements = TileScopePack.point_placements()
-all_the_strategies_verify_database = TileScopePack.all_the_strategies().make_database()
+all_the_strategies = TileScopePack.all_the_strategies()
 all_the_strategies_fusion = TileScopePack.all_the_strategies().make_fusion(
     tracked=False
 )
@@ -30,6 +32,20 @@ row_and_col_placements_component_fusion_fusion = (
     .make_fusion(tracked=False)
 )
 reginsenc = TileScopePack.regular_insertion_encoding(3)
+
+
+def collect_before(func):
+    """
+    Run gc collection before running the test.
+
+    This ensure that the collection ran in the test won't take to much time.
+    """
+
+    def inner():
+        gc.collect()
+        func()
+
+    return inner
 
 
 @pytest.mark.timeout(20)
@@ -109,13 +125,6 @@ def test_132_321_genf():
 @pytest.mark.timeout(20)
 def test_123():
     searcher = TileScope((Perm((0, 1, 2)),), point_placements_fusion)
-    spec = searcher.auto_search(smallest=True)
-    assert isinstance(spec, CombinatorialSpecification)
-
-
-@pytest.mark.timeout(120)
-def test_123_with_db():
-    searcher = TileScope("123", all_the_strategies_verify_database)
     spec = searcher.auto_search(smallest=True)
     assert isinstance(spec, CombinatorialSpecification)
 
@@ -283,6 +292,7 @@ def test_from_tiling():
     assert sympy.simplify(spec.get_genf() - sympy.sympify("(1+x)/(1-x)")) == 0
 
 
+@collect_before
 @pytest.mark.timeout(5)
 def test_expansion():
     """
@@ -291,6 +301,8 @@ def test_expansion():
     """
     pack = TileScopePack.only_root_placements(3, 1)
     css = TileScope("132", pack)
+    print(pack)
+    print(css)
     spec = css.auto_search(smallest=True)
     spec = spec.expand_verified()
     assert sum(1 for rule in spec if isinstance(rule, ReverseRule)) == 1
@@ -347,7 +359,8 @@ def test_domino():
     ]
 
 
-@pytest.mark.timeout(15)
+@collect_before
+@pytest.mark.timeout(60)
 def test_parallel_forest():
     expected_count = [1, 1, 2, 6, 22, 90, 394, 1806, 8558, 41586]
     pack = TileScopePack.only_root_placements(2, 1)
@@ -360,6 +373,7 @@ def test_parallel_forest():
         assert count == expected_count
 
 
+@collect_before
 @pytest.mark.timeout(15)
 def forest_expansion():
     """

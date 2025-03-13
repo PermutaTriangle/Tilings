@@ -1,5 +1,5 @@
 from heapq import heapify, heappop, heappush
-from typing import TYPE_CHECKING, Dict, List, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from tilings.griddedperm import GriddedPerm
 
@@ -32,17 +32,20 @@ class GriddedPermsOnTiling:
     built by inserting points into the minimal gridded permutations.
     """
 
-    def __init__(self, tiling: "Tiling"):
+    def __init__(self, tiling: "Tiling", yield_non_minimal: bool = False):
         self._tiling = tiling
         self._minimal_gps = MinimalGriddedPerms(
             tiling.obstructions, tiling.requirements
         )
+        self._yield_non_minimal = yield_non_minimal
         self._yielded_gridded_perms: Set[GriddedPerm] = set()
 
     def prepare_queue(self, size: int) -> List[QueuePacket]:
         queue: List[QueuePacket] = []
         heapify(queue)
-        for mgp in self._minimal_gps.minimal_gridded_perms():
+        for mgp in self._minimal_gps.minimal_gridded_perms(
+            yield_non_minimal=self._yield_non_minimal
+        ):
             if len(mgp) <= size:
                 packet = QueuePacket(mgp, (-1, -1), {}, 0)
                 heappush(queue, packet)
@@ -50,7 +53,7 @@ class GriddedPermsOnTiling:
                 break
         return queue
 
-    def gridded_perms(self, size: int, place_at_most: int = None):
+    def gridded_perms(self, size: int, place_at_most: Optional[int] = None):
         if place_at_most is None:
             place_at_most = size
         queue = self.prepare_queue(size)

@@ -3,7 +3,16 @@ The implementation of the fusion algorithm
 """
 import collections
 from itertools import chain
-from typing import TYPE_CHECKING, Counter, Iterable, Iterator, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Counter,
+    FrozenSet,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+)
 
 from tilings.assumptions import (
     ComponentAssumption,
@@ -278,14 +287,29 @@ class Fusion:
         are all contained entirely on the left of the fusion region, entirely
         on the right, or split in every possible way.
         """
-        if isinstance(assumption, ComponentAssumption):
-            return self.is_left_sided_assumption(
-                assumption
-            ) and self.is_right_sided_assumption(assumption)
+        left, right = self._left_fuse_region(), self._right_fuse_region()
+        cells = set(gp.pos[0] for gp in assumption.gps)
+        if (left.intersection(cells) and not left.issubset(cells)) or (
+            right.intersection(cells) and not right.issubset(cells)
+        ):
+            return False
         return self._can_fuse_set_of_gridded_perms(fuse_counter) or (
-            all(count == 1 for gp, count in fuse_counter.items())
-            and self._is_one_sided_assumption(assumption)
+            not isinstance(assumption, ComponentAssumption)
+            and (
+                all(count == 1 for count in fuse_counter.values())
+                and self._is_one_sided_assumption(assumption)
+            )
         )
+
+    def _left_fuse_region(self) -> FrozenSet[Cell]:
+        if self._fuse_row:
+            return self._tiling.cells_in_row(self._row_idx)
+        return self._tiling.cells_in_col(self._col_idx)
+
+    def _right_fuse_region(self) -> FrozenSet[Cell]:
+        if self._fuse_row:
+            return self._tiling.cells_in_row(self._row_idx + 1)
+        return self._tiling.cells_in_col(self._col_idx + 1)
 
     def _is_one_sided_assumption(self, assumption: TrackingAssumption) -> bool:
         """
@@ -401,6 +425,8 @@ class Fusion:
                 obstructions=self.obstruction_fuse_counter.keys(),
                 requirements=requirements,
                 assumptions=assumptions,
+                derive_empty=False,
+                already_minimized_obs=True,
             )
         return self._fused_tiling
 
@@ -431,7 +457,7 @@ class ComponentFusion(Fusion):
     ):
         if tiling.requirements:
             raise NotImplementedError(
-                "Component fusion does not handle " "requirements at the moment"
+                "Component fusion does not handle requirements at the moment"
             )
         super().__init__(
             tiling,
@@ -492,7 +518,7 @@ class ComponentFusion(Fusion):
             return self._first_cell
         if not self._pre_check():
             raise RuntimeError(
-                "Pre-check failed. No component fusion " "possible and no first cell"
+                "Pre-check failed. No component fusion possible and no first cell"
             )
         assert self._first_cell is not None
         return self._first_cell
@@ -507,7 +533,7 @@ class ComponentFusion(Fusion):
             return self._second_cell
         if not self._pre_check():
             raise RuntimeError(
-                "Pre-check failed. No component fusion " "possible and no second cell"
+                "Pre-check failed. No component fusion possible and no second cell"
             )
         assert self._second_cell is not None
         return self._second_cell
@@ -567,21 +593,27 @@ class ComponentFusion(Fusion):
             self.unfuse_gridded_perm(ob) for ob in self.obstruction_fuse_counter
         )
 
-    def _can_fuse_assumption(
-        self, assumption: TrackingAssumption, fuse_counter: Counter[GriddedPerm]
-    ) -> bool:
+    def _can_component_fuse_assumption(self, assumption: TrackingAssumption) -> bool:
         """
         Return True if an assumption can be fused. That is, prefusion, the gps
-        are all contained entirely on the left of the fusion region, entirely
-        on the right, or split in every possible way.
+        do not touch the fuse region unless it is the correct sum or skew
+        assumption.
         """
-        if not isinstance(assumption, ComponentAssumption):
-            return self.is_left_sided_assumption(
-                assumption
-            ) and self.is_right_sided_assumption(assumption)
-        return self._can_fuse_set_of_gridded_perms(fuse_counter) or (
-            all(count == 1 for gp, count in fuse_counter.items())
-            and self._is_one_sided_assumption(assumption)
+        gps = [
+            GriddedPerm.point_perm(self.first_cell),
+            GriddedPerm.point_perm(self.second_cell),
+        ]
+        return (  # if right type
+            (
+                isinstance(assumption, SumComponentAssumption)
+                and self.is_sum_component_fusion()
+            )
+            or (
+                isinstance(assumption, SkewComponentAssumption)
+                and self.is_skew_component_fusion()
+            )  # or covers whole region or none of it
+            or all(gp in assumption.gps for gp in gps)
+            or all(gp not in assumption.gps for gp in gps)
         )
 
     def _can_fuse_set_of_gridded_perms(
@@ -601,22 +633,48 @@ class ComponentFusion(Fusion):
             return False
         new_tiling = self._tiling.add_obstructions(self.obstructions_to_add())
 
-        return self._tiling == new_tiling and self._check_isolation_level()
+        return (
+            self._tiling == new_tiling
+            and self._check_isolation_level()
+            and all(
+                self._can_component_fuse_assumption(assumption)
+                for assumption in self._tiling.assumptions
+            )
+        )
 
     def new_assumption(self) -> ComponentAssumption:
         """
         Return the assumption that needs to be counted in order to enumerate.
         """
         fcell = self.first_cell
-        scell = self.second_cell
         gps = (GriddedPerm.single_cell((0,), fcell),)
+        if self.is_sum_component_fusion():
+            return SumComponentAssumption(gps)
+        return SkewComponentAssumption(gps)
+
+    def is_sum_component_fusion(self) -> bool:
+        """
+        Return true if is a sum component fusion
+        """
+        fcell = self.first_cell
+        scell = self.second_cell
         if self._fuse_row:
             sum_ob = GriddedPerm((1, 0), (scell, fcell))
         else:
             sum_ob = GriddedPerm((1, 0), (fcell, scell))
-        if sum_ob in self._tiling.obstructions:
-            return SumComponentAssumption(gps)
-        return SkewComponentAssumption(gps)
+        return sum_ob in self._tiling.obstructions
+
+    def is_skew_component_fusion(self) -> bool:
+        """
+        Return true if is a skew component fusion
+        """
+        fcell = self.first_cell
+        scell = self.second_cell
+        if self._fuse_row:
+            skew_ob = GriddedPerm((0, 1), (fcell, scell))
+        else:
+            skew_ob = GriddedPerm((0, 1), (fcell, scell))
+        return skew_ob in self._tiling.obstructions
 
     def __str__(self) -> str:
         s = "ComponentFusion Algorithm for:\n"

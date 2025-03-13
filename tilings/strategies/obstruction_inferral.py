@@ -109,7 +109,7 @@ class ObstructionInferralFactory(StrategyFactory[Tiling]):
     recompute new_obs which is needed for the strategy.
     """
 
-    def __init__(self, maxlen: int = 3):
+    def __init__(self, maxlen: Optional[int] = 3):
         self.maxlen = maxlen
         super().__init__()
 
@@ -117,7 +117,9 @@ class ObstructionInferralFactory(StrategyFactory[Tiling]):
         """
         Returns the list of new obstructions that can be added to the tiling.
         """
-        return AllObstructionInferral(tiling, self.maxlen).new_obs()
+        return AllObstructionInferral(tiling, self.maxlen).new_obs(
+            yield_non_minimal=True
+        )
 
     def __call__(self, comb_class: Tiling) -> Iterator[ObstructionInferralStrategy]:
         gps = self.new_obs(comb_class)

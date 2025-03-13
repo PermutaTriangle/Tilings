@@ -5,11 +5,7 @@ import sympy
 
 from comb_spec_searcher.utils import taylor_expand
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import (
-    DatabaseEnumeration,
-    LocalEnumeration,
-    MonotoneTreeEnumeration,
-)
+from tilings.algorithms import LocalEnumeration, MonotoneTreeEnumeration
 from tilings.exception import InvalidOperationError
 
 
@@ -256,10 +252,10 @@ class TestMonotoneTreeEnumeration(CommonTest):
         x = sympy.Symbol("x")
         expected_gf = -(
             sympy.sqrt(
-                -(4 * x ** 3 - 14 * x ** 2 + 8 * x - 1) / (2 * x ** 2 - 4 * x + 1)
+                -(4 * x**3 - 14 * x**2 + 8 * x - 1) / (2 * x**2 - 4 * x + 1)
             )
             - 1
-        ) / (2 * x * (x ** 2 - 3 * x + 1))
+        ) / (2 * x * (x**2 - 3 * x + 1))
         assert sympy.simplify(enum_verified.get_genf() - expected_gf) == 0
         t = Tiling(
             obstructions=[
@@ -318,18 +314,18 @@ class TestMonotoneTreeEnumeration(CommonTest):
         cell_var = enum_verified._cell_variable((1, 0))
         dummy_var = enum_verified._cell_variable((0, 0))
         x = sympy.var("x")
-        F = x ** 8 * track_var ** 3 * dummy_var ** 3
+        F = x**8 * track_var**3 * dummy_var**3
         assert (
             enum_verified._interleave_fixed_length(F, (1, 0), 1)
-            == 4 * x ** 9 * dummy_var ** 3 * cell_var ** 1
+            == 4 * x**9 * dummy_var**3 * cell_var**1
         )
         assert (
             enum_verified._interleave_fixed_length(F, (1, 0), 3)
-            == 20 * x ** 11 * dummy_var ** 3 * cell_var ** 3
+            == 20 * x**11 * dummy_var**3 * cell_var**3
         )
         assert (
             enum_verified._interleave_fixed_length(F, (1, 0), 0)
-            == x ** 8 * dummy_var ** 3
+            == x**8 * dummy_var**3
         )
 
     def test_interleave_fixed_lengths(self, enum_verified):
@@ -337,30 +333,30 @@ class TestMonotoneTreeEnumeration(CommonTest):
         cell_var = enum_verified._cell_variable((1, 0))
         dummy_var = enum_verified._cell_variable((0, 0))
         x = sympy.var("x")
-        F = x ** 8 * track_var ** 3 * dummy_var ** 3
+        F = x**8 * track_var**3 * dummy_var**3
         assert (
             enum_verified._interleave_fixed_lengths(F, (1, 0), 1, 1)
-            == 4 * x ** 9 * dummy_var ** 3 * cell_var ** 1
+            == 4 * x**9 * dummy_var**3 * cell_var**1
         )
         assert (
             enum_verified._interleave_fixed_lengths(F, (1, 0), 3, 3)
-            == 20 * x ** 11 * dummy_var ** 3 * cell_var ** 3
+            == 20 * x**11 * dummy_var**3 * cell_var**3
         )
         assert (
             enum_verified._interleave_fixed_lengths(F, (1, 0), 0, 0)
-            == x ** 8 * dummy_var ** 3
+            == x**8 * dummy_var**3
         )
         assert (
             enum_verified._interleave_fixed_lengths(F, (1, 0), 0, 2)
-            == x ** 8 * dummy_var ** 3
-            + 4 * x ** 9 * dummy_var ** 3 * cell_var ** 1
-            + 10 * x ** 10 * dummy_var ** 3 * cell_var ** 2
+            == x**8 * dummy_var**3
+            + 4 * x**9 * dummy_var**3 * cell_var**1
+            + 10 * x**10 * dummy_var**3 * cell_var**2
         )
         assert (
             enum_verified._interleave_fixed_lengths(F, (1, 0), 1, 3)
-            == 4 * x ** 9 * dummy_var ** 3 * cell_var ** 1
-            + 10 * x ** 10 * dummy_var ** 3 * cell_var ** 2
-            + 20 * x ** 11 * dummy_var ** 3 * cell_var ** 3
+            == 4 * x**9 * dummy_var**3 * cell_var**1
+            + 10 * x**10 * dummy_var**3 * cell_var**2
+            + 20 * x**11 * dummy_var**3 * cell_var**3
         )
 
     def test_genf_with_req(self):
@@ -399,11 +395,11 @@ class TestMonotoneTreeEnumeration(CommonTest):
             genf
             == 1
             + 2 * x
-            + 4 * x ** 2
-            + 8 * x ** 3
-            + 14 * x ** 4
-            + 20 * x ** 5
-            + 20 * x ** 6
+            + 4 * x**2
+            + 8 * x**3
+            + 14 * x**4
+            + 20 * x**5
+            + 20 * x**6
         )
 
     def test_with_two_reqs(self):
@@ -439,36 +435,3 @@ class TestMonotoneTreeEnumeration(CommonTest):
         expected_enum = [0, 1, 5, 17, 50, 138, 370, 979, 2575, 6755, 17700]
         assert enum.verified()
         assert taylor_expand(enum.get_genf()) == expected_enum
-
-
-class TestDatabaseEnumeration(CommonTest):
-    @pytest.fixture
-    def enum_verified(self):
-        t = Tiling.from_string("123_132_231")
-        return DatabaseEnumeration(t)
-
-    @pytest.fixture
-    def enum_not_verified(self):
-        t = Tiling.from_string("1324")
-        return DatabaseEnumeration(t)
-
-    def test_get_genf(self, enum_verified):
-        assert enum_verified.get_genf() == sympy.sympify(
-            "(x**2 - x + 1)/(x**2 - 2*x + 1)"
-        )
-
-    @pytest.mark.slow
-    def test_load_verified_tilings(self):
-        DatabaseEnumeration.load_verified_tiling()
-        assert DatabaseEnumeration.all_verified_tilings
-        sample = next(iter(DatabaseEnumeration.all_verified_tilings))
-        Tiling.from_bytes(sample)
-
-    def test_verification_with_cache(self):
-        t = Tiling.from_string("123_132_231")
-        DatabaseEnumeration.all_verified_tilings = frozenset()
-        assert DatabaseEnumeration(t).verified()
-        DatabaseEnumeration.all_verified_tilings = frozenset([1, 2, 3, 4])
-        assert not DatabaseEnumeration(t).verified()
-        DatabaseEnumeration.all_verified_tilings = frozenset([t.to_bytes()])
-        assert DatabaseEnumeration(t).verified()

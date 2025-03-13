@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Iterable, List, Optional, Union
+from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Union
 
 from logzero import logger
 
@@ -32,14 +32,23 @@ class TileScopePack(StrategyPack):
         basis = tuple(basis)
         symmetry = bool(self.symmetries)
 
-        def replace_list(strats):
+        def replace_list(
+            strats: Tuple[Union[AbstractStrategy, StrategyFactory], ...]
+        ) -> List[Union[AbstractStrategy, StrategyFactory]]:
             """Return a new list with the replaced 1x1 strat."""
-            res = []
+            res: List[Union[AbstractStrategy, StrategyFactory]] = []
             for strategy in strats:
                 if isinstance(strategy, BasisAwareVerificationStrategy):
                     if strategy.basis:
                         logger.warning("Basis changed in %s", strategy)
                     res.append(strategy.change_basis(basis, symmetry))
+                elif isinstance(strategy, strat.SymmetriesFactory):
+                    if strategy.basis:
+                        logger.warning("Basis changed in %s", strategy)
+                    res.append(strategy.change_basis(basis))
+                elif hasattr(strategy, "change_basis"):
+                    logger.warning("Basis changed in %s", strategy)
+                    res.append(strategy.change_basis(basis))
                 else:
                     res.append(strategy)
             return res
@@ -50,7 +59,7 @@ class TileScopePack(StrategyPack):
             initial_strats=replace_list(self.initial_strats),
             expansion_strats=list(map(replace_list, self.expansion_strats)),
             name=self.name,
-            symmetries=self.symmetries,
+            symmetries=replace_list(self.symmetries),
             iterative=self.iterative,
         )
 
@@ -64,11 +73,13 @@ class TileScopePack(StrategyPack):
            has length strictly smaller than the maximum length cell basis element.
         """
 
-        def replace_list(strats):
+        def replace_list(
+            strats: Tuple[Union[AbstractStrategy, StrategyFactory], ...]
+        ) -> List[Union[AbstractStrategy, StrategyFactory]]:
             """
             Find subclass verification and alter its perms_to_check variable.
             """
-            res = []
+            res: List[Union[AbstractStrategy, StrategyFactory]] = []
             for strategy in strats:
                 if isinstance(strategy, strat.SubclassVerificationFactory):
                     printed_log = False
@@ -95,6 +106,7 @@ class TileScopePack(StrategyPack):
                             )
                             printed_log = True
                     if not printed_log:
+                        assert strategy.perms_to_check is not None
                         logger.info(
                             "SubclassVerification set up to check the subclasses: "
                             "Av(%s)",
@@ -118,28 +130,50 @@ class TileScopePack(StrategyPack):
         """Make a fusion pack tracked."""
 
         def replace_list(strats):
-            """Return a new list with the replaced fusion strat."""
+            """Return a new list with strats tracked."""
             res = []
             for strategy in strats:
-                if isinstance(strategy, strat.FusionFactory):
-                    res.append(strategy.make_tracked())
-                else:
-                    res.append(strategy)
+                d = strategy.to_jsonable()
+                if not d.get("tracked", True):
+                    d["tracked"] = True
+                    strategy = AbstractStrategy.from_dict(d)
+                res.append(strategy)
             return res
 
-        return (
-            self.__class__(
-                ver_strats=replace_list(self.ver_strats),
-                inferral_strats=replace_list(self.inferral_strats),
-                initial_strats=replace_list(self.initial_strats),
-                expansion_strats=list(map(replace_list, self.expansion_strats)),
-                name=self.name,
-                symmetries=self.symmetries,
-                iterative=self.iterative,
-            )
-            .add_initial(strat.AddAssumptionFactory(), apply_first=True)
-            .add_initial(strat.RearrangeAssumptionFactory(), apply_first=True)
+        pack = self.__class__(
+            ver_strats=replace_list(self.ver_strats),
+            inferral_strats=replace_list(self.inferral_strats),
+            initial_strats=replace_list(self.initial_strats),
+            expansion_strats=list(map(replace_list, self.expansion_strats)),
+            name=self.name.replace("untracked", "tracked"),
+            symmetries=self.symmetries,
+            iterative=self.iterative,
         )
+        if all(
+            not isinstance(strategy, strat.AddAssumptionFactory) for strategy in pack
+        ):
+            pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
+        if all(
+            not isinstance(strategy, strat.RearrangeAssumptionFactory)
+            for strategy in pack
+        ):
+            pack = pack.add_initial(
+                strat.RearrangeAssumptionFactory(), apply_first=True
+            )
+        if strat.ComponentFusionFactory() in pack:
+            if all(
+                not isinstance(strategy, strat.DetectComponentsStrategy)
+                for strategy in pack
+            ):
+                pack = pack.add_initial(
+                    strat.DetectComponentsStrategy(ignore_parent=True)
+                )
+            if all(
+                not isinstance(strategy, strat.ComponentVerificationStrategy)
+                for strategy in pack
+            ):
+                pack = pack.add_verification(strat.ComponentVerificationStrategy())
+        return pack
 
     def make_fusion(
         self,
@@ -174,6 +208,7 @@ class TileScopePack(StrategyPack):
                 pack = pack.add_initial(
                     strat.DetectComponentsStrategy(ignore_parent=True), apply_first=True
                 )
+                pack = pack.add_verification(strat.ComponentVerificationStrategy())
             pack = pack.add_initial(
                 strat.RearrangeAssumptionFactory(), apply_first=True
             )
@@ -186,8 +221,7 @@ class TileScopePack(StrategyPack):
         Return a new pack where the factor strategy is replaced with an
         interleaving factor strategy.
 
-        If unions is set to True it will overwrite unions on the strategy, and
-        also pass the argument to AddInterleavingAssumption method.
+        If unions is set to True it will overwrite unions on the strategy.
         """
 
         def replace_list(strats):
@@ -219,9 +253,6 @@ class TileScopePack(StrategyPack):
         )
 
         if tracked:
-            pack = pack.add_initial(
-                strat.AddInterleavingAssumptionFactory(unions=unions), apply_first=True
-            )
             pack = pack.add_initial(strat.AddAssumptionFactory(), apply_first=True)
 
         return pack
@@ -245,22 +276,162 @@ class TileScopePack(StrategyPack):
             strat.ElementaryVerificationStrategy(), "elementary"
         )
 
-    def make_database(self) -> "TileScopePack":
-        """
-        Create a new pack by adding database verification to the current pack.
-        """
-        return self.add_verification(strat.DatabaseVerificationStrategy(), "database")
-
     def add_all_symmetry(self) -> "TileScopePack":
         """Create a new pack by turning on symmetry on the current pack."""
         if self.symmetries:
             raise ValueError("Symmetries already turned on.")
         return super().add_symmetry(strat.SymmetriesFactory(), "symmetries")
 
+    def kitchen_sinkify(  # pylint: disable=R0912
+        self,
+        short_obs_len: int,
+        obs_inferral_len: int,
+        tracked: bool,
+        level: int,
+    ) -> "TileScopePack":
+        """
+        Create a new pack with the following added:
+            Short Obs verification (unless short_obs_len = 0)
+            No Root Cell verification
+            Deflation
+            Point and/or Assumption Jumping
+            Generalized Monotone Sliding
+            Free Cell Reduction
+            Requirement corroboration
+            Obstruction Inferral (unless obs_inferral_len = 0)
+            Symmetries
+            Point Pointing
+            Unfusion
+            Targeted Row/Col Placements when fusable
+            Relax assumptions
+        Will be made tracked or not, depending on preference.
+        Note that nothing is done with positive / point corroboration, requirement
+        corroboration.
+
+        Different stratgies will be added at different levels
+        Level 1: short obs, no root cell, symmetries,
+                    obs inferral, interleaving factor without unions
+        Level 2: deflation, point/assumption jumping, sliding, free cell reduction,
+                    req corrob, targeted row/col placements, relax assumptions,
+                    interleaving factor with unions
+        Level 3: unfusion 1,1
+        Level 4: unfusion 2,2, pointing mc=4, assumption mc=8
+        Level 5: unfusion 4,4, pointing mc=6, assumption mc=8, requirement pt, mc=4
+        """
+
+        assert level in (
+            1,
+            2,
+            3,
+            4,
+            5,
+        ), "Level must be an int between 1 and 5 inclusive"
+
+        ks_pack = self.__class__(
+            ver_strats=self.ver_strats,
+            inferral_strats=self.inferral_strats,
+            initial_strats=self.initial_strats,
+            expansion_strats=self.expansion_strats,
+            name=self.name,
+            symmetries=self.symmetries,
+            iterative=self.iterative,
+        )
+        if short_obs_len > 0:
+            ver_strats: List[CSSstrategy] = [
+                strat.ShortObstructionVerificationStrategy(short_obs_len)
+            ]
+        else:
+            ver_strats = []
+
+        ver_strats += [
+            strat.NoRootCellVerificationStrategy(),
+        ]
+
+        for strategy in ver_strats:
+            try:
+                ks_pack = ks_pack.add_verification(strategy)
+            except ValueError:
+                pass
+
+        if level >= 2:
+            initial_strats: List[CSSstrategy] = [
+                strat.DeflationFactory(tracked),
+                strat.AssumptionAndPointJumpingFactory(),
+                strat.MonotoneSlidingFactory(),
+                strat.CellReductionFactory(tracked),
+                strat.RequirementCorroborationFactory(),
+                strat.RelaxAssumptionFactory(),
+            ]
+            for strategy in initial_strats:
+                try:
+                    ks_pack = ks_pack.add_initial(strategy)
+                except ValueError:
+                    pass
+
+        if obs_inferral_len > 0:
+            inf_strats: List[CSSstrategy] = [
+                strat.ObstructionInferralFactory(obs_inferral_len)
+            ]
+        else:
+            inf_strats = []
+        for strategy in inf_strats:
+            try:
+                ks_pack = ks_pack.add_inferral(strategy)
+            except ValueError:
+                pass
+
+        ks_pack = ks_pack.make_interleaving(tracked=tracked, unions=level > 1)
+
+        try:
+            ks_pack = ks_pack.add_all_symmetry()
+        except ValueError:
+            pass
+
+        if tracked:
+            ks_pack = ks_pack.make_tracked()
+
+        if level == 2:
+            ks_pack.expansion_strats = ks_pack.expansion_strats + (
+                (strat.FusableRowAndColumnPlacementFactory(),),
+            )
+        elif level == 3:
+            ks_pack.expansion_strats = ks_pack.expansion_strats + (
+                (
+                    strat.UnfusionFactory(1, 1),
+                    strat.FusableRowAndColumnPlacementFactory(),
+                ),
+            )
+        elif level == 4:
+            ks_pack.expansion_strats = ks_pack.expansion_strats + (
+                (
+                    strat.AssumptionPointingFactory(8),
+                    strat.PointingStrategy(4),
+                    strat.UnfusionFactory(2, 2),
+                    strat.FusableRowAndColumnPlacementFactory(),
+                ),
+            )
+        elif level == 5:
+            ks_pack.expansion_strats = ks_pack.expansion_strats + (
+                (
+                    strat.AssumptionPointingFactory(8),
+                    strat.RequirementPointingFactory(4),
+                    strat.PointingStrategy(6),
+                    strat.UnfusionFactory(4, 4),
+                    strat.FusableRowAndColumnPlacementFactory(),
+                ),
+            )
+
+        ks_pack.name += f"_kitchen_sink_level_{level}"
+
+        return ks_pack
+
     # Creation of the base pack
     @classmethod
     def all_the_strategies(cls, length: int = 1) -> "TileScopePack":
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PointCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
@@ -299,14 +470,16 @@ class TileScopePack(StrategyPack):
         )
 
         expansion_strats: List[CSSstrategy] = [
-            strat.FactorFactory(unions=True),
             strat.CellInsertionFactory(maxreqlen=length),
         ]
         if length > 1:
             expansion_strats.append(strat.RequirementCorroborationFactory())
 
         return TileScopePack(
-            initial_strats=[strat.PatternPlacementFactory(partial=partial)],
+            initial_strats=[
+                strat.FactorFactory(unions=True, ignore_parent=False),
+                strat.PointCorroborationFactory(),
+            ],
             ver_strats=[
                 strat.BasicVerificationStrategy(),
                 strat.InsertionEncodingVerificationStrategy(),
@@ -317,7 +490,10 @@ class TileScopePack(StrategyPack):
                 strat.RowColumnSeparationStrategy(),
                 strat.ObstructionTransitivityFactory(),
             ],
-            expansion_strats=[expansion_strats],
+            expansion_strats=[
+                [strat.PatternPlacementFactory(partial=partial)],
+                expansion_strats,
+            ],
             name=name,
         )
 
@@ -327,13 +503,16 @@ class TileScopePack(StrategyPack):
     ) -> "TileScopePack":
         name = "".join(
             [
-                "length_{length}_" if length > 1 else "",
+                f"length_{length}_" if length > 1 else "",
                 "partial_" if partial else "",
                 "point_placements",
             ]
         )
 
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PointCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
@@ -440,7 +619,10 @@ class TileScopePack(StrategyPack):
         if partial:
             expansion_strats.append([strat.PatternPlacementFactory(point_only=True)])
         return TileScopePack(
-            initial_strats=[strat.FactorFactory()],
+            initial_strats=[
+                strat.FactorFactory(),
+                strat.PointCorroborationFactory(),
+            ],
             ver_strats=[
                 strat.BasicVerificationStrategy(),
                 strat.InsertionEncodingVerificationStrategy(),
@@ -503,6 +685,7 @@ class TileScopePack(StrategyPack):
             initial_strats=[
                 strat.RootInsertionFactory(maxreqlen=length, max_num_req=max_num_req),
                 strat.FactorFactory(unions=True, ignore_parent=False, workable=False),
+                strat.PointCorroborationFactory(),
             ],
             ver_strats=[
                 strat.BasicVerificationStrategy(),
@@ -524,13 +707,16 @@ class TileScopePack(StrategyPack):
     ) -> "TileScopePack":
         name = "".join(
             [
-                "length_{length}_" if length != 2 else "",
+                f"length_{length}_" if length != 2 else "",
                 "partial_" if partial else "",
                 "requirement_placements",
             ]
         )
 
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PointCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
@@ -556,6 +742,64 @@ class TileScopePack(StrategyPack):
         )
 
     @classmethod
+    def subobstruction_placements(cls, partial: bool = False) -> "TileScopePack":
+        name = "partial_" if partial else ""
+        name += "subobstruction_placements"
+        return TileScopePack(
+            initial_strats=[
+                strat.FactorFactory(),
+                strat.PointCorroborationFactory(),
+                strat.RequirementCorroborationFactory(),
+            ],
+            ver_strats=[
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
+            ],
+            inferral_strats=[
+                strat.RowColumnSeparationStrategy(),
+                strat.ObstructionTransitivityFactory(),
+            ],
+            expansion_strats=[
+                [
+                    strat.SubobstructionInsertionFactory(),
+                    strat.PatternPlacementFactory(partial=partial),
+                ],
+            ],
+            name=name,
+        )
+
+    @classmethod
+    def basis_pattern_insertions(cls, partial: bool = False) -> "TileScopePack":
+        name = "partial_" if partial else ""
+        name += "basis_pattern_insertions"
+        return TileScopePack(
+            initial_strats=[
+                strat.FactorFactory(),
+                strat.PointCorroborationFactory(),
+                strat.RequirementCorroborationFactory(),
+            ],
+            ver_strats=[
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
+            ],
+            inferral_strats=[
+                strat.RowColumnSeparationStrategy(),
+                strat.ObstructionTransitivityFactory(),
+            ],
+            expansion_strats=[
+                [
+                    strat.BasisPatternInsertionFactory(),
+                    strat.PatternPlacementFactory(partial=partial),
+                ],
+            ],
+            name=name,
+        )
+
+    @classmethod
     def point_and_row_and_col_placements(
         cls,
         length: int = 1,
@@ -570,7 +814,7 @@ class TileScopePack(StrategyPack):
         both = place_col and place_row
         name = "".join(
             [
-                "length_{length}_" if length > 1 else "",
+                f"length_{length}_" if length > 1 else "",
                 "partial_" if partial else "",
                 "point_and_",
                 "row" if not col_only else "",
@@ -583,7 +827,10 @@ class TileScopePack(StrategyPack):
             place_row=place_row, place_col=place_col, partial=partial
         )
 
-        initial_strats: List[CSSstrategy] = [strat.FactorFactory()]
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PointCorroborationFactory(),
+        ]
         if length > 1:
             initial_strats.append(strat.RequirementCorroborationFactory())
 
@@ -610,6 +857,63 @@ class TileScopePack(StrategyPack):
         )
 
     @classmethod
+    def requirement_and_row_and_col_placements(
+        cls,
+        length: int = 1,
+        row_only: bool = False,
+        col_only: bool = False,
+        partial: bool = False,
+    ) -> "TileScopePack":
+        if row_only and col_only:
+            raise ValueError("Can't be row and col only.")
+        place_row = not col_only
+        place_col = not row_only
+        both = place_col and place_row
+        name = "".join(
+            [
+                f"length_{length}_" if length > 1 else "",
+                "partial_" if partial else "",
+                "requirement_and_",
+                "row" if not col_only else "",
+                "_and_" if both else "",
+                "col" if not row_only else "",
+                "_placements",
+            ]
+        )
+        rowcol_strat = strat.RowAndColumnPlacementFactory(
+            place_row=place_row, place_col=place_col, partial=partial
+        )
+
+        initial_strats: List[CSSstrategy] = [
+            strat.FactorFactory(),
+            strat.PointCorroborationFactory(),
+        ]
+        if length > 1:
+            initial_strats.append(strat.RequirementCorroborationFactory())
+
+        return TileScopePack(
+            initial_strats=initial_strats,
+            ver_strats=[
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
+            ],
+            inferral_strats=[
+                strat.RowColumnSeparationStrategy(),
+                strat.ObstructionTransitivityFactory(),
+            ],
+            expansion_strats=[
+                [
+                    strat.RequirementInsertionFactory(maxreqlen=length),
+                    strat.PatternPlacementFactory(partial=partial),
+                    rowcol_strat,
+                ],
+            ],
+            name=name,
+        )
+
+    @classmethod
     def cell_insertions(cls, length: int):
         return TileScopePack(
             initial_strats=[],
@@ -620,5 +924,5 @@ class TileScopePack(StrategyPack):
             ],
             inferral_strats=[],
             expansion_strats=[[strat.CellInsertionFactory(maxreqlen=length)]],
-            name="length_{length}_cell_insertions",
+            name=f"length_{length}_cell_insertions",
         )

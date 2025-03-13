@@ -2,7 +2,7 @@ from collections import defaultdict
 from functools import reduce
 from itertools import product
 from operator import mul
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from sympy import Eq, Function, var
 
@@ -31,7 +31,7 @@ Cell = Tuple[int, int]
 
 class Split(Constructor):
     """
-    The constructor used to cound when a variable is counted by some multiple
+    The constructor used to count when a variable is counted by some multiple
     disjoint subvariables.
     """
 
@@ -40,7 +40,7 @@ class Split(Constructor):
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
         rhs_func = rhs_funcs[0]
-        subs: Dict[var, List[var]] = defaultdict(list)
+        subs: Dict[Any, List[Any]] = defaultdict(list)
         for parent, children in self.split_parameters.items():
             for child in children:
                 subs[var(child)].append(var(parent))
@@ -156,16 +156,13 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             workable=workable,
         )
 
-    @staticmethod
-    def can_be_equivalent() -> bool:
+    def can_be_equivalent(self) -> bool:
         return False
 
-    @staticmethod
-    def is_two_way(comb_class: Tiling):
+    def is_two_way(self, comb_class: Tiling):
         return False
 
-    @staticmethod
-    def is_reversible(comb_class: Tiling):
+    def is_reversible(self, comb_class: Tiling):
         return False
 
     def shifts(
@@ -186,9 +183,17 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
         new_assumptions: List[TrackingAssumption] = []
         for ass in comb_class.assumptions:
             new_assumptions.extend(self._split_assumption(ass, components))
-        return (
-            Tiling(comb_class.obstructions, comb_class.requirements, new_assumptions),
+        new_tiling = Tiling(
+            comb_class.obstructions,
+            comb_class.requirements,
+            sorted(new_assumptions),
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
         )
+        new_tiling.clean_assumptions()
+        return (new_tiling,)
 
     def _split_assumption(
         self, assumption: TrackingAssumption, components: Tuple[Set[Cell], ...]
@@ -305,8 +310,7 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> Constructor:
         raise NotImplementedError
 
-    @staticmethod
-    def formal_step() -> str:
+    def formal_step(self) -> str:
         return "splitting the assumptions"
 
     def backward_map(
@@ -353,6 +357,8 @@ class SplittingStrategy(Strategy[Tiling, GriddedPerm]):
             interleaving = "all"
         elif self.factor_class is factor.FactorWithMonotoneInterleaving:
             interleaving = "monotone"
+        else:
+            raise ValueError("Unknown factor class")
         args = ", ".join(
             [
                 f"interleaving={interleaving!r}",

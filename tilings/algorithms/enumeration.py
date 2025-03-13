@@ -1,12 +1,14 @@
 import abc
 from collections import deque
 from itertools import chain
-from typing import TYPE_CHECKING, Dict, FrozenSet, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional
 
 import requests
-from sympy import Expr, Function, Symbol, diff, simplify, sympify, var
+from sympy import Expr, Symbol, diff, simplify, sympify, var
 
 from comb_spec_searcher.utils import taylor_expand
+from permuta import Av
+from permuta.permutils.symmetry import lex_min
 from tilings.exception import InvalidOperationError
 from tilings.griddedperm import GriddedPerm
 from tilings.misc import is_tree
@@ -40,6 +42,7 @@ class Enumeration(abc.ABC):
         """
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
+        raise NotImplementedError
 
     def __repr__(self) -> str:
         return "Enumeration for:\n" + str(self.tiling)
@@ -88,12 +91,12 @@ class LocalEnumeration(Enumeration):
         all_cells = chain.from_iterable(gp.pos for gp in req_iter)
         return all(c == cell for c in all_cells)
 
-    def get_genf(self, **kwargs) -> Expr:
+    def get_genf(self, **kwargs) -> Any:
         # pylint: disable=too-many-return-statements
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
 
-        funcs: Optional[Dict["Tiling", Function]] = kwargs.get("funcs")
+        funcs: Optional[Dict["Tiling", Any]] = kwargs.get("funcs")
         if funcs is None:
             funcs = {}
         if self.tiling.requirements:
@@ -119,25 +122,21 @@ class LocalEnumeration(Enumeration):
                 return 1
             if self.tiling == self.tiling.__class__.from_string("01_10"):
                 return 1 + x
-            if self.tiling in (
-                self.tiling.__class__.from_string("01"),
-                self.tiling.__class__.from_string("10"),
-            ):
-                return 1 / (1 - x)
-            if self.tiling in (
-                self.tiling.__class__.from_string("123"),
-                self.tiling.__class__.from_string("321"),
-            ):
-                return sympify("-1/2*(sqrt(-4*x + 1) - 1)/x")
-            # TODO: should this create a spec as in the strategy?
-            raise NotImplementedError(
-                f"Look up the combopal database for:\n{self.tiling}"
-            )
+            basis = [ob.patt for ob in self.tiling.obstructions]
+            basis_str = "_".join(map(str, lex_min(basis)))
+            uri = f"https://permpal.com/perms/raw_data_json/basis/{basis_str}"
+            request = requests.get(uri, timeout=10)
+            if request.status_code == 404:
+                raise NotImplementedError(f"No entry on permpal for {Av(basis)}")
+            data = request.json()
+            if data["generating_function_sympy"] is None:
+                raise NotImplementedError(
+                    f"No explicit generating function on permpal for {Av(basis)}"
+                )
+            return sympify(data["generating_function_sympy"])
         gf = None
         if MonotoneTreeEnumeration(self.tiling).verified():
             gf = MonotoneTreeEnumeration(self.tiling).get_genf()
-        if DatabaseEnumeration(self.tiling).verified():
-            gf = DatabaseEnumeration(self.tiling).get_genf()
         if gf is not None:
             funcs[self.tiling] = gf
             return gf
@@ -203,7 +202,7 @@ class MonotoneTreeEnumeration(Enumeration):
         col_cells = self.tiling.cells_in_col(cell[0])
         return (c for c in visited if (c in row_cells or c in col_cells))
 
-    def get_genf(self, **kwargs) -> Expr:
+    def get_genf(self, **kwargs) -> Any:
         # pylint: disable=too-many-locals
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
@@ -242,12 +241,14 @@ class MonotoneTreeEnumeration(Enumeration):
             else:
                 F = self._interleave_fixed_lengths(F_tracked, cell, minlen, maxlen)
             visited.add(cell)
-        F = simplify(F.subs({v: 1 for v in F.free_symbols if v != x}))
+        F = simplify(
+            F.subs({v: 1 for v in F.free_symbols if v != x})
+        )  # type: ignore[operator]
         # A simple test to warn us if the code is wrong
         if __debug__:
             lhs = taylor_expand(F, n=6)
             rhs = [len(list(self.tiling.objects_of_size(i))) for i in range(7)]
-        assert lhs == rhs, f"Bad genf\n{lhs}\n{rhs}"
+            assert lhs == rhs, f"Bad genf\n{lhs}\n{rhs}"
         return F
 
     @staticmethod
@@ -289,11 +290,11 @@ class MonotoneTreeEnumeration(Enumeration):
         `MonotoneTreeEnumeration._tracking_var` in `F`.
         A variable is added to track the number of point in cell.
         """
-        new_genf = self._tracking_var ** num_point * F
+        new_genf = self._tracking_var**num_point * F
         for i in range(1, num_point + 1):
             new_genf = diff(new_genf, self._tracking_var) / i
         new_genf *= self._cell_variable(cell) ** num_point
-        new_genf *= x ** num_point
+        new_genf *= x**num_point
         return new_genf.subs({self._tracking_var: 1})
 
     def _cell_num_point(self, cell):
@@ -321,63 +322,3 @@ class MonotoneTreeEnumeration(Enumeration):
         else:
             raise RuntimeError("Unexpected number of requirements")
         return minlen, maxlen
-
-
-class DatabaseEnumeration(Enumeration):
-    """
-    Enumeration strategy for a tilings that are in the database.
-
-    There is not always a specification for a tiling in the database but you can always
-    find the generating function and the minimal polynomial in the database.
-    """
-
-    API_ROOT_URL = "https://api.combopal.ru.is"
-    all_verified_tilings: FrozenSet[bytes] = frozenset()
-    num_verified_request = 0
-
-    @classmethod
-    def load_verified_tiling(cls):
-        """
-        Load all the verified tiling in the attribute `all_verified_tilings` of
-        the class.
-
-        That speeds up the verification test.
-        """
-        if not DatabaseEnumeration.all_verified_tilings:
-            uri = f"{cls.API_ROOT_URL}/all_verified_tilings"
-            response = requests.get(uri)
-            response.raise_for_status()
-            compressed_tilings = map(bytes.fromhex, response.json())
-            cls.all_verified_tilings = frozenset(compressed_tilings)
-
-    def _get_tiling_entry(self):
-        """
-        Retrieve the tiling entry from the database. Returns None if the tiling
-        is not in the database.
-        """
-        key = self.tiling.to_bytes().hex()
-        search_url = f"{DatabaseEnumeration.API_ROOT_URL}/verified_tiling/key/{key}"
-        r = requests.get(search_url)
-        if r.status_code == 404:
-            return None
-        r.raise_for_status()
-        return r.json()
-
-    def verified(self):
-        """
-        Check if a tiling is verified.
-
-        After a 100 checks it loads all the saved tiling from the database to
-        speed up future requests.
-        """
-        DatabaseEnumeration.num_verified_request += 1
-        if DatabaseEnumeration.all_verified_tilings:
-            return self.tiling.to_bytes() in DatabaseEnumeration.all_verified_tilings
-        if DatabaseEnumeration.num_verified_request > 10:
-            DatabaseEnumeration.load_verified_tiling()
-        return self._get_tiling_entry() is not None
-
-    def get_genf(self, **kwargs) -> Expr:
-        if not self.verified():
-            raise InvalidOperationError("The tiling is not verified")
-        return sympify(self._get_tiling_entry()["genf"])

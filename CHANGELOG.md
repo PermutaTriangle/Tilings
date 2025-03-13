@@ -4,7 +4,96 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+
+## Unreleased 
+
+## [4.0.0 - 2025-03-13]
+### Added
+- python3.9 are deprecated, python3.10 - python3.13 are supported
+- added `TileScopePack.requirement_and_row_and_col_placements`
+- `AssumptionAndPointJumpingFactory` which adds rules where requirements and/or
+  assumptions are swapped around a fusable row or column.
+- `PointJumpingFactory` which adds rules where requirements and assumptions can be
+swapped around a fusable row or column.
+- `MonotoneSlidingFactory` that creates rules that swaps neighbouring cells if they
+  are 'monotone' fusable, i.e., they are a generalized fusion with a monotone local
+  extra obstruction.
+- `DeflationFactory` which adds rules where cells can be deflated into increasing or
+  decreasing cells as obstructions can't occur across the sum/skew components in that
+  cell.
+- `CellReductionFactory` which changes a cell to monotone if at most one point of
+  any crossing gp touches that cell.
+- `PositiveCorroborationFactory` that inserts into cells which if positive makes
+  another cell empty. Also, the `PointCorroborationFactory`, which does this for
+  point or empty cells which is added to most packs.
+- `TargetedCellInsertionFactory` which inserts factors of gridded perms if it can
+  lead to factoring out a verified sub tiling.
+- `BasisPatternInsertionFactory` which inserts permutations which are contained in
+  every pattern in the basis
+- `ComponentVerificationStrategy` which is added to component fusion packs.
+- `ComponentToPointAssumptionStrategy` that changes component assumptions to point
+  assumptions. These strategies are yielded in `RearrangeAssumptionFactory`.
+- `StrategyPack.kitchen_sinkify` to add many experimental strategies to the pack
+- `SubobstructionInsertionFactory` that inserts subobstructions and the pack
+  `TileScopePack.subobstruction_placements` which uses it.
+- `FactorWithInterleavingStrategy.backward_map` so you can now generate permutation
+  from specifications using interleaving factors.
+- `DummyStrategy` that gives a quick template for making strategies.
+- `PointingStrategy`, `AssumptionPointingFactory` and `RequirementPointingFactory`
+  that place points directionless in non-point cells. This are a non-productive
+  strategy so should be used with `RuleDBForest`.
+- `UnfusionFactory` that unfuses either all the rows or columns. Also non-productive.
+- `FusableRowAndColumnPlacementFactory` places fusable rows and columns.
+- `TrackedClassDB` used by `TrackedSearcher`
+- counting for `GeneralizedSlidingStrategy` of rows (i.e., `rotate=True`)
+
+### Fixed
+- `Factor` was not factoring correctly with respect to component assumptions.
+- `ComponentAssumption` are flipped when taking symmetries
+- `Tiling.get_minimum_value` fixed for component assumptions
+- `RearrangeAssumptionFactory` will ignore component assumptions
+- `GriddedPermReduction.minimal_reqs` was removing requirements if they 
+  were duplicates.
+- `RequirementPlacement` algorithm didn't minimise obstructions correctly when
+  placing size 2 or higher gridded perms.
+- added missing condition in `MonotoneSlidingFactory` for consecutive 
+  values. Previous rules failing this condition will now raise 
+  `StrategyDoesNotApply` if it fails this condition.
+- `LocalVerificationStrategy` needs to be a `BasisAwareVerificationStrategy`
+- `PointJumping` maps component assumption to component assumptions.
+- `Tiling.all_symmetries` had a premature break statement that was removed
+- `shift_from_spec` method would previously fail if any tiling had two or 
+  more interleaving cells.
+
+### Changed
+- `TileScopePack.make_tracked` will add the appropriate tracking methods for
+  interleaving factors and make strategies tracked if it can be.
+- The `GriddedPermReduction` limits the size of obstructions it tries to infer in
+  the `minimal_obs` method to the size of the largest obstruction already on the
+  tiling.
+- The `SymmetriesFactory` takes a basis and will not return any symmetries where
+  any of the patterns of the obstruction are not subpatterns of some basis element.
+  If no basis is given, all symmetries are returned.
+- `RequirementPlacement` adds empty cells when placing a point cell. This saves
+  some inferral in partial placements.
+- Don't reinitialise in the `Tiling.from_dict` method.
+- `GuidedSearcher` expands every symmetry
+- `TileScopePack.pattern_placements` factors as an initial strategy.
+- `is_component` method of assumptions updated to consider cell decomposition
+- `AddAssumptionsStrategy.is_reverible` is now True when the assumption covers the
+  whole tiling.
+- The default behavior for `RequirementInsertion` is to allow insertion of factorable
+  requirements
+- `OneByOneVerificationStrategy` will look up permpal.com to find the generating
+  functions and min polys, and also use permpal specs for counting, sampling and
+  generating objects. 
+- The `kitchen_sinkify` function on `TileScopePack` now takes a level between 1 and 5
+  as input, which is used to determine how crazy the added strategies should be.
+
+### Removed
+- `AddInterleavingAssumptionsFactory`. The factor strategy now adds the relevant
+  assumptions where necessary directly, lowering the number of CVs needed.
+
 
 ## [3.1.0] - 2022-01-17
 ### Added

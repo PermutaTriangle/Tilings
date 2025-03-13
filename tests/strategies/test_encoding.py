@@ -10,27 +10,38 @@ from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST, DIRS
 from tilings import GriddedPerm, TrackingAssumption
 from tilings.strategies import (
     AllPlacementsFactory,
+    AssumptionAndPointJumpingFactory,
+    AssumptionPointingFactory,
     BasicVerificationStrategy,
     CellInsertionFactory,
+    CellReductionFactory,
     ComponentFusionFactory,
-    DatabaseVerificationStrategy,
+    DeflationFactory,
+    DummyStrategy,
     ElementaryVerificationStrategy,
     EmptyCellInferralFactory,
     FactorFactory,
     FactorInsertionFactory,
+    FusableRowAndColumnPlacementFactory,
     FusionFactory,
+    InsertionEncodingVerificationStrategy,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
+    MonotoneSlidingFactory,
     MonotoneTreeVerificationStrategy,
+    NoRootCellVerificationStrategy,
     ObstructionInferralFactory,
     ObstructionTransitivityFactory,
     OneByOneVerificationStrategy,
     PatternPlacementFactory,
+    PointingStrategy,
     RearrangeAssumptionFactory,
+    RelaxAssumptionFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
     RequirementInsertionFactory,
     RequirementPlacementFactory,
+    RequirementPointingFactory,
     RootInsertionFactory,
     RowAndColumnPlacementFactory,
     RowColumnSeparationStrategy,
@@ -39,8 +50,15 @@ from tilings.strategies import (
     SplittingStrategy,
     SubclassVerificationFactory,
     SubobstructionInferralFactory,
+    SubobstructionInsertionFactory,
     SymmetriesFactory,
+    TargetedCellInsertionFactory,
+    UnfusionColumnStrategy,
+    UnfusionFactory,
+    UnfusionRowStrategy,
 )
+from tilings.strategies.cell_reduction import CellReductionStrategy
+from tilings.strategies.deflation import DeflationStrategy
 from tilings.strategies.experimental_verification import SubclassVerificationStrategy
 from tilings.strategies.factor import (
     FactorStrategy,
@@ -48,7 +66,18 @@ from tilings.strategies.factor import (
     FactorWithMonotoneInterleavingStrategy,
 )
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
+from tilings.strategies.monotone_sliding import GeneralizedSlidingStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
+from tilings.strategies.point_jumping import (
+    AssumptionAndPointJumpingStrategy,
+    AssumptionJumpingStrategy,
+    PointJumpingStrategy,
+)
+from tilings.strategies.pointing import (
+    AssumptionPointingStrategy,
+    RequirementAssumptionPointingStrategy,
+    RequirementPointingStrategy,
+)
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
@@ -220,6 +249,26 @@ def partition_ignoreparent_workable(strategy):
     ]
 
 
+def partition_ignoreparent_workable_tracked(strategy):
+    return [
+        strategy(
+            partition=partition,
+            ignore_parent=ignore_parent,
+            workable=workable,
+            tracked=tracked,
+        )
+        for partition, ignore_parent, workable, tracked in product(
+            (
+                [[(2, 1), (0, 1)], [(1, 0)]],
+                (((0, 0), (0, 2)), ((0, 1),), ((3, 3), (4, 3))),
+            ),
+            (True, False),
+            (True, False),
+            (True, False),
+        )
+    ]
+
+
 def gps_ignoreparent(strategy):
     return [
         strategy(gps=gps, ignore_parent=ignore_parent)
@@ -321,9 +370,7 @@ def sliding_strategy_arguments(strategy):
 
 def short_length_arguments(strategy):
     return [
-        ShortObstructionVerificationStrategy(
-            basis=basis, short_length=short_length, ignore_parent=ignore_parent
-        )
+        strategy(basis=basis, short_length=short_length, ignore_parent=ignore_parent)
         for short_length in range(4)
         for ignore_parent in (True, False)
         for basis in (
@@ -331,6 +378,15 @@ def short_length_arguments(strategy):
             (Perm((0, 1, 2)),),
             (Perm((0, 1, 2, 3)), Perm((0, 1, 3, 2))),
         )
+    ]
+
+
+def indices_and_row(strategy):
+    return [
+        strategy(idx1, idx2, row)
+        for idx1 in range(3)
+        for idx2 in range(3)
+        for row in (True, False)
     ]
 
 
@@ -345,13 +401,13 @@ strategy_objects = (
     + subreqs_partial_ignoreparent_dirs(RequirementPlacementFactory)
     + [SymmetriesFactory(), BasicVerificationStrategy(), EmptyCellInferralFactory()]
     + partition_ignoreparent_workable(FactorStrategy)
-    + partition_ignoreparent_workable(FactorWithInterleavingStrategy)
-    + partition_ignoreparent_workable(FactorWithMonotoneInterleavingStrategy)
-    + ignoreparent(DatabaseVerificationStrategy)
+    + partition_ignoreparent_workable_tracked(FactorWithInterleavingStrategy)
+    + partition_ignoreparent_workable_tracked(FactorWithMonotoneInterleavingStrategy)
     + ignoreparent(LocallyFactorableVerificationStrategy)
     + ignoreparent(ElementaryVerificationStrategy)
     + ignoreparent(LocalVerificationStrategy)
     + ignoreparent(MonotoneTreeVerificationStrategy)
+    + ignoreparent(InsertionEncodingVerificationStrategy)
     + [ObstructionTransitivityFactory()]
     + [
         OneByOneVerificationStrategy(
@@ -362,6 +418,16 @@ strategy_objects = (
         ),
         OneByOneVerificationStrategy(basis=[], ignore_parent=False, symmetry=False),
         OneByOneVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
+    ]
+    + [
+        NoRootCellVerificationStrategy(
+            basis=[Perm((0, 1, 2)), Perm((2, 1, 0, 3))], ignore_parent=True
+        ),
+        NoRootCellVerificationStrategy(
+            basis=[Perm((2, 1, 0, 3))], ignore_parent=False, symmetry=True
+        ),
+        NoRootCellVerificationStrategy(basis=[], ignore_parent=False, symmetry=False),
+        NoRootCellVerificationStrategy(basis=None, ignore_parent=False, symmetry=False),
     ]
     + [
         SubclassVerificationFactory(perms_to_check=[Perm((0, 1, 2)), Perm((1, 0))]),
@@ -391,7 +457,21 @@ strategy_objects = (
     + [ComponentFusionStrategy(row_idx=1)]
     + [ComponentFusionStrategy(col_idx=3)]
     + [ComponentFusionStrategy(col_idx=3)]
-    + [FusionFactory()]
+    + [FusionFactory(tracked=True), FusionFactory(tracked=False)]
+    + [DeflationFactory(tracked=True), DeflationFactory(tracked=False)]
+    + [CellReductionFactory(tracked=True), DeflationFactory(tracked=False)]
+    + [
+        CellReductionStrategy((0, 0), True, True),
+        CellReductionStrategy((2, 1), True, False),
+        CellReductionStrategy((3, 3), False, True),
+        CellReductionStrategy((4, 1), False, False),
+    ]
+    + [
+        DeflationStrategy((0, 0), True, True),
+        DeflationStrategy((2, 1), True, False),
+        DeflationStrategy((3, 3), False, True),
+        DeflationStrategy((4, 1), False, False),
+    ]
     + [ComponentFusionFactory()]
     + [ObstructionInferralStrategy([GriddedPerm((0, 1, 2), ((0, 0), (1, 1), (1, 2)))])]
     + [
@@ -408,6 +488,48 @@ strategy_objects = (
             ),
             TrackingAssumption([GriddedPerm((0,), [(0, 0)])]),
         )
+    ]
+    + [AssumptionAndPointJumpingFactory()]
+    + indices_and_row(PointJumpingStrategy)
+    + indices_and_row(AssumptionJumpingStrategy)
+    + indices_and_row(AssumptionAndPointJumpingStrategy)
+    + [MonotoneSlidingFactory(), GeneralizedSlidingStrategy(1)]
+    + indices_and_row(PointJumpingStrategy)
+    + [TargetedCellInsertionFactory()]
+    + ignoreparent(SubobstructionInsertionFactory)
+    + [
+        AssumptionPointingFactory(),
+        DummyStrategy(),
+        FusableRowAndColumnPlacementFactory(),
+        PointingStrategy(),
+        RequirementPointingFactory(),
+        UnfusionRowStrategy(),
+        UnfusionColumnStrategy(),
+        UnfusionFactory(),
+        RelaxAssumptionFactory(),
+    ]
+    + [
+        AssumptionPointingStrategy(
+            TrackingAssumption(
+                [GriddedPerm((0,), [(0, 0)]), GriddedPerm((0,), [(1, 0)])]
+            )
+        )
+    ]
+    + [
+        RequirementPointingStrategy(
+            (
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+            ),
+            (0, 1),
+        ),
+        RequirementAssumptionPointingStrategy(
+            (
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+                GriddedPerm.single_cell((0, 1), (0, 0)),
+            ),
+            (0, 1),
+        ),
     ]
 )
 

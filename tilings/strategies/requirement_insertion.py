@@ -1,13 +1,17 @@
 import abc
 from itertools import chain, product
-from typing import Dict, Iterable, Iterator, List, Optional, Tuple, cast
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple, cast
 
+import tilings.strategies as strat
 from comb_spec_searcher import DisjointUnionStrategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
+from comb_spec_searcher.strategies.strategy import VerificationStrategy
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling
+from tilings.algorithms import Factor, SubobstructionInferral
 
+Cell = Tuple[int, int]
 ListRequirement = Tuple[GriddedPerm, ...]
 
 EXTRA_BASIS_ERR = "'extra_basis' should be a list of Perm to avoid"
@@ -396,8 +400,10 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
         extra_basis: Optional[List[Perm]] = None,
         limited_insertion: bool = True,
         ignore_parent: bool = False,
+        allow_factorable_insertions: bool = False,
     ) -> None:
         self.limited_insertion = limited_insertion
+        self.allow_factorable_insertions = allow_factorable_insertions
         super().__init__(maxreqlen, extra_basis, ignore_parent)
 
     def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
@@ -410,7 +416,7 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
         )
         for length in range(1, self.maxreqlen + 1):
             for gp in obs_tiling.gridded_perms_of_length(length):
-                if len(gp.factors()) == 1 and all(
+                if (self.allow_factorable_insertions or len(gp.factors()) == 1) and all(
                     p not in gp.patt for p in self.extra_basis
                 ):
                     yield (GriddedPerm(gp.patt, gp.pos),)
@@ -436,6 +442,7 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
                 f"extra_basis={self.extra_basis!r}",
                 f"limited_insertion={self.limited_insertion}",
                 f"ignore_parent={self.ignore_parent}",
+                f"allow_factorable_insertions={self.allow_factorable_insertions}",
             ]
         )
         return f"{self.__class__.__name__}({args})"
@@ -443,6 +450,7 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
         d["limited_insertion"] = self.limited_insertion
+        d["allow_factorable_insertions"] = self.allow_factorable_insertions
         return d
 
     @classmethod
@@ -454,10 +462,12 @@ class RequirementInsertionFactory(RequirementInsertionWithRestrictionFactory):
         d.pop("extra_basis")
         limited_insertion = d.pop("limited_insertion")
         maxreqlen = d.pop("maxreqlen")
+        allow_factorable_insertions = d.pop("allow_factorable_insertions", False)
         return cls(
             maxreqlen=maxreqlen,
             extra_basis=extra_basis,
             limited_insertion=limited_insertion,
+            allow_factorable_insertions=allow_factorable_insertions,
             **d,
         )
 
@@ -514,6 +524,70 @@ class RequirementCorroborationFactory(AbstractRequirementInsertionFactory):
         return "requirement corroboration"
 
 
+class PositiveCorroborationFactory(AbstractRequirementInsertionFactory):
+    """
+    The positive corroboration strategy.
+
+    The positive corroboration strategy inserts points into any two
+    cells which can not both be positive, i.e., one is positive
+    and the other is empty.
+    """
+
+    def __init__(self, ignore_parent: bool = True):
+        super().__init__(ignore_parent)
+
+    @staticmethod
+    def cells_to_yield(tiling: Tiling) -> Set[Cell]:
+        potential_cells: Set[Tuple[Cell, ...]] = set()
+        cells_to_yield: Set[Cell] = set()
+        for gp in tiling.obstructions:
+            if len(gp) == 2 and not gp.is_localized():
+                if gp.is_interleaving():
+                    cells = tuple(sorted(gp.pos))
+                    if cells in potential_cells:
+                        cells_to_yield.update(cells)
+                    else:
+                        potential_cells.add(cells)
+                else:
+                    cells_to_yield.update(gp.pos)
+        return cells_to_yield
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        for cell in self.cells_to_yield(tiling):
+            if cell not in tiling.point_cells:
+                yield (GriddedPerm.point_perm(cell),)
+
+    def __str__(self) -> str:
+        return "positive corroboration"
+
+
+class PointCorroborationFactory(PositiveCorroborationFactory):
+    """
+    The point corroboration strategy.
+
+    The point corroboration strategy inserts points into any two point
+    or empty cells which can not both be a point, i.e., one is a point
+    and the other is empty.
+    """
+
+    @staticmethod
+    def cells_to_yield(tiling: Tiling) -> Set[Cell]:
+        cell_basis = tiling.cell_basis()
+        point_or_empty_cells = set()
+        for cell, (patts, _) in cell_basis.items():
+            if patts == [Perm((0, 1)), Perm((1, 0))]:
+                point_or_empty_cells.add(cell)
+        point_or_empty_cells = point_or_empty_cells - tiling.point_cells
+        if point_or_empty_cells:
+            return point_or_empty_cells.intersection(
+                PositiveCorroborationFactory.cells_to_yield(tiling)
+            )
+        return set()
+
+    def __str__(self) -> str:
+        return "point corroboration"
+
+
 class RemoveRequirementFactory(StrategyFactory[Tiling]):
     """
     For a tiling T, and each requirement R on T, create the rules that
@@ -534,3 +608,147 @@ class RemoveRequirementFactory(StrategyFactory[Tiling]):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}()"
+
+
+class FactorRowCol(Factor):
+    def _unite_all(self) -> None:
+        self._unite_rows_and_cols()
+
+
+class TargetedCellInsertionFactory(AbstractRequirementInsertionFactory):
+    """
+    Insert factors requirements or obstructions on the tiling if it can lead
+    to separating a verified factor.
+    """
+
+    def __init__(
+        self,
+        verification_strategies: Optional[Iterable[VerificationStrategy]] = None,
+        ignore_parent: bool = True,
+    ) -> None:
+        self.verification_strats: List[VerificationStrategy] = (
+            list(verification_strategies)
+            if verification_strategies is not None
+            else [
+                strat.BasicVerificationStrategy(),
+                strat.InsertionEncodingVerificationStrategy(),
+                strat.OneByOneVerificationStrategy(),
+                strat.LocallyFactorableVerificationStrategy(),
+            ]
+        )
+        super().__init__(ignore_parent)
+
+    def verified(self, tiling: Tiling) -> bool:
+        """Return True if any verification strategy verifies the tiling"""
+        return any(strategy.verified(tiling) for strategy in self.verification_strats)
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        factor_class = FactorRowCol(tiling)
+        potential_factors = factor_class.get_components()
+        reqs_and_obs: Set[GriddedPerm] = set(
+            chain(tiling.obstructions, *tiling.requirements)
+        )
+        for cells in potential_factors:
+            if self.verified(tiling.sub_tiling(cells)):
+                for gp in reqs_and_obs:
+                    if any(cell in cells for cell in gp.pos) and any(
+                        cell not in cells for cell in gp.pos
+                    ):
+                        yield (gp.get_gridded_perm_in_cells(cells),)
+
+    def to_jsonable(self) -> dict:
+        d = super().to_jsonable()
+        d["ver_strats"] = [
+            strategy.to_jsonable() for strategy in self.verification_strats
+        ]
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "TargetedCellInsertionFactory":
+        ver_strats = [
+            cast(VerificationStrategy, VerificationStrategy.from_dict(strategy))
+            for strategy in d["ver_strats"]
+        ]
+        return TargetedCellInsertionFactory(ver_strats, d["ignore_parent"])
+
+    def __repr__(self):
+        return (
+            self.__class__.__name__
+            + f"({self.verification_strats}, {self.ignore_parent})"
+        )
+
+    def __str__(self) -> str:
+        return "targeted cell insertions"
+
+
+class SubobstructionInsertionFactory(AbstractRequirementInsertionFactory):
+    """
+    Insert all subobstructions of the obstructions on the tiling.
+    """
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        for gp in SubobstructionInferral(tiling).potential_new_obs():
+            yield (gp,)
+
+    def __str__(self) -> str:
+        return "subobstruction insertion"
+
+
+class BasisPatternInsertionFactory(AbstractRequirementInsertionFactory):
+    """
+    Insert all requirements that are a subpattern of every pattern in the basis.
+    """
+
+    def __init__(
+        self,
+        basis: Optional[Iterable[Perm]] = None,
+        ignore_parent: bool = False,
+    ):
+        self.basis: Tuple[Perm, ...] = tuple(basis) if basis is not None else tuple()
+        self.perms = self.get_patterns()
+        self.maxreqlen = max(map(len, self.perms), default=0)
+        super().__init__(ignore_parent=ignore_parent)
+
+    def get_patterns(self) -> Set[Perm]:
+        res: Set[Perm] = set()
+        to_process: Iterable[Perm] = self.basis
+        while to_process:
+            to_process = set(
+                (
+                    perm.remove(idx)
+                    for perm in to_process
+                    for idx in perm
+                    if len(perm) > 1
+                )
+            )
+            res.update(to_process)
+        return set(
+            perm for perm in res if all(patt.contains(perm) for patt in self.basis)
+        )
+
+    def change_basis(
+        self,
+        basis: Iterable[Perm],
+    ) -> "BasisPatternInsertionFactory":
+        """
+        Return the version of the strategy with the given basis instead
+        of the current one.
+        """
+        return self.__class__(tuple(basis))
+
+    def req_lists_to_insert(self, tiling: Tiling) -> Iterator[ListRequirement]:
+        obs_tiling = Tiling(
+            tiling.obstructions,
+            remove_empty_rows_and_cols=False,
+            derive_empty=False,
+            simplify=False,
+            sorted_input=True,
+        )
+        for length in range(1, self.maxreqlen + 1):
+            for gp in obs_tiling.gridded_perms_of_length(length):
+                if gp.patt in self.perms:
+                    yield (gp,)
+
+    def __str__(self) -> str:
+        patts = "{" + ", ".join(map(str, sorted(self.perms))) + "}"
+        return f"insertions with permutations {patts}"

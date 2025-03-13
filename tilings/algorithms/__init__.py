@@ -1,4 +1,4 @@
-from .enumeration import DatabaseEnumeration, LocalEnumeration, MonotoneTreeEnumeration
+from .enumeration import LocalEnumeration, MonotoneTreeEnumeration
 from .factor import Factor, FactorWithInterleaving, FactorWithMonotoneInterleaving
 from .fusion import ComponentFusion, Fusion
 from .gridded_perm_generation import GriddedPermsOnTiling
@@ -18,7 +18,6 @@ from .sliding import Sliding
 from .subclass_verification import SubclassVerificationAlgorithm
 
 __all__ = [
-    "DatabaseEnumeration",
     "LocalEnumeration",
     "MonotoneTreeEnumeration",
     "Factor",

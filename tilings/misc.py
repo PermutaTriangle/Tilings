@@ -3,7 +3,17 @@ Collection of function that are not directly related to the code but still
 useful.
 """
 from functools import reduce
-from typing import Dict, Iterable, Iterator, Sequence, Set, Tuple, TypeVar
+from typing import (
+    Collection,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Sequence,
+    Set,
+    Tuple,
+    TypeVar,
+)
 
 Vertex = TypeVar("Vertex")
 T = TypeVar("T")
@@ -35,7 +45,9 @@ def intersection_reduce(iterables: Iterable[Iterable[T]]) -> Set[T]:
         return set()
 
 
-def is_tree(vertices: Sequence[Vertex], edges: Sequence[Tuple[Vertex, Vertex]]) -> bool:
+def is_tree(
+    vertices: Collection[Vertex], edges: Collection[Tuple[Vertex, Vertex]]
+) -> bool:
     """
     Return True if the undirected graph is a tree.
 
@@ -48,7 +60,7 @@ def is_tree(vertices: Sequence[Vertex], edges: Sequence[Tuple[Vertex, Vertex]]) 
 
 
 def adjacency_table(
-    vertices: Sequence[Vertex], edges: Sequence[Tuple[Vertex, Vertex]]
+    vertices: Collection[Vertex], edges: Collection[Tuple[Vertex, Vertex]]
 ) -> AdjTable:
     """Return adjacency table of edges."""
     adj_table = {v: set() for v in vertices}  # type: AdjTable
@@ -113,10 +125,10 @@ def partitions_iterator(lst: Sequence[T]) -> Iterator[Tuple[Tuple[T, ...], ...]]
             yield tuple(map(tuple, part))
 
 
-def algorithm_u(ns, m):
+def algorithm_u(ns: Sequence[T], m: int):
     # pylint: disable=too-many-statements,too-many-branches
     def visit(n, a):
-        ps = [[] for i in range(m)]
+        ps: List[List[T]] = [[] for i in range(m)]
         for j in range(n):
             ps[a[j + 1]].append(ns[j])
         return ps
@@ -125,8 +137,7 @@ def algorithm_u(ns, m):
         if mu == 2:
             yield visit(n, a)
         else:
-            for v in f(mu - 1, nu - 1, (mu + sigma) % 2, n, a):
-                yield v
+            yield from f(mu - 1, nu - 1, (mu + sigma) % 2, n, a)
         if nu == mu + 1:
             a[mu] = mu - 1
             yield visit(n, a)
@@ -139,19 +150,15 @@ def algorithm_u(ns, m):
             else:
                 a[mu] = mu - 1
             if (a[nu] + sigma) % 2 == 1:
-                for v in b(mu, nu - 1, 0, n, a):
-                    yield v
+                yield from b(mu, nu - 1, 0, n, a)
             else:
-                for v in f(mu, nu - 1, 0, n, a):
-                    yield v
+                yield from f(mu, nu - 1, 0, n, a)
             while a[nu] > 0:
                 a[nu] = a[nu] - 1
                 if (a[nu] + sigma) % 2 == 1:
-                    for v in b(mu, nu - 1, 0, n, a):
-                        yield v
+                    yield from b(mu, nu - 1, 0, n, a)
                 else:
-                    for v in f(mu, nu - 1, 0, n, a):
-                        yield v
+                    yield from f(mu, nu - 1, 0, n, a)
 
     def b(mu, nu, sigma, n, a):
         if nu == mu + 1:
@@ -162,19 +169,15 @@ def algorithm_u(ns, m):
             a[mu] = 0
         elif nu > mu + 1:
             if (a[nu] + sigma) % 2 == 1:
-                for v in f(mu, nu - 1, 0, n, a):
-                    yield v
+                yield from f(mu, nu - 1, 0, n, a)
             else:
-                for v in b(mu, nu - 1, 0, n, a):
-                    yield v
+                yield from b(mu, nu - 1, 0, n, a)
             while a[nu] < mu - 1:
                 a[nu] = a[nu] + 1
                 if (a[nu] + sigma) % 2 == 1:
-                    for v in f(mu, nu - 1, 0, n, a):
-                        yield v
+                    yield from f(mu, nu - 1, 0, n, a)
                 else:
-                    for v in b(mu, nu - 1, 0, n, a):
-                        yield v
+                    yield from b(mu, nu - 1, 0, n, a)
             if (mu + sigma) % 2 == 1:
                 a[nu - 1] = 0
             else:
@@ -182,8 +185,7 @@ def algorithm_u(ns, m):
         if mu == 2:
             yield visit(n, a)
         else:
-            for v in b(mu - 1, nu - 1, (mu + sigma) % 2, n, a):
-                yield v
+            yield from b(mu - 1, nu - 1, (mu + sigma) % 2, n, a)
 
     n = len(ns)
     a = [0] * (n + 1)
