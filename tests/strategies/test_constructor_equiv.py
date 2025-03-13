@@ -666,6 +666,8 @@ def test_complement_multiple_params():
     )
     for strategy in ObstructionInferralFactory()(t):
         rule = strategy(t)
+        print(rule)
+        print(rule.to_reverse_rule(0))
         assert not rule.to_reverse_rule(0).is_equivalence()
         with pytest.raises(AssertionError):
             EquivalencePathRule([rule.to_reverse_rule(0)])
