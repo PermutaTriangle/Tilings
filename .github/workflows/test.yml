@@ -54,85 +54,21 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{  matrix.python }}
-      - name: replace css and permuta dependency (win)
-        shell: pwsh
-        if: github.ref != 'refs/heads/master' && runner.os == 'Windows' && !(github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master')
+      - name: Install dependencies from develop branch
+        if: github.ref != 'refs/heads/master' && !(github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master')
         run: |
-          Write-Host "Starting dependency replacement on Windows"
-          Write-Host "Original setup.py content:"
-          Get-Content setup.py | Out-String | Write-Host
+          echo "Installing dependencies from develop branches instead of PyPI"
+          python -m pip install git+https://github.com/PermutaTriangle/comb_spec_searcher.git@develop
+          python -m pip install git+https://github.com/PermutaTriangle/Permuta.git@develop
           
-          # Use the correct pip install-from-git format
-          Write-Host "Replacing comb-spec-searcher..."
-          (Get-Content setup.py) -replace 'comb-spec-searcher==\d+\.\d+\.\d+', 'git+https://github.com/PermutaTriangle/comb_spec_searcher.git@develop#egg=comb_spec_searcher' | Out-File -encoding UTF8 setup.py
+          # Optional: Install the project in development mode to work with the new dependencies
+          python -m pip install -e .
           
-          Write-Host "Replacing permuta..."
-          (Get-Content setup.py) -replace 'permuta==\d+\.\d+\.\d+', 'git+https://github.com/PermutaTriangle/Permuta.git@develop#egg=permuta' | Out-File -encoding UTF8 setup.py
-          
-          Write-Host "Modified setup.py content:"
-          Get-Content setup.py | Out-String | Write-Host
-          
-          # Check if replacements were successful
-          $content = Get-Content setup.py | Out-String
-          if ($content -match 'git\+https://github\.com/PermutaTriangle/comb_spec_searcher\.git@develop#egg=comb_spec_searcher') {
-              Write-Host "✅ comb_spec_searcher replacement successful"
-          } else {
-              Write-Host "❌ comb_spec_searcher replacement FAILED"
-              Write-Host "Checking exact pattern in setup.py:"
-              Select-String -Path setup.py -Pattern "comb-spec-searcher" | Write-Host
-          }
-          
-          if ($content -match 'git\+https://github\.com/PermutaTriangle/Permuta\.git@develop#egg=permuta') {
-              Write-Host "✅ permuta replacement successful"
-          } else {
-              Write-Host "❌ permuta replacement FAILED"
-              Write-Host "Checking exact pattern in setup.py:"
-              Select-String -Path setup.py -Pattern "permuta" | Write-Host
-          }
-      - name: replace css and permuta dependency (unix)
-        if: github.ref != 'refs/heads/master' && runner.os != 'Windows' && !(github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'master')
-        run: |
-          echo "Starting dependency replacement on Unix (${RUNNER_OS})"
-          echo "Original setup.py content:"
-          cat setup.py
-          
-          if [ "$RUNNER_OS" == "macOS" ]; then
-            echo "Using gsed on macOS..."
-            brew install gnu-sed
-            
-            echo "Replacing comb-spec-searcher..."
-            gsed -i -E 's/comb-spec-searcher==[0-9]+\.[0-9]+\.[0-9]+/git+https:\/\/github.com\/PermutaTriangle\/comb_spec_searcher.git@develop#egg=comb_spec_searcher/g' setup.py
-            
-            echo "Replacing permuta..."
-            gsed -i -E 's/permuta==[0-9]+\.[0-9]+\.[0-9]+/git+https:\/\/github.com\/PermutaTriangle\/Permuta.git@develop#egg=permuta/g' setup.py
-          else
-            echo "Using sed on Linux..."
-            echo "Replacing comb-spec-searcher..."
-            sed -i -E 's/comb-spec-searcher==[0-9]+\.[0-9]+\.[0-9]+/git+https:\/\/github.com\/PermutaTriangle\/comb_spec_searcher.git@develop#egg=comb_spec_searcher/g' setup.py
-            
-            echo "Replacing permuta..."
-            sed -i -E 's/permuta==[0-9]+\.[0-9]+\.[0-9]+/git+https:\/\/github.com\/PermutaTriangle\/Permuta.git@develop#egg=permuta/g' setup.py
-          fi
-          
-          echo "Modified setup.py content:"
-          cat setup.py
-          
-          # Check if replacements were successful
-          if grep -q "git+https://github.com/PermutaTriangle/comb_spec_searcher.git@develop#egg=comb_spec_searcher" setup.py; then
-            echo "✅ comb_spec_searcher replacement successful"
-          else
-            echo "❌ comb_spec_searcher replacement FAILED"
-            echo "Checking exact pattern in setup.py:"
-            grep -n "comb-spec-searcher" setup.py || echo "Pattern not found"
-          fi
-          
-          if grep -q "git+https://github.com/PermutaTriangle/Permuta.git@develop#egg=permuta" setup.py; then
-            echo "✅ permuta replacement successful"
-          else
-            echo "❌ permuta replacement FAILED"
-            echo "Checking exact pattern in setup.py:"
-            grep -n "permuta" setup.py || echo "Pattern not found"
-          fi
+          # Verify installed versions
+          echo "Checking installed comb_spec_searcher version:"
+          python -c "import comb_spec_searcher; print(comb_spec_searcher.__version__)"
+          echo "Checking installed permuta version:"
+          python -c "import permuta; print(permuta.__version__)"
       - name: install dependencies
         run: python -m pip install --upgrade pip tox
       - name: run
