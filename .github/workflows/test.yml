@@ -43,10 +43,10 @@ jobs:
             os: ubuntu-latest
 
           - python: "3.13"
-            toxenv: py310
+            toxenv: py313
             os: macos-latest
           - python: "3.13"
-            toxenv: py310
+            toxenv: py313
             os: windows-latest
 
     runs-on: ${{ matrix.os }}
