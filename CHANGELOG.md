@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## Unreleased 
 
-## [4.0.0 - 2024-03-04]
+## [4.0.0 - 2025-03-13]
 ### Added
+- python3.9 are deprecated, python3.10 - python3.13 are supported
 - added `TileScopePack.requirement_and_row_and_col_placements`
 - `AssumptionAndPointJumpingFactory` which adds rules where requirements and/or
   assumptions are swapped around a fusable row or column.
