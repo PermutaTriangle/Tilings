@@ -100,7 +100,7 @@ class RelaxAssumptionStrategy(Strategy[Tiling, GriddedPerm]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "RelaxAssumptionStrategy":
-        return cls(d.pop("child"), d.pop("assumption_idx"), **d)
+        return cls(Tiling.from_dict(d.pop("child")), d.pop("assumption_idx"), **d)
 
 
 class RelaxAssumptionFactory(StrategyFactory[Tiling]):

@@ -15,7 +15,7 @@ from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import GuidedSearcher, TileScope
 
 point_placements = TileScopePack.point_placements()
-all_the_strategies_verify_database = TileScopePack.all_the_strategies().make_database()
+all_the_strategies = TileScopePack.all_the_strategies()
 all_the_strategies_fusion = TileScopePack.all_the_strategies().make_fusion(
     tracked=False
 )
@@ -125,14 +125,6 @@ def test_132_321_genf():
 @pytest.mark.timeout(20)
 def test_123():
     searcher = TileScope((Perm((0, 1, 2)),), point_placements_fusion)
-    spec = searcher.auto_search(smallest=True)
-    assert isinstance(spec, CombinatorialSpecification)
-
-
-@pytest.mark.timeout(120)
-@pytest.mark.skip(reason="Too inconsistent connection db")
-def test_123_with_db():
-    searcher = TileScope("123", all_the_strategies_verify_database)
     spec = searcher.auto_search(smallest=True)
     assert isinstance(spec, CombinatorialSpecification)
 
@@ -309,6 +301,8 @@ def test_expansion():
     """
     pack = TileScopePack.only_root_placements(3, 1)
     css = TileScope("132", pack)
+    print(pack)
+    print(css)
     spec = css.auto_search(smallest=True)
     spec = spec.expand_verified()
     assert sum(1 for rule in spec if isinstance(rule, ReverseRule)) == 1
