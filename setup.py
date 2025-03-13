@@ -34,6 +34,7 @@ setup(
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     long_description=read("README.rst"),
     install_requires=[
+        "sympy==1.13.1",
         "comb-spec-searcher==4.2.0",
         "permuta==2.3.0",
     ],
