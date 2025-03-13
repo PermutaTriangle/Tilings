@@ -62,18 +62,19 @@ jobs:
           Write-Host "Original setup.py content:"
           Get-Content setup.py | Out-String | Write-Host
           
+          # Use the correct pip install-from-git format
           Write-Host "Replacing comb-spec-searcher..."
-          (Get-Content setup.py) -replace 'comb-spec-searcher==\d+\.\d+\.\d+', 'comb_spec_searcher@git+https://github.com/PermutaTriangle/comb_spec_searcher@develop' | Out-File -encoding UTF8 setup.py
+          (Get-Content setup.py) -replace 'comb-spec-searcher==\d+\.\d+\.\d+', 'git+https://github.com/PermutaTriangle/comb_spec_searcher.git@develop#egg=comb_spec_searcher' | Out-File -encoding UTF8 setup.py
           
           Write-Host "Replacing permuta..."
-          (Get-Content setup.py) -replace 'permuta==\d+\.\d+\.\d+', 'permuta@git+https://github.com/PermutaTriangle/Permuta@develop' | Out-File -encoding UTF8 setup.py
+          (Get-Content setup.py) -replace 'permuta==\d+\.\d+\.\d+', 'git+https://github.com/PermutaTriangle/Permuta.git@develop#egg=permuta' | Out-File -encoding UTF8 setup.py
           
           Write-Host "Modified setup.py content:"
           Get-Content setup.py | Out-String | Write-Host
           
           # Check if replacements were successful
           $content = Get-Content setup.py | Out-String
-          if ($content -match 'comb_spec_searcher@git\+https://github\.com/PermutaTriangle/comb_spec_searcher@develop') {
+          if ($content -match 'git\+https://github\.com/PermutaTriangle/comb_spec_searcher\.git@develop#egg=comb_spec_searcher') {
               Write-Host "✅ comb_spec_searcher replacement successful"
           } else {
               Write-Host "❌ comb_spec_searcher replacement FAILED"
@@ -81,7 +82,7 @@ jobs:
               Select-String -Path setup.py -Pattern "comb-spec-searcher" | Write-Host
           }
           
-          if ($content -match 'permuta@git\+https://github\.com/PermutaTriangle/Permuta@develop') {
+          if ($content -match 'git\+https://github\.com/PermutaTriangle/Permuta\.git@develop#egg=permuta') {
               Write-Host "✅ permuta replacement successful"
           } else {
               Write-Host "❌ permuta replacement FAILED"
@@ -100,24 +101,24 @@ jobs:
             brew install gnu-sed
             
             echo "Replacing comb-spec-searcher..."
-            gsed -i -E 's/comb-spec-searcher==[0-9]+\.[0-9]+\.[0-9]+/comb_spec_searcher@git+https:\/\/github.com\/PermutaTriangle\/comb_spec_searcher@develop/g' setup.py
+            gsed -i -E 's/comb-spec-searcher==[0-9]+\.[0-9]+\.[0-9]+/git+https:\/\/github.com\/PermutaTriangle\/comb_spec_searcher.git@develop#egg=comb_spec_searcher/g' setup.py
             
             echo "Replacing permuta..."
-            gsed -i -E 's/permuta==[0-9]+\.[0-9]+\.[0-9]+/permuta@git+https:\/\/github.com\/PermutaTriangle\/Permuta@develop/g' setup.py
+            gsed -i -E 's/permuta==[0-9]+\.[0-9]+\.[0-9]+/git+https:\/\/github.com\/PermutaTriangle\/Permuta.git@develop#egg=permuta/g' setup.py
           else
             echo "Using sed on Linux..."
             echo "Replacing comb-spec-searcher..."
-            sed -i -E 's/comb-spec-searcher==[0-9]+\.[0-9]+\.[0-9]+/comb_spec_searcher@git+https:\/\/github.com\/PermutaTriangle\/comb_spec_searcher@develop/g' setup.py
+            sed -i -E 's/comb-spec-searcher==[0-9]+\.[0-9]+\.[0-9]+/git+https:\/\/github.com\/PermutaTriangle\/comb_spec_searcher.git@develop#egg=comb_spec_searcher/g' setup.py
             
             echo "Replacing permuta..."
-            sed -i -E 's/permuta==[0-9]+\.[0-9]+\.[0-9]+/permuta@git+https:\/\/github.com\/PermutaTriangle\/Permuta@develop/g' setup.py
+            sed -i -E 's/permuta==[0-9]+\.[0-9]+\.[0-9]+/git+https:\/\/github.com\/PermutaTriangle\/Permuta.git@develop#egg=permuta/g' setup.py
           fi
           
           echo "Modified setup.py content:"
           cat setup.py
           
           # Check if replacements were successful
-          if grep -q "comb_spec_searcher@git+https://github.com/PermutaTriangle/comb_spec_searcher@develop" setup.py; then
+          if grep -q "git+https://github.com/PermutaTriangle/comb_spec_searcher.git@develop#egg=comb_spec_searcher" setup.py; then
             echo "✅ comb_spec_searcher replacement successful"
           else
             echo "❌ comb_spec_searcher replacement FAILED"
@@ -125,7 +126,7 @@ jobs:
             grep -n "comb-spec-searcher" setup.py || echo "Pattern not found"
           fi
           
-          if grep -q "permuta@git+https://github.com/PermutaTriangle/Permuta@develop" setup.py; then
+          if grep -q "git+https://github.com/PermutaTriangle/Permuta.git@develop#egg=permuta" setup.py; then
             echo "✅ permuta replacement successful"
           else
             echo "❌ permuta replacement FAILED"
