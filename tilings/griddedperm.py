@@ -93,7 +93,13 @@ class GriddedPerm(CombinatorialObject):
             for indices in combinations(self.potential_indices(patt), len(patt))
         )
 
-    def potential_indices(self, patt: "GriddedPerm") -> bool:
+    def contains_patt6(self, patt: "GriddedPerm") -> bool:
+        return any(
+            patt.patt == Perm.to_standard(self.patt[i] for i in indices)
+            for indices in self.matching_pos_indices(patt)
+        )
+
+    def potential_indices(self, patt: "GriddedPerm") -> list[int]:
         pattidx, pattlen = 0, len(patt)
         indices = []
         cells = {patt.pos[0]}
@@ -104,6 +110,32 @@ class GriddedPerm(CombinatorialObject):
             if cell in cells:
                 indices.append(idx)
         return indices
+
+    def matching_pos_indices(self, patt: "GriddedPerm") -> Iterator[list[int]]:
+        occ_indices = [0] * len(patt)
+
+        if len(patt) == 0:
+            yield tuple()
+            return
+        n = len(patt)
+        if n > len(self):
+            return
+
+        def occurrence(i, k):
+            elements_remaining = len(self) - i
+            elements_needed = n - k
+            while True:
+                if elements_remaining < elements_needed:
+                    return
+                if self.pos[i] == patt.pos[k]:
+                    occ_indices[k] = i
+                    if elements_needed == 1:
+                        yield tuple(occ_indices)
+                    else:
+                        yield from occurrence(i + 1, k + 1)
+                i, elements_remaining = i + 1, elements_remaining - 1
+
+        yield from occurrence(0, 0)
 
     def contains_pos(self, patt: "GriddedPerm") -> bool:
         pattlen = len(patt)
@@ -120,13 +152,15 @@ class GriddedPerm(CombinatorialObject):
     #     assert self.contains_patt2(patt) == self.contains_patt3(patt)
     #     assert self.contains_patt3(patt) == self.contains_patt4(patt)
     #     assert self.contains_patt4(patt) == self.contains_patt5(patt)
+    #     assert self.contains_patt5(patt) == self.contains_patt6(patt)
     #     return self.contains_patt1(patt)
 
-    contains_patt = contains_patt1
+    # contains_patt = contains_patt1
     # contains_patt = contains_patt2
     # contains_patt = contains_patt3
     # contains_patt = contains_patt4
     # contains_patt = contains_patt5
+    contains_patt = contains_patt6
 
     def remove_cells(self, cells: Iterable[Cell]) -> "GriddedPerm":
         """Remove any points in the cell given and return a new gridded
