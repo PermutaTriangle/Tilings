@@ -70,7 +70,63 @@ class GriddedPerm(CombinatorialObject):
 
     def contains(self, *patts: "GriddedPerm") -> bool:
         """Return true if self contains an occurrence of any of patts."""
-        return any(any(True for _ in patt.occurrences_in(self)) for patt in patts)
+        return any(self.contains_patt(patt) for patt in patts)
+
+    def contains_patt1(self, patt: "GriddedPerm") -> bool:
+        return any(True for _ in patt.occurrences_in(self))
+
+    def contains_patt2(self, patt: "GriddedPerm") -> bool:
+        return any(
+            patt == self.get_gridded_perm_at_indices(indices)
+            for indices in combinations(range(len(self)), len(patt))
+        )
+
+    def contains_patt3(self, patt: "GriddedPerm") -> bool:
+        return self.contains_pos(patt) and self.contains_patt1(patt)
+
+    def contains_patt4(self, patt: "GriddedPerm") -> bool:
+        return self.contains_pos(patt) and self.contains_patt2(patt)
+
+    def contains_patt5(self, patt: "GriddedPerm") -> bool:
+        return any(
+            patt == self.get_gridded_perm_at_indices(indices)
+            for indices in combinations(self.potential_indices(patt), len(patt))
+        )
+
+    def potential_indices(self, patt: "GriddedPerm") -> bool:
+        pattidx, pattlen = 0, len(patt)
+        indices = []
+        cells = {patt.pos[0]}
+        for idx, cell in enumerate(self.pos):
+            if pattidx < pattlen and cell == patt.pos[pattidx]:
+                pattidx += 1
+                cells.add(cell)
+            if cell in cells:
+                indices.append(idx)
+        return indices
+
+    def contains_pos(self, patt: "GriddedPerm") -> bool:
+        pattlen = len(patt)
+        pattidx = 0
+        for cell in self.pos:
+            if patt.pos[pattidx] == cell:
+                pattidx += 1
+                if pattidx == pattlen:
+                    return True
+        return False
+
+    # def contains_patt(self, patt: "GriddedPerm") -> bool:
+    #     assert self.contains_patt1(patt) == self.contains_patt2(patt)
+    #     assert self.contains_patt2(patt) == self.contains_patt3(patt)
+    #     assert self.contains_patt3(patt) == self.contains_patt4(patt)
+    #     assert self.contains_patt4(patt) == self.contains_patt5(patt)
+    #     return self.contains_patt1(patt)
+
+    contains_patt = contains_patt1
+    # contains_patt = contains_patt2
+    # contains_patt = contains_patt3
+    # contains_patt = contains_patt4
+    # contains_patt = contains_patt5
 
     def remove_cells(self, cells: Iterable[Cell]) -> "GriddedPerm":
         """Remove any points in the cell given and return a new gridded
@@ -529,7 +585,7 @@ class GriddedPerm(CombinatorialObject):
             )
         res += row_boundary
 
-        for (idx, val) in enumerate(self.patt):
+        for idx, val in enumerate(self.patt):
             x, y = self.pos[idx]
             # insert into this spot:
             # (idx + x + 1) is the horizontal index. idx is points to left, and
