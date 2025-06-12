@@ -778,7 +778,8 @@ class GriddedPerm(CombinatorialObject):
         return (self._patt, self._pos) < (other.patt, other.pos)
 
     def __contains__(self, other: "GriddedPerm") -> bool:
-        return next((True for _ in other.occurrences_in(self)), False)
+        return self.contains_patt(other)
+        # return next((True for _ in other.occurrences_in(self)), False)
 
     def __iter__(self) -> Iterator[Tuple[int, Cell]]:
         return zip(self.patt, self.pos)
