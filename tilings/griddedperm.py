@@ -100,6 +100,8 @@ class GriddedPerm(CombinatorialObject):
         )
 
     def potential_indices(self, patt: "GriddedPerm") -> list[int]:
+        if not patt:
+            return []
         pattidx, pattlen = 0, len(patt)
         indices = []
         cells = {patt.pos[0]}
@@ -138,6 +140,9 @@ class GriddedPerm(CombinatorialObject):
         yield from occurrence(0, 0)
 
     def contains_pos(self, patt: "GriddedPerm") -> bool:
+        if not patt:
+            return True
+
         pattlen = len(patt)
         pattidx = 0
         for cell in self.pos:
@@ -160,7 +165,7 @@ class GriddedPerm(CombinatorialObject):
     # contains_patt = contains_patt3
     # contains_patt = contains_patt4
     # contains_patt = contains_patt5
-    contains_patt = contains_patt6
+    # contains_patt = contains_patt6
 
     def remove_cells(self, cells: Iterable[Cell]) -> "GriddedPerm":
         """Remove any points in the cell given and return a new gridded
@@ -778,7 +783,7 @@ class GriddedPerm(CombinatorialObject):
         return (self._patt, self._pos) < (other.patt, other.pos)
 
     def __contains__(self, other: "GriddedPerm") -> bool:
-        return next((True for _ in other.occurrences_in(self)), False)
+        return self.contains_patt(other)
 
     def __iter__(self) -> Iterator[Tuple[int, Cell]]:
         return zip(self.patt, self.pos)
