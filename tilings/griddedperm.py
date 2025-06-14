@@ -119,13 +119,6 @@ class GriddedPerm(CombinatorialObject):
             for indices in combinations(self.potential_indices(patt), len(patt))
         )
 
-    def contains_patt11(self, patt: "GriddedPerm") -> bool:
-        return self.contains_pos(patt) and any(
-            all(x == y for x, y in zip(patt.pos, (self.pos[i] for i in indices)))
-            and patt.patt == Perm.to_standard(self.patt[i] for i in indices)
-            for indices in self.matching_pos_indices(patt)
-        )
-
     def potential_indices(self, patt: "GriddedPerm") -> list[int]:
         if not patt:
             return []
