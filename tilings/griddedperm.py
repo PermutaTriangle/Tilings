@@ -99,6 +99,33 @@ class GriddedPerm(CombinatorialObject):
             for indices in self.matching_pos_indices(patt)
         )
 
+    def contains_patt7(self, patt: "GriddedPerm") -> bool:
+        return self.contains_pos(patt) and self.contains_patt5(patt)
+
+    def contains_patt8(self, patt: "GriddedPerm") -> bool:
+        return self.contains_pos(patt) and self.contains_patt6(patt)
+
+    def contains_patt9(self, patt: "GriddedPerm") -> bool:
+        return self.contains_pos(patt) and any(
+            all(x == y for x, y in zip(patt.pos, (self.pos[i] for i in indices)))
+            and patt.patt == Perm.to_standard(self.patt[i] for i in indices)
+            for indices in combinations(range(len(self)), len(patt))
+        )
+
+    def contains_patt10(self, patt: "GriddedPerm") -> bool:
+        return self.contains_pos(patt) and any(
+            all(x == y for x, y in zip(patt.pos, (self.pos[i] for i in indices)))
+            and patt.patt == Perm.to_standard(self.patt[i] for i in indices)
+            for indices in combinations(self.potential_indices(patt), len(patt))
+        )
+
+    def contains_patt11(self, patt: "GriddedPerm") -> bool:
+        return self.contains_pos(patt) and any(
+            all(x == y for x, y in zip(patt.pos, (self.pos[i] for i in indices)))
+            and patt.patt == Perm.to_standard(self.patt[i] for i in indices)
+            for indices in self.matching_pos_indices(patt)
+        )
+
     def potential_indices(self, patt: "GriddedPerm") -> list[int]:
         if not patt:
             return []
@@ -158,6 +185,11 @@ class GriddedPerm(CombinatorialObject):
     #     assert self.contains_patt3(patt) == self.contains_patt4(patt)
     #     assert self.contains_patt4(patt) == self.contains_patt5(patt)
     #     assert self.contains_patt5(patt) == self.contains_patt6(patt)
+    #     assert self.contains_patt6(patt) == self.contains_patt7(patt)
+    #     assert self.contains_patt7(patt) == self.contains_patt8(patt)
+    #     assert self.contains_patt8(patt) == self.contains_patt9(patt)
+    #     assert self.contains_patt9(patt) == self.contains_patt10(patt)
+    #     assert self.contains_patt10(patt) == self.contains_patt11(patt)
     #     return self.contains_patt1(patt)
 
     # contains_patt = contains_patt1
