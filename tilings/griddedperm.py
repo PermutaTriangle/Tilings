@@ -17,8 +17,12 @@ class GriddedPerm(CombinatorialObject):
     ) -> None:
         self._patt = Perm(pattern)
         self._pos = tuple(positions)
+        # After testing in June 2025, we found that caching the length gave a small
+        # but meaningful speedup because it gets called so often.
         self._len = len(self._patt)
-        assert len(self._patt) == len(self._pos), "Pattern and positions must have the same length"
+        assert len(self._patt) == len(
+            self._pos
+        ), "Pattern and positions must have the same length"
         self._cells: FrozenSet[Cell] = frozenset(self._pos)
 
     @classmethod
