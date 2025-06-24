@@ -17,8 +17,8 @@ class GriddedPerm(CombinatorialObject):
     ) -> None:
         self._patt = Perm(pattern)
         self._pos = tuple(positions)
-        if len(self._patt) != len(self._pos):
-            raise ValueError("Pattern and position list have unequal lengths.")
+        self._len = len(self._patt)
+        assert len(self._patt) == len(self._pos), "Pattern and positions must have the same length"
         self._cells: FrozenSet[Cell] = frozenset(self._pos)
 
     @classmethod
@@ -72,125 +72,40 @@ class GriddedPerm(CombinatorialObject):
         """Return true if self contains an occurrence of any of patts."""
         return any(self.contains_patt(patt) for patt in patts)
 
-    def contains_patt1(self, patt: "GriddedPerm") -> bool:
-        return any(True for _ in patt.occurrences_in(self))
+    def contains_patt(self, patt: "GriddedPerm") -> bool:
+        """Returns true if self contains an occurrence of patt."""
+        # In June 2025 we wrote 10 different containment methods to find the
+        # fastest one. This one won, and it led to a 2x - 4x speedup in some
+        # spec finding and fast-counting examples. First it checks if the
+        # positions of self could potentially contain the positions of patt,
+        # and only if so does it check if there is an occurrence of patt in
+        # self. We also cached GriddedPerm.len at this time.
+        return self.contains_pos(patt) and any(True for _ in patt.occurrences_in(self))
 
-    def contains_patt2(self, patt: "GriddedPerm") -> bool:
-        return any(
-            patt == self.get_gridded_perm_at_indices(indices)
-            for indices in combinations(range(len(self)), len(patt))
+    def contains_patt_proper(self, patt: "GriddedPerm") -> bool:
+        """Returns true if self contains a proper occurrence of patt."""
+        # See comment for contains_patt. We also found that when only looking
+        # for a proper occurrence, this is faster.
+        return (
+            len(self) > len(patt)
+            and self.contains_pos(patt)
+            and any(True for _ in patt.occurrences_in(self))
         )
-
-    def contains_patt3(self, patt: "GriddedPerm") -> bool:
-        return self.contains_pos(patt) and self.contains_patt1(patt)
-
-    def contains_patt4(self, patt: "GriddedPerm") -> bool:
-        return self.contains_pos(patt) and self.contains_patt2(patt)
-
-    def contains_patt5(self, patt: "GriddedPerm") -> bool:
-        return any(
-            patt == self.get_gridded_perm_at_indices(indices)
-            for indices in combinations(self.potential_indices(patt), len(patt))
-        )
-
-    def contains_patt6(self, patt: "GriddedPerm") -> bool:
-        return any(
-            patt.patt == Perm.to_standard(self.patt[i] for i in indices)
-            for indices in self.matching_pos_indices(patt)
-        )
-
-    def contains_patt7(self, patt: "GriddedPerm") -> bool:
-        return self.contains_pos(patt) and self.contains_patt5(patt)
-
-    def contains_patt8(self, patt: "GriddedPerm") -> bool:
-        return self.contains_pos(patt) and self.contains_patt6(patt)
-
-    def contains_patt9(self, patt: "GriddedPerm") -> bool:
-        return self.contains_pos(patt) and any(
-            all(x == y for x, y in zip(patt.pos, (self.pos[i] for i in indices)))
-            and patt.patt == Perm.to_standard(self.patt[i] for i in indices)
-            for indices in combinations(range(len(self)), len(patt))
-        )
-
-    def contains_patt10(self, patt: "GriddedPerm") -> bool:
-        return self.contains_pos(patt) and any(
-            all(x == y for x, y in zip(patt.pos, (self.pos[i] for i in indices)))
-            and patt.patt == Perm.to_standard(self.patt[i] for i in indices)
-            for indices in combinations(self.potential_indices(patt), len(patt))
-        )
-
-    def potential_indices(self, patt: "GriddedPerm") -> list[int]:
-        if not patt:
-            return []
-        pattidx, pattlen = 0, len(patt)
-        indices = []
-        cells = {patt.pos[0]}
-        for idx, cell in enumerate(self.pos):
-            if pattidx < pattlen and cell == patt.pos[pattidx]:
-                pattidx += 1
-                cells.add(cell)
-            if cell in cells:
-                indices.append(idx)
-        return indices
-
-    def matching_pos_indices(self, patt: "GriddedPerm") -> Iterator[list[int]]:
-        occ_indices = [0] * len(patt)
-
-        if len(patt) == 0:
-            yield tuple()
-            return
-        n = len(patt)
-        if n > len(self):
-            return
-
-        def occurrence(i, k):
-            elements_remaining = len(self) - i
-            elements_needed = n - k
-            while True:
-                if elements_remaining < elements_needed:
-                    return
-                if self.pos[i] == patt.pos[k]:
-                    occ_indices[k] = i
-                    if elements_needed == 1:
-                        yield tuple(occ_indices)
-                    else:
-                        yield from occurrence(i + 1, k + 1)
-                i, elements_remaining = i + 1, elements_remaining - 1
-
-        yield from occurrence(0, 0)
 
     def contains_pos(self, patt: "GriddedPerm") -> bool:
+        """Returns true if the positions of self could potentially contain the
+        positions of patt."""
         if not patt:
             return True
 
         pattlen = len(patt)
         pattidx = 0
-        for cell in self.pos:
-            if patt.pos[pattidx] == cell:
+        for cell in self._pos:
+            if patt._pos[pattidx] == cell:
                 pattidx += 1
                 if pattidx == pattlen:
                     return True
         return False
-
-    # def contains_patt(self, patt: "GriddedPerm") -> bool:
-    #     assert self.contains_patt1(patt) == self.contains_patt2(patt)
-    #     assert self.contains_patt2(patt) == self.contains_patt3(patt)
-    #     assert self.contains_patt3(patt) == self.contains_patt4(patt)
-    #     assert self.contains_patt4(patt) == self.contains_patt5(patt)
-    #     assert self.contains_patt5(patt) == self.contains_patt6(patt)
-    #     assert self.contains_patt6(patt) == self.contains_patt7(patt)
-    #     assert self.contains_patt7(patt) == self.contains_patt8(patt)
-    #     assert self.contains_patt8(patt) == self.contains_patt9(patt)
-    #     assert self.contains_patt9(patt) == self.contains_patt10(patt)
-    #     assert self.contains_patt10(patt) == self.contains_patt11(patt)
-    #     return self.contains_patt1(patt)
-
-    # contains_patt = contains_patt1
-    # contains_patt = contains_patt2
-    # contains_patt = contains_patt3
-    # contains_patt = contains_patt4
-    # contains_patt = contains_patt5
-    # contains_patt = contains_patt6
 
     def remove_cells(self, cells: Iterable[Cell]) -> "GriddedPerm":
         """Remove any points in the cell given and return a new gridded
@@ -788,7 +703,7 @@ class GriddedPerm(CombinatorialObject):
         HTMLViewer.open_svg(self.to_svg(image_scale=scale))
 
     def __len__(self) -> int:
-        return len(self._patt)
+        return self._len
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({tuple(self._patt)!r}, {self.pos})"
