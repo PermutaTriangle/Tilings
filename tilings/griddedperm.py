@@ -105,7 +105,7 @@ class GriddedPerm(CombinatorialObject):
         pattlen = len(patt)
         pattidx = 0
         for cell in self._pos:
-            if patt._pos[pattidx] == cell:
+            if patt._pos[pattidx] == cell:  # pylint: disable=protected-access
                 pattidx += 1
                 if pattidx == pattlen:
                     return True
