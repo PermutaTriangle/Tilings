@@ -19,8 +19,8 @@ class GriddedPerm(CombinatorialObject):
         self._pos = tuple(positions)
         # After testing in June 2025, we found that caching the length gave a small
         # but meaningful speedup because it gets called so often.
-        self._len = len(self._pos)
-        assert self._len == len(
+        self.len = len(self._pos)
+        assert self.len == len(
             self._patt
         ), "Pattern and positions must have the same length"
         self._cells: FrozenSet[Cell] = frozenset(self._pos)
@@ -91,7 +91,7 @@ class GriddedPerm(CombinatorialObject):
         # See comment for contains_patt. We also found that when only looking
         # for a proper occurrence, this is faster.
         return (
-            self._len > patt._len
+            self.len > patt.len
             and self.contains_pos(patt)
             and any(True for _ in patt.occurrences_in(self))
         )
@@ -102,7 +102,7 @@ class GriddedPerm(CombinatorialObject):
         if not patt:
             return True
 
-        pattlen = patt._len  # pylint: disable=protected-access
+        pattlen = patt.len
         pattidx = 0
         for cell in self._pos:
             if patt._pos[pattidx] == cell:  # pylint: disable=protected-access
@@ -355,7 +355,7 @@ class GriddedPerm(CombinatorialObject):
 
     def is_empty(self) -> bool:
         """Check if the gridded permutation is the empty permutation."""
-        return not self._len
+        return not self.len
 
     def is_interleaving(self) -> bool:
         """Check if the gridded permutation occupies two cells that are in the
@@ -707,7 +707,7 @@ class GriddedPerm(CombinatorialObject):
         HTMLViewer.open_svg(self.to_svg(image_scale=scale))
 
     def __len__(self) -> int:
-        return self._len
+        return self.len
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({tuple(self._patt)!r}, {self.pos})"
