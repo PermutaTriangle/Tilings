@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## Unreleased 
+### Changed
+- new GriddedPerm.contains_patt function checks positions first, then pattern
+  and as a result can lead to huge 2x - 4x speed improvement in specification
+  finding
 
 ## [4.0.0 - 2025-03-13]
 ### Added
