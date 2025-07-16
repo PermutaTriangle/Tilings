@@ -11,6 +11,18 @@ if TYPE_CHECKING:
 Cell = Tuple[int, int]
 
 
+def avoids321(gp: GriddedPerm):
+    for left_idx, right_idx in zip(
+        gp.points_in_cell((0, 1)), gp.points_in_cell((1, 0))
+    ):
+        right_val = gp.patt[right_idx]
+        for middle_idx in gp.points_in_cell((0, 0)):
+            middle_val = gp.patt[middle_idx]
+            if middle_idx > left_idx and middle_val > right_val:
+                return False
+    return True
+
+
 class QueuePacket:
     def __init__(
         self, gp: GriddedPerm, last_cell: Cell, mindices: Dict[Cell, int], placed: int
@@ -72,7 +84,8 @@ class GriddedPermsOnTiling:
                 return
             if packet.placed >= place_at_most:
                 continue
-            for cell in self._tiling.active_cells:
+            # for cell in self._tiling.active_cells:
+            for cell in [(0, 0)]:
                 if cell < packet.last_cell:
                     continue
                 for idx, nextgp in self._minimal_gps.insert_point(

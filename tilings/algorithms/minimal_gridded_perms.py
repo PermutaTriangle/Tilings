@@ -14,6 +14,18 @@ Reqs = Tuple[GPTuple, ...]
 WorkPackets = Tuple[GriddedPerm, GPTuple, Cell]
 
 
+def avoids321(gp: GriddedPerm):
+    for left_idx, right_idx in zip(
+        gp.points_in_cell((0, 1)), gp.points_in_cell((1, 0))
+    ):
+        right_val = gp.patt[right_idx]
+        for middle_idx in gp.points_in_cell((0, 0)):
+            middle_val = gp.patt[middle_idx]
+            if middle_idx > left_idx and middle_val > right_val:
+                return False
+    return True
+
+
 class QueuePacket:
     def __init__(
         self,
@@ -100,6 +112,8 @@ class MinimalGriddedPerms:
         self, gp: GriddedPerm, must_contain: Optional[Cell] = None
     ) -> bool:
         """Check if a gridded permutation avoids the obstructions."""
+        if not avoids321(gp):
+            return False
         if must_contain is None:
             obs = self.get_relevant_obstructions(gp)
         else:
@@ -454,7 +468,7 @@ class MinimalGriddedPerms:
             qpacket: QueuePacket, queue: List[QueuePacket]
         ) -> Iterator[GriddedPerm]:
             # now we try inserting a new point into the cell
-            for (cell, localised) in self._get_cells_to_try(qpacket):
+            for cell, localised in self._get_cells_to_try(qpacket):
                 # The `localised` bool tells us if we inserted into
                 # a cell as it didn't contain the patterns in the
                 # cell. If not, then we update the last cell, to
