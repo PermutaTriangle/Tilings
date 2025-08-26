@@ -11,6 +11,7 @@ from .experimental_verification import (
 )
 from .factor import FactorFactory
 from .fusion import ComponentFusionFactory, FusionFactory
+from .gap_vectors import RelaxGapVectorFactory, RemoveGapVectorFactory
 from .monotone_sliding import MonotoneSlidingFactory
 from .obstruction_inferral import (
     EmptyCellInferralFactory,
@@ -107,6 +108,9 @@ __all__ = [
     # Fusion
     "ComponentFusionFactory",
     "FusionFactory",
+    # Gap vector
+    "RelaxGapVectorFactory",
+    "RemoveGapVectorFactory",
     # Inferral
     "EmptyCellInferralFactory",
     "ObstructionInferralFactory",

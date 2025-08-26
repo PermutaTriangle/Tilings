@@ -926,3 +926,38 @@ class TileScopePack(StrategyPack):
             expansion_strats=[[strat.CellInsertionFactory(maxreqlen=length)]],
             name=f"length_{length}_cell_insertions",
         )
+
+    @classmethod
+    def enumeration_scheme(cls, direction: int) -> "TileScopePack":
+        """
+        A pack that we think should mimick Vatter's enumeration scheme.
+        """
+        if direction not in DIRS:
+            raise ValueError(f"Must be direction in {DIRS}.")
+        place_row = direction in (DIR_NORTH, DIR_SOUTH)
+        place_col = not place_row
+        direction_str = {
+            DIR_EAST: "right",
+            DIR_WEST: "left",
+            DIR_NORTH: "top",
+            DIR_SOUTH: "bottom",
+        }[direction]
+        name = f"{direction_str}_enumeration_scheme"
+        return TileScopePack(
+            initial_strats=[
+                strat.FactorFactory(),
+                strat.RemoveGapVectorFactory(tracked=False),
+                strat.RelaxGapVectorFactory(tracked=False),
+                strat.FusionFactory(tracked=False),
+            ],
+            inferral_strats=[],
+            ver_strats=[strat.BasicVerificationStrategy()],
+            expansion_strats=[
+                [
+                    strat.RowAndColumnPlacementFactory(
+                        place_col=place_col, place_row=place_row, dirs=[direction]
+                    )
+                ]
+            ],
+            name=name,
+        )
