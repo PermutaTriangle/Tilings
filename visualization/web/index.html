@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TileScope Visualization</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>TileScope Algorithm Visualization</h1>
+            <div class="controls">
+                <button id="start-realtime" class="btn btn-success">Start Real-time Search</button>
+                <button id="pause-resume" class="btn btn-warning" style="display: none;">Pause</button>
+                <button id="stop-server" class="btn btn-danger">Stop Server</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="panel">
+                    <h3>Search Progress</h3>
+                    <div id="search-stats">
+                        <div class="stat">
+                            <span class="label">Nodes Explored:</span>
+                            <span id="nodes-count">0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Strategies Applied:</span>
+                            <span id="strategies-count">0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Max Depth:</span>
+                            <span id="max-depth">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Current Selection</h3>
+                    <div id="node-details">
+                        <p>Select a node to view details</p>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Tiling Viewer</h3>
+                    <div id="tiling-display">
+                        <p>No tiling selected</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="visualization-area">
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="search-tree">Search Tree</button>
+                    <button class="tab-button" data-tab="specification">Final Specification</button>
+                    <button class="tab-button" data-tab="timeline">Timeline</button>
+                </div>
+
+                <div class="tab-content">
+                    <div id="search-tree" class="tab-panel active">
+                        <svg id="tree-svg"></svg>
+                    </div>
+
+                    <div id="specification" class="tab-panel">
+                        <div id="spec-display">
+                            <p>No specification data loaded</p>
+                        </div>
+                    </div>
+
+                    <div id="timeline" class="tab-panel">
+                        <svg id="timeline-svg"></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div id="status-message">Ready</div>
+            <div id="loading-indicator" style="display: none;">Loading...</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

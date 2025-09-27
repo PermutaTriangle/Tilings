@@ -1,0 +1,384 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+header h1 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* Buttons */
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #45a049;
+}
+
+.btn-secondary {
+    background-color: #f1f1f1;
+    color: #333;
+}
+
+.btn-secondary:hover {
+    background-color: #ddd;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+/* Main content layout */
+.main-content {
+    flex: 1;
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+    max-height: 100%;
+}
+
+.panel {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.panel h3 {
+    margin-bottom: 1rem;
+    color: #555;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5rem;
+}
+
+.stat {
+    display: flex;
+    justify-content: space-between;
+    margin: 0.5rem 0;
+}
+
+.label {
+    font-weight: 500;
+}
+
+/* Visualization area */
+.visualization-area {
+    flex: 1;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.tab-button {
+    padding: 1rem 1.5rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.tab-button:hover {
+    background-color: #e9ecef;
+}
+
+.tab-button.active {
+    border-bottom-color: #667eea;
+    background-color: white;
+    font-weight: 600;
+}
+
+/* Tab content */
+.tab-content {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.tab-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 1rem;
+    display: none;
+    overflow: auto;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+/* SVG styling */
+svg {
+    width: 100%;
+    height: 100%;
+    background-color: #fafafa;
+    border: 1px solid #eee;
+}
+
+/* Tree visualization styles */
+.node {
+    cursor: pointer;
+}
+
+.node circle {
+    fill: #fff;
+    stroke: #333;
+    stroke-width: 2px;
+    transition: all 0.3s ease;
+}
+
+.node.root circle {
+    fill: #667eea;
+    stroke: #4a5cdb;
+}
+
+.node.verified circle {
+    fill: #4CAF50;
+    stroke: #45a049;
+}
+
+.node.expanded circle {
+    fill: #ff9800;
+    stroke: #f57c00;
+}
+
+.node.specification circle {
+    fill: #4CAF50;
+    stroke: #45a049;
+}
+
+.node:hover circle {
+    stroke-width: 3px;
+    filter: brightness(1.1);
+}
+
+.node text {
+    font: 12px sans-serif;
+    fill: #333;
+    text-anchor: middle;
+    dominant-baseline: central;
+}
+
+.link {
+    fill: none;
+    stroke: #999;
+    stroke-width: 2px;
+    stroke-opacity: 0.6;
+}
+
+.link.selected {
+    stroke: #667eea;
+    stroke-width: 3px;
+    stroke-opacity: 1;
+}
+
+/* Tiling display */
+.tiling-grid {
+    font-family: 'Courier New', monospace;
+    white-space: pre;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    overflow: auto;
+    max-height: 300px;
+}
+
+/* Node details */
+.detail-item {
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #555;
+}
+
+/* Status bar */
+.status-bar {
+    background: #e9ecef;
+    padding: 0.5rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #dee2e6;
+}
+
+#loading-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#loading-indicator::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #333;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .main-content {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+    }
+
+    .panel {
+        min-width: 250px;
+    }
+}
+
+/* Tooltip */
+.tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+    max-width: 200px;
+}
+
+/* Specification display */
+#spec-display {
+    font-family: 'Courier New', monospace;
+    white-space: pre-wrap;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    overflow: auto;
+    height: 100%;
+}
+
+/* Timeline styles */
+.timeline-event {
+    fill: #667eea;
+    stroke: #4a5cdb;
+    stroke-width: 1px;
+}
+
+.timeline-event:hover {
+    fill: #4a5cdb;
+}
+
+.timeline-axis {
+    font-size: 12px;
+}
+
+.timeline-axis .domain {
+    stroke: #333;
+}
+
+.timeline-axis .tick line {
+    stroke: #999;
+}
+
+.timeline-axis .tick text {
+    fill: #666;
+}
