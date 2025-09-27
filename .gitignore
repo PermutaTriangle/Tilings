@@ -98,3 +98,6 @@ devtest.py
 .mypy_cache
 .vscode/
 .DS_Store
+
+# WARP.md - AI assistant configuration file
+WARP.md
