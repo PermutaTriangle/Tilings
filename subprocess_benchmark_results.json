@@ -1,0 +1,110 @@
+[
+  {
+    "basis": "0213_0321_1320_2301",
+    "pack_name": "root_then_row_length_1_tracked_fusion_isolated",
+    "status": "error",
+    "time_taken": null,
+    "success": false,
+    "specification": null,
+    "error": "Subprocess parsing failed. Return code: 1"
+  },
+  {
+    "basis": "0213_0321_1320_2301",
+    "pack_name": "point_and_row_placements_tracked_fusion_req_corrob_expand_verified",
+    "status": "error",
+    "time_taken": null,
+    "success": false,
+    "specification": null,
+    "error": "Subprocess parsing failed. Return code: 1"
+  },
+  {
+    "basis": "0213_0321_1320_2301",
+    "pack_name": "row_and_col_placements_tracked_fusion_isolated_single_fusion",
+    "status": "error",
+    "time_taken": null,
+    "success": false,
+    "specification": null,
+    "error": "Subprocess parsing failed. Return code: 1"
+  },
+  {
+    "basis": "0132_1203_1230",
+    "pack_name": "root_then_row_length_1_tracked_fusion_isolated",
+    "status": "error",
+    "time_taken": null,
+    "success": false,
+    "specification": null,
+    "error": "Subprocess parsing failed. Return code: 1"
+  },
+  {
+    "basis": "0132_1203_1230",
+    "pack_name": "point_and_row_placements_tracked_fusion_req_corrob_expand_verified",
+    "status": "error",
+    "time_taken": null,
+    "success": false,
+    "specification": null,
+    "error": "Subprocess parsing failed. Return code: 1"
+  },
+  {
+    "basis": "0132_1203_1230",
+    "pack_name": "row_and_col_placements_tracked_fusion_isolated_single_fusion",
+    "status": "error",
+    "time_taken": null,
+    "success": false,
+    "specification": null,
+    "error": "Subprocess parsing failed. Return code: 1"
+  },
+  {
+    "basis": "0231_1032_1302_1320_2031",
+    "pack_name": "root_then_row_length_1_tracked_fusion_isolated",
+    "status": "error",
+    "time_taken": null,
+    "success": false,
+    "specification": null,
+    "error": "Subprocess parsing failed. Return code: 1"
+  },
+  {
+    "basis": "0231_1032_1302_1320_2031",
+    "pack_name": "point_and_row_placements_tracked_fusion_req_corrob_expand_verified",
+    "status": "error",
+    "time_taken": null,
+    "success": false,
+    "specification": null,
+    "error": "Subprocess parsing failed. Return code: 1"
+  },
+  {
+    "basis": "0231_1032_1302_1320_2031",
+    "pack_name": "row_and_col_placements_tracked_fusion_isolated_single_fusion",
+    "status": "error",
+    "time_taken": null,
+    "success": false,
+    "specification": null,
+    "error": "Subprocess parsing failed. Return code: 1"
+  },
+  {
+    "basis": "0213_0231_1302_1320_3120",
+    "pack_name": "root_then_row_length_1_tracked_fusion_isolated",
+    "status": "error",
+    "time_taken": null,
+    "success": false,
+    "specification": null,
+    "error": "Subprocess parsing failed. Return code: 1"
+  },
+  {
+    "basis": "0213_0231_1302_1320_3120",
+    "pack_name": "point_and_row_placements_tracked_fusion_req_corrob_expand_verified",
+    "status": "error",
+    "time_taken": null,
+    "success": false,
+    "specification": null,
+    "error": "Subprocess parsing failed. Return code: 1"
+  },
+  {
+    "basis": "0213_0231_1302_1320_3120",
+    "pack_name": "row_and_col_placements_tracked_fusion_isolated_single_fusion",
+    "status": "error",
+    "time_taken": null,
+    "success": false,
+    "specification": null,
+    "error": "Subprocess parsing failed. Return code: 1"
+  }
+]
