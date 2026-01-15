@@ -7,6 +7,7 @@ length 2 crossing obstructions that would allow more separation.
 The role of the class `RowColSeparation` is to make sure that row columns
 separation is idempotent by applying the core algorithm until it stabilises.
 """
+
 import heapq
 from itertools import combinations, product
 from typing import TYPE_CHECKING, Dict, List, Tuple

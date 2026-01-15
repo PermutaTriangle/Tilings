@@ -82,9 +82,11 @@ class Sliding:
                         gp.patt,
                         (
                             (
-                                c2
-                                if gp.pos[0][0] == c1
-                                else (c1 if gp.pos[0][0] == c2 else gp.pos[0][0]),
+                                (
+                                    c2
+                                    if gp.pos[0][0] == c1
+                                    else (c1 if gp.pos[0][0] == c2 else gp.pos[0][0])
+                                ),
                                 0,
                             ),
                         ),
@@ -99,9 +101,11 @@ class Sliding:
                         gp.patt,
                         (
                             (
-                                c2
-                                if gp.pos[0][0] == c1
-                                else (c1 if gp.pos[0][0] == c2 else gp.pos[0][0]),
+                                (
+                                    c2
+                                    if gp.pos[0][0] == c1
+                                    else (c1 if gp.pos[0][0] == c2 else gp.pos[0][0])
+                                ),
                                 0,
                             ),
                         ),
@@ -405,9 +409,11 @@ class Sliding:
                 # The 12...n obstrudtion that connects av12 and av123
                 yield GriddedPerm(
                     range(n),
-                    ((av_12, 0),) * (n - 1) + ((av_123, 0),)
-                    if av_12 < av_123
-                    else ((av_123, 0),) + ((av_12, 0),) * (n - 1),
+                    (
+                        ((av_12, 0),) * (n - 1) + ((av_123, 0),)
+                        if av_12 < av_123
+                        else ((av_123, 0),) + ((av_12, 0),) * (n - 1)
+                    ),
                 )
             elif gp in self.col_info[av_123][2]:
                 # The one with two points in av_123 are altered so that the two
@@ -435,9 +441,7 @@ class Sliding:
                 yield gp
 
     @staticmethod
-    def _gp_slide_split(
-        gp: GriddedPerm, c1: int, c2: int
-    ) -> Tuple[
+    def _gp_slide_split(gp: GriddedPerm, c1: int, c2: int) -> Tuple[
         Tuple[Deque[int], Deque[int], Deque[int], Deque[int], Deque[int], Deque[int]],
         Tuple[List[int], List[int], List[int]],
     ]:

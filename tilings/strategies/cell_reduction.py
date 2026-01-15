@@ -1,4 +1,5 @@
 """The cell reduction strategy."""
+
 from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, cast
 
 import sympy

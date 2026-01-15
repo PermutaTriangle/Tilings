@@ -153,9 +153,11 @@ class RequirementPlacement:
         # TODO: to prepare for intervals consider all ways of drawing a
         #       rectangle around point in cell.
         new_pos = [
-            self._point_translation(gp, i, (point_index, gp.patt[point_index]))
-            if i != point_index
-            else self._placed_cell(gp.pos[point_index])
+            (
+                self._point_translation(gp, i, (point_index, gp.patt[point_index]))
+                if i != point_index
+                else self._placed_cell(gp.pos[point_index])
+            )
             for i in range(len(gp))
         ]
         return gp.__class__(gp.patt, new_pos)

@@ -118,9 +118,9 @@ class BasicVerificationStrategy(AtomStrategy):
         gp = next(comb_class.minimal_gridded_perms())
         expected = {"x": len(gp)}
         for assumption in comb_class.assumptions:
-            expected[
-                comb_class.get_assumption_parameter(assumption)
-            ] = assumption.get_value(gp)
+            expected[comb_class.get_assumption_parameter(assumption)] = (
+                assumption.get_value(gp)
+            )
         return reduce(mul, [var(k) ** n for k, n in expected.items()], 1)
 
     def __repr__(self) -> str:

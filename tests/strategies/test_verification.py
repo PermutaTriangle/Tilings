@@ -677,10 +677,7 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
     def test_get_genf(self, strategy, enum_verified):
         x = sympy.Symbol("x")
         expected_gf = -(
-            sympy.sqrt(
-                -(4 * x**3 - 14 * x**2 + 8 * x - 1) / (2 * x**2 - 4 * x + 1)
-            )
-            - 1
+            sympy.sqrt(-(4 * x**3 - 14 * x**2 + 8 * x - 1) / (2 * x**2 - 4 * x + 1)) - 1
         ) / (2 * x * (x**2 - 3 * x + 1))
         assert sympy.simplify(strategy.get_genf(enum_verified[0]) - expected_gf) == 0
 
@@ -758,14 +755,7 @@ class TestMonotoneTreeVerificationStrategy(CommonTest):
         genf = strategy.get_genf(t).expand()
         x = sympy.var("x")
         assert (
-            genf
-            == 1
-            + 2 * x
-            + 4 * x**2
-            + 8 * x**3
-            + 14 * x**4
-            + 20 * x**5
-            + 20 * x**6
+            genf == 1 + 2 * x + 4 * x**2 + 8 * x**3 + 14 * x**4 + 20 * x**5 + 20 * x**6
         )
 
     def test_with_two_reqs(self, strategy):

@@ -1,6 +1,7 @@
 """
 The implementation of the fusion algorithm
 """
+
 import collections
 from itertools import chain
 from typing import (
