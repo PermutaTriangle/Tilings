@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "tilings: A Python library for gridded permutations and tilings"
+url: "https://github.com/PermutaTriangle/Tilings"
+repository-code: "https://github.com/PermutaTriangle/Tilings"
+license: BSD-3-Clause
+authors:
+  - given-names: "Christian"
+    family-names: "Bean"
+    affiliation: "Reykjavik University"
+  - given-names: "Jon Steinn"
+    family-names: "Eliasson"
+    affiliation: "Reykjavik University"
+  - given-names: "Tomas Ken"
+    family-names: "Magnusson"
+  - given-names: "Émile"
+    family-names: "Nadeau"
+    affiliation: "Reykjavik University"
+  - given-names: "Jay"
+    family-names: "Pantone"
+    affiliation: "Marquette University"
+  - given-names: "Henning"
+    family-names: "Ulfarsson"
+    affiliation: "Reykjavik University"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.4948344"
+    description: "DOI for all versions"
+  - type: url
+    value: "https://zenodo.org/badge/latestdoi/121506164"
+    description: "Latest Zenodo DOI"

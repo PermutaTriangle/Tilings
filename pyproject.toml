@@ -1,12 +1,80 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tilings"
+dynamic = ["version"]
+authors = [
+    {name = "Permuta Triangle", email = "permutatriangle@gmail.com"},
+]
+description = "A Python library for gridded permutations and tilings."
+readme = "README.rst"
+license = {text = "BSD-3-Clause"}
+keywords = [
+    "permutation",
+    "perm",
+    "gridded",
+    "pattern",
+    "tiling",
+    "avoid",
+    "contain",
+    "occurrences",
+    "grid",
+    "class",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Education",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "comb-spec-searcher>=4.2.1",
+    "permuta>=2.3.0",
+]
+
+[project.urls]
+Source = "https://github.com/PermutaTriangle/Tilings"
+Tracker = "https://github.com/PermutaTriangle/Tilings/issues"
+
+[project.scripts]
+tilescope = "tilings.cli:main"
+
+[tool.hatch.version]
+path = "tilings/__init__.py"
+
+[tool.hatchling.build.targets.wheel]
+packages = ["tilings"]
+
+[tool.hatchling.build.targets.sdist]
+include = [
+    "tilings",
+    "tests",
+    "README.rst",
+    "LICENSE",
+    "CHANGELOG.md",
+    "CITATION.cff",
+]
+
 [tool.black]
-target-version = ['py37']
+target-version = ['py310']
 include = '\.pyi?$'
 exclude = '''
-
 (
   /(
-      \.eggs         # exclude a few common directories in the
-    | \.git          # root of the project
+      \.eggs
+    | \.git
     | \.hg
     | \.mypy_cache
     | \.tox
@@ -16,7 +84,6 @@ exclude = '''
     | build
     | dist
   )/
-  | foo.py           # also separately exclude a file named foo.py in
-                     # the root of the project
+  | foo.py
 )
 '''

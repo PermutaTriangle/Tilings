@@ -51,8 +51,8 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{  matrix.python }}
       - name: Install dependencies from develop branch
@@ -61,22 +61,20 @@ jobs:
           echo "Installing dependencies from develop branches instead of PyPI"
           python -m pip install git+https://github.com/PermutaTriangle/comb_spec_searcher.git@develop
           python -m pip install git+https://github.com/PermutaTriangle/Permuta.git@develop
-          
-          # Optional: Install the project in development mode to work with the new dependencies
+
+          # Install the project in development mode to work with the new dependencies
           python -m pip install -e .
-          
+
           # Verify installed versions
           echo "Checking installed comb_spec_searcher version:"
           python -c "import comb_spec_searcher; print(comb_spec_searcher.__version__)"
           echo "Checking installed permuta version:"
           python -c "import permuta; print(permuta.__version__)"
       - name: install dependencies
-        run: |
-          python -m pip install --upgrade pip tox
-          pip install setuptools wheel twine
+        run: python -m pip install --upgrade pip tox
       - name: run
         env:
           TOXENV: ${{ matrix.toxenv }}
         run: tox
       - name: setup
-        run: python setup.py install
+        run: pip install -e .

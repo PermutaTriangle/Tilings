@@ -5,13 +5,22 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
-## Unreleased 
+## Unreleased
+
+## [4.1.0] - 2026-01-15
 ### Changed
 - new GriddedPerm.contains_patt function checks positions first, then pattern
   and as a result can lead to huge 2x - 4x speed improvement in specification
   finding
+- Migrated to modern pyproject.toml packaging with hatchling backend
+- Minimum Python version is now 3.10 (dropped 3.8, 3.9 support)
+- Updated GitHub Actions to use latest action versions (checkout@v4, setup-python@v5)
+- Updated Black target version to Python 3.10
 
-## [4.0.0 - 2025-03-13]
+### Removed
+- Removed legacy setup.py and MANIFEST.in files
+
+## [4.0.0] - 2025-03-13
 ### Added
 - python3.9 are deprecated, python3.10 - python3.13 are supported
 - added `TileScopePack.requirement_and_row_and_col_placements`
