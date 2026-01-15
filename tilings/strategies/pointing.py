@@ -2,6 +2,7 @@
 The directionless point placement strategy that is counted
 by the 'pointing' constructor.
 """
+
 from collections import Counter
 from itertools import product
 from typing import (
@@ -158,9 +159,9 @@ class PointingStrategy(Strategy[Tiling, GriddedPerm]):
             ]
             for ass, mapped_ass in zip(comb_class.assumptions, mapped_assumptions):
                 if mapped_ass.gps:
-                    params[
-                        comb_class.get_assumption_parameter(ass)
-                    ] = child.get_assumption_parameter(mapped_ass)
+                    params[comb_class.get_assumption_parameter(ass)] = (
+                        child.get_assumption_parameter(mapped_ass)
+                    )
             res.append(params)
         return tuple(res)
 
@@ -206,9 +207,11 @@ class DivideByK(DivideByN):
         terms = DisjointUnion.get_terms(self, parent_terms, subterms, n)
         return Counter(
             {
-                key: value // (key[self.division_index] + self.shift)
-                if (key[self.division_index] + self.shift) != 0
-                else value
+                key: (
+                    value // (key[self.division_index] + self.shift)
+                    if (key[self.division_index] + self.shift) != 0
+                    else value
+                )
                 for key, value in terms.items()
             }
         )
@@ -387,7 +390,6 @@ class AssumptionPointingFactory(StrategyFactory[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "AssumptionPointingFactory":
-
         return cls(**d)
 
 

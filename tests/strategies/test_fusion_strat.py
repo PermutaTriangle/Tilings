@@ -340,7 +340,6 @@ def easy_fusable(
 
 
 def test_fusion_gfs():
-
     x = var("x")
     k_0 = var("k_0")
     k_1 = var("k_1")

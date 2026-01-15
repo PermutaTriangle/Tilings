@@ -454,7 +454,7 @@ class MinimalGriddedPerms:
             qpacket: QueuePacket, queue: List[QueuePacket]
         ) -> Iterator[GriddedPerm]:
             # now we try inserting a new point into the cell
-            for (cell, localised) in self._get_cells_to_try(qpacket):
+            for cell, localised in self._get_cells_to_try(qpacket):
                 # The `localised` bool tells us if we inserted into
                 # a cell as it didn't contain the patterns in the
                 # cell. If not, then we update the last cell, to

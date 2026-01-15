@@ -251,10 +251,7 @@ class TestMonotoneTreeEnumeration(CommonTest):
     def test_get_genf(self, enum_verified):
         x = sympy.Symbol("x")
         expected_gf = -(
-            sympy.sqrt(
-                -(4 * x**3 - 14 * x**2 + 8 * x - 1) / (2 * x**2 - 4 * x + 1)
-            )
-            - 1
+            sympy.sqrt(-(4 * x**3 - 14 * x**2 + 8 * x - 1) / (2 * x**2 - 4 * x + 1)) - 1
         ) / (2 * x * (x**2 - 3 * x + 1))
         assert sympy.simplify(enum_verified.get_genf() - expected_gf) == 0
         t = Tiling(
@@ -324,8 +321,7 @@ class TestMonotoneTreeEnumeration(CommonTest):
             == 20 * x**11 * dummy_var**3 * cell_var**3
         )
         assert (
-            enum_verified._interleave_fixed_length(F, (1, 0), 0)
-            == x**8 * dummy_var**3
+            enum_verified._interleave_fixed_length(F, (1, 0), 0) == x**8 * dummy_var**3
         )
 
     def test_interleave_fixed_lengths(self, enum_verified):
@@ -392,14 +388,7 @@ class TestMonotoneTreeEnumeration(CommonTest):
         genf = enum.get_genf().expand()
         x = sympy.var("x")
         assert (
-            genf
-            == 1
-            + 2 * x
-            + 4 * x**2
-            + 8 * x**3
-            + 14 * x**4
-            + 20 * x**5
-            + 20 * x**6
+            genf == 1 + 2 * x + 4 * x**2 + 8 * x**3 + 14 * x**4 + 20 * x**5 + 20 * x**6
         )
 
     def test_with_two_reqs(self):

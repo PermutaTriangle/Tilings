@@ -2,6 +2,7 @@
 The row and column separation strategy. The details of the algorithm can be
 found in the algorithms folder.
 """
+
 from typing import Dict, Iterator, Optional, Tuple
 
 from comb_spec_searcher import DisjointUnionStrategy

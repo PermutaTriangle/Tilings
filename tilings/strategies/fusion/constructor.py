@@ -13,6 +13,7 @@ rows or columns.
 We will assume we are always fusing two adjacent columns, and discuss the left
 and right hand sides accordingly.
 """
+
 import enum
 from collections import Counter, defaultdict
 from functools import reduce
@@ -100,9 +101,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             (
                 "left"
                 if parent_fusion_parameter in self.left_sided_parameters
-                else "right"
-                if parent_fusion_parameter in self.right_sided_parameters
-                else "both"
+                else (
+                    "right"
+                    if parent_fusion_parameter in self.right_sided_parameters
+                    else "both"
+                )
             )
             for parent_fusion_parameter in self.parent_fusion_parameters
         ]
@@ -506,9 +509,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             updated_value = (
                 value + number_of_left_points
                 if parameter in self.right_sided_parameters
-                else value + number_of_right_points
-                if parameter in self.left_sided_parameters
-                else value
+                else (
+                    value + number_of_right_points
+                    if parameter in self.left_sided_parameters
+                    else value
+                )
             )
             child_parameter = self.extra_parameters[parameter]
             if child_parameter not in res:

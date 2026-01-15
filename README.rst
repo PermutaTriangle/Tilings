@@ -1,12 +1,18 @@
 Tilings
 =======
 
-.. image:: https://travis-ci.org/PermutaTriangle/Tilings.svg?branch=master
-    :alt: Travis
-    :target: https://travis-ci.org/PermutaTriangle/Tilings
-.. image:: https://coveralls.io/repos/github/PermutaTriangle/Tilings/badge.svg?branch=master
+.. image:: https://github.com/PermutaTriangle/Tilings/actions/workflows/test.yml/badge.svg
+    :alt: Tests
+    :target: https://github.com/PermutaTriangle/Tilings/actions/workflows/test.yml
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :alt: Code style: black
+    :target: https://github.com/psf/black
+.. image:: https://img.shields.io/badge/mypy-checked-blue
+    :alt: mypy: checked
+    :target: https://mypy-lang.org/
+.. image:: https://img.shields.io/coveralls/github/PermutaTriangle/Tilings.svg
     :alt: Coveralls
-    :target: https://coveralls.io/github/PermutaTriangle/Tilings?branch=master
+    :target: https://coveralls.io/github/PermutaTriangle/Tilings
 .. image:: https://img.shields.io/pypi/v/Tilings.svg
     :alt: PyPI
     :target: https://pypi.python.org/pypi/Tilings
@@ -14,9 +20,6 @@ Tilings
     :target: https://pypi.python.org/pypi/Tilings
 .. image:: https://img.shields.io/pypi/pyversions/Tilings.svg
     :target: https://pypi.python.org/pypi/Tilings
-.. image:: https://requires.io/github/PermutaTriangle/Tilings/requirements.svg?branch=master
-     :target: https://requires.io/github/PermutaTriangle/Tilings/requirements/?branch=master
-     :alt: Requirements Status
 .. image:: https://zenodo.org/badge/121506164.svg
    :target: https://zenodo.org/badge/latestdoi/121506164
 
@@ -54,7 +57,7 @@ development mode by cloning the repository, running
 
 .. code:: bash
 
-       ./setup.py develop
+       pip install -e .
 
 To verify that your installation is correct, you can try to get a specification for
 `Av(12)` by running in your terminal:

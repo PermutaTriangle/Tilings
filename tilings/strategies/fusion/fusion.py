@@ -35,7 +35,6 @@ class FusionRule(NonBijectiveRule[Tiling, GriddedPerm]):
         return False
 
     def _ensure_level_objects(self, n: int) -> None:
-
         if self.subobjects is None:
             raise RuntimeError("set_subrecs must be set first")
         while n >= len(self.objects_cache):

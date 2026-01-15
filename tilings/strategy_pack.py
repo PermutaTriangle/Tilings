@@ -33,7 +33,7 @@ class TileScopePack(StrategyPack):
         symmetry = bool(self.symmetries)
 
         def replace_list(
-            strats: Tuple[Union[AbstractStrategy, StrategyFactory], ...]
+            strats: Tuple[Union[AbstractStrategy, StrategyFactory], ...],
         ) -> List[Union[AbstractStrategy, StrategyFactory]]:
             """Return a new list with the replaced 1x1 strat."""
             res: List[Union[AbstractStrategy, StrategyFactory]] = []
@@ -74,7 +74,7 @@ class TileScopePack(StrategyPack):
         """
 
         def replace_list(
-            strats: Tuple[Union[AbstractStrategy, StrategyFactory], ...]
+            strats: Tuple[Union[AbstractStrategy, StrategyFactory], ...],
         ) -> List[Union[AbstractStrategy, StrategyFactory]]:
             """
             Find subclass verification and alter its perms_to_check variable.

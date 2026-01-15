@@ -297,7 +297,7 @@ class FactorWithInterleavingStrategy(FactorStrategy):
 
     @staticmethod
     def interleaving_rows_and_cols(
-        partition: Tuple[Tuple[Cell, ...], ...]
+        partition: Tuple[Tuple[Cell, ...], ...],
     ) -> Tuple[Set[int], Set[int]]:
         """
         Return the set of cols and the set of rows that are being interleaved when
@@ -552,7 +552,6 @@ class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
 
 
 class FactorFactory(StrategyFactory[Tiling]):
-
     FACTOR_ALGO_AND_CLASS = {
         None: (Factor, FactorStrategy),
         "monotone": (
