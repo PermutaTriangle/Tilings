@@ -91,7 +91,7 @@ class _AssumptionPathTracker:
 
     @staticmethod
     def _get_next(
-        path: Deque[Tuple[AbstractRule, int]]
+        path: Deque[Tuple[AbstractRule, int]],
     ) -> Tuple[Rule[Tiling, GriddedPerm], int]:
         """Get next rule and the index of its child we traverse through."""
         r, idx = path.popleft()

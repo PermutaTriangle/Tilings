@@ -163,9 +163,9 @@ class DetectComponentsStrategy(Strategy[Tiling, GriddedPerm]):
         for assumption in comb_class.assumptions:
             mapped_assumption = assumption.remove_components(comb_class)
             if mapped_assumption.gps:
-                extra_parameters[
-                    comb_class.get_assumption_parameter(assumption)
-                ] = child.get_assumption_parameter(mapped_assumption)
+                extra_parameters[comb_class.get_assumption_parameter(assumption)] = (
+                    child.get_assumption_parameter(mapped_assumption)
+                )
         return (extra_parameters,)
 
     def formal_step(self) -> str:

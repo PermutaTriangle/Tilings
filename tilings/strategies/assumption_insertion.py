@@ -77,9 +77,11 @@ class AddAssumptionsConstructor(Constructor):
         }
         child_param_to_parent_param = {v: k for k, v in self.extra_parameters.items()}
         child_pos_to_parent_pos: Tuple[Tuple[int, ...], ...] = tuple(
-            tuple()
-            if param in self.new_parameters
-            else (parent_param_to_pos[child_param_to_parent_param[param]],)
+            (
+                tuple()
+                if param in self.new_parameters
+                else (parent_param_to_pos[child_param_to_parent_param[param]],)
+            )
             for param in child.extra_parameters
         )
         return self.build_param_map(

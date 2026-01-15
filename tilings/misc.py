@@ -2,6 +2,7 @@
 Collection of function that are not directly related to the code but still
 useful.
 """
+
 from functools import reduce
 from typing import (
     Collection,

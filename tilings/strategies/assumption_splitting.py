@@ -77,7 +77,7 @@ class Split(Constructor):
                 yield dict(zip(parameters, comp))
 
         def union_params(
-            sub_params: Tuple[Dict[str, int], ...]
+            sub_params: Tuple[Dict[str, int], ...],
         ) -> Optional[Dict[str, int]]:
             new_params: Dict[str, int] = {}
             for params in sub_params:

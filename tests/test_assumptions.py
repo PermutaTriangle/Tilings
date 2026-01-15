@@ -77,7 +77,6 @@ def all_tilings(
 
 
 def test_bytes(tplaced, tplaced_tracked, all_tilings):
-
     assert len(tplaced.assumptions) == 0
     remade = Tiling.from_bytes(tplaced.to_bytes())
     assert tplaced != tplaced_tracked
