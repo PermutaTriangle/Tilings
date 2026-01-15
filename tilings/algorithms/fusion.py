@@ -169,7 +169,7 @@ class Fusion:
         one point, and the right contains at least one point.
         """
         left, right = [], []
-        for (x, y) in self._tiling.active_cells:
+        for x, y in self._tiling.active_cells:
             if self._fuse_row and y == self._row_idx:
                 left.append(GriddedPerm.single_cell((0,), (x, y)))
                 right.append(GriddedPerm.single_cell((0,), (x, y + 1)))

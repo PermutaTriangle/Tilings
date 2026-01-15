@@ -170,7 +170,12 @@ def maxreqlen_extrabasis_ignoreparent_one_cell_only(strategy):
             ignore_parent=ignore_parent,
             one_cell_only=one_cell_only,
         )
-        for (maxreqlen, extra_basis, ignore_parent, one_cell_only,) in product(
+        for (
+            maxreqlen,
+            extra_basis,
+            ignore_parent,
+            one_cell_only,
+        ) in product(
             (1, 2, 3),
             (None, [Perm((0, 1))], [Perm((0, 2, 1)), Perm((0, 1, 2))]),
             (True, False),

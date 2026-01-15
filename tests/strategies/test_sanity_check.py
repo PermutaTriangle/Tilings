@@ -525,7 +525,9 @@ rules_to_check = [
             assumptions=(TrackingAssumption((GriddedPerm((0,), ((0, 0),)),)),),
         )
     ),
-    RequirementInsertionStrategy(gps=(GriddedPerm((0,), ((1, 0),)),),)(
+    RequirementInsertionStrategy(
+        gps=(GriddedPerm((0,), ((1, 0),)),),
+    )(
         Tiling(
             obstructions=(
                 GriddedPerm((0, 1), ((0, 0), (0, 0))),

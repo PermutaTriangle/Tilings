@@ -69,7 +69,6 @@ class SubclassVerificationAlgorithm:
         return cast(Tuple[Perm, ...], self._subclasses)
 
     def compute_subclasses(self) -> None:
-
         self._subclasses = tuple()
 
         perms_to_check = self.quick_pare()

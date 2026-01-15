@@ -552,7 +552,6 @@ class FactorWithMonotoneInterleavingStrategy(FactorWithInterleavingStrategy):
 
 
 class FactorFactory(StrategyFactory[Tiling]):
-
     FACTOR_ALGO_AND_CLASS = {
         None: (Factor, FactorStrategy),
         "monotone": (

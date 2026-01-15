@@ -680,7 +680,6 @@ class FusableRowAndColumnPlacementFactory(RowAndColumnPlacementFactory):
 
 
 class AllPlacementsFactory(AbstractRequirementPlacementFactory):
-
     PLACEMENT_STRATS: Tuple[AbstractRequirementPlacementFactory, ...] = (
         PatternPlacementFactory(point_only=False),
         # subreqs=True covers everything but it blows up massively!

@@ -387,7 +387,6 @@ class AssumptionPointingFactory(StrategyFactory[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "AssumptionPointingFactory":
-
         return cls(**d)
 
 
