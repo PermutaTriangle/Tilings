@@ -12,9 +12,12 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Set,
     Tuple,
 )
 
+from permuta import Perm
+from tilings.algorithms.map import RowColMap
 from tilings.assumptions import (
     ComponentAssumption,
     SkewComponentAssumption,
@@ -681,3 +684,195 @@ class ComponentFusion(Fusion):
         s = "ComponentFusion Algorithm for:\n"
         s += str(self._tiling)
         return s
+
+
+class FiniteFusion(Fusion):
+    def __init__(
+        self,
+        tiling: "Tiling",
+        *,
+        row_idx: Optional[int] = None,
+        col_idx: Optional[int] = None,
+        tracked: bool = False,
+        isolation_level: Optional[str] = None,
+    ):
+        self._unfused_obs_and_reqs: Optional[
+            Tuple[Tuple[GriddedPerm, ...], Tuple[Tuple[GriddedPerm, ...], ...]]
+        ] = None
+        super().__init__(
+            tiling,
+            row_idx=row_idx,
+            col_idx=col_idx,
+            tracked=tracked,
+            isolation_level=isolation_level,
+        )
+
+    def is_in_fuse_region(self, gp: GriddedPerm) -> bool:
+        if self._col_idx is not None:
+            return all(x in (self._col_idx, self._col_idx + 1) for x, _ in gp.pos)
+        return all(y in (self._row_idx, self._row_idx + 1) for _, y in gp.pos)
+
+    def fuses_to_all_perm_cell(self, fused_obs: Set[GriddedPerm]) -> bool:
+        if self._fuse_row:
+            return not any(
+                ob.is_single_cell() and any(ob.get_points_row(self._row_idx))
+                for ob in fused_obs
+            )
+        return not any(
+            ob.is_single_cell() and any(ob.get_points_col(self._col_idx))
+            for ob in fused_obs
+        )
+
+    def fused_tiling(self) -> "Tiling":
+        if self._fused_tiling is None:
+            extra_obs = self.extra_obs()
+            fused_obs = set(
+                self.fuse_gridded_perm(ob)
+                for ob in self._tiling.obstructions
+                if ob not in extra_obs
+            )
+            if not self.fuses_to_all_perm_cell(fused_obs):
+                fused_reqs = set(
+                    frozenset(self.fuse_gridded_perm(gp) for gp in req)
+                    for req in self._tiling.requirements
+                )
+                fused_ass = set(
+                    ass.__class__([self.fuse_gridded_perm(gp) for gp in ass.gps])
+                    for ass in self._tiling.assumptions
+                )
+                if self._tracked:
+                    fused_ass.add(self.new_assumption())
+                self._fused_tiling = self._tiling.__class__(
+                    fused_obs, fused_reqs, fused_ass
+                )
+            else:
+                # in this case we will be creating an Av() cell, so it implies
+                # ordinary fusion is happening to a finite region.
+                self._fused_tiling = super().fused_tiling()
+        return self._fused_tiling
+
+    def unfused_fused_obs_reqs(
+        self,
+    ) -> Tuple[Tuple[GriddedPerm, ...], Tuple[Tuple[GriddedPerm, ...], ...]]:
+        if self._unfused_obs_and_reqs is None:
+            fused_tiling = self.fused_tiling()
+            obs = tuple(
+                chain.from_iterable(
+                    self.unfuse_gridded_perm(gp) for gp in fused_tiling.obstructions
+                )
+            )
+            reqs = tuple(
+                tuple(chain.from_iterable(self.unfuse_gridded_perm(gp) for gp in req))
+                for req in fused_tiling.requirements
+            )
+            self._unfused_obs_and_reqs = obs, reqs
+        return self._unfused_obs_and_reqs
+
+    def fusable(self) -> bool:
+        obs, reqs = self.unfused_fused_obs_reqs()
+        reduced_obs = tuple(
+            o1 for o1 in obs if not any(o2 in o1 for o2 in self._tiling.obstructions)
+        )
+        return self._tiling == self._tiling.__class__(
+            self._tiling.obstructions + reduced_obs,
+            self._tiling.requirements + reqs,
+            self._tiling.assumptions,
+            already_minimized_obs=True,
+            remove_empty_rows_and_cols=False,
+        )
+
+    def extra_obs(
+        self,
+    ) -> Set[GriddedPerm]:
+        valid_gap_vectors = set(self.get_valid_gap_vectors())
+        return set(
+            ob
+            for ob in self._tiling.obstructions
+            if any(self.gp_satifies_gap_vector(ob, vec) for vec in valid_gap_vectors)
+        )
+
+    def gp_satifies_gap_vector(self, gp: GriddedPerm, vector: Tuple[int, int]) -> bool:
+        return self.is_in_fuse_region(gp) and self.get_vector_from_gp(gp) == vector
+
+    def get_vector_from_gp(self, gp: GriddedPerm) -> Tuple[int, int]:
+        if self._col_idx is not None:
+            return (
+                sum(1 for x, _ in gp.pos if x == self._col_idx),
+                sum(1 for x, _ in gp.pos if x == self._col_idx + 1),
+            )
+        return (
+            sum(1 for _, y in gp.pos if y == self._row_idx),
+            sum(1 for _, y in gp.pos if y == self._row_idx + 1),
+        )
+
+    def get_sk_from_gap_vector(self, vector: Tuple[int, int]) -> Iterator[GriddedPerm]:
+        if not self._fuse_row:
+            row_map = RowColMap(
+                row_map={x: 0 for x in range(self._tiling.dimensions[1])},
+                col_map={0: 0},
+                is_identity=False,
+            )
+            col_pos = (self._col_idx,) * vector[0] + (self._col_idx + 1,) * vector[1]
+            Sk = (
+                GriddedPerm.single_cell(p, (0, 0)) for p in Perm.of_length(sum(vector))
+            )
+            for gp in row_map.preimage_gps(Sk):
+                new_pos = tuple((x, y) for (_, y), x in zip(gp.pos, col_pos))
+                yield GriddedPerm(gp.patt, new_pos)
+        else:
+            col_map = RowColMap(
+                row_map={0: 0},
+                col_map={x: 0 for x in range(self._tiling.dimensions[0])},
+                is_identity=False,
+            )
+            Sk = (
+                GriddedPerm.single_cell(p, (0, 0)) for p in Perm.of_length(sum(vector))
+            )
+            row_heights = (self._row_idx,) * vector[0] + (self._row_idx + 1,) * vector[
+                1
+            ]
+            for gp in col_map.preimage_gps(Sk):
+                row_pos = gp.patt.apply(row_heights)
+                new_pos = tuple((x, y) for (x, _), y in zip(gp.pos, row_pos))
+                yield GriddedPerm(gp.patt, new_pos)
+
+    def is_valid_gap_vector(self, vector: Tuple[int, int]) -> bool:
+        sk = self.get_sk_from_gap_vector(vector)
+        return all(gp.contains(*self._tiling.obstructions) for gp in sk)
+
+    def get_valid_gap_vectors(self) -> Iterator[Tuple[int, int]]:
+        gap_vectors = {
+            self.get_vector_from_gp(ob)
+            for ob in self._tiling.obstructions
+            if self.is_in_fuse_region(ob)
+        }
+        return filter(self.is_valid_gap_vector, gap_vectors)
+
+    def assumption_for_gap_vector(
+        self, gv: Tuple[int, int]
+    ) -> Iterator[TrackingAssumption]:
+        """
+        Returns the assumption that tracks the each row / column affected by the gap
+        vector.
+        """
+        if self._fuse_row:
+            if gv[0] != 0:
+                yield TrackingAssumption.from_cells(
+                    self._tiling.cells_in_row(self._row_idx)
+                )
+            if gv[1] != 0:
+                yield TrackingAssumption.from_cells(
+                    self._tiling.cells_in_row(self._row_idx + 1)
+                )
+        else:
+            if gv[0] != 0:
+                yield TrackingAssumption.from_cells(
+                    self._tiling.cells_in_col(self._col_idx)
+                )
+            if gv[1] != 0:
+                yield TrackingAssumption.from_cells(
+                    self._tiling.cells_in_col(self._col_idx + 1)
+                )
+
+    def assumptions_for_valid_gap_vectors(self) -> Iterator[TrackingAssumption]:
+        pass
