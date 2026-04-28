@@ -158,7 +158,11 @@ bases = [
 #     good_bases.append(b)
 #     good_bases.append(tuple(reverse_set(b)))
 
-from kseparable import eventually_bounded_with_row_col_placements, placement_seqsN
+from kseparable import (
+    eventually_bounded_with_row_col_placements,
+    placement_seqsN,
+    placement_seqsNS,
+)
 
 # # Alternatively, read the good bases from a file
 # with open("good_bases.txt", "r") as f:
@@ -229,74 +233,176 @@ K = 6
 #     if is_minimal:
 #         final_good_bases.append(b)
 
-K = 7
+# CHECK THAT SEP=FALSE AND ONLY NORTH GIVES THE SAME RESULTS AS INSENC
+# K = 7
+# for basis in combinations(Perm.of_length(4), 3):
+#     basis = tuple(sorted(basis))
+#     textbasis = "_".join(str(b) for b in basis)
+#     T = Tiling.from_string(textbasis)
+
+#     insenc = False
+#     evbound = False
+
+#     if is_insertion_encodable_maximum(basis):
+#         print("The basis is insertion encodable maximum!")
+#         insenc = True
+#     else:
+#         print("The basis is not insertion encodable maximum")
+#         insenc = False
+
+#     for k in range(1, K + 1):
+#         for seq in list(placement_seqsN(k)):
+#             if eventually_bounded_with_row_col_placements(T, seq, sep=False):
+#                 print(
+#                     f"The basis is bounded after {k} placements using {seq}!!!!!!!!!!!!!!!!!!!"
+#                 )
+#                 evbound = True
+#                 break
+#         if evbound:
+#             break
+#     if not evbound:
+#         print("The basis is not k-separable top for k up to ", K)
+
+#     if evbound != insenc:
+#         print("Mismatch found for basis ", textbasis)
+#         input("Press Enter to continue...")
+#     else:
+#         print()
+
+"""
+u
+u
+u
+
+u
+u
+d
+
+u
+d
+u
+
+u
+d
+d
+
+d
+u
+u
+
+d
+u
+d
+
+d
+d
+u
+
+d
+d
+d
+"""
+
+
+K = 6
 good_bases = []
-for j in range(3, 4):
+i = 1
+for basis in combinations(Perm.of_length(4), 3):
+    print("Checking basis ", i)
+    i += 1
+    basis = tuple(sorted(basis))
+    textbasis = "_".join(str(b) for b in basis)
+    T = Tiling.from_string(textbasis)
 
-    total = 0
-    ins_enc = 0
-    k_sep_top = 0
-    rest = 0
-
-    # number of ways to choose j permutations from S4
-    grand_total = factorial(24) // (factorial(24 - j) * factorial(j))
-
-    # shuffle the list of perms
-
-    perms = list(Perm.of_length(4))
-    random.seed(42)
-    shuffle(perms)
-    for basis4 in combinations(perms, j):
-        total += 1
-        # for q in Av(Basis(*basis4)).of_length(5):
-        # basis = tuple(sorted(list(basis4) + [q]))
-        basis = tuple(sorted(basis4))
-        textbasis = "_".join(str(b) for b in basis)
-        new_basis = True
-        # for gb in good_bases:
-        #     if set(gb).issubset(set(basis)):
-        #         new_basis = False
-        #         print("Skipping basis ", basis, " as it contains good basis ", gb)
-        #         break
-        # if not new_basis:
-        #     continue
-        print("Trying basis ", textbasis)
-        if is_insertion_encodable_maximum(basis):
-            ins_enc += 1
-            print("The basis is insertion encodable maximum!")
-            print()
-            good_bases.append(basis)
-        else:
-            print("The basis is not insertion encodable maximum")
-            print("Trying k-separable top...")
-            T = Tiling.from_string(textbasis)
-
-            T_is_k_sep_top = False
-            for k in range(1, K + 1):
-                for seq in list(placement_seqsN(k)):  # + list(placement_seqsS(k)):
-                    if eventually_bounded_with_row_col_placements(T, seq):
-                        print(
-                            f"The basis is bounded after {k} placements using {seq}!!!!!!!!!!!!!!!!!!!"
-                        )
-                        k_sep_top += 1
-                        # input("Press Enter to continue...")
-                        good_bases.append(basis)
-                        T_is_k_sep_top = True
-                        break
-                if T_is_k_sep_top:
+    if is_insertion_encodable_maximum(basis):
+        # print("The basis is insertion encodable maximum!")
+        good_bases.append(basis)
+        print("Added the basis.")
+        continue
+    else:
+        evbound = False
+        for k in range(1, K + 1):
+            for seq in list(placement_seqsNS(k)):
+                if eventually_bounded_with_row_col_placements(T, seq, sep=False):
+                    print(
+                        f"The basis is bounded after {k} placements using {seq}!!!!!!!!!!!!!!!!!!!"
+                    )
+                    good_bases.append(basis)
+                    print(f"Added the basis {textbasis} using the new stuff.")
+                    evbound = True
                     break
-            if not T_is_k_sep_top:
-                rest += 1
-                print("The basis is not k-separable top for k up to ", K)
-                print()
-        print("Totals so far: ")
-        print(f"Total: {total} / {grand_total}")
-        print(f"Insertion Encodable: {ins_enc}")
-        print(f"K-Separable Top: {k_sep_top}")
-        print(f"Rest: {rest}")
+            if evbound:
+                break
 
-print("Number of minimal good bases: ", len(good_bases))
-print("The size of the largest basis is: ", max(len(b) for b in good_bases))
+
+# K = 7
+# good_bases = []
+# for j in range(3, 4):
+
+#     total = 0
+#     ins_enc = 0
+#     k_sep_top = 0
+#     rest = 0
+
+#     # number of ways to choose j permutations from S4
+#     grand_total = factorial(24) // (factorial(24 - j) * factorial(j))
+
+#     # shuffle the list of perms
+
+#     perms = list(Perm.of_length(4))
+#     random.seed(42)
+#     shuffle(perms)
+#     for basis4 in combinations(perms, j):
+#         total += 1
+#         # for q in Av(Basis(*basis4)).of_length(5):
+#         # basis = tuple(sorted(list(basis4) + [q]))
+#         basis = tuple(sorted(basis4))
+#         textbasis = "_".join(str(b) for b in basis)
+#         new_basis = True
+#         # for gb in good_bases:
+#         #     if set(gb).issubset(set(basis)):
+#         #         new_basis = False
+#         #         print("Skipping basis ", basis, " as it contains good basis ", gb)
+#         #         break
+#         # if not new_basis:
+#         #     continue
+#         print("Trying basis ", textbasis)
+#         if is_insertion_encodable_maximum(basis):
+#             ins_enc += 1
+#             print("The basis is insertion encodable maximum!")
+#             print()
+#             good_bases.append(basis)
+#         else:
+#             print("The basis is not insertion encodable maximum")
+#             print("Trying k-separable top...")
+#             T = Tiling.from_string(textbasis)
+
+#             T_is_k_sep_top = False
+#             for k in range(1, K + 1):
+#                 for seq in list(placement_seqsN(k)):  # + list(placement_seqsS(k)):
+#                     if eventually_bounded_with_row_col_placements(T, seq):
+#                         print(
+#                             f"The basis is bounded after {k} placements using {seq}!!!!!!!!!!!!!!!!!!!"
+#                         )
+#                         k_sep_top += 1
+#                         # input("Press Enter to continue...")
+#                         good_bases.append(basis)
+#                         T_is_k_sep_top = True
+#                         break
+#                 if T_is_k_sep_top:
+#                     break
+#             if not T_is_k_sep_top:
+#                 rest += 1
+#                 print("The basis is not k-separable top for k up to ", K)
+#                 print()
+#         print("Totals so far: ")
+#         print(f"Total: {total} / {grand_total}")
+#         print(f"Insertion Encodable: {ins_enc}")
+#         print(f"K-Separable Top: {k_sep_top}")
+#         print(f"Rest: {rest}")
+
+# print("Number of minimal good bases: ", len(good_bases))
+# print("The size of the largest basis is: ", max(len(b) for b in good_bases))
 
 # input()
 
@@ -362,10 +468,10 @@ print("The size of the largest basis is: ", max(len(b) for b in good_bases))
 # assert 0
 
 # Write good_bases to a file in the format 0123_0321_01234
-with open("good_bases3x4_K7.txt", "w") as f:
-    for b in good_bases:
-        textbasis = "_".join(str(p) for p in b)
-        f.write(textbasis + "\n")
+# with open("good_bases3x4_K7.txt", "w") as f:
+#     for b in good_bases:
+#         textbasis = "_".join(str(p) for p in b)
+#         f.write(textbasis + "\n")
 
 
 def guess_bases_props(good_bases, profdims=(2, 2)):

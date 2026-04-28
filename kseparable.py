@@ -110,7 +110,7 @@ def powerset(iterable):
 
 
 def eventually_bounded_with_row_col_placements(
-    tiling, seq=[1], fusion=False, verbose=False
+    tiling, seq=[1], sep=True, fusion=False, verbose=False
 ):
     """
     Check if a 1x1 tiling is separable after top and bottom row placements according to seq.
@@ -159,10 +159,11 @@ def eventually_bounded_with_row_col_placements(
     right_col_factory = RightColPlacementFactory()
 
     k = len(seq)
-    # Count 1s and 3s in seq
+    # Count 1s, 3s, as well as 2s, 4s in seq
     ns = sum(1 for x in seq if x == 1 or x == 3)
     we = sum(1 for x in seq if x == 2 or x == 4)
 
+    # Expected dimensions after each placement
     expected_cur_ns = 1
     expected_cur_we = 1
 
@@ -174,6 +175,8 @@ def eventually_bounded_with_row_col_placements(
             for t in current_tilings:
                 print(t)
             print("-------------------------------------")
+
+        # Update expected dimensions
         if seq[i] == 1:
             expected_cur_ns += 2
             expected_cur_we += 1
@@ -186,6 +189,7 @@ def eventually_bounded_with_row_col_placements(
         elif seq[i] == 4:
             expected_cur_we += 2
             expected_cur_ns += 1
+
         next_tilings = []
         for current_tiling in current_tilings:
             # Apply top or bottom row placement to current tiling
@@ -203,17 +207,13 @@ def eventually_bounded_with_row_col_placements(
             if placement_rules:
                 # Take first applicable rule and add all its children
                 rule = placement_rules[0]
-                # TODO Keep track of what the maximum dimensions are up to now, and get rid of any children that are too small
+
                 for rchild in rule.children:
-                    # The dimensions of this child are:
-                    # print(f"Child tiling:\n {rchild}")
-                    # print(f"Dimensions: {rchild.dimensions}")
-                    # print(f"Expected ({expected_cur_ns}, {expected_cur_we})")
-                    # input("Press Enter to continue...")
                     if (
                         rchild.dimensions[0] < expected_cur_ns
                         or rchild.dimensions[1] < expected_cur_we
                     ):
+                        pass  # Discard this child
                         if verbose:
                             print(
                                 f"Discarding child {rchild} as it is too small (need at least ({expected_cur_ns}, {expected_cur_we}))"
@@ -289,12 +289,10 @@ def eventually_bounded_with_row_col_placements(
                                 # Only check if the tiling is too big to be OK already
                                 # (otherwise we know it is OK)
                                 if not ttc.is_empty():
+                                    if not sep:
+                                        # If separation is not allowed, we can stop here
+                                        return False
                                     tilings_to_check.append(ttc)
-                        # print("factored child:")
-                        # print(factored_child)
-                        # print("tilings to check for separability:")
-                        # for ttc in tilings_to_check:
-                        #     print(ttc)
 
                         # THERE IS SOMETHING BROKEN ABOVE BECAUSE THE TTCs ARE NOT ALL FULLY POSITIVE
                         for ttc in tilings_to_check:
@@ -303,7 +301,6 @@ def eventually_bounded_with_row_col_placements(
                                 print(ttc)
                                 input()
 
-                            # FIRST CALL OBSTRUCTIONS TRANSITIVITY TO MAKE SURE ALL OBSTRUCTIONS ARE PRESENT
                             row_col_sep = RowColSeparation(ttc)
                             # Now we delete all non-local obstructions, to see if the tiling would factor after row/col separation
                             # and proper targeted requirement placements
@@ -333,32 +330,6 @@ def eventually_bounded_with_row_col_placements(
                                 for fclc in factored_children_of_localized_ttc:
                                     print(fclc)
 
-                            # print("Factored children of localized ttc:")
-                            # for fclc in factored_children_of_localized_ttc:
-                            #     print(fclc)
-                            # print("----")
-                            # if verbose:
-                            #     print(f"Now looking at factor:")
-                            #     print(factored_child)
-
-                            #     print("This is a factor of size (ns+1, we+1)")
-                            #     print(
-                            #         "... so it must be factorable into tilings of smaller dimensions, if we are to return True"
-                            #     )
-                            #     print("Checking separability...")
-                            #     if any(
-                            #         (
-                            #             fclc.dimensions[0] >= (ns + 1)
-                            #             and fclc.dimensions[1] >= (we + 1)
-                            #         )
-                            #         for fclc in factored_children_of_localized_child
-                            #     ):
-                            #         print("... and it is NOT!")
-                            #     else:
-                            #         print("... and it IS!")
-                            #         print(" it factors into:")
-                            #         for fclc in factored_children_of_localized_child:
-                            #             print(fclc)
                             if any(
                                 (
                                     fclc.dimensions[0] >= (ns + 1)
@@ -426,6 +397,7 @@ def eventually_bounded_with_row_col_placements(
 # basis = "012_102"
 # basis = "0123_1032"
 # basis = "0123_0132_3201"
+# basis = "0123_0132_2103"
 
 
 # T = Tiling.from_string(basis)
@@ -437,10 +409,10 @@ def eventually_bounded_with_row_col_placements(
 # # print(T.inverse().complement())
 # # assert 0
 
-# for seq in placement_seqsN(6):
+# for seq in placement_seqsN(4):
 #     print(f"Testing sequence {seq}:")
 #     print(
-#         f"Is separable after placements {seq}: {eventually_bounded_with_row_col_placements(T, seq=seq, verbose=True)}"
+#         f"Is separable after placements {seq}: {eventually_bounded_with_row_col_placements(T, seq=seq, sep=False, verbose=True)}"
 #     )
 #     input("Press Enter to continue...")
 
@@ -451,7 +423,7 @@ def eventually_bounded_with_row_col_placements(
 #     T = Tiling.from_string(basis)
 
 #     T_is_k_sep_top = False
-#     T_is_k_sep_left = False
+
 #     for k in range(1, K + 1):
 #         for seq in placement_seqsN(k):
 #             if eventually_bounded_with_row_col_placements(T, seq):
@@ -465,26 +437,7 @@ def eventually_bounded_with_row_col_placements(
 #             break
 #     if not T_is_k_sep_top:
 #         print(f"Basis: {basis} is NOT bounded after {K} placements")
-#     continue  # The stuff below is no longer necessary because we do both row and column placements above
-#     if not T_is_k_sep_top:
-#         print(f"Basis: {basis} is NOT bounded after {K} placements")
-#         Ti = T.inverse()
-#         for k in range(1, K + 1):
-#             for seq in placement_seqsNS(k):
-#                 if eventually_bounded_with_row_col_placements(Ti, seq):
-#                     print(
-#                         f"Basis: {basis} is inverse bounded after {k} placements using {seq}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-#                     )
-#                     if k >= 5:
-#                         print("Stop press!")
-#                         input("Press Enter to continue...")
-#                     T_is_k_sep_left = True
-#                     break
-#             if T_is_k_sep_left:
-#                 break
-#     if (not T_is_k_sep_top) and (not T_is_k_sep_left):
-#         print(f"Basis: {basis} is NOT inverse bounded after {K} placements")
-#     input("Press Enter to continue...")
+
 
 # First basis that is not top separable, but is left separable
 # 0132_0231_0312_0321_1032_1302_1320_3021_3120
