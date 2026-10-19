@@ -137,8 +137,9 @@ def test_positive_reverse_fusion(caplog):
     logger.propagate = True
     with caplog.at_level(logging.WARNING):
         assert reverse_rule.sanity_check(4)
-        # only that warning; newer pytest can capture it more than once, as the
-        # logger also propagates
-        assert caplog.records
-        messages = {record.getMessage().split("\n")[0] for record in caplog.records}
-        assert messages == {"Skipping sanity checking generation for rule"}
+        # pytest 9 captures the logzero logger directly, which does not propagate,
+        # and also through the root logger, as this test makes it propagate for
+        # older pytest: count each record once
+        records = list({id(record): record for record in caplog.records}.values())
+        assert len(records) == 1
+        assert "Skipping sanity checking generation" in caplog.text
