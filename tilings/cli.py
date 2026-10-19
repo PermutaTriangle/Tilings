@@ -12,6 +12,7 @@ from permuta.permutils import (
     is_insertion_encodable_rightmost,
 )
 from tilings import Tiling
+from tilings.hints import hints
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
 
@@ -86,6 +87,8 @@ def build_pack(args: argparse.Namespace) -> TileScopePack:
         pack = pack.add_all_symmetry()
     if args.elementary:
         pack = pack.make_elementary()
+    if args.rotational_cuts:
+        pack = pack.add_rotational_cuts()
     return pack
 
 
@@ -95,6 +98,9 @@ def search_spec(args):
     """
     pack = build_pack(args)
     start_class = Tiling.from_string(args.basis)
+    for hint in hints(ob.patt for ob in start_class.obstructions):
+        if not getattr(args, hint.cli_flag.lstrip("-").replace("-", "_"), False):
+            logger.info("Hint: %s", hint.message)
     css = TileScope(start_class, pack)
     spec = css.auto_search(status_update=30)
     logger.info("The generating function is %s", spec.get_genf())
@@ -141,6 +147,12 @@ parser_tree.add_argument(
 )
 parser_tree.add_argument(
     "-e", "--elementary", action="store_true", help="Makes the pack elementary."
+)
+parser_tree.add_argument(
+    "-r",
+    "--rotational-cuts",
+    action="store_true",
+    help="Adds the rotational cuts to the pack, for classes closed under rotation.",
 )
 parser_tree.set_defaults(func=search_spec)
 

@@ -162,10 +162,10 @@ def test_the_equation():
 
 
 def test_a_rotational_pack():
-    pack = TileScopePack.point_placements().make_rotational()
-    assert pack.name == "point_placements_rotational"
+    pack = TileScopePack.point_placements().add_rotational_cuts()
+    assert pack.name == "point_placements_rotational_cuts"
     with pytest.raises(ValueError):
-        pack.make_rotational()
+        pack.add_rotational_cuts()
     spec = TileScope("1234_2341_3412_4123", pack).auto_search(max_expansion_time=60)
     assert any(
         isinstance(rule.strategy, RotationalCutStrategy)

@@ -265,6 +265,18 @@ about it!
 The ``point_placements`` argument above is a strategy pack, which we explain in
 more detail in the ``StrategyPacks`` section.
 
+For some classes ``tilescope spec`` first gives a hint: a property of the class
+that makes it likely that a change to the pack helps the search. A class closed
+under rotation, such as Av(1324, 2413, 3241, 4132), whose basis is rotationally
+stable, has n times as many permutations of length n as each of its cuts has of
+length n - 1, and the hint suggests adding the rotational cuts to the pack:
+
+.. code:: bash
+
+       tilescope spec 1324_2413_3241_4132 point_placements --rotational-cuts
+
+The hints are also available in Python, from ``tilings.hints``.
+
 The tilescope module
 --------------------
 TileScope can be imported in a interactive Python session from

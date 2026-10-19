@@ -276,13 +276,14 @@ class TileScopePack(StrategyPack):
             strat.ElementaryVerificationStrategy(), "elementary"
         )
 
-    def make_rotational(self) -> "TileScopePack":
+    def add_rotational_cuts(self) -> "TileScopePack":
         """
         Create a new pack by adding the rotational cut strategies: a 1x1 tiling
         whose class is closed under rotation, of its positions or of its values,
-        is counted by its min cut and by its max cut.
+        is counted by its min cut and by its max cut. They apply to every such
+        tiling the search finds, the cuts' own cuts included.
         """
-        return self.add_initial(strat.RotationalCutFactory(), "rotational")
+        return self.add_initial(strat.RotationalCutFactory(), "rotational_cuts")
 
     def add_all_symmetry(self) -> "TileScopePack":
         """Create a new pack by turning on symmetry on the current pack."""
