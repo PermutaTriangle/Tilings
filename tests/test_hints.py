@@ -1,3 +1,5 @@
+import argparse
+
 from permuta import Perm
 from tilings import strategies as strat
 from tilings.cli import build_pack, parser
@@ -38,4 +40,14 @@ def test_the_flag():
     assert pack.name == "point_placements_rotational_cuts"
     assert strat.RotationalCutFactory() in pack
     args = parser.parse_args(["spec", "123_231_312", "point_placements"])
+    assert strat.RotationalCutFactory() not in build_pack(args)
+    # a namespace of the caller's own, made before the flag existed, still works
+    args = argparse.Namespace(
+        strategy_pack="point_placements",
+        length=None,
+        basis="123_231_312",
+        fusion=False,
+        symmetries=False,
+        elementary=False,
+    )
     assert strat.RotationalCutFactory() not in build_pack(args)

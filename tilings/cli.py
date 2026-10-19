@@ -87,7 +87,7 @@ def build_pack(args: argparse.Namespace) -> TileScopePack:
         pack = pack.add_all_symmetry()
     if args.elementary:
         pack = pack.make_elementary()
-    if args.rotational_cuts:
+    if getattr(args, "rotational_cuts", False):  # callers' own namespaces may lack it
         pack = pack.add_rotational_cuts()
     return pack
 
