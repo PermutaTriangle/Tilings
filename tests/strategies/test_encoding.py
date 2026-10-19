@@ -43,6 +43,8 @@ from tilings.strategies import (
     RequirementPlacementFactory,
     RequirementPointingFactory,
     RootInsertionFactory,
+    RotationalCutFactory,
+    RotationalCutStrategy,
     RowAndColumnPlacementFactory,
     RowColumnSeparationStrategy,
     ShortObstructionVerificationStrategy,
@@ -535,6 +537,11 @@ strategy_objects = (
             ),
             (0, 1),
         ),
+    ]
+    + [
+        RotationalCutFactory(),
+        RotationalCutStrategy(),
+        RotationalCutStrategy("max", "values", ignore_parent=True),
     ]
 )
 
