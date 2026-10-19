@@ -85,8 +85,7 @@ def min_cut(basis: Iterable[Perm]) -> Tuple[Perm, ...]:
         (Perm((0, 1, 2)), Perm((1, 2, 3, 0)), Perm((2, 3, 0, 1)))
     """
     return tuple(
-        Perm.to_standard(patt[1:]) if patt and patt[0] == 0 else patt
-        for patt in basis
+        Perm.to_standard(patt[1:]) if patt and patt[0] == 0 else patt for patt in basis
     )
 
 

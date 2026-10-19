@@ -142,8 +142,10 @@ def test_the_maps_are_inverse():
                         assert parent in tiling
                         assert strategy.forward_map(tiling, parent) == (obj,)
                         images.append(parent)
-                assert len(images) == len(set(images)) == (n + 1) * len(
-                    list(cut.objects_of_size(n))
+                assert (
+                    len(images)
+                    == len(set(images))
+                    == (n + 1) * len(list(cut.objects_of_size(n)))
                 )
             assert strategy.forward_map(tiling, GriddedPerm.empty_perm()) == (None,)
 
