@@ -181,7 +181,7 @@ def _containers(patt: Perm) -> Set[Perm]:
     return out
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=1 << 16)
 def is_knuth_closed(patts: FrozenSet[Perm]) -> bool:
     """Return True if the permutations avoiding every pattern in patts are closed
     under Knuth equivalence. It is decided locally: an occurrence that a Knuth move
@@ -196,7 +196,7 @@ def is_knuth_closed(patts: FrozenSet[Perm]) -> bool:
     )
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=1 << 16)
 def is_shape_closed(patts: FrozenSet[Perm]) -> bool:
     """Return True if whether a permutation avoids patts depends only on its RSK
     shape: the patterns and their inverses are both Knuth-closed. Monotone patterns
@@ -236,6 +236,13 @@ class KnuthSlide:
             (ob.patt, ob.pos) for ob in tiling.obstructions
         )
         self._rows_of_column = _lines(tiling.active_cells)
+        # a tiling that keeps an empty row or column would lose it in the child, and
+        # the map's coordinates would no longer fit; searches never make one
+        width, height = tiling.dimensions
+        self._reduced = (
+            len({x for x, _ in tiling.active_cells}) == width
+            and len({y for _, y in tiling.active_cells}) == height
+        )
         self._forbidden: Dict[Gridding, bool] = {}
         self._complete_families: Dict[Tuple, bool] = {}
         self._analyses: Dict[Tuple[int, int], _Analysis] = {}
@@ -353,6 +360,8 @@ class KnuthSlide:
             or any(self._rows_of_column.get(x) != rows for x in cols)
         ):
             return _Analysis("the columns are not a block")
+        if not self._reduced:
+            return _Analysis("the tiling has an empty row or column")
         block = frozenset((x, y) for x in cols for y in rows)
         window_groups: DefaultDict[WindowKey, Set[Perm]] = defaultdict(set)
         window: List[Tuple[GriddedPerm, Tuple[int, ...]]] = []
@@ -453,7 +462,13 @@ class KnuthSlide:
             if cells and not _columns_or_rows(cells, cols, rows):
                 return "a requirement is on part of a column of the block"
         for ass in self._tiling.assumptions:
-            cells = {gp.pos[0] for gp in ass.gps if gp.pos[0] in block}
+            cells = set()
+            for gp in ass.gps:
+                if not _block_indices(gp, block):
+                    continue
+                if len(gp) != 1:
+                    return "an assumption on more than a point has points in the block"
+                cells.add(gp.pos[0])
             if not cells:
                 continue
             # only plain TrackingAssumptions: the component assumptions, its

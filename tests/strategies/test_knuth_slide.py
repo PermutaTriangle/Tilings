@@ -4,11 +4,12 @@ from itertools import combinations_with_replacement, permutations, product
 
 import pytest
 
+from comb_spec_searcher import CombinatorialSpecification
 from comb_spec_searcher.rule_db import RuleDBForest
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms.knuth_slide import KnuthSlide, rsk
-from tilings.assumptions import TrackingAssumption
+from tilings.assumptions import SumComponentAssumption, TrackingAssumption
 from tilings.strategies import KnuthSlideFactory
 from tilings.strategies.knuth_slide import KnuthSlideStrategy
 from tilings.strategies.monotone_sliding import MonotoneSlidingFactory
@@ -26,6 +27,10 @@ with open(os.path.join(__location__, "knuth_slide_15432.json")) as fp:
 
 def cell(cell_, *patts):
     return [GriddedPerm(Perm.to_standard(p), [cell_] * len(p)) for p in patts]
+
+
+def griddings_of(patt, *cells):
+    return [GriddedPerm(Perm.to_standard(patt), cells)]
 
 
 def griddings(patt, cells):
@@ -91,6 +96,9 @@ def naive_one_row_slide(tiling, col, width):
 
 
 ROW_PLACEMENTS = TileScopePack.row_and_col_placements(row_only=True).make_fusion(
+    tracked=False
+)
+COL_PLACEMENTS = TileScopePack.row_and_col_placements(col_only=True).make_fusion(
     tracked=False
 )
 
@@ -300,16 +308,86 @@ def test_requirements_and_assumptions_follow_the_cells():
     sanity_check(rule, 6)
 
 
+def decreasing_square(requirements=(), assumptions=()):
+    """A block of two columns and two rows avoiding 12 in every gridding."""
+    cells = [(0, 0), (0, 1), (1, 0), (1, 1)]
+    return Tiling(list(griddings("12", cells)), requirements, assumptions)
+
+
 def test_a_requirement_on_part_of_a_column_stops_the_ferrers_slide():
+    """A point requirement in one of a column's two cells: the slide refuses it, and
+    the naive child, with the requirement mirrored, has other counts."""
+    tiling = decreasing_square([[GriddedPerm((0,), ((0, 1),))]])
+    assert (
+        KnuthSlide(tiling).why_not(0, 2)
+        == "a requirement is on part of a column of the block"
+    )
+    naive = decreasing_square([[GriddedPerm((0,), ((1, 1),))]])
+    assert counts(tiling, 5) != counts(naive, 5)
     parent = two_rows(1, [(0, 0)])
-    tiling = Tiling(parent.obstructions, [[GriddedPerm((0,), ((1, 1),))]])
-    assert KnuthSlide(tiling).why_not(1, 2) is not None
     whole_column = Tiling(
         parent.obstructions,
         [[GriddedPerm((0,), ((1, 0),)), GriddedPerm((0,), ((1, 1),))]],
     )
     (rule,) = [r for r in slides(whole_column) if not r.strategy.transpose]
     sanity_check(rule, 5)
+
+
+def test_an_assumption_on_part_of_the_block_stops_the_slide():
+    """An assumption on one cell of a block spanning two rows: the slide refuses it,
+    and the naive child, with the assumption mirrored, has other parameters."""
+    tiling = decreasing_square(
+        assumptions=[TrackingAssumption([GriddedPerm((0,), ((0, 1),))])]
+    )
+    assert (
+        KnuthSlide(tiling).why_not(0, 2)
+        == "an assumption covers part of the block's columns and rows"
+    )
+    naive = decreasing_square(
+        assumptions=[TrackingAssumption([GriddedPerm((0,), ((1, 1),))])]
+    )
+    assert tiling.get_terms(3) != naive.get_terms(3)
+
+
+@pytest.mark.parametrize(
+    "assumption",
+    [
+        TrackingAssumption([GriddedPerm((0, 1), (X, Y))]),
+        SumComponentAssumption([GriddedPerm((0,), (X,)), GriddedPerm((0,), (Y,))]),
+    ],
+    ids=["on more than a point", "counting components"],
+)
+def test_assumptions_that_do_not_count_points_stop_the_slide(assumption):
+    tiling = Tiling(babson_west.obstructions, [], [assumption])
+    assert KnuthSlide(tiling).why_not(0, 2) is not None
+    assert not slides(tiling)
+
+
+def test_an_assumption_from_outside_the_block_stops_the_slide():
+    """An assumption on two points, the first outside the block: not a point
+    assumption on the block either."""
+    other, x, y = (0, 0), (1, 0), (2, 0)
+    tiling = Tiling(
+        cell(other, "21")
+        + cell(x, "21")
+        + cell(y, "321")
+        + griddings_of("321", x, y, y),
+        [],
+        [TrackingAssumption([GriddedPerm((0, 1), (other, y))])],
+    )
+    assert not slides(tiling)
+
+
+def test_a_tiling_with_an_empty_column_does_not_slide():
+    """The child would lose the empty column, and the map would not fit it."""
+    tiling = Tiling(
+        babson_west.obstructions
+        + (GriddedPerm((0,), ((2, 0),)), GriddedPerm((0, 1), ((3, 0), (3, 0)))),
+        remove_empty_rows_and_cols=False,
+    )
+    assert tiling.dimensions == (4, 1)
+    assert KnuthSlide(tiling).why_not(0, 2) == "the tiling has an empty row or column"
+    assert not slides(tiling)
 
 
 def test_transposed_slides():
@@ -319,6 +397,18 @@ def test_transposed_slides():
     assert rule.strategy.transpose
     assert rule.children[0] == slides(babson_west)[0].children[0].inverse()
     assert_bijection(tiling, rule.children[0], rule.strategy, 6)
+    sanity_check(rule, 6)
+
+
+def test_transposed_slides_with_assumptions():
+    """A block of rows with an assumption: its parameter goes through the inverse."""
+    tiling = Tiling(
+        babson_west.obstructions, [], [TrackingAssumption([GriddedPerm((0,), (X,))])]
+    ).inverse()
+    (rule,) = slides(tiling)
+    assert rule.strategy.transpose
+    assert rule.children[0] == slides(tiling.inverse())[0].children[0].inverse()
+    assert_bijection(tiling, rule.children[0], rule.strategy, 5)
     sanity_check(rule, 6)
 
 
@@ -337,6 +427,13 @@ def test_factory_options():
     assert not [
         r for r in slides(two_rows(1, [(0, 0)]), rows=False) if not r.strategy.transpose
     ]
+    assert slides(babson_west.inverse())
+    assert not slides(babson_west.inverse(), transpose=False)
+    assert str(KnuthSlideFactory()) == "Knuth slides of up to 3 columns or rows"
+    assert (
+        str(KnuthSlideFactory(max_width=2, rows=False, transpose=False))
+        == "Knuth slides of up to 2 columns, in one row of cells"
+    )
 
 
 def test_the_strategy_refuses_a_block_that_does_not_slide():
@@ -399,3 +496,23 @@ def test_av_15432_with_three_column_slides():
         33324,
         261808,
     ]
+
+
+def test_a_specification_of_transposed_slides():
+    """Av(1432) with column placements, whose slides are blocks of rows: the
+    specification counts, samples, and survives a JSON round trip, which rebuilds
+    each slide's child through its decomposition function."""
+    spec = untracked_then_guided("1432", COL_PLACEMENTS, 2)
+    rules = [
+        r for rule in spec.rules_dict.values() for r in getattr(rule, "rules", (rule,))
+    ]
+    knuth = [r.strategy for r in rules if isinstance(r.strategy, KnuthSlideStrategy)]
+    assert any(strategy.transpose for strategy in knuth)
+    expected = [1, 1, 2, 6, 23, 103, 513, 2761, 15767]
+    assert [spec.count_objects_of_size(n) for n in range(9)] == expected
+    again = CombinatorialSpecification.from_dict(
+        json.loads(json.dumps(spec.to_jsonable()))
+    )
+    assert [again.count_objects_of_size(n) for n in range(9)] == expected
+    assert spec.random_sample_object_of_size(7).patt.avoids(Perm((0, 3, 2, 1)))
+    spec.sanity_check(4)

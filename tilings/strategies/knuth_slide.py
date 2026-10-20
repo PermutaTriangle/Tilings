@@ -155,7 +155,9 @@ class KnuthSlideFactory(StrategyFactory[Tiling]):
         )
 
     def __str__(self) -> str:
-        return f"Knuth slides of up to {self.max_width} columns or rows"
+        what = "columns or rows" if self.transpose else "columns"
+        where = "" if self.rows else ", in one row of cells"
+        return f"Knuth slides of up to {self.max_width} {what}{where}"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()

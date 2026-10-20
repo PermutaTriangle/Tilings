@@ -12,10 +12,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   word w becomes RSK^-1(P(w), evac(Q(w))). It applies when every constraint on the
   block depends only on the Knuth classes of its values' windows and on the RSK
   shapes of its runs of columns (`tilings.algorithms.knuth_slide`). It contains
-  Tilings' sliding, works on blocks of any width and, as the Ferrers version, on
-  blocks spanning several rows, with requirements and tracking assumptions. With
-  blocks of up to three columns, `row_and_col_placements(row_only=True)` with
-  fusion finds a specification for Av(15432).
+  Tilings' sliding and monotone sliding, works on blocks of any width and, as the
+  Ferrers version, on blocks spanning several rows, with requirements and tracking
+  assumptions. With blocks of up to three columns,
+  `row_and_col_placements(row_only=True)` with fusion finds a specification for
+  Av(15432).
 
 ## [4.1.0] - 2026-01-15
 ### Changed
