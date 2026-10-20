@@ -11,6 +11,7 @@ from tilings.algorithms.knuth_slide import KnuthSlide, rsk
 from tilings.assumptions import TrackingAssumption
 from tilings.strategies import KnuthSlideFactory
 from tilings.strategies.knuth_slide import KnuthSlideStrategy
+from tilings.strategies.monotone_sliding import MonotoneSlidingFactory
 from tilings.strategies.sliding import SlidingFactory
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import GuidedSearcher, TrackedSearcher
@@ -162,6 +163,33 @@ def test_slides_agree_with_tilings_sliding():
             assert rule.children[0] in children
             tested += 1
     assert tested > 0
+
+
+def test_slides_agree_with_tilings_monotone_sliding():
+    """Every rule of Tilings' monotone sliding, on the tilings of an untracked search
+    and of the tracked search it guides, is a Knuth slide of two columns, assumptions
+    included. The Knuth slide gives it the maps it lacks."""
+    pack = ROW_PLACEMENTS.add_initial(MonotoneSlidingFactory())
+    untracked = TrackedSearcher(
+        Tiling.from_string("1432"), pack, max_assumptions=0, ruledb=RuleDBForest()
+    )
+    spec = untracked.auto_search(status_update=None)
+    tracked = GuidedSearcher(
+        spec.comb_classes(), spec.root, pack.make_tracked(), ruledb=RuleDBForest()
+    )
+    tracked.auto_search(status_update=None)
+    tested = with_assumptions = 0
+    for searcher in (untracked, tracked):
+        for label in range(len(searcher.classdb.label_to_tilings)):
+            tiling = searcher.classdb.get_class(label)
+            for rule in MonotoneSlidingFactory()(tiling):
+                if rule.children[0] == tiling:
+                    continue
+                children = {r.children[0] for r in slides(tiling, max_width=2)}
+                assert rule.children[0] in children
+                tested += 1
+                with_assumptions += bool(tiling.assumptions)
+    assert tested > 0 and with_assumptions > 0
 
 
 def two_rows(strip_column, short_columns):
