@@ -40,13 +40,13 @@ def hints(basis: Iterable[Perm]) -> List[Hint]:
         >>> hints([Perm((0, 1, 2)), Perm((2, 3, 0, 1))])
         []
     """
-    patts = tuple(Basis.from_iterable(basis))
+    patterns = tuple(Basis.from_iterable(basis))
     out: List[Hint] = []
-    if patts and all(len(patt) > 1 for patt in patts):
-        rotation = rotation_of(patts)
+    if patterns and all(len(pattern) > 1 for pattern in patterns):
+        rotation = rotation_of(patterns)
         if rotation is not None:
             cuts = sorted(
-                {Basis.from_iterable(cut(patts)) for cut in (min_cut, max_cut)},
+                {Basis.from_iterable(cut(patterns)) for cut in (min_cut, max_cut)},
                 key=str,
             )
             if len(cuts) == 1:

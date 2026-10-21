@@ -98,7 +98,7 @@ def search_spec(args):
     """
     pack = build_pack(args)
     start_class = Tiling.from_string(args.basis)
-    for hint in hints(ob.patt for ob in start_class.obstructions):
+    for hint in hints(obstruction.patt for obstruction in start_class.obstructions):
         if not getattr(args, hint.cli_flag.lstrip("-").replace("-", "_"), False):
             logger.info("Hint: %s", hint.message)
     css = TileScope(start_class, pack)

@@ -8,7 +8,7 @@ from tilings.strategy_pack import TileScopePack
 
 
 def basis(string):
-    return [Perm.to_standard(map(int, patt)) for patt in string.split("_")]
+    return [Perm.to_standard(map(int, pattern)) for pattern in string.split("_")]
 
 
 def test_a_class_closed_under_rotation():

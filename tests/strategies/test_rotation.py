@@ -16,7 +16,7 @@ from tilings.tilescope import TileScope, TileScopePack
 
 
 def basis(string):
-    return [Perm.to_standard(map(int, patt)) for patt in string.split("_")]
+    return [Perm.to_standard(map(int, pattern)) for pattern in string.split("_")]
 
 
 # closed under rotation of the positions: the lift of 12, [1234], [1324], and
@@ -60,8 +60,12 @@ def test_the_cuts_count_the_class():
         whole = Av(basis(string))
         for cut in (min_cut, max_cut):
             part = Av(cut(basis(string)))
-            for n in range(1, 9):
-                assert whole.count(n) == n * part.count(n - 1), (string, cut, n)
+            for size in range(1, 9):
+                assert whole.count(size) == size * part.count(size - 1), (
+                    string,
+                    cut,
+                    size,
+                )
 
 
 def test_the_rules_pass_their_sanity_checks():
@@ -73,8 +77,8 @@ def test_the_rules_pass_their_sanity_checks():
             rules = [strategy(tiling) for strategy in RotationalCutFactory()(tiling)]
             assert rules, (string, tiling)
             for rule in rules:
-                for n in range(8):
-                    assert rule.sanity_check(n), (rule, n)
+                for size in range(8):
+                    assert rule.sanity_check(size), (rule, size)
 
 
 def test_one_or_two_cuts():
@@ -95,9 +99,9 @@ def test_the_cut_of_a_cut():
     # 12 rotations of 1 + 123, 1 + 231 and 1 + 312, counted by n(n - 1)
     lift = basis("123_231_312")
     lift_of_lift = {
-        Perm((0,) + tuple(val + 1 for val in patt)).shift_left(k)
-        for patt in lift
-        for k in range(4)
+        Perm((0,) + tuple(value + 1 for value in pattern)).shift_left(shift)
+        for pattern in lift
+        for shift in range(4)
     }
     assert len(lift_of_lift) == 12
     tiling = Tiling.from_perms(lift_of_lift)
@@ -106,7 +110,15 @@ def test_the_cut_of_a_cut():
     (cut,) = strategy(tiling).children
     assert cut == Tiling.from_perms(lift)
     assert list(RotationalCutFactory()(cut))
-    assert [Av(lift_of_lift).count(n) for n in range(7)] == [1, 1, 2, 6, 12, 20, 30]
+    assert [Av(lift_of_lift).count(size) for size in range(7)] == [
+        1,
+        1,
+        2,
+        6,
+        12,
+        20,
+        30,
+    ]
 
 
 def test_where_it_does_not_apply():
@@ -118,8 +130,8 @@ def test_where_it_does_not_apply():
         RotationalCutStrategy("min", "positions")(Tiling.from_perms(basis(VALUES[0])))
     stable = basis("123_231_312")
     two_cells = Tiling(
-        [GriddedPerm.single_cell(patt, (0, 0)) for patt in stable]
-        + [GriddedPerm.single_cell(patt, (1, 0)) for patt in stable]
+        [GriddedPerm.single_cell(pattern, (0, 0)) for pattern in stable]
+        + [GriddedPerm.single_cell(pattern, (1, 0)) for pattern in stable]
     )
     pattern_requirement = Tiling.from_perms(stable, [[Perm((0, 1))]])
     tracked = Tiling.from_perms(stable).add_assumption(
@@ -135,29 +147,33 @@ def test_the_maps_are_inverse():
         tiling = Tiling.from_perms(basis(string))
         for strategy in RotationalCutFactory()(tiling):
             (cut,) = strategy.decomposition_function(tiling)
-            for n in range(6):
+            for size in range(6):
                 images = []
-                for obj in cut.objects_of_size(n):
-                    for parent in strategy.backward_map(tiling, (obj,)):
+                for gridded_perm in cut.objects_of_size(size):
+                    for parent in strategy.backward_map(tiling, (gridded_perm,)):
                         assert parent in tiling
-                        assert strategy.forward_map(tiling, parent) == (obj,)
+                        assert strategy.forward_map(tiling, parent) == (gridded_perm,)
                         images.append(parent)
                 assert (
                     len(images)
                     == len(set(images))
-                    == (n + 1) * len(list(cut.objects_of_size(n)))
+                    == (size + 1) * len(list(cut.objects_of_size(size)))
                 )
             assert strategy.forward_map(tiling, GriddedPerm.empty_perm()) == (None,)
 
 
 def test_the_equation():
     x = sympy.var("x")
-    lhs, rhs = sympy.Function("F")(x), sympy.Function("C")(x)
+    parent_function, cut_function = sympy.Function("F")(x), sympy.Function("C")(x)
     for contains_empty, start in ((True, [1]), (False, [0])):
-        eq = RotationalCutConstructor(contains_empty).get_equation(lhs, (rhs,))
+        equation = RotationalCutConstructor(contains_empty).get_equation(
+            parent_function, (cut_function,)
+        )
         # the lift of 12 is counted by n, from its cut, the class of 12
-        series = sympy.series(eq.rhs.subs(rhs, 1 / (1 - x)).doit(), x, 0, 6)
-        terms = [series.removeO().coeff(x, n) for n in range(6)]
+        series = sympy.series(
+            equation.rhs.subs(cut_function, 1 / (1 - x)).doit(), x, 0, 6
+        )
+        terms = [series.removeO().coeff(x, size) for size in range(6)]
         assert terms == start + [1, 2, 3, 4, 5]
 
 
@@ -172,8 +188,8 @@ def test_a_rotational_pack():
         for rule in spec.rules_dict.values()
     )
     try:
-        counts = [spec.count_objects_of_size(n) for n in range(9)]
+        counts = [spec.count_objects_of_size(size) for size in range(9)]
     except NotImplementedError:  # a class verified by its insertion encoding
         spec = spec.expand_verified()
-        counts = [spec.count_objects_of_size(n) for n in range(9)]
+        counts = [spec.count_objects_of_size(size) for size in range(9)]
     assert counts == [1, 1, 2, 6, 20, 65, 198, 560, 1480]

@@ -60,18 +60,18 @@ def is_rotationally_stable(basis: Iterable[Perm]) -> bool:
         >>> is_rotationally_stable([Perm((0, 1, 2)), Perm((2, 3, 0, 1))])
         False
     """
-    patts = frozenset(basis)
-    return all(patt.shift_left() in patts for patt in patts)
+    patterns = frozenset(basis)
+    return all(pattern.shift_left() in patterns for pattern in patterns)
 
 
 def rotation_of(basis: Iterable[Perm]) -> Optional[str]:
     """Return "positions" if the class with the basis is closed under rotation,
     "values" if it is not but is closed under the cyclic shift of the values (its
     inverse basis is rotationally stable), and None otherwise."""
-    patts = tuple(basis)
-    if is_rotationally_stable(patts):
+    patterns = tuple(basis)
+    if is_rotationally_stable(patterns):
         return "positions"
-    if is_rotationally_stable(patt.inverse() for patt in patts):
+    if is_rotationally_stable(pattern.inverse() for pattern in patterns):
         return "values"
     return None
 
@@ -85,7 +85,8 @@ def min_cut(basis: Iterable[Perm]) -> Tuple[Perm, ...]:
         (Perm((0, 1, 2)), Perm((1, 2, 3, 0)), Perm((2, 3, 0, 1)))
     """
     return tuple(
-        Perm.to_standard(patt[1:]) if patt and patt[0] == 0 else patt for patt in basis
+        Perm.to_standard(pattern[1:]) if pattern and pattern[0] == 0 else pattern
+        for pattern in basis
     )
 
 
@@ -98,20 +99,24 @@ def max_cut(basis: Iterable[Perm]) -> Tuple[Perm, ...]:
         (Perm((0, 2, 1)), Perm((2, 1, 3, 0)), Perm((1, 3, 0, 2)))
     """
     return tuple(
-        Perm.to_standard(patt[:-1]) if patt and patt[-1] == len(patt) - 1 else patt
-        for patt in basis
+        (
+            Perm.to_standard(pattern[:-1])
+            if pattern and pattern[-1] == len(pattern) - 1
+            else pattern
+        )
+        for pattern in basis
     )
 
 
-def _rotations(patt: Perm, rotation: str) -> Iterator[Perm]:
+def _rotations(pattern: Perm, rotation: str) -> Iterator[Perm]:
     """Yield the n rotations of the permutation, of its positions or of its values,
     which are distinct."""
-    n = len(patt)
-    for k in range(n):
+    length = len(pattern)
+    for shift in range(length):
         if rotation == "positions":
-            yield patt.shift_left(k)
+            yield pattern.shift_left(shift)
         else:
-            yield Perm(tuple((val + k) % n for val in patt))
+            yield Perm(tuple((value + shift) % length for value in pattern))
 
 
 def _basis(tiling: Tiling) -> Optional[Tuple[Perm, ...]]:
@@ -125,8 +130,8 @@ def _basis(tiling: Tiling) -> Optional[Tuple[Perm, ...]]:
         (GriddedPerm.point_perm((0, 0)),),
     ):
         return None
-    basis = tuple(ob.patt for ob in tiling.obstructions)
-    if not basis or any(len(patt) < 2 for patt in basis):
+    basis = tuple(obstruction.patt for obstruction in tiling.obstructions)
+    if not basis or any(len(pattern) < 2 for pattern in basis):
         return None
     return basis
 
@@ -134,7 +139,7 @@ def _basis(tiling: Tiling) -> Optional[Tuple[Perm, ...]]:
 def _closed(basis: Tuple[Perm, ...], rotation: str) -> bool:
     if rotation == "positions":
         return is_rotationally_stable(basis)
-    return is_rotationally_stable(patt.inverse() for patt in basis)
+    return is_rotationally_stable(pattern.inverse() for pattern in basis)
 
 
 class RotationalCutConstructor(Constructor[Tiling, GriddedPerm]):
@@ -175,8 +180,8 @@ class RotationalCutConstructor(Constructor[Tiling, GriddedPerm]):
             if self.contains_empty:
                 yield (), ([None],)  # the empty object, which no child object gives
             return
-        for param, objs in subobjs[0](n - 1).items():
-            yield param, (objs,)
+        for param, objects in subobjs[0](n - 1).items():
+            yield param, (objects,)
 
     def random_sample_sub_objects(
         self,
@@ -278,15 +283,15 @@ class RotationalCutStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> Iterator[GriddedPerm]:
         """Yield the n rotations of 1 + p, for the min cut, or of p + 1, for the max
         cut, where p is the child's object."""
-        (obj,) = objs
-        if obj is None:
+        (child_object,) = objs
+        if child_object is None:
             yield GriddedPerm.empty_perm()
             return
         if self.cut == "min":
-            patt = Perm((0,) + tuple(val + 1 for val in obj.patt))
+            pattern = Perm((0,) + tuple(value + 1 for value in child_object.patt))
         else:
-            patt = Perm(tuple(obj.patt) + (len(obj.patt),))
-        for rotated in _rotations(patt, self.rotation):
+            pattern = Perm(tuple(child_object.patt) + (len(child_object.patt),))
+        for rotated in _rotations(pattern, self.rotation):
             yield GriddedPerm.single_cell(rotated, (0, 0))
 
     def forward_map(
@@ -297,10 +302,10 @@ class RotationalCutStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> Tuple[Optional[GriddedPerm], ...]:
         """Return the cut of the one rotation of the object that starts with its
         minimum, for the min cut, or that ends with its maximum, for the max cut."""
-        patt = obj.patt
-        if not patt:
+        pattern = obj.patt
+        if not pattern:
             return (None,)
-        for rotated in _rotations(patt, self.rotation):
+        for rotated in _rotations(pattern, self.rotation):
             if self.cut == "min" and rotated[0] == 0:
                 return (GriddedPerm.single_cell(Perm.to_standard(rotated[1:]), (0, 0)),)
             if self.cut == "max" and rotated[-1] == len(rotated) - 1:
@@ -318,10 +323,10 @@ class RotationalCutStrategy(Strategy[Tiling, GriddedPerm]):
         )
 
     def to_jsonable(self) -> dict:
-        d = super().to_jsonable()
-        d["cut"] = self.cut
-        d["rotation"] = self.rotation
-        return d
+        jsonable = super().to_jsonable()
+        jsonable["cut"] = self.cut
+        jsonable["rotation"] = self.rotation
+        return jsonable
 
     @classmethod
     def from_dict(cls, d: dict) -> "RotationalCutStrategy":
