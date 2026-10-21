@@ -82,73 +82,76 @@ WindowKey = Tuple[Tuple[int, ...], Tuple[Cell, ...], int, Tuple[int, ...]]
 def rsk(word: Sequence[int]) -> Tuple[Tableau, Tableau]:
     """Return the insertion and recording tableaux of a word of distinct letters,
     by row insertion."""
-    p_tab: Tableau = []
-    q_tab: Tableau = []
+    insertion_tableau: Tableau = []
+    recording_tableau: Tableau = []
     for step, letter in enumerate(word, 1):
-        for p_row, q_row in zip(p_tab, q_tab):
-            idx = bisect_left(p_row, letter)
-            if idx == len(p_row):
-                p_row.append(letter)
-                q_row.append(step)
+        for insertion_row, recording_row in zip(insertion_tableau, recording_tableau):
+            position = bisect_left(insertion_row, letter)
+            if position == len(insertion_row):
+                insertion_row.append(letter)
+                recording_row.append(step)
                 break
-            letter, p_row[idx] = p_row[idx], letter
+            letter, insertion_row[position] = insertion_row[position], letter
         else:
-            p_tab.append([letter])
-            q_tab.append([step])
-    return p_tab, q_tab
+            insertion_tableau.append([letter])
+            recording_tableau.append([step])
+    return insertion_tableau, recording_tableau
 
 
 def rsk_inverse(
-    p_tab: Sequence[Sequence[int]], q_tab: Sequence[Sequence[int]]
+    insertion_tableau: Sequence[Sequence[int]],
+    recording_tableau: Sequence[Sequence[int]],
 ) -> List[int]:
     """Return the word whose insertion and recording tableaux are the given ones, of
     the same shape, the recording tableau standard."""
-    p_rows = [list(row) for row in p_tab]
-    q_rows = [list(row) for row in q_tab]
-    row_of = {step: r for r, row in enumerate(q_rows) for step in row}
+    insertion_rows = [list(row) for row in insertion_tableau]
+    recording_rows = [list(row) for row in recording_tableau]
+    row_of = {
+        step: row_index for row_index, row in enumerate(recording_rows) for step in row
+    }
     word = [0] * len(row_of)
     for step in range(len(word), 0, -1):
-        row = row_of[step]
-        q_rows[row].pop()
-        letter = p_rows[row].pop()
-        for upper in range(row - 1, -1, -1):
-            p_row = p_rows[upper]
-            idx = bisect_left(p_row, letter) - 1
-            letter, p_row[idx] = p_row[idx], letter
+        row_index = row_of[step]
+        recording_rows[row_index].pop()
+        letter = insertion_rows[row_index].pop()
+        for upper in range(row_index - 1, -1, -1):
+            insertion_row = insertion_rows[upper]
+            position = bisect_left(insertion_row, letter) - 1
+            letter, insertion_row[position] = insertion_row[position], letter
         word[step - 1] = letter
     return word
 
 
-def evacuation(tab: Sequence[Sequence[int]]) -> Tableau:
+def evacuation(tableau: Sequence[Sequence[int]]) -> Tableau:
     """Return Schutzenberger's evacuation of a standard Young tableau: delete the
     smallest entry and slide the hole out by jeu de taquin, n times, writing n, n - 1,
     ... in the cells vacated."""
-    current = [list(row) for row in tab]
+    current = [list(row) for row in tableau]
     result: Tableau = [[0] * len(row) for row in current]
     size = sum(len(row) for row in current)
     for label in range(size, 0, -1):
-        row, col = 0, 0
+        row, column = 0, 0
         while True:
-            right = current[row][col + 1] if col + 1 < len(current[row]) else None
+            right = current[row][column + 1] if column + 1 < len(current[row]) else None
             below = (
-                current[row + 1][col]
-                if row + 1 < len(current) and col < len(current[row + 1])
+                current[row + 1][column]
+                if row + 1 < len(current) and column < len(current[row + 1])
                 else None
             )
             if right is None and below is None:
                 break
             if below is None or (right is not None and right < below):
                 assert right is not None
-                current[row][col] = right
-                col += 1
+                current[row][column] = right
+                column += 1
             else:
                 assert below is not None
-                current[row][col] = below
+                current[row][column] = below
                 row += 1
         current[row].pop()
         if not current[row]:
             current.pop()
-        result[row][col] = label
+        result[row][column] = label
     return result
 
 
@@ -156,8 +159,8 @@ def knuth_slide_word(word: Sequence[int]) -> List[int]:
     """Return RSK^-1(P(w), evac(Q(w))) for the word w of distinct letters: it has the
     same insertion tableau, and its factor at positions m + 1 - j to m + 1 - i has
     the RSK shape of w's factor at positions i to j. It is an involution."""
-    p_tab, q_tab = rsk(word)
-    return rsk_inverse(p_tab, evacuation(q_tab))
+    insertion_tableau, recording_tableau = rsk(word)
+    return rsk_inverse(insertion_tableau, evacuation(recording_tableau))
 
 
 def _knuth_neighbours(perm: Perm) -> Iterator[Perm]:
@@ -165,44 +168,44 @@ def _knuth_neighbours(perm: Perm) -> Iterator[Perm]:
     x z y <-> z x y, for x < y < z."""
     word = list(perm)
     for i in range(len(word) - 2):
-        a, b, c = word[i], word[i + 1], word[i + 2]
-        if min(b, c) < a < max(b, c):
-            yield Perm(word[: i + 1] + [c, b] + word[i + 3 :])
-        if min(a, b) < c < max(a, b):
-            yield Perm(word[:i] + [b, a] + word[i + 2 :])
+        first, second, third = word[i], word[i + 1], word[i + 2]
+        if min(second, third) < first < max(second, third):
+            yield Perm(word[: i + 1] + [third, second] + word[i + 3 :])
+        if min(first, second) < third < max(first, second):
+            yield Perm(word[:i] + [second, first] + word[i + 2 :])
 
 
-def _containers(patt: Perm) -> Set[Perm]:
+def _containers(pattern: Perm) -> Set[Perm]:
     """The pattern itself and the permutations one entry longer that contain it."""
-    out = {patt}
-    for index in range(len(patt) + 1):
-        for value in range(len(patt) + 1):
-            out.add(patt.insert(index, value))
-    return out
+    containers = {pattern}
+    for index in range(len(pattern) + 1):
+        for value in range(len(pattern) + 1):
+            containers.add(pattern.insert(index, value))
+    return containers
 
 
 @lru_cache(maxsize=1 << 16)
-def is_knuth_closed(patts: FrozenSet[Perm]) -> bool:
+def is_knuth_closed(patterns: FrozenSet[Perm]) -> bool:
     """Return True if the permutations avoiding every pattern in patts are closed
     under Knuth equivalence. It is decided locally: an occurrence that a Knuth move
     destroys uses both letters it swaps, and with the letter that allows the move
     it lies in a permutation at most one entry longer than the pattern."""
-    basis = tuple(patts)
+    basis = tuple(patterns)
     return not any(
         neighbour.avoids(*basis)
-        for patt in basis
-        for container in _containers(patt)
+        for pattern in basis
+        for container in _containers(pattern)
         for neighbour in _knuth_neighbours(container)
     )
 
 
 @lru_cache(maxsize=1 << 16)
-def is_shape_closed(patts: FrozenSet[Perm]) -> bool:
+def is_shape_closed(patterns: FrozenSet[Perm]) -> bool:
     """Return True if whether a permutation avoids patts depends only on its RSK
     shape: the patterns and their inverses are both Knuth-closed. Monotone patterns
     are."""
-    return is_knuth_closed(patts) and is_knuth_closed(
-        frozenset(patt.inverse() for patt in patts)
+    return is_knuth_closed(patterns) and is_knuth_closed(
+        frozenset(pattern.inverse() for pattern in patterns)
     )
 
 
@@ -233,7 +236,7 @@ class KnuthSlide:
     def __init__(self, tiling: "Tiling") -> None:
         self._tiling = tiling
         self._obstruction_keys = frozenset(
-            (ob.patt, ob.pos) for ob in tiling.obstructions
+            (obstruction.patt, obstruction.pos) for obstruction in tiling.obstructions
         )
         self._rows_of_column = _lines(tiling.active_cells)
         # a tiling that keeps an empty row or column would lose it in the child, and
@@ -280,120 +283,146 @@ class KnuthSlide:
                         yield first, size
             start = end
 
-    def why_not(self, col: int, width: int) -> Optional[str]:
+    def why_not(self, column: int, width: int) -> Optional[str]:
         """Return None if the block slides, and otherwise why it does not."""
-        return self._analysis(col, width).reason
+        return self._analysis(column, width).reason
 
-    def is_identity(self, col: int, width: int) -> bool:
+    def is_identity(self, column: int, width: int) -> bool:
         """Is the slide's child the tiling itself? True when the block slides and its
         constraints, requirements and assumptions are symmetric under the mirror."""
-        analysis = self._analysis(col, width)
+        analysis = self._analysis(column, width)
         return analysis.reason is None and analysis.identity
 
-    def slide(self, col: int, width: int) -> "Tiling":
+    def slide(self, column: int, width: int) -> "Tiling":
         """Return the child of the slide of the block."""
-        analysis = self._analysis(col, width)
+        analysis = self._analysis(column, width)
         if analysis.reason is not None:
             raise ValueError(f"the block does not slide: {analysis.reason}")
-        cols = tuple(range(col, col + width))
-        block = frozenset((x, y) for x in cols for y in analysis.rows)
+        block_columns = tuple(range(column, column + width))
+        block = frozenset((x, y) for x in block_columns for y in analysis.rows)
         obstructions: Set[GriddedPerm] = {
-            ob for ob in self._tiling.obstructions if not _block_indices(ob, block)
+            obstruction
+            for obstruction in self._tiling.obstructions
+            if not _block_indices(obstruction, block)
         }
-        for ob, rows in analysis.window:
+        for obstruction, rows in analysis.window:
             obstructions.update(
-                GriddedPerm(patt, pos)
-                for patt, pos in _regriddings(ob, _block_indices(ob, block), cols, rows)
+                GriddedPerm(pattern, positions)
+                for pattern, positions in _regriddings(
+                    obstruction, _block_indices(obstruction, block), block_columns, rows
+                )
             )
-        for ob, (low, high) in analysis.run:
-            mirrored = tuple(range(2 * col + width - 1 - high, 2 * col + width - low))
+        for obstruction, (low, high) in analysis.run:
+            mirrored = tuple(
+                range(2 * column + width - 1 - high, 2 * column + width - low)
+            )
             obstructions.update(
-                GriddedPerm(patt, pos)
-                for patt, pos in _regriddings(
-                    ob, _block_indices(ob, block), mirrored, analysis.rows
+                GriddedPerm(pattern, positions)
+                for pattern, positions in _regriddings(
+                    obstruction,
+                    _block_indices(obstruction, block),
+                    mirrored,
+                    analysis.rows,
                 )
             )
         requirements = [
-            [mirror_gp(gp, col, width) for gp in req]
-            for req in self._tiling.requirements
+            [mirror_gp(gridded_perm, column, width) for gridded_perm in requirement]
+            for requirement in self._tiling.requirements
         ]
         assumptions = [
-            ass.__class__(mirror_gp(gp, col, width) for gp in ass.gps)
-            for ass in self._tiling.assumptions
+            assumption.__class__(
+                mirror_gp(gridded_perm, column, width)
+                for gridded_perm in assumption.gps
+            )
+            for assumption in self._tiling.assumptions
         ]
         return self._tiling.__class__(obstructions, requirements, assumptions)
 
     @staticmethod
-    def slide_gp(gp: GriddedPerm, col: int, width: int) -> GriddedPerm:
+    def slide_gp(gridded_perm: GriddedPerm, column: int, width: int) -> GriddedPerm:
         """Return the image of a gridded permutation under the slide of the block
         (col, width). The slide is an involution."""
-        idx = [i for i, (x, _) in enumerate(gp.pos) if col <= x < col + width]
-        if not idx:
-            return gp
-        word = [gp.patt[i] for i in idx]
+        indices = [
+            i
+            for i, (x, _) in enumerate(gridded_perm.pos)
+            if column <= x < column + width
+        ]
+        if not indices:
+            return gridded_perm
+        word = [gridded_perm.patt[i] for i in indices]
         sizes = [0] * width
-        for i in idx:
-            sizes[gp.pos[i][0] - col] += 1
-        row_of = {gp.patt[i]: gp.pos[i][1] for i in idx}
+        for i in indices:
+            sizes[gridded_perm.pos[i][0] - column] += 1
+        row_of = {gridded_perm.patt[i]: gridded_perm.pos[i][1] for i in indices}
         new_word = knuth_slide_word(word)
-        columns = [col + t for t in range(width) for _ in range(sizes[width - 1 - t])]
-        patt = list(gp.patt)
-        pos = list(gp.pos)
-        for t, i in enumerate(idx):
-            patt[i] = new_word[t]
-            pos[i] = (columns[t], row_of[new_word[t]])
-        return GriddedPerm(Perm(patt), pos)
+        columns = [
+            column + offset
+            for offset in range(width)
+            for _ in range(sizes[width - 1 - offset])
+        ]
+        pattern = list(gridded_perm.patt)
+        positions = list(gridded_perm.pos)
+        for offset, i in enumerate(indices):
+            pattern[i] = new_word[offset]
+            positions[i] = (columns[offset], row_of[new_word[offset]])
+        return GriddedPerm(Perm(pattern), positions)
 
-    def _analysis(self, col: int, width: int) -> _Analysis:
-        key = (col, width)
+    def _analysis(self, column: int, width: int) -> _Analysis:
+        key = (column, width)
         if key not in self._analyses:
-            self._analyses[key] = self._analyse(col, width)
+            self._analyses[key] = self._analyse(column, width)
         return self._analyses[key]
 
     # pylint: disable=too-many-locals,too-many-branches,too-many-return-statements
-    def _analyse(self, col: int, width: int) -> _Analysis:
-        cols = tuple(range(col, col + width))
-        rows = self._rows_of_column.get(col, tuple())
+    def _analyse(self, column: int, width: int) -> _Analysis:
+        block_columns = tuple(range(column, column + width))
+        rows = self._rows_of_column.get(column, tuple())
         if (
             width < 2
             or not rows
-            or any(self._rows_of_column.get(x) != rows for x in cols)
+            or any(self._rows_of_column.get(x) != rows for x in block_columns)
         ):
             return _Analysis("the columns are not a block")
         if not self._reduced:
             return _Analysis("the tiling has an empty row or column")
-        block = frozenset((x, y) for x in cols for y in rows)
+        block = frozenset((x, y) for x in block_columns for y in rows)
         window_groups: DefaultDict[WindowKey, Set[Perm]] = defaultdict(set)
         window: List[Tuple[GriddedPerm, Tuple[int, ...]]] = []
         run_groups: DefaultDict[Tuple[int, int], Set[Perm]] = defaultdict(set)
         run: DefaultDict[Tuple[int, int], List[GriddedPerm]] = defaultdict(list)
-        for ob in self._tiling.obstructions:
-            idx = _block_indices(ob, block)
-            if not idx:
+        for obstruction in self._tiling.obstructions:
+            indices = _block_indices(obstruction, block)
+            if not indices:
                 continue
-            columns = {ob.pos[i][0] for i in idx}
-            low, high = min(columns), max(columns)
-            inside = len(idx) == len(ob)
+            obstruction_columns = {obstruction.pos[i][0] for i in indices}
+            low, high = min(obstruction_columns), max(obstruction_columns)
+            inside = len(indices) == len(obstruction)
             if (
                 inside
                 and low == high
-                and (len(rows) == 1 or self._complete(ob, idx, (low,), rows))
+                and (
+                    len(rows) == 1 or self._complete(obstruction, indices, (low,), rows)
+                )
             ):
-                run_groups[(low, low)].add(_pattern(ob, idx))
-                run[(low, low)].append(ob)
+                run_groups[(low, low)].add(_pattern(obstruction, indices))
+                run[(low, low)].append(obstruction)
                 continue
-            key = self._window_key(ob, idx, rows)
-            if key is not None and self._complete(ob, idx, cols, key[3]):
-                window_groups[key].add(_pattern(ob, idx))
-                window.append((ob, key[3]))
+            window_key = self._window_key(obstruction, indices, rows)
+            if window_key is not None and self._complete(
+                obstruction, indices, block_columns, window_key[3]
+            ):
+                window_groups[window_key].add(_pattern(obstruction, indices))
+                window.append((obstruction, window_key[3]))
                 continue
             if (
                 inside
                 and low < high
-                and self._complete(ob, idx, tuple(range(low, high + 1)), rows)
+                and self._complete(
+                    obstruction, indices, tuple(range(low, high + 1)), rows
+                )
             ):
-                run_groups[(low, high)].add(_pattern(ob, idx))
-                run[(low, high)].append(ob)
+                run_groups[(low, high)].add(_pattern(obstruction, indices))
+                run[(low, high)].append(obstruction)
                 continue
             return _Analysis(
                 "an obstruction depends on how the block's points are split"
@@ -403,130 +432,154 @@ class KnuthSlide:
                 continue
             # what is not shape-closed in a column may still be a window constraint
             kept: List[GriddedPerm] = []
-            for ob in run[span]:
-                idx = _block_indices(ob, block)
-                key = self._window_key(ob, idx, rows)
-                if key is not None and self._complete(ob, idx, cols, key[3]):
-                    window_groups[key].add(_pattern(ob, idx))
-                    window.append((ob, key[3]))
+            for obstruction in run[span]:
+                indices = _block_indices(obstruction, block)
+                window_key = self._window_key(obstruction, indices, rows)
+                if window_key is not None and self._complete(
+                    obstruction, indices, block_columns, window_key[3]
+                ):
+                    window_groups[window_key].add(_pattern(obstruction, indices))
+                    window.append((obstruction, window_key[3]))
                 else:
-                    kept.append(ob)
+                    kept.append(obstruction)
             run[span] = kept
-            run_groups[span] = {_pattern(ob, _block_indices(ob, block)) for ob in kept}
+            run_groups[span] = {
+                _pattern(obstruction, _block_indices(obstruction, block))
+                for obstruction in kept
+            }
             if not is_shape_closed(frozenset(run_groups[span])):
                 return _Analysis("a run's patterns are not determined by the RSK shape")
-        for patts in window_groups.values():
-            if not is_knuth_closed(frozenset(patts)):
+        for patterns in window_groups.values():
+            if not is_knuth_closed(frozenset(patterns)):
                 return _Analysis("a window's patterns are not closed under Knuth moves")
-        reason = self._requirements_and_assumptions(cols, rows, block)
+        reason = self._requirements_and_assumptions(block_columns, rows, block)
         if reason is not None:
             return _Analysis(reason)
-        last = 2 * col + width - 1
+        last = 2 * column + width - 1
         identity = all(
-            patts == run_groups.get((last - high, last - low), set())
-            for (low, high), patts in run_groups.items()
-        ) and self._symmetric(col, width)
+            patterns == run_groups.get((last - high, last - low), set())
+            for (low, high), patterns in run_groups.items()
+        ) and self._symmetric(column, width)
         return _Analysis(
             None,
             rows,
             window,
-            [(ob, span) for span, obs in run.items() for ob in obs],
+            [
+                (obstruction, span)
+                for span, obstructions in run.items()
+                for obstruction in obstructions
+            ],
             identity,
         )
 
-    def _symmetric(self, col: int, width: int) -> bool:
+    def _symmetric(self, column: int, width: int) -> bool:
         """Are the requirements and assumptions the same with the block mirrored?"""
-        reqs = {frozenset(req) for req in self._tiling.requirements}
-        mirrored_reqs = {
-            frozenset(mirror_gp(gp, col, width) for gp in req)
-            for req in self._tiling.requirements
+        requirements = {
+            frozenset(requirement) for requirement in self._tiling.requirements
         }
-        asss = {frozenset(ass.gps) for ass in self._tiling.assumptions}
-        mirrored_asss = {
-            frozenset(mirror_gp(gp, col, width) for gp in ass.gps)
-            for ass in self._tiling.assumptions
+        mirrored_requirements = {
+            frozenset(
+                mirror_gp(gridded_perm, column, width) for gridded_perm in requirement
+            )
+            for requirement in self._tiling.requirements
         }
-        return reqs == mirrored_reqs and asss == mirrored_asss
+        assumptions = {
+            frozenset(assumption.gps) for assumption in self._tiling.assumptions
+        }
+        mirrored_assumptions = {
+            frozenset(
+                mirror_gp(gridded_perm, column, width)
+                for gridded_perm in assumption.gps
+            )
+            for assumption in self._tiling.assumptions
+        }
+        return (
+            requirements == mirrored_requirements
+            and assumptions == mirrored_assumptions
+        )
 
     def _requirements_and_assumptions(
-        self, cols: Tuple[int, ...], rows: Tuple[int, ...], block: FrozenSet[Cell]
+        self,
+        block_columns: Tuple[int, ...],
+        rows: Tuple[int, ...],
+        block: FrozenSet[Cell],
     ) -> Optional[str]:
-        for req in self._tiling.requirements:
+        for requirement in self._tiling.requirements:
             cells = set()
-            for gp in req:
-                if not _block_indices(gp, block):
+            for gridded_perm in requirement:
+                if not _block_indices(gridded_perm, block):
                     continue
-                if len(gp) != 1:
+                if len(gridded_perm) != 1:
                     return "a requirement other than points has points in the block"
-                cells.add(gp.pos[0])
-            if cells and not _columns_or_rows(cells, cols, rows):
+                cells.add(gridded_perm.pos[0])
+            if cells and not _columns_or_rows(cells, block_columns, rows):
                 return "a requirement is on part of a column of the block"
-        for ass in self._tiling.assumptions:
+        for assumption in self._tiling.assumptions:
             cells = set()
-            for gp in ass.gps:
-                if not _block_indices(gp, block):
+            for gridded_perm in assumption.gps:
+                if not _block_indices(gridded_perm, block):
                     continue
-                if len(gp) != 1:
+                if len(gridded_perm) != 1:
                     return "an assumption on more than a point has points in the block"
-                cells.add(gp.pos[0])
+                cells.add(gridded_perm.pos[0])
             if not cells:
                 continue
             # only plain TrackingAssumptions: the component assumptions, its
             # subclasses, count something the slide does not keep
-            if ass.__class__ is not TrackingAssumption:
+            if assumption.__class__ is not TrackingAssumption:
                 return "an assumption that does not count points covers the block"
             whole_columns = {(x, y) for x, _ in cells for y in rows}
-            whole_rows = {(x, y) for _, y in cells for x in cols}
+            whole_rows = {(x, y) for _, y in cells for x in block_columns}
             if cells not in (whole_columns, whole_rows):
                 return "an assumption covers part of the block's columns and rows"
         return None
 
     @staticmethod
     def _window_key(
-        ob: GriddedPerm, idx: Sequence[int], rows: Tuple[int, ...]
+        obstruction: GriddedPerm, indices: Sequence[int], rows: Tuple[int, ...]
     ) -> Optional[WindowKey]:
         """The obstruction's points outside the block, how many of them lie below
         the block points, and the block rows its block points span; None if a point
         outside lies between two block points in value."""
-        inside = set(idx)
-        values = [ob.patt[i] for i in idx]
+        inside = set(indices)
+        values = [obstruction.patt[i] for i in indices]
         low, high = min(values), max(values)
-        rest = [i for i in range(len(ob)) if i not in inside]
-        if any(low < ob.patt[i] < high for i in rest):
+        rest = [i for i in range(len(obstruction)) if i not in inside]
+        if any(low < obstruction.patt[i] < high for i in rest):
             return None
-        outside = tuple(Perm.to_standard([ob.patt[i] for i in rest]))
-        below = sum(1 for i in rest if ob.patt[i] < low)
-        block_rows = [ob.pos[i][1] for i in idx]
+        outside = tuple(Perm.to_standard([obstruction.patt[i] for i in rest]))
+        below = sum(1 for i in rest if obstruction.patt[i] < low)
+        block_rows = [obstruction.pos[i][1] for i in indices]
         lowest, highest = min(block_rows), max(block_rows)
         return (
             outside,
-            tuple(ob.pos[i] for i in rest),
+            tuple(obstruction.pos[i] for i in rest),
             below,
             tuple(y for y in rows if lowest <= y <= highest),
         )
 
     def _complete(
         self,
-        ob: GriddedPerm,
-        idx: Sequence[int],
-        cols: Tuple[int, ...],
+        obstruction: GriddedPerm,
+        indices: Sequence[int],
+        columns: Tuple[int, ...],
         rows: Tuple[int, ...],
     ) -> bool:
         """Is every regridding of the obstruction's block points over the cells
         cols x rows forbidden? The same for all its regriddings, so it is cached by
         their family."""
-        inside = set(idx)
+        inside = set(indices)
         family = (
-            ob.patt,
-            tuple(cell for i, cell in enumerate(ob.pos) if i not in inside),
-            tuple(idx),
-            cols,
+            obstruction.patt,
+            tuple(cell for i, cell in enumerate(obstruction.pos) if i not in inside),
+            tuple(indices),
+            columns,
             rows,
         )
         if family not in self._complete_families:
             self._complete_families[family] = all(
                 self._is_forbidden(gridding)
-                for gridding in _regriddings(ob, idx, cols, rows)
+                for gridding in _regriddings(obstruction, indices, columns, rows)
             )
         return self._complete_families[family]
 
@@ -541,41 +594,43 @@ class KnuthSlide:
 
 
 def _regriddings(  # pylint: disable=too-many-locals
-    ob: GriddedPerm,
-    idx: Sequence[int],
-    cols: Tuple[int, ...],
+    obstruction: GriddedPerm,
+    indices: Sequence[int],
+    columns: Tuple[int, ...],
     rows: Tuple[int, ...],
 ) -> Iterator[Gridding]:
     """Every valid gridding, as (pattern, cells), with the obstruction's pattern and
     cells outside the block, and its block points (idx, consecutive in position) in
     the cells cols x rows."""
-    patt = ob.patt
-    inside = set(idx)
-    rest = [i for i in range(len(ob)) if i not in inside]
-    by_value = sorted(idx, key=lambda i: patt[i])
+    pattern = obstruction.patt
+    inside = set(indices)
+    rest = [i for i in range(len(obstruction)) if i not in inside]
+    by_value = sorted(indices, key=lambda i: pattern[i])
     lowest = {
-        i: max((ob.pos[j][1] for j in rest if patt[j] < patt[i]), default=-1)
-        for i in idx
+        i: max(
+            (obstruction.pos[j][1] for j in rest if pattern[j] < pattern[i]), default=-1
+        )
+        for i in indices
     }
     highest = {
         i: min(
-            (ob.pos[j][1] for j in rest if patt[j] > patt[i]),
-            default=len(patt) + max(rows) + 1,
+            (obstruction.pos[j][1] for j in rest if pattern[j] > pattern[i]),
+            default=len(pattern) + max(rows) + 1,
         )
-        for i in idx
+        for i in indices
     }
     row_choices = [
-        row_seq
-        for row_seq in combinations_with_replacement(rows, len(idx))
-        if all(lowest[i] <= y <= highest[i] for i, y in zip(by_value, row_seq))
+        row_sequence
+        for row_sequence in combinations_with_replacement(rows, len(indices))
+        if all(lowest[i] <= y <= highest[i] for i, y in zip(by_value, row_sequence))
     ]
-    for col_seq in combinations_with_replacement(cols, len(idx)):
-        for row_seq in row_choices:
-            pos = list(ob.pos)
-            row = dict(zip(by_value, row_seq))
-            for i, x in zip(idx, col_seq):
-                pos[i] = (x, row[i])
-            yield patt, tuple(pos)
+    for column_sequence in combinations_with_replacement(columns, len(indices)):
+        for row_sequence in row_choices:
+            positions = list(obstruction.pos)
+            row_of = dict(zip(by_value, row_sequence))
+            for i, x in zip(indices, column_sequence):
+                positions[i] = (x, row_of[i])
+            yield pattern, tuple(positions)
 
 
 def _lines(cells: Iterable[Cell]) -> Dict[int, Tuple[int, ...]]:
@@ -583,37 +638,37 @@ def _lines(cells: Iterable[Cell]) -> Dict[int, Tuple[int, ...]]:
     rows: DefaultDict[int, Set[int]] = defaultdict(set)
     for x, y in cells:
         rows[x].add(y)
-    return {x: tuple(sorted(ys)) for x, ys in rows.items()}
+    return {x: tuple(sorted(column_rows)) for x, column_rows in rows.items()}
 
 
-def mirror_gp(gp: GriddedPerm, col: int, width: int) -> GriddedPerm:
+def mirror_gp(gridded_perm: GriddedPerm, column: int, width: int) -> GriddedPerm:
     """Mirror the block's columns in a gridded permutation with at most one point
     in the block (a requirement's or an assumption's point)."""
-    if not any(col <= x < col + width for x, _ in gp.pos):
-        return gp
+    if not any(column <= x < column + width for x, _ in gridded_perm.pos):
+        return gridded_perm
     return GriddedPerm(
-        gp.patt,
+        gridded_perm.patt,
         (
-            (2 * col + width - 1 - x, y) if col <= x < col + width else (x, y)
-            for x, y in gp.pos
+            (2 * column + width - 1 - x, y) if column <= x < column + width else (x, y)
+            for x, y in gridded_perm.pos
         ),
     )
 
 
 def _columns_or_rows(
-    cells: Set[Cell], cols: Tuple[int, ...], rows: Tuple[int, ...]
+    cells: Set[Cell], columns: Tuple[int, ...], rows: Tuple[int, ...]
 ) -> bool:
     """Are the cells those of some whole columns and some whole rows of the block?"""
-    whole_columns = {x for x in cols if all((x, y) in cells for y in rows)}
-    whole_rows = {y for y in rows if all((x, y) in cells for x in cols)}
+    whole_columns = {x for x in columns if all((x, y) in cells for y in rows)}
+    whole_rows = {y for y in rows if all((x, y) in cells for x in columns)}
     return cells == {
-        (x, y) for x in cols for y in rows if x in whole_columns or y in whole_rows
+        (x, y) for x in columns for y in rows if x in whole_columns or y in whole_rows
     }
 
 
-def _block_indices(gp: GriddedPerm, block: FrozenSet[Cell]) -> List[int]:
-    return [i for i, cell in enumerate(gp.pos) if cell in block]
+def _block_indices(gridded_perm: GriddedPerm, block: FrozenSet[Cell]) -> List[int]:
+    return [i for i, cell in enumerate(gridded_perm.pos) if cell in block]
 
 
-def _pattern(gp: GriddedPerm, idx: Iterable[int]) -> Perm:
-    return Perm.to_standard([gp.patt[i] for i in idx])
+def _pattern(gridded_perm: GriddedPerm, indices: Iterable[int]) -> Perm:
+    return Perm.to_standard([gridded_perm.patt[i] for i in indices])

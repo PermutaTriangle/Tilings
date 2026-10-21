@@ -45,11 +45,13 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             raise StrategyDoesNotApply(f"no Knuth slide: {reason}")
         return (self._frame(slide.slide(self.col, self.width)),)
 
-    def _map(self, gp: GriddedPerm) -> GriddedPerm:
+    def _map(self, gridded_perm: GriddedPerm) -> GriddedPerm:
         if self.transpose:
-            image = KnuthSlide.slide_gp(gp.inverse(_flip), self.col, self.width)
+            image = KnuthSlide.slide_gp(
+                gridded_perm.inverse(_flip), self.col, self.width
+            )
             return image.inverse(_flip)
-        return KnuthSlide.slide_gp(gp, self.col, self.width)
+        return KnuthSlide.slide_gp(gridded_perm, self.col, self.width)
 
     def forward_map(
         self,
@@ -66,7 +68,9 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
         # the slide is an involution
-        yield from (self._map(gp) for gp in objs if gp is not None)
+        yield from (
+            self._map(gridded_perm) for gridded_perm in objs if gridded_perm is not None
+        )
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -77,13 +81,20 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             children = self.decomposition_function(comb_class)
         child = children[0]
         mapped = {}
-        for ass in comb_class.assumptions:
-            gps = (gp.inverse(_flip) for gp in ass.gps) if self.transpose else ass.gps
-            image = (mirror_gp(gp, self.col, self.width) for gp in gps)
+        for assumption in comb_class.assumptions:
+            gridded_perms = (
+                (gridded_perm.inverse(_flip) for gridded_perm in assumption.gps)
+                if self.transpose
+                else assumption.gps
+            )
+            image = (
+                mirror_gp(gridded_perm, self.col, self.width)
+                for gridded_perm in gridded_perms
+            )
             if self.transpose:
-                image = (gp.inverse(_flip) for gp in image)
-            mapped[comb_class.get_assumption_parameter(ass)] = (
-                child.get_assumption_parameter(ass.__class__(image))
+                image = (gridded_perm.inverse(_flip) for gridded_perm in image)
+            mapped[comb_class.get_assumption_parameter(assumption)] = (
+                child.get_assumption_parameter(assumption.__class__(image))
             )
         return (mapped,)
 
@@ -136,17 +147,17 @@ class KnuthSlideFactory(StrategyFactory[Tiling]):
                 continue
             frame = comb_class.inverse() if transpose else comb_class
             slide = KnuthSlide(frame)
-            for col, width in slide.blocks(self.max_width, self.rows):
-                if slide.why_not(col, width) is not None or slide.is_identity(
-                    col, width
+            for column, width in slide.blocks(self.max_width, self.rows):
+                if slide.why_not(column, width) is not None or slide.is_identity(
+                    column, width
                 ):
                     continue
-                child = slide.slide(col, width)
+                child = slide.slide(column, width)
                 if transpose:
                     child = child.inverse()
                 if child == comb_class:
                     continue
-                yield KnuthSlideStrategy(col, width, transpose)(comb_class, (child,))
+                yield KnuthSlideStrategy(column, width, transpose)(comb_class, (child,))
 
     def __repr__(self) -> str:
         return (
@@ -160,11 +171,11 @@ class KnuthSlideFactory(StrategyFactory[Tiling]):
         return f"Knuth slides of up to {self.max_width} {what}{where}"
 
     def to_jsonable(self) -> dict:
-        d: dict = super().to_jsonable()
-        d["max_width"] = self.max_width
-        d["rows"] = self.rows
-        d["transpose"] = self.transpose
-        return d
+        jsonable: dict = super().to_jsonable()
+        jsonable["max_width"] = self.max_width
+        jsonable["rows"] = self.rows
+        jsonable["transpose"] = self.transpose
+        return jsonable
 
     @classmethod
     def from_dict(cls, d: dict) -> "KnuthSlideFactory":

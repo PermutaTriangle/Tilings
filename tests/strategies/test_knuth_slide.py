@@ -18,81 +18,101 @@ from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import GuidedSearcher, TrackedSearcher
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-with open(os.path.join(__location__, "knuth_slide_15432.json")) as fp:
+with open(os.path.join(__location__, "knuth_slide_15432.json")) as blocks_file:
     AV_15432_BLOCKS = {
-        name: (Tiling.from_dict(d["tiling"]), d["col"], d["width"])
-        for name, d in json.load(fp).items()
+        name: (Tiling.from_dict(entry["tiling"]), entry["col"], entry["width"])
+        for name, entry in json.load(blocks_file).items()
     }
 
 
-def cell(cell_, *patts):
-    return [GriddedPerm(Perm.to_standard(p), [cell_] * len(p)) for p in patts]
+def cell(cell_, *patterns):
+    return [
+        GriddedPerm(Perm.to_standard(pattern), [cell_] * len(pattern))
+        for pattern in patterns
+    ]
 
 
-def griddings_of(patt, *cells):
-    return [GriddedPerm(Perm.to_standard(patt), cells)]
+def griddings_of(pattern, *cells):
+    return [GriddedPerm(Perm.to_standard(pattern), cells)]
 
 
-def griddings(patt, cells):
+def griddings(pattern, cells):
     """Every valid gridding of patt over the cells."""
-    patt = Perm.to_standard(patt)
-    for pos in product(cells, repeat=len(patt)):
-        if any(pos[i][0] > pos[i + 1][0] for i in range(len(patt) - 1)):
+    pattern = Perm.to_standard(pattern)
+    for positions in product(cells, repeat=len(pattern)):
+        if any(positions[i][0] > positions[i + 1][0] for i in range(len(pattern) - 1)):
             continue
         if any(
-            patt[i] < patt[j] and pos[i][1] > pos[j][1]
-            for i in range(len(patt))
-            for j in range(len(patt))
+            pattern[i] < pattern[j] and positions[i][1] > positions[j][1]
+            for i in range(len(pattern))
+            for j in range(len(pattern))
         ):
             continue
-        yield GriddedPerm(patt, pos)
+        yield GriddedPerm(pattern, positions)
 
 
 def assert_bijection(parent, child, strategy, length):
     """The forward map takes the parent's gridded permutations of each size onto the
     child's, and the backward map takes them back."""
-    for n in range(length + 1):
-        parent_gps = set(parent.objects_of_size(n))
-        images = {strategy.forward_map(parent, gp)[0] for gp in parent_gps}
-        assert images == set(child.objects_of_size(n))
-        assert {next(strategy.backward_map(parent, (gp,))) for gp in images} == (
-            parent_gps
-        )
+    for size in range(length + 1):
+        parent_gridded_perms = set(parent.objects_of_size(size))
+        images = {
+            strategy.forward_map(parent, gridded_perm)[0]
+            for gridded_perm in parent_gridded_perms
+        }
+        assert images == set(child.objects_of_size(size))
+        assert {
+            next(strategy.backward_map(parent, (gridded_perm,)))
+            for gridded_perm in images
+        } == (parent_gridded_perms)
 
 
 def sanity_check(rule, length):
-    for n in range(length + 1):
-        assert rule.sanity_check(n)
+    for size in range(length + 1):
+        assert rule.sanity_check(size)
 
 
 def slides(tiling, **kwargs):
     return list(KnuthSlideFactory(**kwargs)(tiling))
 
 
-def naive_one_row_slide(tiling, col, width):
+def naive_one_row_slide(tiling, column, width):
     """The child the slide would have if every obstruction inside one cell were the
     cell's own and every other one a window constraint: the cells' obstructions
     mirrored, the others regridded over the block."""
-    cells = [(col + i, 0) for i in range(width)]
-    mirror = {c: cells[width - 1 - i] for i, c in enumerate(cells)}
-    obs = set()
-    for ob in tiling.obstructions:
-        idx = [i for i, c in enumerate(ob.pos) if c in cells]
-        if not idx:
-            obs.add(ob)
-        elif len(idx) == len(ob) and len({ob.pos[i] for i in idx}) == 1:
-            obs.add(GriddedPerm(ob.patt, [mirror[c] for c in ob.pos]))
+    cells = [(column + i, 0) for i in range(width)]
+    mirror = {cell_: cells[width - 1 - i] for i, cell_ in enumerate(cells)}
+    obstructions = set()
+    for obstruction in tiling.obstructions:
+        indices = [i for i, cell_ in enumerate(obstruction.pos) if cell_ in cells]
+        if not indices:
+            obstructions.add(obstruction)
+        elif (
+            len(indices) == len(obstruction)
+            and len({obstruction.pos[i] for i in indices}) == 1
+        ):
+            obstructions.add(
+                GriddedPerm(
+                    obstruction.patt, [mirror[cell_] for cell_ in obstruction.pos]
+                )
+            )
         else:
-            for choice in combinations_with_replacement(cells, len(idx)):
-                pos = list(ob.pos)
-                for i, c in zip(idx, choice):
-                    pos[i] = c
-                obs.add(GriddedPerm(ob.patt, pos))
-    reqs = [
-        [GriddedPerm(gp.patt, [mirror.get(c, c) for c in gp.pos]) for gp in req]
-        for req in tiling.requirements
+            for choice in combinations_with_replacement(cells, len(indices)):
+                positions = list(obstruction.pos)
+                for i, cell_ in zip(indices, choice):
+                    positions[i] = cell_
+                obstructions.add(GriddedPerm(obstruction.patt, positions))
+    requirements = [
+        [
+            GriddedPerm(
+                gridded_perm.patt,
+                [mirror.get(cell_, cell_) for cell_ in gridded_perm.pos],
+            )
+            for gridded_perm in requirement
+        ]
+        for requirement in tiling.requirements
     ]
-    return Tiling(obs, reqs)
+    return Tiling(obstructions, requirements)
 
 
 ROW_PLACEMENTS = TileScopePack.row_and_col_placements(row_only=True).make_fusion(
@@ -104,14 +124,16 @@ COL_PLACEMENTS = TileScopePack.row_and_col_placements(col_only=True).make_fusion
 
 
 def counts(tiling, length):
-    return [sum(1 for _ in tiling.objects_of_size(n)) for n in range(length + 1)]
+    return [sum(1 for _ in tiling.objects_of_size(size)) for size in range(length + 1)]
 
 
 # Babson and West's pair: an increasing cell next to a 321-avoiding one, jointly
 # 321-avoiding (the Catalan numbers either way round).
-X, Y = (0, 0), (1, 0)
+LEFT, RIGHT = (0, 0), (1, 0)
 babson_west = Tiling(
-    cell(X, "21") + cell(Y, "321") + [GriddedPerm(Perm((2, 1, 0)), (X, Y, Y))]
+    cell(LEFT, "21")
+    + cell(RIGHT, "321")
+    + [GriddedPerm(Perm((2, 1, 0)), (LEFT, RIGHT, RIGHT))]
 )
 
 
@@ -119,7 +141,9 @@ def test_babson_west_pair():
     (rule,) = slides(babson_west)
     child = rule.children[0]
     assert child == Tiling(
-        cell(Y, "21") + cell(X, "321") + [GriddedPerm(Perm((2, 1, 0)), (X, X, Y))]
+        cell(RIGHT, "21")
+        + cell(LEFT, "321")
+        + [GriddedPerm(Perm((2, 1, 0)), (LEFT, LEFT, RIGHT))]
     )
     assert (
         counts(babson_west, 7) == counts(child, 7) == [1, 2, 5, 14, 42, 132, 429, 1430]
@@ -131,11 +155,11 @@ def test_babson_west_pair():
 @pytest.mark.parametrize("name", sorted(AV_15432_BLOCKS))
 def test_three_column_slides_of_av_15432(name):
     """The three blocks of three cells that Av(15432)'s specification reverses."""
-    tiling, col, width = AV_15432_BLOCKS[name]
+    tiling, column, width = AV_15432_BLOCKS[name]
     rules = [
         rule
         for rule in slides(tiling)
-        if rule.strategy.col == col and rule.strategy.width == width
+        if rule.strategy.col == column and rule.strategy.width == width
     ]
     assert len(rules) == 1
     assert_bijection(tiling, rules[0].children[0], rules[0].strategy, 5)
@@ -147,12 +171,12 @@ def test_three_distinct_cells_do_not_slide_two_at_a_time():
     and all three avoid 4321, so only the pair (Av(321), inc) slides; the naive slide
     of the others changes the counts."""
     tiling, _, _ = AV_15432_BLOCKS["04321|3210|210|10"]
-    ks = KnuthSlide(tiling)
-    assert ks.why_not(1, 3) is None
-    assert ks.why_not(2, 2) is None
-    for col in (0, 1):
-        assert ks.why_not(col, 2) is not None
-        assert counts(tiling, 5) != counts(naive_one_row_slide(tiling, col, 2), 5)
+    knuth_slide = KnuthSlide(tiling)
+    assert knuth_slide.why_not(1, 3) is None
+    assert knuth_slide.why_not(2, 2) is None
+    for column in (0, 1):
+        assert knuth_slide.why_not(column, 2) is not None
+        assert counts(tiling, 5) != counts(naive_one_row_slide(tiling, column, 2), 5)
 
 
 def test_slides_agree_with_tilings_sliding():
@@ -167,7 +191,7 @@ def test_slides_agree_with_tilings_sliding():
     for label in range(len(searcher.classdb.label_to_tilings)):
         tiling = searcher.classdb.get_class(label)
         for rule in SlidingFactory(use_symmetries=True)(tiling):
-            children = {r.children[0] for r in slides(tiling)}
+            children = {slide_rule.children[0] for slide_rule in slides(tiling)}
             assert rule.children[0] in children
             tested += 1
     assert tested > 0
@@ -193,7 +217,9 @@ def test_slides_agree_with_tilings_monotone_sliding():
             for rule in MonotoneSlidingFactory()(tiling):
                 if rule.children[0] == tiling:
                     continue
-                children = {r.children[0] for r in slides(tiling, max_width=2)}
+                children = {
+                    slide_rule.children[0] for slide_rule in slides(tiling, max_width=2)
+                }
                 assert rule.children[0] in children
                 tested += 1
                 with_assumptions += bool(tiling.assumptions)
@@ -212,7 +238,7 @@ def two_rows(strip_column, short_columns):
         for y in range(2)
         if (x, y) not in cells
     ]
-    strip = [c for c in cells if c[0] == strip_column]
+    strip = [cell_ for cell_ in cells if cell_[0] == strip_column]
     return Tiling(list(griddings("321", cells)) + list(griddings("21", strip)) + empty)
 
 
@@ -221,7 +247,9 @@ def two_rows(strip_column, short_columns):
 )
 def test_the_ferrers_version(short_columns):
     parent = two_rows(1, short_columns)
-    (rule,) = [r for r in slides(parent) if not r.strategy.transpose]
+    (rule,) = [
+        slide_rule for slide_rule in slides(parent) if not slide_rule.strategy.transpose
+    ]
     assert rule.children[0] == two_rows(2, short_columns)
     assert_bijection(parent, rule.children[0], rule.strategy, 5)
     sanity_check(rule, 5)
@@ -241,21 +269,23 @@ def point_and_pair(x_basis, y_basis, window):
     """A point, and to its right the pair; above the point, the pair's word avoids
     the window's patterns."""
     point, x_cell, y_cell = (0, 0), (1, 0), (2, 0)
-    obs = cell(point, "12", "21") + cell(x_cell, *x_basis) + cell(y_cell, *y_basis)
-    for patt in window:
-        lifted = (0,) + tuple(v + 1 for v in Perm.to_standard(patt))
-        for choice in combinations_with_replacement([x_cell, y_cell], len(patt)):
-            obs.append(GriddedPerm(Perm(lifted), (point,) + choice))
-    return Tiling(obs, [[GriddedPerm((0,), (point,))]])
+    obstructions = (
+        cell(point, "12", "21") + cell(x_cell, *x_basis) + cell(y_cell, *y_basis)
+    )
+    for pattern in window:
+        lifted = (0,) + tuple(value + 1 for value in Perm.to_standard(pattern))
+        for choice in combinations_with_replacement([x_cell, y_cell], len(pattern)):
+            obstructions.append(GriddedPerm(Perm(lifted), (point,) + choice))
+    return Tiling(obstructions, [[GriddedPerm((0,), (point,))]])
 
 
 def shape_31():
     """The nine permutations of RSK shape (3, 1): a class determined by the shape,
     whose basis is not monotone."""
     return [
-        Perm(p)
-        for p in permutations(range(4))
-        if tuple(len(row) for row in rsk(p)[0]) == (3, 1)
+        Perm(perm)
+        for perm in permutations(range(4))
+        if tuple(len(row) for row in rsk(perm)[0]) == (3, 1)
     ]
 
 
@@ -276,35 +306,48 @@ def test_general_slides(tiling):
 
 
 @pytest.mark.parametrize(
-    "tiling, col",
+    "tiling, column",
     [
-        (Tiling(cell(X, "132") + cell(Y, "21") + list(griddings("1234", [X, Y]))), 0),
+        (
+            Tiling(
+                cell(LEFT, "132")
+                + cell(RIGHT, "21")
+                + list(griddings("1234", [LEFT, RIGHT]))
+            ),
+            0,
+        ),
         (point_and_pair(["21"], ["321"], ["132"]), 1),
         (
-            Tiling(cell(X, "21") + cell(Y, "12") + [GriddedPerm(Perm((1, 0)), (X, Y))]),
+            Tiling(
+                cell(LEFT, "21")
+                + cell(RIGHT, "12")
+                + [GriddedPerm(Perm((1, 0)), (LEFT, RIGHT))]
+            ),
             0,
         ),
     ],
     ids=["cell not shape-closed", "window not Knuth-closed", "split-dependent"],
 )
-def test_each_condition_is_needed(tiling, col):
+def test_each_condition_is_needed(tiling, column):
     """Each tiling breaks one condition: the slide refuses it, and the naive slide
     changes the counts."""
-    assert KnuthSlide(tiling).why_not(col, 2) is not None
-    assert not [r for r in slides(tiling) if r.strategy.col == col]
-    assert counts(tiling, 6) != counts(naive_one_row_slide(tiling, col, 2), 6)
+    assert KnuthSlide(tiling).why_not(column, 2) is not None
+    assert not [
+        slide_rule for slide_rule in slides(tiling) if slide_rule.strategy.col == column
+    ]
+    assert counts(tiling, 6) != counts(naive_one_row_slide(tiling, column, 2), 6)
 
 
 def test_requirements_and_assumptions_follow_the_cells():
     tiling = Tiling(
         babson_west.obstructions,
-        [[GriddedPerm((0,), (X,))]],
-        [TrackingAssumption([GriddedPerm((0,), (X,))])],
+        [[GriddedPerm((0,), (LEFT,))]],
+        [TrackingAssumption([GriddedPerm((0,), (LEFT,))])],
     )
     (rule,) = slides(tiling)
     child = rule.children[0]
-    assert child.requirements == ((GriddedPerm((0,), (Y,)),),)
-    assert child.assumptions == (TrackingAssumption([GriddedPerm((0,), (Y,))]),)
+    assert child.requirements == ((GriddedPerm((0,), (RIGHT,)),),)
+    assert child.assumptions == (TrackingAssumption([GriddedPerm((0,), (RIGHT,))]),)
     sanity_check(rule, 6)
 
 
@@ -329,7 +372,11 @@ def test_a_requirement_on_part_of_a_column_stops_the_ferrers_slide():
         parent.obstructions,
         [[GriddedPerm((0,), ((1, 0),)), GriddedPerm((0,), ((1, 1),))]],
     )
-    (rule,) = [r for r in slides(whole_column) if not r.strategy.transpose]
+    (rule,) = [
+        slide_rule
+        for slide_rule in slides(whole_column)
+        if not slide_rule.strategy.transpose
+    ]
     sanity_check(rule, 5)
 
 
@@ -352,8 +399,10 @@ def test_an_assumption_on_part_of_the_block_stops_the_slide():
 @pytest.mark.parametrize(
     "assumption",
     [
-        TrackingAssumption([GriddedPerm((0, 1), (X, Y))]),
-        SumComponentAssumption([GriddedPerm((0,), (X,)), GriddedPerm((0,), (Y,))]),
+        TrackingAssumption([GriddedPerm((0, 1), (LEFT, RIGHT))]),
+        SumComponentAssumption(
+            [GriddedPerm((0,), (LEFT,)), GriddedPerm((0,), (RIGHT,))]
+        ),
     ],
     ids=["on more than a point", "counting components"],
 )
@@ -403,7 +452,7 @@ def test_transposed_slides():
 def test_transposed_slides_with_assumptions():
     """A block of rows with an assumption: its parameter goes through the inverse."""
     tiling = Tiling(
-        babson_west.obstructions, [], [TrackingAssumption([GriddedPerm((0,), (X,))])]
+        babson_west.obstructions, [], [TrackingAssumption([GriddedPerm((0,), (LEFT,))])]
     ).inverse()
     (rule,) = slides(tiling)
     assert rule.strategy.transpose
@@ -413,7 +462,9 @@ def test_transposed_slides_with_assumptions():
 
 
 def test_identical_columns_give_no_rule():
-    twins = Tiling(cell(X, "21") + cell(Y, "21") + list(griddings("21", [X, Y])))
+    twins = Tiling(
+        cell(LEFT, "21") + cell(RIGHT, "21") + list(griddings("21", [LEFT, RIGHT]))
+    )
     assert KnuthSlide(twins).why_not(0, 2) is None
     assert KnuthSlide(twins).is_identity(0, 2)
     assert not slides(twins)
@@ -425,7 +476,9 @@ def test_factory_options():
     assert 3 in widths
     assert {rule.strategy.width for rule in slides(tiling, max_width=2)} <= {2}
     assert not [
-        r for r in slides(two_rows(1, [(0, 0)]), rows=False) if not r.strategy.transpose
+        slide_rule
+        for slide_rule in slides(two_rows(1, [(0, 0)]), rows=False)
+        if not slide_rule.strategy.transpose
     ]
     assert slides(babson_west.inverse())
     assert not slides(babson_west.inverse(), transpose=False)
@@ -441,7 +494,11 @@ def test_the_strategy_refuses_a_block_that_does_not_slide():
 
     with pytest.raises(StrategyDoesNotApply):
         KnuthSlideStrategy(0, 2)(
-            Tiling(cell(X, "21") + cell(Y, "12") + [GriddedPerm(Perm((1, 0)), (X, Y))])
+            Tiling(
+                cell(LEFT, "21")
+                + cell(RIGHT, "12")
+                + [GriddedPerm(Perm((1, 0)), (LEFT, RIGHT))]
+            )
         )
 
 
@@ -465,7 +522,7 @@ def untracked_then_guided(basis, pack, max_width):
 
 def test_av_1432_with_two_column_slides():
     spec = untracked_then_guided("1432", ROW_PLACEMENTS, 2)
-    assert [spec.count_objects_of_size(n) for n in range(9)] == [
+    assert [spec.count_objects_of_size(size) for size in range(9)] == [
         1,
         1,
         2,
@@ -484,7 +541,7 @@ def test_av_15432_with_three_column_slides():
     """Av(15432), which Tilings' sliding does not reach, with its Wilf-equivalent
     Av(12345)'s counts."""
     spec = untracked_then_guided("15432", ROW_PLACEMENTS, 3)
-    assert [spec.count_objects_of_size(n) for n in range(10)] == [
+    assert [spec.count_objects_of_size(size) for size in range(10)] == [
         1,
         1,
         2,
@@ -504,15 +561,19 @@ def test_a_specification_of_transposed_slides():
     each slide's child through its decomposition function."""
     spec = untracked_then_guided("1432", COL_PLACEMENTS, 2)
     rules = [
-        r for rule in spec.rules_dict.values() for r in getattr(rule, "rules", (rule,))
+        step
+        for rule in spec.rules_dict.values()
+        for step in getattr(rule, "rules", (rule,))
     ]
-    knuth = [r.strategy for r in rules if isinstance(r.strategy, KnuthSlideStrategy)]
+    knuth = [
+        step.strategy for step in rules if isinstance(step.strategy, KnuthSlideStrategy)
+    ]
     assert any(strategy.transpose for strategy in knuth)
     expected = [1, 1, 2, 6, 23, 103, 513, 2761, 15767]
-    assert [spec.count_objects_of_size(n) for n in range(9)] == expected
+    assert [spec.count_objects_of_size(size) for size in range(9)] == expected
     again = CombinatorialSpecification.from_dict(
         json.loads(json.dumps(spec.to_jsonable()))
     )
-    assert [again.count_objects_of_size(n) for n in range(9)] == expected
+    assert [again.count_objects_of_size(size) for size in range(9)] == expected
     assert spec.random_sample_object_of_size(7).patt.avoids(Perm((0, 3, 2, 1)))
     spec.sanity_check(4)
