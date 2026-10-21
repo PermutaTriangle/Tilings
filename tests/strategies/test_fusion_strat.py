@@ -1,5 +1,5 @@
 import pytest
-from sympy import Eq, Function, var
+from sympy import Derivative, Eq, Function, Lambda, expand, var
 
 from comb_spec_searcher.strategies import Rule
 from tilings import GriddedPerm, Tiling
@@ -350,7 +350,11 @@ def test_fusion_gfs():
     t1 = easy_fusable()
     rules = list(FusionFactory()(t1))
     assert len(rules) == 1
-    # EQ NOT IMPLEMENTED
+    F0 = Function("F0")(x)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(F0, F1.subs({k_0: 1}) + Derivative(F1, k_0).subs({k_0: 1}))
+    assert eq_equality(actual_eq, expected_eq)
 
     t2 = easy_fusable(track_left=True)
     rules = list(FusionFactory()(t2))
@@ -364,7 +368,11 @@ def test_fusion_gfs():
     t3 = easy_fusable(track_left=True, track_right=True, same_tracking=True)
     rules = list(FusionFactory()(t3))
     assert len(rules) == 1
-    # EQ NOT IMPLEMENTED
+    F0 = Function("F0")(x, k_0)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(F0, F1 + k_0 * Derivative(F1, k_0))
+    assert eq_equality(actual_eq, expected_eq)
 
     t4 = easy_fusable(track_left=True, track_right=True, same_tracking=False)
     rules = list(FusionFactory()(t4))
@@ -378,7 +386,11 @@ def test_fusion_gfs():
     t5 = easy_fusable(pos_left=True)
     rules = list(FusionFactory()(t5))
     assert len(rules) == 1
-    # EQ NOT IMPLEMENTED
+    F0 = Function("F0")(x)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(F0, Derivative(F1, k_0).subs({k_0: 1}))
+    assert eq_equality(actual_eq, expected_eq)
 
     t6 = easy_fusable(pos_left=True, track_left=True)
     rules = list(FusionFactory()(t6))
@@ -403,7 +415,11 @@ def test_fusion_gfs():
     )
     rules = list(FusionFactory()(t8))
     assert len(rules) == 1
-    # EQ NOT IMPLEMENTED
+    F0 = Function("F0")(x, k_0)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(F0, k_0 * Derivative(F1, k_0))
+    assert eq_equality(actual_eq, expected_eq)
 
     t9 = easy_fusable(
         pos_left=True, track_left=True, track_right=True, same_tracking=False
@@ -432,7 +448,11 @@ def test_fusion_gfs():
     t11 = easy_fusable(pos_left=True, pos_right=True)
     rules = list(FusionFactory()(t11))
     assert len(rules) == 1
-    # EQ NOT IMPLEMENTED
+    F0 = Function("F0")(x)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(F0, Derivative(F1, k_0).subs({k_0: 1}) - F1.subs({k_0: 1}))
+    assert eq_equality(actual_eq, expected_eq)
 
     t12 = easy_fusable(pos_left=True, pos_right=True, track_left=True)
     rules = list(FusionFactory()(t12))
@@ -454,7 +474,11 @@ def test_fusion_gfs():
     )
     rules = list(FusionFactory()(t13))
     assert len(rules) == 1
-    # EQ NOT IMPLEMENTED
+    F0 = Function("F0")(x, k_0)
+    F1 = Function("F1")(x, k_0)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    expected_eq = Eq(F0, k_0 * Derivative(F1, k_0) - F1)
+    assert eq_equality(actual_eq, expected_eq)
 
     t14 = easy_fusable(
         pos_left=True,
@@ -564,3 +588,26 @@ def test_indexed_backward_map():
         r.indexed_backward_map((gp,), i, True) == target
         for i, target in enumerate(reversed(order))
     )
+
+
+def test_fusion_derivative_equation_counts():
+    """
+    When both sides of the fused region are given the same value, the equation
+    is a derivative. It must agree with the counting: each child with k points
+    in the fused region gives k + 1 parents, less the splits leaving a side
+    that must hold a point empty.
+    """
+    x, k_0 = var("x"), var("k_0")
+    for kwargs in ({}, {"pos_left": True}, {"pos_left": True, "pos_right": True}):
+        rule = list(FusionFactory()(easy_fusable(**kwargs)))[0]
+        parent, child = rule.comb_class, rule.children[0]
+        F0, F1 = Function("F0")(x), Function("F1")(x, k_0)
+        eq = rule.constructor.get_equation(F0, (F1,))
+        series = sum(
+            x**n * k_0 ** child.get_parameters(gp)[0]
+            for n in range(6)
+            for gp in child.objects_of_size(n)
+        )
+        rhs = expand(eq.rhs.replace(Function("F1"), Lambda((x, k_0), series)).doit())
+        for n in range(6):
+            assert rhs.coeff(x, n) == sum(1 for _ in parent.objects_of_size(n))

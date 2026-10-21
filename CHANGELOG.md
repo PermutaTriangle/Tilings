@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Fixed
+- `FusionConstructor.get_equation` gives the equation of a fusion whose two sides
+  are given the same value, such as one with an untracked parent and a tracked
+  child: the derivative F(q) + q F'(q) of the child's function F of the fuse
+  parameter, less F(q) for each side that must hold a point. It used to raise
+  NotImplementedError.
 
 ## [4.1.0] - 2026-01-15
 ### Changed

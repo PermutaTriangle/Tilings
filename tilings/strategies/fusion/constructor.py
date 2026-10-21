@@ -210,10 +210,7 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             if fuse_type in ("right", "both"):
                 q *= sympy.var(parent_fuse_parameter)
         if left_vars == 1 and right_vars == 1 and p == q:
-            raise NotImplementedError(
-                "Not handled case with no left and right vars, and new fuse "
-                "parameter, or only parent fusion parameter covered entire region"
-            )
+            return self._derivative_equation(lhs_func, rhs_func, subs, q)
         subs1 = {**subs}
         subs1[self.fuse_parameter] = q / left_vars
         subs2 = {**subs}
@@ -239,6 +236,31 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
             )
             / (q * right_vars - p * left_vars)
             - to_subtract,
+        )
+
+    def _derivative_equation(
+        self,
+        lhs_func: sympy.Function,
+        rhs_func: sympy.Function,
+        subs: Dict[str, Any],
+        value: sympy.Expr,
+    ) -> sympy.Eq:
+        """
+        The equation when both sides of the fused region are given the same
+        value. The divided difference (q F(q) - p F(p)) / (q - p) of the other
+        cases, with F the child's function of the fuse parameter, is then its
+        limit, the derivative F(q) + q F'(q): each child with k points in the
+        fused region gives k + 1 parents. A side that must hold a point loses
+        the split that leaves it empty, F(q) for each.
+        """
+        fuse_subs = {**subs, self.fuse_parameter: value}
+        at_value = rhs_func.subs(fuse_subs, simultaneous=True)
+        derivative = sympy.Derivative(rhs_func, sympy.var(self.fuse_parameter))
+        slope = derivative.subs(  # pylint: disable=assignment-from-no-return
+            fuse_subs, simultaneous=True
+        )
+        return sympy.Eq(
+            lhs_func, at_value + value * slope - sum(self.min_points) * at_value
         )
 
     def reliance_profile(self, n: int, **parameters: int) -> RelianceProfile:
