@@ -601,13 +601,18 @@ def test_fusion_derivative_equation_counts():
     for kwargs in ({}, {"pos_left": True}, {"pos_left": True, "pos_right": True}):
         rule = list(FusionFactory()(easy_fusable(**kwargs)))[0]
         parent, child = rule.comb_class, rule.children[0]
-        F0, F1 = Function("F0")(x), Function("F1")(x, k_0)
-        eq = rule.constructor.get_equation(F0, (F1,))
+        parent_function = Function("F0")(x)
+        child_function = Function("F1")(x, k_0)
+        equation = rule.constructor.get_equation(parent_function, (child_function,))
         series = sum(
-            x**n * k_0 ** child.get_parameters(gp)[0]
-            for n in range(6)
-            for gp in child.objects_of_size(n)
+            x**size * k_0 ** child.get_parameters(gridded_perm)[0]
+            for size in range(6)
+            for gridded_perm in child.objects_of_size(size)
         )
-        rhs = expand(eq.rhs.replace(Function("F1"), Lambda((x, k_0), series)).doit())
-        for n in range(6):
-            assert rhs.coeff(x, n) == sum(1 for _ in parent.objects_of_size(n))
+        expanded = expand(
+            equation.rhs.replace(Function("F1"), Lambda((x, k_0), series)).doit()
+        )
+        for size in range(6):
+            assert expanded.coeff(x, size) == sum(
+                1 for _ in parent.objects_of_size(size)
+            )
