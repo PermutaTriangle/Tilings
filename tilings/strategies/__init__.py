@@ -11,6 +11,7 @@ from .experimental_verification import (
 )
 from .factor import FactorFactory
 from .fusion import ComponentFusionFactory, FusionFactory
+from .knuth_slide import KnuthSlideFactory
 from .monotone_sliding import MonotoneSlidingFactory
 from .obstruction_inferral import (
     EmptyCellInferralFactory,
@@ -97,6 +98,7 @@ __all__ = [
     "UnfusionRowStrategy",
     "UnfusionFactory",
     # Equivalence
+    "KnuthSlideFactory",
     "MonotoneSlidingFactory",
     "PatternPlacementFactory",
     "SlidingFactory",
