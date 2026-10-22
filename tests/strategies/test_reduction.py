@@ -5,6 +5,7 @@ import pytest
 
 from comb_spec_searcher import CombinatorialSpecification, Strategy
 from permuta import Av, Perm
+from permuta.misc import DIR_NORTH, DIR_SOUTH
 from tilings import GriddedPerm, Tiling
 from tilings import strategies as strat
 from tilings.assumptions import TrackingAssumption
@@ -19,7 +20,9 @@ from tilings.strategies.reduction import (
     is_reducible,
     is_rigid,
     reduction_children,
+    reduction_plan,
 )
+from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
 
@@ -123,6 +126,29 @@ def one_cell():
     )
 
 
+@pytest.fixture
+def threshold():
+    """Av(2143) with its topmost point placed, a 21 inserted into the cell left of
+    the point and the 2 of the 21 placed bottommost: that is the lowest top of an
+    inversion of the left cell. Its points below it are in two increasing cells,
+    left and right of it, every point of the left one below those of the right
+    one, in the row of the cell right of the topmost point, which sees them only
+    through the 2143 with one point in them."""
+    with_point = Tiling.from_string("2143").add_single_cell_requirement(
+        Perm((0,)), (0, 0)
+    )
+    placed = RequirementPlacementStrategy(
+        [GriddedPerm(Perm((0,)), ((0, 0),))], [0], DIR_NORTH
+    )(with_point).children[0]
+    with_inversion = placed.add_single_cell_requirement(Perm((1, 0)), (0, 0))
+    return RequirementPlacementStrategy(
+        [GriddedPerm(Perm((1, 0)), ((0, 0), (0, 0)))], [0], DIR_SOUTH
+    )(with_inversion).children[0]
+
+
+THRESHOLD_CELLS = [(0, 0), (0, 2), (1, 1), (2, 0), (2, 2)]
+
+
 def offered_sets(tiling, region):
     return sorted(
         {strategy.cells for strategy in ReductionFactory(True, region)(tiling)}
@@ -189,19 +215,34 @@ def test_regions(two_rows, apart, row_and_column, one_cell):
 
 def test_children(two_rows):
     cells = [(1, 0), (2, 0), (3, 1)]
+    # no cell outside the set shares a row or a column with (1, 0) or (2, 0), and
+    # no obstruction with points outside the set has a point in them
+    assert reduction_plan(two_rows, cells) == ((((3, 1),),), ((1, 0), (2, 0)))
     reduced_tiling, own_tiling = reduction_children(two_rows, cells, False)
-    # the bottom row is one decreasing sequence, the cells tracked
+    # the reduced tiling keeps (3, 1) beside (0, 1), decreasing and tracked
+    assert reduced_tiling.dimensions == (2, 1)
+    assert GriddedPerm(Perm((0, 1)), ((1, 0), (1, 0))) in reduced_tiling.obstructions
+    assert reduced_tiling.assumptions == (TrackingAssumption.from_cells([(1, 0)]),)
+    # the own tiling keeps the 123s with the decreasing cell, in three columns and
+    # two rows, and tracks (3, 1) only
+    assert own_tiling.dimensions == (3, 2)
+    assert GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 1))) in (
+        own_tiling.obstructions
+    )
+    assert own_tiling.assumptions == (TrackingAssumption.from_cells([(2, 1)]),)
+    # not minimal, the reduced tiling keeps every cell of the set, each tracked
+    assert reduction_plan(two_rows, cells, minimal=False) == (
+        (((1, 0),), ((2, 0),), ((3, 1),)),
+        (),
+    )
+    reduced_tiling, own_tiling = reduction_children(
+        two_rows, cells, False, minimal=False
+    )
     assert GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0))) in reduced_tiling.obstructions
     for cell in cells:
         assert GriddedPerm(Perm((0, 1)), (cell, cell)) in reduced_tiling.obstructions
         assert TrackingAssumption.from_cells([cell]) in reduced_tiling.assumptions
     assert reduced_tiling.dimensions == two_rows.dimensions
-    # the own tiling keeps the 123s with the decreasing cell, in three columns and
-    # two rows
-    assert own_tiling.dimensions == (3, 2)
-    assert GriddedPerm(Perm((0, 1, 2)), ((0, 0), (0, 0), (2, 1))) in (
-        own_tiling.obstructions
-    )
     assert len(own_tiling.assumptions) == 3
 
 
@@ -217,10 +258,11 @@ def test_children(two_rows):
     ],
 )
 @pytest.mark.parametrize("increasing", [True, False])
-def test_sanity_check(request, fixture, cells, increasing):
+@pytest.mark.parametrize("minimal", [True, False])
+def test_sanity_check(request, fixture, cells, increasing, minimal):
     """The counts, objects and random samples of the rule against its tilings."""
     tiling = request.getfixturevalue(fixture)
-    rule = ReductionStrategy(cells, increasing)(tiling)
+    rule = ReductionStrategy(cells, increasing, minimal=minimal)(tiling)
     for n in range(6):
         assert rule.sanity_check(n)
 
@@ -234,31 +276,33 @@ def test_sanity_check(request, fixture, cells, increasing):
     ],
 )
 @pytest.mark.parametrize("increasing", [True, False])
-def test_maps(request, fixture, cells, increasing):
+@pytest.mark.parametrize("minimal", [True, False])
+def test_maps(request, fixture, cells, increasing, minimal):
     """The forward map is a bijection onto the pairs with as many points in each
-    cell, and the backward map is its inverse."""
+    group, whose sizes add up to the parent's with the groups' points counted once,
+    and the backward map is its inverse."""
     tiling = request.getfixturevalue(fixture)
-    strategy = ReductionStrategy(cells, increasing)
+    strategy = ReductionStrategy(cells, increasing, minimal=minimal)
     reduced_tiling, own_tiling = strategy.decomposition_function(tiling)
+    groups, _ = strategy.plan(tiling)
     _, own_to_parent = compression(strategy.cells)
 
-    def reduced_cell_sizes(reduced_gp):
+    def reduced_group_sizes(reduced_gp):
         parent_gp = reduced_tiling.backward_map.map_gp(reduced_gp)
         return tuple(
-            sum(1 for other in parent_gp.pos if other == cell)
-            for cell in strategy.cells
+            sum(1 for other in parent_gp.pos if other == group[0]) for group in groups
         )
 
-    def own_cell_sizes(own_gp):
+    def own_group_sizes(own_gp):
         own_cells = [own_to_parent[cell] for cell in own_gp.pos]
         return tuple(
-            sum(1 for other in own_cells if other == cell) for cell in strategy.cells
+            sum(1 for other in own_cells if other in group) for group in groups
         )
 
     own_by_sizes = defaultdict(list)
     for n in range(6):
         for own_gp in own_tiling.objects_of_size(n):
-            own_by_sizes[own_cell_sizes(own_gp)].append(own_gp)
+            own_by_sizes[own_group_sizes(own_gp)].append(own_gp)
     for n in range(6):
         images = set()
         for gp in tiling.objects_of_size(n):
@@ -268,10 +312,71 @@ def test_maps(request, fixture, cells, increasing):
             images.add((reduced_gp, own_gp))
         pairs = {
             (reduced_gp, own_gp)
-            for reduced_gp in reduced_tiling.objects_of_size(n)
-            for own_gp in own_by_sizes[reduced_cell_sizes(reduced_gp)]
+            for reduced_size in range(n + 1)
+            for reduced_gp in reduced_tiling.objects_of_size(reduced_size)
+            for own_gp in own_by_sizes[reduced_group_sizes(reduced_gp)]
+            if reduced_size + len(own_gp) - sum(reduced_group_sizes(reduced_gp)) == n
         }
         assert images == pairs
+
+
+def test_ordered_line(threshold):
+    """An obstruction with one point in the set may see it along a row the set has
+    other cells in, when the set's own obstructions put those cells in the order of
+    the reduction: here the two low cells, the left one below the right one, so
+    increasing only."""
+    assert is_reducible(threshold, THRESHOLD_CELLS, True)
+    assert not is_reducible(threshold, THRESHOLD_CELLS, False)
+    assert [
+        strategy.increasing
+        for strategy in ReductionFactory(True, "any")(threshold)
+        if strategy.cells == tuple(THRESHOLD_CELLS)
+    ] == [True]
+
+
+@pytest.mark.timeout(120)
+def test_threshold(threshold):
+    """The reduction of the left cell's five cells: the two low cells are seen as
+    one, the point and the high cells are left out, and each child tracks one
+    group."""
+    strategy = ReductionStrategy(THRESHOLD_CELLS, True)
+    assert strategy.plan(threshold) == (
+        (((0, 0), (2, 0)),),
+        ((0, 2), (1, 1), (2, 2)),
+    )
+    reduced_tiling, own_tiling = strategy.decomposition_function(threshold)
+    assert reduced_tiling.dimensions == (3, 2)
+    assert len(reduced_tiling.assumptions) == 1
+    assert len(own_tiling.assumptions) == 1
+    assert [len(list(threshold.objects_of_size(n))) for n in range(7)] == [
+        0,
+        0,
+        0,
+        1,
+        7,
+        40,
+        225,
+    ]
+    rule = strategy(threshold)
+    for n in range(7):
+        assert rule.sanity_check(n)
+
+
+@pytest.mark.timeout(120)
+def test_threshold_inverse(threshold):
+    """The inverse of the threshold tiling: the two low cells are in one column,
+    which the cell below the topmost point's cell shares, and are seen as one."""
+    tiling = threshold.inverse()
+    cells = [(row, column) for column, row in THRESHOLD_CELLS]
+    assert is_reducible(tiling, cells, True)
+    assert not is_reducible(tiling, cells, False)
+    strategy = ReductionStrategy(cells, True)
+    groups, left_out = strategy.plan(tiling)
+    assert groups == (((0, 0), (0, 2)),)
+    assert len(left_out) == 3
+    rule = strategy(tiling)
+    for n in range(7):
+        assert rule.sanity_check(n)
 
 
 def test_parent_assumptions(apart):
@@ -328,6 +433,18 @@ def test_encoding():
         assert decoded.__dict__ == strategy.__dict__
     assert CellReductionStrategy((2, 1), False).to_jsonable()["cell"] == (2, 1)
     assert "region" not in CellReductionFactory(True).to_jsonable()
+
+
+def test_encoded_before():
+    """A strategy encoded before the choice keeps every cell, each tracked."""
+    for strategy in (
+        ReductionStrategy([(1, 0), (2, 0), (3, 1)], False),
+        CellReductionStrategy((0, 0), True),
+    ):
+        assert strategy.minimal
+        encoded = strategy.to_jsonable()
+        encoded.pop("minimal")
+        assert not Strategy.from_dict(encoded).minimal
 
 
 @pytest.mark.timeout(120)

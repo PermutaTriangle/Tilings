@@ -9,13 +9,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - `ReductionFactory` and `ReductionStrategy`, the reduction of a set of cells:
   the cells are made increasing or decreasing, and the tiling of their own
-  obstructions and requirements, with the points in each of them counted, goes
-  beside the reduced tiling. The count is the Hadamard product of the two in the
-  variables counting the points in the cells, at 1, and the rules generate and
-  sample their objects. The factory's `region` says which sets it tries: `"cell"`
-  (single cells, the cell reduction), `"row"`, `"column"`, `"line"` (every set of
-  cells in one row or one column) and `"any"` (every set, of at most `max_cells`
-  cells if given).
+  obstructions and requirements goes beside the reduced tiling. An obstruction
+  with one point in the set may see that point along a row or a column the set
+  has other cells in, when the set's own obstructions already put those cells in
+  the order of the reduction. The reduced tiling keeps only what the rest of the
+  tiling sees of the set: it leaves out the cells the rest does not see, and keeps
+  one cell for each group of cells it sees as one, tracked once in both children.
+  The count is the Hadamard product of the two children in the variables counting
+  the points in those groups, at 1, and the product in the size of the cells left
+  out, and the rules generate and sample their objects. The factory's `region`
+  says which sets it tries: `"cell"` (single cells, the cell reduction), `"row"`,
+  `"column"`, `"line"` (every set of cells in one row or one column) and `"any"`
+  (every set, of at most `max_cells` cells if given). A strategy with
+  `minimal=False` keeps and tracks every cell of the set.
 
 ### Changed
 - `CellReductionFactory` and `CellReductionStrategy` are now the reduction of
