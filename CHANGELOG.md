@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- `ReductionFactory` and `ReductionStrategy`, the reduction of a set of cells:
+  the cells are made increasing or decreasing, and the tiling of their own
+  obstructions and requirements, with the points in each of them counted, goes
+  beside the reduced tiling. The count is the Hadamard product of the two in the
+  variables counting the points in the cells, at 1, and the rules generate and
+  sample their objects. The factory's `region` says which sets it tries: `"cell"`
+  (single cells, the cell reduction), `"row"`, `"column"`, `"line"` (every set of
+  cells in one row or one column) and `"any"` (every set, of at most `max_cells`
+  cells if given).
+
+### Changed
+- `CellReductionFactory` and `CellReductionStrategy` are now the reduction of
+  single cells, so they count, generate and sample objects, and the kitchen sink
+  pack uses `ReductionFactory` with the region `"cell"`. A cell with no
+  obstruction of its own, or in a component assumption, is no longer reduced.
 
 ## [4.1.0] - 2026-01-15
 ### Changed

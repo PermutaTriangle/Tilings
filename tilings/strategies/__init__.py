@@ -25,6 +25,7 @@ from .pointing import (
     RequirementPointingFactory,
 )
 from .rearrange_assumption import RearrangeAssumptionFactory
+from .reduction import ReductionFactory
 from .relax_assumption import RelaxAssumptionFactory
 from .requirement_insertion import (
     BasisPatternInsertionFactory,
@@ -115,6 +116,7 @@ __all__ = [
     "SubobstructionInferralFactory",
     # Reduction
     "CellReductionFactory",
+    "ReductionFactory",
     # Symmetry
     "SymmetriesFactory",
     # Verification
