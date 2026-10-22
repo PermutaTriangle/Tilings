@@ -282,6 +282,17 @@ def test_parent_assumptions(apart):
     assert len(rule.children[0].extra_parameters) == 3
 
 
+def test_unrestricted_cell():
+    """A cell with no obstruction of its own is not reduced: its own tiling would be
+    Tiling(), with only the empty permutation."""
+    tiling = tiling_from(
+        {(1, 0): [Perm((1, 0))]}, [(Perm((0, 1)), ((0, 0), (1, 0)))], []
+    )
+    assert not is_reducible(tiling, [(0, 0)])
+    assert list(ReductionFactory(True, "any")(tiling)) == []
+    assert list(CellReductionFactory(True)(tiling)) == []
+
+
 def test_not_tracked(two_rows):
     strategy = ReductionStrategy([(1, 0), (2, 0), (3, 1)], True, tracked=False)
     reduced_tiling, _ = strategy.decomposition_function(two_rows)
