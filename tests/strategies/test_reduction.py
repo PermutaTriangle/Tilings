@@ -230,20 +230,6 @@ def test_children(two_rows):
         own_tiling.obstructions
     )
     assert own_tiling.assumptions == (TrackingAssumption.from_cells([(2, 1)]),)
-    # not minimal, the reduced tiling keeps every cell of the set, each tracked
-    assert reduction_plan(two_rows, cells, minimal=False) == (
-        (((1, 0),), ((2, 0),), ((3, 1),)),
-        (),
-    )
-    reduced_tiling, own_tiling = reduction_children(
-        two_rows, cells, False, minimal=False
-    )
-    assert GriddedPerm(Perm((0, 1)), ((1, 0), (2, 0))) in reduced_tiling.obstructions
-    for cell in cells:
-        assert GriddedPerm(Perm((0, 1)), (cell, cell)) in reduced_tiling.obstructions
-        assert TrackingAssumption.from_cells([cell]) in reduced_tiling.assumptions
-    assert reduced_tiling.dimensions == two_rows.dimensions
-    assert len(own_tiling.assumptions) == 3
 
 
 @pytest.mark.parametrize(
@@ -258,11 +244,10 @@ def test_children(two_rows):
     ],
 )
 @pytest.mark.parametrize("increasing", [True, False])
-@pytest.mark.parametrize("minimal", [True, False])
-def test_sanity_check(request, fixture, cells, increasing, minimal):
+def test_sanity_check(request, fixture, cells, increasing):
     """The counts, objects and random samples of the rule against its tilings."""
     tiling = request.getfixturevalue(fixture)
-    rule = ReductionStrategy(cells, increasing, minimal=minimal)(tiling)
+    rule = ReductionStrategy(cells, increasing)(tiling)
     for n in range(6):
         assert rule.sanity_check(n)
 
@@ -276,13 +261,12 @@ def test_sanity_check(request, fixture, cells, increasing, minimal):
     ],
 )
 @pytest.mark.parametrize("increasing", [True, False])
-@pytest.mark.parametrize("minimal", [True, False])
-def test_maps(request, fixture, cells, increasing, minimal):
+def test_maps(request, fixture, cells, increasing):
     """The forward map is a bijection onto the pairs with as many points in each
     group, whose sizes add up to the parent's with the groups' points counted once,
     and the backward map is its inverse."""
     tiling = request.getfixturevalue(fixture)
-    strategy = ReductionStrategy(cells, increasing, minimal=minimal)
+    strategy = ReductionStrategy(cells, increasing)
     reduced_tiling, own_tiling = strategy.decomposition_function(tiling)
     groups, _ = strategy.plan(tiling)
     _, own_to_parent = compression(strategy.cells)
@@ -433,18 +417,6 @@ def test_encoding():
         assert decoded.__dict__ == strategy.__dict__
     assert CellReductionStrategy((2, 1), False).to_jsonable()["cell"] == (2, 1)
     assert "region" not in CellReductionFactory(True).to_jsonable()
-
-
-def test_encoded_before():
-    """A strategy encoded before the choice keeps every cell, each tracked."""
-    for strategy in (
-        ReductionStrategy([(1, 0), (2, 0), (3, 1)], False),
-        CellReductionStrategy((0, 0), True),
-    ):
-        assert strategy.minimal
-        encoded = strategy.to_jsonable()
-        encoded.pop("minimal")
-        assert not Strategy.from_dict(encoded).minimal
 
 
 @pytest.mark.timeout(120)

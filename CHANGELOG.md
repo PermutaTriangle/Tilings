@@ -20,8 +20,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   out, and the rules generate and sample their objects. The factory's `region`
   says which sets it tries: `"cell"` (single cells, the cell reduction), `"row"`,
   `"column"`, `"line"` (every set of cells in one row or one column) and `"any"`
-  (every set, of at most `max_cells` cells if given). A strategy with
-  `minimal=False` keeps and tracks every cell of the set.
+  (every set, of at most `max_cells` cells if given).
 
 ### Changed
 - `CellReductionFactory` and `CellReductionStrategy` are now the reduction of

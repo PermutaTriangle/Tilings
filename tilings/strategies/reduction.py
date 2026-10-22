@@ -51,9 +51,7 @@ cells left out:
     parent(n) = sum over w and m of reduced(n - m; w) * own(|w| + m; w),
 
 w the number of points in each group and m in the cells left out. A single cell
-is the cell reduction (`tilings.strategies.cell_reduction`). A strategy that is
-not minimal, as are those of specifications encoded before the choice existed,
-keeps every cell of the set in the reduced tiling, each tracked.
+is the cell reduction (`tilings.strategies.cell_reduction`).
 """
 
 import random
@@ -408,15 +406,12 @@ def _runs(
 
 @lru_cache(maxsize=1024)
 def _layout(
-    tiling: Tiling, cells: Tuple[Cell, ...], minimal: bool
+    tiling: Tiling, cells: Tuple[Cell, ...]
 ) -> Tuple[Plan, FrozenSet[int], FrozenSet[int]]:
     """The plan of the reduction (see reduction_plan), and the columns and the
     rows with cells outside the set."""
     cell_set = frozenset(cells)
     view = _view(tiling, cell_set)
-    if not minimal:
-        plan: Plan = tuple((cell,) for cell in cells), ()
-        return plan, view.outside_columns, view.outside_rows
     left_out = _left_out(cells, cell_set, view)
     seen = [cell for cell in cells if cell not in left_out]
     # a cell of a group along a row has a column with no cell outside the set, so
@@ -427,12 +422,11 @@ def _layout(
     return (tuple(sorted(groups)), left_out), view.outside_columns, view.outside_rows
 
 
-def reduction_plan(tiling: Tiling, cells: Iterable[Cell], minimal: bool = True) -> Plan:
+def reduction_plan(tiling: Tiling, cells: Iterable[Cell]) -> Plan:
     """Return the groups of the set's cells that the rest of the tiling sees as
     one, each first the cell the reduced tiling keeps for it, and the cells the
-    rest does not see, which the reduced tiling leaves out. Not minimal: every cell
-    a group of its own, and none left out."""
-    return _layout(tiling, tuple(sorted(set(cells))), minimal)[0]
+    rest does not see, which the reduced tiling leaves out."""
+    return _layout(tiling, tuple(sorted(set(cells))))[0]
 
 
 def _own_is_tracked(groups: Groups, left_out: Tuple[Cell, ...]) -> bool:
@@ -487,7 +481,6 @@ def reduction_children(
     cells: Iterable[Cell],
     increasing: bool,
     tracked: bool = True,
-    minimal: bool = True,
 ) -> Tuple[Tiling, Tiling]:
     """Return the reduced tiling, with a cell for each group of the set that the
     rest sees as one and none for the cells it does not see, those cells increasing
@@ -495,7 +488,7 @@ def reduction_children(
     tracked; and the tiling of the set's own obstructions and requirements, each
     group tracked if there are two or more, or cells left out."""
     cell_set = frozenset(cells)
-    plan = reduction_plan(tiling, cell_set, minimal)
+    plan = reduction_plan(tiling, cell_set)
     return (
         _reduced_tiling(tiling, cell_set, plan, increasing, tracked),
         _own_tiling(tiling, cell_set, plan),
@@ -619,12 +612,10 @@ class ReductionConstructor(Constructor[Tiling, GriddedPerm]):
         parent: Tiling,
         children: Tuple[Tiling, ...],
         cells: Iterable[Cell],
-        plan: Optional[Plan] = None,
+        plan: Plan,
     ):
         reduced_tiling, own_tiling = children
         self.cells = tuple(sorted(set(cells)))
-        if plan is None:
-            plan = tuple((cell,) for cell in self.cells), ()
         self.groups, left_out = plan
         self.leaves_out = bool(left_out)
         reduced_parameters = reduced_tiling.extra_parameters
@@ -846,22 +837,20 @@ class ReductionConstructor(Constructor[Tiling, GriddedPerm]):
 class ReductionStrategy(Strategy[Tiling, GriddedPerm]):
     """A strategy that makes a set of cells increasing (or decreasing), the points
     of its cells in each row and each column in that order, and counts the cells'
-    own tiling beside it. Minimal, the reduced tiling keeps only the cells of the
-    set that the rest of the tiling sees, one for each group it sees as one."""
+    own tiling beside it. The reduced tiling keeps only the cells of the set that
+    the rest of the tiling sees, one for each group it sees as one."""
 
     def __init__(
         self,
         cells: Iterable[Cell],
         increasing: bool,
         tracked: bool = True,
-        minimal: bool = True,
     ):
         self.cells: Tuple[Cell, ...] = tuple(
             sorted(set(cast(Cell, tuple(cell)) for cell in cells))
         )
         self.increasing = increasing
         self.tracked = tracked
-        self.minimal = minimal
         super().__init__()
 
     def can_be_equivalent(self) -> bool:
@@ -881,7 +870,7 @@ class ReductionStrategy(Strategy[Tiling, GriddedPerm]):
     def plan(self, comb_class: Tiling) -> Plan:
         """The groups of the set the reduced tiling keeps a cell for, and the cells
         it leaves out."""
-        return reduction_plan(comb_class, self.cells, self.minimal)
+        return reduction_plan(comb_class, self.cells)
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling, Tiling]:
         if not is_reducible(comb_class, self.cells, self.increasing):
@@ -889,9 +878,7 @@ class ReductionStrategy(Strategy[Tiling, GriddedPerm]):
             raise StrategyDoesNotApply(
                 f"The cells {self.cells} are not reducible to {direction}"
             )
-        return reduction_children(
-            comb_class, self.cells, self.increasing, self.tracked, self.minimal
-        )
+        return reduction_children(comb_class, self.cells, self.increasing, self.tracked)
 
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -940,9 +927,7 @@ class ReductionStrategy(Strategy[Tiling, GriddedPerm]):
         """The gridded permutation of the reduced tiling for one of the tiling, in
         the tiling's cells: the share of the set canonical, each group's points in
         its first cell, and the points of the cells left out removed."""
-        (groups, _), outside_columns, outside_rows = _layout(
-            comb_class, self.cells, self.minimal
-        )
+        (groups, _), outside_columns, outside_rows = _layout(comb_class, self.cells)
         cell_set = frozenset(self.cells)
         keeper = {cell: group[0] for group in groups for cell in group}
         kept = [group[0] for group in groups]
@@ -975,7 +960,7 @@ class ReductionStrategy(Strategy[Tiling, GriddedPerm]):
         """The gridded permutation of the tiling for one of the reduced tiling and
         one of the own tiling, both in the tiling's cells: the rest from the first,
         the share of the set from the second."""
-        _, outside_columns, outside_rows = _layout(comb_class, self.cells, self.minimal)
+        _, outside_columns, outside_rows = _layout(comb_class, self.cells)
         cell_set = frozenset(self.cells)
         reduced_columns, reduced_rows, reduced_ranks = _words(reduced_gp)
         own_columns, own_rows, own_ranks = _words(own_gp)
@@ -1032,7 +1017,6 @@ class ReductionStrategy(Strategy[Tiling, GriddedPerm]):
         d["cells"] = self.cells
         d["increasing"] = self.increasing
         d["tracked"] = self.tracked
-        d["minimal"] = self.minimal
         return d
 
     @classmethod
@@ -1040,16 +1024,13 @@ class ReductionStrategy(Strategy[Tiling, GriddedPerm]):
         cells = [cast(Cell, tuple(cell)) for cell in d.pop("cells")]
         increasing = d.pop("increasing")
         tracked = d.pop("tracked")
-        # encoded before the choice existed: every cell kept and tracked
-        minimal = d.pop("minimal", False)
         assert not d
-        return cls(cells, increasing, tracked, minimal)
+        return cls(cells, increasing, tracked)
 
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(cells={self.cells!r}, "
-            f"increasing={self.increasing!r}, tracked={self.tracked!r}, "
-            f"minimal={self.minimal!r})"
+            f"increasing={self.increasing!r}, tracked={self.tracked!r})"
         )
 
     @staticmethod
@@ -1077,7 +1058,7 @@ class ReductionFactory(StrategyFactory[Tiling]):
     A set is reduced if it is reducible, it is not all of the active cells, it is
     not rigid (every cell monotone, and the points of any two of its cells in a
     row or a column in a fixed order: reducing it would change nothing, or reverse
-    it), it is not a single finite cell, and, minimal, the rest of the tiling sees
+    it), it is not a single finite cell, and the rest of the tiling sees
     one of its cells (if it sees none, the set is a factor). So the reduced tiling
     is never larger than the tiling, and smaller at some size.
     """
@@ -1087,14 +1068,12 @@ class ReductionFactory(StrategyFactory[Tiling]):
         tracked: bool = True,
         region: str = "cell",
         max_cells: Optional[int] = None,
-        minimal: bool = True,
     ):
         if region not in REGIONS:
             raise ValueError(f"The region must be one of {REGIONS}, not {region!r}")
         self.tracked = tracked
         self.region = region
         self.max_cells = max_cells
-        self.minimal = minimal
         super().__init__()
 
     def candidate_sets(self, tiling: Tiling) -> Iterator[Tuple[Cell, ...]]:
@@ -1158,19 +1137,18 @@ class ReductionFactory(StrategyFactory[Tiling]):
             ]
             if not directions or is_rigid(comb_class, cells):
                 continue
-            if self.minimal and not reduction_plan(comb_class, cells)[0]:
+            if not reduction_plan(comb_class, cells)[0]:
                 continue
             for increasing in directions:
                 yield self.strategy(cells, increasing)
 
     def strategy(self, cells: Tuple[Cell, ...], increasing: bool) -> ReductionStrategy:
-        return ReductionStrategy(cells, increasing, self.tracked, self.minimal)
+        return ReductionStrategy(cells, increasing, self.tracked)
 
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(tracked={self.tracked!r}, "
-            f"region={self.region!r}, max_cells={self.max_cells!r}, "
-            f"minimal={self.minimal!r})"
+            f"region={self.region!r}, max_cells={self.max_cells!r})"
         )
 
     def __str__(self) -> str:
@@ -1186,14 +1164,8 @@ class ReductionFactory(StrategyFactory[Tiling]):
         d["tracked"] = self.tracked
         d["region"] = self.region
         d["max_cells"] = self.max_cells
-        d["minimal"] = self.minimal
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "ReductionFactory":
-        return cls(
-            d.get("tracked", True),
-            d.get("region", "cell"),
-            d.get("max_cells"),
-            d.get("minimal", True),
-        )
+        return cls(d.get("tracked", True), d.get("region", "cell"), d.get("max_cells"))
