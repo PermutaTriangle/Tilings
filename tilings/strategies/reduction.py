@@ -98,7 +98,7 @@ Cell = Tuple[int, int]
 Groups = Tuple[Tuple[Cell, ...], ...]
 Plan = Tuple[Groups, Tuple[Cell, ...]]
 Words = Dict[int, List[Cell]]
-REGIONS = ("cell", "row", "column", "line", "any")
+REGIONS = ("cell", "row", "column", "line", "cut", "any")
 
 
 def _lies_in(gps: Iterable[GriddedPerm], cells: FrozenSet[Cell]) -> bool:
@@ -1053,7 +1053,13 @@ class ReductionFactory(StrategyFactory[Tiling]):
     - "column": the active cells of every column;
     - "line": every set of cells in one row or in one column, so single cells and
       whole rows and columns among them;
-    - "any": every set of cells, of at most max_cells cells if that is given.
+    - "cut": the active cells on one side of a line between two adjacent columns
+      or two adjacent rows: left of it, right of it, below it or above it, as the
+      cells left of a placed point, which a threshold reduction reduces; at most
+      twice the number of columns and rows;
+    - "any": every set of cells.
+
+    With max_cells, the sets of "cut" and "any" have at most that many cells.
 
     A set is reduced if it is reducible, it is not all of the active cells, it is
     not rigid (every cell monotone, and the points of any two of its cells in a
@@ -1102,6 +1108,12 @@ class ReductionFactory(StrategyFactory[Tiling]):
                 for size in range(1, len(line) + 1)
                 for subset in combinations(line, size)
             )
+        elif self.region == "cut":
+            candidates = (
+                side
+                for side in self.cuts(tiling, active_cells)
+                if self.max_cells is None or len(side) <= self.max_cells
+            )
         else:
             largest = len(active_cells)
             if self.max_cells is not None:
@@ -1115,6 +1127,19 @@ class ReductionFactory(StrategyFactory[Tiling]):
             if cells and cells not in seen:
                 seen.add(cells)
                 yield cells
+
+    @staticmethod
+    def cuts(tiling: Tiling, active_cells: List[Cell]) -> Iterator[Tuple[Cell, ...]]:
+        """For each line between two adjacent columns, the active cells left of it
+        and those right of it; likewise below and above each line between two
+        adjacent rows."""
+        width, height = tiling.dimensions
+        for column in range(1, width):
+            yield tuple(cell for cell in active_cells if cell[0] < column)
+            yield tuple(cell for cell in active_cells if cell[0] >= column)
+        for row in range(1, height):
+            yield tuple(cell for cell in active_cells if cell[1] < row)
+            yield tuple(cell for cell in active_cells if cell[1] >= row)
 
     @staticmethod
     def is_finite_cell(tiling: Tiling, cell: Cell) -> bool:
@@ -1153,6 +1178,13 @@ class ReductionFactory(StrategyFactory[Tiling]):
 
     def __str__(self) -> str:
         tracked = "tracked " if self.tracked else ""
+        if self.region == "cut":
+            bound = (
+                "" if self.max_cells is None else f" of at most {self.max_cells} cells"
+            )
+            return (
+                f"{tracked}reduction factory of the cells on one side of a line{bound}"
+            )
         if self.region != "any":
             return f"{tracked}{self.region} reduction factory"
         if self.max_cells is None:

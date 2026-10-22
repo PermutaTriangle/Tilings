@@ -213,6 +213,50 @@ def test_regions(two_rows, apart, row_and_column, one_cell):
         ReductionFactory(True, "diagonal")
 
 
+def cut_sets(tiling):
+    """The active cells on each side of each line between adjacent columns or rows."""
+    width, height = tiling.dimensions
+    cells = tiling.active_cells
+    sides = []
+    for column in range(1, width):
+        sides.append({cell for cell in cells if cell[0] < column})
+        sides.append({cell for cell in cells if cell[0] >= column})
+    for row in range(1, height):
+        sides.append({cell for cell in cells if cell[1] < row})
+        sides.append({cell for cell in cells if cell[1] >= row})
+    return sides
+
+
+def test_cut_region(two_rows, apart, row_and_column, one_cell, threshold):
+    # the threshold reduction's set, the cells left of the topmost point, is a cut
+    assert tuple(THRESHOLD_CELLS) in offered_sets(threshold, "cut")
+    for tiling in (two_rows, apart, row_and_column, one_cell, threshold):
+        offered = offered_sets(tiling, "cut")
+        # each set offered is one side of a line, and "any" offers it too
+        assert all(set(cells) in cut_sets(tiling) for cells in offered)
+        assert set(offered) <= set(offered_sets(tiling, "any"))
+    # both of two_rows' reductions are cuts: above its middle line, and right of
+    # its first column
+    assert offered_sets(two_rows, "cut") == [
+        ((0, 1), (3, 1)),
+        ((1, 0), (2, 0), (3, 1)),
+    ]
+    assert offered_sets(one_cell, "cut") == [((0, 0),)]
+    # max_cells bounds the sets of a cut as it bounds those of "any"
+    assert tuple(THRESHOLD_CELLS) not in {
+        strategy.cells for strategy in ReductionFactory(True, "cut", 4)(threshold)
+    }
+    assert str(ReductionFactory(True, "cut")) == (
+        "tracked reduction factory of the cells on one side of a line"
+    )
+    assert str(ReductionFactory(False, "cut", 4)) == (
+        "reduction factory of the cells on one side of a line of at most 4 cells"
+    )
+    for strategy in ReductionFactory(True, "cut")(threshold):
+        rule = strategy(threshold)
+        assert all(rule.sanity_check(n) for n in range(5))
+
+
 def test_children(two_rows):
     cells = [(1, 0), (2, 0), (3, 1)]
     # no cell outside the set shares a row or a column with (1, 0) or (2, 0), and
@@ -409,6 +453,7 @@ def test_encoding():
         ReductionStrategy([(0, 0), (1, 0)], True, True),
         CellReductionStrategy((2, 1), False, False),
         ReductionFactory(True, "line"),
+        ReductionFactory(True, "cut", 6),
         ReductionFactory(False, "any", 3),
         CellReductionFactory(True),
     ):

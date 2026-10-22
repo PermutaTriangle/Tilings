@@ -19,8 +19,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   the points in those groups, at 1, and the product in the size of the cells left
   out, and the rules generate and sample their objects. The factory's `region`
   says which sets it tries: `"cell"` (single cells, the cell reduction), `"row"`,
-  `"column"`, `"line"` (every set of cells in one row or one column) and `"any"`
-  (every set, of at most `max_cells` cells if given).
+  `"column"`, `"line"` (every set of cells in one row or one column), `"cut"`
+  (the cells on one side of a line between two columns or two rows, as the cells
+  left of a placed point) and `"any"` (every set); with `max_cells`, the sets of
+  `"cut"` and `"any"` have at most that many cells.
 
 ### Changed
 - `CellReductionFactory` and `CellReductionStrategy` are now the reduction of
