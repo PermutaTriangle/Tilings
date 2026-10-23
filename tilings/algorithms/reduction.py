@@ -233,51 +233,37 @@ def _qualifies(tiling: "Tiling", cell_set: FrozenSet[Cell]) -> bool:
     return cell_set <= cells_with_own_obstructions
 
 
-class _View(NamedTuple):
-    """What the rest of the tiling has to do with a set of cells: the columns and
-    the rows with cells outside the set, the obstructions and the requirement lists
-    with points outside it, and the tracked cells."""
+def _crossing_obstructions(
+    tiling: "Tiling", cell_set: FrozenSet[Cell]
+) -> Iterator[GriddedPerm]:
+    """The obstructions with points in the set and outside it."""
+    return (
+        obstruction
+        for obstruction in tiling.obstructions
+        if _crosses(obstruction, cell_set)
+    )
 
-    outside_columns: FrozenSet[int]
-    outside_rows: FrozenSet[int]
-    crossing_obstructions: Tuple[GriddedPerm, ...]
-    crossing_requirements: Tuple[Tuple[GriddedPerm, ...], ...]
-    tracked: FrozenSet[Cell]
 
-
-def _view(tiling: "Tiling", cell_set: FrozenSet[Cell]) -> _View:
-    outside = tiling.active_cells - cell_set
-    return _View(
-        frozenset(cell[0] for cell in outside),
-        frozenset(cell[1] for cell in outside),
-        tuple(
-            obstruction
-            for obstruction in tiling.obstructions
-            if _crosses(obstruction, cell_set)
-        ),
-        tuple(
-            requirement
-            for requirement in tiling.requirements
-            if not _lies_in(requirement, cell_set)
-        ),
-        frozenset(
-            cell
-            for assumption in tiling.assumptions
-            for gridded_perm in assumption.gps
-            for cell in gridded_perm.pos
-        ),
+def _crossing_requirements(
+    tiling: "Tiling", cell_set: FrozenSet[Cell]
+) -> Iterator[Tuple[GriddedPerm, ...]]:
+    """The requirement lists that do not lie in the set."""
+    return (
+        requirement
+        for requirement in tiling.requirements
+        if not _lies_in(requirement, cell_set)
     )
 
 
 def _seen_gridded_perms(
-    view: _View, cell_set: FrozenSet[Cell]
+    tiling: "Tiling", cell_set: FrozenSet[Cell]
 ) -> Iterator[GriddedPerm]:
-    """The gridded permutations the rest of the tiling sees the set through: the
-    obstructions with points in the set and outside it, and the gridded
-    permutations with points in the set of the requirement lists that do not lie
-    in it."""
-    yield from view.crossing_obstructions
-    for requirement in view.crossing_requirements:
+    """The gridded permutations the rest of the tiling sees the set through, one
+    at a time: the obstructions with points in the set and outside it, and the
+    gridded permutations with points in the set of the requirement lists that do
+    not lie in it."""
+    yield from _crossing_obstructions(tiling, cell_set)
+    for requirement in _crossing_requirements(tiling, cell_set):
         for gridded_perm in requirement:
             if any(cell in cell_set for cell in gridded_perm.pos):
                 yield gridded_perm
@@ -296,9 +282,48 @@ def is_reducible(
     if not _qualifies(tiling, cell_set):
         return False
     ordered_columns, ordered_rows = _ordered_lines(tiling, cell_set, increasing)
+    # one at a time, to stop at the first gridded permutation not allowed
     return all(
         _crossing_is_allowed(gridded_perm, cell_set, ordered_columns, ordered_rows)
-        for gridded_perm in _seen_gridded_perms(_view(tiling, cell_set), cell_set)
+        for gridded_perm in _seen_gridded_perms(tiling, cell_set)
+    )
+
+
+class _View(NamedTuple):
+    """What the rest of the tiling has to do with a set of cells: the set, the
+    columns and the rows with cells outside it, the obstructions and the
+    requirement lists with points outside it, the cells of the set with a point of
+    a gridded permutation the rest sees it through, and the tracked cells."""
+
+    cell_set: FrozenSet[Cell]
+    outside_columns: FrozenSet[int]
+    outside_rows: FrozenSet[int]
+    crossing_obstructions: Tuple[GriddedPerm, ...]
+    crossing_requirements: Tuple[Tuple[GriddedPerm, ...], ...]
+    touched: FrozenSet[Cell]
+    tracked: FrozenSet[Cell]
+
+
+def _view(tiling: "Tiling", cell_set: FrozenSet[Cell]) -> _View:
+    outside = tiling.active_cells - cell_set
+    return _View(
+        cell_set,
+        frozenset(cell[0] for cell in outside),
+        frozenset(cell[1] for cell in outside),
+        tuple(_crossing_obstructions(tiling, cell_set)),
+        tuple(_crossing_requirements(tiling, cell_set)),
+        frozenset(
+            cell
+            for gridded_perm in _seen_gridded_perms(tiling, cell_set)
+            for cell in gridded_perm.pos
+            if cell in cell_set
+        ),
+        frozenset(
+            cell
+            for assumption in tiling.assumptions
+            for gridded_perm in assumption.gps
+            for cell in gridded_perm.pos
+        ),
     )
 
 
@@ -362,24 +387,16 @@ def _seen_alike(tiling: "Tiling", source: Cell, target: Cell, view: _View) -> bo
     return True
 
 
-def _left_out(
-    cells: Tuple[Cell, ...], cell_set: FrozenSet[Cell], view: _View
-) -> Tuple[Cell, ...]:
+def _left_out(view: _View) -> Tuple[Cell, ...]:
     """The cells of the set the rest does not see: no cell outside the set in
     their row or column, no point of an obstruction or requirement with points
     outside the set, and not tracked."""
-    touched = {
-        cell
-        for gridded_perm in _seen_gridded_perms(view, cell_set)
-        for cell in gridded_perm.pos
-        if cell in cell_set
-    }
     return tuple(
         cell
-        for cell in cells
+        for cell in sorted(view.cell_set)
         if cell[0] not in view.outside_columns
         and cell[1] not in view.outside_rows
-        and cell not in touched
+        and cell not in view.touched
         and cell not in view.tracked
     )
 
@@ -430,9 +447,8 @@ def _runs(
 def _layout(tiling: "Tiling", cells: Tuple[Cell, ...]) -> _Layout:
     """The plan of the reduction (see reduction_plan), and the columns and the
     rows with cells outside the set."""
-    cell_set = frozenset(cells)
-    view = _view(tiling, cell_set)
-    left_out = _left_out(cells, cell_set, view)
+    view = _view(tiling, frozenset(cells))
+    left_out = _left_out(view)
     seen = [cell for cell in cells if cell not in left_out]
     # a cell of a group along a row has a column with no cell outside the set, so
     # it is in no column with one, and the two kinds of group do not meet
