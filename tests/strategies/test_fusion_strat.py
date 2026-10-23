@@ -304,12 +304,13 @@ def easy_fusable(
     track_left=False,
     track_right=False,
     same_tracking=False,
+    pos_either=False,
     tracked_beyond=(),
 ):
     """Two decreasing cells, (0, 0) and (1, 0), every point of the left one
-    above those of the right one, so that their columns fuse. tracked_beyond adds
-    an increasing cell (2, 0) beside them and an assumption tracking each list of
-    cells it gives."""
+    above those of the right one, so that their columns fuse. With pos_either, a
+    point is required in one of them; tracked_beyond adds an increasing cell (2, 0)
+    beside them and an assumption tracking each list of cells it gives."""
     if same_tracking:
         assert track_left and track_right
     obs = [
@@ -325,6 +326,13 @@ def easy_fusable(
         reqs.append([GriddedPerm.single_cell((0,), (0, 0))])
     if pos_right:
         reqs.append([GriddedPerm.single_cell((0,), (1, 0))])
+    if pos_either:
+        reqs.append(
+            [
+                GriddedPerm.single_cell((0,), (0, 0)),
+                GriddedPerm.single_cell((0,), (1, 0)),
+            ]
+        )
 
     ass = [
         TrackingAssumption([GriddedPerm.single_cell((0,), cell) for cell in cells])
@@ -349,22 +357,16 @@ def easy_fusable(
     return tiling
 
 
+def eq_equality(e1, e2):
+    return e1.lhs == e2.lhs and (e1.rhs - e2.rhs).simplify() == 0
+
+
 def test_fusion_gfs():
+    """The equations of fusions whose two sides are given different values. Those
+    whose sides are given the same value are in test_fusion_derivative_equation."""
     x = var("x")
     k_0 = var("k_0")
     k_1 = var("k_1")
-
-    def eq_equality(e1, e2):
-        return (e1.rhs - e2.rhs).simplify() == 0
-
-    t1 = easy_fusable()
-    rules = list(FusionFactory()(t1))
-    assert len(rules) == 1
-    F0 = Function("F0")(x)
-    F1 = Function("F1")(x, k_0)
-    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
-    expected_eq = Eq(F0, F1.subs({k_0: 1}) + Derivative(F1, k_0).subs({k_0: 1}))
-    assert eq_equality(actual_eq, expected_eq)
 
     t2 = easy_fusable(track_left=True)
     rules = list(FusionFactory()(t2))
@@ -375,15 +377,6 @@ def test_fusion_gfs():
     expected_eq = Eq(F0, (k_0 * F1 - F1.subs({k_0: 1})) / (k_0 - 1))
     assert eq_equality(actual_eq, expected_eq)
 
-    t3 = easy_fusable(track_left=True, track_right=True, same_tracking=True)
-    rules = list(FusionFactory()(t3))
-    assert len(rules) == 1
-    F0 = Function("F0")(x, k_0)
-    F1 = Function("F1")(x, k_0)
-    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
-    expected_eq = Eq(F0, F1 + k_0 * Derivative(F1, k_0))
-    assert eq_equality(actual_eq, expected_eq)
-
     t4 = easy_fusable(track_left=True, track_right=True, same_tracking=False)
     rules = list(FusionFactory()(t4))
     assert len(rules) == 1
@@ -391,15 +384,6 @@ def test_fusion_gfs():
     F1 = Function("F1")(x, k_0)
     actual_eq = rules[0].constructor.get_equation(F0, (F1,))
     expected_eq = Eq(F0, (k_0 * F1 - k_1 * F1.subs({k_0: k_1})) / (k_0 - k_1))
-    assert eq_equality(actual_eq, expected_eq)
-
-    t5 = easy_fusable(pos_left=True)
-    rules = list(FusionFactory()(t5))
-    assert len(rules) == 1
-    F0 = Function("F0")(x)
-    F1 = Function("F1")(x, k_0)
-    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
-    expected_eq = Eq(F0, Derivative(F1, k_0).subs({k_0: 1}))
     assert eq_equality(actual_eq, expected_eq)
 
     t6 = easy_fusable(pos_left=True, track_left=True)
@@ -418,17 +402,6 @@ def test_fusion_gfs():
     F1 = Function("F1")(x, k_0)
     actual_eq = rules[0].constructor.get_equation(F0, (F1,))
     expected_eq = Eq(F0, (k_0 * F1 - F1.subs({k_0: 1})) / (k_0 - 1) - F1)
-    assert eq_equality(actual_eq, expected_eq)
-
-    t8 = easy_fusable(
-        pos_left=True, track_left=True, track_right=True, same_tracking=True
-    )
-    rules = list(FusionFactory()(t8))
-    assert len(rules) == 1
-    F0 = Function("F0")(x, k_0)
-    F1 = Function("F1")(x, k_0)
-    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
-    expected_eq = Eq(F0, k_0 * Derivative(F1, k_0))
     assert eq_equality(actual_eq, expected_eq)
 
     t9 = easy_fusable(
@@ -455,15 +428,6 @@ def test_fusion_gfs():
     expected_eq = Eq(F0, (k_0 * F1 - k_1 * F1.subs({k_0: k_1})) / (k_0 - k_1) - F1)
     assert eq_equality(actual_eq, expected_eq)
 
-    t11 = easy_fusable(pos_left=True, pos_right=True)
-    rules = list(FusionFactory()(t11))
-    assert len(rules) == 1
-    F0 = Function("F0")(x)
-    F1 = Function("F1")(x, k_0)
-    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
-    expected_eq = Eq(F0, Derivative(F1, k_0).subs({k_0: 1}) - F1.subs({k_0: 1}))
-    assert eq_equality(actual_eq, expected_eq)
-
     t12 = easy_fusable(pos_left=True, pos_right=True, track_left=True)
     rules = list(FusionFactory()(t12))
     assert len(rules) == 1
@@ -475,21 +439,6 @@ def test_fusion_gfs():
     )
     assert eq_equality(actual_eq, expected_eq)
 
-    t13 = easy_fusable(
-        pos_left=True,
-        pos_right=True,
-        track_left=True,
-        track_right=True,
-        same_tracking=True,
-    )
-    rules = list(FusionFactory()(t13))
-    assert len(rules) == 1
-    F0 = Function("F0")(x, k_0)
-    F1 = Function("F1")(x, k_0)
-    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
-    expected_eq = Eq(F0, k_0 * Derivative(F1, k_0) - F1)
-    assert eq_equality(actual_eq, expected_eq)
-
     t14 = easy_fusable(
         pos_left=True,
         pos_right=True,
@@ -499,7 +448,6 @@ def test_fusion_gfs():
     )
     rules = list(FusionFactory()(t14))
     assert len(rules) == 1
-    # EQ NOT IMPLEMENTED
     F0 = Function("F0")(x, k_0, k_1)
     F1 = Function("F1")(x, k_0)
     actual_eq = rules[0].constructor.get_equation(F0, (F1,))
@@ -508,9 +456,6 @@ def test_fusion_gfs():
         (k_0 * F1 - k_1 * F1.subs({k_0: k_1})) / (k_0 - k_1) - F1 - F1.subs({k_0: k_1}),
     )
     assert eq_equality(actual_eq, expected_eq)
-
-    # TODO: Add tests for the versions where there is a list requirement with a point
-    # in each cell. Equations for this are not currently implemented.
 
 
 def test_indexed_forward_map():
@@ -600,32 +545,51 @@ def test_indexed_backward_map():
     )
 
 
-def test_fusion_derivative_equation_counts():
-    """
-    When both sides of the fused region are given the same value, the equation
-    is a derivative. It must agree with the counting: each child with k points
-    in the fused region gives k + 1 parents, less the splits leaving a side
-    that must hold a point empty.
-    """
+@pytest.mark.parametrize(
+    "case",
+    [
+        "untracked",
+        "tracked",
+        "left positive",
+        "left positive, tracked",
+        "both positive",
+        "both positive, tracked",
+    ],
+)
+def test_fusion_derivative_equation(case):
+    """The equations of fusions whose two sides are given the same value: the
+    derivative F(q) + q F'(q) of the divided difference, less F(q) for each side
+    that must hold a point."""
     x, k_0 = var("x"), var("k_0")
-    for kwargs in ({}, {"pos_left": True}, {"pos_left": True, "pos_right": True}):
-        rule = list(FusionFactory()(easy_fusable(**kwargs)))[0]
-        parent, child = rule.comb_class, rule.children[0]
-        parent_function = Function("F0")(x)
-        child_function = Function("F1")(x, k_0)
-        equation = rule.constructor.get_equation(parent_function, (child_function,))
-        series = sum(
-            x**size * k_0 ** child.get_parameters(gridded_perm)[0]
-            for size in range(6)
-            for gridded_perm in child.objects_of_size(size)
-        )
-        expanded = expand(
-            equation.rhs.replace(Function("F1"), Lambda((x, k_0), series)).doit()
-        )
-        for size in range(6):
-            assert expanded.coeff(x, size) == sum(
-                1 for _ in parent.objects_of_size(size)
-            )
+    F1 = Function("F1")(x, k_0)
+    at_one = F1.subs({k_0: 1})
+    slope_at_one = Derivative(F1, k_0).subs({k_0: 1})
+    region = {"track_left": True, "track_right": True, "same_tracking": True}
+    fusable, tracked, expected = {
+        "untracked": ({}, False, at_one + slope_at_one),
+        "tracked": (region, True, F1 + k_0 * Derivative(F1, k_0)),
+        "left positive": ({"pos_left": True}, False, slope_at_one),
+        "left positive, tracked": (
+            {"pos_left": True, **region},
+            True,
+            k_0 * Derivative(F1, k_0),
+        ),
+        "both positive": (
+            {"pos_left": True, "pos_right": True},
+            False,
+            slope_at_one - at_one,
+        ),
+        "both positive, tracked": (
+            {"pos_left": True, "pos_right": True, **region},
+            True,
+            k_0 * Derivative(F1, k_0) - F1,
+        ),
+    }[case]
+    rules = list(FusionFactory()(easy_fusable(**fusable)))
+    assert len(rules) == 1
+    F0 = Function("F0")(x, k_0) if tracked else Function("F0")(x)
+    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
+    assert eq_equality(actual_eq, Eq(F0, expected))
 
 
 def column_fusion(tiling):
@@ -724,3 +688,42 @@ def test_fusion_derivative_beside_eleven_tracked_cells():
         ],
     )
     assert equation_gives_the_parent(column_fusion(tiling), largest=2)
+
+
+TRACKINGS = {
+    "untracked": {},
+    "left tracked": {"track_left": True},
+    "right tracked": {"track_right": True},
+    "both tracked apart": {"track_left": True, "track_right": True},
+    "both tracked together": {
+        "track_left": True,
+        "track_right": True,
+        "same_tracking": True,
+    },
+}
+POSITIVES = {
+    "none positive": {},
+    "left positive": {"pos_left": True},
+    "right positive": {"pos_right": True},
+    "both positive": {"pos_left": True, "pos_right": True},
+    "either positive": {"pos_either": True},
+}
+
+
+@pytest.mark.parametrize("tracking", TRACKINGS)
+@pytest.mark.parametrize("positive", POSITIVES)
+def test_fusion_equation_counts(tracking, positive):
+    """The equation of each of easy_fusable's fusions, of both kinds, against the
+    objects."""
+    tiling = easy_fusable(**TRACKINGS[tracking], **POSITIVES[positive])
+    assert equation_gives_the_parent(column_fusion(tiling))
+
+
+@pytest.mark.parametrize(
+    "fusion",
+    ["row_fusion", "col_fusion", "component_row_fusion", "component_col_fusion"],
+)
+def test_fusion_equation_counts_of_fixtures(request, fusion):
+    """The equations of the fusions of small_tiling, whose fused rows and columns
+    have two cells each, and of the component fusions, against the objects."""
+    assert equation_gives_the_parent(request.getfixturevalue(fusion))
