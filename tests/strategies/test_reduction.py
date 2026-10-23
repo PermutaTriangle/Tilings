@@ -11,7 +11,6 @@ from permuta.misc import DIR_NORTH, DIR_SOUTH
 from tilings import GriddedPerm, Tiling
 from tilings import strategies as strat
 from tilings.algorithms.reduction import (
-    compression,
     is_reducible,
     is_rigid,
     monotone_obstructions,
@@ -384,37 +383,54 @@ def test_maps(request, fixture, cells, increasing):
     strategy = ReductionStrategy(cells, increasing)
     reduced_tiling, own_tiling = strategy.decomposition_function(tiling)
     groups, _ = strategy.plan(tiling)
-    _, own_to_parent = compression(strategy.cells)
 
-    def reduced_group_sizes(reduced_gp):
-        parent_gp = reduced_tiling.backward_map.map_gp(reduced_gp)
+    def reduced_group_sizes(reduced_gridded_perm):
+        parent_gridded_perm = reduced_tiling.backward_map.map_gp(reduced_gridded_perm)
         return tuple(
-            sum(1 for other in parent_gp.pos if other == group[0]) for group in groups
+            sum(1 for other in parent_gridded_perm.pos if other == group[0])
+            for group in groups
         )
 
-    def own_group_sizes(own_gp):
-        own_cells = [own_to_parent[cell] for cell in own_gp.pos]
+    def own_group_sizes(own_gridded_perm):
+        own_cells = own_tiling.backward_map.map_gp(own_gridded_perm).pos
         return tuple(
             sum(1 for other in own_cells if other in group) for group in groups
         )
 
     own_by_sizes = defaultdict(list)
     for n in range(6):
-        for own_gp in own_tiling.objects_of_size(n):
-            own_by_sizes[own_group_sizes(own_gp)].append(own_gp)
+        for own_gridded_perm in own_tiling.objects_of_size(n):
+            own_by_sizes[own_group_sizes(own_gridded_perm)].append(own_gridded_perm)
     for n in range(6):
         images = set()
-        for gp in tiling.objects_of_size(n):
-            reduced_gp, own_gp = strategy.forward_map(tiling, gp)
-            assert reduced_gp in reduced_tiling and own_gp in own_tiling
-            assert next(strategy.backward_map(tiling, (reduced_gp, own_gp))) == gp
-            images.add((reduced_gp, own_gp))
+        for gridded_perm in tiling.objects_of_size(n):
+            reduced_gridded_perm, own_gridded_perm = strategy.forward_map(
+                tiling, gridded_perm
+            )
+            assert (
+                reduced_gridded_perm in reduced_tiling
+                and own_gridded_perm in own_tiling
+            )
+            assert (
+                next(
+                    strategy.backward_map(
+                        tiling, (reduced_gridded_perm, own_gridded_perm)
+                    )
+                )
+                == gridded_perm
+            )
+            images.add((reduced_gridded_perm, own_gridded_perm))
         pairs = {
-            (reduced_gp, own_gp)
+            (reduced_gridded_perm, own_gridded_perm)
             for reduced_size in range(n + 1)
-            for reduced_gp in reduced_tiling.objects_of_size(reduced_size)
-            for own_gp in own_by_sizes[reduced_group_sizes(reduced_gp)]
-            if reduced_size + len(own_gp) - sum(reduced_group_sizes(reduced_gp)) == n
+            for reduced_gridded_perm in reduced_tiling.objects_of_size(reduced_size)
+            for own_gridded_perm in own_by_sizes[
+                reduced_group_sizes(reduced_gridded_perm)
+            ]
+            if reduced_size
+            + len(own_gridded_perm)
+            - sum(reduced_group_sizes(reduced_gridded_perm))
+            == n
         }
         assert images == pairs
 
@@ -658,9 +674,14 @@ def test_cell_reduction(one_cell, two_rows):
     """The cell reduction is the reduction of single cells."""
     for tiling in (one_cell, two_rows):
         cell_strategies = list(CellReductionFactory(True)(tiling))
-        assert all(isinstance(s, CellReductionStrategy) for s in cell_strategies)
-        assert sorted((s.cells, s.increasing) for s in cell_strategies) == sorted(
-            (s.cells, s.increasing) for s in ReductionFactory(True, "cell")(tiling)
+        assert all(
+            isinstance(strategy, CellReductionStrategy) for strategy in cell_strategies
+        )
+        assert sorted(
+            (strategy.cells, strategy.increasing) for strategy in cell_strategies
+        ) == sorted(
+            (strategy.cells, strategy.increasing)
+            for strategy in ReductionFactory(True, "cell")(tiling)
         )
     rule = CellReductionStrategy((0, 0), True)(one_cell)
     for n in range(6):

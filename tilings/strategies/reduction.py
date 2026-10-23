@@ -50,19 +50,22 @@ cells left out:
     parent(n) = sum over w and m of reduced(n - m; w) * own(|w| + m; w),
 
 w the number of points in each group and m in the cells left out. A single cell
-is the cell reduction (`tilings.strategies.cell_reduction`).
+is the cell reduction (`tilings.strategies.cell_reduction`). The condition, the
+plan, the children and the words of the maps are in `tilings.algorithms.reduction`.
 """
 
 import random
 from collections import Counter, defaultdict
-from itertools import combinations, product
+from itertools import combinations
 from typing import (
+    Any,
     Callable,
     DefaultDict,
     Dict,
     Iterable,
     Iterator,
     List,
+    NamedTuple,
     Optional,
     Tuple,
     cast,
@@ -87,7 +90,6 @@ from tilings.algorithms.reduction import (
     Cell,
     ReductionPlan,
     combine_gridded_perms,
-    compression,
     is_reducible,
     is_rigid,
     own_is_tracked,
@@ -102,6 +104,26 @@ __all__ = ("ReductionConstructor", "ReductionStrategy", "ReductionFactory")
 REGIONS = ("cell", "row", "column", "line", "cut", "any")
 
 
+class SampleChoice(NamedTuple):
+    """The sizes and the parameters of the reduced tiling and of the own tiling for
+    one choice of the numbers of points in the groups and the cells left out."""
+
+    reduced_size: int
+    reduced_parameters: Dict[str, int]
+    own_size: int
+    own_parameters: Dict[str, int]
+
+
+def _bounded_compositions(bound: int, parts: int) -> Iterator[Tuple[int, ...]]:
+    """The tuples of parts numbers, each at least 0, of sum at most bound."""
+    if parts == 0:
+        yield ()
+        return
+    for first in range(bound + 1):
+        for rest in _bounded_compositions(bound - first, parts - 1):
+            yield (first,) + rest
+
+
 class ReductionConstructor(Constructor[Tiling, GriddedPerm]):
     """The constructor of a reduction: the Hadamard product of the reduced tiling
     and the tiling of the cells' own obstructions in the variables that count the
@@ -109,6 +131,9 @@ class ReductionConstructor(Constructor[Tiling, GriddedPerm]):
     product in the size of the cells the reduced tiling leaves out.
 
         parent(n; p) = sum over w and m of reduced(n - m; p, w) * own(|w| + m; w)
+
+    parent_to_reduced is the strategy's map of the parent's parameters to the
+    reduced tiling's (its extra parameters for the reduced tiling).
     """
 
     def __init__(
@@ -117,50 +142,55 @@ class ReductionConstructor(Constructor[Tiling, GriddedPerm]):
         children: Tuple[Tiling, ...],
         cells: Iterable[Cell],
         plan: ReductionPlan,
+        parent_to_reduced: Optional[Dict[str, str]] = None,
     ):
         reduced_tiling, own_tiling = children
         self.cells = tuple(sorted(set(cells)))
         self.groups, left_out = plan
         self.leaves_out = bool(left_out)
-        reduced_parameters = reduced_tiling.extra_parameters
-
-        def reduced_parameter(assumption: TrackingAssumption) -> str:
-            return reduced_tiling.get_assumption_parameter(
-                reduced_tiling.forward_map.map_assumption(assumption)
-            )
-
+        if parent_to_reduced is None:
+            parent_to_reduced = {
+                parent_parameter: self._parameter_of(reduced_tiling, assumption)
+                for parent_parameter, assumption in zip(
+                    parent.extra_parameters, parent.assumptions
+                )
+            }
+        self.parent_to_reduced = parent_to_reduced
         self.reduced_group_parameters = tuple(
-            reduced_parameter(TrackingAssumption.from_cells([group[0]]))
+            self._parameter_of(
+                reduced_tiling, TrackingAssumption.from_cells([group[0]])
+            )
             for group in self.groups
         )
-        self.reduced_group_indices = tuple(
-            reduced_parameters.index(name) for name in self.reduced_group_parameters
+        self.reduced_group_indices = self._indices(
+            reduced_tiling, self.reduced_group_parameters
         )
-        self.parent_to_reduced = {
-            parent_parameter: reduced_parameter(assumption)
-            for parent_parameter, assumption in zip(
-                parent.extra_parameters, parent.assumptions
-            )
-        }
-        self.parent_indices = tuple(
-            reduced_parameters.index(self.parent_to_reduced[parent_parameter])
-            for parent_parameter in parent.extra_parameters
+        self.parent_indices = self._indices(
+            reduced_tiling,
+            [self.parent_to_reduced[name] for name in parent.extra_parameters],
         )
-        if not own_is_tracked(self.groups, left_out):
-            self.own_group_parameters: Optional[Tuple[str, ...]] = None
-            self.own_group_indices: Tuple[int, ...] = ()
-        else:
-            forward, _ = compression(self.cells)
+        self.own_group_parameters: Optional[Tuple[str, ...]] = None
+        self.own_group_indices: Tuple[int, ...] = ()
+        if own_is_tracked(self.groups, left_out):
             self.own_group_parameters = tuple(
-                own_tiling.get_assumption_parameter(
-                    TrackingAssumption.from_cells([forward[cell] for cell in group])
-                )
+                self._parameter_of(own_tiling, TrackingAssumption.from_cells(group))
                 for group in self.groups
             )
-            self.own_group_indices = tuple(
-                own_tiling.extra_parameters.index(name)
-                for name in self.own_group_parameters
+            self.own_group_indices = self._indices(
+                own_tiling, self.own_group_parameters
             )
+
+    @staticmethod
+    def _parameter_of(child: Tiling, assumption: TrackingAssumption) -> str:
+        """The child's parameter for an assumption in the parent's cells."""
+        return child.get_assumption_parameter(
+            child.forward_map.map_assumption(assumption)
+        )
+
+    @staticmethod
+    def _indices(child: Tiling, parameters: Iterable[str]) -> Tuple[int, ...]:
+        """The places of the parameters in the child's extra parameters."""
+        return tuple(child.extra_parameters.index(name) for name in parameters)
 
     def _left_out_sizes(self, n: int) -> range:
         """The numbers of points the cells left out may have."""
@@ -195,9 +225,31 @@ class ReductionConstructor(Constructor[Tiling, GriddedPerm]):
             tuple(reduced_parameters[index] for index in self.parent_indices),
         )
 
+    def _pairs(
+        self,
+        n: int,
+        reduced_by_parameters: Callable[[int], Dict[Parameters, Any]],
+        own_by_group_sizes: Callable[[int], Dict[Tuple[int, ...], Any]],
+    ) -> Iterator[Tuple[Parameters, Any, Any]]:
+        """For each number of points in the cells left out, and each parameter of
+        the reduced tiling at the size that leaves, the parent's parameters, the
+        reduced tiling's value and the own tiling's value with as many points in
+        each group (counts, or lists of objects)."""
+        own_by_size: Dict[int, Dict[Tuple[int, ...], Any]] = {}
+        for left_out_size in self._left_out_sizes(n):
+            reduced_values = reduced_by_parameters(n - left_out_size)
+            for reduced_parameters, reduced_value in reduced_values.items():
+                group_sizes, parent_parameters = self._split(reduced_parameters)
+                own_size = sum(group_sizes) + left_out_size
+                if own_size not in own_by_size:
+                    own_by_size[own_size] = own_by_group_sizes(own_size)
+                own_value = own_by_size[own_size].get(group_sizes)
+                if reduced_value and own_value:
+                    yield parent_parameters, reduced_value, own_value
+
     def _own_counts(self, own_terms: Callable[[int], Terms], size: int) -> Counter:
-        """The number of objects of the own tiling with each number of points in
-        the groups, for objects of the size."""
+        """The number of objects of the own tiling of the size with each number of
+        points in the groups."""
         own_counts: Counter = Counter()
         for own_parameters, own_count in own_terms(size).items():
             own_counts[self._group_sizes(own_parameters, size)] += own_count
@@ -207,19 +259,11 @@ class ReductionConstructor(Constructor[Tiling, GriddedPerm]):
         self, parent_terms: Callable[[int], Terms], subterms: SubTerms, n: int
     ) -> Terms:
         reduced_terms, own_terms = subterms
-        own_counts_by_size: Dict[int, Counter] = {}
         terms: Terms = Counter()
-        for left_out_size in self._left_out_sizes(n):
-            for reduced_parameters, reduced_count in reduced_terms(
-                n - left_out_size
-            ).items():
-                group_sizes, parent_parameters = self._split(reduced_parameters)
-                own_size = sum(group_sizes) + left_out_size
-                if own_size not in own_counts_by_size:
-                    own_counts_by_size[own_size] = self._own_counts(own_terms, own_size)
-                own_count = own_counts_by_size[own_size][group_sizes]
-                if own_count:
-                    terms[parent_parameters] += reduced_count * own_count
+        for parent_parameters, reduced_count, own_count in self._pairs(
+            n, reduced_terms, lambda size: self._own_counts(own_terms, size)
+        ):
+            terms[parent_parameters] += reduced_count * own_count
         return terms
 
     def _own_objects(
@@ -238,50 +282,46 @@ class ReductionConstructor(Constructor[Tiling, GriddedPerm]):
         self, subobjs: SubObjects, n: int
     ) -> Iterator[Tuple[Parameters, Tuple[List[Optional[GriddedPerm]], ...]]]:
         reduced_objects, own_objects = subobjs
-        own_by_size: Dict[int, DefaultDict[Parameters, List[Optional[GriddedPerm]]]]
-        own_by_size = {}
-        for left_out_size in self._left_out_sizes(n):
-            for reduced_parameters, reduced_list in reduced_objects(
-                n - left_out_size
-            ).items():
-                group_sizes, parent_parameters = self._split(reduced_parameters)
-                own_size = sum(group_sizes) + left_out_size
-                if own_size not in own_by_size:
-                    own_by_size[own_size] = self._own_objects(own_objects, own_size)
-                own_list = own_by_size[own_size].get(group_sizes, [])
-                if reduced_list and own_list:
-                    yield parent_parameters, (reduced_list, own_list)
+        for parent_parameters, reduced_list, own_list in self._pairs(
+            n, reduced_objects, lambda size: self._own_objects(own_objects, size)
+        ):
+            yield parent_parameters, (reduced_list, own_list)
 
     def _sample_choices(
         self, n: int, parent_parameters: Dict[str, int]
-    ) -> Iterator[Tuple[int, Dict[str, int], int, Dict[str, int]]]:
+    ) -> Iterator[SampleChoice]:
         """For each number of points in the cells left out and in the groups that
-        the parent's parameters allow, the size and the parameters of the reduced
-        tiling, and the size and the parameters of the own tiling."""
+        the parent's parameters allow, the sizes and the parameters of the two
+        children."""
         fixed_parameters = {
             self.parent_to_reduced[name]: value
             for name, value in parent_parameters.items()
         }
+        fixed_sizes = [
+            fixed_parameters.get(name) for name in self.reduced_group_parameters
+        ]
+        free = [index for index, size in enumerate(fixed_sizes) if size is None]
+        fixed_total = sum(size for size in fixed_sizes if size is not None)
         for left_out_size in self._left_out_sizes(n):
             reduced_size = n - left_out_size
-            for group_sizes in product(
-                range(reduced_size + 1), repeat=len(self.groups)
+            if fixed_total > reduced_size:
+                continue
+            for free_sizes in _bounded_compositions(
+                reduced_size - fixed_total, len(free)
             ):
-                if sum(group_sizes) > reduced_size:
-                    continue
+                group_sizes = list(fixed_sizes)
+                for index, size in zip(free, free_sizes):
+                    group_sizes[index] = size
                 reduced_parameters = dict(fixed_parameters)
-                if all(
-                    reduced_parameters.setdefault(name, group_size) == group_size
-                    for name, group_size in zip(
-                        self.reduced_group_parameters, group_sizes
-                    )
-                ):
-                    yield (
-                        reduced_size,
-                        reduced_parameters,
-                        sum(group_sizes) + left_out_size,
-                        self._own_parameters(group_sizes),
-                    )
+                reduced_parameters.update(
+                    zip(self.reduced_group_parameters, cast(List[int], group_sizes))
+                )
+                yield SampleChoice(
+                    reduced_size,
+                    reduced_parameters,
+                    sum(cast(List[int], group_sizes)) + left_out_size,
+                    self._own_parameters(tuple(cast(List[int], group_sizes))),
+                )
 
     def random_sample_sub_objects(
         self,
@@ -296,43 +336,47 @@ class ReductionConstructor(Constructor[Tiling, GriddedPerm]):
         for choice in self._sample_choices(n, parameters):
             total += self._choice_count(subrecs, choice)
             if random_choice <= total:
-                reduced_size, reduced_parameters, own_size, own_parameters = choice
                 return (
-                    subsamplers[0](n=reduced_size, **reduced_parameters),
-                    subsamplers[1](n=own_size, **own_parameters),
+                    subsamplers[0](n=choice.reduced_size, **choice.reduced_parameters),
+                    subsamplers[1](n=choice.own_size, **choice.own_parameters),
                 )
         raise RuntimeError("Function did not return")
 
     @staticmethod
-    def _choice_count(
-        subrecs: SubRecs, choice: Tuple[int, Dict[str, int], int, Dict[str, int]]
-    ) -> int:
-        """The number of pairs of objects for the choice of the sizes and the
-        parameters of the reduced tiling and of the own tiling."""
-        reduced_size, reduced_parameters, own_size, own_parameters = choice
-        reduced_count = subrecs[0](n=reduced_size, **reduced_parameters)
+    def _choice_count(subrecs: SubRecs, choice: SampleChoice) -> int:
+        """The number of pairs of objects of the two children for the choice."""
+        reduced_count = subrecs[0](n=choice.reduced_size, **choice.reduced_parameters)
         if not reduced_count:
             return 0
-        return reduced_count * subrecs[1](n=own_size, **own_parameters)
+        return reduced_count * subrecs[1](n=choice.own_size, **choice.own_parameters)
 
     def equiv(
         self, other: "Constructor", data: Optional[object] = None
     ) -> Tuple[bool, Optional[object]]:
+        """Two reductions' constructors are taken as equivalent only when they pair
+        their children the same way: as many groups, cells left out or not, the
+        own tiling tracked or not, and the groups' and the parent's parameters at
+        the same places of the children's parameters. This errs on the side of
+        not equivalent."""
         return (
             isinstance(other, ReductionConstructor)
             and len(self.groups) == len(other.groups)
             and self.leaves_out == other.leaves_out
-            and len(self.parent_indices) == len(other.parent_indices),
+            and (self.own_group_parameters is None)
+            == (other.own_group_parameters is None)
+            and self.reduced_group_indices == other.reduced_group_indices
+            and self.parent_indices == other.parent_indices
+            and self.own_group_indices == other.own_group_indices,
             None,
         )
 
     @staticmethod
     def get_eq_symbol() -> str:
-        return "↣"
+        return ReductionStrategy.get_eq_symbol()
 
     @staticmethod
     def get_op_symbol() -> str:
-        return "⊙"
+        return ReductionStrategy.get_op_symbol()
 
     def __str__(self) -> str:
         return "Hadamard product in the reduced cells"
@@ -392,7 +436,11 @@ class ReductionStrategy(Strategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(comb_class)
         return ReductionConstructor(
-            comb_class, children, self.cells, self.plan(comb_class)
+            comb_class,
+            children,
+            self.cells,
+            self.plan(comb_class),
+            self.extra_parameters(comb_class, children)[0],
         )
 
     def reverse_constructor(
@@ -459,14 +507,10 @@ class ReductionStrategy(Strategy[Tiling, GriddedPerm]):
             children = self.decomposition_function(comb_class)
         reduced_gridded_perm, own_gridded_perm = objs
         assert reduced_gridded_perm is not None and own_gridded_perm is not None
-        _, backward = compression(self.cells)
         yield self.combine_gridded_perms(
             comb_class,
             children[0].backward_map.map_gp(reduced_gridded_perm),
-            GriddedPerm(
-                own_gridded_perm.patt,
-                tuple(backward[cell] for cell in own_gridded_perm.pos),
-            ),
+            children[1].backward_map.map_gp(own_gridded_perm),
         )
 
     def forward_map(
@@ -477,14 +521,9 @@ class ReductionStrategy(Strategy[Tiling, GriddedPerm]):
     ) -> Tuple[Optional[GriddedPerm], ...]:
         if children is None:
             children = self.decomposition_function(comb_class)
-        forward, _ = compression(self.cells)
-        own_gridded_perm = obj.get_gridded_perm_in_cells(self.cells)
         return (
             children[0].forward_map.map_gp(self.reduce_gridded_perm(comb_class, obj)),
-            GriddedPerm(
-                own_gridded_perm.patt,
-                tuple(forward[cell] for cell in own_gridded_perm.pos),
-            ),
+            children[1].forward_map.map_gp(obj.get_gridded_perm_in_cells(self.cells)),
         )
 
     def to_jsonable(self) -> dict:
@@ -538,14 +577,18 @@ class ReductionFactory(StrategyFactory[Tiling]):
       twice the number of columns and rows;
     - "any": every set of cells.
 
-    With max_cells, the sets of "cut" and "any" have at most that many cells.
+    With max_cells, the sets of "cut" and "any" have at most that many cells. The
+    region "any" tries every set of active cells, whose number grows exponentially
+    with the number of active cells; give it a max_cells, or use "cut" or "line".
 
     A set is reduced if it is reducible, it is not all of the active cells, it is
     not rigid (every cell monotone, and the points of any two of its cells in a
     row or a column in a fixed order: reducing it would change nothing, or reverse
-    it), it is not a single finite cell, and the rest of the tiling sees
-    one of its cells (if it sees none, the set is a factor). So the reduced tiling
-    is never larger than the tiling, and smaller at some size.
+    it), it is not a single finite cell, and the rest of the tiling sees one of its
+    cells (if it sees none, the set is a factor).
+
+    With tracked=False the strategies track nothing and have no constructor: for
+    an untracked search, whose specification a tracked search then counts.
     """
 
     def __init__(
@@ -564,48 +607,57 @@ class ReductionFactory(StrategyFactory[Tiling]):
     def candidate_sets(self, tiling: Tiling) -> Iterator[Tuple[Cell, ...]]:
         """The sets of active cells of the region, each once."""
         active_cells = sorted(tiling.active_cells)
-        lines: List[List[Cell]] = []
-        if self.region in ("row", "line"):
-            lines.extend(
-                [cell for cell in active_cells if cell[1] == row]
-                for row in range(tiling.dimensions[1])
-            )
-        if self.region in ("column", "line"):
-            lines.extend(
-                [cell for cell in active_cells if cell[0] == column]
-                for column in range(tiling.dimensions[0])
-            )
         seen = set()
+        for cells in self._region_sets(tiling, active_cells):
+            if cells and cells not in seen:
+                seen.add(cells)
+                yield cells
+
+    def _region_sets(
+        self, tiling: Tiling, active_cells: List[Cell]
+    ) -> Iterator[Tuple[Cell, ...]]:
         if self.region == "cell":
-            candidates: Iterable[Tuple[Cell, ...]] = ((cell,) for cell in active_cells)
-        elif self.region in ("row", "column"):
-            candidates = (tuple(line) for line in lines)
-        elif self.region == "line":
-            candidates = (
+            return ((cell,) for cell in active_cells)
+        if self.region in ("row", "column"):
+            return (tuple(line) for line in self._lines(tiling, active_cells))
+        if self.region == "line":
+            return (
                 subset
-                for line in lines
+                for line in self._lines(tiling, active_cells)
                 for size in range(1, len(line) + 1)
                 for subset in combinations(line, size)
             )
-        elif self.region == "cut":
-            candidates = (
+        if self.region == "cut":
+            return (
                 side
                 for side in self.cuts(tiling, active_cells)
                 if self.max_cells is None or len(side) <= self.max_cells
             )
-        else:
-            largest = len(active_cells)
-            if self.max_cells is not None:
-                largest = min(largest, self.max_cells)
-            candidates = (
-                subset
-                for size in range(1, largest + 1)
-                for subset in combinations(active_cells, size)
+        largest = len(active_cells)
+        if self.max_cells is not None:
+            largest = min(largest, self.max_cells)
+        return (
+            subset
+            for size in range(1, largest + 1)
+            for subset in combinations(active_cells, size)
+        )
+
+    def _lines(self, tiling: Tiling, active_cells: List[Cell]) -> List[List[Cell]]:
+        """The active cells of each row (for "row" and "line") and of each column
+        (for "column" and "line")."""
+        width, height = tiling.dimensions
+        lines: List[List[Cell]] = []
+        if self.region in ("row", "line"):
+            lines.extend(
+                [cell for cell in active_cells if cell[1] == row]
+                for row in range(height)
             )
-        for cells in candidates:
-            if cells and cells not in seen:
-                seen.add(cells)
-                yield cells
+        if self.region in ("column", "line"):
+            lines.extend(
+                [cell for cell in active_cells if cell[0] == column]
+                for column in range(width)
+            )
+        return lines
 
     @staticmethod
     def cuts(tiling: Tiling, active_cells: List[Cell]) -> Iterator[Tuple[Cell, ...]]:
@@ -623,8 +675,8 @@ class ReductionFactory(StrategyFactory[Tiling]):
     @staticmethod
     def is_finite_cell(tiling: Tiling, cell: Cell) -> bool:
         cell_basis = tiling.cell_basis()[cell][0]
-        return any(patt.is_increasing() for patt in cell_basis) and any(
-            patt.is_decreasing() for patt in cell_basis
+        return any(pattern.is_increasing() for pattern in cell_basis) and any(
+            pattern.is_decreasing() for pattern in cell_basis
         )
 
     def __call__(self, comb_class: Tiling) -> Iterator[ReductionStrategy]:
@@ -641,7 +693,7 @@ class ReductionFactory(StrategyFactory[Tiling]):
             ]
             if not directions or is_rigid(comb_class, cells):
                 continue
-            if not reduction_plan(comb_class, cells)[0]:
+            if not reduction_plan(comb_class, cells).groups:
                 continue
             for increasing in directions:
                 yield self.strategy(cells, increasing)
@@ -679,4 +731,8 @@ class ReductionFactory(StrategyFactory[Tiling]):
 
     @classmethod
     def from_dict(cls, d: dict) -> "ReductionFactory":
-        return cls(d.get("tracked", True), d.get("region", "cell"), d.get("max_cells"))
+        tracked = d.pop("tracked", True)
+        region = d.pop("region", "cell")
+        max_cells = d.pop("max_cells", None)
+        assert not d
+        return cls(tracked, region, max_cells)

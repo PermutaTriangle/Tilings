@@ -70,4 +70,6 @@ class CellReductionFactory(ReductionFactory):
 
     @classmethod
     def from_dict(cls, d: dict) -> "CellReductionFactory":
-        return cls(d["tracked"])
+        tracked = d.pop("tracked")
+        assert not d
+        return cls(tracked)

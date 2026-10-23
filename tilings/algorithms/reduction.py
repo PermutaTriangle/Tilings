@@ -33,7 +33,6 @@ if TYPE_CHECKING:
 
 __all__ = (
     "combine_gridded_perms",
-    "compression",
     "is_reducible",
     "is_rigid",
     "monotone_obstructions",
@@ -66,16 +65,18 @@ class _Layout(NamedTuple):
     outside_rows: FrozenSet[int]
 
 
-def _lies_in(gps: Iterable[GriddedPerm], cells: FrozenSet[Cell]) -> bool:
+def _lies_in(gridded_perms: Iterable[GriddedPerm], cells: FrozenSet[Cell]) -> bool:
     """Return True if every point of the gridded permutations is in the cells."""
-    return all(cell in cells for gp in gps for cell in gp.pos)
+    return all(
+        cell in cells for gridded_perm in gridded_perms for cell in gridded_perm.pos
+    )
 
 
-def _crosses(gp: GriddedPerm, cells: FrozenSet[Cell]) -> bool:
+def _crosses(gridded_perm: GriddedPerm, cells: FrozenSet[Cell]) -> bool:
     """Return True if the gridded permutation has points in the cells and outside
     them."""
-    points_inside = sum(1 for cell in gp.pos if cell in cells)
-    return 0 < points_inside < len(gp)
+    points_inside = sum(1 for cell in gridded_perm.pos if cell in cells)
+    return 0 < points_inside < len(gridded_perm)
 
 
 def monotone_obstructions(cells: Iterable[Cell], increasing: bool) -> List[GriddedPerm]:
@@ -83,7 +84,7 @@ def monotone_obstructions(cells: Iterable[Cell], increasing: bool) -> List[Gridd
     cells of the set that share a row or a column, which make the share of the set
     canonical."""
     cell_list = sorted(set(cells))
-    patt = Perm((1, 0)) if increasing else Perm((0, 1))
+    pattern = Perm((1, 0)) if increasing else Perm((0, 1))
     obstructions = []
     for left_cell, right_cell in product(cell_list, repeat=2):
         if left_cell[0] != right_cell[0] and left_cell[1] != right_cell[1]:
@@ -94,7 +95,7 @@ def monotone_obstructions(cells: Iterable[Cell], increasing: bool) -> List[Gridd
             continue
         if not increasing and left_cell[1] > right_cell[1]:
             continue
-        obstructions.append(GriddedPerm(patt, (left_cell, right_cell)))
+        obstructions.append(GriddedPerm(pattern, (left_cell, right_cell)))
     return obstructions
 
 
@@ -128,7 +129,7 @@ def _ordered_lines(
 
 
 def _crossing_is_allowed(
-    gp: GriddedPerm,
+    gridded_perm: GriddedPerm,
     cells: FrozenSet[Cell],
     ordered_columns: Set[int],
     ordered_rows: Set[int],
@@ -138,11 +139,11 @@ def _crossing_is_allowed(
     of that point's row or no other cell of its column, and touches the other cells
     of the column (row) only if the cells' points there are in the order of the
     direction."""
-    cells_inside = [cell for cell in gp.pos if cell in cells]
+    cells_inside = [cell for cell in gridded_perm.pos if cell in cells]
     if len(cells_inside) != 1:
         return False
     column, row = cells_inside[0]
-    cells_outside = [cell for cell in gp.pos if cell not in cells]
+    cells_outside = [cell for cell in gridded_perm.pos if cell not in cells]
     touches_column = any(cell[0] == column for cell in cells_outside)
     touches_row = any(cell[1] == row for cell in cells_outside)
     if touches_column and touches_row:
@@ -180,7 +181,9 @@ def _qualifies(tiling: "Tiling", cell_set: FrozenSet[Cell]) -> bool:
     return cell_set <= cells_with_own_obstructions
 
 
-def _seen_gps(tiling: "Tiling", cell_set: FrozenSet[Cell]) -> Iterator[GriddedPerm]:
+def _seen_gridded_perms(
+    tiling: "Tiling", cell_set: FrozenSet[Cell]
+) -> Iterator[GriddedPerm]:
     """The obstructions with points in the set and outside it, and the gridded
     permutations with points in the set of the requirement lists that do not lie
     in it."""
@@ -189,9 +192,9 @@ def _seen_gps(tiling: "Tiling", cell_set: FrozenSet[Cell]) -> Iterator[GriddedPe
             yield obstruction
     for requirement in tiling.requirements:
         if not _lies_in(requirement, cell_set):
-            for gp in requirement:
-                if any(cell in cell_set for cell in gp.pos):
-                    yield gp
+            for gridded_perm in requirement:
+                if any(cell in cell_set for cell in gridded_perm.pos):
+                    yield gridded_perm
 
 
 def is_reducible(
@@ -206,8 +209,8 @@ def is_reducible(
         return False
     ordered_columns, ordered_rows = _ordered_lines(tiling, cell_set, increasing)
     return all(
-        _crossing_is_allowed(gp, cell_set, ordered_columns, ordered_rows)
-        for gp in _seen_gps(tiling, cell_set)
+        _crossing_is_allowed(gridded_perm, cell_set, ordered_columns, ordered_rows)
+        for gridded_perm in _seen_gridded_perms(tiling, cell_set)
     )
 
 
@@ -219,8 +222,8 @@ def is_rigid(tiling: "Tiling", cells: Iterable[Cell]) -> bool:
     cell_list = sorted(set(cells))
     obstructions = tiling.obstructions
 
-    def is_forbidden(gp: GriddedPerm) -> bool:
-        return gp.contains(*obstructions)
+    def is_forbidden(gridded_perm: GriddedPerm) -> bool:
+        return gridded_perm.contains(*obstructions)
 
     for first_cell, second_cell in product(cell_list, repeat=2):
         if first_cell > second_cell:
@@ -242,22 +245,6 @@ def is_rigid(tiling: "Tiling", cells: Iterable[Cell]) -> bool:
     return True
 
 
-def compression(cells: Iterable[Cell]) -> Tuple[Dict[Cell, Cell], Dict[Cell, Cell]]:
-    """Return the maps from the cells of the set to the cells of its own tiling,
-    which keeps the columns and rows of the set only, and back."""
-    cell_list = sorted(set(cells))
-    column_index = {
-        column: index
-        for index, column in enumerate(sorted({cell[0] for cell in cell_list}))
-    }
-    row_index = {
-        row: index for index, row in enumerate(sorted({cell[1] for cell in cell_list}))
-    }
-    forward = {cell: (column_index[cell[0]], row_index[cell[1]]) for cell in cell_list}
-    backward = {own_cell: cell for cell, own_cell in forward.items()}
-    return forward, backward
-
-
 class _View(NamedTuple):
     """What the rest of the tiling has to do with a set of cells: the columns and
     the rows with cells outside the set, the obstructions and the requirement lists
@@ -275,8 +262,16 @@ def _view(tiling: "Tiling", cell_set: FrozenSet[Cell]) -> _View:
     return _View(
         frozenset(cell[0] for cell in outside),
         frozenset(cell[1] for cell in outside),
-        tuple(ob for ob in tiling.obstructions if _crosses(ob, cell_set)),
-        tuple(req for req in tiling.requirements if not _lies_in(req, cell_set)),
+        tuple(
+            obstruction
+            for obstruction in tiling.obstructions
+            if _crosses(obstruction, cell_set)
+        ),
+        tuple(
+            requirement
+            for requirement in tiling.requirements
+            if not _lies_in(requirement, cell_set)
+        ),
         frozenset(
             cell
             for assumption in tiling.assumptions
@@ -286,11 +281,12 @@ def _view(tiling: "Tiling", cell_set: FrozenSet[Cell]) -> _View:
     )
 
 
-def _moved(gp: GriddedPerm, source: Cell, target: Cell) -> GriddedPerm:
+def _moved(gridded_perm: GriddedPerm, source: Cell, target: Cell) -> GriddedPerm:
     """The gridded permutation with its point in the source cell in the target
     cell instead."""
     return GriddedPerm(
-        gp.patt, tuple(target if cell == source else cell for cell in gp.pos)
+        gridded_perm.patt,
+        tuple(target if cell == source else cell for cell in gridded_perm.pos),
     )
 
 
@@ -305,8 +301,11 @@ def _seen_alike(tiling: "Tiling", source: Cell, target: Cell, view: _View) -> bo
         ).contains(*tiling.obstructions):
             return False
     for requirement in view.crossing_requirements:
-        for gp in requirement:
-            if source in gp.pos and _moved(gp, source, target) not in requirement:
+        for gridded_perm in requirement:
+            if (
+                source in gridded_perm.pos
+                and _moved(gridded_perm, source, target) not in requirement
+            ):
                 return False
     return True
 
@@ -318,13 +317,16 @@ def _left_out(
     their row or column, no point of an obstruction or requirement with points
     outside the set, and not tracked."""
     touched = {
-        cell for gp in view.crossing_obstructions for cell in gp.pos if cell in cell_set
+        cell
+        for gridded_perm in view.crossing_obstructions
+        for cell in gridded_perm.pos
+        if cell in cell_set
     }
     touched.update(
         cell
         for requirement in view.crossing_requirements
-        for gp in requirement
-        for cell in gp.pos
+        for gridded_perm in requirement
+        for cell in gridded_perm.pos
         if cell in cell_set
     )
     return tuple(
@@ -425,10 +427,18 @@ def _reduced_tiling(
     kept = [group[0] for group in groups]
     emptied = [cell for group in groups for cell in group[1:]] + list(left_out)
     return tiling.__class__(
-        [ob for ob in tiling.obstructions if not _lies_in([ob], cell_set)]
+        [
+            obstruction
+            for obstruction in tiling.obstructions
+            if not _lies_in([obstruction], cell_set)
+        ]
         + monotone_obstructions(kept, increasing)
         + [GriddedPerm.point_perm(cell) for cell in emptied],
-        [req for req in tiling.requirements if not _lies_in(req, cell_set)],
+        [
+            requirement
+            for requirement in tiling.requirements
+            if not _lies_in(requirement, cell_set)
+        ],
         list(tiling.assumptions)
         + ([TrackingAssumption.from_cells([cell]) for cell in kept] if tracked else []),
     )
@@ -446,9 +456,17 @@ def _own_tiling(
         if (column, row) not in cell_set
     ]
     return tiling.__class__(
-        [ob for ob in tiling.obstructions if _lies_in([ob], cell_set)]
+        [
+            obstruction
+            for obstruction in tiling.obstructions
+            if _lies_in([obstruction], cell_set)
+        ]
         + other_cells_emptied,
-        [req for req in tiling.requirements if _lies_in(req, cell_set)],
+        [
+            requirement
+            for requirement in tiling.requirements
+            if _lies_in(requirement, cell_set)
+        ],
         (
             [TrackingAssumption.from_cells(list(group)) for group in groups]
             if own_is_tracked(groups, left_out)
@@ -476,22 +494,23 @@ def reduction_children(
     )
 
 
-def _words(gp: GriddedPerm) -> Tuple[Words, Words, Dict[Cell, List[int]]]:
+def _words(gridded_perm: GriddedPerm) -> Tuple[Words, Words, Dict[Cell, List[int]]]:
     """The words of the gridded permutation: for each column the cells of its
     points from left to right, for each row from bottom to top, and for each cell
     the ranks of the values of its points from left to right."""
     column_words: DefaultDict[int, List[Cell]] = defaultdict(list)
-    for cell in gp.pos:
+    for cell in gridded_perm.pos:
         column_words[cell[0]].append(cell)
     row_words: DefaultDict[int, List[Cell]] = defaultdict(list)
-    for index in sorted(range(len(gp)), key=lambda index: gp.patt[index]):
-        row_words[gp.pos[index][1]].append(gp.pos[index])
+    for index in sorted(
+        range(len(gridded_perm)), key=lambda index: gridded_perm.patt[index]
+    ):
+        row_words[gridded_perm.pos[index][1]].append(gridded_perm.pos[index])
     values_in_cell: DefaultDict[Cell, List[int]] = defaultdict(list)
-    for value, cell in zip(gp.patt, gp.pos):
+    for value, cell in zip(gridded_perm.patt, gridded_perm.pos):
         values_in_cell[cell].append(value)
     ranks = {
-        cell: [sorted(values).index(value) for value in values]
-        for cell, values in values_in_cell.items()
+        cell: list(Perm.to_standard(values)) for cell, values in values_in_cell.items()
     }
     return column_words, row_words, ranks
 
@@ -516,15 +535,15 @@ def _from_words(
     values, number_of_values = _slots(row_words)
     if number_of_values != size:
         raise ValueError("the column words and the row words have different lengths")
-    patt = [0] * size
-    pos: List[Cell] = [(0, 0)] * size
+    pattern = [0] * size
+    cells_of_points: List[Cell] = [(0, 0)] * size
     for cell, cell_positions in positions.items():
         if not len(values[cell]) == len(cell_positions) == len(ranks[cell]):
             raise ValueError(f"the words have different numbers of points in {cell}")
         for position, rank in zip(cell_positions, ranks[cell]):
-            patt[position] = values[cell][rank]
-            pos[position] = cell
-    return GriddedPerm(Perm(patt), tuple(pos))
+            pattern[position] = values[cell][rank]
+            cells_of_points[position] = cell
+    return GriddedPerm(Perm(pattern), tuple(cells_of_points))
 
 
 def _monotone_ranks(size: int, increasing: bool) -> List[int]:
