@@ -296,15 +296,36 @@ def test_reducible(two_rows, apart):
     assert not is_reducible(apart, [(1, 0)])
 
 
-def test_reducible_from_an_iterator(alike_row):
-    """With no direction given, the cells are read once, so an iterator serves for
-    both directions: here the second, as the complement of alike_row is reducible
-    decreasing only."""
-    tiling = alike_row.complement()
+def test_reducible_with_no_direction(alike_row):
+    """With no direction given, a set is reducible if it is in one of the two:
+    alike_row's two cells are reducible increasing only, and those of its
+    complement decreasing only. The cells are read once, so an iterator serves for
+    both directions."""
     cells = [(0, 0), (1, 0)]
-    assert not is_reducible(tiling, cells, True)
-    assert is_reducible(tiling, cells, False)
-    assert is_reducible(tiling, iter(cells))
+    for tiling, increasing in ((alike_row, True), (alike_row.complement(), False)):
+        assert is_reducible(tiling, cells, increasing)
+        assert not is_reducible(tiling, cells, not increasing)
+        assert is_reducible(tiling, cells)
+        assert is_reducible(tiling, iter(cells))
+
+
+def test_degenerate_sets(two_rows):
+    """The empty set is not reducible, nor is a set with an empty cell or a cell
+    off the tiling; all the active cells of a tiling are, when the condition holds,
+    though the factory does not offer them."""
+    assert not is_reducible(two_rows, [])
+    width, height = two_rows.dimensions
+    empty_cells = [
+        (column, row)
+        for column in range(width)
+        for row in range(height)
+        if (column, row) not in two_rows.active_cells
+    ]
+    assert empty_cells
+    for cell in empty_cells + [(width, height)]:
+        assert not is_reducible(two_rows, [cell])
+        assert not is_reducible(two_rows, [cell, (0, 1)])
+    assert is_reducible(tiling_from({(0, 0): [Perm((2, 1, 0))]}, [], []), [(0, 0)])
 
 
 def test_rigid(two_rows):
@@ -318,6 +339,23 @@ def test_rigid(two_rows):
         [],
     )
     assert is_rigid(increasing_row, [(0, 0), (1, 0)])
+    # the points of the two cells in a fixed order, but the second cell not monotone
+    second_not_monotone = tiling_from(
+        {(0, 0): [Perm((1, 0))], (1, 0): [Perm((0, 1, 2))]},
+        [(Perm((0, 1)), ((0, 0), (1, 0)))],
+        [],
+    )
+    assert not is_rigid(second_not_monotone, [(0, 0), (1, 0)])
+    # two increasing cells of a column, in no fixed order, the lower one's points
+    # all left of the upper one's, and all right of them
+    increasing_cells = {(0, 0): [Perm((1, 0))], (0, 1): [Perm((1, 0))]}
+    column = [(0, 0), (0, 1)]
+    assert not is_rigid(tiling_from(increasing_cells, [], []), column)
+    for crossing in (
+        (Perm((1, 0)), ((0, 1), (0, 0))),
+        (Perm((0, 1)), ((0, 0), (0, 1))),
+    ):
+        assert is_rigid(tiling_from(increasing_cells, [crossing], []), column)
 
 
 def test_regions(two_rows, apart, row_and_column, one_cell):
@@ -930,14 +968,23 @@ def test_cell_reduction(one_cell, two_rows):
 
 
 def test_encoding():
-    for strategy in (
-        ReductionStrategy([(0, 0), (1, 0)], True, True),
-        CellReductionStrategy((2, 1), False, False),
+    """The strategies, in each direction, tracked or not, and the factories decode
+    to what they encode."""
+    strategies = [
+        strategy
+        for increasing in (True, False)
+        for tracked in (True, False)
+        for strategy in (
+            ReductionStrategy([(0, 0), (1, 0)], increasing, tracked),
+            CellReductionStrategy((2, 1), increasing, tracked),
+        )
+    ]
+    for strategy in strategies + [
         ReductionFactory(True, "line"),
         ReductionFactory(True, "cut", 6),
         ReductionFactory(False, "any", 3),
         CellReductionFactory(True),
-    ):
+    ]:
         decoded = Strategy.from_dict(json.loads(json.dumps(strategy.to_jsonable())))
         assert decoded.__class__ == strategy.__class__
         assert decoded.__dict__ == strategy.__dict__
