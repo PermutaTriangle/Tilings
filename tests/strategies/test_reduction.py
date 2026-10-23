@@ -183,6 +183,13 @@ def unlike_row():
 
 
 @pytest.fixture
+def unlike_row_decreasing():
+    """The complement of unlike_row, reducible decreasing only: every point of A
+    lies above those of B and below those of C."""
+    return beside_a_row_cell(False).complement()
+
+
+@pytest.fixture
 def with_requirement_list():
     """alike_row with a point required in A or in C."""
     tiling = beside_a_row_cell(True)
@@ -206,6 +213,36 @@ def touched_only():
         },
         [(Perm((0, 2, 1)), ((0, 0), (1, 2), (1, 2)))],
         [(0, 2), (1, 0), (1, 1)],
+    )
+
+
+def row_above_a_cell(requirements=()):
+    """A row of an increasing cell A = (0, 1), a cell B = (1, 1) of Av(312) and a
+    decreasing cell C = (2, 1), above a cell D = (2, 0) of Av(321), with no
+    obstruction between two cells."""
+    tiling = tiling_from(
+        {
+            (0, 1): [Perm((1, 0))],
+            (1, 1): [Perm((2, 0, 1))],
+            (2, 1): [Perm((0, 1))],
+            (2, 0): [Perm((2, 1, 0))],
+        },
+        [],
+        [],
+    )
+    return Tiling(tiling.obstructions, requirements)
+
+
+@pytest.fixture
+def split_by_column():
+    return row_above_a_cell()
+
+
+@pytest.fixture
+def seen_through_requirement():
+    """row_above_a_cell with a point required in B or in D."""
+    return row_above_a_cell(
+        [[GriddedPerm.point_perm((1, 1)), GriddedPerm.point_perm((2, 0))]]
     )
 
 
@@ -371,7 +408,10 @@ def test_sanity_check(request, fixture, cells, increasing):
     + [
         ("alike_row", [(0, 0), (1, 0)], True),
         ("unlike_row", [(0, 0), (1, 0)], True),
+        ("unlike_row_decreasing", [(0, 0), (1, 0)], False),
         ("with_requirement_list", [(0, 0), (1, 0)], True),
+        ("split_by_column", [(1, 1), (2, 1)], True),
+        ("seen_through_requirement", [(0, 1), (1, 1), (2, 1)], True),
         ("threshold", THRESHOLD_CELLS, True),
     ],
 )
@@ -498,6 +538,28 @@ def test_requirement_list(with_requirement_list):
     assert is_reducible(with_requirement_list, cells, True)
     rule = ReductionStrategy(cells, True)(with_requirement_list)
     assert all(rule.sanity_check(n) for n in range(6))
+
+
+def test_seen_through_requirement(seen_through_requirement):
+    """Of the top row, B is kept, though its row and column have no cell outside
+    the set, since a requirement list with a point outside the set has a point in
+    it; A, which nothing outside the set sees, is left out."""
+    cells = [(0, 1), (1, 1), (2, 1)]
+    assert reduction_plan(seen_through_requirement, cells) == (
+        (((1, 1),), ((2, 1),)),
+        ((0, 1),),
+    )
+    rule = ReductionStrategy(cells, True)(seen_through_requirement)
+    assert all(rule.sanity_check(n) for n in range(5))
+
+
+def test_split_by_column(split_by_column):
+    """B and C, in a row with A outside the set, are two groups: C's column has D
+    outside the set, which sees C's points but not B's."""
+    cells = [(1, 1), (2, 1)]
+    assert reduction_plan(split_by_column, cells) == ((((1, 1),), ((2, 1),)), ())
+    rule = ReductionStrategy(cells, True)(split_by_column)
+    assert all(rule.sanity_check(n) for n in range(5))
 
 
 def test_direction_not_reducible(threshold):
