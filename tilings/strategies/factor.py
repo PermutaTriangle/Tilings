@@ -11,6 +11,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Type,
     Union,
     cast,
 )
@@ -611,15 +612,14 @@ class FactorFactory(StrategyFactory[Tiling]):
             FactorWithInterleavingStrategy.interleaving_rows_and_cols(components)
         )
         if interleaving:
+            # only the factor classes with interleaving get here, and they take tracked
+            factor_class = cast(Type[FactorWithInterleavingStrategy], self.factor_class)
             # pylint: disable=E1123
-            return cast(
-                FactorWithInterleavingStrategy,
-                self.factor_class(
-                    components,
-                    ignore_parent=self.ignore_parent,
-                    workable=workable,
-                    tracked=self.tracked,
-                ),
+            return factor_class(
+                components,
+                ignore_parent=self.ignore_parent,
+                workable=workable,
+                tracked=self.tracked,
             )
         return FactorStrategy(
             components, ignore_parent=self.ignore_parent, workable=workable
