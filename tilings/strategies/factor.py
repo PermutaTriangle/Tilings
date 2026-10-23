@@ -633,7 +633,7 @@ class FactorFactory(StrategyFactory[Tiling]):
         elif self.factor_class is FactorWithMonotoneInterleavingStrategy:
             s = "factor with monotone interleaving"
         else:
-            raise Exception("Invalid interleaving type")
+            raise ValueError("Invalid interleaving type")
         if self.unions:
             s = "unions of " + s
         if self.tracked:

@@ -97,7 +97,7 @@ class RequirementPlacement:
             return cell in self._point_row_cells
         if self.own_col:  # Only placing in own column
             return cell in self._point_col_cells
-        raise Exception("Not placing at all!!")
+        raise ValueError("Not placing at all!!")
 
     def _point_translation(
         self, gp: GriddedPerm, index: int, placed_cell: Cell
@@ -283,7 +283,7 @@ class RequirementPlacement:
             return c1[1] > c2[1]
         if direction == DIR_SOUTH:
             return c1[1] < c2[1]
-        raise Exception("Invalid direction")
+        raise ValueError("Invalid direction")
 
     def forced_obstructions_from_requirement(
         self,
