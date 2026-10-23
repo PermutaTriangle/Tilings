@@ -2,8 +2,62 @@
 reducible, the plan of what the reduced tiling keeps of it, the two children, and
 the words that the maps between the tiling and the children are built from.
 
-`tilings.strategies.reduction` has the strategy, its constructor and its factory,
-and the argument why the reduction holds.
+A set of active cells of a tiling is reducible, in a direction (increasing or
+decreasing), if every obstruction with points both in the set and outside it has
+exactly one point in the set, in the cell c say, and
+
+- it does not have points both in another cell of the row of c and in another
+  cell of the column of c;
+- if it has a point in another cell of the column (row) of c, then the cells of
+  the set in that column (row) are already in the order of the direction: c is
+  the only one, or the tiling's obstructions put the points of the lower (left)
+  of any two of them all to the left of (below) those of the other, the other
+  way round when decreasing;
+
+every requirement list lies in the set, or each of its gridded permutations has
+no point in the set or one point in it as an obstruction may have; each cell of
+the set lies in an obstruction that lies in the set; and no assumption with a
+point in the set is a component assumption or tracks a gridded permutation of
+two or more points.
+
+A gridded permutation is the same as, for each column, the word of the cells of
+its points from left to right, for each row, the word of the cells of its points
+from bottom to top, and the permutation in each cell, chosen independently. The
+share of a set of cells in these is the order of its points among themselves in
+each column and in each row, and the permutation in each of its cells; the rest
+is the places of the set's points among the other points of each column and
+row, and the permutations in the other cells. An obstruction with one point in a
+reducible set sees that point only through its cell and its place among the
+other points of its column or of its row, and which of the set's places there
+are the cell's is fixed by the rest: the cell is the only one of the set there,
+or the set's own obstructions fix the order of its cells there. Sorting the
+share into the canonical one, in which every cell of the set is increasing (or
+decreasing), and so are the points of the cells of the set in each row and in
+each column, keeps both. The sorting keeps the number of points in each cell,
+but not the occurrences of a pattern, which is why a tracked pattern of two or
+more points may not touch the set.
+
+So the gridded permutations of the tiling are the pairs of a gridded
+permutation of the reduced tiling, whose share is canonical, and one of the own
+tiling, with as many points in the cells of the set. The own tiling is the
+tiling of the set's own obstructions and requirements, those that lie in the
+set, with every other cell empty; each cell of the set must lie in one of its
+obstructions, as `Tiling` takes a cell in no obstruction and no requirement to
+be empty.
+
+The reduced tiling keeps what the rest of the tiling sees of the set and no
+more. A cell of the set whose row and column have no cell outside the set, and
+in which no obstruction or requirement with points outside the set has a point,
+is seen only through its number of points, which the own tiling counts: the
+reduced tiling leaves it out. Cells of the set in one row are seen as one if
+their columns, and the columns between them, have no cell outside the set, no
+other cell of the set that the rest sees lies between them, and the
+obstructions and requirements with points outside the set treat a point in any
+of them alike; likewise in a column. The reduced tiling keeps the first of such
+a group, with all the group's points.
+
+`tilings.strategies.reduction` has the strategy, its constructor, which counts
+the pairs, and its factory.
 """
 
 from collections import Counter, defaultdict
@@ -158,11 +212,9 @@ def _crossing_is_allowed(
 def _qualifies(tiling: "Tiling", cell_set: FrozenSet[Cell]) -> bool:
     """Return True if the set is of active cells, the assumptions track points in
     its cells only one by one (no component assumption on them, and no tracked
-    gridded permutation of two or more points with a point in them: the sorting
-    keeps the number of points in each cell, but not the occurrences of a pattern),
-    and each of its cells has an obstruction of its own: the tiling of the set's
-    own obstructions must have every cell of the set (an unrestricted cell has
-    none)."""
+    gridded permutation of two or more points with a point in them), and each of
+    its cells lies in an obstruction that lies in the set (an unrestricted cell
+    lies in none)."""
     if not cell_set or not cell_set <= tiling.active_cells:
         return False
     if any(
@@ -179,72 +231,6 @@ def _qualifies(tiling: "Tiling", cell_set: FrozenSet[Cell]) -> bool:
         for cell in obstruction.pos
     }
     return cell_set <= cells_with_own_obstructions
-
-
-def _seen_gridded_perms(
-    tiling: "Tiling", cell_set: FrozenSet[Cell]
-) -> Iterator[GriddedPerm]:
-    """The obstructions with points in the set and outside it, and the gridded
-    permutations with points in the set of the requirement lists that do not lie
-    in it."""
-    for obstruction in tiling.obstructions:
-        if _crosses(obstruction, cell_set):
-            yield obstruction
-    for requirement in tiling.requirements:
-        if not _lies_in(requirement, cell_set):
-            for gridded_perm in requirement:
-                if any(cell in cell_set for cell in gridded_perm.pos):
-                    yield gridded_perm
-
-
-def is_reducible(
-    tiling: "Tiling", cells: Iterable[Cell], increasing: Optional[bool] = None
-) -> bool:
-    """Return True if the set of cells is reducible on the tiling in the direction,
-    or in one of the two directions if none is given."""
-    cell_set = frozenset(cells)
-    if increasing is None:
-        return is_reducible(tiling, cell_set, True) or is_reducible(
-            tiling, cell_set, False
-        )
-    if not _qualifies(tiling, cell_set):
-        return False
-    ordered_columns, ordered_rows = _ordered_lines(tiling, cell_set, increasing)
-    return all(
-        _crossing_is_allowed(gridded_perm, cell_set, ordered_columns, ordered_rows)
-        for gridded_perm in _seen_gridded_perms(tiling, cell_set)
-    )
-
-
-def is_rigid(tiling: "Tiling", cells: Iterable[Cell]) -> bool:
-    """Return True if the share of the cells is the same in every gridded
-    permutation with the same number of points in each cell: every cell is
-    monotone, and the points of any two of the cells in a row or a column are in
-    a fixed order. Reducing such cells changes nothing, or reverses them."""
-    cell_list = sorted(set(cells))
-    obstructions = tiling.obstructions
-
-    def is_forbidden(gridded_perm: GriddedPerm) -> bool:
-        return gridded_perm.contains(*obstructions)
-
-    for first_cell, second_cell in product(cell_list, repeat=2):
-        if first_cell > second_cell:
-            continue
-        if first_cell == second_cell or first_cell[1] == second_cell[1]:
-            # a cell, or two cells of a row, read from left to right
-            if not (
-                is_forbidden(GriddedPerm(Perm((0, 1)), (first_cell, second_cell)))
-                or is_forbidden(GriddedPerm(Perm((1, 0)), (first_cell, second_cell)))
-            ):
-                return False
-        elif first_cell[0] == second_cell[0]:
-            # two cells of a column, the lower one first
-            if not (
-                is_forbidden(GriddedPerm(Perm((0, 1)), (first_cell, second_cell)))
-                or is_forbidden(GriddedPerm(Perm((1, 0)), (second_cell, first_cell)))
-            ):
-                return False
-    return True
 
 
 class _View(NamedTuple):
@@ -281,6 +267,70 @@ def _view(tiling: "Tiling", cell_set: FrozenSet[Cell]) -> _View:
             for cell in gridded_perm.pos
         ),
     )
+
+
+def _seen_gridded_perms(
+    view: _View, cell_set: FrozenSet[Cell]
+) -> Iterator[GriddedPerm]:
+    """The gridded permutations the rest of the tiling sees the set through: the
+    obstructions with points in the set and outside it, and the gridded
+    permutations with points in the set of the requirement lists that do not lie
+    in it."""
+    yield from view.crossing_obstructions
+    for requirement in view.crossing_requirements:
+        for gridded_perm in requirement:
+            if any(cell in cell_set for cell in gridded_perm.pos):
+                yield gridded_perm
+
+
+def is_reducible(
+    tiling: "Tiling", cells: Iterable[Cell], increasing: Optional[bool] = None
+) -> bool:
+    """Return True if the set of cells is reducible on the tiling in the direction,
+    or in one of the two directions if none is given."""
+    cell_set = frozenset(cells)
+    if increasing is None:
+        return is_reducible(tiling, cell_set, True) or is_reducible(
+            tiling, cell_set, False
+        )
+    if not _qualifies(tiling, cell_set):
+        return False
+    ordered_columns, ordered_rows = _ordered_lines(tiling, cell_set, increasing)
+    return all(
+        _crossing_is_allowed(gridded_perm, cell_set, ordered_columns, ordered_rows)
+        for gridded_perm in _seen_gridded_perms(_view(tiling, cell_set), cell_set)
+    )
+
+
+def is_rigid(tiling: "Tiling", cells: Iterable[Cell]) -> bool:
+    """Return True if the share of the cells is the same in every gridded
+    permutation with the same number of points in each cell: every cell is
+    monotone, and the points of any two of the cells in a row or a column are in
+    a fixed order. Reducing such cells changes nothing, or reverses them."""
+    cell_list = sorted(set(cells))
+    obstructions = tiling.obstructions
+
+    def is_forbidden(gridded_perm: GriddedPerm) -> bool:
+        return gridded_perm.contains(*obstructions)
+
+    for first_cell, second_cell in product(cell_list, repeat=2):
+        if first_cell > second_cell:
+            continue
+        if first_cell == second_cell or first_cell[1] == second_cell[1]:
+            # a cell, or two cells of a row, read from left to right
+            if not (
+                is_forbidden(GriddedPerm(Perm((0, 1)), (first_cell, second_cell)))
+                or is_forbidden(GriddedPerm(Perm((1, 0)), (first_cell, second_cell)))
+            ):
+                return False
+        elif first_cell[0] == second_cell[0]:
+            # two cells of a column, the lower one first
+            if not (
+                is_forbidden(GriddedPerm(Perm((0, 1)), (first_cell, second_cell)))
+                or is_forbidden(GriddedPerm(Perm((1, 0)), (second_cell, first_cell)))
+            ):
+                return False
+    return True
 
 
 def _moved(gridded_perm: GriddedPerm, source: Cell, target: Cell) -> GriddedPerm:
@@ -320,17 +370,10 @@ def _left_out(
     outside the set, and not tracked."""
     touched = {
         cell
-        for gridded_perm in view.crossing_obstructions
+        for gridded_perm in _seen_gridded_perms(view, cell_set)
         for cell in gridded_perm.pos
         if cell in cell_set
     }
-    touched.update(
-        cell
-        for requirement in view.crossing_requirements
-        for gridded_perm in requirement
-        for cell in gridded_perm.pos
-        if cell in cell_set
-    )
     return tuple(
         cell
         for cell in cells
@@ -449,6 +492,9 @@ def _reduced_tiling(
 def _own_tiling(
     tiling: "Tiling", cell_set: FrozenSet[Cell], plan: ReductionPlan
 ) -> "Tiling":
+    # Not Tiling.sub_tiling: it keeps the parts in the set of the parent's
+    # assumptions, which the reduced tiling counts, and it does not simplify the
+    # tiling, while searches compare simplified tilings.
     groups, left_out = plan
     width, height = tiling.dimensions
     other_cells_emptied = [
@@ -486,8 +532,8 @@ def reduction_children(
     """Return the reduced tiling, with a cell for each group of the set that the
     rest sees as one and none for the cells it does not see, those cells increasing
     (or decreasing) and in that order in their rows and columns, each tracked if
-    tracked; and the tiling of the set's own obstructions and requirements, each
-    group tracked if there are two or more, or cells left out."""
+    tracked; and the own tiling, each group tracked if there are two or more, or
+    cells left out."""
     cell_set = frozenset(cells)
     plan = reduction_plan(tiling, cell_set)
     return (
@@ -549,7 +595,7 @@ def _from_words(
 
 
 def _monotone_ranks(size: int, increasing: bool) -> List[int]:
-    return list(range(size)) if increasing else list(range(size - 1, -1, -1))
+    return list(Perm.identity(size) if increasing else Perm.monotone_decreasing(size))
 
 
 def _canonical_words(

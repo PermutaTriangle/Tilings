@@ -31,8 +31,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   its children identically. None could have been counted: the old constructor
   raised `NotImplementedError`.
 - `CellReductionConstructor` is `ReductionConstructor`, which takes the parent,
-  the children, the cells and the plan. The old `CellReductionConstructor
-  (parameter)` counted nothing: each of its methods raised `NotImplementedError`.
+  the children, the plan and the map of the parent's parameters to the reduced
+  tiling's. The old `CellReductionConstructor(parameter)` counted nothing: each
+  of its methods raised `NotImplementedError`.
 
 ### Removed
 - `CellReductionFactory.reducible_cells`,

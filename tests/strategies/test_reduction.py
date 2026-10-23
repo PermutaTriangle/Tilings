@@ -4,7 +4,7 @@ from collections import defaultdict
 
 import pytest
 
-from comb_spec_searcher import CombinatorialSpecification, Strategy
+from comb_spec_searcher import CombinatorialSpecification, DisjointUnion, Strategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta import Av, Perm
 from permuta.misc import DIR_NORTH, DIR_SOUTH
@@ -579,12 +579,12 @@ def test_direction_not_reducible(threshold):
         ReductionStrategy(THRESHOLD_CELLS, False)(threshold)
 
 
-def random_gridded_perm(rng, cells, size):
+def random_gridded_perm(random_generator, cells, size):
     """A gridded permutation with points in random cells, read left to right by
     column and bottom to top by row."""
-    positions = sorted(rng.choice(cells) for _ in range(size))
+    positions = sorted(random_generator.choice(cells) for _ in range(size))
     by_value = sorted(
-        range(size), key=lambda index: (positions[index][1], rng.random())
+        range(size), key=lambda index: (positions[index][1], random_generator.random())
     )
     values = [0] * size
     for value, index in enumerate(by_value):
@@ -592,10 +592,12 @@ def random_gridded_perm(rng, cells, size):
     return GriddedPerm(Perm(values), tuple(positions))
 
 
-def random_tiling(rng):
-    width, height = rng.randint(1, 3), rng.randint(1, 3)
+def random_tiling(random_generator):
+    width, height = random_generator.randint(1, 3), random_generator.randint(1, 3)
     cells = [(column, row) for column in range(width) for row in range(height)]
-    active = rng.sample(cells, rng.randint(1, min(len(cells), 4)))
+    active = random_generator.sample(
+        cells, random_generator.randint(1, min(len(cells), 4))
+    )
     patterns = [
         Perm(pattern)
         for pattern in ((0, 1), (1, 0), (0, 2, 1), (1, 0, 2), (1, 2, 0), (0, 1, 2))
@@ -604,12 +606,20 @@ def random_tiling(rng):
         GriddedPerm.point_perm(cell) for cell in cells if cell not in active
     ]
     for cell in active:
-        for pattern in rng.sample(patterns, rng.randint(1, 2)):
+        for pattern in random_generator.sample(
+            patterns, random_generator.randint(1, 2)
+        ):
             obstructions.append(GriddedPerm.single_cell(pattern, cell))
-    for _ in range(rng.randint(1, 4)):
-        obstructions.append(random_gridded_perm(rng, active, rng.randint(2, 3)))
+    for _ in range(random_generator.randint(1, 4)):
+        obstructions.append(
+            random_gridded_perm(
+                random_generator, active, random_generator.randint(2, 3)
+            )
+        )
     requirements = (
-        [[GriddedPerm.point_perm(rng.choice(active))]] if rng.random() < 0.3 else []
+        [[GriddedPerm.point_perm(random_generator.choice(active))]]
+        if random_generator.random() < 0.3
+        else []
     )
     return Tiling(obstructions, requirements)
 
@@ -618,10 +628,10 @@ def random_tiling(rng):
 def test_random_tilings():
     """Every reduction the factory offers on 30 random tilings, seeded, passes its
     sanity check (counts, objects and random samples) to size 4."""
-    rng = random.Random(2026)
+    random_generator = random.Random(2026)
     tilings = []
     while len(tilings) < 30:
-        tiling = random_tiling(rng)
+        tiling = random_tiling(random_generator)
         if not tiling.is_empty() and len(tiling.active_cells) >= 2:
             tilings.append(tiling)
     reductions = 0
@@ -713,8 +723,9 @@ def test_unrestricted_cell():
 
 def test_tracked_pattern():
     """A tracking assumption on a gridded permutation of two or more points counts
-    occurrences of a pattern, which the sorting does not keep: a set with a cell of
-    one is not reduced (the review of the pull request, round 1, finding 1)."""
+    occurrences of a pattern, which the sorting does not keep, as it keeps only
+    the number of points in each cell: a set with a cell of one is not reduced,
+    and the reductions still offered pass their sanity check."""
     tiling = Tiling(
         [
             GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
@@ -733,6 +744,20 @@ def test_tracked_pattern():
     for strategy in ReductionFactory(True, "any")(tiling):
         rule = strategy(tiling)
         assert all(rule.sanity_check(n) for n in range(5))
+
+
+def test_equiv(alike_row, unlike_row):
+    """Two reductions' constructors are equivalent when they pair their children
+    the same way: the alike row's and its complement's, one group each, but not
+    the alike row's and the unlike row's, one group and two."""
+    cells = [(0, 0), (1, 0)]
+    alike = ReductionStrategy(cells, True).constructor(alike_row)
+    complement = ReductionStrategy(cells, False).constructor(alike_row.complement())
+    unlike = ReductionStrategy(cells, True).constructor(unlike_row)
+    assert alike.equiv(complement)[0]
+    assert not alike.equiv(unlike)[0]
+    assert not unlike.equiv(alike)[0]
+    assert not alike.equiv(DisjointUnion(alike_row, (alike_row,), ({},)))[0]
 
 
 def test_not_tracked(two_rows):
