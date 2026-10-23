@@ -47,6 +47,7 @@ from .requirement_placement import (
     RequirementPlacementFactory,
     RowAndColumnPlacementFactory,
 )
+from .rotation import RotationalCutFactory, RotationalCutStrategy
 from .row_and_col_separation import RowColumnSeparationStrategy
 from .sliding import SlidingFactory
 from .symmetry import SymmetriesFactory
@@ -115,6 +116,9 @@ __all__ = [
     "SubobstructionInferralFactory",
     # Reduction
     "CellReductionFactory",
+    # Rotation
+    "RotationalCutFactory",
+    "RotationalCutStrategy",
     # Symmetry
     "SymmetriesFactory",
     # Verification

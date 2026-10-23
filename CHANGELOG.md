@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- `RotationalCutFactory` and `RotationalCutStrategy`: a 1x1 tiling whose class is
+  closed under rotation (its basis is rotationally stable), or under the cyclic
+  shift of the values, has n times as many permutations of length n as its min
+  cut, {p : 1 + p in the class}, or its max cut, {p : p + 1 in the class}, has of
+  length n - 1. The strategy adds the rule to each cut, with the new
+  `RotationalCutConstructor`.
+- `TileScopePack.add_rotational_cuts`, which adds `RotationalCutFactory` to a pack,
+  and the flag `--rotational-cuts` of `tilescope spec`, which does the same.
+- `tilings.hints`: hints, properties of a class that make it likely that a
+  change to a pack helps the search. The first: a class closed under rotation,
+  for which the rotational cuts help. `tilescope spec` tells the user of the
+  hints that the pack it runs does not follow.
 
 ## [4.1.0] - 2026-01-15
 ### Changed
