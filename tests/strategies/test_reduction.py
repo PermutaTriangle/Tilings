@@ -195,6 +195,21 @@ def unlike_row_decreasing():
 
 
 @pytest.fixture
+def unlike_column():
+    """The inverse of unlike_row: A = (0, 0) below B = (0, 1) in a column with a
+    cell C = (0, 2) of the rest, which sees them unlike, so that the reduction
+    keeps both cells of the column; reducible increasing only."""
+    return beside_a_row_cell(False).inverse()
+
+
+@pytest.fixture
+def unlike_column_decreasing():
+    """The inverse of unlike_row_decreasing: the same three cells, reducible
+    decreasing only."""
+    return beside_a_row_cell(False).complement().inverse()
+
+
+@pytest.fixture
 def with_requirement_list():
     """alike_row with a point required in A or in C."""
     tiling = beside_a_row_cell(True)
@@ -241,6 +256,13 @@ def row_above_a_cell(requirements=()):
 @pytest.fixture
 def split_by_column():
     return row_above_a_cell()
+
+
+@pytest.fixture
+def split_by_first_column():
+    """The reverse of split_by_column: C = (0, 1), above D = (0, 0), comes before
+    B = (1, 1) in the row, and A = (2, 1) after them."""
+    return row_above_a_cell().reverse()
 
 
 @pytest.fixture
@@ -299,6 +321,21 @@ def test_reducible(two_rows, apart):
     assert not is_reducible(two_rows, [(1, 0)])
     assert is_reducible(apart, [(1, 0), (2, 2)])
     assert not is_reducible(apart, [(1, 0)])
+
+
+def test_crossing_in_a_column():
+    """A 123 with two points in A = (0, 0), a cell of Av(132), and one in the
+    decreasing cell B = (0, 1) above it has its point of the set {B} in B, and
+    touches A, in B's column. The set has no other cell in that column, so the
+    column is in order, and the set is reducible in both directions. B's column, 0,
+    differs from its row, 1, so the test tells the set's columns from its rows."""
+    tiling = tiling_from(
+        {(0, 0): [Perm((0, 2, 1))], (0, 1): [Perm((0, 1))]},
+        [(Perm((0, 1, 2)), ((0, 0), (0, 0), (0, 1)))],
+        [],
+    )
+    assert is_reducible(tiling, [(0, 1)], True)
+    assert is_reducible(tiling, [(0, 1)], False)
 
 
 def test_reducible_with_no_direction(alike_row):
@@ -396,6 +433,13 @@ def test_regions(two_rows, apart, row_and_column, one_cell):
     )
     with pytest.raises(ValueError):
         ReductionFactory(True, "diagonal")
+
+
+def test_factory_defaults():
+    """Unless told otherwise, a factory is tracked and reduces single cells, with no
+    bound on the number of cells of a set."""
+    factory = ReductionFactory()
+    assert (factory.tracked, factory.region, factory.max_cells) == (True, "cell", None)
 
 
 def test_candidate_sets():
@@ -496,6 +540,8 @@ def test_children(two_rows):
         ("one_cell", [(0, 0)]),
         ("seen_through_a_21", [(0, 1), (1, 1)]),
         ("left_out_beside_a_21", [(0, 1), (1, 1), (2, 1)]),
+        ("seen_through_requirement", [(0, 1), (1, 1)]),
+        ("split_by_first_column", [(0, 1), (1, 1)]),
     ],
 )
 @pytest.mark.parametrize("increasing", [True, False])
@@ -523,6 +569,8 @@ def test_sanity_check(request, fixture, cells, increasing):
         ("alike_row", [(0, 0), (1, 0)], True),
         ("unlike_row", [(0, 0), (1, 0)], True),
         ("unlike_row_decreasing", [(0, 0), (1, 0)], False),
+        ("unlike_column", [(0, 0), (0, 1)], True),
+        ("unlike_column_decreasing", [(0, 0), (0, 1)], False),
         ("with_requirement_list", [(0, 0), (1, 0)], True),
         ("split_by_column", [(1, 1), (2, 1)], True),
         ("seen_through_requirement", [(0, 1), (1, 1), (2, 1)], True),
@@ -638,6 +686,20 @@ def test_groups_along_a_row(alike_row, unlike_row):
     assert own_tiling.dimensions == (2, 1)
 
 
+def test_groups_along_a_column(unlike_column, unlike_column_decreasing):
+    """The two cells of the column are two groups, both kept, so that test_maps
+    orders the points of two kept cells of a column: increasing in unlike_column,
+    decreasing in unlike_column_decreasing."""
+    cells = [(0, 0), (0, 1)]
+    for tiling, increasing in (
+        (unlike_column, True),
+        (unlike_column_decreasing, False),
+    ):
+        assert reduction_plan(tiling, cells) == ((((0, 0),), ((0, 1),)), ())
+        assert is_reducible(tiling, cells, increasing)
+        assert not is_reducible(tiling, cells, not increasing)
+
+
 def test_left_out_beside_kept(touched_only):
     """A cell the rest sees only through an obstruction with a point in it is
     kept, and the cell beside it, which the rest does not see, is left out."""
@@ -697,15 +759,27 @@ def test_seen_through_requirement(seen_through_requirement):
     )
     rule = ReductionStrategy(cells, True)(seen_through_requirement)
     assert all(rule.sanity_check(n) for n in range(5))
+    # the set of A and B alone is two groups, as the rest sees them alike one way
+    # only: moved from B to A, the requirement list's point leaves the list, while
+    # nothing the rest sees has a point in A to move to B
+    assert reduction_plan(seen_through_requirement, [(0, 1), (1, 1)]) == (
+        (((0, 1),), ((1, 1),)),
+        (),
+    )
 
 
-def test_split_by_column(split_by_column):
+def test_split_by_column(split_by_column, split_by_first_column):
     """B and C, in a row with A outside the set, are two groups: C's column has D
-    outside the set, which sees C's points but not B's."""
+    outside the set, which sees C's points but not B's. So C joins no group, also
+    in the reverse, where it comes before B."""
     cells = [(1, 1), (2, 1)]
     assert reduction_plan(split_by_column, cells) == ((((1, 1),), ((2, 1),)), ())
     rule = ReductionStrategy(cells, True)(split_by_column)
     assert all(rule.sanity_check(n) for n in range(5))
+    assert reduction_plan(split_by_first_column, [(0, 1), (1, 1)]) == (
+        (((0, 1),), ((1, 1),)),
+        (),
+    )
 
 
 def test_seen_through_a_21(seen_through_a_21):
@@ -882,16 +956,25 @@ def test_unrestricted_cell():
 
 
 def test_factory_skips():
-    """The factory does not offer a single finite cell, though it is reducible and
-    not rigid, nor a set the rest of the tiling sees nothing of: a factor."""
-    finite_cell = tiling_from(
-        {(0, 0): [Perm((0, 1, 2)), Perm((2, 1, 0))], (1, 0): [Perm((1, 0))]},
-        [(Perm((0, 1)), ((0, 0), (1, 0)))],
-        [],
-    )
-    assert is_reducible(finite_cell, [(0, 0)])
-    assert not is_rigid(finite_cell, [(0, 0)])
-    assert list(ReductionFactory(True, "cell")(finite_cell)) == []
+    """The factory does not offer a single finite cell, one whose basis has an
+    increasing and a decreasing pattern, though it is reducible and not rigid, nor a
+    set the rest of the tiling sees nothing of: a factor. A cell whose basis has
+    only one of the two patterns is offered."""
+    for basis in (
+        [Perm((0, 1, 2)), Perm((2, 1, 0))],
+        [Perm((0, 1, 2))],
+        [Perm((2, 1, 0))],
+    ):
+        cell_tiling = tiling_from(
+            {(0, 0): basis, (1, 0): [Perm((1, 0))]},
+            [(Perm((0, 1)), ((0, 0), (1, 0)))],
+            [],
+        )
+        finite = len(basis) == 2
+        assert is_reducible(cell_tiling, [(0, 0)])
+        assert not is_rigid(cell_tiling, [(0, 0)])
+        assert ReductionFactory.is_finite_cell(cell_tiling, (0, 0)) == finite
+        assert offered_sets(cell_tiling, "cell") == ([] if finite else [((0, 0),)])
     factor = tiling_from(
         {(0, 0): [Perm((2, 1, 0))], (1, 1): [Perm((2, 1, 0))]}, [], [(0, 1), (1, 0)]
     )
@@ -992,12 +1075,22 @@ def test_bounded_compositions():
     )
 
 
-def test_not_tracked(two_rows):
+def test_not_tracked(two_rows, one_cell):
+    """An untracked strategy tracks nothing and has no constructor; a factory's
+    strategies are tracked as the factory is."""
     strategy = ReductionStrategy([(1, 0), (2, 0), (3, 1)], True, tracked=False)
     reduced_tiling, _ = strategy.decomposition_function(two_rows)
     assert not reduced_tiling.assumptions
     with pytest.raises(NotImplementedError):
         strategy.constructor(two_rows)
+    for tracked in (True, False):
+        for factory, tiling in (
+            (ReductionFactory(tracked, "row"), two_rows),
+            (CellReductionFactory(tracked), one_cell),
+        ):
+            strategies = list(factory(tiling))
+            assert strategies
+            assert all(strategy.tracked == tracked for strategy in strategies)
 
 
 def test_cell_reduction(one_cell, two_rows):
