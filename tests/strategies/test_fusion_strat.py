@@ -1,5 +1,5 @@
 import pytest
-from sympy import Derivative, Eq, Function, Lambda, expand, var
+from sympy import Derivative, Eq, Function, Lambda, cancel, expand, var
 
 from comb_spec_searcher.strategies import Rule
 from tilings import GriddedPerm, Tiling
@@ -304,7 +304,12 @@ def easy_fusable(
     track_left=False,
     track_right=False,
     same_tracking=False,
+    tracked_beyond=(),
 ):
+    """Two decreasing cells, (0, 0) and (1, 0), every point of the left one
+    above those of the right one, so that their columns fuse. tracked_beyond adds
+    an increasing cell (2, 0) beside them and an assumption tracking each list of
+    cells it gives."""
     if same_tracking:
         assert track_left and track_right
     obs = [
@@ -312,6 +317,8 @@ def easy_fusable(
         GriddedPerm((0, 1), ((0, 0), (1, 0))),
         GriddedPerm.single_cell((0, 1), (1, 0)),
     ]
+    if tracked_beyond:
+        obs.append(GriddedPerm.single_cell((1, 0), (2, 0)))
 
     reqs = []
     if pos_left:
@@ -319,7 +326,10 @@ def easy_fusable(
     if pos_right:
         reqs.append([GriddedPerm.single_cell((0,), (1, 0))])
 
-    ass = []
+    ass = [
+        TrackingAssumption([GriddedPerm.single_cell((0,), cell) for cell in cells])
+        for cells in tracked_beyond
+    ]
     if same_tracking:
         ass.append(
             TrackingAssumption(
@@ -616,3 +626,101 @@ def test_fusion_derivative_equation_counts():
             assert expanded.coeff(x, size) == sum(
                 1 for _ in parent.objects_of_size(size)
             )
+
+
+def column_fusion(tiling):
+    """The rule fusing the tiling's columns 0 and 1."""
+    rules = [
+        rule
+        for rule in FusionFactory()(tiling)
+        if rule.formal_step == "fuse columns 0 and 1"
+    ]
+    assert len(rules) == 1
+    return rules[0]
+
+
+def objects_series(tiling, parameters, x, largest):
+    """The tiling's objects of size at most largest, as a polynomial in x and the
+    parameters."""
+    total = 0
+    for size in range(largest + 1):
+        for gridded_perm in tiling.objects_of_size(size):
+            term = x**size
+            for parameter, value in zip(
+                parameters, tiling.get_parameters(gridded_perm)
+            ):
+                term *= parameter**value
+            total += term
+    return expand(total)
+
+
+def equation_gives_the_parent(rule, largest=4):
+    """Whether the rule's equation, expanded with the child's objects, gives the
+    parent's objects of each size up to largest, monomial by monomial in the
+    parent's parameters."""
+    x = var("x")
+    parent, child = rule.comb_class, rule.children[0]
+    parent_parameters = [var(name) for name in parent.extra_parameters]
+    child_parameters = [var(name) for name in child.extra_parameters]
+    child_function = Function("F1")
+    equation = rule.constructor.get_equation(
+        Function("F0")(x, *parent_parameters),
+        (child_function(x, *child_parameters),),
+    )
+    child_series = objects_series(child, child_parameters, x, largest)
+    expanded = expand(
+        equation.rhs.replace(
+            child_function, Lambda((x, *child_parameters), child_series)
+        ).doit()
+    )
+    parent_series = objects_series(parent, parent_parameters, x, largest)
+    return all(
+        expand(cancel(expanded.coeff(x, size) - parent_series.coeff(x, size))) == 0
+        for size in range(largest + 1)
+    )
+
+
+@pytest.mark.parametrize("track_region", [False, True])
+def test_fusion_derivative_beside_a_tracked_cell(track_region):
+    """The parent tracks a cell (2, 0) beside the fused region, and the region too
+    or not. The child's fuse parameter can have the name of the parent's parameter
+    of (2, 0), which the child's parameter of (2, 0) is given: the equation must
+    differentiate in the fuse parameter alone."""
+    region = {"track_left": True, "track_right": True, "same_tracking": True}
+    tiling = easy_fusable(tracked_beyond=[[(2, 0)]], **(region if track_region else {}))
+    assert equation_gives_the_parent(column_fusion(tiling))
+
+
+@pytest.mark.parametrize("side", [(0, 0), (1, 0)], ids=["left", "right"])
+def test_fusion_one_sided_beyond_the_region(side):
+    """One parameter of the parent tracks a side of the region, the left cell or
+    the right one, and the cell (2, 0) beside the region together. It is
+    one-sided, so the equation stays the divided difference, though both sides of
+    the region are given the value 1."""
+    tiling = easy_fusable(tracked_beyond=[[side, (2, 0)]])
+    assert equation_gives_the_parent(column_fusion(tiling))
+
+
+def test_fusion_derivative_beside_eleven_tracked_cells():
+    """The pair of easy_fusable beside eleven tracked cells of at most one point
+    each, so that the child's parameters k_1 to k_11 are given the parent's k_0
+    to k_10. Substituting them one at a time, in sympy's order of their names,
+    which puts k_10 before k_9, would give k_10's place the parent's k_8: the
+    child's parameters must be substituted simultaneously."""
+    beside = [(column, 0) for column in range(2, 13)]
+    tiling = Tiling(
+        obstructions=[
+            GriddedPerm.single_cell((0, 1), (0, 0)),
+            GriddedPerm((0, 1), ((0, 0), (1, 0))),
+            GriddedPerm.single_cell((0, 1), (1, 0)),
+        ]
+        + [
+            GriddedPerm.single_cell(patt, cell)
+            for cell in beside
+            for patt in ((0, 1), (1, 0))
+        ],
+        assumptions=[
+            TrackingAssumption([GriddedPerm.single_cell((0,), cell)]) for cell in beside
+        ],
+    )
+    assert equation_gives_the_parent(column_fusion(tiling), largest=2)
