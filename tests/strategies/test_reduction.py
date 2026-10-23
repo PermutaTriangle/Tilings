@@ -730,7 +730,7 @@ def test_specification():
     spec = TileScope("1234_1342_2413", pack).auto_search()
     assert isinstance(spec, CombinatorialSpecification)
     assert any(
-        isinstance(rule.strategy, ReductionStrategy) and len(rule.strategy.cells) > 1
+        isinstance(rule.strategy, ReductionStrategy) and len(rule.strategy.cells) == 3
         for rule in spec.rules_dict.values()
     )
     basis = [Perm((0, 1, 2, 3)), Perm((0, 2, 3, 1)), Perm((1, 3, 0, 2))]

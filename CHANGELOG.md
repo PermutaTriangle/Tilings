@@ -7,28 +7,38 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- `ReductionFactory` and `ReductionStrategy`, the reduction of a set of cells:
-  the cells are made increasing or decreasing, and the tiling of their own
-  obstructions and requirements goes beside the reduced tiling. An obstruction
-  with one point in the set may see that point along a row or a column the set
-  has other cells in, when the set's own obstructions already put those cells in
-  the order of the reduction. The reduced tiling keeps only what the rest of the
-  tiling sees of the set: it leaves out the cells the rest does not see, and keeps
-  one cell for each group of cells it sees as one, tracked once in both children.
-  The count is the Hadamard product of the two children in the variables counting
-  the points in those groups, at 1, and the product in the size of the cells left
-  out, and the rules generate and sample their objects. The factory's `region`
-  says which sets it tries: `"cell"` (single cells, the cell reduction), `"row"`,
-  `"column"`, `"line"` (every set of cells in one row or one column), `"cut"`
-  (the cells on one side of a line between two columns or two rows, as the cells
-  left of a placed point) and `"any"` (every set); with `max_cells`, the sets of
-  `"cut"` and `"any"` have at most that many cells.
+- `ReductionFactory` and `ReductionStrategy`, the reduction of a set of cells: the
+  cells are made increasing or decreasing, and their own tiling is counted beside
+  the reduced tiling, which keeps only what the rest of the tiling sees of them
+  (a Hadamard product, with object maps and random sampling). The factory's
+  `region` is `"cell"`, `"row"`, `"column"`, `"line"`, `"cut"` (the cells on one
+  side of a line between two columns or two rows) or `"any"`, the last two with
+  `max_cells`. The condition, the plan and the children are in
+  `tilings.algorithms.reduction`.
 
 ### Changed
-- `CellReductionFactory` and `CellReductionStrategy` are now the reduction of
-  single cells, so they count, generate and sample objects, and the kitchen sink
-  pack uses `ReductionFactory` with the region `"cell"`. A cell with no
-  obstruction of its own, or in a component assumption, is no longer reduced.
+- `CellReductionFactory` and `CellReductionStrategy` are the reduction of single
+  cells: they count, generate and sample objects, and the kitchen sink pack uses
+  `ReductionFactory(tracked)`. A cell with no obstruction of its own, in a
+  component assumption, or in a tracked gridded permutation of two or more
+  points, is no longer reduced.
+- `CellReductionStrategy.formal_step` names the direction, as in "reducing cell
+  (0, 0) to increasing", where it was "reducing cell (0, 0)".
+- The cell reduction's reduced tiling is built with `Tiling`'s defaults
+  (simplified, empty rows and columns removed), where it was built with
+  `simplify=False`, `derive_empty=False` and `remove_empty_rows_and_cols=False`,
+  so a specification saved with the old `CellReductionStrategy` may not rebuild
+  its children identically. None could have been counted: the old constructor
+  raised `NotImplementedError`.
+- `CellReductionConstructor` is `ReductionConstructor`, which takes the parent,
+  the children, the cells and the plan. The old `CellReductionConstructor
+  (parameter)` counted nothing: each of its methods raised `NotImplementedError`.
+
+### Removed
+- `CellReductionFactory.reducible_cells`,
+  `CellReductionFactory.can_reduce_cell_with_requirements_and_assumptions` and
+  `CellReductionFactory.gp_in_row_and_col`. The condition is
+  `tilings.algorithms.reduction.is_reducible`.
 
 ## [4.1.0] - 2026-01-15
 ### Changed
