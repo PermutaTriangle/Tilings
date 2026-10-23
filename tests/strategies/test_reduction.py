@@ -994,7 +994,13 @@ def test_encoding():
 
 @pytest.mark.timeout(120)
 def test_specification():
-    """A specification of Av(1234, 1342, 2413) that reduces a set of three cells."""
+    """A specification of Av(1243, 2314, 2413) that reduces a set of three cells,
+    with row and column placements, tracked fusion and the reduction of any set of
+    at most three cells. The search goes level by level: after the fourth, the
+    first with a specification, every specification of the class reduces a set of
+    three cells (fusion has none before the fifth), so whichever is extracted does.
+    auto_search would stop as its timing allows and extract a specification at
+    random, which need not reduce three cells where there are other kinds."""
     pack = TileScopePack.row_and_col_placements(row_only=False)
     counting_verification = (
         strat.BasicVerificationStrategy,
@@ -1014,13 +1020,16 @@ def test_specification():
     pack = pack.make_fusion(tracked=True).add_initial(
         ReductionFactory(True, "any", max_cells=3)
     )
-    spec = TileScope("1234_1342_2413", pack).auto_search()
+    searcher = TileScope("1243_2314_2413", pack)
+    for _ in range(4):
+        searcher.do_level()
+    spec = searcher.get_specification(minimization_time_limit=0)
     assert isinstance(spec, CombinatorialSpecification)
     assert any(
         isinstance(rule.strategy, ReductionStrategy) and len(rule.strategy.cells) == 3
         for rule in spec.rules_dict.values()
     )
-    basis = [Perm((0, 1, 2, 3)), Perm((0, 2, 3, 1)), Perm((1, 3, 0, 2))]
+    basis = [Perm((0, 1, 3, 2)), Perm((1, 2, 0, 3)), Perm((1, 3, 0, 2))]
     assert [spec.count_objects_of_size(n) for n in range(9)] == [
         len(list(Av(basis).of_length(n))) for n in range(9)
     ]
