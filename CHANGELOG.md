@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+- Minimum Python version is now 3.11; CPython and PyPy 3.10 are no longer supported.
+- Python 3.15 is the primary version for linting, packaging, and cross-platform
+  tests, with compatibility tests for CPython 3.11 through 3.14.
+- Black targets Python 3.11, the minimum supported version.
+
+### Added
+- Required CI coverage for stable PyPy 3.12 alongside PyPy 3.11.
+
+### Fixed
+- Install the dependencies of PyPy's bundled cffi and HPy packages in tox so
+  dependency checks pass.
+
 ## [4.1.0] - 2026-01-15
 ### Changed
 - new GriddedPerm.contains_patt function checks positions first, then pattern
