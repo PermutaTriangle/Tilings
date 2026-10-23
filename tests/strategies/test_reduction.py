@@ -262,6 +262,17 @@ def test_reducible(two_rows, apart):
     assert not is_reducible(apart, [(1, 0)])
 
 
+def test_reducible_from_an_iterator(alike_row):
+    """With no direction given, the cells are read once, so an iterator serves for
+    both directions: here the second, as the complement of alike_row is reducible
+    decreasing only."""
+    tiling = alike_row.complement()
+    cells = [(0, 0), (1, 0)]
+    assert not is_reducible(tiling, cells, True)
+    assert is_reducible(tiling, cells, False)
+    assert is_reducible(tiling, iter(cells))
+
+
 def test_rigid(two_rows):
     assert is_rigid(two_rows, [(3, 1)])
     assert not is_rigid(two_rows, [(0, 1), (3, 1)])

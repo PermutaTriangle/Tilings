@@ -202,9 +202,11 @@ def is_reducible(
 ) -> bool:
     """Return True if the set of cells is reducible on the tiling in the direction,
     or in one of the two directions if none is given."""
-    if increasing is None:
-        return is_reducible(tiling, cells, True) or is_reducible(tiling, cells, False)
     cell_set = frozenset(cells)
+    if increasing is None:
+        return is_reducible(tiling, cell_set, True) or is_reducible(
+            tiling, cell_set, False
+        )
     if not _qualifies(tiling, cell_set):
         return False
     ordered_columns, ordered_rows = _ordered_lines(tiling, cell_set, increasing)
