@@ -314,6 +314,9 @@ class ReductionConstructor(Constructor[Tiling, GriddedPerm]):
         tracked or not, and the groups' and the parent's parameters at the same
         places of the children's parameters, so as many groups. This errs on the
         side of not equivalent."""
+        # Whether the own tiling is tracked, and the places of its groups'
+        # parameters, follow from the number of groups and leaves_out; they are
+        # compared all the same, as what _group_sizes reads.
         return (
             isinstance(other, ReductionConstructor)
             and self.leaves_out == other.leaves_out

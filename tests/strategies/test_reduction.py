@@ -1,4 +1,5 @@
 import json
+import math
 import random
 from collections import defaultdict
 
@@ -22,7 +23,11 @@ from tilings.strategies.cell_reduction import (
     CellReductionFactory,
     CellReductionStrategy,
 )
-from tilings.strategies.reduction import ReductionFactory, ReductionStrategy
+from tilings.strategies.reduction import (
+    ReductionFactory,
+    ReductionStrategy,
+    _bounded_compositions,
+)
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
@@ -643,28 +648,42 @@ def test_left_out_beside_kept(touched_only):
         assert all(rule.sanity_check(n) for n in range(6))
 
 
-def test_requirement_list(with_requirement_list):
-    """A requirement list with a point in the set and a point outside it."""
+def test_requirement_list(with_requirement_list, alike_row):
+    """A requirement list with a point in the set and a point outside it. With a
+    point required in A or in C, A and B are two groups, as a point in B does not
+    meet the requirement; with a point in A, in B or in C, they are one group."""
     cells = [(0, 0), (1, 0)]
     assert is_reducible(with_requirement_list, cells, True)
+    assert reduction_plan(with_requirement_list, cells) == (
+        (((0, 0),), ((1, 0),)),
+        (),
+    )
     rule = ReductionStrategy(cells, True)(with_requirement_list)
     assert all(rule.sanity_check(n) for n in range(6))
+    in_any_cell = Tiling(
+        alike_row.obstructions,
+        [[GriddedPerm.point_perm(cell) for cell in [(0, 0), (1, 0), (2, 0)]]],
+    )
+    assert reduction_plan(in_any_cell, cells) == ((((0, 0), (1, 0)),), ())
 
 
 def test_requirement_with_two_points_in_the_set(alike_row):
     """A gridded permutation with two points in the set, in a requirement list
-    with points outside it, makes the set not reducible: here a 12 from A to B, in
-    a list with a point in C. The direction is given, as alike_row is not
-    reducible decreasing anyway."""
-    tiling = Tiling(
-        alike_row.obstructions,
-        [[GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))), GriddedPerm.point_perm((2, 0))]],
-    )
+    with points outside it, makes the set not reducible: a 12 from A to B, in a
+    list with a point in C, and a lone 231 across A, B and C, which has a point
+    outside the set itself. The direction is given, as alike_row is not reducible
+    decreasing anyway."""
     cells = [(0, 0), (1, 0)]
     assert is_reducible(alike_row, cells, True)
-    assert not is_reducible(tiling, cells, True)
-    with pytest.raises(StrategyDoesNotApply):
-        ReductionStrategy(cells, True)(tiling)
+    for requirement in (
+        [GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))), GriddedPerm.point_perm((2, 0))],
+        [GriddedPerm(Perm((1, 2, 0)), ((0, 0), (1, 0), (2, 0)))],
+    ):
+        tiling = Tiling(alike_row.obstructions, [requirement])
+        assert sorted(tiling.requirements[0]) == sorted(requirement)
+        assert not is_reducible(tiling, cells, True)
+        with pytest.raises(StrategyDoesNotApply):
+            ReductionStrategy(cells, True)(tiling)
 
 
 def test_seen_through_requirement(seen_through_requirement):
@@ -862,6 +881,25 @@ def test_unrestricted_cell():
     assert list(CellReductionFactory(True)(tiling)) == []
 
 
+def test_factory_skips():
+    """The factory does not offer a single finite cell, though it is reducible and
+    not rigid, nor a set the rest of the tiling sees nothing of: a factor."""
+    finite_cell = tiling_from(
+        {(0, 0): [Perm((0, 1, 2)), Perm((2, 1, 0))], (1, 0): [Perm((1, 0))]},
+        [(Perm((0, 1)), ((0, 0), (1, 0)))],
+        [],
+    )
+    assert is_reducible(finite_cell, [(0, 0)])
+    assert not is_rigid(finite_cell, [(0, 0)])
+    assert list(ReductionFactory(True, "cell")(finite_cell)) == []
+    factor = tiling_from(
+        {(0, 0): [Perm((2, 1, 0))], (1, 1): [Perm((2, 1, 0))]}, [], [(0, 1), (1, 0)]
+    )
+    assert is_reducible(factor, [(0, 0)], True)
+    assert reduction_plan(factor, [(0, 0)]) == ((), ((0, 0),))
+    assert list(ReductionFactory(True, "any")(factor)) == []
+
+
 def test_tracked_pattern():
     """A tracking assumption on a gridded permutation of two or more points counts
     occurrences of a pattern, which the sorting does not keep, as it keeps only
@@ -921,7 +959,8 @@ def test_equiv(
             constructor(seen_through_requirement, [(0, 1), (1, 1), (2, 1)]),
             False,
         ),
-        # one group each, a cell left out in one only, whose own tiling is tracked
+        # one group each, a cell left out in one only, and so its own tiling
+        # tracked: two differences
         (alike, constructor(touched_only, [(0, 0), (0, 1)]), False),
         # the parent tracking the set's cell, or the cell after it: the parent's
         # parameter at the group's place, or after it
@@ -938,6 +977,19 @@ def test_equiv(
         assert first.equiv(second)[0] == equivalent
         assert second.equiv(first)[0] == equivalent
     assert not alike.equiv(DisjointUnion(alike_row, (alike_row,), ({},)))[0]
+
+
+def test_bounded_compositions():
+    """The tuples of parts numbers at least 0 whose sum is at most bound, each
+    once: C(bound + parts, parts) of them."""
+    assert list(_bounded_compositions(5, 0)) == [()]
+    assert list(_bounded_compositions(0, 3)) == [(0, 0, 0)]
+    compositions = list(_bounded_compositions(4, 3))
+    assert len(set(compositions)) == len(compositions) == math.comb(7, 3)
+    assert all(
+        len(parts) == 3 and min(parts) >= 0 and sum(parts) <= 4
+        for parts in compositions
+    )
 
 
 def test_not_tracked(two_rows):
@@ -965,6 +1017,15 @@ def test_cell_reduction(one_cell, two_rows):
     for n in range(6):
         assert rule.sanity_check(n)
     assert str(CellReductionFactory(True)) == "tracked cell reduction factory"
+
+
+def test_strategy_cells():
+    """A strategy's cells are sorted and without repeats, so that strategies of
+    the same set compare equal."""
+    assert ReductionStrategy([(1, 0), (0, 0), (1, 0)], True).cells == ((0, 0), (1, 0))
+    assert ReductionStrategy([(1, 0), (0, 0)], True) == ReductionStrategy(
+        [(0, 0), (1, 0)], True
+    )
 
 
 def test_encoding():
