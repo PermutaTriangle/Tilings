@@ -190,16 +190,20 @@ def _crossing_is_allowed(
 
 
 def _qualifies(tiling: Tiling, cell_set: FrozenSet[Cell]) -> bool:
-    """Return True if the set is of active cells, with no component assumption
-    on them, and each of its cells has an obstruction of its own: the tiling of the
-    set's own obstructions must have every cell of the set (an unrestricted cell
-    has none)."""
+    """Return True if the set is of active cells, the assumptions track points in
+    its cells only one by one (no component assumption on them, and no tracked
+    gridded permutation of two or more points with a point in them: the sorting
+    keeps the number of points in each cell, but not the occurrences of a pattern),
+    and each of its cells has an obstruction of its own: the tiling of the set's
+    own obstructions must have every cell of the set (an unrestricted cell has
+    none)."""
     if not cell_set or not cell_set <= tiling.active_cells:
         return False
     if any(
-        isinstance(assumption, ComponentAssumption)
-        and any(gp.pos[0] in cell_set for gp in assumption.gps)
+        (isinstance(assumption, ComponentAssumption) or len(gridded_perm) > 1)
+        and any(cell in cell_set for cell in gridded_perm.pos)
         for assumption in tiling.assumptions
+        for gridded_perm in assumption.gps
     ):
         return False
     cells_with_own_obstructions = {
@@ -309,7 +313,10 @@ def _view(tiling: Tiling, cell_set: FrozenSet[Cell]) -> _View:
         tuple(ob for ob in tiling.obstructions if _crosses(ob, cell_set)),
         tuple(req for req in tiling.requirements if not _lies_in(req, cell_set)),
         frozenset(
-            gp.pos[0] for assumption in tiling.assumptions for gp in assumption.gps
+            cell
+            for assumption in tiling.assumptions
+            for gridded_perm in assumption.gps
+            for cell in gridded_perm.pos
         ),
     )
 

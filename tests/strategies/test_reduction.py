@@ -4,6 +4,7 @@ from collections import defaultdict
 import pytest
 
 from comb_spec_searcher import CombinatorialSpecification, Strategy
+from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta import Av, Perm
 from permuta.misc import DIR_NORTH, DIR_SOUTH
 from tilings import GriddedPerm, Tiling
@@ -424,6 +425,30 @@ def test_unrestricted_cell():
     assert not is_reducible(tiling, [(0, 0)])
     assert list(ReductionFactory(True, "any")(tiling)) == []
     assert list(CellReductionFactory(True)(tiling)) == []
+
+
+def test_tracked_pattern():
+    """A tracking assumption on a gridded permutation of two or more points counts
+    occurrences of a pattern, which the sorting does not keep: a set with a cell of
+    one is not reduced (the review of the pull request, round 1, finding 1)."""
+    tiling = Tiling(
+        [
+            GriddedPerm(Perm((0, 1)), ((0, 1),) * 2),
+            GriddedPerm(Perm((1, 0)), ((0, 1),) * 2),
+            GriddedPerm(Perm((0, 2, 1)), ((1, 1),) * 3),
+            GriddedPerm(Perm((1, 0, 2)), ((1, 0),) * 3),
+        ],
+        assumptions=[TrackingAssumption([GriddedPerm(Perm((0, 1)), ((1, 0),) * 2)])],
+    )
+    assert not is_reducible(tiling, [(1, 0)])
+    for increasing in (True, False):
+        with pytest.raises(StrategyDoesNotApply):
+            ReductionStrategy([(1, 0)], increasing)(tiling)
+    offered = offered_sets(tiling, "any")
+    assert offered and all((1, 0) not in cells for cells in offered)
+    for strategy in ReductionFactory(True, "any")(tiling):
+        rule = strategy(tiling)
+        assert all(rule.sanity_check(n) for n in range(5))
 
 
 def test_not_tracked(two_rows):
