@@ -1,4 +1,5 @@
 import json
+import random
 from collections import defaultdict
 
 import pytest
@@ -20,6 +21,7 @@ from tilings.strategies.reduction import (
     compression,
     is_reducible,
     is_rigid,
+    monotone_obstructions,
     reduction_children,
     reduction_plan,
 )
@@ -148,6 +150,65 @@ def threshold():
 
 
 THRESHOLD_CELLS = [(0, 0), (0, 2), (1, 1), (2, 0), (2, 2)]
+
+
+def beside_a_row_cell(both_above):
+    """Two cells of the set in a row, A = (0, 0) before B = (1, 0), every point of A
+    below those of B, beside a cell C = (2, 0) of the rest in the same row. Every
+    point of A lies above those of C; so does every point of B if both_above, and
+    then C sees A and B alike."""
+    crossing = [
+        (Perm((1, 0)), ((0, 0), (1, 0))),
+        (Perm((0, 1)), ((0, 0), (2, 0))),
+    ]
+    if both_above:
+        crossing.append((Perm((0, 1)), ((1, 0), (2, 0))))
+    return tiling_from(
+        {
+            (0, 0): [Perm((0, 2, 1))],
+            (1, 0): [Perm((0, 2, 1))],
+            (2, 0): [Perm((1, 0))],
+        },
+        crossing,
+        [],
+    )
+
+
+@pytest.fixture
+def alike_row():
+    return beside_a_row_cell(True)
+
+
+@pytest.fixture
+def unlike_row():
+    return beside_a_row_cell(False)
+
+
+@pytest.fixture
+def with_requirement_list():
+    """alike_row with a point required in A or in C."""
+    tiling = beside_a_row_cell(True)
+    return Tiling(
+        tiling.obstructions,
+        [[GriddedPerm.point_perm((0, 0)), GriddedPerm.point_perm((2, 0))]],
+    )
+
+
+@pytest.fixture
+def touched_only():
+    """A cell A = (0, 0) of the set below a cell B = (0, 1) of it, in a column and
+    rows with no cell outside the set, and a cell C = (1, 2) of the rest: the rest
+    sees A only through the 132s with a point in A and two in C, and B not at
+    all."""
+    return tiling_from(
+        {
+            (0, 0): [Perm((0, 2, 1))],
+            (0, 1): [Perm((1, 0))],
+            (1, 2): [Perm((0, 1, 2))],
+        },
+        [(Perm((0, 2, 1)), ((0, 0), (1, 2), (1, 2)))],
+        [(0, 2), (1, 0), (1, 1)],
+    )
 
 
 def offered_sets(tiling, region):
@@ -298,14 +359,24 @@ def test_sanity_check(request, fixture, cells, increasing):
 
 
 @pytest.mark.parametrize(
-    "fixture, cells",
+    "fixture, cells, increasing",
     [
-        ("two_rows", [(1, 0), (2, 0), (3, 1)]),
-        ("apart", [(1, 0), (2, 2)]),
-        ("row_and_column", [(0, 0), (1, 0), (2, 0)]),
+        (fixture, cells, increasing)
+        for fixture, cells in (
+            ("two_rows", [(1, 0), (2, 0), (3, 1)]),
+            ("apart", [(1, 0), (2, 2)]),
+            ("row_and_column", [(0, 0), (1, 0), (2, 0)]),
+            ("touched_only", [(0, 0), (0, 1)]),
+        )
+        for increasing in (True, False)
+    ]
+    + [
+        ("alike_row", [(0, 0), (1, 0)], True),
+        ("unlike_row", [(0, 0), (1, 0)], True),
+        ("with_requirement_list", [(0, 0), (1, 0)], True),
+        ("threshold", THRESHOLD_CELLS, True),
     ],
 )
-@pytest.mark.parametrize("increasing", [True, False])
 def test_maps(request, fixture, cells, increasing):
     """The forward map is a bijection onto the pairs with as many points in each
     group, whose sizes add up to the parent's with the groups' points counted once,
@@ -347,6 +418,131 @@ def test_maps(request, fixture, cells, increasing):
             if reduced_size + len(own_gp) - sum(reduced_group_sizes(reduced_gp)) == n
         }
         assert images == pairs
+
+
+def test_monotone_obstructions():
+    """In each cell, and between the two cells of each row and of each column, in
+    the order of the direction: the lower (left) cell's points left of (below) the
+    other's when increasing, right of (above) them when decreasing."""
+    cells = [(0, 0), (1, 0), (0, 1)]
+    increasing_obstructions = [
+        GriddedPerm(Perm((1, 0)), positions)
+        for positions in (
+            ((0, 0), (0, 0)),
+            ((0, 0), (1, 0)),
+            ((0, 1), (0, 0)),
+            ((0, 1), (0, 1)),
+            ((1, 0), (1, 0)),
+        )
+    ]
+    decreasing_obstructions = [
+        GriddedPerm(Perm((0, 1)), positions)
+        for positions in (
+            ((0, 0), (0, 0)),
+            ((0, 0), (0, 1)),
+            ((0, 0), (1, 0)),
+            ((0, 1), (0, 1)),
+            ((1, 0), (1, 0)),
+        )
+    ]
+    assert sorted(monotone_obstructions(cells, True)) == sorted(increasing_obstructions)
+    assert sorted(monotone_obstructions(cells, False)) == sorted(
+        decreasing_obstructions
+    )
+
+
+def test_groups_along_a_row(alike_row, unlike_row):
+    """Two cells of a row that the rest sees alike are one group, kept in the
+    first; two cells it does not see alike are two groups."""
+    cells = [(0, 0), (1, 0)]
+    assert reduction_plan(alike_row, cells) == ((((0, 0), (1, 0)),), ())
+    assert reduction_plan(unlike_row, cells) == ((((0, 0),), ((1, 0),)), ())
+    for tiling in (alike_row, unlike_row):
+        assert is_reducible(tiling, cells, True)
+        assert not is_reducible(tiling, cells, False)
+        rule = ReductionStrategy(cells, True)(tiling)
+        assert all(rule.sanity_check(n) for n in range(6))
+    reduced_tiling, own_tiling = reduction_children(alike_row, cells, True)
+    assert reduced_tiling.dimensions == (2, 1)
+    assert own_tiling.dimensions == (2, 1)
+
+
+def test_left_out_beside_kept(touched_only):
+    """A cell the rest sees only through an obstruction with a point in it is
+    kept, and the cell beside it, which the rest does not see, is left out."""
+    cells = [(0, 0), (0, 1)]
+    assert reduction_plan(touched_only, cells) == ((((0, 0),),), ((0, 1),))
+    for increasing in (True, False):
+        rule = ReductionStrategy(cells, increasing)(touched_only)
+        assert all(rule.sanity_check(n) for n in range(6))
+
+
+def test_requirement_list(with_requirement_list):
+    """A requirement list with a point in the set and a point outside it."""
+    cells = [(0, 0), (1, 0)]
+    assert is_reducible(with_requirement_list, cells, True)
+    rule = ReductionStrategy(cells, True)(with_requirement_list)
+    assert all(rule.sanity_check(n) for n in range(6))
+
+
+def test_direction_not_reducible(threshold):
+    """A strategy applied in a direction its set is not reducible in."""
+    with pytest.raises(StrategyDoesNotApply):
+        ReductionStrategy(THRESHOLD_CELLS, False)(threshold)
+
+
+def random_gridded_perm(rng, cells, size):
+    """A gridded permutation with points in random cells, read left to right by
+    column and bottom to top by row."""
+    positions = sorted(rng.choice(cells) for _ in range(size))
+    by_value = sorted(
+        range(size), key=lambda index: (positions[index][1], rng.random())
+    )
+    values = [0] * size
+    for value, index in enumerate(by_value):
+        values[index] = value
+    return GriddedPerm(Perm(values), tuple(positions))
+
+
+def random_tiling(rng):
+    width, height = rng.randint(1, 3), rng.randint(1, 3)
+    cells = [(column, row) for column in range(width) for row in range(height)]
+    active = rng.sample(cells, rng.randint(1, min(len(cells), 4)))
+    patterns = [
+        Perm(pattern)
+        for pattern in ((0, 1), (1, 0), (0, 2, 1), (1, 0, 2), (1, 2, 0), (0, 1, 2))
+    ]
+    obstructions = [
+        GriddedPerm.point_perm(cell) for cell in cells if cell not in active
+    ]
+    for cell in active:
+        for pattern in rng.sample(patterns, rng.randint(1, 2)):
+            obstructions.append(GriddedPerm.single_cell(pattern, cell))
+    for _ in range(rng.randint(1, 4)):
+        obstructions.append(random_gridded_perm(rng, active, rng.randint(2, 3)))
+    requirements = (
+        [[GriddedPerm.point_perm(rng.choice(active))]] if rng.random() < 0.3 else []
+    )
+    return Tiling(obstructions, requirements)
+
+
+@pytest.mark.timeout(300)
+def test_random_tilings():
+    """Every reduction the factory offers on 30 random tilings, seeded, passes its
+    sanity check (counts, objects and random samples) to size 4."""
+    rng = random.Random(2026)
+    tilings = []
+    while len(tilings) < 30:
+        tiling = random_tiling(rng)
+        if not tiling.is_empty() and len(tiling.active_cells) >= 2:
+            tilings.append(tiling)
+    reductions = 0
+    for tiling in tilings:
+        for strategy in ReductionFactory(True, "any", max_cells=3)(tiling):
+            rule = strategy(tiling)
+            assert all(rule.sanity_check(n) for n in range(5)), rule
+            reductions += 1
+    assert reductions >= 30
 
 
 def test_ordered_line(threshold):
