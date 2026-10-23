@@ -10,14 +10,7 @@ from permuta import Av, Perm
 from permuta.misc import DIR_NORTH, DIR_SOUTH
 from tilings import GriddedPerm, Tiling
 from tilings import strategies as strat
-from tilings.assumptions import TrackingAssumption
-from tilings.strategies.cell_reduction import (
-    CellReductionFactory,
-    CellReductionStrategy,
-)
-from tilings.strategies.reduction import (
-    ReductionFactory,
-    ReductionStrategy,
+from tilings.algorithms.reduction import (
     compression,
     is_reducible,
     is_rigid,
@@ -25,6 +18,12 @@ from tilings.strategies.reduction import (
     reduction_children,
     reduction_plan,
 )
+from tilings.assumptions import TrackingAssumption
+from tilings.strategies.cell_reduction import (
+    CellReductionFactory,
+    CellReductionStrategy,
+)
+from tilings.strategies.reduction import ReductionFactory, ReductionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
