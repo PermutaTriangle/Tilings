@@ -52,6 +52,8 @@ To install ``tilings`` on your system, run:
 
        pip install tilings
 
+Python 3.11 or newer is required.
+
 If you would like to edit the source code, you should install ``tilings`` in
 development mode by cloning the repository, running
 
@@ -69,6 +71,39 @@ To verify that your installation is correct, you can try to get a specification 
 You should then be all set up to use ``tilings`` and the ``TileScope`` algorithm! The
 "Performance" section at the end of this document provides some more technical
 information.
+
+Running the checks
+------------------
+
+Install tox and run a test environment for an installed Python version:
+
+.. code:: bash
+
+       python -m pip install "tox>=4,<5"
+       python -m tox run -e py315
+
+The test environments cover CPython 3.11 through 3.15 and PyPy 3.11 and 3.12.
+Python 3.15 is used for the ``flake8``, ``mypy``, ``pylint``, and ``black``
+environments, packaging, and the Linux, macOS, and Windows test jobs.
+Older supported CPython versions and both PyPy versions are tested on Linux.
+PyPy 3.12 uses a stable release and is a required check.
+Pass pytest arguments after ``--``, for example
+``python -m tox run -e py315 -- tests/test_griddedperm.py``.
+
+By default, tox installs the released dependencies declared in ``pyproject.toml``.
+To test against the ``develop`` branches of both ``comb_spec_searcher`` and
+``permuta``, set the environment variable ``TILINGS_TEST_DEPS`` to
+``-r.github/requirements-develop.txt`` before running tox. For example, in a
+POSIX shell:
+
+.. code:: bash
+
+       TILINGS_TEST_DEPS=-r.github/requirements-develop.txt python -m tox run -e py315
+
+GitHub Actions uses released dependencies for ``master`` and pull requests
+targeting ``master``, and development dependencies for other branches. The same
+dependency selection applies to tests, mypy, and pylint inside their tox
+environments.
 
 What are gridded permutations and tilings?
 ------------------------------------------
