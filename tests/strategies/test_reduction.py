@@ -246,6 +246,40 @@ def seen_through_requirement():
     )
 
 
+@pytest.fixture
+def seen_through_a_21():
+    """An increasing cell A = (0, 1) beside a cell B = (1, 1) of Av(321), above two
+    decreasing cells C = (1, 0) and D = (2, 0), with no obstruction between two
+    cells, and a point required in D or a 21 from A down to C."""
+    tiling = tiling_from(
+        {
+            (0, 1): [Perm((1, 0))],
+            (1, 1): [Perm((2, 1, 0))],
+            (1, 0): [Perm((0, 1))],
+            (2, 0): [Perm((0, 1))],
+        },
+        [],
+        [],
+    )
+    return Tiling(
+        tiling.obstructions,
+        [[GriddedPerm.point_perm((2, 0)), GriddedPerm(Perm((1, 0)), ((0, 1), (1, 0)))]],
+    )
+
+
+@pytest.fixture
+def left_out_beside_a_21():
+    """row_above_a_cell with a 21 from A down to D, or a 12 in D, required."""
+    return row_above_a_cell(
+        [
+            [
+                GriddedPerm(Perm((1, 0)), ((0, 1), (2, 0))),
+                GriddedPerm(Perm((0, 1)), ((2, 0), (2, 0))),
+            ]
+        ]
+    )
+
+
 def offered_sets(tiling, region):
     return sorted(
         {strategy.cells for strategy in ReductionFactory(True, region)(tiling)}
@@ -393,6 +427,8 @@ def test_children(two_rows):
         ("row_and_column", [(0, 0), (0, 1)]),
         ("row_and_column", [(0, 0), (1, 0), (2, 0)]),
         ("one_cell", [(0, 0)]),
+        ("seen_through_a_21", [(0, 1), (1, 1)]),
+        ("left_out_beside_a_21", [(0, 1), (1, 1), (2, 1)]),
     ],
 )
 @pytest.mark.parametrize("increasing", [True, False])
@@ -423,6 +459,8 @@ def test_sanity_check(request, fixture, cells, increasing):
         ("with_requirement_list", [(0, 0), (1, 0)], True),
         ("split_by_column", [(1, 1), (2, 1)], True),
         ("seen_through_requirement", [(0, 1), (1, 1), (2, 1)], True),
+        ("seen_through_a_21", [(0, 1), (1, 1)], True),
+        ("left_out_beside_a_21", [(0, 1), (1, 1), (2, 1)], True),
         ("threshold", THRESHOLD_CELLS, True),
     ],
 )
@@ -551,6 +589,22 @@ def test_requirement_list(with_requirement_list):
     assert all(rule.sanity_check(n) for n in range(6))
 
 
+def test_requirement_with_two_points_in_the_set(alike_row):
+    """A gridded permutation with two points in the set, in a requirement list
+    with points outside it, makes the set not reducible: here a 12 from A to B, in
+    a list with a point in C. The direction is given, as alike_row is not
+    reducible decreasing anyway."""
+    tiling = Tiling(
+        alike_row.obstructions,
+        [[GriddedPerm(Perm((0, 1)), ((0, 0), (1, 0))), GriddedPerm.point_perm((2, 0))]],
+    )
+    cells = [(0, 0), (1, 0)]
+    assert is_reducible(alike_row, cells, True)
+    assert not is_reducible(tiling, cells, True)
+    with pytest.raises(StrategyDoesNotApply):
+        ReductionStrategy(cells, True)(tiling)
+
+
 def test_seen_through_requirement(seen_through_requirement):
     """Of the top row, B is kept, though its row and column have no cell outside
     the set, since a requirement list with a point outside the set has a point in
@@ -571,6 +625,31 @@ def test_split_by_column(split_by_column):
     assert reduction_plan(split_by_column, cells) == ((((1, 1),), ((2, 1),)), ())
     rule = ReductionStrategy(cells, True)(split_by_column)
     assert all(rule.sanity_check(n) for n in range(5))
+
+
+def test_seen_through_a_21(seen_through_a_21):
+    """A, in a column and a row with no cell outside the set, is kept: the rest
+    sees it through the 21 of the requirement list, whose other point is in C. The
+    21 is in a list with a point, as Tiling splits a requirement of a lone 21
+    between two cells that share no row or column into a point in each."""
+    cells = [(0, 1), (1, 1)]
+    assert reduction_plan(seen_through_a_21, cells) == ((((0, 1),), ((1, 1),)), ())
+    assert (tuple(cells), True) in {
+        (strategy.cells, strategy.increasing)
+        for strategy in ReductionFactory(True, "row")(seen_through_a_21)
+    }
+
+
+def test_left_out_beside_a_21(left_out_beside_a_21):
+    """Of the top row, A is kept, though its row and column have no cell outside
+    the set, since the rest sees it through the 21 of the requirement list, whose
+    other point is in D; B, which nothing outside the set sees, is left out: the
+    case of test_left_out_beside_kept, with a requirement for the obstruction."""
+    cells = [(0, 1), (1, 1), (2, 1)]
+    assert reduction_plan(left_out_beside_a_21, cells) == (
+        (((0, 1),), ((2, 1),)),
+        ((1, 1),),
+    )
 
 
 def test_direction_not_reducible(threshold):
