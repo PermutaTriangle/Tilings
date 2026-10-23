@@ -560,7 +560,7 @@ class Tiling(CombinatorialClass):
     def cell_within_bounds(self, cell: Cell) -> bool:
         """Checks if a cell is within the bounds of the tiling."""
         (i, j) = self.dimensions
-        return cell[0] >= 0 and cell[0] < i and cell[1] >= 0 and cell[1] < j
+        return 0 <= cell[0] < i and 0 <= cell[1] < j
 
     def empty_cell(self, cell: Cell) -> "Tiling":
         """Empties a cell in the tiling by adding a point obstruction into the
