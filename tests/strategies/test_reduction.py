@@ -355,6 +355,30 @@ def test_regions(two_rows, apart, row_and_column, one_cell):
         ReductionFactory(True, "diagonal")
 
 
+def test_candidate_sets():
+    """The sets each region tries, each once, on an L of three cells: (0, 0) below
+    (0, 1) and left of (1, 0)."""
+    tiling = tiling_from(
+        {cell: [Perm((0, 2, 1))] for cell in [(0, 0), (0, 1), (1, 0)]}, [], [(1, 1)]
+    )
+    single_cells = [((0, 0),), ((0, 1),), ((1, 0),)]
+    bottom_row, left_column = ((0, 0), (1, 0)), ((0, 0), (0, 1))
+    two_cell_sets = [left_column, bottom_row, ((0, 1), (1, 0))]
+    expected = [
+        ("cell", None, single_cells),
+        ("row", None, [bottom_row, ((0, 1),)]),
+        ("column", None, [left_column, ((1, 0),)]),
+        ("line", None, single_cells + [bottom_row, left_column]),
+        ("cut", None, [left_column, ((1, 0),), bottom_row, ((0, 1),)]),
+        ("cut", 1, [((1, 0),), ((0, 1),)]),
+        ("any", None, single_cells + two_cell_sets + [((0, 0), (0, 1), (1, 0))]),
+        ("any", 2, single_cells + two_cell_sets),
+    ]
+    for region, max_cells, sets in expected:
+        factory = ReductionFactory(True, region, max_cells)
+        assert sorted(factory.candidate_sets(tiling)) == sorted(sets), region
+
+
 def cut_sets(tiling):
     """The active cells on each side of each line between adjacent columns or rows."""
     width, height = tiling.dimensions
@@ -825,17 +849,56 @@ def test_tracked_pattern():
         assert all(rule.sanity_check(n) for n in range(5))
 
 
-def test_equiv(alike_row, unlike_row):
+def test_equiv(
+    alike_row,
+    unlike_row,
+    split_by_column,
+    seen_through_requirement,
+    touched_only,
+    one_cell,
+):
     """Two reductions' constructors are equivalent when they pair their children
-    the same way: the alike row's and its complement's, one group each, but not
-    the alike row's and the unlike row's, one group and two."""
-    cells = [(0, 0), (1, 0)]
-    alike = ReductionStrategy(cells, True).constructor(alike_row)
-    complement = ReductionStrategy(cells, False).constructor(alike_row.complement())
-    unlike = ReductionStrategy(cells, True).constructor(unlike_row)
-    assert alike.equiv(complement)[0]
-    assert not alike.equiv(unlike)[0]
-    assert not unlike.equiv(alike)[0]
+    the same way: cells left out or not, and the groups' and the parent's
+    parameters at the same places of the children's parameters."""
+
+    def constructor(tiling, cells, increasing=True):
+        return ReductionStrategy(cells, increasing).constructor(tiling)
+
+    def tracking(tiling, cell):
+        return tiling.add_assumption(TrackingAssumption.from_cells([cell]))
+
+    alike = constructor(alike_row, [(0, 0), (1, 0)])
+    unlike = constructor(unlike_row, [(0, 0), (1, 0)])
+    tracking_the_set = constructor(tracking(one_cell, (0, 0)), [(0, 0)])
+    pairs = [
+        # one group each, nothing left out
+        (alike, constructor(alike_row.complement(), [(0, 0), (1, 0)], False), True),
+        # two groups each, nothing left out
+        (unlike, constructor(split_by_column, [(1, 1), (2, 1)]), True),
+        # one group and two
+        (alike, unlike, False),
+        # two groups each, a cell left out in one only
+        (
+            unlike,
+            constructor(seen_through_requirement, [(0, 1), (1, 1), (2, 1)]),
+            False,
+        ),
+        # one group each, a cell left out in one only, whose own tiling is tracked
+        (alike, constructor(touched_only, [(0, 0), (0, 1)]), False),
+        # the parent tracking the set's cell, or the cell after it: the parent's
+        # parameter at the group's place, or after it
+        (tracking_the_set, constructor(tracking(one_cell, (1, 0)), [(0, 0)]), False),
+        # the parent tracking the set's cell, or the cell before it: the group's
+        # parameter at the parent's place, or after it
+        (
+            tracking_the_set,
+            constructor(tracking(one_cell.reverse(), (0, 0)), [(1, 0)]),
+            False,
+        ),
+    ]
+    for first, second, equivalent in pairs:
+        assert first.equiv(second)[0] == equivalent
+        assert second.equiv(first)[0] == equivalent
     assert not alike.equiv(DisjointUnion(alike_row, (alike_row,), ({},)))[0]
 
 

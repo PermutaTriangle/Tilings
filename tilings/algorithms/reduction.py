@@ -41,9 +41,10 @@ So the gridded permutations of the tiling are the pairs of a gridded
 permutation of the reduced tiling, whose share is canonical, and one of the own
 tiling, with as many points in the cells of the set. The own tiling is the
 tiling of the set's own obstructions and requirements, those that lie in the
-set, with every other cell empty; each cell of the set must lie in one of its
-obstructions, as `Tiling` takes a cell in no obstruction and no requirement to
-be empty.
+set, with every other cell empty. As `Tiling` takes a cell in no obstruction and
+no requirement to be empty, each cell of the set must lie in one of the set's
+own obstructions or requirements; the condition asks for an obstruction, which
+is stricter.
 
 The reduced tiling keeps what the rest of the tiling sees of the set and no
 more. A cell of the set whose row and column have no cell outside the set, and
@@ -213,8 +214,9 @@ def _qualifies(tiling: "Tiling", cell_set: FrozenSet[Cell]) -> bool:
     """Return True if the set is of active cells, the assumptions track points in
     its cells only one by one (no component assumption on them, and no tracked
     gridded permutation of two or more points with a point in them), and each of
-    its cells lies in an obstruction that lies in the set (an unrestricted cell
-    lies in none)."""
+    its cells lies in an obstruction that lies in the set, which keeps it active in
+    the own tiling (an unrestricted cell lies in none; a requirement that lies in
+    the set would keep it active too, but is not taken)."""
     if not cell_set or not cell_set <= tiling.active_cells:
         return False
     if any(

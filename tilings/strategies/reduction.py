@@ -6,9 +6,11 @@ reduction holds: the gridded permutations of the tiling are the pairs of one of
 the reduced tiling and one of the own tiling with as many points in the cells of
 the set, where the reduced tiling keeps a cell for each group of the set's cells
 that the rest of the tiling sees as one, and none for the cells it does not see.
-Each group is tracked once, in both children, and the count is the Hadamard
-product of the children in the numbers of points of the groups, at 1, and the
-product in the number of points of the cells left out:
+The reduced tiling tracks each group in its kept cell; the own tiling tracks each
+group in its cells, unless there is one group and no cell left out, when its
+size is the group's number of points. The count is the Hadamard product of the
+children in the numbers of points of the groups, at 1, and the product in the
+number of points of the cells left out:
 
     parent(n) = sum over w and m of reduced(n - m; w) * own(|w| + m; w),
 
@@ -77,7 +79,8 @@ class SampleChoice(NamedTuple):
 
 
 def _bounded_compositions(bound: int, parts: int) -> Iterator[Tuple[int, ...]]:
-    """The tuples of parts numbers, each at least 0, of sum at most bound."""
+    """The tuples of length parts of numbers at least 0 whose sum is at most
+    bound."""
     if parts == 0:
         yield ()
         return
@@ -106,14 +109,14 @@ class ReductionConstructor(Constructor[Tiling, GriddedPerm]):
         parent_to_reduced: Dict[str, str],
     ):
         reduced_tiling, own_tiling = children
-        self.groups, left_out = plan
+        groups, left_out = plan
         self.leaves_out = bool(left_out)
         self.parent_to_reduced = parent_to_reduced
         self.reduced_group_parameters = tuple(
             self._parameter_of(
                 reduced_tiling, TrackingAssumption.from_cells([group[0]])
             )
-            for group in self.groups
+            for group in groups
         )
         self.reduced_group_indices = self._indices(
             reduced_tiling, self.reduced_group_parameters
@@ -124,10 +127,10 @@ class ReductionConstructor(Constructor[Tiling, GriddedPerm]):
         )
         self.own_group_parameters: Optional[Tuple[str, ...]] = None
         self.own_group_indices: Tuple[int, ...] = ()
-        if own_is_tracked(self.groups, left_out):
+        if own_is_tracked(groups, left_out):
             self.own_group_parameters = tuple(
                 self._parameter_of(own_tiling, TrackingAssumption.from_cells(group))
-                for group in self.groups
+                for group in groups
             )
             self.own_group_indices = self._indices(
                 own_tiling, self.own_group_parameters
@@ -307,13 +310,12 @@ class ReductionConstructor(Constructor[Tiling, GriddedPerm]):
         self, other: "Constructor", data: Optional[object] = None
     ) -> Tuple[bool, Optional[object]]:
         """Two reductions' constructors are taken as equivalent only when they pair
-        their children the same way: as many groups, cells left out or not, the
-        own tiling tracked or not, and the groups' and the parent's parameters at
-        the same places of the children's parameters. This errs on the side of
-        not equivalent."""
+        their children the same way: cells left out or not, the own tiling
+        tracked or not, and the groups' and the parent's parameters at the same
+        places of the children's parameters, so as many groups. This errs on the
+        side of not equivalent."""
         return (
             isinstance(other, ReductionConstructor)
-            and len(self.groups) == len(other.groups)
             and self.leaves_out == other.leaves_out
             and (self.own_group_parameters is None)
             == (other.own_group_parameters is None)
