@@ -389,13 +389,14 @@ def test_rigid(two_rows):
     )
     assert not is_rigid(second_not_monotone, [(0, 0), (1, 0)])
     # two increasing cells of a column, in no fixed order, the lower one's points
-    # all left of the upper one's, and all right of them
-    increasing_cells = {(0, 0): [Perm((1, 0))], (0, 1): [Perm((1, 0))]}
-    column = [(0, 0), (0, 1)]
+    # all left of the upper one's, and all right of them; in rows 1 and 2 of column
+    # 0, beside a cell (1, 0), so that neither cell's row index is the column index
+    increasing_cells = {cell: [Perm((1, 0))] for cell in [(0, 1), (0, 2), (1, 0)]}
+    column = [(0, 1), (0, 2)]
     assert not is_rigid(tiling_from(increasing_cells, [], []), column)
     for crossing in (
-        (Perm((1, 0)), ((0, 1), (0, 0))),
-        (Perm((0, 1)), ((0, 0), (0, 1))),
+        (Perm((1, 0)), ((0, 2), (0, 1))),
+        (Perm((0, 1)), ((0, 1), (0, 2))),
     ):
         assert is_rigid(tiling_from(increasing_cells, [crossing], []), column)
 
@@ -433,6 +434,17 @@ def test_regions(two_rows, apart, row_and_column, one_cell):
     )
     with pytest.raises(ValueError):
         ReductionFactory(True, "diagonal")
+    # the factories' names for the regions that test_cut_region and
+    # test_cell_reduction do not check
+    assert str(ReductionFactory(True, "row")) == "tracked row reduction factory"
+    assert str(ReductionFactory(False, "column")) == "column reduction factory"
+    assert str(ReductionFactory(True, "line")) == "tracked line reduction factory"
+    assert str(ReductionFactory(True, "any")) == (
+        "tracked reduction factory of any set of cells"
+    )
+    assert str(ReductionFactory(False, "any", 3)) == (
+        "reduction factory of sets of at most 3 cells"
+    )
 
 
 def test_factory_defaults():
@@ -527,6 +539,8 @@ def test_children(two_rows):
         own_tiling.obstructions
     )
     assert own_tiling.assumptions == (TrackingAssumption.from_cells([(2, 1)]),)
+    # with two children, the rule is never an equivalence
+    assert not ReductionStrategy(cells, False).can_be_equivalent()
 
 
 @pytest.mark.parametrize(
@@ -937,11 +951,17 @@ def test_threshold_inverse(threshold):
 
 
 def test_parent_assumptions(apart):
-    """The parent's tracked cells keep their counts."""
-    rule = ReductionStrategy([(1, 0), (2, 2)], True)(apart)
+    """The parent's tracked cells keep their counts. Given no children,
+    extra_parameters computes them."""
+    strategy = ReductionStrategy([(1, 0), (2, 2)], True)
+    rule = strategy(apart)
     for n in range(6):
         assert rule.sanity_check(n)
     assert len(rule.children[0].extra_parameters) == 3
+    children = strategy.decomposition_function(apart)
+    parameters = strategy.extra_parameters(apart)
+    assert parameters == strategy.extra_parameters(apart, children)
+    assert len(parameters[0]) == 2
 
 
 def test_unrestricted_cell():
