@@ -4,7 +4,7 @@ of adjacent columns, or of adjacent rows, reversed. See tilings.algorithms.knuth
 for when a block slides and why the slide is a bijection.
 """
 
-from typing import Dict, Iterator, Optional, Tuple
+from typing import Dict, Iterator, Optional, Tuple, cast
 
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
@@ -35,20 +35,21 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self.width = width
         self.transpose = transpose
 
-    def _frame(self, tiling: Tiling) -> Tiling:
+    def _inverse_if_transposed(self, tiling: Tiling) -> Tiling:
+        """The tiling, or with transpose its inverse: the one whose columns slide."""
         return tiling.inverse() if self.transpose else tiling
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
-        slide = KnuthSlide(self._frame(comb_class))
+        slide = KnuthSlide(self._inverse_if_transposed(comb_class))
         reason = slide.why_not(self.col, self.width)
         if reason is not None:
             raise StrategyDoesNotApply(f"no Knuth slide: {reason}")
-        return (self._frame(slide.slide(self.col, self.width)),)
+        return (self._inverse_if_transposed(slide.slide(self.col, self.width)),)
 
     def _map(self, comb_class: Tiling, gridded_perm: GriddedPerm) -> GriddedPerm:
         if not self.transpose:
-            return KnuthSlide.slide_gp(gridded_perm, self.col, self.width)
-        image = KnuthSlide.slide_gp(
+            return KnuthSlide.slide_gridded_perm(gridded_perm, self.col, self.width)
+        image = KnuthSlide.slide_gridded_perm(
             _INVERSE.gp_transform(comb_class, gridded_perm), self.col, self.width
         )
         return _INVERSE.inverse_gp_transform(comb_class, image)
@@ -76,11 +77,8 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Iterator[GriddedPerm]:
         # the slide is an involution
-        yield from (
-            self._map(comb_class, gridded_perm)
-            for gridded_perm in objs
-            if gridded_perm is not None
-        )
+        gridded_perm = objs[self.backward_map_index(objs)]
+        yield self._map(comb_class, cast(GriddedPerm, gridded_perm))
 
     def extra_parameters(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
@@ -90,32 +88,31 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(comb_class)
         child = children[0]
-        return (
-            {
-                comb_class.get_assumption_parameter(
-                    assumption
-                ): child.get_assumption_parameter(
-                    assumption.__class__(
-                        self._mirror(comb_class, gridded_perm)
-                        for gridded_perm in assumption.gps
-                    )
-                )
-                for assumption in comb_class.assumptions
-            },
-        )
+        mapped = {}
+        for assumption in comb_class.assumptions:
+            mirrored = assumption.__class__(
+                self._mirror(comb_class, gridded_perm)
+                for gridded_perm in assumption.gps
+            )
+            mapped[comb_class.get_assumption_parameter(assumption)] = (
+                child.get_assumption_parameter(mirrored)
+            )
+        return (mapped,)
 
     def formal_step(self) -> str:
         kind = "rows" if self.transpose else "columns"
         return f"Knuth slide of the {self.width} {kind} from {kind[:-1]} {self.col}"
 
     def to_jsonable(self) -> dict:
-        return {
-            "class_module": "tilings.strategies.knuth_slide",
-            "strategy_class": "KnuthSlideStrategy",
-            "col": self.col,
-            "width": self.width,
-            "transpose": self.transpose,
-        }
+        d: dict = super().to_jsonable()
+        d.pop("ignore_parent")
+        d.pop("inferrable")
+        d.pop("possibly_empty")
+        d.pop("workable")
+        d["col"] = self.col
+        d["width"] = self.width
+        d["transpose"] = self.transpose
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "KnuthSlideStrategy":
@@ -126,9 +123,6 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             f"{self.__class__.__name__}(col={self.col}, width={self.width}, "
             f"transpose={self.transpose})"
         )
-
-    def __str__(self) -> str:
-        return self.formal_step()
 
 
 class KnuthSlideFactory(StrategyFactory[Tiling]):

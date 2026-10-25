@@ -14,7 +14,9 @@ reverse-complement).
 
 So the slide is a bijection onto the gridded permutations of the child tiling when:
 
-- every obstruction with points in the block is of window type or of run type.
+- every obstruction with points in the block is not contradictory, that is a
+  gridding some gridded permutation can have, and is of window type or of run
+  type.
     - Window type: no other point of it has a value between two of its block
       values, and every regridding of its block points over the block's columns,
       and over the block's rows from its lowest block row to its highest, is
@@ -163,7 +165,7 @@ def knuth_slide_word(word: Sequence[int]) -> List[int]:
     return rsk_inverse(insertion_tableau, evacuation(recording_tableau))
 
 
-def _knuth_neighbours(perm: Perm) -> Iterator[Perm]:
+def _knuth_neighbors(perm: Perm) -> Iterator[Perm]:
     """Yield the permutations one elementary Knuth move from perm: y z x <-> y x z and
     x z y <-> z x y, for x < y < z."""
     word = list(perm)
@@ -177,23 +179,23 @@ def _knuth_neighbours(perm: Perm) -> Iterator[Perm]:
 
 @lru_cache(maxsize=1 << 16)
 def is_knuth_closed(patterns: FrozenSet[Perm]) -> bool:
-    """Return True if the permutations avoiding every pattern in patts are closed
-    under Knuth equivalence. It is decided locally: an occurrence that a Knuth move
+    """Return True if the permutations avoiding all the patterns are closed under
+    Knuth equivalence. It is decided locally: an occurrence that a Knuth move
     destroys uses both letters it swaps, and with the letter that allows the move
     it lies in a permutation at most one entry longer than the pattern."""
     basis = tuple(patterns)
     return not any(
-        neighbour.avoids(*basis)
+        neighbor.avoids(*basis)
         for pattern in basis
         for container in (pattern, *pattern.coveredby())
-        for neighbour in _knuth_neighbours(container)
+        for neighbor in _knuth_neighbors(container)
     )
 
 
 @lru_cache(maxsize=1 << 16)
 def is_shape_closed(patterns: FrozenSet[Perm]) -> bool:
-    """Return True if whether a permutation avoids patts depends only on its RSK
-    shape: the patterns and their inverses are both Knuth-closed. Monotone patterns
+    """Return True if whether a permutation avoids the patterns depends only on its
+    RSK shape: the patterns and their inverses are both Knuth-closed. Monotone patterns
     are."""
     return is_knuth_closed(patterns) and is_knuth_closed(
         frozenset(pattern.inverse() for pattern in patterns)
@@ -313,8 +315,10 @@ class KnuthSlide:
         return self._analysis(column, width).reason
 
     def is_identity(self, column: int, width: int) -> bool:
-        """Is the slide's child the tiling itself? True when the block slides and its
-        constraints, requirements and assumptions are symmetric under the mirror."""
+        """Return True if the block slides and the patterns of each of its runs, and
+        the requirements and assumptions, are the same with the block mirrored, as
+        the window constraints always are: the child is then the tiling itself, and
+        the factory skips the slide without making the child."""
         analysis = self._analysis(column, width)
         return analysis.reason is None and analysis.identity
 
@@ -377,9 +381,11 @@ class KnuthSlide:
         return mirrored
 
     @staticmethod
-    def slide_gp(gridded_perm: GriddedPerm, column: int, width: int) -> GriddedPerm:
-        """Return the image of a gridded permutation under the slide of the block
-        (col, width). The slide is an involution."""
+    def slide_gridded_perm(
+        gridded_perm: GriddedPerm, column: int, width: int
+    ) -> GriddedPerm:
+        """Return the image of a gridded permutation under the slide of the block of
+        the width from the column. The slide is an involution."""
         indices = [
             i
             for i, (x, _) in enumerate(gridded_perm.pos)
@@ -634,9 +640,9 @@ class KnuthSlide:
     def _window_key(
         obstruction: GriddedPerm, indices: Sequence[int], rows: Tuple[int, ...]
     ) -> Optional[_WindowKey]:
-        """The obstruction's points outside the block, how many of them lie below
-        the block points, and the block rows its block points span; None if a point
-        outside lies between two block points in value."""
+        """The key of the window that the obstruction's block points, at the
+        indices, form in the block's rows; None if a point of it outside the block
+        lies between two of them in value."""
         inside = set(indices)
         values = [obstruction.patt[i] for i in indices]
         low, high = min(values), max(values)
@@ -661,9 +667,9 @@ class KnuthSlide:
         columns: Tuple[int, ...],
         rows: Tuple[int, ...],
     ) -> bool:
-        """Is every regridding of the obstruction's block points over the cells
-        cols x rows forbidden? The same for all its regriddings, so it is cached by
-        their family."""
+        """Is every regridding of the obstruction's block points over the cells of
+        the columns and rows forbidden? The same for all its regriddings, so it is
+        cached by their family."""
         inside = set(indices)
         family = (
             obstruction.patt,
@@ -735,4 +741,5 @@ def _columns_or_rows(
 
 
 def _block_indices(gridded_perm: GriddedPerm, block: FrozenSet[Cell]) -> List[int]:
+    """The indices of the gridded permutation's points in the block."""
     return [i for i, cell in enumerate(gridded_perm.pos) if cell in block]

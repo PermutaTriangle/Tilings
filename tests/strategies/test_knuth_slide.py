@@ -506,6 +506,27 @@ def test_the_strategy_refuses_a_block_that_does_not_slide():
         )
 
 
+def test_the_strategy_in_json_and_the_backward_map_of_no_object():
+    """The JSON form of a strategy names its block and nothing else, as saved
+    specifications have it; and as for any disjoint union, the backward map of no
+    object raises."""
+    from comb_spec_searcher.exception import ObjectMappingError
+
+    strategy = KnuthSlideStrategy(1, 2, transpose=True)
+    assert strategy.to_jsonable() == {
+        "class_module": "tilings.strategies.knuth_slide",
+        "strategy_class": "KnuthSlideStrategy",
+        "col": 1,
+        "width": 2,
+        "transpose": True,
+    }
+    again = KnuthSlideStrategy.from_dict(strategy.to_jsonable())
+    assert repr(again) == repr(strategy)
+    (rule,) = slides(babson_west)
+    with pytest.raises(ObjectMappingError):
+        next(rule.strategy.backward_map(babson_west, (None,)))
+
+
 def untracked_then_guided(basis, pack, max_width):
     pack = pack.add_initial(KnuthSlideFactory(max_width=max_width))
     untracked = TrackedSearcher(
