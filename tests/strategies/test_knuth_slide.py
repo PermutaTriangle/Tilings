@@ -170,6 +170,45 @@ def test_three_column_slides_of_av_15432(name):
     sanity_check(rules[0], 5)
 
 
+def decreasing_staircase(lengths, mirrored=False):
+    """Cells in one row, the run of columns from column i to the last avoiding
+    together the decreasing pattern of length lengths[i]: for (5, 4, 3, 2), the
+    staircase [Av(54321) | Av(4321) | Av(321) | Av(21)] of Av(165432)'s
+    specification. With mirrored, the runs from the first column to the mirror of
+    column i do."""
+    cells = [(x, 0) for x in range(len(lengths))]
+    obstructions = []
+    for first, length in enumerate(lengths):
+        decreasing = "".join(str(value) for value in range(length, 0, -1))
+        run = cells[: len(lengths) - first] if mirrored else cells[first:]
+        obstructions.extend(griddings(decreasing, run))
+    return Tiling(obstructions)
+
+
+def test_a_block_of_four_columns():
+    """The staircase of four cells slides all at once to its mirror image, and so do
+    its last three cells and its last two, but no other block of it. The factory
+    offers the slide of the four only when max_width allows four columns."""
+    staircase = decreasing_staircase([5, 4, 3, 2])
+    knuth = KnuthSlide(staircase)
+    assert [
+        block for block in knuth.blocks(max_width=4) if knuth.why_not(*block) is None
+    ] == [(2, 2), (1, 3), (0, 4)]
+    (rule,) = [
+        slide_rule
+        for slide_rule in slides(staircase, max_width=4)
+        if slide_rule.strategy.width == 4
+    ]
+    assert rule.children[0] == decreasing_staircase([5, 4, 3, 2], mirrored=True)
+    assert counts(staircase, 7) == [1, 4, 19, 104, 641, 4364, 32293, 256288]
+    assert counts(rule.children[0], 7) == counts(staircase, 7)
+    assert_bijection(staircase, rule.children[0], rule.strategy, 5)
+    sanity_check(rule, 5)
+    assert not [
+        slide_rule for slide_rule in slides(staircase) if slide_rule.strategy.width == 4
+    ]
+
+
 def test_three_distinct_cells_do_not_slide_two_at_a_time():
     """[Av(15432) | Av(4321) | Av(321) | inc]: the last two cells avoid 321 together,
     and all three avoid 4321, so only the pair (Av(321), inc) slides; the naive slide
@@ -184,8 +223,8 @@ def test_three_distinct_cells_do_not_slide_two_at_a_time():
 
 
 def test_slides_agree_with_tilings_sliding():
-    """On the tilings Tilings' sliding was made for, the Knuth slide gives the same
-    children."""
+    """On the tilings of a search of Av(1432) with Tilings' sliding, every child of
+    a sliding rule is the child of a Knuth slide."""
     av_1432 = ROW_PLACEMENTS.add_initial(SlidingFactory(use_symmetries=True))
     searcher = TrackedSearcher(
         Tiling.from_string("1432"), av_1432, max_assumptions=0, ruledb=RuleDBForest()
@@ -202,9 +241,10 @@ def test_slides_agree_with_tilings_sliding():
 
 
 def test_slides_agree_with_tilings_monotone_sliding():
-    """Every rule of Tilings' monotone sliding, on the tilings of an untracked search
-    and of the tracked search it guides, is a Knuth slide of two columns, assumptions
-    included. The Knuth slide gives it the maps it lacks."""
+    """On the tilings of an untracked search of Av(1432) with Tilings' monotone
+    sliding, and of the tracked search it guides, the child of every monotone
+    sliding rule that changes the tiling is the child of a Knuth slide of two
+    columns, assumptions included."""
     pack = ROW_PLACEMENTS.add_initial(MonotoneSlidingFactory())
     untracked = TrackedSearcher(
         Tiling.from_string("1432"), pack, max_assumptions=0, ruledb=RuleDBForest()
@@ -478,7 +518,7 @@ def test_factory_options():
     tiling, _, _ = AV_15432_BLOCKS["04321|3210|10|210|3210"]
     widths = {rule.strategy.width for rule in slides(tiling)}
     assert 3 in widths
-    assert {rule.strategy.width for rule in slides(tiling, max_width=2)} <= {2}
+    assert {rule.strategy.width for rule in slides(tiling, max_width=2)} == {2}
     assert not [
         slide_rule
         for slide_rule in slides(two_rows(1, [(0, 0)]), rows=False)
