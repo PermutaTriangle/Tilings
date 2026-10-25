@@ -3,7 +3,7 @@ import json
 import pytest
 import sympy
 
-from comb_spec_searcher import Strategy
+from comb_spec_searcher import CombinatorialSpecification, Strategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from permuta import Av, Perm
 from tilings import GriddedPerm, Tiling, TrackingAssumption
@@ -205,15 +205,19 @@ def test_a_rotational_pack():
 
 @pytest.mark.parametrize("string", ["123_231_312", "1234_2341_3412_4123"])
 def test_a_bijection_through_a_cut_is_one_to_one(string):
-    """A specification that uses a rotational cut, mapped by a bijection to itself:
-    every object goes to itself, so the n rotations of a permutation stay apart."""
-    pack = (
-        TileScopePack.point_placements()
-        .add_rotational_cuts()
-        .add_verification(BasicVerificationStrategy(), replace=True)
+    """A specification through the class's min cut, mapped by a bijection to itself:
+    every object goes to itself, so the n rotations of a permutation stay apart. It
+    is put together from the cut's rule and a specification of the cut, as a search
+    with the cuts can find one without them, depending on when it looks."""
+    tiling = Tiling.from_string(string)
+    cut_rule = RotationalCutStrategy()(tiling)
+    pack = TileScopePack.point_placements().add_verification(
+        BasicVerificationStrategy(), replace=True
     )
-    spec = TileScope(string, pack).auto_search(max_expansion_time=60)
-    assert any("rotation" in rule.formal_step for rule in spec.rules_dict.values())
+    cut_spec = TileScope(cut_rule.children[0], pack).auto_search(max_expansion_time=60)
+    spec = CombinatorialSpecification(
+        tiling, [cut_rule] + list(cut_spec.rules_dict.values())
+    )
     bijection = spec.get_bijection_to(spec)
     assert bijection is not None
     for size in range(1, 6):
