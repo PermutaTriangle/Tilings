@@ -195,8 +195,8 @@ def is_knuth_closed(patterns: FrozenSet[Perm]) -> bool:
 @lru_cache(maxsize=1 << 16)
 def is_shape_closed(patterns: FrozenSet[Perm]) -> bool:
     """Return True if whether a permutation avoids the patterns depends only on its
-    RSK shape: the patterns and their inverses are both Knuth-closed. Monotone patterns
-    are."""
+    RSK shape: the patterns and their inverses are both Knuth-closed. Monotone
+    patterns are."""
     return is_knuth_closed(patterns) and is_knuth_closed(
         frozenset(pattern.inverse() for pattern in patterns)
     )
@@ -606,6 +606,8 @@ class KnuthSlide:
         rows: Tuple[int, ...],
         block: FrozenSet[Cell],
     ) -> Optional[str]:
+        """Return why a requirement or an assumption with points in the block is not
+        on whole columns or whole rows of it, as points it counts; None if none is."""
         for requirement in self._tiling.requirements:
             cells = set()
             for gridded_perm in requirement:
