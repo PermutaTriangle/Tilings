@@ -5,8 +5,9 @@ reverses a block of adjacent columns.
 A block is a set of k >= 2 adjacent columns whose active cells are exactly the same
 nonempty set of rows R in each column. The points of a gridded permutation in the
 block form its block word w, the concatenation of the column words. The slide
-replaces w by RSK^-1(P(w), evac(Q(w))) and reverses the columns: column c gets as many
-of the first letters as the last column had, and so on, each value keeping its row.
+replaces w by RSK^-1(P(w), evac(Q(w))), Permuta's evacuate_recording_tableau, and
+reverses the columns: column c gets as many of the first letters as the last column
+had, and so on, each value keeping its row.
 The new word has the same insertion tableau, so on every interval of values it is
 Knuth equivalent to the old one, and every run of adjacent columns gets the RSK shape
 of its mirror image (Schutzenberger: evacuation is the recording tableau of the
@@ -22,11 +23,11 @@ So the slide is a bijection onto the gridded permutations of the child tiling wh
       and over the block's rows from its lowest block row to its highest, is
       forbidden. For each configuration of the other points, the patterns that
       these obstructions see in the block must form a Knuth-closed set: one whose
-      avoiders are closed under Knuth equivalence.
+      avoiders are closed under Knuth equivalence (Permuta's is_knuth_closed).
     - Run type: all its points are in the block, and every regridding over the run
       of columns it spans and all the block's rows is forbidden. For each run, the
       patterns must form a shape-closed set: one whose avoiders are determined by
-      the RSK shape, such as a monotone pattern.
+      the RSK shape, such as a monotone pattern (Permuta's is_shape_closed).
 - every requirement with points in the block is a list of points whose block cells
   are whole columns or whole rows of the block, or both;
 - every assumption with points in the block counts points (TrackingAssumption), on
@@ -39,9 +40,7 @@ slide of adjacent cells; a block of several rows is its Ferrers version, after
 Babson and West's sliding lemma.
 """
 
-from bisect import bisect_left
 from collections import defaultdict
-from functools import lru_cache
 from itertools import combinations_with_replacement
 from typing import (
     TYPE_CHECKING,
@@ -60,146 +59,21 @@ from typing import (
 )
 
 from permuta import Perm
+from permuta.permutils import (
+    evacuate_recording_tableau,
+    is_knuth_closed,
+    is_shape_closed,
+)
 from tilings.assumptions import TrackingAssumption
 from tilings.griddedperm import GriddedPerm
 
 if TYPE_CHECKING:
     from tilings import Tiling
 
-__all__ = [
-    "KnuthSlide",
-    "evacuation",
-    "is_knuth_closed",
-    "is_shape_closed",
-    "knuth_slide_word",
-    "rsk",
-    "rsk_inverse",
-]
+__all__ = ["KnuthSlide"]
 
 Cell = Tuple[int, int]
-Tableau = List[List[int]]
 Gridding = Tuple[Perm, Tuple[Cell, ...]]
-
-
-def rsk(word: Sequence[int]) -> Tuple[Tableau, Tableau]:
-    """Return the insertion and recording tableaux of a word of distinct letters,
-    by row insertion."""
-    insertion_tableau: Tableau = []
-    recording_tableau: Tableau = []
-    for step, letter in enumerate(word, 1):
-        for insertion_row, recording_row in zip(insertion_tableau, recording_tableau):
-            position = bisect_left(insertion_row, letter)
-            if position == len(insertion_row):
-                insertion_row.append(letter)
-                recording_row.append(step)
-                break
-            letter, insertion_row[position] = insertion_row[position], letter
-        else:
-            insertion_tableau.append([letter])
-            recording_tableau.append([step])
-    return insertion_tableau, recording_tableau
-
-
-def rsk_inverse(
-    insertion_tableau: Sequence[Sequence[int]],
-    recording_tableau: Sequence[Sequence[int]],
-) -> List[int]:
-    """Return the word whose insertion and recording tableaux are the given ones, of
-    the same shape, the recording tableau standard."""
-    insertion_rows = [list(row) for row in insertion_tableau]
-    recording_rows = [list(row) for row in recording_tableau]
-    row_of = {
-        step: row_index for row_index, row in enumerate(recording_rows) for step in row
-    }
-    word = [0] * len(row_of)
-    for step in range(len(word), 0, -1):
-        row_index = row_of[step]
-        recording_rows[row_index].pop()
-        letter = insertion_rows[row_index].pop()
-        for upper in range(row_index - 1, -1, -1):
-            insertion_row = insertion_rows[upper]
-            position = bisect_left(insertion_row, letter) - 1
-            letter, insertion_row[position] = insertion_row[position], letter
-        word[step - 1] = letter
-    return word
-
-
-def evacuation(tableau: Sequence[Sequence[int]]) -> Tableau:
-    """Return Schutzenberger's evacuation of a standard Young tableau: delete the
-    smallest entry and slide the hole out by jeu de taquin, n times, writing n, n - 1,
-    ... in the cells vacated."""
-    current = [list(row) for row in tableau]
-    result: Tableau = [[0] * len(row) for row in current]
-    size = sum(len(row) for row in current)
-    for label in range(size, 0, -1):
-        row, column = 0, 0
-        while True:
-            right = current[row][column + 1] if column + 1 < len(current[row]) else None
-            below = (
-                current[row + 1][column]
-                if row + 1 < len(current) and column < len(current[row + 1])
-                else None
-            )
-            if right is None and below is None:
-                break
-            if below is None or (right is not None and right < below):
-                assert right is not None
-                current[row][column] = right
-                column += 1
-            else:
-                assert below is not None
-                current[row][column] = below
-                row += 1
-        current[row].pop()
-        if not current[row]:
-            current.pop()
-        result[row][column] = label
-    return result
-
-
-def knuth_slide_word(word: Sequence[int]) -> List[int]:
-    """Return RSK^-1(P(w), evac(Q(w))) for the word w of distinct letters: it has the
-    same insertion tableau, and its factor at positions m + 1 - j to m + 1 - i has
-    the RSK shape of w's factor at positions i to j. It is an involution."""
-    insertion_tableau, recording_tableau = rsk(word)
-    return rsk_inverse(insertion_tableau, evacuation(recording_tableau))
-
-
-def _knuth_neighbors(perm: Perm) -> Iterator[Perm]:
-    """Yield the permutations one elementary Knuth move from perm: y z x <-> y x z and
-    x z y <-> z x y, for x < y < z."""
-    word = list(perm)
-    for i in range(len(word) - 2):
-        first, second, third = word[i], word[i + 1], word[i + 2]
-        if min(second, third) < first < max(second, third):
-            yield Perm(word[: i + 1] + [third, second] + word[i + 3 :])
-        if min(first, second) < third < max(first, second):
-            yield Perm(word[:i] + [second, first] + word[i + 2 :])
-
-
-@lru_cache(maxsize=1 << 16)
-def is_knuth_closed(patterns: FrozenSet[Perm]) -> bool:
-    """Return True if the permutations avoiding all the patterns are closed under
-    Knuth equivalence. It is decided locally: an occurrence that a Knuth move
-    destroys uses both letters it swaps, and with the letter that allows the move
-    it lies in a permutation at most one entry longer than the pattern."""
-    basis = tuple(patterns)
-    return not any(
-        neighbor.avoids(*basis)
-        for pattern in basis
-        for container in (pattern, *pattern.coveredby())
-        for neighbor in _knuth_neighbors(container)
-    )
-
-
-@lru_cache(maxsize=1 << 16)
-def is_shape_closed(patterns: FrozenSet[Perm]) -> bool:
-    """Return True if whether a permutation avoids the patterns depends only on its
-    RSK shape: the patterns and their inverses are both Knuth-closed. Monotone
-    patterns are."""
-    return is_knuth_closed(patterns) and is_knuth_closed(
-        frozenset(pattern.inverse() for pattern in patterns)
-    )
 
 
 class _WindowKey(NamedTuple):
@@ -398,7 +272,7 @@ class KnuthSlide:
         for i in indices:
             sizes[gridded_perm.pos[i][0] - column] += 1
         row_of = {gridded_perm.patt[i]: gridded_perm.pos[i][1] for i in indices}
-        new_word = knuth_slide_word(word)
+        new_word = evacuate_recording_tableau(word)
         columns = [
             column + offset
             for offset in range(width)
@@ -536,7 +410,7 @@ class KnuthSlide:
         the run has given the windows its window constraints, or why those of a
         window are not closed under Knuth moves; None if neither."""
         for span, patterns in list(constraints.run_patterns.items()):
-            if is_shape_closed(frozenset(patterns)):
+            if is_shape_closed(patterns):
                 continue
             kept: List[GriddedPerm] = []
             for obstruction in constraints.runs[span]:
@@ -555,10 +429,10 @@ class KnuthSlide:
                 obstruction.get_gridded_perm_in_cells(block).patt
                 for obstruction in kept
             }
-            if not is_shape_closed(frozenset(constraints.run_patterns[span])):
+            if not is_shape_closed(constraints.run_patterns[span]):
                 return "a run's patterns are not determined by the RSK shape"
         for patterns in constraints.window_patterns.values():
-            if not is_knuth_closed(frozenset(patterns)):
+            if not is_knuth_closed(patterns):
                 return "a window's patterns are not closed under Knuth moves"
         return None
 

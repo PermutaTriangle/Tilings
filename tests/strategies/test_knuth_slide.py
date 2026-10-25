@@ -7,8 +7,9 @@ import pytest
 from comb_spec_searcher import CombinatorialSpecification
 from comb_spec_searcher.rule_db import RuleDBForest
 from permuta import Perm
+from permuta.permutils import rsk
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms.knuth_slide import KnuthSlide, rsk
+from tilings.algorithms.knuth_slide import KnuthSlide
 from tilings.assumptions import (
     SkewComponentAssumption,
     SumComponentAssumption,
