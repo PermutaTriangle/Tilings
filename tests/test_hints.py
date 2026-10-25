@@ -11,9 +11,11 @@ from tilings import GriddedPerm, Tiling, cli
 from tilings import strategies as strat
 from tilings.cli import build_pack, parser
 from tilings.hints import (
+    OnePointExtension,
+    extension_placement,
     hints_for,
-    one_point_extension,
     one_point_extension_chain,
+    one_point_extension_of,
     one_point_extensions,
 )
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
@@ -156,7 +158,9 @@ def without_point(perm, direction):
 def extended(string, direction):
     """Every one-point extension in the direction of the patterns of the basis."""
     return sorted(
-        set().union(*(one_point_extensions(p, direction) for p in basis(string)))
+        set().union(
+            *(one_point_extensions(pattern, direction) for pattern in basis(string))
+        )
     )
 
 
@@ -182,7 +186,7 @@ def test_one_point_extension_found_and_counted(string, direction):
     and its class has n times as many permutations of length n as the class of the
     basis extended has of length n - 1."""
     patterns = extended(string, direction)
-    assert one_point_extension(patterns) == (direction, tuple(sorted(basis(string))))
+    assert one_point_extension_of(patterns) == (direction, tuple(sorted(basis(string))))
     small, large = Av(Basis(*basis(string))), Av(Basis(*patterns))
     assert [large.count(n) for n in range(1, 8)] == [
         n * small.count(n - 1) for n in range(1, 8)
@@ -192,21 +196,23 @@ def test_one_point_extension_found_and_counted(string, direction):
 def test_a_basis_not_minimal():
     """A pattern containing one of the basis is left out first, as Av ignores it."""
     patterns = extended("123", DIR_NORTH) + [Perm((0, 1, 2, 3, 4))]
-    assert one_point_extension(patterns) == (DIR_NORTH, (Perm((0, 1, 2)),))
+    assert one_point_extension_of(patterns) == (DIR_NORTH, (Perm((0, 1, 2)),))
 
 
 def test_not_a_one_point_extension():
-    assert one_point_extension(basis("1234_1243_1423")) is None  # one is missing
-    assert one_point_extension(basis("1234")) is None
-    assert one_point_extension(basis("12_21")) is None  # extends patterns of length 1
-    assert one_point_extension([]) is None
+    assert one_point_extension_of(basis("1234_1243_1423")) is None  # one is missing
+    assert one_point_extension_of(basis("1234")) is None
+    assert (
+        one_point_extension_of(basis("12_21")) is None
+    )  # extends patterns of length 1
+    assert one_point_extension_of([]) is None
 
 
 def test_the_extension_hint():
     (hint,) = hints_for(extended("123", DIR_NORTH))
     assert hint.name == "one-point extension"
     assert "adding a new maximum to a pattern of the basis of Av(012)" in hint.message
-    assert "n times as many permutations of length n as Av(012)" in hint.message
+    assert "n times as many permutations of length n as that class" in hint.message
     assert "partial placement of the topmost point" in hint.message
     assert "Search for Av(012) instead" in hint.message
     assert "add_extension_placement((DIR_NORTH,), 3)" in hint.message
@@ -239,7 +245,10 @@ def test_the_extension_placement_finds_a_specification(direction):
     whose rules pass their sanity check, the partial placement in that direction
     among them. Point placements alone find none in a minute for the maximum's."""
     root = Tiling(
-        [GriddedPerm.single_cell(p, (0, 0)) for p in extended("123", direction)]
+        [
+            GriddedPerm.single_cell(pattern, (0, 0))
+            for pattern in extended("123", direction)
+        ]
     )
     pack = TileScopePack.point_placements().add_extension_placement((direction,), 3)
     spec = TileScope(root, pack).auto_search(max_expansion_time=30)  # under a second
@@ -248,9 +257,10 @@ def test_the_extension_placement_finds_a_specification(direction):
         for rule in spec.rules_dict.values()
         if isinstance(rule.strategy, RequirementPlacementStrategy)
     ]
-    assert [(p.direction, p.own_row and p.own_col) for p in placements] == [
-        (direction, False)
-    ]
+    assert [
+        (placement.direction, placement.own_row and placement.own_col)
+        for placement in placements
+    ] == [(direction, False)]
     assert spec.sanity_check(6)
 
 
@@ -288,7 +298,10 @@ def test_an_extension_of_an_extension(second, directions):
     length of the first reduction's patterns."""
     patterns = sorted(
         set().union(
-            *(one_point_extensions(p, second) for p in extended("123", DIR_NORTH))
+            *(
+                one_point_extensions(pattern, second)
+                for pattern in extended("123", DIR_NORTH)
+            )
         )
     )
     chain = one_point_extension_chain(patterns)
@@ -297,7 +310,7 @@ def test_an_extension_of_an_extension(second, directions):
     )
     assert chain[-1][1] == (Perm((0, 1, 2)),)
     (hint,) = hints_for(patterns)
-    assert "is such an extension too, and reduced again it is Av(012)" in hint.message
+    assert "and reduced again it is Av(012)" in hint.message
     assert "n (n - 1) times as many permutations of length n as Av(012)" in hint.message
     assert "Search for Av(012) instead" in hint.message
     placement, inferral = hint.strategies
@@ -385,11 +398,11 @@ def test_the_hint_and_the_flag_in_each_direction(direction):
     (hint,) = hints_for(patterns)
     message = hint.message
     assert f"adding {adding} to a pattern of the basis of Av(012)" in message
-    assert f"whose {taken_out}, leaves a permutation of Av(012)" in message
+    assert f"whose {taken_out}, leaves a permutation of that class" in message
     assert f"placement {placing}, with obstruction inferral to length 3" in message
     assert f"add_extension_placement((DIR_{name},), 3)" in message
     assert "such an extension too" not in message
-    assert "has of length n - 1. Search for Av(012) instead" in message
+    assert "has of length n - 1, for n >= 1. Search for Av(012) instead" in message
     assert "F = 1 + x (x G)'" in message
     assert "Or add to the pack" in message
     assert message.endswith("--extension-placement).")
@@ -409,7 +422,7 @@ def test_a_basis_of_one_pattern_of_length_two(string, direction):
     """The shortest basis B the hint takes: B' has patterns of length 3, and the
     class has n permutations of length n."""
     patterns = extended_in(string, direction)
-    assert one_point_extension(patterns) == (direction, tuple(basis(string)))
+    assert one_point_extension_of(patterns) == (direction, tuple(basis(string)))
     assert one_point_extension_chain(patterns) == [(direction, tuple(basis(string)))]
     assert counts(patterns) == [1] + list(range(1, 8))
 
@@ -419,7 +432,7 @@ def test_a_class_that_is_an_extension_in_every_direction():
     patterns = extended_in("12_21", DIR_NORTH)
     for direction in DIRECTIONS:
         assert extended_in("12_21", direction) == patterns
-    assert one_point_extension(patterns) == (DIR_NORTH, tuple(basis("12_21")))
+    assert one_point_extension_of(patterns) == (DIR_NORTH, tuple(basis("12_21")))
     rotation_hint, hint = hints_for(patterns)
     assert rotation_hint.name == "rotationally stable"
     assert "adding a new maximum" in hint.message
@@ -458,14 +471,17 @@ def test_two_steps_in_every_order_of_directions(extending, steps, inner):
     ]
     (hint,) = hints_for(patterns)
     first = Av(Basis(*extended_in("123", inner)))
+    assert f"to a pattern of the basis of {first}," in hint.message
+    second_point = HINT_WORDS[steps[1]][0]
     assert (
-        f"{first} is such an extension too, and reduced again it is Av(012)"
-        in hint.message
+        f"That class is such an extension too, by {second_point}, and reduced again "
+        "it is Av(012)" in hint.message
     )
     assert "n (n - 1) times as many permutations of length n as Av(012)" in hint.message
-    assert "has of length n - 2. Search for Av(012) instead" in hint.message
+    assert "has of length n - 2, for n >= 2. Search for Av(012) instead" in hint.message
     names = ", ".join(f"DIR_{HINT_WORDS[d][3]}" for d in dict.fromkeys(steps))
-    assert f"add_extension_placement(({names},), 4)" in hint.message
+    names += "," if len(set(steps)) == 1 else ""
+    assert f"add_extension_placement(({names}), 4)" in hint.message
     placement, inferral = hint.strategies
     assert placement.dirs == tuple(dict.fromkeys(steps)) and inferral.maxlen == 4
     placement, inferral = extension_strategies(build_pack(flag_args(patterns)))
@@ -490,12 +506,10 @@ def test_three_steps(extending, steps):
         == steps
     )
     (hint,) = hints_for(patterns)
-    assert (
-        "reduced 2 more times it is Av(012): the class has n (n - 1) (n - 2) times"
-        in hint.message
-    )
+    assert "and reduced 2 more times, by " in hint.message
+    assert "it is Av(012): the class has n (n - 1) (n - 2) times" in hint.message
     assert "times as many permutations of length n as Av(012) has" in hint.message
-    assert "of length n - 3. Search for Av(012) instead" in hint.message
+    assert "of length n - 3, for n >= 3. Search for Av(012) instead" in hint.message
     placement, inferral = hint.strategies
     assert placement.dirs == tuple(dict.fromkeys(steps)) and inferral.maxlen == 5
     placement, inferral = extension_strategies(build_pack(flag_args(patterns)))
@@ -519,30 +533,32 @@ def test_a_basis_of_patterns_of_different_lengths():
 
 def test_not_quite_a_one_point_extension():
     ext = extended_in("123", DIR_NORTH)
-    assert one_point_extension(ext) == (DIR_NORTH, (Perm((0, 1, 2)),))
-    assert one_point_extension(ext + [Perm((1, 0, 3, 2))]) is None  # a pattern too many
-    assert one_point_extension(ext[1:]) is None  # or too few
+    assert one_point_extension_of(ext) == (DIR_NORTH, (Perm((0, 1, 2)),))
+    assert (
+        one_point_extension_of(ext + [Perm((1, 0, 3, 2))]) is None
+    )  # a pattern too many
+    assert one_point_extension_of(ext[1:]) is None  # or too few
     mixed = ext[:3] + extended_in("123", DIR_SOUTH)[:1]  # of two directions
-    assert one_point_extension(mixed) is None
+    assert one_point_extension_of(mixed) is None
     both = ext + extended_in("123", DIR_SOUTH)
-    assert one_point_extension(both) is None
+    assert one_point_extension_of(both) is None
     assert one_point_extension_chain(both) == []
     assert hints_for(both) == []
     assert hints_for(ext + [Perm((1, 0, 3, 2))]) == []
 
 
 def test_the_empty_and_the_short_and_the_repeated():
-    assert one_point_extension([Perm()]) is None  # the empty class
-    assert one_point_extension([Perm((0,))]) is None
+    assert one_point_extension_of([Perm()]) is None  # the empty class
+    assert one_point_extension_of([Perm((0,))]) is None
     assert one_point_extension_chain([Perm()]) == []
     assert hints_for([Perm()]) == []
     ext = extended_in("123", DIR_NORTH)
     expected = (DIR_NORTH, (Perm((0, 1, 2)),))
-    assert one_point_extension(ext + ext) == expected  # repeats
-    assert one_point_extension(reversed(ext)) == expected  # any order
-    assert one_point_extension(iter(ext)) == expected  # once through
-    assert one_point_extension(ext + [Perm((0, 1, 2, 3, 4))]) == expected
-    assert one_point_extension(ext + [Perm((0, 1, 2))]) is None  # basis {012}
+    assert one_point_extension_of(ext + ext) == expected  # repeats
+    assert one_point_extension_of(reversed(ext)) == expected  # any order
+    assert one_point_extension_of(iter(ext)) == expected  # once through
+    assert one_point_extension_of(ext + [Perm((0, 1, 2, 3, 4))]) == expected
+    assert one_point_extension_of(ext + [Perm((0, 1, 2))]) is None  # basis {012}
     assert one_point_extension_chain(ext) == [expected]
 
 
@@ -584,7 +600,7 @@ def test_the_flag_finds_a_specification_for_two_steps(extending):
     sanity check, and whose partial placements are in the chain's directions."""
     patterns = extended_in("123", *extending)
     pack = build_pack(flag_args(patterns))
-    root = Tiling([GriddedPerm.single_cell(p, (0, 0)) for p in patterns])
+    root = Tiling([GriddedPerm.single_cell(pattern, (0, 0)) for pattern in patterns])
     spec = TileScope(root, pack).auto_search(max_expansion_time=30)  # under a second
     directions = {
         rule.strategy.direction
@@ -655,7 +671,10 @@ NOT_AN_EXTENSION = (
     "is not every one-point extension",
     "--extension-placement does not apply",
 )
-CANNOT_TAKE_IT = ("--extension-placement does not go with this pack",)
+CANNOT_TAKE_IT = (
+    "--extension-placement does not go with this pack",
+    "has a requirement placement or obstruction inferral already",
+)
 
 
 @pytest.mark.parametrize(
@@ -721,3 +740,65 @@ def test_the_pack_method():
     )
     with pytest.raises(ValueError):
         sink.add_extension_placement((DIR_NORTH,), 3)
+
+
+@pytest.mark.parametrize(
+    "directions, length",
+    [((), 3), ((DIR_NORTH, 4), 3), ((DIR_NORTH,), 0), ((DIR_NORTH,), -1)],
+    ids=["no directions", "not a direction", "length 0", "length -1"],
+)
+def test_the_pack_method_checks_its_input(directions, length):
+    with pytest.raises(ValueError):
+        TileScopePack.point_placements().add_extension_placement(directions, length)
+
+
+def test_the_pack_method_places_in_each_direction_once():
+    pack = TileScopePack.point_placements().add_extension_placement(
+        (DIR_WEST, DIR_NORTH, DIR_WEST), 3
+    )
+    placement, inferral = extension_strategies(pack)
+    assert placement.dirs == (DIR_WEST, DIR_NORTH) and inferral.maxlen == 3
+
+
+def test_the_steps_of_a_chain_and_their_placement():
+    """Each step is a named tuple of its direction and the basis it leaves, and the
+    placement that follows the chain is in its directions, in their order and each
+    once, with the length of the first step's basis."""
+    patterns = extended_in("123", DIR_NORTH, DIR_WEST, DIR_NORTH)
+    chain = one_point_extension_chain(patterns)
+    assert all(isinstance(step, OnePointExtension) for step in chain)
+    assert [step.direction for step in chain] == [DIR_NORTH, DIR_WEST, DIR_NORTH]
+    assert chain[0] == one_point_extension_of(patterns)
+    assert chain[1] == one_point_extension_of(chain[0].basis)
+    assert chain[-1].basis == (Perm((0, 1, 2)),)
+    assert extension_placement(chain) == ((DIR_NORTH, DIR_WEST), 5)
+    assert extension_placement(chain[1:]) == ((DIR_WEST, DIR_NORTH), 4)
+
+
+def warnings(monkeypatch, argv):
+    """Build the pack of 'tilescope spec' with the arguments, and return what was
+    logged as a warning."""
+    messages = []
+    monkeypatch.setattr(
+        cli.logger,
+        "warning",
+        lambda message, *args: messages.append(message % args if args else message),
+    )
+    build_pack(parser.parse_args(argv))
+    return messages
+
+
+@pytest.mark.parametrize(
+    "pack", ["row_and_col_placements", "row_placements", "col_placements"]
+)
+def test_the_flag_warns_of_a_pack_that_inserts_no_points(monkeypatch, pack):
+    """These packs insert no point requirements, so the placement has no point to
+    place: the flag warns, but builds the pack."""
+    (message,) = warnings(monkeypatch, ["spec", "1234_1243_1423_4123", pack, "-x"])
+    assert "--extension-placement places the point of a point requirement" in message
+    assert "point_placements does" in message
+
+
+@pytest.mark.parametrize("pack", ["point_placements", "insertion_point_placements"])
+def test_the_flag_does_not_warn_of_a_pack_that_inserts_points(monkeypatch, pack):
+    assert not warnings(monkeypatch, ["spec", "1234_1243_1423_4123", pack, "-x"])

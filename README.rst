@@ -286,8 +286,8 @@ Another hint: a class whose basis is every way of adding a new maximum, or
 minimum, leftmost or rightmost point, to the patterns of a basis B, such as
 Av(1234, 1243, 1423, 4123) for B = {123}, has n times as many permutations of
 length n as Av(B) has of length n - 1. The hint names Av(B) to search for instead.
-Or a partial placement and obstruction inferral can be added to the pack, which
-turn the class into a point and Av(B):
+Or the pack can be told to take that point out, which turns the class into the
+point and Av(B):
 
 .. code:: bash
 
