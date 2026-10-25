@@ -25,7 +25,7 @@ from tilings.tilescope import GuidedSearcher, TrackedSearcher
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 with open(os.path.join(__location__, "knuth_slide_15432.json")) as blocks_file:
     AV_15432_BLOCKS = {
-        name: (Tiling.from_dict(entry["tiling"]), entry["col"], entry["width"])
+        name: (Tiling.from_dict(entry["tiling"]), entry["start"], entry["width"])
         for name, entry in json.load(blocks_file).items()
     }
 
@@ -164,7 +164,7 @@ def test_three_column_slides_of_av_15432(name):
     rules = [
         rule
         for rule in slides(tiling)
-        if rule.strategy.col == column and rule.strategy.width == width
+        if rule.strategy.start == column and rule.strategy.width == width
     ]
     assert len(rules) == 1
     assert_bijection(tiling, rules[0].children[0], rules[0].strategy, 5)
@@ -378,7 +378,9 @@ def test_each_condition_is_needed(tiling, column):
     changes the counts."""
     assert KnuthSlide(tiling).why_not(column, 2) is not None
     assert not [
-        slide_rule for slide_rule in slides(tiling) if slide_rule.strategy.col == column
+        slide_rule
+        for slide_rule in slides(tiling)
+        if slide_rule.strategy.start == column
     ]
     assert counts(tiling, 6) != counts(naive_one_row_slide(tiling, column, 2), 6)
 
@@ -557,7 +559,7 @@ def test_the_strategy_in_json_and_the_backward_map_of_no_object():
     assert strategy.to_jsonable() == {
         "class_module": "tilings.strategies.knuth_slide",
         "strategy_class": "KnuthSlideStrategy",
-        "col": 1,
+        "start": 1,
         "width": 2,
         "transpose": True,
     }
@@ -889,13 +891,13 @@ def test_rows_false_leaves_out_the_blocks_of_several_rows():
     that of the block of two rows next to it, which it offers by default."""
     tiling = pair_and_ferrers_block()
     both = slides(tiling)
-    assert {(rule.strategy.col, rule.strategy.width) for rule in both} == {
+    assert {(rule.strategy.start, rule.strategy.width) for rule in both} == {
         (0, 2),
         (2, 2),
     }
     assert not any(rule.strategy.transpose for rule in both)
     (one_row,) = slides(tiling, rows=False)
-    assert (one_row.strategy.col, one_row.strategy.width) == (0, 2)
+    assert (one_row.strategy.start, one_row.strategy.width) == (0, 2)
     for rule in both:
         sanity_check(rule, 4)
 
@@ -1074,7 +1076,7 @@ def test_a_slide_is_an_identity_when_the_requirements_and_assumptions_are_symmet
     rules = [
         slide_rule
         for slide_rule in slides(tiling)
-        if (slide_rule.strategy.col, slide_rule.strategy.width) == (1, 2)
+        if (slide_rule.strategy.start, slide_rule.strategy.width) == (1, 2)
     ]
     assert bool(rules) == (not identity)
     for rule in rules:

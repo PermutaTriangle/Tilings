@@ -24,14 +24,14 @@ _INVERSE = TilingInverse()
 
 class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     """
-    The Knuth slide of the block of width columns starting at column col, or with
-    transpose, of the block of width rows starting at row col (the slide of the
+    The Knuth slide of the block of width columns starting at column start, or with
+    transpose, of the block of width rows starting at row start (the slide of the
     inverse tiling's columns).
     """
 
-    def __init__(self, col: int, width: int, transpose: bool = False) -> None:
+    def __init__(self, start: int, width: int, transpose: bool = False) -> None:
         super().__init__(possibly_empty=False)
-        self.col = col
+        self.start = start
         self.width = width
         self.transpose = transpose
 
@@ -41,22 +41,22 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
         slide = KnuthSlide(self._inverse_if_transposed(comb_class))
-        reason = slide.why_not(self.col, self.width)
+        reason = slide.why_not(self.start, self.width)
         if reason is not None:
             raise StrategyDoesNotApply(f"no Knuth slide: {reason}")
-        return (self._inverse_if_transposed(slide.slide(self.col, self.width)),)
+        return (self._inverse_if_transposed(slide.slide(self.start, self.width)),)
 
     def _map(self, comb_class: Tiling, gridded_perm: GriddedPerm) -> GriddedPerm:
         if not self.transpose:
-            return KnuthSlide.slide_gridded_perm(gridded_perm, self.col, self.width)
+            return KnuthSlide.slide_gridded_perm(gridded_perm, self.start, self.width)
         image = KnuthSlide.slide_gridded_perm(
-            _INVERSE.gp_transform(comb_class, gridded_perm), self.col, self.width
+            _INVERSE.gp_transform(comb_class, gridded_perm), self.start, self.width
         )
         return _INVERSE.inverse_gp_transform(comb_class, image)
 
     def _mirror(self, comb_class: Tiling, gridded_perm: GriddedPerm) -> GriddedPerm:
         """A requirement's or an assumption's point with the block mirrored."""
-        mirror = KnuthSlide.mirror(self.col, self.width)
+        mirror = KnuthSlide.mirror(self.start, self.width)
         if not self.transpose:
             return gridded_perm.apply_map(mirror)
         image = _INVERSE.gp_transform(comb_class, gridded_perm).apply_map(mirror)
@@ -101,7 +101,7 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
     def formal_step(self) -> str:
         kind = "rows" if self.transpose else "columns"
-        return f"Knuth slide of the {self.width} {kind} from {kind[:-1]} {self.col}"
+        return f"Knuth slide of the {self.width} {kind} from {kind[:-1]} {self.start}"
 
     def to_jsonable(self) -> dict:
         d: dict = super().to_jsonable()
@@ -109,18 +109,18 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         d.pop("inferrable")
         d.pop("possibly_empty")
         d.pop("workable")
-        d["col"] = self.col
+        d["start"] = self.start
         d["width"] = self.width
         d["transpose"] = self.transpose
         return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "KnuthSlideStrategy":
-        return cls(d["col"], d["width"], d["transpose"])
+        return cls(d["start"], d["width"], d["transpose"])
 
     def __repr__(self) -> str:
         return (
-            f"{self.__class__.__name__}(col={self.col}, width={self.width}, "
+            f"{self.__class__.__name__}(start={self.start}, width={self.width}, "
             f"transpose={self.transpose})"
         )
 
