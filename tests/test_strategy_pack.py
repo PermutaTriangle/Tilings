@@ -116,7 +116,7 @@ packs.extend(
     + [pack.add_initial(AssumptionAndPointJumpingFactory()) for pack in packs]
     + [pack.add_rotational_cuts() for pack in packs]
     + [
-        pack.add_extension_placement(DIR_NORTH, 3)
+        pack.add_extension_placement((DIR_NORTH,), 3)
         for pack in packs
         if strat.RequirementPlacementFactory() not in pack  # only_root_placements'
     ]

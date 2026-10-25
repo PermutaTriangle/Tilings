@@ -13,7 +13,7 @@ from permuta.permutils import (
     is_insertion_encodable_rightmost,
 )
 from tilings import Tiling
-from tilings.hints import hints_for
+from tilings.hints import hints_for, one_point_extension_chain
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
 
@@ -90,7 +90,33 @@ def build_pack(args: argparse.Namespace) -> TileScopePack:
         pack = pack.make_elementary()
     if getattr(args, "rotational_cuts", False):  # callers' own namespaces may lack it
         pack = pack.add_rotational_cuts()
+    if getattr(args, "extension_placement", False):
+        pack = add_extension_placement(pack, args.basis)
     return pack
+
+
+def add_extension_placement(pack: TileScopePack, basis: str) -> TileScopePack:
+    """
+    Return the pack with the partial placements and obstruction inferral that the
+    one-point extension hint for the basis asks for (tilings.hints), or exit with an
+    error if the basis is not every one-point extension of a basis in one direction,
+    or the pack cannot take them.
+    """
+    chain = one_point_extension_chain(
+        Perm.to_standard(pattern) for pattern in basis.split("_")
+    )
+    if not chain:
+        parser.error(
+            "The basis is not every one-point extension of a basis in one "
+            "direction, so --extension-placement does not apply."
+        )
+    directions = tuple(dict.fromkeys(direction for direction, _ in chain))
+    try:
+        return pack.add_extension_placement(
+            directions, max(len(pattern) for pattern in chain[0][1])
+        )
+    except ValueError as error:
+        parser.error(f"--extension-placement does not go with this pack: {error}")
 
 
 def search_spec(args):
@@ -167,6 +193,13 @@ parser_tree.add_argument(
     "--rotational-cuts",
     action="store_true",
     help="Adds the rotational cuts to the pack, for classes closed under rotation.",
+)
+parser_tree.add_argument(
+    "-x",
+    "--extension-placement",
+    action="store_true",
+    help="Adds a partial placement and obstruction inferral to the pack, for classes "
+    "whose basis is every one-point extension of a basis in one direction.",
 )
 parser_tree.set_defaults(func=search_spec)
 

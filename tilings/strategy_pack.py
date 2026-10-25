@@ -285,19 +285,21 @@ class TileScopePack(StrategyPack):
         """
         return self.add_initial(strat.RotationalCutFactory(), "rotational_cuts")
 
-    def add_extension_placement(self, direction: int, length: int) -> "TileScopePack":
+    def add_extension_placement(
+        self, directions: Iterable[int], length: int
+    ) -> "TileScopePack":
         """
         Create a new pack by adding the partial placement of a requirement's point
-        furthest in the direction, the topmost point for DIR_NORTH, and obstruction
+        furthest in the directions, the topmost point for DIR_NORTH, and obstruction
         inferral to the length. A class whose basis is every one-point extension in
-        that direction of the patterns of a basis B, the longest of which has that
+        such a direction of the patterns of a basis B, the longest of which has that
         length, goes by them to that point and Av(B) (see tilings.hints). A pack
         that has a requirement placement or obstruction inferral already, as
         only_root_placements' packs have, raises ValueError, as add_expansion and
         add_inferral do.
         """
         return self.add_expansion(
-            [strat.RequirementPlacementFactory(partial=True, dirs=(direction,))],
+            [strat.RequirementPlacementFactory(partial=True, dirs=tuple(directions))],
             name_ext="extension_placement",
         ).add_inferral(strat.ObstructionInferralFactory(length))
 
