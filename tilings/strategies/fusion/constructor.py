@@ -211,8 +211,11 @@ class FusionConstructor(Constructor[Tiling, GriddedPerm]):
                 q *= sympy.var(parent_fuse_parameter)
         if left_vars == 1 and right_vars == 1 and p == q:
             raise NotImplementedError(
-                "Not handled case with no left and right vars, and new fuse "
-                "parameter, or only parent fusion parameter covered entire region"
+                "No equation for a fusion whose two sides are given the same "
+                "value: it has no one-sided parameters, and the parent's fusion "
+                "parameters, if any, cover the whole region. Adding to the parent "
+                "an assumption that tracks one side of the region first makes the "
+                "fusion one-sided."
             )
         subs1 = {**subs}
         subs1[self.fuse_parameter] = q / left_vars
