@@ -289,7 +289,7 @@ class MinimalGriddedPerms:
             self.max_cell_counts[gps] = res
         return res
 
-    _better_bounds = None
+    _better_bounds: Optional[Dict[FrozenSet[Perm], int]] = None
 
     @staticmethod
     def better_bounds() -> Dict[FrozenSet[Perm], int]:
