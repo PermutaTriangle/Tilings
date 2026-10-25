@@ -49,6 +49,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    NamedTuple,
     Optional,
     Sequence,
     Set,
@@ -60,7 +61,6 @@ from tilings.assumptions import TrackingAssumption
 from tilings.griddedperm import GriddedPerm
 
 if TYPE_CHECKING:
-    # pylint: disable=cyclic-import
     from tilings import Tiling
 
 __all__ = [
@@ -76,7 +76,6 @@ __all__ = [
 Cell = Tuple[int, int]
 Tableau = List[List[int]]
 Gridding = Tuple[Perm, Tuple[Cell, ...]]
-WindowKey = Tuple[Tuple[int, ...], Tuple[Cell, ...], int, Tuple[int, ...]]
 
 
 def rsk(word: Sequence[int]) -> Tuple[Tableau, Tableau]:
@@ -207,6 +206,40 @@ def is_shape_closed(patterns: FrozenSet[Perm]) -> bool:
     return is_knuth_closed(patterns) and is_knuth_closed(
         frozenset(pattern.inverse() for pattern in patterns)
     )
+
+
+class _WindowKey(NamedTuple):
+    """What tells a block's windows apart: the pattern of an obstruction's points
+    outside the block and their cells, how many of them lie below its block points,
+    and the rows of the block that its block points span."""
+
+    outside_pattern: Tuple[int, ...]
+    outside_cells: Tuple[Cell, ...]
+    below: int
+    rows: Tuple[int, ...]
+
+
+class _Constraints:
+    """A block's obstructions as window and run constraints, with the patterns that
+    each window and each run of columns sees in the block."""
+
+    def __init__(self) -> None:
+        self.windows: List[Tuple[GriddedPerm, Tuple[int, ...]]] = []
+        self.window_patterns: DefaultDict[_WindowKey, Set[Perm]] = defaultdict(set)
+        self.runs: DefaultDict[Tuple[int, int], List[GriddedPerm]] = defaultdict(list)
+        self.run_patterns: DefaultDict[Tuple[int, int], Set[Perm]] = defaultdict(set)
+
+    def add_window(
+        self, obstruction: GriddedPerm, key: _WindowKey, pattern: Perm
+    ) -> None:
+        self.windows.append((obstruction, key.rows))
+        self.window_patterns[key].add(pattern)
+
+    def add_run(
+        self, obstruction: GriddedPerm, span: Tuple[int, int], pattern: Perm
+    ) -> None:
+        self.runs[span].append(obstruction)
+        self.run_patterns[span].add(pattern)
 
 
 class _Analysis:
@@ -370,11 +403,25 @@ class KnuthSlide:
     def _analysis(self, column: int, width: int) -> _Analysis:
         key = (column, width)
         if key not in self._analyses:
-            self._analyses[key] = self._analyse(column, width)
+            self._analyses[key] = self._analyze(column, width)
         return self._analyses[key]
 
-    # pylint: disable=too-many-locals,too-many-branches,too-many-return-statements
-    def _analyse(self, column: int, width: int) -> _Analysis:
+    def _analyze(self, column: int, width: int) -> _Analysis:
+        """Decide whether the block slides, choosing as the proof does. No
+        obstruction with points in the block may be contradictory, and each is the
+        first of these that it can be:
+        - a run constraint of its column: it lies in one column of the block, and
+          every regridding there is forbidden, as it is when the block has one row;
+        - a window constraint: no other point of it lies between its block points
+          in value, and every regridding of them over the block's columns, in the
+          rows they span, is forbidden;
+        - a run constraint of the columns it spans: it lies in the block, and every
+          regridding over those columns is forbidden.
+        A run whose patterns are not determined by the RSK shape gives the windows
+        those of its obstructions that are window constraints. Then the patterns of
+        each run must be determined by the shape, those of each window must be
+        closed under Knuth moves, and the requirements and assumptions must be on
+        whole columns or whole rows of the block."""
         block_columns = tuple(range(column, column + width))
         rows = self._rows_of_column.get(column, tuple())
         if (
@@ -386,10 +433,40 @@ class KnuthSlide:
         if not self._reduced:
             return _Analysis("the tiling has an empty row or column")
         block = frozenset((x, y) for x in block_columns for y in rows)
-        window_groups: DefaultDict[WindowKey, Set[Perm]] = defaultdict(set)
-        window: List[Tuple[GriddedPerm, Tuple[int, ...]]] = []
-        run_groups: DefaultDict[Tuple[int, int], Set[Perm]] = defaultdict(set)
-        run: DefaultDict[Tuple[int, int], List[GriddedPerm]] = defaultdict(list)
+        constraints = _Constraints()
+        reason = (
+            self._classify(constraints, block_columns, rows, block)
+            or self._closure(constraints, block_columns, rows, block)
+            or self._requirements_and_assumptions(block_columns, rows, block)
+        )
+        if reason is not None:
+            return _Analysis(reason)
+        last = 2 * column + width - 1
+        identity = all(
+            patterns == constraints.run_patterns.get((last - high, last - low), set())
+            for (low, high), patterns in constraints.run_patterns.items()
+        ) and self._symmetric(column, width)
+        return _Analysis(
+            None,
+            rows,
+            constraints.windows,
+            [
+                (obstruction, span)
+                for span, obstructions in constraints.runs.items()
+                for obstruction in obstructions
+            ],
+            identity,
+        )
+
+    def _classify(
+        self,
+        constraints: _Constraints,
+        block_columns: Tuple[int, ...],
+        rows: Tuple[int, ...],
+        block: FrozenSet[Cell],
+    ) -> Optional[str]:
+        """Put each obstruction with points in the block into the constraints, as
+        _analyze says, or return why one does not fit."""
         for obstruction in self._tiling.obstructions:
             indices = _block_indices(obstruction, block)
             if not indices:
@@ -397,9 +474,7 @@ class KnuthSlide:
             # a gridding no gridded permutation has: it may be all that keeps a cell
             # of the block active, and it has no regriddings to keep it in the child
             if obstruction.contradictory():
-                return _Analysis(
-                    "an obstruction with points in the block is contradictory"
-                )
+                return "an obstruction with points in the block is contradictory"
             obstruction_columns = {obstruction.pos[i][0] for i in indices}
             low, high = min(obstruction_columns), max(obstruction_columns)
             inside = len(indices) == len(obstruction)
@@ -410,73 +485,79 @@ class KnuthSlide:
                     len(rows) == 1 or self._complete(obstruction, indices, (low,), rows)
                 )
             ):
-                run_groups[(low, low)].add(_pattern(obstruction, indices))
-                run[(low, low)].append(obstruction)
+                constraints.add_run(
+                    obstruction, (low, low), _pattern(obstruction, indices)
+                )
                 continue
-            window_key = self._window_key(obstruction, indices, rows)
-            if window_key is not None and self._complete(
-                obstruction, indices, block_columns, window_key[3]
-            ):
-                window_groups[window_key].add(_pattern(obstruction, indices))
-                window.append((obstruction, window_key[3]))
-                continue
-            if (
+            window_key = self._window(obstruction, indices, block_columns, rows)
+            if window_key is not None:
+                constraints.add_window(
+                    obstruction, window_key, _pattern(obstruction, indices)
+                )
+            elif (
                 inside
                 and low < high
                 and self._complete(
                     obstruction, indices, tuple(range(low, high + 1)), rows
                 )
             ):
-                run_groups[(low, high)].add(_pattern(obstruction, indices))
-                run[(low, high)].append(obstruction)
+                constraints.add_run(
+                    obstruction, (low, high), _pattern(obstruction, indices)
+                )
+            else:
+                return "an obstruction depends on how the block's points are split"
+        return None
+
+    def _closure(
+        self,
+        constraints: _Constraints,
+        block_columns: Tuple[int, ...],
+        rows: Tuple[int, ...],
+        block: FrozenSet[Cell],
+    ) -> Optional[str]:
+        """Return why the patterns of a run are not determined by the RSK shape, once
+        the run has given the windows its window constraints, or why those of a
+        window are not closed under Knuth moves; None if neither."""
+        for span, patterns in list(constraints.run_patterns.items()):
+            if is_shape_closed(frozenset(patterns)):
                 continue
-            return _Analysis(
-                "an obstruction depends on how the block's points are split"
-            )
-        for span in list(run_groups):
-            if is_shape_closed(frozenset(run_groups[span])):
-                continue
-            # what is not shape-closed in a column may still be a window constraint
             kept: List[GriddedPerm] = []
-            for obstruction in run[span]:
+            for obstruction in constraints.runs[span]:
                 indices = _block_indices(obstruction, block)
-                window_key = self._window_key(obstruction, indices, rows)
-                if window_key is not None and self._complete(
-                    obstruction, indices, block_columns, window_key[3]
-                ):
-                    window_groups[window_key].add(_pattern(obstruction, indices))
-                    window.append((obstruction, window_key[3]))
-                else:
+                window_key = self._window(obstruction, indices, block_columns, rows)
+                if window_key is None:
                     kept.append(obstruction)
-            run[span] = kept
-            run_groups[span] = {
+                else:
+                    constraints.add_window(
+                        obstruction, window_key, _pattern(obstruction, indices)
+                    )
+            constraints.runs[span] = kept
+            constraints.run_patterns[span] = {
                 _pattern(obstruction, _block_indices(obstruction, block))
                 for obstruction in kept
             }
-            if not is_shape_closed(frozenset(run_groups[span])):
-                return _Analysis("a run's patterns are not determined by the RSK shape")
-        for patterns in window_groups.values():
+            if not is_shape_closed(frozenset(constraints.run_patterns[span])):
+                return "a run's patterns are not determined by the RSK shape"
+        for patterns in constraints.window_patterns.values():
             if not is_knuth_closed(frozenset(patterns)):
-                return _Analysis("a window's patterns are not closed under Knuth moves")
-        reason = self._requirements_and_assumptions(block_columns, rows, block)
-        if reason is not None:
-            return _Analysis(reason)
-        last = 2 * column + width - 1
-        identity = all(
-            patterns == run_groups.get((last - high, last - low), set())
-            for (low, high), patterns in run_groups.items()
-        ) and self._symmetric(column, width)
-        return _Analysis(
-            None,
-            rows,
-            window,
-            [
-                (obstruction, span)
-                for span, obstructions in run.items()
-                for obstruction in obstructions
-            ],
-            identity,
-        )
+                return "a window's patterns are not closed under Knuth moves"
+        return None
+
+    def _window(
+        self,
+        obstruction: GriddedPerm,
+        indices: Sequence[int],
+        block_columns: Tuple[int, ...],
+        rows: Tuple[int, ...],
+    ) -> Optional[_WindowKey]:
+        """The window key of the obstruction if it is a window constraint, and None
+        if it is not."""
+        window_key = self._window_key(obstruction, indices, rows)
+        if window_key is None or not self._complete(
+            obstruction, indices, block_columns, window_key.rows
+        ):
+            return None
+        return window_key
 
     def _symmetric(self, column: int, width: int) -> bool:
         """Are the requirements and assumptions the same with the block mirrored?"""
@@ -543,7 +624,7 @@ class KnuthSlide:
     @staticmethod
     def _window_key(
         obstruction: GriddedPerm, indices: Sequence[int], rows: Tuple[int, ...]
-    ) -> Optional[WindowKey]:
+    ) -> Optional[_WindowKey]:
         """The obstruction's points outside the block, how many of them lie below
         the block points, and the block rows its block points span; None if a point
         outside lies between two block points in value."""
@@ -557,7 +638,7 @@ class KnuthSlide:
         below = sum(1 for i in rest if obstruction.patt[i] < low)
         block_rows = [obstruction.pos[i][1] for i in indices]
         lowest, highest = min(block_rows), max(block_rows)
-        return (
+        return _WindowKey(
             outside,
             tuple(obstruction.pos[i] for i in rest),
             below,
