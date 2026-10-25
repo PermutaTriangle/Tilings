@@ -43,6 +43,7 @@ from functools import lru_cache
 from itertools import combinations_with_replacement
 from typing import (
     TYPE_CHECKING,
+    Callable,
     DefaultDict,
     Dict,
     FrozenSet,
@@ -174,15 +175,6 @@ def _knuth_neighbours(perm: Perm) -> Iterator[Perm]:
             yield Perm(word[:i] + [second, first] + word[i + 2 :])
 
 
-def _containers(pattern: Perm) -> Set[Perm]:
-    """The pattern itself and the permutations one entry longer that contain it."""
-    containers = {pattern}
-    for index in range(len(pattern) + 1):
-        for value in range(len(pattern) + 1):
-            containers.add(pattern.insert(index, value))
-    return containers
-
-
 @lru_cache(maxsize=1 << 16)
 def is_knuth_closed(patterns: FrozenSet[Perm]) -> bool:
     """Return True if the permutations avoiding every pattern in patts are closed
@@ -193,7 +185,7 @@ def is_knuth_closed(patterns: FrozenSet[Perm]) -> bool:
     return not any(
         neighbour.avoids(*basis)
         for pattern in basis
-        for container in _containers(pattern)
+        for container in (pattern, *pattern.coveredby())
         for neighbour in _knuth_neighbours(container)
     )
 
@@ -358,18 +350,31 @@ class KnuthSlide:
                     analysis.rows,
                 )
             )
+        mirror = self.mirror(column, width)
         requirements = [
-            [mirror_gp(gridded_perm, column, width) for gridded_perm in requirement]
+            [gridded_perm.apply_map(mirror) for gridded_perm in requirement]
             for requirement in self._tiling.requirements
         ]
         assumptions = [
             assumption.__class__(
-                mirror_gp(gridded_perm, column, width)
-                for gridded_perm in assumption.gps
+                gridded_perm.apply_map(mirror) for gridded_perm in assumption.gps
             )
             for assumption in self._tiling.assumptions
         ]
         return self._tiling.__class__(obstructions, requirements, assumptions)
+
+    @staticmethod
+    def mirror(column: int, width: int) -> Callable[[Cell], Cell]:
+        """Return the map of cells that mirrors the columns of the block of the width
+        from the column, and keeps every other cell: with GriddedPerm.apply_map, it
+        mirrors a requirement's or an assumption's point."""
+        last = column + width - 1
+
+        def mirrored(cell: Cell) -> Cell:
+            x, y = cell
+            return (column + last - x, y) if column <= x <= last else cell
+
+        return mirrored
 
     @staticmethod
     def slide_gp(gridded_perm: GriddedPerm, column: int, width: int) -> GriddedPerm:
@@ -486,13 +491,17 @@ class KnuthSlide:
                 )
             ):
                 constraints.add_run(
-                    obstruction, (low, low), _pattern(obstruction, indices)
+                    obstruction,
+                    (low, low),
+                    obstruction.get_gridded_perm_in_cells(block).patt,
                 )
                 continue
             window_key = self._window(obstruction, indices, block_columns, rows)
             if window_key is not None:
                 constraints.add_window(
-                    obstruction, window_key, _pattern(obstruction, indices)
+                    obstruction,
+                    window_key,
+                    obstruction.get_gridded_perm_in_cells(block).patt,
                 )
             elif (
                 inside
@@ -502,7 +511,9 @@ class KnuthSlide:
                 )
             ):
                 constraints.add_run(
-                    obstruction, (low, high), _pattern(obstruction, indices)
+                    obstruction,
+                    (low, high),
+                    obstruction.get_gridded_perm_in_cells(block).patt,
                 )
             else:
                 return "an obstruction depends on how the block's points are split"
@@ -529,11 +540,13 @@ class KnuthSlide:
                     kept.append(obstruction)
                 else:
                     constraints.add_window(
-                        obstruction, window_key, _pattern(obstruction, indices)
+                        obstruction,
+                        window_key,
+                        obstruction.get_gridded_perm_in_cells(block).patt,
                     )
             constraints.runs[span] = kept
             constraints.run_patterns[span] = {
-                _pattern(obstruction, _block_indices(obstruction, block))
+                obstruction.get_gridded_perm_in_cells(block).patt
                 for obstruction in kept
             }
             if not is_shape_closed(frozenset(constraints.run_patterns[span])):
@@ -561,23 +574,19 @@ class KnuthSlide:
 
     def _symmetric(self, column: int, width: int) -> bool:
         """Are the requirements and assumptions the same with the block mirrored?"""
+        mirror = self.mirror(column, width)
         requirements = {
             frozenset(requirement) for requirement in self._tiling.requirements
         }
         mirrored_requirements = {
-            frozenset(
-                mirror_gp(gridded_perm, column, width) for gridded_perm in requirement
-            )
+            frozenset(gridded_perm.apply_map(mirror) for gridded_perm in requirement)
             for requirement in self._tiling.requirements
         }
         assumptions = {
             frozenset(assumption.gps) for assumption in self._tiling.assumptions
         }
         mirrored_assumptions = {
-            frozenset(
-                mirror_gp(gridded_perm, column, width)
-                for gridded_perm in assumption.gps
-            )
+            frozenset(gridded_perm.apply_map(mirror) for gridded_perm in assumption.gps)
             for assumption in self._tiling.assumptions
         }
         return (
@@ -714,20 +723,6 @@ def _lines(cells: Iterable[Cell]) -> Dict[int, Tuple[int, ...]]:
     return {x: tuple(sorted(column_rows)) for x, column_rows in rows.items()}
 
 
-def mirror_gp(gridded_perm: GriddedPerm, column: int, width: int) -> GriddedPerm:
-    """Mirror the block's columns in a gridded permutation with at most one point
-    in the block (a requirement's or an assumption's point)."""
-    if not any(column <= x < column + width for x, _ in gridded_perm.pos):
-        return gridded_perm
-    return GriddedPerm(
-        gridded_perm.patt,
-        (
-            (2 * column + width - 1 - x, y) if column <= x < column + width else (x, y)
-            for x, y in gridded_perm.pos
-        ),
-    )
-
-
 def _columns_or_rows(
     cells: Set[Cell], columns: Tuple[int, ...], rows: Tuple[int, ...]
 ) -> bool:
@@ -741,7 +736,3 @@ def _columns_or_rows(
 
 def _block_indices(gridded_perm: GriddedPerm, block: FrozenSet[Cell]) -> List[int]:
     return [i for i, cell in enumerate(gridded_perm.pos) if cell in block]
-
-
-def _pattern(gridded_perm: GriddedPerm, indices: Iterable[int]) -> Perm:
-    return Perm.to_standard([gridded_perm.patt[i] for i in indices])

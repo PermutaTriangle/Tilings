@@ -13,13 +13,13 @@ from comb_spec_searcher.strategies.strategy import (
     StrategyFactory,
 )
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms.knuth_slide import KnuthSlide, mirror_gp
+from tilings.algorithms.knuth_slide import KnuthSlide
+from tilings.strategies.symmetry import TilingInverse
 
 __all__ = ["KnuthSlideFactory", "KnuthSlideStrategy"]
 
-
-def _flip(cell: Tuple[int, int]) -> Tuple[int, int]:
-    return (cell[1], cell[0])
+# the inverse's maps of gridded permutations, for the slides of blocks of rows
+_INVERSE = TilingInverse()
 
 
 class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
@@ -45,13 +45,21 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             raise StrategyDoesNotApply(f"no Knuth slide: {reason}")
         return (self._frame(slide.slide(self.col, self.width)),)
 
-    def _map(self, gridded_perm: GriddedPerm) -> GriddedPerm:
-        if self.transpose:
-            image = KnuthSlide.slide_gp(
-                gridded_perm.inverse(_flip), self.col, self.width
-            )
-            return image.inverse(_flip)
-        return KnuthSlide.slide_gp(gridded_perm, self.col, self.width)
+    def _map(self, comb_class: Tiling, gridded_perm: GriddedPerm) -> GriddedPerm:
+        if not self.transpose:
+            return KnuthSlide.slide_gp(gridded_perm, self.col, self.width)
+        image = KnuthSlide.slide_gp(
+            _INVERSE.gp_transform(comb_class, gridded_perm), self.col, self.width
+        )
+        return _INVERSE.inverse_gp_transform(comb_class, image)
+
+    def _mirror(self, comb_class: Tiling, gridded_perm: GriddedPerm) -> GriddedPerm:
+        """A requirement's or an assumption's point with the block mirrored."""
+        mirror = KnuthSlide.mirror(self.col, self.width)
+        if not self.transpose:
+            return gridded_perm.apply_map(mirror)
+        image = _INVERSE.gp_transform(comb_class, gridded_perm).apply_map(mirror)
+        return _INVERSE.inverse_gp_transform(comb_class, image)
 
     def forward_map(
         self,
@@ -59,7 +67,7 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         obj: GriddedPerm,
         children: Optional[Tuple[Tiling, ...]] = None,
     ) -> Tuple[GriddedPerm]:
-        return (self._map(obj),)
+        return (self._map(comb_class, obj),)
 
     def backward_map(
         self,
@@ -69,7 +77,9 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     ) -> Iterator[GriddedPerm]:
         # the slide is an involution
         yield from (
-            self._map(gridded_perm) for gridded_perm in objs if gridded_perm is not None
+            self._map(comb_class, gridded_perm)
+            for gridded_perm in objs
+            if gridded_perm is not None
         )
 
     def extra_parameters(
@@ -80,23 +90,19 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         if children is None:
             children = self.decomposition_function(comb_class)
         child = children[0]
-        mapped = {}
-        for assumption in comb_class.assumptions:
-            gridded_perms = (
-                (gridded_perm.inverse(_flip) for gridded_perm in assumption.gps)
-                if self.transpose
-                else assumption.gps
-            )
-            image = (
-                mirror_gp(gridded_perm, self.col, self.width)
-                for gridded_perm in gridded_perms
-            )
-            if self.transpose:
-                image = (gridded_perm.inverse(_flip) for gridded_perm in image)
-            mapped[comb_class.get_assumption_parameter(assumption)] = (
-                child.get_assumption_parameter(assumption.__class__(image))
-            )
-        return (mapped,)
+        return (
+            {
+                comb_class.get_assumption_parameter(
+                    assumption
+                ): child.get_assumption_parameter(
+                    assumption.__class__(
+                        self._mirror(comb_class, gridded_perm)
+                        for gridded_perm in assumption.gps
+                    )
+                )
+                for assumption in comb_class.assumptions
+            },
+        )
 
     def formal_step(self) -> str:
         kind = "rows" if self.transpose else "columns"
