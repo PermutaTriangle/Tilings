@@ -1,5 +1,5 @@
 import pytest
-from sympy import Derivative, Eq, Function, Lambda, cancel, expand, var
+from sympy import Eq, Function, Lambda, cancel, expand, var
 
 from comb_spec_searcher.strategies import Rule
 from tilings import GriddedPerm, Tiling
@@ -363,7 +363,8 @@ def eq_equality(e1, e2):
 
 def test_fusion_gfs():
     """The equations of fusions whose two sides are given different values. Those
-    whose sides are given the same value are in test_fusion_derivative_equation."""
+    whose sides are given the same value have none
+    (test_fusion_with_both_sides_the_same_value)."""
     x = var("x")
     k_0 = var("k_0")
     k_1 = var("k_1")
@@ -545,53 +546,6 @@ def test_indexed_backward_map():
     )
 
 
-@pytest.mark.parametrize(
-    "case",
-    [
-        "untracked",
-        "tracked",
-        "left positive",
-        "left positive, tracked",
-        "both positive",
-        "both positive, tracked",
-    ],
-)
-def test_fusion_derivative_equation(case):
-    """The equations of fusions whose two sides are given the same value: the
-    derivative F(q) + q F'(q) of the divided difference, less F(q) for each side
-    that must hold a point."""
-    x, k_0 = var("x"), var("k_0")
-    F1 = Function("F1")(x, k_0)
-    at_one = F1.subs({k_0: 1})
-    slope_at_one = Derivative(F1, k_0).subs({k_0: 1})
-    region = {"track_left": True, "track_right": True, "same_tracking": True}
-    fusable, tracked, expected = {
-        "untracked": ({}, False, at_one + slope_at_one),
-        "tracked": (region, True, F1 + k_0 * Derivative(F1, k_0)),
-        "left positive": ({"pos_left": True}, False, slope_at_one),
-        "left positive, tracked": (
-            {"pos_left": True, **region},
-            True,
-            k_0 * Derivative(F1, k_0),
-        ),
-        "both positive": (
-            {"pos_left": True, "pos_right": True},
-            False,
-            slope_at_one - at_one,
-        ),
-        "both positive, tracked": (
-            {"pos_left": True, "pos_right": True, **region},
-            True,
-            k_0 * Derivative(F1, k_0) - F1,
-        ),
-    }[case]
-    rules = list(FusionFactory()(easy_fusable(**fusable)))
-    assert len(rules) == 1
-    F0 = Function("F0")(x, k_0) if tracked else Function("F0")(x)
-    actual_eq = rules[0].constructor.get_equation(F0, (F1,))
-    assert eq_equality(actual_eq, Eq(F0, expected))
-
-
 def column_fusion(tiling):
     """The rule fusing the tiling's columns 0 and 1."""
     rules = [
@@ -644,17 +598,6 @@ def equation_gives_the_parent(rule, largest=4):
     )
 
 
-@pytest.mark.parametrize("track_region", [False, True])
-def test_fusion_derivative_beside_a_tracked_cell(track_region):
-    """The parent tracks a cell (2, 0) beside the fused region, and the region too
-    or not. The child's fuse parameter can have the name of the parent's parameter
-    of (2, 0), which the child's parameter of (2, 0) is given: the equation must
-    differentiate in the fuse parameter alone."""
-    region = {"track_left": True, "track_right": True, "same_tracking": True}
-    tiling = easy_fusable(tracked_beyond=[[(2, 0)]], **(region if track_region else {}))
-    assert equation_gives_the_parent(column_fusion(tiling))
-
-
 @pytest.mark.parametrize("side", [(0, 0), (1, 0)], ids=["left", "right"])
 def test_fusion_one_sided_beyond_the_region(side):
     """One parameter of the parent tracks a side of the region, the left cell or
@@ -665,29 +608,14 @@ def test_fusion_one_sided_beyond_the_region(side):
     assert equation_gives_the_parent(column_fusion(tiling))
 
 
-def test_fusion_derivative_beside_eleven_tracked_cells():
-    """The pair of easy_fusable beside eleven tracked cells of at most one point
-    each, so that the child's parameters k_1 to k_11 are given the parent's k_0
-    to k_10. Substituting them one at a time, in sympy's order of their names,
-    which puts k_10 before k_9, would give k_10's place the parent's k_8: the
-    child's parameters must be substituted simultaneously."""
-    beside = [(column, 0) for column in range(2, 13)]
-    tiling = Tiling(
-        obstructions=[
-            GriddedPerm.single_cell((0, 1), (0, 0)),
-            GriddedPerm((0, 1), ((0, 0), (1, 0))),
-            GriddedPerm.single_cell((0, 1), (1, 0)),
-        ]
-        + [
-            GriddedPerm.single_cell(patt, cell)
-            for cell in beside
-            for patt in ((0, 1), (1, 0))
-        ],
-        assumptions=[
-            TrackingAssumption([GriddedPerm.single_cell((0,), cell)]) for cell in beside
-        ],
-    )
-    assert equation_gives_the_parent(column_fusion(tiling), largest=2)
+def test_fusion_both_sides_tracked_beside_a_tracked_cell():
+    """The parent tracks the two sides of the region apart, k_0 and k_1, and a cell
+    (2, 0) beside it, k_2, which the child's k_1 is given while its k_0 is given the
+    sides' values: substituting one name at a time would give k_0's place the value
+    of k_1 and then that of k_2, so the child's parameters must be substituted
+    simultaneously."""
+    tiling = easy_fusable(track_left=True, track_right=True, tracked_beyond=[[(2, 0)]])
+    assert equation_gives_the_parent(column_fusion(tiling))
 
 
 TRACKINGS = {
@@ -710,20 +638,36 @@ POSITIVES = {
 }
 
 
-@pytest.mark.parametrize("tracking", TRACKINGS)
+SAME_VALUE = ("untracked", "both tracked together")  # both sides given the same value
+
+
+@pytest.mark.parametrize(
+    "tracking", [name for name in TRACKINGS if name not in SAME_VALUE]
+)
 @pytest.mark.parametrize("positive", POSITIVES)
 def test_fusion_equation_counts(tracking, positive):
-    """The equation of each of easy_fusable's fusions, of both kinds, against the
-    objects."""
+    """The equation of each of easy_fusable's fusions with a one-sided parameter,
+    against the objects."""
     tiling = easy_fusable(**TRACKINGS[tracking], **POSITIVES[positive])
     assert equation_gives_the_parent(column_fusion(tiling))
+
+
+@pytest.mark.parametrize("tracking", SAME_VALUE)
+@pytest.mark.parametrize("positive", POSITIVES)
+def test_fusion_with_both_sides_the_same_value(tracking, positive):
+    """A fusion whose two sides are given the same value, its parent untracked or
+    tracking the whole region, has no equation, and the error says so."""
+    tiling = easy_fusable(**TRACKINGS[tracking], **POSITIVES[positive])
+    with pytest.raises(NotImplementedError, match="given the same value"):
+        equation_gives_the_parent(column_fusion(tiling))
 
 
 @pytest.mark.parametrize(
     "fusion",
     ["row_fusion", "col_fusion", "component_row_fusion", "component_col_fusion"],
 )
-def test_fusion_equation_counts_of_fixtures(request, fusion):
-    """The equations of the fusions of small_tiling, whose fused rows and columns
-    have two cells each, and of the component fusions, against the objects."""
-    assert equation_gives_the_parent(request.getfixturevalue(fusion))
+def test_fusion_of_fixtures_with_both_sides_the_same_value(request, fusion):
+    """The fusions of small_tiling, whose fused rows and columns have two cells
+    each, and the component fusions, their parents untracked, have no equation."""
+    with pytest.raises(NotImplementedError, match="given the same value"):
+        equation_gives_the_parent(request.getfixturevalue(fusion))
