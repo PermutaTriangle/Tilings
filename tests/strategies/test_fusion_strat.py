@@ -547,12 +547,13 @@ def test_indexed_backward_map():
 
 
 def column_fusion(tiling):
-    """The rule fusing the tiling's columns 0 and 1."""
-    rules = [
-        rule
-        for rule in FusionFactory()(tiling)
-        if rule.formal_step == "fuse columns 0 and 1"
-    ]
+    """The rule fusing the tiling's columns 0 and 1. On a tiling of one row and two
+    columns it is the only rule FusionFactory makes; a tiling with a third column has
+    another fusion too."""
+    rules = list(FusionFactory()(tiling))
+    if tiling.dimensions == (2, 1):
+        assert len(rules) == 1
+    rules = [rule for rule in rules if rule.formal_step == "fuse columns 0 and 1"]
     assert len(rules) == 1
     return rules[0]
 
@@ -671,3 +672,20 @@ def test_fusion_of_fixtures_with_both_sides_the_same_value(request, fusion):
     each, and the component fusions, their parents untracked, have no equation."""
     with pytest.raises(NotImplementedError, match="given the same value"):
         equation_gives_the_parent(request.getfixturevalue(fusion))
+
+
+@pytest.mark.parametrize(
+    "positive",
+    [{"pos_left": True}, {"pos_right": True}, {"pos_left": True, "pos_right": True}],
+    ids=["left positive", "right positive", "both positive"],
+)
+def test_fusion_both_sides_tracked_beside_a_tracked_cell_with_a_positive_side(
+    positive,
+):
+    """As test_fusion_both_sides_tracked_beside_a_tracked_cell, with a positive
+    side, so that the equation also subtracts the child with one side empty, whose
+    parameters must be substituted simultaneously too."""
+    tiling = easy_fusable(
+        track_left=True, track_right=True, tracked_beyond=[[(2, 0)]], **positive
+    )
+    assert equation_gives_the_parent(column_fusion(tiling))
