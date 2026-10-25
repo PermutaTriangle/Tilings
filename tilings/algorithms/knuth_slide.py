@@ -394,6 +394,12 @@ class KnuthSlide:
             indices = _block_indices(obstruction, block)
             if not indices:
                 continue
+            # a gridding no gridded permutation has: it may be all that keeps a cell
+            # of the block active, and it has no regriddings to keep it in the child
+            if obstruction.contradictory():
+                return _Analysis(
+                    "an obstruction with points in the block is contradictory"
+                )
             obstruction_columns = {obstruction.pos[i][0] for i in indices}
             low, high = min(obstruction_columns), max(obstruction_columns)
             inside = len(indices) == len(obstruction)
@@ -593,37 +599,23 @@ class KnuthSlide:
         return self._forbidden[gridding]
 
 
-def _regriddings(  # pylint: disable=too-many-locals
+def _regriddings(
     obstruction: GriddedPerm,
     indices: Sequence[int],
     columns: Tuple[int, ...],
     rows: Tuple[int, ...],
 ) -> Iterator[Gridding]:
-    """Every valid gridding, as (pattern, cells), with the obstruction's pattern and
-    cells outside the block, and its block points (idx, consecutive in position) in
-    the cells cols x rows."""
+    """Every regridding, as (pattern, cells), of the obstruction's block points, at
+    the indices and consecutive in position, over the cells of the columns and rows,
+    in the order of their positions and of their values; the other points keep their
+    cells. Each is a valid gridding when the obstruction is not contradictory and
+    each of its other points is below all its block points in value and in a row no
+    higher than any of the rows, or above them all and in a row no lower: as a
+    window's obstructions are, over the rows their block points span, and a run's,
+    which have no other points."""
     pattern = obstruction.patt
-    inside = set(indices)
-    rest = [i for i in range(len(obstruction)) if i not in inside]
     by_value = sorted(indices, key=lambda i: pattern[i])
-    lowest = {
-        i: max(
-            (obstruction.pos[j][1] for j in rest if pattern[j] < pattern[i]), default=-1
-        )
-        for i in indices
-    }
-    highest = {
-        i: min(
-            (obstruction.pos[j][1] for j in rest if pattern[j] > pattern[i]),
-            default=len(pattern) + max(rows) + 1,
-        )
-        for i in indices
-    }
-    row_choices = [
-        row_sequence
-        for row_sequence in combinations_with_replacement(rows, len(indices))
-        if all(lowest[i] <= y <= highest[i] for i, y in zip(by_value, row_sequence))
-    ]
+    row_choices = list(combinations_with_replacement(rows, len(indices)))
     for column_sequence in combinations_with_replacement(columns, len(indices)):
         for row_sequence in row_choices:
             positions = list(obstruction.pos)

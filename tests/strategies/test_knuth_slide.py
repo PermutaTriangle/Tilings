@@ -1034,3 +1034,29 @@ def test_the_parameters_of_a_strategy_without_its_children():
     assert str(rule.strategy) == "Knuth slide of the 2 columns from column 0"
     (transposed,) = slides(babson_west.inverse())
     assert str(transposed.strategy) == "Knuth slide of the 2 rows from row 0"
+
+
+def test_a_contradictory_obstruction_does_not_give_a_wrong_slide():
+    """Tilings keeps an obstruction that no gridding can have: here the 10 from cell
+    (0, 0) to cell (2, 1), whose higher value is on the left but in the lower row.
+    It is all that keeps the free cell (0, 0) active, and it has no regriddings, so
+    the child of the slide of the first two columns would lose a column: the slide
+    refuses the block, and the factory offers no rule."""
+    tiling = Tiling(
+        [
+            GriddedPerm(Perm((0, 1)), [(1, 0), (1, 0)]),
+            GriddedPerm(Perm((1, 0)), [(1, 0), (1, 0)]),
+            GriddedPerm(Perm((1, 0)), [(0, 0), (2, 1)]),
+            GriddedPerm(Perm((1, 0)), [(2, 1), (2, 1)]),
+        ]
+    )
+    assert [
+        obstruction
+        for obstruction in tiling.obstructions
+        if obstruction.contradictory()
+    ]
+    assert (
+        KnuthSlide(tiling).why_not(0, 2)
+        == "an obstruction with points in the block is contradictory"
+    )
+    assert not slides(tiling)
