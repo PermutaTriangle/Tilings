@@ -9,7 +9,11 @@ from comb_spec_searcher.rule_db import RuleDBForest
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms.knuth_slide import KnuthSlide, rsk
-from tilings.assumptions import SumComponentAssumption, TrackingAssumption
+from tilings.assumptions import (
+    SkewComponentAssumption,
+    SumComponentAssumption,
+    TrackingAssumption,
+)
 from tilings.strategies import KnuthSlideFactory
 from tilings.strategies.knuth_slide import KnuthSlideStrategy
 from tilings.strategies.monotone_sliding import MonotoneSlidingFactory
@@ -577,3 +581,456 @@ def test_a_specification_of_transposed_slides():
     assert [again.count_objects_of_size(size) for size in range(9)] == expected
     assert spec.random_sample_object_of_size(7).patt.avoids(Perm((0, 3, 2, 1)))
     spec.sanity_check(4)
+
+
+def pair_above_a_column(height, mirrored=False):
+    """Babson and West's pair in row height, with a column of height cells at its
+    right, so that the pair is not in the lowest row. With mirrored, the pair's cells
+    have changed places: the child of the slide."""
+    cells = [(0, height), (1, height)]
+    avoids_21, avoids_321 = reversed(cells) if mirrored else cells
+    unused = [(x, y) for x in (0, 1) for y in range(height)] + [(2, height)]
+    obstructions = (
+        cell(avoids_21, "21")
+        + cell(avoids_321, "321")
+        + [GriddedPerm(Perm((2, 1, 0)), sorted([avoids_21, avoids_321, avoids_321]))]
+        + [GriddedPerm((0,), (unused_cell,)) for unused_cell in unused]
+    )
+    for row in range(height):
+        obstructions += cell((2, row), "21")
+    return Tiling(obstructions)
+
+
+@pytest.mark.parametrize("height", [2, 3])
+def test_a_block_above_other_rows_slides_like_one_in_the_lowest_row(height):
+    """The row bound of a regridding is open above when no point of the obstruction
+    lies above the block points, however high the block's row and however short the
+    obstruction: Av(21) in a cell of row 2 has two points, and the regridding of its
+    own points to the other cell must still be there."""
+    parent = pair_above_a_column(height)
+    (rule,) = slides(parent)
+    assert not rule.strategy.transpose
+    assert rule.children[0] == pair_above_a_column(height, mirrored=True)
+    assert_bijection(parent, rule.children[0], rule.strategy, 5)
+    sanity_check(rule, 5)
+
+
+def point_with_windows(above, below):
+    """A point, and to its right the pair; the pair's word, when it lies above the
+    point, avoids the patterns above, and when it lies below the point, the patterns
+    below. The point is first in every word, being in the leftmost column."""
+    point, x_cell, y_cell = (0, 0), (1, 0), (2, 0)
+    obstructions = cell(point, "12", "21") + cell(x_cell, "21") + cell(y_cell, "321")
+    for pattern in above:
+        word = Perm((0,) + tuple(value + 1 for value in Perm.to_standard(pattern)))
+        for choice in combinations_with_replacement([x_cell, y_cell], len(pattern)):
+            obstructions.append(GriddedPerm(word, (point,) + choice))
+    for pattern in below:
+        block = Perm.to_standard(pattern)
+        word = Perm((len(block),) + tuple(block))
+        for choice in combinations_with_replacement([x_cell, y_cell], len(pattern)):
+            obstructions.append(GriddedPerm(word, (point,) + choice))
+    return Tiling(obstructions, [[GriddedPerm((0,), (point,))]])
+
+
+def test_the_windows_above_and_below_a_point_are_closed_on_their_own():
+    """Av(132) when the pair lies above the point and Av(312) when it lies below:
+    {132, 312} is closed under Knuth moves, but neither pattern alone is, and a
+    window is one of the patterns the block sees for one position of the other
+    points among its values, so the slide must refuse."""
+    tiling = point_with_windows(above=["132"], below=["312"])
+    assert not any(obstruction.contradictory() for obstruction in tiling.obstructions)
+    assert (
+        KnuthSlide(tiling).why_not(1, 2)
+        == "a window's patterns are not closed under Knuth moves"
+    )
+    assert not slides(tiling)
+
+
+def split_by_outside_cell():
+    """Two cells at the left of the pair, one below the other. A point of the lower
+    one may not lie above and to the left of a point of the pair, whichever its
+    column; a point of the upper one may not lie so to a point of the pair's first
+    column, but may to one of its second. The two obstructions have the same pattern
+    and the same cell for the pair's point: they differ in the cell outside the block
+    only."""
+    lower, upper, x_cell, y_cell = (0, 0), (0, 1), (1, 0), (2, 0)
+    above = Perm((1, 0))
+    return Tiling(
+        [GriddedPerm((0,), (unused_cell,)) for unused_cell in [(1, 1), (2, 1)]]
+        + cell(x_cell, "21")
+        + cell(y_cell, "321")
+        + [
+            GriddedPerm(above, (lower, x_cell)),
+            GriddedPerm(above, (lower, y_cell)),
+            GriddedPerm(above, (upper, x_cell)),
+        ]
+    )
+
+
+def test_each_family_of_regriddings_is_complete_on_its_own():
+    """Whether every regridding of an obstruction's block points is forbidden depends
+    on the cells outside the block, not only on the pattern and the block's cells:
+    the family of the lower cell is complete, that of the upper cell is not."""
+    tiling = split_by_outside_cell()
+    assert (
+        KnuthSlide(tiling).why_not(1, 2)
+        == "an obstruction depends on how the block's points are split"
+    )
+    assert not slides(tiling)
+    assert counts(tiling, 5) != counts(naive_one_row_slide(tiling, 1, 2), 5)
+
+
+def test_a_cell_closed_under_knuth_moves_but_not_the_shape_stops_the_slide():
+    """Av(132, 312) in the first cell is closed under Knuth moves, not determined by
+    the shape; the second cell lacks it, so it is not a window either, and the slide
+    must refuse for the run's patterns, not accept it as a window. The naive slide
+    changes the counts."""
+    tiling = Tiling(
+        cell(LEFT, "132", "312")
+        + cell(RIGHT, "21")
+        + list(griddings("1234", [LEFT, RIGHT]))
+    )
+    assert (
+        KnuthSlide(tiling).why_not(0, 2)
+        == "a run's patterns are not determined by the RSK shape"
+    )
+    assert not slides(tiling)
+    assert counts(tiling, 6) != counts(naive_one_row_slide(tiling, 0, 2), 6)
+
+
+def test_an_outside_point_between_the_blocks_values_is_not_a_window():
+    """102 with its first point outside the block, in every regridding of the other
+    two over the block's columns: the outside value lies between the block's, so the
+    slide must refuse. The naive slide changes the counts (at size 5)."""
+    outside, x_cell, y_cell = (0, 0), (1, 0), (2, 0)
+    between = [
+        GriddedPerm(Perm((1, 0, 2)), (outside,) + pair)
+        for pair in combinations_with_replacement([x_cell, y_cell], 2)
+    ]
+    tiling = Tiling(cell(y_cell, "231") + between)
+    assert tiling.dimensions == (3, 1)
+    assert (
+        KnuthSlide(tiling).why_not(1, 2)
+        == "an obstruction depends on how the block's points are split"
+    )
+    assert not slides(tiling)
+    assert counts(tiling, 5) != counts(naive_one_row_slide(tiling, 1, 2), 5)
+
+
+def point_at(cell_):
+    return GriddedPerm((0,), (cell_,))
+
+
+OUTSIDE, TOP_OF_FIRST = (0, 0), (1, 1)
+
+
+def ferrers_with(requirements=(), assumptions=()):
+    """Babson and West's picture with a short column at the left (block: columns 1
+    and 2, rows 0 and 1; the cell (0, 0) outside it)."""
+    return Tiling(two_rows(1, [(0, 0)]).obstructions, requirements, assumptions)
+
+
+@pytest.mark.parametrize(
+    "requirements, assumptions, reason",
+    [
+        (
+            [[point_at(OUTSIDE), point_at(TOP_OF_FIRST)]],
+            [],
+            "a requirement is on part of a column of the block",
+        ),
+        (
+            [],
+            [TrackingAssumption([point_at(OUTSIDE), point_at(TOP_OF_FIRST)])],
+            "an assumption covers part of the block's columns and rows",
+        ),
+        (
+            [],
+            [SkewComponentAssumption([point_at(OUTSIDE), point_at(TOP_OF_FIRST)])],
+            "an assumption that does not count points covers the block",
+        ),
+        (
+            [],
+            [
+                TrackingAssumption([point_at(OUTSIDE)]),
+                TrackingAssumption([point_at(TOP_OF_FIRST)]),
+            ],
+            "an assumption covers part of the block's columns and rows",
+        ),
+    ],
+    ids=[
+        "requirement starting outside the block",
+        "assumption starting outside the block",
+        "component assumption starting outside the block",
+        "assumption after one with no point in the block",
+    ],
+)
+def test_every_point_and_every_assumption_is_checked(requirements, assumptions, reason):
+    """The check reads all the points of a requirement or an assumption, and all the
+    assumptions: what is wrong with the block is not hidden behind a point outside it
+    that comes first, or an assumption with no point in the block."""
+    tiling = ferrers_with(requirements, assumptions)
+    assert KnuthSlide(tiling).why_not(1, 2) == reason
+    assert not [
+        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.transpose
+    ]
+
+
+@pytest.mark.parametrize(
+    "requirements, assumptions",
+    [
+        ([[point_at((1, 1)), point_at((2, 1))]], []),
+        ([], [TrackingAssumption([point_at((1, 1)), point_at((2, 1))])]),
+    ],
+    ids=["requirement on a row of the block", "assumption on a row of the block"],
+)
+def test_a_requirement_or_an_assumption_on_a_whole_row_of_the_block_slides(
+    requirements, assumptions
+):
+    """The top row of the block, which the mirror takes to itself: the slide is
+    accepted, and the parameter of the assumption is kept."""
+    tiling = ferrers_with(requirements, assumptions)
+    (rule,) = [
+        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.transpose
+    ]
+    assert rule.children[0].requirements == tiling.requirements
+    assert rule.children[0].assumptions == tiling.assumptions
+    sanity_check(rule, 5)
+
+
+@pytest.mark.parametrize(
+    "tiling", [babson_west, babson_west.inverse()], ids=["columns", "rows"]
+)
+def test_a_strategy_rebuilds_the_child_of_its_rule(tiling):
+    """Applied to the tiling alone, as when a specification is read from JSON, a
+    strategy gives back its rule's child, whether it slides columns or rows."""
+    (rule,) = slides(tiling)
+    assert rule.strategy.decomposition_function(tiling) == rule.children
+    assert rule.strategy(tiling).children == rule.children
+
+
+def pair_and_ferrers_block():
+    """Babson and West's pair in columns 0 and 1, in the lowest row, and next to it a
+    block of two columns and two rows (everything avoids 321, and column 2 avoids
+    21)."""
+    cells = [(0, 0), (1, 0), (2, 0), (2, 1), (3, 0), (3, 1)]
+    return Tiling(
+        list(griddings("321", cells))
+        + cell((0, 0), "21")
+        + list(griddings("21", [(2, 0), (2, 1)]))
+        + [GriddedPerm((0,), (unused_cell,)) for unused_cell in [(0, 1), (1, 1)]]
+    )
+
+
+def test_rows_false_leaves_out_the_blocks_of_several_rows():
+    """With rows False the factory offers the slide of the pair in one row, and not
+    that of the block of two rows next to it, which it offers by default."""
+    tiling = pair_and_ferrers_block()
+    both = slides(tiling)
+    assert {(rule.strategy.col, rule.strategy.width) for rule in both} == {
+        (0, 2),
+        (2, 2),
+    }
+    assert not any(rule.strategy.transpose for rule in both)
+    (one_row,) = slides(tiling, rows=False)
+    assert (one_row.strategy.col, one_row.strategy.width) == (0, 2)
+    for rule in both:
+        sanity_check(rule, 4)
+
+
+def columns_of_cells(*rows_of_column):
+    """A tiling of decreasing cells: column i has one in each row of rows_of_column[i],
+    and the other cells of the column are empty."""
+    height = max(y for rows in rows_of_column for y in rows) + 1
+    obstructions = []
+    for x, rows in enumerate(rows_of_column):
+        for y in range(height):
+            if y in rows:
+                obstructions += cell((x, y), "12")
+            else:
+                obstructions.append(GriddedPerm((0,), ((x, y),)))
+    return Tiling(obstructions)
+
+
+BLOCKS_TILING = columns_of_cells((0,), (0,), (0,), (0,), (0, 1), (0, 1), (1,), (1,))
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected",
+    [
+        ({}, [(0, 2), (1, 2), (2, 2), (0, 3), (1, 3), (4, 2), (6, 2)]),
+        (
+            {"max_width": 4},
+            [(0, 2), (1, 2), (2, 2), (0, 3), (1, 3), (0, 4), (4, 2), (6, 2)],
+        ),
+        ({"max_width": 2}, [(0, 2), (1, 2), (2, 2), (4, 2), (6, 2)]),
+        ({"rows": False}, [(0, 2), (1, 2), (2, 2), (0, 3), (1, 3), (6, 2)]),
+    ],
+    ids=["default", "max_width 4", "max_width 2", "rows False"],
+)
+def test_the_blocks_of_a_tiling(kwargs, expected):
+    """Runs of adjacent columns with the same rows of cells, of 2 to max_width
+    columns; with rows False, only those within one row. A run ends where the rows
+    change and at the last column."""
+    assert sorted(KnuthSlide(BLOCKS_TILING).blocks(**kwargs)) == sorted(expected)
+
+
+@pytest.mark.parametrize(
+    "tiling",
+    [
+        BLOCKS_TILING,
+        columns_of_cells((0,), (1,), (0,), (1,)),
+        columns_of_cells((0, 1), (0, 1)),
+        columns_of_cells((0,), (0, 1), (1,)),
+        babson_west,
+        two_rows(1, [(0, 0), (3, 1)]),
+    ],
+    ids=[
+        "blocks",
+        "none",
+        "one block of two rows",
+        "no equal neighbors",
+        "pair",
+        "ferrers",
+    ],
+)
+@pytest.mark.parametrize("transpose", [False, True])
+@pytest.mark.parametrize("rows", [False, True])
+def test_has_blocks_says_whether_there_are_blocks(tiling, transpose, rows):
+    """The cheap test agrees with the blocks, for columns and for rows."""
+    frame = tiling.inverse() if transpose else tiling
+    assert KnuthSlide.has_blocks(tiling, transpose, rows) == bool(
+        list(KnuthSlide(frame).blocks(2, rows))
+    )
+    if not transpose and rows:
+        assert KnuthSlide.has_blocks(tiling) == KnuthSlide.has_blocks(
+            tiling, False, True
+        )
+    assert KnuthSlide.has_blocks(tiling) == bool(list(KnuthSlide(tiling).blocks()))
+
+
+@pytest.mark.parametrize(
+    "tiling",
+    [Tiling(), Tiling.from_string("1"), Tiling([GriddedPerm.empty_perm()])],
+    ids=["a free cell", "Av(1)", "the empty tiling"],
+)
+def test_a_tiling_of_one_cell_has_nothing_to_slide(tiling):
+    assert tiling.dimensions == (1, 1)
+    assert not slides(tiling)
+    assert not list(KnuthSlide(tiling).blocks())
+    assert not KnuthSlide.has_blocks(tiling) and not KnuthSlide.has_blocks(tiling, True)
+
+
+@pytest.mark.parametrize("max_width, rules", [(0, 0), (1, 0), (2, 1), (10, 1)])
+def test_the_largest_width_of_a_block(max_width, rules):
+    """A pair of columns slides when blocks of two columns are allowed, whether or not
+    the limit is larger than the tiling is wide."""
+    assert len(slides(babson_west, max_width=max_width)) == rules
+
+
+def test_columns_that_are_not_a_block():
+    """A block is two or more adjacent columns with the same rows of active cells."""
+    knuth = KnuthSlide(two_rows(1, [(0, 0)]))
+    for column, width in [(0, 0), (0, 1), (0, 2), (0, 3), (2, 2), (3, 2)]:
+        assert knuth.why_not(column, width) == "the columns are not a block"
+    with pytest.raises(ValueError, match="the block does not slide"):
+        knuth.slide(0, 2)
+
+
+def test_cells_that_are_windows_slide_though_the_shape_does_not_close_them():
+    """Av(132, 312) in both cells jointly, in every gridding of the pair. Each cell's
+    patterns, {132, 312}, are closed under Knuth moves but not determined by the
+    shape; as the constraints are windows, with complete families, the block slides."""
+    both = list(griddings("132", [LEFT, RIGHT])) + list(griddings("312", [LEFT, RIGHT]))
+    tiling = Tiling(both + cell(RIGHT, "321"))
+    (rule,) = slides(tiling)
+    assert rule.children[0] == Tiling(both + cell(LEFT, "321"))
+    assert_bijection(tiling, rule.children[0], rule.strategy, 5)
+    sanity_check(rule, 5)
+
+
+def test_windows_with_different_points_outside_are_closed_on_their_own():
+    """Two points in a cell at the left of the pair, below the pair's points: Av(132)
+    when they form a 12, Av(312) when they form a 21. {132, 312} is closed under Knuth
+    moves, but each pattern alone is not: the windows are told apart by the pattern
+    of the points outside. The naive slide changes the counts."""
+    outside, x_cell, y_cell = (0, 0), (1, 0), (2, 0)
+    obstructions = cell(outside, "123") + cell(x_cell, "21") + cell(y_cell, "321")
+    for outside_pattern, block_pattern in [("12", "132"), ("21", "312")]:
+        pattern = Perm(
+            tuple(Perm.to_standard(outside_pattern))
+            + tuple(value + 2 for value in Perm.to_standard(block_pattern))
+        )
+        for choice in combinations_with_replacement([x_cell, y_cell], 3):
+            obstructions.append(GriddedPerm(pattern, (outside, outside) + choice))
+    tiling = Tiling(obstructions)
+    assert (
+        KnuthSlide(tiling).why_not(1, 2)
+        == "a window's patterns are not closed under Knuth moves"
+    )
+    assert not slides(tiling)
+    assert counts(tiling, 6) != counts(naive_one_row_slide(tiling, 1, 2), 6)
+
+
+FRONT, FIRST, SECOND = (0, 0), (1, 0), (2, 0)
+
+
+@pytest.mark.parametrize(
+    "requirements, assumptions, identity",
+    [
+        ([], [], True),
+        ([[point_at(FIRST)]], [], False),
+        ([[point_at(FIRST), point_at(SECOND)]], [], True),
+        ([], [TrackingAssumption([point_at(FIRST)])], False),
+        ([], [TrackingAssumption([point_at(FIRST), point_at(SECOND)])], True),
+    ],
+    ids=[
+        "twins",
+        "requirement on one",
+        "requirement on both",
+        "assumption on one",
+        "assumption on both",
+    ],
+)
+def test_a_slide_is_an_identity_when_the_requirements_and_assumptions_are_symmetric(
+    requirements, assumptions, identity
+):
+    """Two identical cells, with a cell in front of them, so that the block does not
+    start at column 0: the slide is the identity exactly when its requirements and
+    assumptions are the same with the block mirrored; otherwise it gives a rule."""
+    tiling = Tiling(
+        cell(FRONT, "12")
+        + cell(FIRST, "21")
+        + cell(SECOND, "21")
+        + list(griddings("21", [FIRST, SECOND])),
+        requirements,
+        assumptions,
+    )
+    knuth = KnuthSlide(tiling)
+    assert knuth.why_not(1, 2) is None
+    assert knuth.is_identity(1, 2) == identity
+    rules = [
+        slide_rule
+        for slide_rule in slides(tiling)
+        if (slide_rule.strategy.col, slide_rule.strategy.width) == (1, 2)
+    ]
+    assert bool(rules) == (not identity)
+    for rule in rules:
+        assert rule.children[0] != tiling
+        sanity_check(rule, 4)
+
+
+def test_the_parameters_of_a_strategy_without_its_children():
+    """The strategy maps the parent's parameters to the child's, whether or not it is
+    given the child, and it reads as its step."""
+    tiling = Tiling(
+        babson_west.obstructions, [], [TrackingAssumption([point_at(LEFT)])]
+    )
+    (rule,) = slides(tiling)
+    assert rule.strategy.extra_parameters(tiling) == ({"k_0": "k_0"},)
+    assert rule.strategy.extra_parameters(tiling, rule.children) == ({"k_0": "k_0"},)
+    assert rule.strategy.extra_parameters(babson_west) == ({},)
+    assert not KnuthSlideStrategy(0, 2).transpose
+    assert str(rule.strategy) == "Knuth slide of the 2 columns from column 0"
+    (transposed,) = slides(babson_west.inverse())
+    assert str(transposed.strategy) == "Knuth slide of the 2 rows from row 0"

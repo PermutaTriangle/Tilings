@@ -140,3 +140,69 @@ def test_shape_closure():
     assert is_knuth_closed(basis("132", "312"))
     assert not is_shape_closed(basis("132", "312"))
     assert is_knuth_closed(frozenset()) and is_shape_closed(frozenset())
+
+
+def knuth_class_moves(word):
+    """The words one elementary Knuth move from word, as Knuth stated them: for
+    x < y < z, y z x <-> y x z and x z y <-> z x y. Written from that statement, not
+    from the module under test."""
+    for i in range(len(word) - 2):
+        triple = tuple(word[i : i + 3])
+        low, middle, high = sorted(triple)
+        for one, other in [
+            ((middle, high, low), (middle, low, high)),
+            ((low, high, middle), (high, low, middle)),
+        ]:
+            for before, after in [(one, other), (other, one)]:
+                if triple == before:
+                    yield tuple(word[:i]) + after + tuple(word[i + 3 :])
+
+
+@pytest.mark.parametrize("size", range(8))
+def test_the_insertion_tableau_identifies_the_knuth_classes(size):
+    """Knuth's theorem: two permutations are Knuth equivalent exactly when their
+    insertion tableaux are equal. The classes are found here by the moves alone, and
+    compared with the fibers of rsk's first tableau."""
+    by_tableau = defaultdict(set)
+    for perm in permutations(range(size)):
+        by_tableau[tuple(map(tuple, rsk(perm)[0]))].add(perm)
+    seen = set()
+    for start in permutations(range(size)):
+        if start in seen:
+            continue
+        component, frontier = {start}, [start]
+        while frontier:
+            for neighbor in knuth_class_moves(frontier.pop()):
+                if neighbor not in component:
+                    component.add(neighbor)
+                    frontier.append(neighbor)
+        seen |= component
+        assert component == by_tableau[tuple(map(tuple, rsk(start)[0]))]
+
+
+def test_knuth_closure_of_unions_of_knuth_classes():
+    """Most sets of patterns are not closed, so the brute force above mostly agrees on
+    the answer False for patterns of four letters. Unions of Knuth classes are often
+    closed: the answers True are compared too."""
+    classes = {}
+    for size in (3, 4):
+        by_tableau = defaultdict(list)
+        for perm in permutations(range(size)):
+            by_tableau[tuple(map(tuple, rsk(perm)[0]))].append(Perm(perm))
+        classes[size] = list(by_tableau.values())
+    generator = random.Random(2027)
+    closed = 0
+    for _ in range(60):
+        basis = [
+            perm
+            for size in (3, 4)
+            for knuth_class in generator.sample(classes[size], generator.randint(0, 2))
+            for perm in knuth_class
+        ]
+        if not basis:
+            continue
+        length = max(len(pattern) for pattern in basis) + 1
+        expected = brute_force_knuth_closed(basis, length)
+        assert is_knuth_closed(frozenset(basis)) == expected, basis
+        closed += expected
+    assert closed >= 10
