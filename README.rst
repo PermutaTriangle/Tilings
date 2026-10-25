@@ -265,6 +265,25 @@ about it!
 The ``point_placements`` argument above is a strategy pack, which we explain in
 more detail in the ``StrategyPacks`` section.
 
+For some classes ``tilescope spec`` first gives a hint, such as a simpler class
+to search for instead. A class closed under rotation, where a rotation moves a
+permutation's first entry to its end, such as Av(1234, 2341, 3412, 4123), has n
+times as many permutations of length n as a smaller class, its cut, has of length
+n - 1, here Av(123, 3412). The hint names that class:
+
+.. code:: bash
+
+       tilescope spec 123_3412 point_placements
+
+Or the rotational cuts can be added to the pack, to cut such classes wherever the
+search meets them:
+
+.. code:: bash
+
+       tilescope spec 1234_2341_3412_4123 point_placements --rotational-cuts
+
+The hints are also available in Python, from ``tilings.hints``.
+
 The tilescope module
 --------------------
 TileScope can be imported in a interactive Python session from
