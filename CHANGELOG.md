@@ -7,30 +7,29 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- `RotationalCutFactory` and `RotationalCutStrategy`: a 1x1 tiling whose class is
-  closed under rotation (its basis is rotationally stable), or under the cyclic
-  shift of the values, has n times as many permutations of length n as its min
-  cut, {p : 1 + p in the class}, or its max cut, {p : p + 1 in the class}, has of
-  length n - 1. The strategy adds the rule to each cut, with the new
-  `RotationalCutConstructor`.
+- The rotational cut. A class closed under rotation, where a rotation is the
+  cyclic shift that moves a permutation's first entry to its end (not
+  `Perm.rotate`), or closed under the same shift of its values, has n times as many
+  permutations of length n as its cut has of length n - 1. Its min cut is the
+  permutations p for which the class has 1 followed by p raised by one, and its max
+  cut those for which it has p followed by a new maximum. `RotationalCutFactory`
+  and `RotationalCutStrategy` give the rule from the class to each cut, a
+  `RotationalCutRule` with the `RotationalCutConstructor`, and
+  `tilings.strategies.rotation` has `is_rotationally_stable`, `rotation_kind`,
+  `min_cut`, `max_cut` and `max_cut_differs`.
 - `TileScopePack.add_rotational_cuts`, which adds `RotationalCutFactory` to a pack,
   and the flag `--rotational-cuts` of `tilescope spec`, which does the same.
-- `tilings.hints`: hints, properties of a class that make it likely that a
-  change to a pack helps the search. The first: a class closed under rotation,
-  for which the rotational cuts help. `tilescope spec` tells the user of the
-  hints that the pack it runs does not follow.
-- The hint `one-point extension`: a class whose basis is every one-point
-  extension of a basis B in one direction, every way of adding a new maximum,
-  minimum, leftmost or rightmost point to its patterns, has n times as many
-  permutations of length n as Av(B) has of length n - 1, and a partial placement
-  of the point furthest in that direction, with obstruction inferral to the length
-  of B's longest pattern, turns it into that point and Av(B).
-  `tilings.hints.one_point_extensions` and `one_point_extension` make and find
-  such bases.
-- `TileScopePack.add_extension_placement(direction, length)`, which adds that
-  partial placement and obstruction inferral to a pack, and the flag
-  `--extension-placement` of `tilescope spec`, which adds them for the class's
-  direction and length.
+- `tilings.hints`: `hints_for(basis)` gives the hints (`Hint`) for a class, a
+  property that makes a simpler class, or a change to the pack, likely to help.
+  The first is a class closed under rotation, for which it names the class to
+  search for instead: the cut, cut again while it is closed under rotation.
+  `tilescope spec` tells the user of the hints that the pack it runs does not
+  follow.
+
+### Fixed
+- `tilescope spec` says when it cannot compute the generating function of the
+  specification it found, as for one with a rotational cut or with catalytic
+  variables, rather than ending with an error.
 
 ## [4.1.0] - 2026-01-15
 ### Changed

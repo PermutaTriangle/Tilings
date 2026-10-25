@@ -1,193 +1,140 @@
 """
-Hints: properties of a permutation class that make it likely that a change to a
-strategy pack helps TileScope find a specification for it. Permuta's enumeration
-strategies settle a class's count when one applies; a hint only says what is worth
-adding to the pack, and why. `tilescope spec` tells the user of the hints that the
-pack it runs does not follow.
+Hints: properties of a permutation class that make it likely that a simpler class,
+or a change to a strategy pack, helps TileScope find a specification for it.
+Permuta's enumeration strategies settle a class's count when one applies; a hint
+only says what is worth doing, and why. `tilescope spec` tells the user of the
+hints that the pack it runs does not follow.
 
 The first hint: a class closed under rotation, of its positions or of its values,
-has n times as many permutations of length n as each of its cuts has of length
-n - 1, and the rotational cut strategies use that (TileScopePack.add_rotational_cuts,
-or --rotational-cuts on the command line).
-
-The second: a class whose basis is every one-point extension of the patterns of a
-basis B in one direction, every way of adding to each a new maximum, say, is the
-permutations whose maximum, taken out, leaves a permutation of Av(B). It has n
-times as many permutations of length n as Av(B) has of length n - 1, and a partial
-placement of the topmost point, with obstruction inferral to the length of B's
-longest pattern, turns it into that point and Av(B)
-(TileScopePack.add_extension_placement, or --extension-placement).
+has n times as many permutations of length n as its cut has of length n - 1, and
+the cut can be closed under rotation again. The rotation of a permutation is here
+the cyclic shift that moves its first entry to the end. The hint names the class to
+search for instead, the cut cut again while it is closed under rotation, whose
+generating function gives the class's; or the rotational cuts can be added to the
+pack (TileScopePack.add_rotational_cuts, or --rotational-cuts on the command line),
+which cut every such tiling the search finds.
 """
 
-from typing import Iterable, List, NamedTuple, Optional, Set, Tuple
+from typing import Iterable, List, NamedTuple, Optional, Tuple
 
+from comb_spec_searcher import StrategyPack
+from comb_spec_searcher.typing import CSSstrategy
 from permuta import Av, Perm
-from permuta.misc import DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST
 from permuta.perm_sets.basis import Basis
-from tilings.strategies.rotation import max_cut, min_cut, rotation_of
+from tilings.strategies.rotation import (
+    RotationalCutFactory,
+    max_cut,
+    max_cut_differs,
+    min_cut,
+    rotation_kind,
+)
 
-__all__ = ["Hint", "hints", "one_point_extension", "one_point_extensions"]
-
-# For each direction, in the order one_point_extension tries them: the point a
-# one-point extension adds, that point once added, the point the placement places,
-# and the direction's name.
-EXTENSION_WORDS = {
-    DIR_NORTH: ("a new maximum", "maximum", "topmost point", "DIR_NORTH"),
-    DIR_SOUTH: ("a new minimum", "minimum", "bottommost point", "DIR_SOUTH"),
-    DIR_WEST: ("a new leftmost point", "leftmost point", "leftmost point", "DIR_WEST"),
-    DIR_EAST: (
-        "a new rightmost point",
-        "rightmost point",
-        "rightmost point",
-        "DIR_EAST",
-    ),
-}
+__all__ = ["Hint", "hints_for"]
 
 
 class Hint(NamedTuple):
-    """A hint for a class: its name, what was found and what to do, and the pack
-    method and the 'tilescope spec' flag that follow it."""
+    """A hint for a class: its name, what was found and what to do, and the
+    strategies a pack has when it follows the hint."""
 
     name: str
     message: str
-    pack_method: str
-    cli_flag: str
+    strategies: Tuple[CSSstrategy, ...]
+
+    def followed_by(self, pack: StrategyPack) -> bool:
+        """Return True if the pack has the hint's strategies (a pack holds one
+        strategy of each class, whatever its parameters)."""
+        return all(strategy in pack for strategy in self.strategies)
 
 
-def one_point_extensions(pattern: Perm, direction: int) -> Set[Perm]:
-    """Return every way of adding to the pattern a new point that is its maximum
-    (DIR_NORTH), its minimum (DIR_SOUTH), its leftmost point (DIR_WEST) or its
-    rightmost point (DIR_EAST).
-
-    Examples:
-        >>> sorted(one_point_extensions(Perm((0, 1)), DIR_NORTH))
-        [Perm((0, 1, 2)), Perm((0, 2, 1)), Perm((2, 0, 1))]
-        >>> sorted(one_point_extensions(Perm((0, 1)), DIR_WEST))
-        [Perm((0, 1, 2)), Perm((1, 0, 2)), Perm((2, 0, 1))]
-    """
-    size = len(pattern)
-    if direction == DIR_NORTH:
-        return {pattern.insert(index, size) for index in range(size + 1)}
-    if direction == DIR_SOUTH:
-        return {pattern.insert(index, 0) for index in range(size + 1)}
-    if direction == DIR_WEST:
-        return {pattern.insert(0, value) for value in range(size + 1)}
-    if direction == DIR_EAST:
-        return {pattern.insert(size, value) for value in range(size + 1)}
-    raise ValueError(f"Invalid direction {direction}")
+def _closed_under_rotation(patterns: Basis) -> bool:
+    """Return True if the rotational cut applies to the class of the minimal basis:
+    the class is closed under rotation, and no pattern of the basis is shorter than
+    2."""
+    return (
+        bool(patterns)
+        and all(len(pattern) > 1 for pattern in patterns)
+        and rotation_kind(patterns) is not None
+    )
 
 
-def _without_extreme_point(pattern: Perm, direction: int) -> Perm:
-    """Return the pattern without its point furthest in the direction."""
-    if direction == DIR_NORTH:
-        return pattern.remove(pattern.index(len(pattern) - 1))
-    if direction == DIR_SOUTH:
-        return pattern.remove(pattern.index(0))
-    if direction == DIR_WEST:
-        return pattern.remove(0)
-    return pattern.remove(len(pattern) - 1)
+def _cuts(patterns: Basis) -> List[Basis]:
+    """Return the minimal bases of the class's min cut and, if it is another class,
+    of its max cut."""
+    cuts = [Basis.from_iterable(min_cut(patterns))]
+    if max_cut_differs(patterns):
+        cuts.append(Basis.from_iterable(max_cut(patterns)))
+    return cuts
 
 
-def one_point_extension(
-    basis: Iterable[Perm],
-) -> Optional[Tuple[int, Tuple[Perm, ...]]]:
-    """Return the first direction, of north, south, west and east, in which the
-    basis is every one-point extension (one_point_extensions) of the patterns of a
-    basis B of patterns of length at least 2, with B; None if there is none. The
-    class is then the permutations whose point furthest in that direction, taken
-    out, leaves a permutation of Av(B).
+def _longest_chain_of_cuts(patterns: Basis) -> List[Basis]:
+    """Return the class, its cut, the cut's cut and so on, while each is closed
+    under rotation: of the chains the two cuts begin, the longest, the min cut's when
+    they are as long. Its last class is the one to search for instead."""
+    chains = [
+        _longest_chain_of_cuts(cut) if _closed_under_rotation(cut) else [cut]
+        for cut in _cuts(patterns)
+    ]
+    return [patterns] + max(chains, key=len)
 
-    Examples:
-        >>> one_point_extension(
-        ...     Perm.to_standard(p) for p in ("1234", "1243", "1423", "4123")
-        ... ) == (DIR_NORTH, (Perm((0, 1, 2)),))
-        True
-        >>> one_point_extension([Perm((0, 1, 2))]) is None
-        True
-    """
-    patterns = set(Basis.from_iterable(basis))
-    if not patterns or any(len(pattern) < 3 for pattern in patterns):
+
+def _rotation_hint(patterns: Basis) -> Optional[Hint]:
+    """Return the hint for a class closed under rotation, None for any other."""
+    if not _closed_under_rotation(patterns):
         return None
-    for direction in EXTENSION_WORDS:
-        reduced = {_without_extreme_point(pattern, direction) for pattern in patterns}
-        extended = set().union(
-            *(one_point_extensions(pattern, direction) for pattern in reduced)
+    rotation = rotation_kind(patterns)
+    why = (
+        "its basis is rotationally stable; a rotation moves the first entry to "
+        "the end"
+        if rotation == "positions"
+        else "its inverse basis is rotationally stable; a rotation of the values "
+        "raises each by one, the largest becoming the smallest"
+    )
+    chain = _longest_chain_of_cuts(patterns)
+    cuts = len(chain) - 1
+    end = Av(chain[-1])
+    if cuts == 1 and max_cut_differs(patterns):
+        min_class, max_class = (Av(cut) for cut in _cuts(patterns))
+        counted = f"each of its cuts, {min_class} and {max_class}, has"
+        search = "either"
+    else:
+        counted = f"its cut, {Av(chain[1])}, has"
+        search = str(end)
+    again = ""
+    if cuts > 1:
+        cut_again = "its cut is" if cuts == 2 else f"cut {cuts - 1} more times it is"
+        times = " ".join(["n"] + [f"(n - {index})" for index in range(1, cuts)])
+        again = (
+            f" That cut is closed under rotation too, and {cut_again} {end}: the "
+            f"class has {times} times as many permutations of length n as {end} has "
+            f"of length n - {cuts}."
         )
-        if extended == patterns:
-            return direction, tuple(sorted(reduced))
-    return None
+    return Hint(
+        "rotationally stable",
+        f"The class is closed under rotation of its {rotation} ({why}), so it has n "
+        f"times as many permutations of length n as {counted} of length n - 1."
+        f"{again} Search for {search} instead: its generating function G gives the "
+        "class's, F = 1 + x (x G)', once for each cut. Or add the rotational cuts to "
+        "the pack "
+        "(TileScopePack.add_rotational_cuts, or --rotational-cuts), which cut every "
+        "1x1 tiling closed under rotation that the search finds, though "
+        "comb_spec_searcher cannot compute a generating function through them.",
+        (RotationalCutFactory(),),
+    )
 
 
-def hints(basis: Iterable[Perm]) -> List[Hint]:
+def hints_for(basis: Iterable[Perm]) -> List[Hint]:
     """Return the hints for the class with the basis.
 
     Examples:
-        >>> [hint.name for hint in hints(Perm.to_standard(p) for p in
+        >>> [hint.name for hint in hints_for(Perm.to_standard(p) for p in
         ...     ("1324", "2413", "3241", "4132"))]
         ['rotationally stable']
-        >>> hints([Perm((0, 1, 2)), Perm((2, 3, 0, 1))])
+        >>> hints_for([Perm((0, 1, 2)), Perm((2, 3, 0, 1))])
         []
-        >>> [hint.name for hint in hints(Perm.to_standard(p) for p in
-        ...     ("1234", "1243", "1423", "4123"))]
-        ['one-point extension']
     """
-    patterns = tuple(Basis.from_iterable(basis))
-    out: List[Hint] = []
-    if patterns and all(len(pattern) > 1 for pattern in patterns):
-        rotation = rotation_of(patterns)
-        if rotation is not None:
-            cuts = sorted(
-                {Basis.from_iterable(cut(patterns)) for cut in (min_cut, max_cut)},
-                key=str,
-            )
-            if len(cuts) == 1:
-                counted = f"its cut, {Av(cuts[0])},"
-            else:
-                counted = f"each of its cuts, {Av(cuts[0])} and {Av(cuts[1])},"
-            why = (
-                "its basis is rotationally stable"
-                if rotation == "positions"
-                else "its inverse basis is rotationally stable"
-            )
-            out.append(
-                Hint(
-                    "rotationally stable",
-                    f"The class is closed under rotation of its {rotation} ({why}), "
-                    f"so it has n times as many permutations of length n as "
-                    f"{counted} has of length n - 1. Add the rotational cuts to the "
-                    "pack (TileScopePack.add_rotational_cuts, or --rotational-cuts) "
-                    "to use them, on every 1x1 tiling closed under rotation that "
-                    "the search finds.",
-                    "add_rotational_cuts",
-                    "--rotational-cuts",
-                )
-            )
-    extension_hint = _extension_hint(patterns)
-    if extension_hint is not None:
-        out.append(extension_hint)
-    return out
-
-
-def _extension_hint(patterns: Iterable[Perm]) -> Optional[Hint]:
-    """Return the one-point extension hint for a basis that is one
-    (one_point_extension), None for any other."""
-    extension = one_point_extension(patterns)
-    if extension is None:
-        return None
-    direction, reduced = extension
-    new_point, added, placed, name = EXTENSION_WORDS[direction]
-    length = max(len(pattern) for pattern in reduced)
-    small = Av(Basis(*reduced))
-    return Hint(
-        "one-point extension",
-        f"The basis is every way of adding {new_point} to a pattern of the basis of "
-        f"{small}, so the class is the permutations whose {added}, taken out, "
-        f"leaves a permutation of {small}, and it has n times as many permutations "
-        f"of length n as {small} has of length n - 1. A partial placement of the "
-        f"{placed}, with obstruction inferral to length {length}, turns the class "
-        f"into that point and {small}: add them to the pack "
-        f"(TileScopePack.add_extension_placement({name}, {length}), or "
-        "--extension-placement).",
-        "add_extension_placement",
-        "--extension-placement",
-    )
+    patterns = Basis.from_iterable(basis)
+    found: List[Hint] = []
+    rotation_hint = _rotation_hint(patterns)
+    if rotation_hint is not None:
+        found.append(rotation_hint)
+    return found

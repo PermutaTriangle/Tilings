@@ -5,6 +5,7 @@ from typing import Callable, Dict
 
 from logzero import logger
 
+from comb_spec_searcher.exception import IncorrectGeneratingFunctionError
 from permuta import Perm
 from permuta.misc import DIR_SOUTH, DIR_WEST
 from permuta.permutils import (
@@ -12,7 +13,7 @@ from permuta.permutils import (
     is_insertion_encodable_rightmost,
 )
 from tilings import Tiling
-from tilings.hints import hints, one_point_extension
+from tilings.hints import hints_for
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
 
@@ -89,33 +90,7 @@ def build_pack(args: argparse.Namespace) -> TileScopePack:
         pack = pack.make_elementary()
     if getattr(args, "rotational_cuts", False):  # callers' own namespaces may lack it
         pack = pack.add_rotational_cuts()
-    if getattr(args, "extension_placement", False):
-        pack = add_extension_placement(pack, args.basis)
     return pack
-
-
-def add_extension_placement(pack: TileScopePack, basis: str) -> TileScopePack:
-    """
-    Return the pack with the partial placement and obstruction inferral that the
-    one-point extension hint for the basis asks for (tilings.hints), or exit with an
-    error if the basis is not every one-point extension of a basis in one direction,
-    or the pack cannot take them.
-    """
-    extension = one_point_extension(
-        Perm.to_standard(pattern) for pattern in basis.split("_")
-    )
-    if extension is None:
-        parser.error(
-            "The basis is not every one-point extension of a basis in one "
-            "direction, so --extension-placement does not apply."
-        )
-    direction, reduced = extension
-    try:
-        return pack.add_extension_placement(
-            direction, max(len(pattern) for pattern in reduced)
-        )
-    except ValueError as error:
-        parser.error(f"--extension-placement does not go with this pack: {error}")
 
 
 def search_spec(args):
@@ -124,12 +99,25 @@ def search_spec(args):
     """
     pack = build_pack(args)
     start_class = Tiling.from_string(args.basis)
-    for hint in hints(obstruction.patt for obstruction in start_class.obstructions):
-        if not getattr(args, hint.cli_flag.lstrip("-").replace("-", "_"), False):
+    basis = (obstruction.patt for obstruction in start_class.obstructions)
+    for hint in hints_for(basis):
+        if not hint.followed_by(pack):
             logger.info("Hint: %s", hint.message)
     css = TileScope(start_class, pack)
     spec = css.auto_search(status_update=30)
-    logger.info("The generating function is %s", spec.get_genf())
+    try:
+        genf = spec.get_genf()
+    except (IncorrectGeneratingFunctionError, NotImplementedError) as error:
+        # as for a rotational cut, whose equation has a derivative, or for
+        # catalytic variables
+        logger.info(
+            "The generating function cannot be computed from this specification "
+            "(%s: %s)",
+            type(error).__name__,
+            error,
+        )
+    else:
+        logger.info("The generating function is %s", genf)
     return 0
 
 
@@ -179,13 +167,6 @@ parser_tree.add_argument(
     "--rotational-cuts",
     action="store_true",
     help="Adds the rotational cuts to the pack, for classes closed under rotation.",
-)
-parser_tree.add_argument(
-    "-x",
-    "--extension-placement",
-    action="store_true",
-    help="Adds a partial placement and obstruction inferral to the pack, for classes "
-    "whose basis is every one-point extension of a basis in one direction.",
 )
 parser_tree.set_defaults(func=search_spec)
 
