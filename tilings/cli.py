@@ -5,6 +5,7 @@ from typing import Callable, Dict
 
 from logzero import logger
 
+from comb_spec_searcher.exception import IncorrectGeneratingFunctionError
 from permuta import Perm
 from permuta.misc import DIR_SOUTH, DIR_WEST
 from permuta.permutils import (
@@ -12,7 +13,7 @@ from permuta.permutils import (
     is_insertion_encodable_rightmost,
 )
 from tilings import Tiling
-from tilings.hints import hints
+from tilings.hints import hints_for
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
 
@@ -98,12 +99,25 @@ def search_spec(args):
     """
     pack = build_pack(args)
     start_class = Tiling.from_string(args.basis)
-    for hint in hints(obstruction.patt for obstruction in start_class.obstructions):
-        if not getattr(args, hint.cli_flag.lstrip("-").replace("-", "_"), False):
+    basis = (obstruction.patt for obstruction in start_class.obstructions)
+    for hint in hints_for(basis):
+        if not hint.followed_by(pack):
             logger.info("Hint: %s", hint.message)
     css = TileScope(start_class, pack)
     spec = css.auto_search(status_update=30)
-    logger.info("The generating function is %s", spec.get_genf())
+    try:
+        genf = spec.get_genf()
+    except (IncorrectGeneratingFunctionError, NotImplementedError) as error:
+        # as for a rotational cut, whose equation has a derivative, or for
+        # catalytic variables
+        logger.info(
+            "The generating function cannot be computed from this specification "
+            "(%s: %s)",
+            type(error).__name__,
+            error,
+        )
+    else:
+        logger.info("The generating function is %s", genf)
     return 0
 
 

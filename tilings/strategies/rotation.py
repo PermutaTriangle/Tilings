@@ -1,9 +1,10 @@
 """
 The rotational cut strategy, for a 1x1 tiling whose class is closed under rotation.
 
-The rotation of a permutation is the cyclic shift that moves its first entry to the
-end (Perm.shift_left). A class is closed under rotation when its basis is, that
-is when the basis is rotationally stable. The n rotations of a permutation of
+The rotation of a permutation is here the cyclic shift that moves its first entry to
+the end (Perm.shift_left), not the quarter turn of Perm.rotate. A class is closed
+under rotation when its minimal basis is, that is when the basis is rotationally
+stable. The n rotations of a permutation of
 length n are distinct, and exactly one of them starts with its minimum. So the
 class has n times as many permutations of length n as its min cut,
 {p : 1 + p is in the class}, has of length n - 1. Exactly one of them ends with its
@@ -13,17 +14,23 @@ values, which is a class whose inverse basis is rotationally stable, has the sam
 two cuts and is counted by them in the same way. A cut can be closed under
 rotation again, and the strategy then applies to it too.
 
+A rule to a cut sends the n rotations of 1 + p, or of p + 1, to p, so it is not a
+bijection: RotationalCutRule tells them apart by their index among the rotations, as
+FusionRule does for the objects a fused one splits into.
+
 As generating functions, F(x) = x (x C(x))' for the nonempty permutations of the
 class, where C(x) is the cut's, and F(x) = 1 + x (x C(x))' for the whole class.
 """
 
 from collections import Counter
+from itertools import islice
 from typing import Callable, Iterable, Iterator, List, Optional, Tuple
 
 import sympy
 
 from comb_spec_searcher import Constructor, Strategy, StrategyFactory
 from comb_spec_searcher.exception import StrategyDoesNotApply
+from comb_spec_searcher.strategies.rule import NonBijectiveRule
 from comb_spec_searcher.typing import (
     Parameters,
     RelianceProfile,
@@ -34,16 +41,20 @@ from comb_spec_searcher.typing import (
     Terms,
 )
 from permuta import Perm
+from permuta.perm_sets.basis import Basis
+from permuta.permutils import inverse_set
 from tilings import GriddedPerm, Tiling
 
 __all__ = [
     "RotationalCutConstructor",
     "RotationalCutFactory",
+    "RotationalCutRule",
     "RotationalCutStrategy",
     "is_rotationally_stable",
     "max_cut",
+    "max_cut_differs",
     "min_cut",
-    "rotation_of",
+    "rotation_kind",
 ]
 
 CUTS = ("min", "max")
@@ -51,8 +62,9 @@ ROTATIONS = ("positions", "values")
 
 
 def is_rotationally_stable(basis: Iterable[Perm]) -> bool:
-    """Return True if the basis is closed under rotation. The class it is the basis
-    of is then closed under rotation too.
+    """Return True if the minimal basis of the class with the basis is closed under
+    rotation, so that the class is closed under rotation too. A pattern that contains
+    another of the basis is left out first.
 
     Examples:
         >>> is_rotationally_stable([Perm((0, 1, 2)), Perm((1, 2, 0)), Perm((2, 0, 1))])
@@ -60,20 +72,33 @@ def is_rotationally_stable(basis: Iterable[Perm]) -> bool:
         >>> is_rotationally_stable([Perm((0, 1, 2)), Perm((2, 3, 0, 1))])
         False
     """
-    patterns = frozenset(basis)
+    patterns = frozenset(Basis.from_iterable(basis))
     return all(pattern.shift_left() in patterns for pattern in patterns)
 
 
-def rotation_of(basis: Iterable[Perm]) -> Optional[str]:
-    """Return "positions" if the class with the basis is closed under rotation,
-    "values" if it is not but is closed under the cyclic shift of the values (its
-    inverse basis is rotationally stable), and None otherwise."""
+def _closed(basis: Iterable[Perm], rotation: str) -> bool:
+    """Return True if the class with the basis is closed under the rotation of its
+    positions, or of its values, which is the rotation of its inverse's positions."""
+    if rotation == "positions":
+        return is_rotationally_stable(basis)
+    return is_rotationally_stable(inverse_set(basis))
+
+
+def rotation_kind(basis: Iterable[Perm]) -> Optional[str]:
+    """Return the kind of rotation the class with the basis is closed under:
+    "positions", or "values" if it is closed only under the cyclic shift of its values
+    (its inverse basis is rotationally stable), or None if neither.
+
+    Examples:
+        >>> rotation_kind([Perm((0, 1, 2)), Perm((1, 2, 0)), Perm((2, 0, 1))])
+        'positions'
+        >>> rotation_kind([Perm((0, 1, 2)), Perm((2, 3, 0, 1))]) is None
+        True
+    """
     patterns = tuple(basis)
-    if is_rotationally_stable(patterns):
-        return "positions"
-    if is_rotationally_stable(pattern.inverse() for pattern in patterns):
-        return "values"
-    return None
+    return next(
+        (rotation for rotation in ROTATIONS if _closed(patterns, rotation)), None
+    )
 
 
 def min_cut(basis: Iterable[Perm]) -> Tuple[Perm, ...]:
@@ -85,7 +110,7 @@ def min_cut(basis: Iterable[Perm]) -> Tuple[Perm, ...]:
         (Perm((0, 1, 2)), Perm((1, 2, 3, 0)), Perm((2, 3, 0, 1)))
     """
     return tuple(
-        Perm.to_standard(pattern[1:]) if pattern and pattern[0] == 0 else pattern
+        pattern.remove(0) if pattern and pattern[0] == 0 else pattern
         for pattern in basis
     )
 
@@ -99,12 +124,17 @@ def max_cut(basis: Iterable[Perm]) -> Tuple[Perm, ...]:
         (Perm((0, 2, 1)), Perm((2, 1, 3, 0)), Perm((1, 3, 0, 2)))
     """
     return tuple(
-        (
-            Perm.to_standard(pattern[:-1])
-            if pattern and pattern[-1] == len(pattern) - 1
-            else pattern
-        )
+        pattern.remove() if pattern and pattern[-1] == len(pattern) - 1 else pattern
         for pattern in basis
+    )
+
+
+def max_cut_differs(basis: Iterable[Perm]) -> bool:
+    """Return True if the max cut of the class with the basis is a different class
+    from its min cut."""
+    patterns = tuple(basis)
+    return Basis.from_iterable(max_cut(patterns)) != Basis.from_iterable(
+        min_cut(patterns)
     )
 
 
@@ -116,7 +146,7 @@ def _rotations(pattern: Perm, rotation: str) -> Iterator[Perm]:
         if rotation == "positions":
             yield pattern.shift_left(shift)
         else:
-            yield Perm(tuple((value + shift) % length for value in pattern))
+            yield pattern.shift_up(shift)
 
 
 def _basis(tiling: Tiling) -> Optional[Tuple[Perm, ...]]:
@@ -136,17 +166,11 @@ def _basis(tiling: Tiling) -> Optional[Tuple[Perm, ...]]:
     return basis
 
 
-def _closed(basis: Tuple[Perm, ...], rotation: str) -> bool:
-    if rotation == "positions":
-        return is_rotationally_stable(basis)
-    return is_rotationally_stable(pattern.inverse() for pattern in basis)
-
-
 class RotationalCutConstructor(Constructor[Tiling, GriddedPerm]):
     """The parent has n times as many objects of size n as its one child has of size
     n - 1, for n >= 1. At size 0 it has the empty object if it contains it."""
 
-    def __init__(self, contains_empty: bool):
+    def __init__(self, contains_empty: bool) -> None:
         self.contains_empty = contains_empty
 
     def can_be_equivalent(self) -> bool:
@@ -220,7 +244,7 @@ class RotationalCutStrategy(Strategy[Tiling, GriddedPerm]):
         inferrable: bool = True,
         possibly_empty: bool = False,
         workable: bool = True,
-    ):
+    ) -> None:
         if cut not in CUTS:
             raise ValueError(f"cut must be one of {CUTS}")
         if rotation not in ROTATIONS:
@@ -236,6 +260,15 @@ class RotationalCutStrategy(Strategy[Tiling, GriddedPerm]):
 
     def can_be_equivalent(self) -> bool:
         return False
+
+    def __call__(
+        self,
+        comb_class: Tiling,
+        children: Optional[Tuple[Tiling, ...]] = None,
+    ) -> "RotationalCutRule":
+        if children is None:
+            children = self.decomposition_function(comb_class)
+        return RotationalCutRule(self, comb_class, children=children)
 
     def is_two_way(self, comb_class: Tiling) -> bool:
         return False
@@ -263,8 +296,8 @@ class RotationalCutStrategy(Strategy[Tiling, GriddedPerm]):
     def constructor(
         self, comb_class: Tiling, children: Optional[Tuple[Tiling, ...]] = None
     ) -> RotationalCutConstructor:
-        if children is None:
-            children = self.decomposition_function(comb_class)
+        if children is None:  # raises StrategyDoesNotApply where the cut does not apply
+            self.decomposition_function(comb_class)
         return RotationalCutConstructor(contains_empty=not comb_class.requirements)
 
     def reverse_constructor(
@@ -333,6 +366,32 @@ class RotationalCutStrategy(Strategy[Tiling, GriddedPerm]):
         return cls(**d)
 
 
+class RotationalCutRule(NonBijectiveRule[Tiling, GriddedPerm]):
+    """The rule of a rotational cut. Its forward map sends the n rotations of 1 + p,
+    or of p + 1, to p, so an object is told apart from the other rotations by its
+    index among those that the backward map yields, in their fixed order."""
+
+    def _forward_order(
+        self,
+        obj: GriddedPerm,
+        image: Tuple[Optional[GriddedPerm], ...],
+        data: Optional[object] = None,
+    ) -> int:
+        return next(
+            index
+            for index, rotated in enumerate(self.backward_map(image))
+            if rotated == obj
+        )
+
+    def _backward_order_item(
+        self,
+        idx: int,
+        objs: Tuple[Optional[GriddedPerm], ...],
+        data: Optional[object] = None,
+    ) -> GriddedPerm:
+        return next(islice(self.backward_map(objs), idx, None))
+
+
 class RotationalCutFactory(StrategyFactory[Tiling]):
     """Yield the rotational cut strategies for a 1x1 tiling of a class closed under
     rotation, of its positions or of its values: its min cut, and its max cut when
@@ -342,11 +401,11 @@ class RotationalCutFactory(StrategyFactory[Tiling]):
         basis = _basis(comb_class)
         if basis is None:
             return
-        rotation = rotation_of(basis)
+        rotation = rotation_kind(basis)
         if rotation is None:
             return
         yield RotationalCutStrategy("min", rotation)
-        if Tiling.from_perms(max_cut(basis)) != Tiling.from_perms(min_cut(basis)):
+        if max_cut_differs(basis):
             yield RotationalCutStrategy("max", rotation)
 
     def __str__(self) -> str:
