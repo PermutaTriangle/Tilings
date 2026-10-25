@@ -275,6 +275,18 @@ length n - 1, and the hint suggests adding the rotational cuts to the pack:
 
        tilescope spec 1324_2413_3241_4132 point_placements --rotational-cuts
 
+Another hint: a class whose basis is every way of adding a new maximum to the
+patterns of a basis B, such as Av(1234, 1243, 1423, 4123) for B = {123}, is the
+permutations whose maximum, taken out, leaves a permutation of Av(B), and it has n
+times as many permutations of length n as Av(B) has of length n - 1. A partial
+placement of the topmost point, with obstruction inferral to the length of B's
+longest pattern, turns it into that point and Av(B), and the same goes for a new
+minimum, leftmost or rightmost point:
+
+.. code:: bash
+
+       tilescope spec 1234_1243_1423_4123 point_placements --extension-placement
+
 The hints are also available in Python, from ``tilings.hints``.
 
 The tilescope module

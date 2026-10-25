@@ -4,7 +4,7 @@ from itertools import product
 import pytest
 
 from permuta import Perm
-from permuta.misc import DIRS
+from permuta.misc import DIR_NORTH, DIRS
 from tilings import strategies as strat
 from tilings.strategies import AssumptionAndPointJumpingFactory, SlidingFactory
 from tilings.strategy_pack import TileScopePack
@@ -115,6 +115,11 @@ packs.extend(
     + [pack.add_initial(SlidingFactory(use_symmetries=True)) for pack in packs]
     + [pack.add_initial(AssumptionAndPointJumpingFactory()) for pack in packs]
     + [pack.add_rotational_cuts() for pack in packs]
+    + [
+        pack.add_extension_placement(DIR_NORTH, 3)
+        for pack in packs
+        if strat.RequirementPlacementFactory() not in pack  # only_root_placements'
+    ]
     + [
         pack.kitchen_sinkify(
             short_obs_len=4, obs_inferral_len=2, tracked=True, level=level

@@ -19,6 +19,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   change to a pack helps the search. The first: a class closed under rotation,
   for which the rotational cuts help. `tilescope spec` tells the user of the
   hints that the pack it runs does not follow.
+- The hint `one-point extension`: a class whose basis is every one-point
+  extension of a basis B in one direction, every way of adding a new maximum,
+  minimum, leftmost or rightmost point to its patterns, has n times as many
+  permutations of length n as Av(B) has of length n - 1, and a partial placement
+  of the point furthest in that direction, with obstruction inferral to the length
+  of B's longest pattern, turns it into that point and Av(B).
+  `tilings.hints.one_point_extensions` and `one_point_extension` make and find
+  such bases.
+- `TileScopePack.add_extension_placement(direction, length)`, which adds that
+  partial placement and obstruction inferral to a pack, and the flag
+  `--extension-placement` of `tilescope spec`, which adds them for the class's
+  direction and length.
 
 ## [4.1.0] - 2026-01-15
 ### Changed
