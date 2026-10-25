@@ -479,6 +479,18 @@ def test_two_steps_in_every_order_of_directions(extending, steps, inner):
     )
     assert "n (n - 1) times as many permutations of length n as Av(012)" in hint.message
     assert "has of length n - 2, for n >= 2. Search for Av(012) instead" in hint.message
+    assert "F = 1 + x (x G)', applied twice." in hint.message
+    if len(set(steps)) == 1:
+        placed = HINT_WORDS[steps[0]][2]
+        assert (
+            f"a partial placement {placed}, with obstruction inferral" in hint.message
+        )
+    else:
+        first_placed, second_placed = (HINT_WORDS[step][2] for step in steps)
+        assert (
+            f"partial placements {first_placed} and the "
+            f"{second_placed.removeprefix('of the ')}, with" in hint.message
+        )
     names = ", ".join(f"DIR_{HINT_WORDS[d][3]}" for d in dict.fromkeys(steps))
     names += "," if len(set(steps)) == 1 else ""
     assert f"add_extension_placement(({names}), 4)" in hint.message
@@ -510,6 +522,12 @@ def test_three_steps(extending, steps):
     assert "it is Av(012): the class has n (n - 1) (n - 2) times" in hint.message
     assert "times as many permutations of length n as Av(012) has" in hint.message
     assert "of length n - 3, for n >= 3. Search for Av(012) instead" in hint.message
+    assert "F = 1 + x (x G)', applied 3 times." in hint.message
+    if len(set(steps)) == 3:
+        assert (
+            "partial placements of the bottommost point, the leftmost point and the "
+            "topmost point, with" in hint.message
+        )
     placement, inferral = hint.strategies
     assert placement.dirs == tuple(dict.fromkeys(steps)) and inferral.maxlen == 5
     placement, inferral = extension_strategies(build_pack(flag_args(patterns)))
