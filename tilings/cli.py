@@ -103,8 +103,9 @@ def build_pack(args: argparse.Namespace) -> TileScopePack:
     return pack
 
 
-# The strategies of the command's packs that insert a point requirement into the
-# class's own 1x1 tiling, the requirement whose point the partial placement places.
+# The classes of the strategies of the command's packs that insert a point
+# requirement into the class's own 1x1 tiling, whose point the partial placement
+# places.
 # The corroborations of row_and_col_placements insert points only into tilings of
 # two or more cells.
 POINT_INSERTIONS = (CellInsertionFactory, RequirementInsertionFactory)
@@ -127,8 +128,9 @@ def pack_with_extension_placement(pack: TileScopePack, basis: str) -> TileScopeP
             "The basis is not every one-point extension of a basis, so "
             "--extension-placement does not apply."
         )
+    directions, length = extension_placement_arguments(chain)
     try:
-        extended = pack.add_extension_placement(*extension_placement_arguments(chain))
+        extended = pack.add_extension_placement(directions, length)
     except ValueError:
         parser.error(
             "--extension-placement does not go with this pack: it has a requirement "
@@ -225,8 +227,8 @@ parser_tree.add_argument(
     action="store_true",
     help="Adds a partial placement and obstruction inferral to the pack, for classes "
     "whose basis is every one-point extension of a basis. The placement places the "
-    "points of point requirements, so the pack must insert them, as point_placements "
-    "does.",
+    "point of a point requirement, so the pack must insert point requirements, as "
+    "point_placements does.",
 )
 parser_tree.set_defaults(func=search_spec)
 

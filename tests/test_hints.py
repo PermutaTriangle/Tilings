@@ -1,6 +1,6 @@
 import argparse
+import itertools
 import json
-from itertools import chain
 
 import pytest
 import sympy
@@ -790,16 +790,6 @@ def test_the_pack_method():
         sink.add_extension_placement((DIR_NORTH,), 3)
 
 
-@pytest.mark.parametrize(
-    "directions, length",
-    [((), 3), ((DIR_NORTH, 4), 3), ((DIR_NORTH,), 0), ((DIR_NORTH,), -1)],
-    ids=["no directions", "not a direction", "length 0", "length -1"],
-)
-def test_the_pack_method_checks_its_input(directions, length):
-    with pytest.raises(ValueError):
-        TileScopePack.point_placements().add_extension_placement(directions, length)
-
-
 def test_the_pack_method_places_in_each_direction_once():
     pack = TileScopePack.point_placements().add_extension_placement(
         (DIR_WEST, DIR_NORTH, DIR_WEST), 3
@@ -847,8 +837,18 @@ def test_the_flag_warns_of_a_pack_that_inserts_no_points(monkeypatch, pack):
     assert "point_placements does" in message
 
 
-@pytest.mark.parametrize("pack", ["point_placements", "insertion_point_placements"])
+@pytest.mark.parametrize(
+    "pack",
+    [
+        "point_placements",
+        "insertion_point_placements",
+        "all_the_strategies",
+        "requirement_placements",
+    ],
+)
 def test_the_flag_does_not_warn_of_a_pack_that_inserts_points(monkeypatch, pack):
+    """These packs insert point requirements, through CellInsertionFactory or
+    through RequirementInsertionFactory."""
     assert not warnings(monkeypatch, ["spec", "1234_1243_1423_4123", pack, "-x"])
 
 
@@ -861,12 +861,12 @@ SEARCH_FOR = (
 # the message's last sentence, on what the placement needs, for one direction and for
 # more
 PLACEMENT_NEEDS = (
-    "The placement places the points of point requirements, so the pack must insert "
-    "them, as point_placements does."
+    "The placement places the point of a point requirement, so the pack must insert "
+    "point requirements, as point_placements does."
 )
 PLACEMENTS_NEED = (
-    "The placements place the points of point requirements, so the pack must insert "
-    "them, as point_placements does."
+    "The placements place the point of a point requirement, so the pack must insert "
+    "point requirements, as point_placements does."
 )
 
 # The hint's whole message for a chain of steps. Each case: the directions in which
@@ -988,20 +988,15 @@ def test_the_pack_method_takes_an_inferral_of_length_1(direction):
     assert placement.dirs == (direction,) and inferral.maxlen == 1
 
 
-@pytest.mark.parametrize("pack", ["all_the_strategies", "requirement_placements"])
-def test_the_flag_does_not_warn_of_a_pack_that_inserts_requirements(monkeypatch, pack):
-    """These packs insert point requirements through RequirementInsertionFactory."""
-    assert not warnings(monkeypatch, ["spec", "1234_1243_1423_4123", pack, "-x"])
-
-
 @pytest.mark.parametrize(
     "directions, length, said",
     [
         ((), 3, "^The directions must be one or more of DIR_NORTH"),
         ((DIR_NORTH, 4), 3, "^The directions must be one or more of DIR_NORTH"),
         ((DIR_NORTH,), 0, "^The inferral's length must be at least 1, not 0"),
+        ((DIR_NORTH,), -1, "^The inferral's length must be at least 1, not -1"),
     ],
-    ids=["no directions", "not a direction", "length 0"],
+    ids=["no directions", "not a direction", "length 0", "length -1"],
 )
 def test_the_pack_method_says_what_is_wrong(directions, length, said):
     """The error is the method's own check, not one from further in."""
@@ -1049,7 +1044,7 @@ def inserts_a_point_into_the_class(pack, patterns):
     whose point the partial placement places."""
     tiling = Tiling([GriddedPerm.single_cell(pattern, (0, 0)) for pattern in patterns])
     with_a_point = tiling.insert_cell((0, 0))
-    for factory in chain(pack.initial_strats, *pack.expansion_strats):
+    for factory in itertools.chain(pack.initial_strats, *pack.expansion_strats):
         for made in factory(tiling):
             rule = made(tiling) if isinstance(made, AbstractStrategy) else made
             if with_a_point in rule.children:
@@ -1169,3 +1164,18 @@ def test_the_warning_in_full(monkeypatch):
         "tiling, and row_and_col_placements inserts none there, so the placement may "
         "not apply; point_placements does."
     )
+
+
+def test_the_pack_method_takes_an_integral_length():
+    """A length is an integer as operator.index takes one, such as an integer type
+    of another library's."""
+
+    class Three:
+        def __index__(self):
+            return 3
+
+    pack = TileScopePack.point_placements().add_extension_placement(
+        (DIR_NORTH,), Three()
+    )
+    _, inferral = extension_strategies(pack)
+    assert inferral.maxlen == 3 and type(inferral.maxlen) is int
