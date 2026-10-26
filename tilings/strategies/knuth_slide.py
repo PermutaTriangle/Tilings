@@ -128,26 +128,27 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 class KnuthSlideFactory(StrategyFactory[Tiling]):
     """
     Every Knuth slide of a tiling that changes it: of blocks of 2 to max_width adjacent
-    columns, and with transpose, of rows. With rows False, only blocks within one row
-    (or, with transpose, one column); with rows True also the Ferrers version, of
-    blocks spanning several rows.
+    columns, and with slide_rows, of blocks of 2 to max_width adjacent rows too. A
+    block of columns may span several rows of cells, and a block of rows several
+    columns of cells; with one_line_only, a block of columns lies in one row of cells,
+    and a block of rows in one column of cells.
     """
 
     def __init__(
-        self, max_width: int = 3, rows: bool = True, transpose: bool = True
+        self, max_width: int = 3, one_line_only: bool = False, slide_rows: bool = True
     ) -> None:
         super().__init__()
         self.max_width = max_width
-        self.rows = rows
-        self.transpose = transpose
+        self.one_line_only = one_line_only
+        self.slide_rows = slide_rows
 
     def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
-        for transpose in (False, True) if self.transpose else (False,):
-            if not KnuthSlide.has_blocks(comb_class, transpose, self.rows):
+        for transpose in (False, True) if self.slide_rows else (False,):
+            if not KnuthSlide.has_blocks(comb_class, transpose, self.one_line_only):
                 continue
             frame = comb_class.inverse() if transpose else comb_class
             slide = KnuthSlide(frame)
-            for column, width in slide.blocks(self.max_width, self.rows):
+            for column, width in slide.blocks(self.max_width, self.one_line_only):
                 if slide.why_not(column, width) is not None or slide.is_identity(
                     column, width
                 ):
@@ -162,19 +163,19 @@ class KnuthSlideFactory(StrategyFactory[Tiling]):
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(max_width={self.max_width}, "
-            f"rows={self.rows}, transpose={self.transpose})"
+            f"one_line_only={self.one_line_only}, slide_rows={self.slide_rows})"
         )
 
     def __str__(self) -> str:
-        what = "columns or rows" if self.transpose else "columns"
-        where = "" if self.rows else ", in one row of cells"
+        what = "columns or rows" if self.slide_rows else "columns"
+        where = ", in one line of cells" if self.one_line_only else ""
         return f"Knuth slides of up to {self.max_width} {what}{where}"
 
     def to_jsonable(self) -> dict:
         jsonable: dict = super().to_jsonable()
         jsonable["max_width"] = self.max_width
-        jsonable["rows"] = self.rows
-        jsonable["transpose"] = self.transpose
+        jsonable["one_line_only"] = self.one_line_only
+        jsonable["slide_rows"] = self.slide_rows
         return jsonable
 
     @classmethod

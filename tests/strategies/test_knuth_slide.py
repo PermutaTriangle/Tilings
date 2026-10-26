@@ -524,15 +524,15 @@ def test_factory_options():
     assert {rule.strategy.width for rule in slides(tiling, max_width=2)} == {2}
     assert not [
         slide_rule
-        for slide_rule in slides(two_rows(1, [(0, 0)]), rows=False)
+        for slide_rule in slides(two_rows(1, [(0, 0)]), one_line_only=True)
         if not slide_rule.strategy.transpose
     ]
     assert slides(babson_west.inverse())
-    assert not slides(babson_west.inverse(), transpose=False)
+    assert not slides(babson_west.inverse(), slide_rows=False)
     assert str(KnuthSlideFactory()) == "Knuth slides of up to 3 columns or rows"
     assert (
-        str(KnuthSlideFactory(max_width=2, rows=False, transpose=False))
-        == "Knuth slides of up to 2 columns, in one row of cells"
+        str(KnuthSlideFactory(max_width=2, one_line_only=True, slide_rows=False))
+        == "Knuth slides of up to 2 columns, in one line of cells"
     )
 
 
@@ -886,9 +886,9 @@ def pair_and_ferrers_block():
     )
 
 
-def test_rows_false_leaves_out_the_blocks_of_several_rows():
-    """With rows False the factory offers the slide of the pair in one row, and not
-    that of the block of two rows next to it, which it offers by default."""
+def test_one_line_only_leaves_out_the_blocks_of_several_rows():
+    """With one_line_only the factory offers the slide of the pair in one row, and
+    not that of the block of two rows next to it, which it offers by default."""
     tiling = pair_and_ferrers_block()
     both = slides(tiling)
     assert {(rule.strategy.start, rule.strategy.width) for rule in both} == {
@@ -896,7 +896,7 @@ def test_rows_false_leaves_out_the_blocks_of_several_rows():
         (2, 2),
     }
     assert not any(rule.strategy.transpose for rule in both)
-    (one_row,) = slides(tiling, rows=False)
+    (one_row,) = slides(tiling, one_line_only=True)
     assert (one_row.strategy.start, one_row.strategy.width) == (0, 2)
     for rule in both:
         sanity_check(rule, 4)
@@ -928,14 +928,14 @@ BLOCKS_TILING = columns_of_cells((0,), (0,), (0,), (0,), (0, 1), (0, 1), (1,), (
             [(0, 2), (1, 2), (2, 2), (0, 3), (1, 3), (0, 4), (4, 2), (6, 2)],
         ),
         ({"max_width": 2}, [(0, 2), (1, 2), (2, 2), (4, 2), (6, 2)]),
-        ({"rows": False}, [(0, 2), (1, 2), (2, 2), (0, 3), (1, 3), (6, 2)]),
+        ({"one_line_only": True}, [(0, 2), (1, 2), (2, 2), (0, 3), (1, 3), (6, 2)]),
     ],
-    ids=["default", "max_width 4", "max_width 2", "rows False"],
+    ids=["default", "max_width 4", "max_width 2", "one_line_only"],
 )
 def test_the_blocks_of_a_tiling(kwargs, expected):
     """Runs of adjacent columns with the same rows of cells, of 2 to max_width
-    columns; with rows False, only those within one row. A run ends where the rows
-    change and at the last column."""
+    columns; with one_line_only, only those within one row. A run ends where the
+    rows change and at the last column."""
     assert sorted(KnuthSlide(BLOCKS_TILING).blocks(**kwargs)) == sorted(expected)
 
 
@@ -959,16 +959,16 @@ def test_the_blocks_of_a_tiling(kwargs, expected):
     ],
 )
 @pytest.mark.parametrize("transpose", [False, True])
-@pytest.mark.parametrize("rows", [False, True])
-def test_has_blocks_says_whether_there_are_blocks(tiling, transpose, rows):
+@pytest.mark.parametrize("one_line_only", [False, True])
+def test_has_blocks_says_whether_there_are_blocks(tiling, transpose, one_line_only):
     """The cheap test agrees with the blocks, for columns and for rows."""
     frame = tiling.inverse() if transpose else tiling
-    assert KnuthSlide.has_blocks(tiling, transpose, rows) == bool(
-        list(KnuthSlide(frame).blocks(2, rows))
+    assert KnuthSlide.has_blocks(tiling, transpose, one_line_only) == bool(
+        list(KnuthSlide(frame).blocks(2, one_line_only))
     )
-    if not transpose and rows:
+    if not transpose and not one_line_only:
         assert KnuthSlide.has_blocks(tiling) == KnuthSlide.has_blocks(
-            tiling, False, True
+            tiling, False, False
         )
     assert KnuthSlide.has_blocks(tiling) == bool(list(KnuthSlide(tiling).blocks()))
 

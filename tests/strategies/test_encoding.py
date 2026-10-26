@@ -503,7 +503,7 @@ strategy_objects = (
     + [MonotoneSlidingFactory(), GeneralizedSlidingStrategy(1)]
     + [
         KnuthSlideFactory(),
-        KnuthSlideFactory(max_width=2, rows=False, transpose=False),
+        KnuthSlideFactory(max_width=2, one_line_only=True, slide_rows=False),
         KnuthSlideStrategy(1, 2),
         KnuthSlideStrategy(0, 3, transpose=True),
     ]
