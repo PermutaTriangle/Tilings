@@ -13,7 +13,11 @@ from permuta.permutils import (
     is_insertion_encodable_rightmost,
 )
 from tilings import Tiling
-from tilings.hints import extension_placement, hints_for, one_point_extension_chain
+from tilings.hints import (
+    extension_placement_arguments,
+    find_one_point_extension_chain,
+    hints_for,
+)
 from tilings.strategies.requirement_insertion import (
     CellInsertionFactory,
     RequirementInsertionFactory,
@@ -116,7 +120,7 @@ def pack_with_extension_placement(pack: TileScopePack, basis: str) -> TileScopeP
     has a requirement placement or obstruction inferral already. Warn if the pack
     inserts no point requirements, as the placements then have no point to place.
     """
-    chain = one_point_extension_chain(
+    chain = find_one_point_extension_chain(
         Perm.to_standard(pattern) for pattern in basis.split("_")
     )
     if not chain:
@@ -125,7 +129,7 @@ def pack_with_extension_placement(pack: TileScopePack, basis: str) -> TileScopeP
             "--extension-placement does not apply."
         )
     try:
-        extended = pack.add_extension_placement(*extension_placement(chain))
+        extended = pack.add_extension_placement(*extension_placement_arguments(chain))
     except ValueError:
         parser.error(
             "--extension-placement does not go with this pack: it has a requirement "

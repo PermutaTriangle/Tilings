@@ -31,11 +31,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   n as Av(B) has of length n - 1. The hint names the class to search for instead,
   Av(B), reduced again while it is such an extension.
 - `tilings.hints.one_point_extensions(pattern, direction)`, which makes a
-  pattern's one-point extensions; `one_point_extension_of(basis)`, which finds
-  the direction and the basis B of which a basis is every one-point extension;
-  `one_point_extension_chain(basis)`, which reduces it again while it is one, as
-  a list of `OnePointExtension` steps; and `extension_placement(chain)`, the
-  directions and length of the placement that follows the hint.
+  pattern's one-point extensions; `find_one_point_extension(basis)`, which finds
+  the direction and the basis B of which a basis is every one-point extension, as
+  a `OnePointExtension(direction, reduced_basis)`;
+  `find_one_point_extension_chain(basis)`, which reduces it again while it is
+  one, as a list of such steps; and `extension_placement_arguments(chain)`, the
+  directions and length that `add_extension_placement` takes for the hint.
 - `TileScopePack.add_extension_placement(directions, length)`, which adds a
   partial placement of the point furthest in the directions and obstruction
   inferral to the length, turning such a class into that point and Av(B), and

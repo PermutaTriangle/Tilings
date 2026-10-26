@@ -12,10 +12,10 @@ from tilings import strategies as strat
 from tilings.cli import build_pack, parser
 from tilings.hints import (
     OnePointExtension,
-    extension_placement,
+    extension_placement_arguments,
+    find_one_point_extension,
+    find_one_point_extension_chain,
     hints_for,
-    one_point_extension_chain,
-    one_point_extension_of,
     one_point_extensions,
 )
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
@@ -186,7 +186,10 @@ def test_one_point_extension_found_and_counted(string, direction):
     and its class has n times as many permutations of length n as the class of the
     basis extended has of length n - 1."""
     patterns = extended(string, direction)
-    assert one_point_extension_of(patterns) == (direction, tuple(sorted(basis(string))))
+    assert find_one_point_extension(patterns) == (
+        direction,
+        tuple(sorted(basis(string))),
+    )
     small, large = Av(Basis(*basis(string))), Av(Basis(*patterns))
     assert [large.count(n) for n in range(1, 8)] == [
         n * small.count(n - 1) for n in range(1, 8)
@@ -196,16 +199,16 @@ def test_one_point_extension_found_and_counted(string, direction):
 def test_a_basis_not_minimal():
     """A pattern containing one of the basis is left out first, as Av ignores it."""
     patterns = extended("123", DIR_NORTH) + [Perm((0, 1, 2, 3, 4))]
-    assert one_point_extension_of(patterns) == (DIR_NORTH, (Perm((0, 1, 2)),))
+    assert find_one_point_extension(patterns) == (DIR_NORTH, (Perm((0, 1, 2)),))
 
 
 def test_not_a_one_point_extension():
-    assert one_point_extension_of(basis("1234_1243_1423")) is None  # one is missing
-    assert one_point_extension_of(basis("1234")) is None
+    assert find_one_point_extension(basis("1234_1243_1423")) is None  # one is missing
+    assert find_one_point_extension(basis("1234")) is None
     assert (
-        one_point_extension_of(basis("12_21")) is None
+        find_one_point_extension(basis("12_21")) is None
     )  # extends patterns of length 1
-    assert one_point_extension_of([]) is None
+    assert find_one_point_extension([]) is None
 
 
 def test_the_extension_hint():
@@ -304,7 +307,7 @@ def test_an_extension_of_an_extension(second, directions):
             )
         )
     )
-    chain = one_point_extension_chain(patterns)
+    chain = find_one_point_extension_chain(patterns)
     assert tuple(direction for direction, _ in chain) == directions + (
         (DIR_NORTH,) if second == DIR_NORTH else ()
     )
@@ -422,8 +425,10 @@ def test_a_basis_of_one_pattern_of_length_two(string, direction):
     """The shortest basis B the hint takes: B' has patterns of length 3, and the
     class has n permutations of length n."""
     patterns = extended_in(string, direction)
-    assert one_point_extension_of(patterns) == (direction, tuple(basis(string)))
-    assert one_point_extension_chain(patterns) == [(direction, tuple(basis(string)))]
+    assert find_one_point_extension(patterns) == (direction, tuple(basis(string)))
+    assert find_one_point_extension_chain(patterns) == [
+        (direction, tuple(basis(string)))
+    ]
     assert counts(patterns) == [1] + list(range(1, 8))
 
 
@@ -432,7 +437,7 @@ def test_a_class_that_is_an_extension_in_every_direction():
     patterns = extended_in("12_21", DIR_NORTH)
     for direction in DIRECTIONS:
         assert extended_in("12_21", direction) == patterns
-    assert one_point_extension_of(patterns) == (DIR_NORTH, tuple(basis("12_21")))
+    assert find_one_point_extension(patterns) == (DIR_NORTH, tuple(basis("12_21")))
     rotation_hint, hint = hints_for(patterns)
     assert rotation_hint.name == "rotationally stable"
     assert "adding a new maximum" in hint.message
@@ -442,8 +447,9 @@ def test_a_class_that_is_an_extension_in_every_direction():
 
 
 # For the class made by extending 123 in the two directions, one after the other: the
-# directions of the steps one_point_extension_chain finds, the outermost first, and the
-# direction in which 123 was extended to give the class that the first step leaves.
+# directions of the steps find_one_point_extension_chain finds, the outermost first,
+# and the direction in which 123 was extended to give the class that the first step
+# leaves.
 CHAINS = [
     ((DIR_NORTH, DIR_NORTH), (DIR_NORTH, DIR_NORTH), DIR_NORTH),
     ((DIR_NORTH, DIR_SOUTH), (DIR_NORTH, DIR_SOUTH), DIR_SOUTH),  # a tie: north first
@@ -462,7 +468,7 @@ def test_two_steps_in_every_order_of_directions(extending, steps, inner):
     each once; the class has n (n - 1) times as many permutations of length n as
     Av(012) has of length n - 2."""
     patterns = extended_in("123", *extending)
-    chain = one_point_extension_chain(patterns)
+    chain = find_one_point_extension_chain(patterns)
     assert tuple(direction for direction, _ in chain) == steps
     assert chain[-1][1] == (Perm((0, 1, 2)),)
     small = Av(Basis(*basis("123")))
@@ -514,7 +520,7 @@ def test_three_steps(extending, steps):
     and the hint ask for the directions in the steps' order, with length 5."""
     patterns = extended_in("123", *extending)
     assert (
-        tuple(direction for direction, _ in one_point_extension_chain(patterns))
+        tuple(direction for direction, _ in find_one_point_extension_chain(patterns))
         == steps
     )
     (hint,) = hints_for(patterns)
@@ -551,33 +557,33 @@ def test_a_basis_of_patterns_of_different_lengths():
 
 def test_not_quite_a_one_point_extension():
     ext = extended_in("123", DIR_NORTH)
-    assert one_point_extension_of(ext) == (DIR_NORTH, (Perm((0, 1, 2)),))
+    assert find_one_point_extension(ext) == (DIR_NORTH, (Perm((0, 1, 2)),))
     assert (
-        one_point_extension_of(ext + [Perm((1, 0, 3, 2))]) is None
+        find_one_point_extension(ext + [Perm((1, 0, 3, 2))]) is None
     )  # a pattern too many
-    assert one_point_extension_of(ext[1:]) is None  # or too few
+    assert find_one_point_extension(ext[1:]) is None  # or too few
     mixed = ext[:3] + extended_in("123", DIR_SOUTH)[:1]  # of two directions
-    assert one_point_extension_of(mixed) is None
+    assert find_one_point_extension(mixed) is None
     both = ext + extended_in("123", DIR_SOUTH)
-    assert one_point_extension_of(both) is None
-    assert one_point_extension_chain(both) == []
+    assert find_one_point_extension(both) is None
+    assert find_one_point_extension_chain(both) == []
     assert hints_for(both) == []
     assert hints_for(ext + [Perm((1, 0, 3, 2))]) == []
 
 
 def test_the_empty_and_the_short_and_the_repeated():
-    assert one_point_extension_of([Perm()]) is None  # the empty class
-    assert one_point_extension_of([Perm((0,))]) is None
-    assert one_point_extension_chain([Perm()]) == []
+    assert find_one_point_extension([Perm()]) is None  # the empty class
+    assert find_one_point_extension([Perm((0,))]) is None
+    assert find_one_point_extension_chain([Perm()]) == []
     assert hints_for([Perm()]) == []
     ext = extended_in("123", DIR_NORTH)
     expected = (DIR_NORTH, (Perm((0, 1, 2)),))
-    assert one_point_extension_of(ext + ext) == expected  # repeats
-    assert one_point_extension_of(reversed(ext)) == expected  # any order
-    assert one_point_extension_of(iter(ext)) == expected  # once through
-    assert one_point_extension_of(ext + [Perm((0, 1, 2, 3, 4))]) == expected
-    assert one_point_extension_of(ext + [Perm((0, 1, 2))]) is None  # basis {012}
-    assert one_point_extension_chain(ext) == [expected]
+    assert find_one_point_extension(ext + ext) == expected  # repeats
+    assert find_one_point_extension(reversed(ext)) == expected  # any order
+    assert find_one_point_extension(iter(ext)) == expected  # once through
+    assert find_one_point_extension(ext + [Perm((0, 1, 2, 3, 4))]) == expected
+    assert find_one_point_extension(ext + [Perm((0, 1, 2))]) is None  # basis {012}
+    assert find_one_point_extension_chain(ext) == [expected]
 
 
 def test_the_extension_hint_formula():
@@ -783,14 +789,14 @@ def test_the_steps_of_a_chain_and_their_placement():
     placement that follows the chain is in its directions, in their order and each
     once, with the length of the first step's basis."""
     patterns = extended_in("123", DIR_NORTH, DIR_WEST, DIR_NORTH)
-    chain = one_point_extension_chain(patterns)
+    chain = find_one_point_extension_chain(patterns)
     assert all(isinstance(step, OnePointExtension) for step in chain)
     assert [step.direction for step in chain] == [DIR_NORTH, DIR_WEST, DIR_NORTH]
-    assert chain[0] == one_point_extension_of(patterns)
-    assert chain[1] == one_point_extension_of(chain[0].basis)
-    assert chain[-1].basis == (Perm((0, 1, 2)),)
-    assert extension_placement(chain) == ((DIR_NORTH, DIR_WEST), 5)
-    assert extension_placement(chain[1:]) == ((DIR_WEST, DIR_NORTH), 4)
+    assert chain[0] == find_one_point_extension(patterns)
+    assert chain[1] == find_one_point_extension(chain[0].reduced_basis)
+    assert chain[-1].reduced_basis == (Perm((0, 1, 2)),)
+    assert extension_placement_arguments(chain) == ((DIR_NORTH, DIR_WEST), 5)
+    assert extension_placement_arguments(chain[1:]) == ((DIR_WEST, DIR_NORTH), 4)
 
 
 def warnings(monkeypatch, argv):
