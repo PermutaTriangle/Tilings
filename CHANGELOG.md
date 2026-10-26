@@ -7,13 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- `KnuthSlideFactory(max_width, one_line_only, slide_rows)` and
+- `KnuthSlideFactory(max_width=3, one_line_only=False, slide_rows=True)` and
   `KnuthSlideStrategy`, the Knuth slide: an equivalence that reverses a block of
-  2 to `max_width` adjacent columns with the same rows of active cells, or with
-  `slide_rows` a block of rows too. The points in the block are rearranged so
-  that the values in every window keep their Knuth class, and every run of
-  columns takes the RSK shape of its mirror image. Its rules have forward and
-  backward maps.
+  2 to `max_width` adjacent columns with the same rows of active cells, and,
+  unless `slide_rows` is False, a block of adjacent rows too; columns always
+  slide. With `one_line_only`, a block of columns lies in one row of cells, and
+  a block of rows in one column of cells. The points in the block are
+  rearranged so that the values in every window keep their Knuth class, and
+  every run of columns takes the RSK shape of its mirror image. Its rules have
+  forward and backward maps. No built-in pack has the slide: it is added with
+  `pack.add_initial(KnuthSlideFactory())`.
 - `tilings.algorithms.KnuthSlide`, which finds a tiling's blocks, tells whether
   each slides and why not, and gives the child and the map of gridded
   permutations. A block slides when every obstruction on it depends only on the
@@ -21,9 +24,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   columns, and every requirement and tracking assumption on it is on whole
   columns or whole rows. Blocks of any width slide, in one row of cells or,
   unless `one_line_only` is set, in several.
-- With slides of up to three columns, `row_and_col_placements(row_only=True)` with
-  fusion finds a specification for Av(15432), which Tilings' sliding does not
-  reach.
+- With slides of up to three columns, Av(15432), which Tilings' sliding does not
+  reach, has a specification: `row_and_col_placements(row_only=True)` with
+  untracked fusion and the slide as an initial strategy finds an untracked one,
+  and the GuidedSearcher with that pack made tracked one that counts the class.
 
 ### Changed
 - Tilings needs a Permuta release with `permuta.permutils.robinson_schensted`,

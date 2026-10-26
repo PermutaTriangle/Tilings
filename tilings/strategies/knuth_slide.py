@@ -22,6 +22,12 @@ __all__ = ["KnuthSlideFactory", "KnuthSlideStrategy"]
 _INVERSE = TilingInverse()
 
 
+def _columns_frame(tiling: Tiling, transpose: bool) -> Tiling:
+    """The tiling whose columns slide: the tiling, or with transpose its inverse. The
+    inverse is an involution, so the same takes the frame's child back."""
+    return tiling.inverse() if transpose else tiling
+
+
 class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
     """
     The Knuth slide of the block of width columns starting at column start, or with
@@ -35,43 +41,41 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         self.width = width
         self.transpose = transpose
 
-    def _inverse_if_transposed(self, tiling: Tiling) -> Tiling:
-        """The tiling, or with transpose its inverse: the one whose columns slide."""
-        return tiling.inverse() if self.transpose else tiling
-
     def decomposition_function(self, comb_class: Tiling) -> Tuple[Tiling]:
-        slide = KnuthSlide(self._inverse_if_transposed(comb_class))
+        slide = KnuthSlide(_columns_frame(comb_class, self.transpose))
         reason = slide.why_not(self.start, self.width)
         if reason is not None:
             raise StrategyDoesNotApply(f"no Knuth slide: {reason}")
-        return (self._inverse_if_transposed(slide.slide(self.start, self.width)),)
+        return (_columns_frame(slide.slide(self.start, self.width), self.transpose),)
 
-    def _in_columns(
+    def _apply_in_columns(
         self,
         comb_class: Tiling,
         gridded_perm: GriddedPerm,
         function: Callable[[GriddedPerm], GriddedPerm],
     ) -> GriddedPerm:
-        """Apply the function, of the gridded permutations of the tiling whose
-        columns slide, to a gridded permutation: through the inverse for a slide of
-        rows."""
+        """Apply to the gridded permutation a function of the gridded permutations
+        of the tiling whose columns slide: for a slide of rows, through the
+        inverse."""
         if not self.transpose:
             return function(gridded_perm)
-        image = function(_INVERSE.gp_transform(comb_class, gridded_perm))
-        return _INVERSE.inverse_gp_transform(comb_class, image)
+        in_columns = _INVERSE.gp_transform(comb_class, gridded_perm)
+        return _INVERSE.inverse_gp_transform(comb_class, function(in_columns))
 
     def _map(self, comb_class: Tiling, gridded_perm: GriddedPerm) -> GriddedPerm:
-        return self._in_columns(
+        return self._apply_in_columns(
             comb_class,
             gridded_perm,
-            lambda image: KnuthSlide.slide_gridded_perm(image, self.start, self.width),
+            lambda in_columns: KnuthSlide.slide_gridded_perm(
+                in_columns, self.start, self.width
+            ),
         )
 
     def _mirror(self, comb_class: Tiling, gridded_perm: GriddedPerm) -> GriddedPerm:
         """A requirement's or an assumption's point with the block mirrored."""
         mirror = KnuthSlide.mirror(self.start, self.width)
-        return self._in_columns(
-            comb_class, gridded_perm, lambda image: image.apply_map(mirror)
+        return self._apply_in_columns(
+            comb_class, gridded_perm, lambda in_columns: in_columns.apply_map(mirror)
         )
 
     def forward_map(
@@ -116,15 +120,15 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
         return f"Knuth slide of the {self.width} {kind} from {kind[:-1]} {self.start}"
 
     def to_jsonable(self) -> dict:
-        d: dict = super().to_jsonable()
-        d.pop("ignore_parent")
-        d.pop("inferrable")
-        d.pop("possibly_empty")
-        d.pop("workable")
-        d["start"] = self.start
-        d["width"] = self.width
-        d["transpose"] = self.transpose
-        return d
+        jsonable: dict = super().to_jsonable()
+        jsonable.pop("ignore_parent")
+        jsonable.pop("inferrable")
+        jsonable.pop("possibly_empty")
+        jsonable.pop("workable")
+        jsonable["start"] = self.start
+        jsonable["width"] = self.width
+        jsonable["transpose"] = self.transpose
+        return jsonable
 
     @classmethod
     def from_dict(cls, d: dict) -> "KnuthSlideStrategy":
@@ -139,11 +143,12 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
 
 class KnuthSlideFactory(StrategyFactory[Tiling]):
     """
-    Every Knuth slide of a tiling that changes it: of blocks of 2 to max_width adjacent
-    columns, and with slide_rows, of blocks of 2 to max_width adjacent rows too. A
-    block of columns may span several rows of cells, and a block of rows several
-    columns of cells; with one_line_only, a block of columns lies in one row of cells,
-    and a block of rows in one column of cells.
+    Every Knuth slide of a tiling that changes it: of blocks of 2 to max_width
+    adjacent columns, and of blocks of 2 to max_width adjacent rows unless slide_rows
+    is False. Columns always slide. A block of columns may span several rows of cells,
+    and a block of rows several columns of cells, unless one_line_only is True: then
+    a block of columns lies in one row of cells, and a block of rows in one column of
+    cells. By default max_width is 3, one_line_only is False and slide_rows is True.
     """
 
     def __init__(
@@ -158,16 +163,13 @@ class KnuthSlideFactory(StrategyFactory[Tiling]):
         for transpose in (False, True) if self.slide_rows else (False,):
             if not KnuthSlide.has_blocks(comb_class, transpose, self.one_line_only):
                 continue
-            frame = comb_class.inverse() if transpose else comb_class
-            slide = KnuthSlide(frame)
+            slide = KnuthSlide(_columns_frame(comb_class, transpose))
             for column, width in slide.blocks(self.max_width, self.one_line_only):
                 if slide.why_not(column, width) is not None or slide.is_identity(
                     column, width
                 ):
                     continue
-                child = slide.slide(column, width)
-                if transpose:
-                    child = child.inverse()
+                child = _columns_frame(slide.slide(column, width), transpose)
                 if child == comb_class:
                     continue
                 yield KnuthSlideStrategy(column, width, transpose)(comb_class, (child,))
