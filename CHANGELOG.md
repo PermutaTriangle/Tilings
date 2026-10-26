@@ -7,21 +7,27 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- `KnuthSlideFactory` and `KnuthSlideStrategy`, the Knuth slide: an equivalence
-  that reverses a block of two or more adjacent columns with the same rows of
-  active cells, or with `transpose` a block of rows. The block's word w becomes
-  RSK^-1(P(w), evac(Q(w))), with Permuta's `evacuate_recording_tableau`, and the
-  columns' sizes are reversed. Its rules have forward and backward maps.
+- `KnuthSlideFactory(max_width, one_line_only, slide_rows)` and
+  `KnuthSlideStrategy`, the Knuth slide: an equivalence that reverses a block of
+  2 to `max_width` adjacent columns with the same rows of active cells, or with
+  `slide_rows` a block of rows too. The points in the block are rearranged so
+  that the values in every window keep their Knuth class, and every run of
+  columns takes the RSK shape of its mirror image. Its rules have forward and
+  backward maps.
 - `tilings.algorithms.KnuthSlide`, which finds a tiling's blocks, tells whether
   each slides and why not, and gives the child and the map of gridded
   permutations. A block slides when every obstruction on it depends only on the
   Knuth classes of its windows of values or on the RSK shapes of its runs of
   columns, and every requirement and tracking assumption on it is on whole
-  columns or whole rows. Blocks of any width slide, in one row of cells or, as
-  the Ferrers version, in several.
+  columns or whole rows. Blocks of any width slide, in one row of cells or,
+  unless `one_line_only` is set, in several.
 - With slides of up to three columns, `row_and_col_placements(row_only=True)` with
   fusion finds a specification for Av(15432), which Tilings' sliding does not
   reach.
+
+### Changed
+- Tilings needs a Permuta release with `permuta.permutils.robinson_schensted`,
+  whose RSK, evacuation and Knuth-closure tests the Knuth slide uses.
 
 ## [4.1.0] - 2026-01-15
 ### Changed

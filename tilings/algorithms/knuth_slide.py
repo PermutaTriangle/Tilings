@@ -7,37 +7,43 @@ nonempty set of rows R in each column. The points of a gridded permutation in th
 block form its block word w, the concatenation of the column words. The slide
 replaces w by RSK^-1(P(w), evac(Q(w))), Permuta's evacuate_recording_tableau, and
 reverses the columns: column c gets as many of the first letters as the last column
-had, and so on, each value keeping its row.
-The new word has the same insertion tableau, so on every interval of values it is
-Knuth equivalent to the old one, and every run of adjacent columns gets the RSK shape
-of its mirror image (Schutzenberger: evacuation is the recording tableau of the
-reverse-complement).
+had, and so on, each value keeping its row. The new word has the same insertion
+tableau, so on every interval of values it is Knuth equivalent to the old one; and
+every run of adjacent columns gets the RSK shape of its mirror image, as evacuation
+is the recording tableau of the reverse-complement (Schutzenberger). The map is an
+involution, as evacuation is.
 
-So the slide is a bijection onto the gridded permutations of the child tiling when:
+So the slide is a bijection onto the gridded permutations of the child tiling when
+every constraint touching the block depends only on what the slide keeps:
 
-- every obstruction with points in the block is not contradictory, that is a
-  gridding some gridded permutation can have, and is of window type or of run
-  type.
+- Every obstruction with points in the block is not contradictory, that is, some
+  gridded permutation can have it, and it is of window type or of run type.
     - Window type: no other point of it has a value between two of its block
       values, and every regridding of its block points over the block's columns,
       and over the block's rows from its lowest block row to its highest, is
       forbidden. For each configuration of the other points, the patterns that
       these obstructions see in the block must form a Knuth-closed set: one whose
-      avoiders are closed under Knuth equivalence (Permuta's is_knuth_closed).
+      avoiders are closed under Knuth equivalence (Permuta's is_knuth_closed). The
+      slide keeps the Knuth class of the block word on the window, so it keeps
+      whether the window avoids them.
     - Run type: all its points are in the block, and every regridding over the run
       of columns it spans and all the block's rows is forbidden. For each run, the
       patterns must form a shape-closed set: one whose avoiders are determined by
-      the RSK shape, such as a monotone pattern (Permuta's is_shape_closed).
-- every requirement with points in the block is a list of points whose block cells
-  are whole columns or whole rows of the block, or both;
-- every assumption with points in the block counts points (TrackingAssumption), on
+      the RSK shape, such as a monotone pattern (Permuta's is_shape_closed). The
+      slide gives the mirrored run that shape, so the mirrored run avoids them.
+- Every requirement with points in the block is a set of points whose cells in the
+  block make up whole columns of it, whole rows of it, or both.
+- Every assumption with points in the block counts points (TrackingAssumption) on
   whole columns of the block or on whole rows of it.
+  The slide moves each column's points to the mirrored column, keeping each value's
+  row, so it keeps how many points those requirements and assumptions see.
 
 The child has the obstructions with no block points, every regridding of the window
 type ones, the run type ones regridded over the mirrored runs, and the requirements
-and assumptions with the block's columns mirrored. A block of one row is the Knuth
-slide of adjacent cells; a block of several rows is its Ferrers version, after
-Babson and West's sliding lemma.
+and assumptions with the block's columns mirrored. A block of one row of cells is
+the Knuth slide of adjacent cells. A block of several rows of cells is its Ferrers
+version, which slides a shape of cells as Babson and West's sliding lemma slides a
+Ferrers board.
 """
 
 from collections import defaultdict
@@ -74,6 +80,33 @@ __all__ = ["KnuthSlide"]
 
 Cell = Tuple[int, int]
 Gridding = Tuple[Perm, Tuple[Cell, ...]]
+
+
+def _mirror_column(column: int, width: int, x: int) -> int:
+    """The column that the slide of the block of the width from the column takes the
+    column x of the block to."""
+    return 2 * column + width - 1 - x
+
+
+class _Block(NamedTuple):
+    """A block's columns, its rows of cells, and its cells."""
+
+    columns: Tuple[int, ...]
+    rows: Tuple[int, ...]
+    cells: FrozenSet[Cell]
+
+    def indices(self, gridded_perm: GriddedPerm) -> List[int]:
+        """The indices of the gridded permutation's points in the block."""
+        return [i for i, cell in enumerate(gridded_perm.pos) if cell in self.cells]
+
+    def pattern(self, gridded_perm: GriddedPerm) -> Perm:
+        """The pattern of the gridded permutation's points in the block."""
+        return gridded_perm.get_gridded_perm_in_cells(self.cells).patt
+
+
+def _block(column: int, width: int, rows: Tuple[int, ...]) -> _Block:
+    columns = tuple(range(column, column + width))
+    return _Block(columns, rows, frozenset((x, y) for x in columns for y in rows))
 
 
 class _WindowKey(NamedTuple):
@@ -187,46 +220,47 @@ class KnuthSlide:
 
     def why_not(self, column: int, width: int) -> Optional[str]:
         """Return None if the block slides, and otherwise why it does not."""
-        return self._analysis(column, width).reason
+        return self._cached_analysis(column, width).reason
 
     def is_identity(self, column: int, width: int) -> bool:
         """Return True if the block slides and the patterns of each of its runs, and
-        the requirements and assumptions, are the same with the block mirrored, as
-        the window constraints always are: the child is then the tiling itself, and
-        the factory skips the slide without making the child."""
-        analysis = self._analysis(column, width)
+        the requirements and assumptions, are the same with the block mirrored. Its
+        window constraints are regridded over the whole block, so they are the same
+        mirrored. The child is then the tiling itself, and the factory skips the
+        slide without making the child."""
+        analysis = self._cached_analysis(column, width)
         return analysis.reason is None and analysis.identity
 
     def slide(self, column: int, width: int) -> "Tiling":
-        """Return the child of the slide of the block."""
-        analysis = self._analysis(column, width)
+        """Return the child of the slide of the block. Raise ValueError if the block
+        does not slide (why_not)."""
+        analysis = self._cached_analysis(column, width)
         if analysis.reason is not None:
             raise ValueError(f"the block does not slide: {analysis.reason}")
-        block_columns = tuple(range(column, column + width))
-        block = frozenset((x, y) for x in block_columns for y in analysis.rows)
+        block = _block(column, width, analysis.rows)
         obstructions: Set[GriddedPerm] = {
             obstruction
             for obstruction in self._tiling.obstructions
-            if not _block_indices(obstruction, block)
+            if not block.indices(obstruction)
         }
         for obstruction, rows in analysis.window:
             obstructions.update(
                 GriddedPerm(pattern, positions)
                 for pattern, positions in _regriddings(
-                    obstruction, _block_indices(obstruction, block), block_columns, rows
+                    obstruction, block.indices(obstruction), block.columns, rows
                 )
             )
         for obstruction, (low, high) in analysis.run:
             mirrored = tuple(
-                range(2 * column + width - 1 - high, 2 * column + width - low)
+                range(
+                    _mirror_column(column, width, high),
+                    _mirror_column(column, width, low) + 1,
+                )
             )
             obstructions.update(
                 GriddedPerm(pattern, positions)
                 for pattern, positions in _regriddings(
-                    obstruction,
-                    _block_indices(obstruction, block),
-                    mirrored,
-                    analysis.rows,
+                    obstruction, block.indices(obstruction), mirrored, block.rows
                 )
             )
         mirror = self.mirror(column, width)
@@ -247,11 +281,12 @@ class KnuthSlide:
         """Return the map of cells that mirrors the columns of the block of the width
         from the column, and keeps every other cell: with GriddedPerm.apply_map, it
         mirrors a requirement's or an assumption's point."""
-        last = column + width - 1
 
         def mirrored(cell: Cell) -> Cell:
             x, y = cell
-            return (column + last - x, y) if column <= x <= last else cell
+            if column <= x < column + width:
+                return (_mirror_column(column, width, x), y)
+            return cell
 
         return mirrored
 
@@ -286,16 +321,15 @@ class KnuthSlide:
             positions[i] = (columns[offset], row_of[new_word[offset]])
         return GriddedPerm(Perm(pattern), positions)
 
-    def _analysis(self, column: int, width: int) -> _Analysis:
+    def _cached_analysis(self, column: int, width: int) -> _Analysis:
         key = (column, width)
         if key not in self._analyses:
             self._analyses[key] = self._analyze(column, width)
         return self._analyses[key]
 
     def _analyze(self, column: int, width: int) -> _Analysis:
-        """Decide whether the block slides, choosing as the proof does. No
-        obstruction with points in the block may be contradictory, and each is the
-        first of these that it can be:
+        """Decide whether the block slides. No obstruction with points in the block
+        may be contradictory, and each is the first of these that it can be:
         - a run constraint of its column: it lies in one column of the block, and
           every regridding there is forbidden, as it is when the block has one row;
         - a window constraint: no other point of it lies between its block points
@@ -303,33 +337,46 @@ class KnuthSlide:
           rows they span, is forbidden;
         - a run constraint of the columns it spans: it lies in the block, and every
           regridding over those columns is forbidden.
-        A run whose patterns are not determined by the RSK shape gives the windows
-        those of its obstructions that are window constraints. Then the patterns of
-        each run must be determined by the shape, those of each window must be
-        closed under Knuth moves, and the requirements and assumptions must be on
-        whole columns or whole rows of the block."""
-        block_columns = tuple(range(column, column + width))
+        A constraint of one column, such as a cell's basis, is taken as a run of that
+        column first: it then moves to the mirrored column, which the slide gives
+        this column's shape. One across columns is a window's when it can be, as a
+        window needs only that its patterns be closed under Knuth moves, where a run
+        needs them determined by the shape, a stronger condition. A run whose
+        patterns are not determined by the shape gives the windows those of its
+        obstructions that are window constraints. Then the patterns of each run must
+        be determined by the shape, those of each window must be closed under Knuth
+        moves, and the requirements and assumptions must be on whole columns or whole
+        rows of the block."""
         rows = self._rows_of_column.get(column, tuple())
         if (
             width < 2
             or not rows
-            or any(self._rows_of_column.get(x) != rows for x in block_columns)
+            or any(
+                self._rows_of_column.get(x) != rows
+                for x in range(column, column + width)
+            )
         ):
             return _Analysis("the columns are not a block")
         if not self._reduced:
             return _Analysis("the tiling has an empty row or column")
-        block = frozenset((x, y) for x in block_columns for y in rows)
+        block = _block(column, width, rows)
         constraints = _Constraints()
         reason = (
-            self._classify(constraints, block_columns, rows, block)
-            or self._closure(constraints, block_columns, rows, block)
-            or self._requirements_and_assumptions(block_columns, rows, block)
+            self._classify(constraints, block)
+            or self._check_closures(constraints, block)
+            or self._requirements_and_assumptions(block)
         )
         if reason is not None:
             return _Analysis(reason)
-        last = 2 * column + width - 1
         identity = all(
-            patterns == constraints.run_patterns.get((last - high, last - low), set())
+            patterns
+            == constraints.run_patterns.get(
+                (
+                    _mirror_column(column, width, high),
+                    _mirror_column(column, width, low),
+                ),
+                set(),
+            )
             for (low, high), patterns in constraints.run_patterns.items()
         ) and self._symmetric(column, width)
         return _Analysis(
@@ -344,17 +391,12 @@ class KnuthSlide:
             identity,
         )
 
-    def _classify(
-        self,
-        constraints: _Constraints,
-        block_columns: Tuple[int, ...],
-        rows: Tuple[int, ...],
-        block: FrozenSet[Cell],
-    ) -> Optional[str]:
+    def _classify(self, constraints: _Constraints, block: _Block) -> Optional[str]:
         """Put each obstruction with points in the block into the constraints, as
         _analyze says, or return why one does not fit."""
+        rows = block.rows
         for obstruction in self._tiling.obstructions:
-            indices = _block_indices(obstruction, block)
+            indices = block.indices(obstruction)
             if not indices:
                 continue
             # a gridding no gridded permutation has: it may be all that keeps a cell
@@ -371,18 +413,12 @@ class KnuthSlide:
                     len(rows) == 1 or self._complete(obstruction, indices, (low,), rows)
                 )
             ):
-                constraints.add_run(
-                    obstruction,
-                    (low, low),
-                    obstruction.get_gridded_perm_in_cells(block).patt,
-                )
+                constraints.add_run(obstruction, (low, low), block.pattern(obstruction))
                 continue
-            window_key = self._window(obstruction, indices, block_columns, rows)
+            window_key = self._as_window_constraint(obstruction, indices, block)
             if window_key is not None:
                 constraints.add_window(
-                    obstruction,
-                    window_key,
-                    obstruction.get_gridded_perm_in_cells(block).patt,
+                    obstruction, window_key, block.pattern(obstruction)
                 )
             elif (
                 inside
@@ -392,43 +428,36 @@ class KnuthSlide:
                 )
             ):
                 constraints.add_run(
-                    obstruction,
-                    (low, high),
-                    obstruction.get_gridded_perm_in_cells(block).patt,
+                    obstruction, (low, high), block.pattern(obstruction)
                 )
             else:
                 return "an obstruction depends on how the block's points are split"
         return None
 
-    def _closure(
-        self,
-        constraints: _Constraints,
-        block_columns: Tuple[int, ...],
-        rows: Tuple[int, ...],
-        block: FrozenSet[Cell],
+    def _check_closures(
+        self, constraints: _Constraints, block: _Block
     ) -> Optional[str]:
-        """Return why the patterns of a run are not determined by the RSK shape, once
-        the run has given the windows its window constraints, or why those of a
-        window are not closed under Knuth moves; None if neither."""
+        """Return why the patterns of a run are not determined by the RSK shape, or
+        why those of a window are not closed under Knuth moves; None if neither. A
+        run whose patterns are not determined by the shape first gives the windows
+        its obstructions that are window constraints."""
         for span, patterns in list(constraints.run_patterns.items()):
             if is_shape_closed(patterns):
                 continue
             kept: List[GriddedPerm] = []
             for obstruction in constraints.runs[span]:
-                indices = _block_indices(obstruction, block)
-                window_key = self._window(obstruction, indices, block_columns, rows)
+                window_key = self._as_window_constraint(
+                    obstruction, block.indices(obstruction), block
+                )
                 if window_key is None:
                     kept.append(obstruction)
                 else:
                     constraints.add_window(
-                        obstruction,
-                        window_key,
-                        obstruction.get_gridded_perm_in_cells(block).patt,
+                        obstruction, window_key, block.pattern(obstruction)
                     )
             constraints.runs[span] = kept
             constraints.run_patterns[span] = {
-                obstruction.get_gridded_perm_in_cells(block).patt
-                for obstruction in kept
+                block.pattern(obstruction) for obstruction in kept
             }
             if not is_shape_closed(constraints.run_patterns[span]):
                 return "a run's patterns are not determined by the RSK shape"
@@ -437,18 +466,14 @@ class KnuthSlide:
                 return "a window's patterns are not closed under Knuth moves"
         return None
 
-    def _window(
-        self,
-        obstruction: GriddedPerm,
-        indices: Sequence[int],
-        block_columns: Tuple[int, ...],
-        rows: Tuple[int, ...],
+    def _as_window_constraint(
+        self, obstruction: GriddedPerm, indices: Sequence[int], block: _Block
     ) -> Optional[_WindowKey]:
-        """The window key of the obstruction if it is a window constraint, and None
-        if it is not."""
-        window_key = self._window_key(obstruction, indices, rows)
+        """Return the window key of the obstruction if it is a window constraint,
+        and None if it is not."""
+        window_key = self._window_key(obstruction, indices, block.rows)
         if window_key is None or not self._complete(
-            obstruction, indices, block_columns, window_key.rows
+            obstruction, indices, block.columns, window_key.rows
         ):
             return None
         return window_key
@@ -475,18 +500,14 @@ class KnuthSlide:
             and assumptions == mirrored_assumptions
         )
 
-    def _requirements_and_assumptions(
-        self,
-        block_columns: Tuple[int, ...],
-        rows: Tuple[int, ...],
-        block: FrozenSet[Cell],
-    ) -> Optional[str]:
+    def _requirements_and_assumptions(self, block: _Block) -> Optional[str]:
         """Return why a requirement or an assumption with points in the block is not
         on whole columns or whole rows of it, as points it counts; None if none is."""
+        block_columns, rows = block.columns, block.rows
         for requirement in self._tiling.requirements:
             cells = set()
             for gridded_perm in requirement:
-                if not _block_indices(gridded_perm, block):
+                if not block.indices(gridded_perm):
                     continue
                 if len(gridded_perm) != 1:
                     return "a requirement other than points has points in the block"
@@ -496,7 +517,7 @@ class KnuthSlide:
         for assumption in self._tiling.assumptions:
             cells = set()
             for gridded_perm in assumption.gps:
-                if not _block_indices(gridded_perm, block):
+                if not block.indices(gridded_perm):
                     continue
                 if len(gridded_perm) != 1:
                     return "an assumption on more than a point has points in the block"
@@ -578,14 +599,16 @@ def _regriddings(
     columns: Tuple[int, ...],
     rows: Tuple[int, ...],
 ) -> Iterator[Gridding]:
-    """Every regridding, as (pattern, cells), of the obstruction's block points, at
-    the indices and consecutive in position, over the cells of the columns and rows,
-    in the order of their positions and of their values; the other points keep their
-    cells. Each is a valid gridding when the obstruction is not contradictory and
-    each of its other points is below all its block points in value and in a row no
-    higher than any of the rows, or above them all and in a row no lower: as a
-    window's obstructions are, over the rows their block points span, and a run's,
-    which have no other points."""
+    """Yield every regridding of the obstruction's block points, at the indices,
+    over the cells of the columns and rows, as (pattern, cells). The points keep
+    their order: in columns, by position, and in rows, by value. The other points
+    keep their cells.
+
+    Each regridding is a valid gridding when the obstruction is not contradictory
+    and each of its other points lies below all its block points, in value and in a
+    row no higher than the rows, or above them all, in a row no lower. A window's
+    obstructions are so, over the rows their block points span, and a run's have no
+    other points."""
     pattern = obstruction.patt
     by_value = sorted(indices, key=lambda i: pattern[i])
     row_choices = list(combinations_with_replacement(rows, len(indices)))
@@ -615,8 +638,3 @@ def _columns_or_rows(
     return cells == {
         (x, y) for x in columns for y in rows if x in whole_columns or y in whole_rows
     }
-
-
-def _block_indices(gridded_perm: GriddedPerm, block: FrozenSet[Cell]) -> List[int]:
-    """The indices of the gridded permutation's points in the block."""
-    return [i for i, cell in enumerate(gridded_perm.pos) if cell in block]

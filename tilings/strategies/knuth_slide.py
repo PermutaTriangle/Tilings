@@ -4,7 +4,7 @@ of adjacent columns, or of adjacent rows, reversed. See tilings.algorithms.knuth
 for when a block slides and why the slide is a bijection.
 """
 
-from typing import Dict, Iterator, Optional, Tuple, cast
+from typing import Callable, Dict, Iterator, Optional, Tuple, cast
 
 from comb_spec_searcher.exception import StrategyDoesNotApply
 from comb_spec_searcher.strategies import Rule
@@ -46,21 +46,33 @@ class KnuthSlideStrategy(DisjointUnionStrategy[Tiling, GriddedPerm]):
             raise StrategyDoesNotApply(f"no Knuth slide: {reason}")
         return (self._inverse_if_transposed(slide.slide(self.start, self.width)),)
 
-    def _map(self, comb_class: Tiling, gridded_perm: GriddedPerm) -> GriddedPerm:
+    def _in_columns(
+        self,
+        comb_class: Tiling,
+        gridded_perm: GriddedPerm,
+        function: Callable[[GriddedPerm], GriddedPerm],
+    ) -> GriddedPerm:
+        """Apply the function, of the gridded permutations of the tiling whose
+        columns slide, to a gridded permutation: through the inverse for a slide of
+        rows."""
         if not self.transpose:
-            return KnuthSlide.slide_gridded_perm(gridded_perm, self.start, self.width)
-        image = KnuthSlide.slide_gridded_perm(
-            _INVERSE.gp_transform(comb_class, gridded_perm), self.start, self.width
-        )
+            return function(gridded_perm)
+        image = function(_INVERSE.gp_transform(comb_class, gridded_perm))
         return _INVERSE.inverse_gp_transform(comb_class, image)
+
+    def _map(self, comb_class: Tiling, gridded_perm: GriddedPerm) -> GriddedPerm:
+        return self._in_columns(
+            comb_class,
+            gridded_perm,
+            lambda image: KnuthSlide.slide_gridded_perm(image, self.start, self.width),
+        )
 
     def _mirror(self, comb_class: Tiling, gridded_perm: GriddedPerm) -> GriddedPerm:
         """A requirement's or an assumption's point with the block mirrored."""
         mirror = KnuthSlide.mirror(self.start, self.width)
-        if not self.transpose:
-            return gridded_perm.apply_map(mirror)
-        image = _INVERSE.gp_transform(comb_class, gridded_perm).apply_map(mirror)
-        return _INVERSE.inverse_gp_transform(comb_class, image)
+        return self._in_columns(
+            comb_class, gridded_perm, lambda image: image.apply_map(mirror)
+        )
 
     def forward_map(
         self,

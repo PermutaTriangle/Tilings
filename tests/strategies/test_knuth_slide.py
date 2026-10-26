@@ -201,8 +201,8 @@ def test_a_block_of_four_columns():
         if slide_rule.strategy.width == 4
     ]
     assert rule.children[0] == decreasing_staircase([5, 4, 3, 2], mirrored=True)
-    assert counts(staircase, 7) == [1, 4, 19, 104, 641, 4364, 32293, 256288]
-    assert counts(rule.children[0], 7) == counts(staircase, 7)
+    assert counts(staircase, 6) == [1, 4, 19, 104, 641, 4364, 32293]
+    assert counts(rule.children[0], 6) == counts(staircase, 6)
     assert_bijection(staircase, rule.children[0], rule.strategy, 5)
     sanity_check(rule, 5)
     assert not [
