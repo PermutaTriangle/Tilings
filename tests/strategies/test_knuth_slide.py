@@ -1487,3 +1487,28 @@ def test_the_options_are_keyword_only():
         True,
         False,
     )
+
+
+def test_a_run_determined_by_the_shape_keeps_its_window_constraints():
+    """Each cell's basis is determined by the RSK shape, but without 132 and 312,
+    which the two cells also avoid together, it would not be: 213 and 231 have the
+    shape of 132. So each basis stays a run whole, and the slide swaps them."""
+    left, right = (0, 0), (1, 0)
+    together = list(griddings("132", [left, right])) + list(
+        griddings("312", [left, right])
+    )
+    tiling = Tiling(
+        cell(left, "132", "213", "231", "312")
+        + cell(right, "123", "132", "213", "231", "312")
+        + together
+    )
+    assert KnuthSlide(tiling).why_not(0, 2) is None
+    (rule,) = slides(tiling)
+    child = rule.children[0]
+    assert child == Tiling(
+        cell(left, "123", "132", "213", "231", "312")
+        + cell(right, "132", "213", "231", "312")
+        + together
+    )
+    assert_bijection(tiling, child, rule.strategy, 6)
+    sanity_check(rule, 6)
