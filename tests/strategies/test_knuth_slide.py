@@ -1124,3 +1124,239 @@ def test_a_contradictory_obstruction_does_not_give_a_wrong_slide():
         == "an obstruction with points in the block is contradictory"
     )
     assert not slides(tiling)
+
+
+def two_points_left_of_the_pair():
+    """Two cells of at most one point each, left of Babson and West's pair and below
+    it: the pair's word avoids 132 when the first has a point, and 312 when the
+    second has one."""
+    first, second, x_cell, y_cell = (0, 0), (1, 0), (2, 0), (3, 0)
+    obstructions = (
+        cell(first, "12", "21")
+        + cell(second, "12", "21")
+        + cell(x_cell, "21")
+        + cell(y_cell, "321")
+    )
+    for point, pattern in ((first, "132"), (second, "312")):
+        word = Perm((0,) + tuple(value + 1 for value in Perm.to_standard(pattern)))
+        for choice in combinations_with_replacement([x_cell, y_cell], len(pattern)):
+            obstructions.append(GriddedPerm(word, (point,) + choice))
+    return Tiling(obstructions)
+
+
+def test_windows_whose_outside_points_are_in_other_cells_are_closed_on_their_own():
+    """{132, 312} is closed under Knuth moves, but neither pattern alone is: the two
+    windows have the same outside pattern below the pair, in different cells, and
+    each must be closed on its own, so the slide refuses. Were the two merged, the
+    slide would map some gridded permutations out of the child, though the counts
+    agree."""
+    tiling = two_points_left_of_the_pair()
+    assert not any(obstruction.contradictory() for obstruction in tiling.obstructions)
+    assert (
+        KnuthSlide(tiling).why_not(2, 2)
+        == "a window's patterns are not closed under Knuth moves"
+    )
+    assert not [
+        rule
+        for rule in slides(tiling)
+        if rule.strategy.start == 2 and not rule.strategy.transpose
+    ]
+    naive = naive_one_row_slide(tiling, 2, 2)
+    assert counts(tiling, 5) == counts(naive, 5)
+    images = {
+        KnuthSlide.slide_gridded_perm(gridded_perm, 2, 2)
+        for gridded_perm in tiling.objects_of_size(4)
+    }
+    assert not images <= set(naive.objects_of_size(4))
+
+
+def test_a_contradictory_obstruction_away_from_the_block_does_not_stop_the_slide():
+    """Only an obstruction with points in the block must be one some gridded
+    permutation can have. Here the 10 from cell (2, 0) to cell (3, 1), whose higher
+    value is on the left but in the lower row, is away from the pair in columns 0 and
+    1: it stays in the child as it is, and the slide is a bijection."""
+    away = GriddedPerm(Perm((1, 0)), [(2, 0), (3, 1)])
+    assert away.contradictory()
+    tiling = Tiling(babson_west.obstructions + (away,))
+    assert tiling.dimensions == (4, 2)
+    (rule,) = slides(tiling)
+    assert (rule.strategy.start, rule.strategy.width) == (0, 2)
+    assert rule.children[0] == Tiling(
+        slides(babson_west)[0].children[0].obstructions + (away,)
+    )
+    assert away in rule.children[0].obstructions
+    assert_bijection(tiling, rule.children[0], rule.strategy, 3)
+    sanity_check(rule, 3)
+
+
+def test_the_parameters_of_two_assumptions_change_places():
+    """An assumption on each cell of the pair: the slide takes the parameter of each
+    to the child's parameter of the other, for columns and for rows. An identity map
+    would pass with one assumption, whose parameter is its own either way."""
+    tiling = Tiling(
+        babson_west.obstructions,
+        [],
+        [TrackingAssumption([point_at(LEFT)]), TrackingAssumption([point_at(RIGHT)])],
+    )
+    for frame in (tiling, tiling.inverse()):
+        (rule,) = slides(frame)
+        swapped = ({"k_0": "k_1", "k_1": "k_0"},)
+        assert rule.strategy.extra_parameters(frame, rule.children) == swapped
+        assert rule.strategy.extra_parameters(frame) == swapped
+        sanity_check(rule, 5)
+
+
+def test_a_requirement_or_an_assumption_on_more_than_a_point_stops_the_slide():
+    """A requirement or an assumption whose gridded permutation has two points, in
+    the block: the mirror would take its points out of order."""
+    two_points = GriddedPerm(Perm((0, 1)), (LEFT, RIGHT))
+    with_requirement = Tiling(babson_west.obstructions, [[two_points]])
+    assert (
+        KnuthSlide(with_requirement).why_not(0, 2)
+        == "a requirement other than points has points in the block"
+    )
+    assert not slides(with_requirement)
+    with_assumption = Tiling(
+        babson_west.obstructions, [], [TrackingAssumption([two_points])]
+    )
+    assert (
+        KnuthSlide(with_assumption).why_not(0, 2)
+        == "an assumption on more than a point has points in the block"
+    )
+    assert not slides(with_assumption)
+
+
+def test_a_tiling_with_an_empty_row_does_not_slide():
+    """A block of two rows with an empty row between them: the child would lose the
+    empty row, and the map would not fit it."""
+    cells = [(0, 0), (0, 2), (1, 0), (1, 2)]
+    tiling = Tiling(
+        list(griddings("12", cells)) + [point_at((0, 1)), point_at((1, 1))],
+        remove_empty_rows_and_cols=False,
+    )
+    assert tiling.dimensions == (2, 3)
+    assert KnuthSlide(tiling).why_not(0, 2) == "the tiling has an empty row or column"
+    assert not slides(tiling)
+
+
+@pytest.mark.parametrize("transpose", [False, True])
+@pytest.mark.parametrize(
+    "start, width", [(-1, 2), (1, 2), (0, 3), (5, 2), (0, 0), (1, 1)]
+)
+def test_a_block_that_does_not_fit_the_tiling_is_refused(start, width, transpose):
+    """A block that starts before the first column, ends after the last, or is
+    narrower than two columns, as a saved specification could name for another
+    tiling: the strategy does not apply, in columns and in rows."""
+    from comb_spec_searcher.exception import StrategyDoesNotApply
+
+    tiling = babson_west.inverse() if transpose else babson_west
+    assert (
+        KnuthSlide(babson_west).why_not(start, width) == "the columns are not a block"
+    )
+    with pytest.raises(StrategyDoesNotApply):
+        KnuthSlideStrategy(start, width, transpose)(tiling)
+
+
+def test_requirements_and_assumptions_next_to_the_block_stay_where_they_are():
+    """Requirements and assumptions on a point in the cell before the block and on
+    one in the cell after it are not mirrored: the block is the columns 1 and 2."""
+    before, after = (0, 0), (3, 0)
+    tiling = Tiling(
+        cell(before, "12")
+        + cell(FIRST, "21")
+        + cell(SECOND, "321")
+        + griddings_of("321", FIRST, SECOND, SECOND)
+        + cell(after, "12"),
+        [[point_at(before)], [point_at(after)]],
+        [TrackingAssumption([point_at(before)]), TrackingAssumption([point_at(after)])],
+    )
+    (rule,) = [
+        slide_rule
+        for slide_rule in slides(tiling)
+        if (slide_rule.strategy.start, slide_rule.strategy.width) == (1, 2)
+    ]
+    assert rule.children[0].requirements == tiling.requirements
+    assert rule.children[0].assumptions == tiling.assumptions
+    assert rule.strategy.extra_parameters(tiling, rule.children) == (
+        {"k_0": "k_0", "k_1": "k_1"},
+    )
+    sanity_check(rule, 4)
+
+
+@pytest.mark.parametrize("transpose", [False, True], ids=["columns", "rows"])
+def test_requirements_and_assumptions_of_a_block_of_three(transpose):
+    """A requirement and an assumption on the first of three columns (or rows) go to
+    the third, and an assumption on the middle one stays: the mirror is not that of a
+    block of two."""
+    staircase = decreasing_staircase([4, 3, 2])
+    columns = Tiling(
+        staircase.obstructions,
+        [[point_at((0, 0))]],
+        [
+            TrackingAssumption([point_at((0, 0))]),
+            TrackingAssumption([point_at((1, 0))]),
+        ],
+    )
+    tiling = columns.inverse() if transpose else columns
+    (rule,) = [
+        slide_rule for slide_rule in slides(tiling) if slide_rule.strategy.width == 3
+    ]
+    expected = Tiling(
+        decreasing_staircase([4, 3, 2], mirrored=True).obstructions,
+        [[point_at((2, 0))]],
+        [
+            TrackingAssumption([point_at((1, 0))]),
+            TrackingAssumption([point_at((2, 0))]),
+        ],
+    )
+    assert rule.strategy.transpose == transpose
+    assert rule.children[0] == (expected.inverse() if transpose else expected)
+    assert rule.strategy.extra_parameters(tiling, rule.children) == (
+        {"k_0": "k_1", "k_1": "k_0"},
+    )
+    assert_bijection(tiling, rule.children[0], rule.strategy, 4)
+    sanity_check(rule, 4)
+
+
+def test_the_families_of_a_window_are_told_apart_by_the_rows_they_span():
+    """Two columns and two rows, and a cell at the right of the block. The top row
+    avoids 21 across both cells, so the 21s there, regridded over the columns, are all
+    forbidden. In the bottom row only the second cell avoids 21, so the 21 there is
+    not a complete family. The two have the same pattern, no points outside the block
+    and the same columns: they differ in rows only, and the slide must refuse."""
+    after = (2, 0)
+    tiling = Tiling(
+        list(griddings("21", [(0, 1), (1, 1)]))
+        + cell((1, 0), "21")
+        + griddings_of("12", (0, 0), after)
+        + griddings_of("12", (1, 0), after)
+    )
+    assert tiling.dimensions == (3, 2)
+    assert (
+        KnuthSlide(tiling).why_not(0, 2)
+        == "an obstruction depends on how the block's points are split"
+    )
+    assert not [
+        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.transpose
+    ]
+
+
+@pytest.mark.parametrize(
+    "tiling",
+    [
+        two_rows(1, [(0, 0), (3, 1)]),
+        pair_above_a_column(2),
+        decreasing_staircase([4, 3, 2]),
+    ],
+    ids=["ferrers, both sides", "above a column", "three columns"],
+)
+def test_the_child_of_a_slide_has_only_possible_obstructions(tiling):
+    """The regriddings of an obstruction are valid griddings without any bound on the
+    rows, as the obstruction is not contradictory: no obstruction of the child is."""
+    assert not any(obstruction.contradictory() for obstruction in tiling.obstructions)
+    rules = slides(tiling)
+    assert rules
+    for rule in rules:
+        assert not any(
+            obstruction.contradictory() for obstruction in rule.children[0].obstructions
+        )
