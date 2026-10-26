@@ -293,7 +293,7 @@ def two_rows(strip_column, short_columns):
 def test_the_ferrers_version(short_columns):
     parent = two_rows(1, short_columns)
     (rule,) = [
-        slide_rule for slide_rule in slides(parent) if not slide_rule.strategy.transpose
+        slide_rule for slide_rule in slides(parent) if not slide_rule.strategy.of_rows
     ]
     assert rule.children[0] == two_rows(2, short_columns)
     assert_bijection(parent, rule.children[0], rule.strategy, 5)
@@ -422,7 +422,7 @@ def test_a_requirement_on_part_of_a_column_stops_the_ferrers_slide():
     (rule,) = [
         slide_rule
         for slide_rule in slides(whole_column)
-        if not slide_rule.strategy.transpose
+        if not slide_rule.strategy.of_rows
     ]
     sanity_check(rule, 5)
 
@@ -486,23 +486,23 @@ def test_a_tiling_with_an_empty_column_does_not_slide():
     assert not slides(tiling)
 
 
-def test_transposed_slides():
+def test_slides_of_rows():
     """The slide of a block of rows: Babson and West's pair stacked in a column."""
     tiling = babson_west.inverse()
     (rule,) = slides(tiling)
-    assert rule.strategy.transpose
+    assert rule.strategy.of_rows
     assert rule.children[0] == slides(babson_west)[0].children[0].inverse()
     assert_bijection(tiling, rule.children[0], rule.strategy, 6)
     sanity_check(rule, 6)
 
 
-def test_transposed_slides_with_assumptions():
+def test_slides_of_rows_with_assumptions():
     """A block of rows with an assumption: its parameter goes through the inverse."""
     tiling = Tiling(
         babson_west.obstructions, [], [TrackingAssumption([GriddedPerm((0,), (LEFT,))])]
     ).inverse()
     (rule,) = slides(tiling)
-    assert rule.strategy.transpose
+    assert rule.strategy.of_rows
     assert rule.children[0] == slides(tiling.inverse())[0].children[0].inverse()
     assert_bijection(tiling, rule.children[0], rule.strategy, 5)
     sanity_check(rule, 6)
@@ -525,7 +525,7 @@ def test_factory_options():
     assert not [
         slide_rule
         for slide_rule in slides(two_rows(1, [(0, 0)]), one_line_only=True)
-        if not slide_rule.strategy.transpose
+        if not slide_rule.strategy.of_rows
     ]
     assert slides(babson_west.inverse())
     assert not slides(babson_west.inverse(), slide_rows=False)
@@ -555,13 +555,13 @@ def test_the_strategy_in_json_and_the_backward_map_of_no_object():
     object raises."""
     from comb_spec_searcher.exception import ObjectMappingError
 
-    strategy = KnuthSlideStrategy(1, 2, transpose=True)
+    strategy = KnuthSlideStrategy(1, 2, of_rows=True)
     assert strategy.to_jsonable() == {
         "class_module": "tilings.strategies.knuth_slide",
         "strategy_class": "KnuthSlideStrategy",
         "start": 1,
         "width": 2,
-        "transpose": True,
+        "of_rows": True,
     }
     again = KnuthSlideStrategy.from_dict(strategy.to_jsonable())
     assert repr(again) == repr(strategy)
@@ -623,7 +623,7 @@ def test_av_15432_with_three_column_slides():
     ]
 
 
-def test_a_specification_of_transposed_slides():
+def test_a_specification_of_slides_of_rows():
     """Av(1432) with column placements, whose slides are blocks of rows: the
     specification counts, samples, and survives a JSON round trip, which rebuilds
     each slide's child through its decomposition function."""
@@ -636,7 +636,7 @@ def test_a_specification_of_transposed_slides():
     knuth = [
         step.strategy for step in rules if isinstance(step.strategy, KnuthSlideStrategy)
     ]
-    assert any(strategy.transpose for strategy in knuth)
+    assert any(strategy.of_rows for strategy in knuth)
     expected = [1, 1, 2, 6, 23, 103, 513, 2761, 15767]
     assert [spec.count_objects_of_size(size) for size in range(9)] == expected
     again = CombinatorialSpecification.from_dict(
@@ -673,7 +673,7 @@ def test_a_block_above_other_rows_slides_like_one_in_the_lowest_row(height):
     own points to the other cell must still be there."""
     parent = pair_above_a_column(height)
     (rule,) = slides(parent)
-    assert not rule.strategy.transpose
+    assert not rule.strategy.of_rows
     assert rule.children[0] == pair_above_a_column(height, mirrored=True)
     assert_bijection(parent, rule.children[0], rule.strategy, 5)
     sanity_check(rule, 5)
@@ -836,7 +836,7 @@ def test_every_point_and_every_assumption_is_checked(requirements, assumptions, 
     tiling = ferrers_with(requirements, assumptions)
     assert KnuthSlide(tiling).why_not(1, 2) == reason
     assert not [
-        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.transpose
+        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.of_rows
     ]
 
 
@@ -855,7 +855,7 @@ def test_a_requirement_or_an_assumption_on_a_whole_row_of_the_block_slides(
     accepted, and the parameter of the assumption is kept."""
     tiling = ferrers_with(requirements, assumptions)
     (rule,) = [
-        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.transpose
+        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.of_rows
     ]
     assert rule.children[0].requirements == tiling.requirements
     assert rule.children[0].assumptions == tiling.assumptions
@@ -895,7 +895,7 @@ def test_one_line_only_leaves_out_the_blocks_of_several_rows():
         (0, 2),
         (2, 2),
     }
-    assert not any(rule.strategy.transpose for rule in both)
+    assert not any(rule.strategy.of_rows for rule in both)
     (one_row,) = slides(tiling, one_line_only=True)
     assert (one_row.strategy.start, one_row.strategy.width) == (0, 2)
     for rule in both:
@@ -958,17 +958,17 @@ def test_the_blocks_of_a_tiling(kwargs, expected):
         "ferrers",
     ],
 )
-@pytest.mark.parametrize("transpose", [False, True])
+@pytest.mark.parametrize("of_rows", [False, True])
 @pytest.mark.parametrize("one_line_only", [False, True])
-def test_has_blocks_says_whether_there_are_blocks(tiling, transpose, one_line_only):
+def test_has_blocks_says_whether_there_are_blocks(tiling, of_rows, one_line_only):
     """The cheap test agrees with the blocks, for columns and for rows."""
-    frame = tiling.inverse() if transpose else tiling
-    assert KnuthSlide.has_blocks(tiling, transpose, one_line_only) == bool(
-        list(KnuthSlide(frame).blocks(2, one_line_only))
+    frame = tiling.inverse() if of_rows else tiling
+    assert KnuthSlide.has_blocks(tiling, of_rows, one_line_only=one_line_only) == bool(
+        list(KnuthSlide(frame).blocks(2, one_line_only=one_line_only))
     )
-    if not transpose and not one_line_only:
+    if not of_rows and not one_line_only:
         assert KnuthSlide.has_blocks(tiling) == KnuthSlide.has_blocks(
-            tiling, False, False
+            tiling, False, one_line_only=False
         )
     assert KnuthSlide.has_blocks(tiling) == bool(list(KnuthSlide(tiling).blocks()))
 
@@ -1094,10 +1094,10 @@ def test_the_parameters_of_a_strategy_without_its_children():
     assert rule.strategy.extra_parameters(tiling) == ({"k_0": "k_0"},)
     assert rule.strategy.extra_parameters(tiling, rule.children) == ({"k_0": "k_0"},)
     assert rule.strategy.extra_parameters(babson_west) == ({},)
-    assert not KnuthSlideStrategy(0, 2).transpose
+    assert not KnuthSlideStrategy(0, 2).of_rows
     assert str(rule.strategy) == "Knuth slide of the 2 columns from column 0"
-    (transposed,) = slides(babson_west.inverse())
-    assert str(transposed.strategy) == "Knuth slide of the 2 rows from row 0"
+    (slide_of_rows,) = slides(babson_west.inverse())
+    assert str(slide_of_rows.strategy) == "Knuth slide of the 2 rows from row 0"
 
 
 def test_a_contradictory_obstruction_does_not_give_a_wrong_slide():
@@ -1159,7 +1159,7 @@ def test_windows_whose_outside_points_are_in_other_cells_are_closed_on_their_own
     assert not [
         rule
         for rule in slides(tiling)
-        if rule.strategy.start == 2 and not rule.strategy.transpose
+        if rule.strategy.start == 2 and not rule.strategy.of_rows
     ]
     naive = naive_one_row_slide(tiling, 2, 2)
     assert counts(tiling, 5) == counts(naive, 5)
@@ -1239,22 +1239,22 @@ def test_a_tiling_with_an_empty_row_does_not_slide():
     assert not slides(tiling)
 
 
-@pytest.mark.parametrize("transpose", [False, True])
+@pytest.mark.parametrize("of_rows", [False, True])
 @pytest.mark.parametrize(
     "start, width", [(-1, 2), (1, 2), (0, 3), (5, 2), (0, 0), (1, 1)]
 )
-def test_a_block_that_does_not_fit_the_tiling_is_refused(start, width, transpose):
+def test_a_block_that_does_not_fit_the_tiling_is_refused(start, width, of_rows):
     """A block that starts before the first column, ends after the last, or is
     narrower than two columns, as a saved specification could name for another
     tiling: the strategy does not apply, in columns and in rows."""
     from comb_spec_searcher.exception import StrategyDoesNotApply
 
-    tiling = babson_west.inverse() if transpose else babson_west
+    tiling = babson_west.inverse() if of_rows else babson_west
     assert (
         KnuthSlide(babson_west).why_not(start, width) == "the columns are not a block"
     )
     with pytest.raises(StrategyDoesNotApply):
-        KnuthSlideStrategy(start, width, transpose)(tiling)
+        KnuthSlideStrategy(start, width, of_rows)(tiling)
 
 
 def test_requirements_and_assumptions_next_to_the_block_stay_where_they_are():
@@ -1283,8 +1283,8 @@ def test_requirements_and_assumptions_next_to_the_block_stay_where_they_are():
     sanity_check(rule, 4)
 
 
-@pytest.mark.parametrize("transpose", [False, True], ids=["columns", "rows"])
-def test_requirements_and_assumptions_of_a_block_of_three(transpose):
+@pytest.mark.parametrize("of_rows", [False, True], ids=["columns", "rows"])
+def test_requirements_and_assumptions_of_a_block_of_three(of_rows):
     """A requirement and an assumption on the first of three columns (or rows) go to
     the third, and an assumption on the middle one stays: the mirror is not that of a
     block of two."""
@@ -1297,7 +1297,7 @@ def test_requirements_and_assumptions_of_a_block_of_three(transpose):
             TrackingAssumption([point_at((1, 0))]),
         ],
     )
-    tiling = columns.inverse() if transpose else columns
+    tiling = columns.inverse() if of_rows else columns
     (rule,) = [
         slide_rule for slide_rule in slides(tiling) if slide_rule.strategy.width == 3
     ]
@@ -1309,8 +1309,8 @@ def test_requirements_and_assumptions_of_a_block_of_three(transpose):
             TrackingAssumption([point_at((2, 0))]),
         ],
     )
-    assert rule.strategy.transpose == transpose
-    assert rule.children[0] == (expected.inverse() if transpose else expected)
+    assert rule.strategy.of_rows == of_rows
+    assert rule.children[0] == (expected.inverse() if of_rows else expected)
     assert rule.strategy.extra_parameters(tiling, rule.children) == (
         {"k_0": "k_1", "k_1": "k_0"},
     )
@@ -1337,7 +1337,7 @@ def test_the_families_of_a_window_are_told_apart_by_the_rows_they_span():
         == "an obstruction depends on how the block's points are split"
     )
     assert not [
-        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.transpose
+        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.of_rows
     ]
 
 
@@ -1413,7 +1413,7 @@ def test_a_window_in_either_row_of_the_block_must_be_closed_under_knuth_moves(
         == "a window's patterns are not closed under Knuth moves"
     )
     assert not [
-        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.transpose
+        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.of_rows
     ]
 
 
@@ -1427,10 +1427,10 @@ def test_one_line_only_leaves_out_the_blocks_of_several_columns_of_cells():
         (0, 2),
         (2, 2),
     }
-    assert all(rule.strategy.transpose for rule in both)
+    assert all(rule.strategy.of_rows for rule in both)
     (one_column,) = slides(tiling, one_line_only=True)
     assert (one_column.strategy.start, one_column.strategy.width) == (0, 2)
-    assert one_column.strategy.transpose
+    assert one_column.strategy.of_rows
 
 
 @pytest.mark.parametrize(
@@ -1453,7 +1453,7 @@ def test_a_requirement_or_an_assumption_away_from_the_block_does_not_stop_the_sl
     are in the cell before the block, which the slide leaves as it is."""
     tiling = ferrers_with(requirements, assumptions)
     (rule,) = [
-        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.transpose
+        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.of_rows
     ]
     assert rule.children[0].requirements == tiling.requirements
     assert rule.children[0].assumptions == tiling.assumptions
@@ -1470,3 +1470,20 @@ def test_the_factory_s_json_keys():
         "one_line_only": True,
         "slide_rows": False,
     }
+
+
+def test_the_options_are_keyword_only():
+    """The factory's options, and those of blocks and has_blocks, are keyword-only,
+    so that a caller who passes them by position fails loudly."""
+    with pytest.raises(TypeError):
+        KnuthSlideFactory(3, True, True)
+    with pytest.raises(TypeError):
+        KnuthSlide(babson_west).blocks(3, True)
+    with pytest.raises(TypeError):
+        KnuthSlide.has_blocks(babson_west, False, True)
+    factory = KnuthSlideFactory(3, one_line_only=True, slide_rows=False)
+    assert (factory.max_width, factory.one_line_only, factory.slide_rows) == (
+        3,
+        True,
+        False,
+    )

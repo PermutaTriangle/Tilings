@@ -505,7 +505,7 @@ strategy_objects = (
         KnuthSlideFactory(),
         KnuthSlideFactory(max_width=2, one_line_only=True, slide_rows=False),
         KnuthSlideStrategy(1, 2),
-        KnuthSlideStrategy(0, 3, transpose=True),
+        KnuthSlideStrategy(0, 3, of_rows=True),
     ]
     + indices_and_row(PointJumpingStrategy)
     + [TargetedCellInsertionFactory()]

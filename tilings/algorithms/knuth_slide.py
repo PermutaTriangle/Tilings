@@ -204,12 +204,12 @@ class KnuthSlide:
 
     @staticmethod
     def has_blocks(
-        tiling: "Tiling", transpose: bool = False, one_line_only: bool = False
+        tiling: "Tiling", of_rows: bool = False, *, one_line_only: bool = False
     ) -> bool:
-        """Could the tiling have a block of columns, or with transpose of rows? A
-        cheap test, to avoid computing the inverse tiling for nothing."""
+        """Could the tiling have a block of columns, or with of_rows of rows? A cheap
+        test, to avoid computing the inverse tiling for nothing."""
         cells = tiling.active_cells
-        if transpose:
+        if of_rows:
             cells = frozenset((y, x) for x, y in cells)
         lines = _lines(cells)
         return any(
@@ -219,7 +219,7 @@ class KnuthSlide:
         )
 
     def blocks(
-        self, max_width: int = 3, one_line_only: bool = False
+        self, max_width: int = 3, *, one_line_only: bool = False
     ) -> Iterator[Tuple[int, int]]:
         """Yield every block (first column, width) of width 2 to max_width. With
         one_line_only, only blocks within one row of cells."""

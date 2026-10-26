@@ -7,16 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- `KnuthSlideFactory(max_width=3, one_line_only=False, slide_rows=True)` and
-  `KnuthSlideStrategy`, the Knuth slide: an equivalence that reverses a block of
-  2 to `max_width` adjacent columns with the same rows of active cells, and,
-  unless `slide_rows` is False, a block of adjacent rows too; columns always
-  slide. With `one_line_only`, a block of columns lies in one row of cells, and
-  a block of rows in one column of cells. The points in the block are
-  rearranged so that the values in every window keep their Knuth class, and
-  every run of columns takes the RSK shape of its mirror image. Its rules have
-  forward and backward maps. No built-in pack has the slide: it is added with
-  `pack.add_initial(KnuthSlideFactory())`.
+- `KnuthSlideFactory(max_width=3, *, one_line_only=False, slide_rows=True)` and
+  `KnuthSlideStrategy(start, width, of_rows=False)`, the Knuth slide: an
+  equivalence that reverses a block of 2 to `max_width` adjacent columns with the
+  same rows of active cells, and, unless `slide_rows` is False, a block of
+  adjacent rows too; columns always slide. With `one_line_only`, a block of
+  columns lies in one row of cells, and a block of rows in one column of cells.
+  The points in the block are rearranged so that the values in every window
+  keep their Knuth class, and every run of columns takes the RSK shape of its
+  mirror image. Its rules have forward and backward maps. No built-in pack has
+  the slide: it is added with `pack.add_initial(KnuthSlideFactory())`.
 - `tilings.algorithms.KnuthSlide`, which finds a tiling's blocks, tells whether
   each slides and why not, and gives the child and the map of gridded
   permutations. A block slides when every obstruction on it depends only on the
