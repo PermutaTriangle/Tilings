@@ -282,6 +282,17 @@ search meets them:
 
        tilescope spec 1234_2341_3412_4123 point_placements --rotational-cuts
 
+Another hint: a class whose basis is every way of adding a new maximum, or
+minimum, leftmost or rightmost point, to the patterns of a basis B, such as
+Av(1234, 1243, 1423, 4123) for B = {123}, has n times as many permutations of
+length n as Av(B) has of length n - 1. The hint names Av(B) to search for instead.
+Or the pack can be told to take that point out, which turns the class into the
+point and Av(B):
+
+.. code:: bash
+
+       tilescope spec 1234_1243_1423_4123 point_placements --extension-placement
+
 The hints are also available in Python, from ``tilings.hints``.
 
 The tilescope module
