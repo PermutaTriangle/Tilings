@@ -1360,3 +1360,113 @@ def test_the_child_of_a_slide_has_only_possible_obstructions(tiling):
         assert not any(
             obstruction.contradictory() for obstruction in rule.children[0].obstructions
         )
+
+
+def pair_and_point(window):
+    """Babson and West's pair, and to its right a point that lies above the pair's
+    points: the pair's word, with the point after it, avoids the window's patterns.
+    The mirror image of point_and_pair's picture."""
+    x_cell, y_cell, point = (0, 0), (1, 0), (2, 0)
+    obstructions = cell(point, "12", "21") + cell(x_cell, "123") + cell(y_cell, "21")
+    for pattern in window:
+        word = Perm(tuple(Perm.to_standard(pattern)) + (len(pattern),))
+        for choice in combinations_with_replacement([x_cell, y_cell], len(pattern)):
+            obstructions.append(GriddedPerm(word, choice + (point,)))
+    return Tiling(obstructions, [[GriddedPerm((0,), (point,))]])
+
+
+def test_a_window_with_a_point_to_the_right_slides():
+    """{132, 312} is closed under Knuth moves, and the pair's windows have the point
+    after them, as point_and_pair's have it before: the patterns that the block sees
+    are the pair's alone, not the pair with the point, and the slide is offered."""
+    tiling = pair_and_point(["132", "312"])
+    assert KnuthSlide(tiling).why_not(0, 2) is None
+    (rule,) = [
+        slide_rule
+        for slide_rule in slides(tiling)
+        if (slide_rule.strategy.start, slide_rule.strategy.width) == (0, 2)
+    ]
+    assert_bijection(tiling, rule.children[0], rule.strategy, 6)
+    sanity_check(rule, 5)
+
+
+@pytest.mark.parametrize(
+    "increasing_cells",
+    [[(0, 0), (1, 0), (1, 1)], [(0, 0), (0, 1), (1, 1)]],
+    ids=["a 10 in the top row", "a 10 in the bottom row"],
+)
+@pytest.mark.parametrize("pattern", ["021", "102"])
+def test_a_window_in_either_row_of_the_block_must_be_closed_under_knuth_moves(
+    pattern, increasing_cells
+):
+    """The pattern avoided in the four cells of two columns and two rows jointly, with
+    the 10s of three of the cells forbidden. 021 and 201, like 102 and 120, are Knuth
+    equivalent, so the windows' patterns are not closed under Knuth moves, however
+    few of a pattern's points lie in one of the block's rows."""
+    cells = [(0, 0), (0, 1), (1, 0), (1, 1)]
+    tiling = Tiling(
+        list(griddings("10", increasing_cells)) + list(griddings(pattern, cells))
+    )
+    assert tiling.dimensions == (2, 2)
+    assert (
+        KnuthSlide(tiling).why_not(0, 2)
+        == "a window's patterns are not closed under Knuth moves"
+    )
+    assert not [
+        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.transpose
+    ]
+
+
+def test_one_line_only_leaves_out_the_blocks_of_several_columns_of_cells():
+    """The same for rows: with one_line_only the factory offers the slide of the pair
+    in one column of cells, and not that of the block of two columns of cells next to
+    it, which it offers by default."""
+    tiling = pair_and_ferrers_block().inverse()
+    both = slides(tiling)
+    assert {(rule.strategy.start, rule.strategy.width) for rule in both} == {
+        (0, 2),
+        (2, 2),
+    }
+    assert all(rule.strategy.transpose for rule in both)
+    (one_column,) = slides(tiling, one_line_only=True)
+    assert (one_column.strategy.start, one_column.strategy.width) == (0, 2)
+    assert one_column.strategy.transpose
+
+
+@pytest.mark.parametrize(
+    "requirements, assumptions",
+    [
+        ([[GriddedPerm(Perm((0, 1)), (OUTSIDE, OUTSIDE))]], []),
+        ([], [TrackingAssumption([GriddedPerm(Perm((0, 1)), (OUTSIDE, OUTSIDE))])]),
+        ([], [SumComponentAssumption([point_at(OUTSIDE)])]),
+    ],
+    ids=[
+        "requirement of two points",
+        "assumption on two points",
+        "assumption counting components",
+    ],
+)
+def test_a_requirement_or_an_assumption_away_from_the_block_does_not_stop_the_slide(
+    requirements, assumptions
+):
+    """Only those with points in the block must be on points and count points: these
+    are in the cell before the block, which the slide leaves as it is."""
+    tiling = ferrers_with(requirements, assumptions)
+    (rule,) = [
+        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.transpose
+    ]
+    assert rule.children[0].requirements == tiling.requirements
+    assert rule.children[0].assumptions == tiling.assumptions
+    sanity_check(rule, 4)
+
+
+def test_the_factory_s_json_keys():
+    """The keys a saved specification holds, which cannot change after release."""
+    factory = KnuthSlideFactory(max_width=2, one_line_only=True, slide_rows=False)
+    assert factory.to_jsonable() == {
+        "class_module": "tilings.strategies.knuth_slide",
+        "strategy_class": "KnuthSlideFactory",
+        "max_width": 2,
+        "one_line_only": True,
+        "slide_rows": False,
+    }
