@@ -21,7 +21,6 @@ from tilings.hints import (
 from tilings.strategies.requirement_insertion import (
     CellInsertionFactory,
     RequirementInsertionFactory,
-    TargetedCellInsertionFactory,
 )
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
@@ -104,12 +103,11 @@ def build_pack(args: argparse.Namespace) -> TileScopePack:
     return pack
 
 
-# the strategies that insert the point requirements that a partial placement places
-POINT_INSERTIONS = (
-    CellInsertionFactory,
-    RequirementInsertionFactory,
-    TargetedCellInsertionFactory,
-)
+# The strategies of the command's packs that insert a point requirement into the
+# class's own 1x1 tiling, the requirement whose point the partial placement places.
+# The corroborations of row_and_col_placements insert points only into tilings of
+# two or more cells.
+POINT_INSERTIONS = (CellInsertionFactory, RequirementInsertionFactory)
 
 
 def pack_with_extension_placement(pack: TileScopePack, basis: str) -> TileScopePack:
@@ -118,7 +116,8 @@ def pack_with_extension_placement(pack: TileScopePack, basis: str) -> TileScopeP
     one-point extension hint for the basis asks for (tilings.hints). Exit with a
     parser error if the basis is no one-point extension of a basis, or if the pack
     has a requirement placement or obstruction inferral already. Warn if the pack
-    inserts no point requirements, as the placements then have no point to place.
+    inserts no point requirement into the class's tiling, as the placements then
+    have no point to place.
     """
     chain = find_one_point_extension_chain(
         Perm.to_standard(pattern) for pattern in basis.split("_")
@@ -135,12 +134,11 @@ def pack_with_extension_placement(pack: TileScopePack, basis: str) -> TileScopeP
             "--extension-placement does not go with this pack: it has a requirement "
             "placement or obstruction inferral already, and a pack holds one of each."
         )
-    strategies = [*pack.initial_strats, *pack.inferral_strats]
-    strategies += [strategy for level in pack.expansion_strats for strategy in level]
-    if not any(isinstance(strategy, POINT_INSERTIONS) for strategy in strategies):
+    if not any(isinstance(strategy, POINT_INSERTIONS) for strategy in pack):
         logger.warning(
-            "--extension-placement places the point of a point requirement, and %s "
-            "inserts none, so the placement may not apply; point_placements does.",
+            "--extension-placement places the point of a point requirement in the "
+            "class's tiling, and %s inserts none there, so the placement may not "
+            "apply; point_placements does.",
             pack.name,
         )
     return extended

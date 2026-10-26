@@ -23,7 +23,8 @@ The hint names the class to search for instead, B reduced while it is such an
 extension. Or the pack can be given a partial placement of the topmost point, with
 obstruction inferral to the length of B's longest pattern, which turns the class
 into that point and Av(B) (TileScopePack.add_extension_placement, or
---extension-placement on the command line).
+--extension-placement on the command line). The placement places the points of
+point requirements, so the pack must insert them, as point_placements does.
 """
 
 from typing import Iterable, List, NamedTuple, Optional, Sequence, Set, Tuple
@@ -56,20 +57,19 @@ __all__ = [
     "one_point_extensions",
 ]
 
-# The directions of one-point extensions, in the order find_one_point_extension tries
-# them.
-_DIRECTIONS = (DIR_NORTH, DIR_SOUTH, DIR_WEST, DIR_EAST)
-
 
 class _ExtensionWords(NamedTuple):
     """How the extension hint speaks of a direction: the point a one-point extension
-    adds, that point in the class, and the point the placement places."""
+    adds, that point in a permutation of the class, and the point the placement
+    places."""
 
     new_point: str
-    point: str
-    placed: str
+    extreme_point: str
+    placed_point: str
 
 
+# The directions of one-point extensions, in the order find_one_point_extension
+# tries them, and how the hint speaks of each.
 _EXTENSION_WORDS = {
     DIR_NORTH: _ExtensionWords("a new maximum", "maximum", "topmost point"),
     DIR_SOUTH: _ExtensionWords("a new minimum", "minimum", "bottommost point"),
@@ -83,8 +83,9 @@ _EXTENSION_WORDS = {
 
 
 class OnePointExtension(NamedTuple):
-    """How a basis is every one-point extension of another (find_one_point_extension):
-    the direction of the extensions, and the other basis, the reduced basis."""
+    """A step of reducing a basis that is every one-point extension of another
+    (find_one_point_extension): the direction of the extensions, and the basis
+    whose patterns they extend, the reduced basis."""
 
     direction: int
     reduced_basis: Tuple[Perm, ...]
@@ -102,6 +103,12 @@ class Hint(NamedTuple):
         """Return True if the pack has the hint's strategies (a pack holds one
         strategy of each class, whatever its parameters)."""
         return all(strategy in pack for strategy in self.strategies)
+
+
+def _falling_factorial(factors: int) -> str:
+    """Return the falling factorial of n with that many factors,
+    "n (n - 1) ... (n - factors + 1)"."""
+    return " ".join(["n"] + [f"(n - {index})" for index in range(1, factors)])
 
 
 def _closed_under_rotation(patterns: Basis) -> bool:
@@ -160,7 +167,7 @@ def _rotation_hint(patterns: Basis) -> Optional[Hint]:
     again = ""
     if cuts > 1:
         cut_again = "its cut is" if cuts == 2 else f"cut {cuts - 1} more times it is"
-        times = " ".join(["n"] + [f"(n - {index})" for index in range(1, cuts)])
+        times = _falling_factorial(cuts)
         again = (
             f" That cut is closed under rotation too, and {cut_again} {end}: the "
             f"class has {times} times as many permutations of length n as {end} has "
@@ -205,10 +212,11 @@ def one_point_extensions(pattern: Perm, direction: int) -> Set[Perm]:
 
 def _without_extreme_point(pattern: Perm, direction: int) -> Perm:
     """Return the pattern without its point furthest in the direction."""
+    # remove_element takes out a value, the largest by default, and remove an index
     if direction == DIR_NORTH:
-        return pattern.remove(pattern.index(len(pattern) - 1))
+        return pattern.remove_element()
     if direction == DIR_SOUTH:
-        return pattern.remove(pattern.index(0))
+        return pattern.remove_element(0)
     if direction == DIR_WEST:
         return pattern.remove(0)
     if direction == DIR_EAST:
@@ -217,12 +225,12 @@ def _without_extreme_point(pattern: Perm, direction: int) -> Perm:
 
 
 def find_one_point_extension(basis: Iterable[Perm]) -> Optional[OnePointExtension]:
-    """Return how the basis, once minimized, is every one-point extension
-    (one_point_extensions) of the patterns of a basis B of patterns of length at
-    least 2: the first direction, of north, south, west and east, in which it is,
-    and B. Return None if it is no such extension. The class is then the
-    permutations whose point furthest in that direction, taken out, leaves a
-    permutation of Av(B).
+    """Return the direction and the reduced basis B of a one-point extension: B is a
+    basis of patterns of length at least 2, and the basis, once minimized, is every
+    one-point extension (one_point_extensions) of B's patterns in that direction.
+    The directions are tried in the order north, south, west and east. Return None
+    if the basis is no such extension. The class is then the permutations whose
+    point furthest in the direction, taken out, leaves a permutation of Av(B).
 
     Examples:
         >>> find_one_point_extension(
@@ -239,7 +247,7 @@ def _extension_of_minimal(patterns: Set[Perm]) -> Optional[OnePointExtension]:
     """find_one_point_extension for a minimal basis."""
     if not patterns or any(len(pattern) < 3 for pattern in patterns):
         return None
-    for direction in _DIRECTIONS:
+    for direction in _EXTENSION_WORDS:
         reduced = {_without_extreme_point(pattern, direction) for pattern in patterns}
         # a pattern of length k has k + 1 extensions in a direction, and distinct
         # patterns have none in common, as taking the point out gives the pattern
@@ -256,8 +264,8 @@ def _extension_of_minimal(patterns: Set[Perm]) -> Optional[OnePointExtension]:
 def find_one_point_extension_chain(basis: Iterable[Perm]) -> List[OnePointExtension]:
     """Return the steps of reducing the basis while it is every one-point extension
     of a basis (find_one_point_extension): each step's direction, and the basis it
-    leaves. The last step's basis is the class to search for instead. The list is
-    empty if the basis is no such extension.
+    leaves. The last step's reduced basis is the class to search for instead. The
+    list is empty if the basis is no such extension.
 
     Examples:
         >>> [step.direction == DIR_NORTH for step in find_one_point_extension_chain(
@@ -274,105 +282,123 @@ def _chain_of_minimal(patterns: Set[Perm]) -> List[OnePointExtension]:
     step = _extension_of_minimal(patterns)
     while step is not None:
         chain.append(step)
-        # B is minimal: a pattern of B containing another would have an extension
-        # containing one of the other's, and the basis extended is minimal
+        # The reduced basis is minimal too, so it is not minimized again. If one of
+        # its patterns contained another, each extension of the one would contain an
+        # extension of the other, and the basis extended, which is minimal, would
+        # have both.
         step = _extension_of_minimal(set(step.reduced_basis))
     return chain
 
 
 def extension_placement_arguments(
-    chain: Sequence[OnePointExtension],
+    chain: Iterable[OnePointExtension],
 ) -> Tuple[Tuple[int, ...], int]:
-    """Return the directions and the length of the partial placement and obstruction
-    inferral that follow the one-point extension hint for a chain of steps
-    (find_one_point_extension_chain): the steps' directions in their order, each once,
-    and the length of the longest pattern of the first step's basis."""
-    directions = tuple(dict.fromkeys(step.direction for step in chain))
-    return directions, max(len(pattern) for pattern in chain[0].reduced_basis)
-
-
-def _factor(steps: int) -> str:
-    """Return "n (n - 1) ... (n - steps + 1)"."""
-    return " ".join(["n"] + [f"(n - {index})" for index in range(1, steps)])
+    """Return the arguments of TileScopePack.add_extension_placement that follow the
+    one-point extension hint for a chain of steps (find_one_point_extension_chain):
+    the steps' directions in their order, each once, and the length of the longest
+    pattern of the first step's reduced basis. Raise ValueError if the chain has no
+    steps, as for a basis that is no one-point extension."""
+    steps = tuple(chain)
+    if not steps:
+        raise ValueError(
+            "The chain has no steps: the basis is no one-point extension of a basis."
+        )
+    directions = tuple(dict.fromkeys(direction for direction, _ in steps))
+    _, first_reduced_basis = steps[0]
+    return directions, max(len(pattern) for pattern in first_reduced_basis)
 
 
 def _reduced_again(chain: Sequence[OnePointExtension]) -> str:
     """Return the sentence on the chain's steps after the first, for a chain of more
-    than one step."""
+    than one step: the points they take out, and the counts that follow."""
     steps = len(chain)
-    end = Av(Basis(*chain[-1].reduced_basis))
-    later = [_EXTENSION_WORDS[step.direction].new_point for step in chain[1:]]
-    if len(set(later)) == 1:
-        by = f"by {later[0]}" + (" each time" if steps > 2 else "")
-    else:
-        by = "by " + ", then ".join(later)
-    reduced = (
-        f"{by}, and reduced again it is"
-        if steps == 2
-        else f"and reduced {steps - 1} more times, {by}, it is"
-    )
-    return (
-        f"That class is such an extension too, {reduced} {end}: the class has "
-        f"{_factor(steps)} times as many permutations of length n as {end} has of "
-        f"length n - {steps}, for n >= {steps}."
-    )
-
-
-def _extension_message(chain: Sequence[OnePointExtension]) -> str:
-    """Return the one-point extension hint's message for a chain of steps, which
-    names the class the first step leaves once, as "that class" after."""
-    steps = len(chain)
-    words = _EXTENSION_WORDS[chain[0].direction]
-    first, end = Av(Basis(*chain[0].reduced_basis)), Av(Basis(*chain[-1].reduced_basis))
-    directions, length = extension_placement_arguments(chain)
-    sentences = [
-        f"The basis is every way of adding {words.new_point} to a pattern of the "
-        f"basis of {first}, so the class is the permutations whose {words.point}, "
-        "taken out, leaves a permutation of that class, and it has n times as many "
-        "permutations of length n as that class has of length n - 1, for n >= 1."
+    search_class = Av(Basis(*chain[-1].reduced_basis))
+    taken_out = [
+        f"the {_EXTENSION_WORDS[step.direction].extreme_point}" for step in chain[1:]
     ]
-    if steps > 1:
-        sentences.append(_reduced_again(chain))
-    applied = {1: "", 2: ", applied twice"}.get(steps, f", applied {steps} times")
-    sentences.append(
-        f"Search for {end} instead: its generating function G gives the class's by "
-        f"F = 1 + x (x G)'{applied}."
+    if steps == 2:
+        points = f"one more point, {taken_out[0]}"
+    elif len(set(taken_out)) == 1:
+        points = f"{steps - 1} more points, {taken_out[0]} each time"
+    else:
+        points = f"{steps - 1} more points, " + ", then ".join(taken_out)
+    return (
+        f"That class is such an extension too, and taking out {points}, leaves a "
+        f"permutation of {search_class}: the class has {_falling_factorial(steps)} "
+        f"times as many permutations of length n as {search_class} has of length "
+        f"n - {steps}, for n >= {steps}."
     )
-    placed = [_EXTENSION_WORDS[direction].placed for direction in directions]
-    if len(placed) == 1:
-        placements = f"a partial placement of the {placed[0]}"
+
+
+def _extension_message(
+    chain: Sequence[OnePointExtension], directions: Tuple[int, ...], length: int
+) -> str:
+    """Return the one-point extension hint's message for a chain of steps and the
+    placement's arguments (extension_placement_arguments). It names the class the
+    first step leaves once, and calls it "that class" after."""
+    steps = len(chain)
+    first_words = _EXTENSION_WORDS[chain[0].direction]
+    first_class = Av(Basis(*chain[0].reduced_basis))
+    search_class = Av(Basis(*chain[-1].reduced_basis))
+    sentences = [
+        f"The basis is every way of adding {first_words.new_point} to each pattern "
+        f"of the basis of {first_class}, so the class is the permutations whose "
+        f"{first_words.extreme_point}, taken out, leaves a permutation of that "
+        "class, and it has n times as many permutations of length n as that class "
+        "has of length n - 1, for n >= 1."
+    ]
+    if steps == 1:
+        applied = ""
+    else:
+        sentences.append(_reduced_again(chain))
+        applied = ", applied twice" if steps == 2 else f", applied {steps} times"
+    sentences.append(
+        f"Search for {search_class} instead: its generating function G gives the "
+        f"class's by F = 1 + x (x G)'{applied}."
+    )
+    placed_points = [
+        _EXTENSION_WORDS[direction].placed_point for direction in directions
+    ]
+    if len(placed_points) == 1:
+        placements = f"a partial placement of the {placed_points[0]}"
         effect = (
-            "which turns the class into that point and that class"
+            f"which turns the class into that point and {first_class}"
             if steps == 1
             else "which takes the points out one step at a time"
         )
+        placing = "The placement places"
     else:
         placements = (
-            f"partial placements of the {', the '.join(placed[:-1])} and the "
-            f"{placed[-1]}"
+            f"partial placements of the {', the '.join(placed_points[:-1])} and the "
+            f"{placed_points[-1]}"
         )
         effect = "which take the points out one step at a time"
-    names = ", ".join(DIR_REPR[direction] for direction in directions)
+        placing = "The placements place"
+    direction_names = ", ".join(DIR_REPR[direction] for direction in directions)
     if len(directions) == 1:
-        names += ","
+        direction_names += ","  # a tuple of one direction: (DIR_NORTH,)
     sentences.append(
         f"Or add to the pack {placements}, with obstruction inferral to length "
-        f"{length}, {effect} (TileScopePack.add_extension_placement(({names}), "
-        f"{length}), or --extension-placement)."
+        f"{length}, {effect} (TileScopePack.add_extension_placement(("
+        f"{direction_names}), {length}), or --extension-placement)."
+    )
+    sentences.append(
+        f"{placing} the points of point requirements, so the pack must insert them, "
+        "as point_placements does."
     )
     return " ".join(sentences)
 
 
 def _extension_hint(patterns: Basis) -> Optional[Hint]:
-    """Return the one-point extension hint for a minimal basis that is one, and None
-    for any other."""
+    """Return the one-point extension hint for a minimal basis that is every
+    one-point extension of a basis, and None for any other."""
     chain = _chain_of_minimal(set(patterns))
     if not chain:
         return None
     directions, length = extension_placement_arguments(chain)
     return Hint(
         "one-point extension",
-        _extension_message(chain),
+        _extension_message(chain, directions, length),
         (
             RequirementPlacementFactory(partial=True, dirs=directions),
             ObstructionInferralFactory(length),

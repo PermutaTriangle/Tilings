@@ -40,8 +40,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `TileScopePack.add_extension_placement(directions, length)`, which adds a
   partial placement of the point furthest in the directions and obstruction
   inferral to the length, turning such a class into that point and Av(B), and
-  the flag `--extension-placement` of `tilescope spec`, which adds them for the
-  class's chain.
+  the flag `-x`/`--extension-placement` of `tilescope spec`, which adds them for
+  the class's chain. The placement places the points of point requirements, so
+  the flag warns of a pack that inserts none into the class's tiling, such as
+  `row_and_col_placements`.
 
 ### Fixed
 - `tilescope spec` says when it cannot compute the generating function of the

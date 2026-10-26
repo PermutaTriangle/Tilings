@@ -289,26 +289,35 @@ class TileScopePack(StrategyPack):
         self, directions: Iterable[int], length: int
     ) -> "TileScopePack":
         """
-        Create a new pack by adding the partial placement of a requirement's point
-        furthest in the directions, the topmost point for DIR_NORTH, and obstruction
-        inferral to the length. A class whose basis is every one-point extension in
-        such a direction of the patterns of a basis B, the longest of which has that
-        length, goes by them to that point and Av(B) (see tilings.hints). The
+        Create a new pack by adding a partial placement and obstruction inferral.
+        The placement places a requirement's point that is furthest in one of the
+        directions, the topmost point for DIR_NORTH, in a row of its own for
+        DIR_NORTH and DIR_SOUTH and in a column of its own for DIR_WEST and
+        DIR_EAST. The inferral infers obstructions up to the length. A class whose
+        basis is every one-point extension in such a direction of the patterns of a
+        basis B, the longest of which has that length, goes by them to that point
+        and Av(B) (see tilings.hints). The placement places the points of point
+        requirements, so the pack must insert them, as point_placements does. The
         inferral's cost grows quickly with the length.
 
-        Raise ValueError if there are no directions, if one is not DIR_NORTH,
-        DIR_SOUTH, DIR_WEST or DIR_EAST, or if the length is less than 1; and, as
-        add_expansion and add_inferral do, if the pack has a requirement placement
-        or obstruction inferral already, as only_root_placements' packs have.
+        Raise TypeError if the length is not an integer. Raise ValueError if there
+        are no directions, if one is not DIR_NORTH, DIR_SOUTH, DIR_WEST or
+        DIR_EAST, or if the length is less than 1; and, as add_expansion and
+        add_inferral do, if the pack has a requirement placement or obstruction
+        inferral already, as only_root_placements' packs have.
         """
         directions = tuple(dict.fromkeys(directions))
         if not directions or any(direction not in DIRS for direction in directions):
             raise ValueError(
-                "The directions are some of DIR_NORTH, DIR_SOUTH, DIR_WEST and "
-                f"DIR_EAST, not {directions}."
+                "The directions must be one or more of DIR_NORTH, DIR_SOUTH, "
+                f"DIR_WEST and DIR_EAST, not {directions}."
+            )
+        if not isinstance(length, int) or isinstance(length, bool):
+            raise TypeError(
+                f"The inferral's length must be an integer, not {length!r}."
             )
         if length < 1:
-            raise ValueError(f"The inferral's length is at least 1, not {length}.")
+            raise ValueError(f"The inferral's length must be at least 1, not {length}.")
         return self.add_expansion(
             [strat.RequirementPlacementFactory(partial=True, dirs=directions)],
             name_ext="extension_placement",
