@@ -820,3 +820,148 @@ def test_the_flag_warns_of_a_pack_that_inserts_no_points(monkeypatch, pack):
 @pytest.mark.parametrize("pack", ["point_placements", "insertion_point_placements"])
 def test_the_flag_does_not_warn_of_a_pack_that_inserts_points(monkeypatch, pack):
     assert not warnings(monkeypatch, ["spec", "1234_1243_1423_4123", pack, "-x"])
+
+
+SEARCH_FOR = (
+    "Search for Av(012) instead: its generating function G gives the class's by "
+    "F = 1 + x (x G)'"
+)
+
+# The hint's whole message for a chain of steps. Each case: the directions in which
+# 123 is extended, one after the other (the last is the chain's first step), and
+# what follows the message's first sentence, which is built from HINT_WORDS.
+WHOLE_MESSAGES = [
+    pytest.param(
+        (DIR_NORTH,),
+        f"{SEARCH_FOR}. Or add to the pack a partial placement of the topmost point, "
+        "with obstruction inferral to length 3, which turns the class into that point "
+        "and that class (TileScopePack.add_extension_placement((DIR_NORTH,), 3), or "
+        "--extension-placement).",
+        id="one step",
+    ),
+    pytest.param(
+        (DIR_NORTH, DIR_NORTH),
+        "That class is such an extension too, by a new maximum, and reduced again it "
+        "is Av(012): the class has n (n - 1) times as many permutations of length n "
+        f"as Av(012) has of length n - 2, for n >= 2. {SEARCH_FOR}, applied twice. Or "
+        "add to the pack a partial placement of the topmost point, with obstruction "
+        "inferral to length 4, which takes the points out one step at a time "
+        "(TileScopePack.add_extension_placement((DIR_NORTH,), 4), or "
+        "--extension-placement).",
+        id="two steps in one direction",
+    ),
+    pytest.param(
+        (DIR_NORTH, DIR_WEST),
+        "That class is such an extension too, by a new maximum, and reduced again it "
+        "is Av(012): the class has n (n - 1) times as many permutations of length n "
+        f"as Av(012) has of length n - 2, for n >= 2. {SEARCH_FOR}, applied twice. Or "
+        "add to the pack partial placements of the leftmost point and the topmost "
+        "point, with obstruction inferral to length 4, which take the points out one "
+        "step at a time (TileScopePack.add_extension_placement((DIR_WEST, "
+        "DIR_NORTH), 4), or --extension-placement).",
+        id="two steps in two directions",
+    ),
+    pytest.param(
+        (DIR_NORTH, DIR_NORTH, DIR_NORTH),
+        "That class is such an extension too, and reduced 2 more times, by a new "
+        "maximum each time, it is Av(012): the class has n (n - 1) (n - 2) times as "
+        "many permutations of length n as Av(012) has of length n - 3, for n >= 3. "
+        f"{SEARCH_FOR}, applied 3 times. Or add to the pack a partial placement of the "
+        "topmost point, with obstruction inferral to length 5, which takes the "
+        "points out one step at a time "
+        "(TileScopePack.add_extension_placement((DIR_NORTH,), 5), or "
+        "--extension-placement).",
+        id="three steps in one direction",
+    ),
+    pytest.param(
+        (DIR_NORTH, DIR_NORTH, DIR_WEST),
+        "That class is such an extension too, and reduced 2 more times, by a new "
+        "maximum each time, it is Av(012): the class has n (n - 1) (n - 2) times as "
+        "many permutations of length n as Av(012) has of length n - 3, for n >= 3. "
+        f"{SEARCH_FOR}, applied 3 times. Or add to the pack partial placements of the "
+        "leftmost point and the topmost point, with obstruction inferral to length "
+        "5, which take the points out one step at a time "
+        "(TileScopePack.add_extension_placement((DIR_WEST, DIR_NORTH), 5), or "
+        "--extension-placement).",
+        id="three steps, the later two in one direction, the first in another",
+    ),
+    pytest.param(
+        (DIR_NORTH, DIR_WEST, DIR_SOUTH),
+        "That class is such an extension too, and reduced 2 more times, by a new "
+        "leftmost point, then a new maximum, it is Av(012): the class has n (n - 1) "
+        "(n - 2) times as many permutations of length n as Av(012) has of length "
+        f"n - 3, for n >= 3. {SEARCH_FOR}, applied 3 times. Or add to the pack partial "
+        "placements of the bottommost point, the leftmost point and the topmost "
+        "point, with obstruction inferral to length 5, which take the points out one "
+        "step at a time (TileScopePack.add_extension_placement((DIR_SOUTH, "
+        "DIR_WEST, DIR_NORTH), 5), or --extension-placement).",
+        id="three steps in three directions",
+    ),
+    pytest.param(
+        (DIR_WEST, DIR_NORTH, DIR_NORTH),
+        "That class is such an extension too, and reduced 2 more times, by a new "
+        "maximum, then a new leftmost point, it is Av(012): the class has n (n - 1) "
+        "(n - 2) times as many permutations of length n as Av(012) has of length "
+        f"n - 3, for n >= 3. {SEARCH_FOR}, applied 3 times. Or add to the pack partial "
+        "placements of the topmost point and the leftmost point, with obstruction "
+        "inferral to length 5, which take the points out one step at a time "
+        "(TileScopePack.add_extension_placement((DIR_NORTH, DIR_WEST), 5), or "
+        "--extension-placement).",
+        id="three steps, the later two in two directions, the first as the second",
+    ),
+]
+
+
+@pytest.mark.parametrize("extending, rest", WHOLE_MESSAGES)
+def test_the_whole_message(extending, rest):
+    """The whole of the hint's message, with the class the first step leaves named
+    once, the later steps' points ('each time' only past two steps, and only when
+    the later steps agree), how often the transform is applied, and the placements,
+    for chains of one to three steps. The class names come from extended_in, not
+    from the hint."""
+    patterns = extended_in("123", *extending)
+    adding, taken_out, _, _ = HINT_WORDS[extending[-1]]
+    first = Av(Basis(*extended_in("123", *extending[:-1])))
+    (hint,) = hints_for(patterns)
+    assert hint.message == (
+        f"The basis is every way of adding {adding} to a pattern of the basis of "
+        f"{first}, so the class is the permutations whose {taken_out}, leaves a "
+        "permutation of that class, and it has n times as many permutations of "
+        f"length n as that class has of length n - 1, for n >= 1. {rest}"
+    )
+
+
+@pytest.mark.parametrize("direction", DIRECTIONS)
+def test_the_pack_method_takes_an_inferral_of_length_1(direction):
+    """The shortest inferral (the empty cell inferral's length): the boundary of
+    'at least 1', which the method takes though the hint never asks for it."""
+    pack = TileScopePack.point_placements().add_extension_placement((direction,), 1)
+    placement, inferral = extension_strategies(pack)
+    assert placement.dirs == (direction,) and inferral.maxlen == 1
+
+
+@pytest.mark.parametrize("pack", ["all_the_strategies", "requirement_placements"])
+def test_the_flag_does_not_warn_of_a_pack_that_inserts_requirements(monkeypatch, pack):
+    """These packs insert point requirements through RequirementInsertionFactory."""
+    assert not warnings(monkeypatch, ["spec", "1234_1243_1423_4123", pack, "-x"])
+
+
+@pytest.mark.parametrize(
+    "directions, length, said",
+    [
+        ((), 3, "^The directions are some of DIR_NORTH"),
+        ((DIR_NORTH, 4), 3, "^The directions are some of DIR_NORTH"),
+        ((DIR_NORTH,), 0, "^The inferral's length is at least 1, not 0"),
+    ],
+    ids=["no directions", "not a direction", "length 0"],
+)
+def test_the_pack_method_says_what_is_wrong(directions, length, said):
+    """The error is the method's own check, not one from further in."""
+    with pytest.raises(ValueError, match=said):
+        TileScopePack.point_placements().add_extension_placement(directions, length)
+
+
+def test_the_warning_names_the_pack(monkeypatch):
+    argv = ["spec", "1234_1243_1423_4123", "row_and_col_placements", "-x"]
+    (message,) = warnings(monkeypatch, argv)
+    assert "and row_and_col_placements inserts none" in message
