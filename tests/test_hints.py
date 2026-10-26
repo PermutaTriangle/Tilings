@@ -1075,3 +1075,97 @@ def test_the_flag_warns_of_the_packs_that_insert_no_point_into_the_class(
     pack = build_pack(parser.parse_args(["spec", string, name]))
     warned = warnings(monkeypatch, ["spec", string, name, "-x"])
     assert bool(warned) != inserts_a_point_into_the_class(pack, patterns)
+
+
+SEARCH_FOR_01 = SEARCH_FOR.replace("Av(012)", "Av(01)")
+
+# Av(12) extended in the directions one after the other, the last the chain's first
+# step: the directions of the steps are the reverse (no tie, as for the cases of
+# WHOLE_MESSAGES), and the message follows its first sentence with
+FOUR_STEP_MESSAGES = [
+    pytest.param(
+        (DIR_NORTH,) * 4,
+        "That class is such an extension too, and taking out 3 more points, the "
+        "maximum each time, leaves a permutation of Av(01): the class has n (n - 1) "
+        "(n - 2) (n - 3) times as many permutations of length n as Av(01) has of "
+        f"length n - 4, for n >= 4. {SEARCH_FOR_01}, applied 4 times. Or add to the "
+        "pack a partial placement of the topmost point, with obstruction inferral to "
+        "length 5, which takes the points out one step at a time "
+        "(TileScopePack.add_extension_placement((DIR_NORTH,), 5), or "
+        f"--extension-placement). {PLACEMENT_NEEDS}",
+        id="four steps in one direction",
+    ),
+    pytest.param(
+        (DIR_NORTH, DIR_WEST, DIR_SOUTH, DIR_EAST),
+        "That class is such an extension too, and taking out 3 more points, the "
+        "minimum, then the leftmost point, then the maximum, leaves a permutation "
+        "of Av(01): the class has n (n - 1) (n - 2) (n - 3) times as many "
+        "permutations of length n as Av(01) has of length n - 4, for n >= 4. "
+        f"{SEARCH_FOR_01}, applied 4 times. Or add to the pack partial placements of "
+        "the rightmost point, the bottommost point, the leftmost point and the "
+        "topmost point, with obstruction inferral to length 5, which take the points "
+        "out one step at a time (TileScopePack.add_extension_placement(("
+        "DIR_EAST, DIR_SOUTH, DIR_WEST, DIR_NORTH), 5), or --extension-placement). "
+        f"{PLACEMENTS_NEED}",
+        id="four steps in four directions",
+    ),
+]
+
+
+@pytest.mark.parametrize("extending, rest", FOUR_STEP_MESSAGES)
+def test_four_steps(extending, rest):
+    """Four steps: the whole message, the counts n (n - 1) (n - 2) (n - 3) times those
+    of Av(01) from n = 4 on (by brute force), the transform applied 4 times to the
+    series of Av(01), and the pack that follows the hint."""
+    patterns = extended_in("12", *extending)
+    steps = tuple(reversed(extending))
+    chain = find_one_point_extension_chain(patterns)
+    assert tuple(step.direction for step in chain) == steps
+    # every permutation of length up to 3 is in the class, as the basis has patterns
+    # of length 5 only
+    assert counts(patterns) == [1, 1, 2, 6] + [
+        n * (n - 1) * (n - 2) * (n - 3) for n in range(4, 8)
+    ]
+    adding, taken_out, _, _ = HINT_WORDS[extending[-1]]
+    first = Av(Basis(*extended_in("12", *extending[:-1])))
+    (hint,) = hints_for(patterns)
+    assert hint.message == (
+        f"The basis is every way of adding {adding} to each pattern of the basis of "
+        f"{first}, so the class is the permutations whose {taken_out}, leaves a "
+        "permutation of that class, and it has n times as many permutations of "
+        f"length n as that class has of length n - 1, for n >= 1. {rest}"
+    )
+    x = sympy.Symbol("x")
+    series = sum(x**n for n in range(8))  # Av(01) has one permutation of each length
+    for _ in range(4):  # "applied 4 times"
+        series = sympy.expand(1 + x * sympy.diff(x * series, x))
+    assert [series.coeff(x, n) for n in range(8)] == counts(patterns)
+    directions = tuple(dict.fromkeys(steps))
+    assert extension_placement_arguments(chain) == (directions, 5)
+    placement, inferral = hint.strategies
+    assert placement.dirs == directions and inferral.maxlen == 5
+    placement, inferral = extension_strategies(build_pack(flag_args(patterns)))
+    assert placement.dirs == directions and inferral.maxlen == 5
+
+
+@pytest.mark.parametrize("length", [False, 0.5, -0.5])
+def test_a_length_below_1_that_is_not_an_integer_is_a_type_error(length):
+    """The type is checked before the range: False is not an integer here, as True
+    is not, and 0.5 is not one though it is below 1."""
+    with pytest.raises(TypeError, match="^The inferral's length must be an integer"):
+        TileScopePack.point_placements().add_extension_placement((DIR_NORTH,), length)
+
+
+def test_no_steps_from_an_empty_iterator():
+    with pytest.raises(ValueError, match="^The chain has no steps"):
+        extension_placement_arguments(iter(()))
+
+
+def test_the_warning_in_full(monkeypatch):
+    argv = ["spec", "1234_1243_1423_4123", "row_and_col_placements", "-x"]
+    (message,) = warnings(monkeypatch, argv)
+    assert message == (
+        "--extension-placement places the point of a point requirement in the class's "
+        "tiling, and row_and_col_placements inserts none there, so the placement may "
+        "not apply; point_placements does."
+    )
