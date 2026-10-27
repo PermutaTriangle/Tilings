@@ -52,6 +52,8 @@ To install ``tilings`` on your system, run:
 
        pip install tilings
 
+Python 3.11 or newer is required.
+
 If you would like to edit the source code, you should install ``tilings`` in
 development mode by cloning the repository, running
 
