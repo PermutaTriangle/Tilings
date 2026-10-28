@@ -1512,3 +1512,83 @@ def test_a_run_determined_by_the_shape_keeps_its_window_constraints():
     )
     assert_bijection(tiling, child, rule.strategy, 6)
     sanity_check(rule, 6)
+
+
+def test_a_run_in_three_rows_is_read_in_the_middle_row_too():
+    """The first column avoids 201 whatever the rows of its points, so its run is {201},
+    which the RSK shape does not determine (102 and 120 share the shape of 201): the
+    slide must refuse. All four obstructions have a point in the middle row, and one has
+    only such points. Read without the middle row, they give the patterns 0, 10 and
+    none, which the shape does determine, and the slide of the block is offered with the
+    wrong counts: 4207 gridded permutations of size 5 against the tiling's 4211."""
+    column = [(0, 0), (0, 1), (0, 2)]
+    tiling = Tiling(
+        list(griddings("12", [(0, 0), (1, 0)]))
+        + list(griddings("21", [(0, 2), (1, 2)]))
+        + list(griddings("4321", [(0, 1), (1, 1)]))
+        + list(griddings("312", column))
+    )
+    assert tiling.dimensions == (2, 3)
+    assert counts(tiling, 5) == [1, 6, 30, 148, 763, 4211]
+    assert (
+        KnuthSlide(tiling).why_not(0, 2)
+        == "a run's patterns are not determined by the RSK shape"
+    )
+    assert not [
+        slide_rule for slide_rule in slides(tiling) if not slide_rule.strategy.of_rows
+    ]
+
+
+def three_rows(strip_column, requirements=(), assumptions=()):
+    """Babson and West's picture with a block of two columns and three rows: everything
+    avoids 321, and the strip column, as a whole, avoids 21."""
+    cells = [(x, y) for x in range(2) for y in range(3)]
+    strip = [cell_ for cell_ in cells if cell_[0] == strip_column]
+    return Tiling(
+        list(griddings("321", cells)) + list(griddings("21", strip)),
+        requirements,
+        assumptions,
+    )
+
+
+@pytest.mark.parametrize("row", [0, 1, 2])
+def test_the_ferrers_version_of_three_rows(row):
+    """The slide of a block of three rows, with a requirement and an assumption on one
+    whole row of it, the middle one included."""
+    requirements = [[point_at((0, row)), point_at((1, row))]]
+    assumptions = [TrackingAssumption([point_at((0, row)), point_at((1, row))])]
+    parent = three_rows(0, requirements, assumptions)
+    (rule,) = [
+        slide_rule for slide_rule in slides(parent) if not slide_rule.strategy.of_rows
+    ]
+    assert rule.children[0] == three_rows(1, requirements, assumptions)
+    assert_bijection(parent, rule.children[0], rule.strategy, 4)
+    sanity_check(rule, 4)
+
+
+def two_row_staircase(lengths, mirrored=False):
+    """decreasing_staircase with two cells, in two rows, in every column."""
+    obstructions = []
+    for first, length in enumerate(lengths):
+        decreasing = "".join(str(value) for value in range(length, 0, -1))
+        columns = (
+            range(len(lengths) - first) if mirrored else range(first, len(lengths))
+        )
+        obstructions.extend(
+            griddings(decreasing, [(x, y) for x in columns for y in range(2)])
+        )
+    return Tiling(obstructions)
+
+
+def test_a_block_of_three_columns_and_two_rows():
+    """The runs of a block of three columns that is also two rows high: the staircase of
+    (4, 3, 2) slides to its mirror image, as in one row."""
+    parent = two_row_staircase([4, 3, 2])
+    (rule,) = [
+        slide_rule
+        for slide_rule in slides(parent)
+        if slide_rule.strategy.width == 3 and not slide_rule.strategy.of_rows
+    ]
+    assert rule.children[0] == two_row_staircase([4, 3, 2], mirrored=True)
+    assert_bijection(parent, rule.children[0], rule.strategy, 4)
+    sanity_check(rule, 4)
