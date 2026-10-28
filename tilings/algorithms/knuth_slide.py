@@ -17,16 +17,18 @@ the reverse-complement (Schutzenberger). The map is an involution, as evacuation
 
 The slide moves points between the block's columns, so it keeps a constraint on the
 block's points when the constraint does not depend on how those points are split
-among the columns and the rows: when every regridding of them, as below, is
-forbidden too. An obstruction's points in the block, in the rows that they span,
-form its window. The slide is a bijection onto the gridded permutations of the child
-tiling when every constraint touching the block depends only on what the slide
-keeps:
+among the columns and the rows: when every regridding of them is forbidden too. A
+regridding of an obstruction's points in the block puts them in other cells of the
+block, keeping their order by position across the columns and by value across the
+rows, while its other points keep their cells. An obstruction's points in the
+block, in the rows that they span, form its window. The slide is a bijection onto
+the gridded permutations of the child tiling when every constraint touching the
+block depends only on what the slide keeps:
 
 - Every obstruction with points in the block is not contradictory, that is, some
   gridded permutation can have it, and it is of window type or of run type. A
   contradictory obstruction may be all that keeps a cell of the block active, and
-  it has no regriddings to keep the cell active in the child; Tilings makes none.
+  it has no regriddings to keep the cell active in the child.
     - Window type: no other point of it has a value between two of its block
       values, and every regridding of its block points over the block's columns,
       and over the block's rows from its lowest block row to its highest, is
@@ -36,10 +38,13 @@ keeps:
       equivalence (Permuta's is_knuth_closed). The slide keeps the Knuth class of
       the block word on the window, so it keeps whether the window avoids them.
     - Run type: all its points are in the block, and every regridding over the run
-      of columns it spans and all the block's rows is forbidden. For each run, the
-      patterns must form a shape-closed set: one whose avoiders are determined by
-      the RSK shape, such as a monotone pattern (Permuta's is_shape_closed). The
-      slide gives the mirrored run that shape, so the mirrored run avoids them.
+      of columns it spans and all the block's rows is forbidden. An obstruction in
+      one column can be of both types: it is taken as its column's run, and a run
+      whose patterns are not shape-closed leaves out those of its obstructions that
+      are of window type, which their windows hold. For each run, the patterns that
+      remain must form a shape-closed set: one whose avoiders are determined by the
+      RSK shape, such as a monotone pattern (Permuta's is_shape_closed). The slide
+      gives the mirrored run that shape, so the mirrored run avoids them.
 - Of every requirement, the gridded permutations with points in the block are
   single points, whose cells in the block make up whole columns of it, whole rows of
   it, or both; those with no points in the block may be of any length.
@@ -204,10 +209,10 @@ class KnuthSlide:
 
     @staticmethod
     def has_blocks(
-        tiling: "Tiling", of_rows: bool = False, *, one_line_only: bool = False
+        tiling: "Tiling", *, of_rows: bool = False, one_line_only: bool = False
     ) -> bool:
-        """Could the tiling have a block of columns, or with of_rows of rows? A cheap
-        test, to avoid computing the inverse tiling for nothing."""
+        """Could the tiling have a block of columns, or, with of_rows, a block of
+        rows? A cheap test, to avoid computing the inverse tiling for nothing."""
         cells = tiling.active_cells
         if of_rows:
             cells = frozenset((y, x) for x, y in cells)
@@ -349,10 +354,10 @@ class KnuthSlide:
         under Knuth moves, where a run needs them determined by the shape, a
         stronger condition. A run whose patterns are not determined by the shape
         leaves out those of its obstructions that are window constraints, which the
-        windows hold already (_classify). Then the patterns of each run must
-        be determined by the shape, those of each window must be closed under Knuth
-        moves, and the requirements and assumptions must be on whole columns or whole
-        rows of the block."""
+        windows hold already (_leave_out_window_constraints). Then the patterns of
+        each run must be determined by the shape, those of each window must be
+        closed under Knuth moves, and the requirements and assumptions must be on
+        whole columns or whole rows of the block."""
         rows = self._rows_of_column.get(column, tuple())
         if (
             width < 2
@@ -395,8 +400,8 @@ class KnuthSlide:
 
     def _classify(self, constraints: _Constraints, block: _Block) -> Optional[str]:
         """Put each obstruction with points in the block into the constraints, as
-        _analyze says, or return why one does not fit. A run whose patterns are not
-        determined by the shape then leaves out its window constraints."""
+        _analyze says, or return why one does not fit; then leave the window
+        constraints out of the runs that need it (_leave_out_window_constraints)."""
         rows = block.rows
         for obstruction in self._tiling.obstructions:
             indices = block.indices(obstruction)
@@ -435,13 +440,36 @@ class KnuthSlide:
                 )
             else:
                 return "an obstruction depends on how the block's points are split"
-        # A run whose patterns are not determined by the shape leaves out those of
-        # its obstructions that are window constraints, as the windows hold them
-        # already. Such an obstruction lies in one column. Its gridding with its last
-        # point in the next column of the block, or its first point in the column
-        # before, is forbidden, and as the tiling's obstructions are minimal, that
-        # gridding is an obstruction itself, of the same pattern and the same rows:
-        # a window constraint of the same window, whose regriddings are its own.
+        self._leave_out_window_constraints(constraints, block)
+        return None
+
+    def _leave_out_window_constraints(
+        self, constraints: _Constraints, block: _Block
+    ) -> None:
+        """Leave out of each run whose patterns are not determined by the shape
+        those of its obstructions that are window constraints, as the windows hold
+        them already. A run whose patterns are determined keeps them all, as a
+        subset of a shape-closed set need not be shape-closed; they are then
+        regridded both over the mirrored run, in all the block's rows, and, as
+        below, over the block's columns, in the rows they span.
+
+        Such an obstruction O lies in one column, as a run of several columns takes
+        only obstructions that are not window constraints. The windows hold it:
+        1. Move O's last point into the next column of the block, or its first
+           point into the column before. The gridding G so made is a regridding of
+           O over the block's columns, in the rows O spans, so G is forbidden, as O
+           is a window constraint.
+        2. So G contains an obstruction O'. If O' misses the moved point, it lies
+           inside O and is not O, which the minimality of the tiling's obstructions
+           rules out.
+        3. Otherwise O' uses the moved point, the one point of G in its column. As
+           a cell of the block is not empty, O' is not that point alone, so it has
+           points in both columns and lies in the block: it is a window or run
+           constraint, whose regriddings over the two columns are forbidden. Its
+           regridding that moves the point back lies inside O, so by minimality it
+           is O, and O' is G.
+        4. So G is an obstruction, of the same pattern and the same rows as O: a
+           window constraint of O's window, whose regriddings are O's own."""
         for span, run in list(constraints.runs.items()):
             if not is_shape_closed(run.values()):
                 constraints.runs[span] = {
@@ -452,7 +480,6 @@ class KnuthSlide:
                     )
                     is None
                 }
-        return None
 
     @staticmethod
     def _check_closures(constraints: _Constraints) -> Optional[str]:

@@ -963,12 +963,12 @@ def test_the_blocks_of_a_tiling(kwargs, expected):
 def test_has_blocks_says_whether_there_are_blocks(tiling, of_rows, one_line_only):
     """The cheap test agrees with the blocks, for columns and for rows."""
     frame = tiling.inverse() if of_rows else tiling
-    assert KnuthSlide.has_blocks(tiling, of_rows, one_line_only=one_line_only) == bool(
-        list(KnuthSlide(frame).blocks(2, one_line_only=one_line_only))
-    )
+    assert KnuthSlide.has_blocks(
+        tiling, of_rows=of_rows, one_line_only=one_line_only
+    ) == bool(list(KnuthSlide(frame).blocks(2, one_line_only=one_line_only)))
     if not of_rows and not one_line_only:
         assert KnuthSlide.has_blocks(tiling) == KnuthSlide.has_blocks(
-            tiling, False, one_line_only=False
+            tiling, of_rows=False, one_line_only=False
         )
     assert KnuthSlide.has_blocks(tiling) == bool(list(KnuthSlide(tiling).blocks()))
 
@@ -982,7 +982,8 @@ def test_a_tiling_of_one_cell_has_nothing_to_slide(tiling):
     assert tiling.dimensions == (1, 1)
     assert not slides(tiling)
     assert not list(KnuthSlide(tiling).blocks())
-    assert not KnuthSlide.has_blocks(tiling) and not KnuthSlide.has_blocks(tiling, True)
+    assert not KnuthSlide.has_blocks(tiling)
+    assert not KnuthSlide.has_blocks(tiling, of_rows=True)
 
 
 @pytest.mark.parametrize("max_width, rules", [(0, 0), (1, 0), (2, 1), (10, 1)])
@@ -1481,6 +1482,8 @@ def test_the_options_are_keyword_only():
         KnuthSlide(babson_west).blocks(3, True)
     with pytest.raises(TypeError):
         KnuthSlide.has_blocks(babson_west, False, True)
+    with pytest.raises(TypeError):
+        KnuthSlide.has_blocks(babson_west, True)
     factory = KnuthSlideFactory(3, one_line_only=True, slide_rows=False)
     assert (factory.max_width, factory.one_line_only, factory.slide_rows) == (
         3,

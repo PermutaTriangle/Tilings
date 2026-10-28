@@ -145,10 +145,11 @@ class KnuthSlideFactory(StrategyFactory[Tiling]):
     """
     Every Knuth slide of a tiling that changes it: of blocks of 2 to max_width
     adjacent columns, and of blocks of 2 to max_width adjacent rows unless slide_rows
-    is False. Columns always slide. A block of columns may span several rows of cells,
-    and a block of rows several columns of cells, unless one_line_only is True: then
-    a block of columns lies in one row of cells, and a block of rows in one column of
-    cells. By default max_width is 3, one_line_only is False and slide_rows is True.
+    is False. Blocks of columns are tried whatever slide_rows is. A block of columns
+    may span several rows of cells, and a block of rows several columns of cells,
+    unless one_line_only is True: then a block of columns lies in one row of cells,
+    and a block of rows in one column of cells. By default max_width is 3,
+    one_line_only is False and slide_rows is True.
     """
 
     def __init__(
@@ -166,7 +167,7 @@ class KnuthSlideFactory(StrategyFactory[Tiling]):
     def __call__(self, comb_class: Tiling) -> Iterator[Rule]:
         for of_rows in (False, True) if self.slide_rows else (False,):
             if not KnuthSlide.has_blocks(
-                comb_class, of_rows, one_line_only=self.one_line_only
+                comb_class, of_rows=of_rows, one_line_only=self.one_line_only
             ):
                 continue
             slide = KnuthSlide(_columns_frame(comb_class, of_rows))
