@@ -6,6 +6,40 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- `ReductionFactory` and `ReductionStrategy`, the reduction of a set of cells: the
+  cells are made increasing or decreasing, and their own tiling is counted beside
+  the reduced tiling, which keeps only what the rest of the tiling sees of them
+  (a Hadamard product, with object maps and random sampling). The factory's
+  `region` is `"cell"`, `"row"`, `"column"`, `"line"`, `"cut"` (the cells on one
+  side of a line between two columns or two rows) or `"any"`, the last two with
+  `max_cells`. The condition, the plan and the children are in
+  `tilings.algorithms.reduction`.
+
+### Changed
+- `CellReductionFactory` and `CellReductionStrategy` are the reduction of single
+  cells: they count, generate and sample objects, and the kitchen sink pack uses
+  `ReductionFactory(tracked)`. A cell with no obstruction of its own, in a
+  component assumption, or in a tracked gridded permutation of two or more
+  points, is no longer reduced.
+- `CellReductionStrategy.formal_step` names the direction, as in "reducing cell
+  (0, 0) to increasing", where it was "reducing cell (0, 0)".
+- The cell reduction's reduced tiling is built with `Tiling`'s defaults
+  (simplified, empty rows and columns removed), where it was built with
+  `simplify=False`, `derive_empty=False` and `remove_empty_rows_and_cols=False`,
+  so a specification saved with the old `CellReductionStrategy` may not rebuild
+  its children identically. None could have been counted: the old constructor
+  raised `NotImplementedError`.
+- `CellReductionConstructor` is `ReductionConstructor`, which takes the parent,
+  the children, the plan and the map of the parent's parameters to the reduced
+  tiling's. The old `CellReductionConstructor(parameter)` counted nothing: each
+  of its methods raised `NotImplementedError`.
+
+### Removed
+- `CellReductionFactory.reducible_cells`,
+  `CellReductionFactory.can_reduce_cell_with_requirements_and_assumptions` and
+  `CellReductionFactory.gp_in_row_and_col`. The condition is
+  `tilings.algorithms.reduction.is_reducible`.
 
 ### Changed
 - Minimum Python version is now 3.11; CPython and PyPy 3.10 are no longer supported.
