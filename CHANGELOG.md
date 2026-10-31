@@ -6,6 +6,36 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Added
+- `KnuthSlideFactory(max_width=3, *, one_line_only=False, slide_rows=True)` and
+  `KnuthSlideStrategy(start, width, of_rows=False)`, the Knuth slide: an
+  equivalence that reverses a block of 2 to `max_width` adjacent columns with the
+  same rows of active cells, and, unless `slide_rows` is False, a block of
+  adjacent rows too; columns always slide. With `one_line_only`, a block of
+  columns lies in one row of cells, and a block of rows in one column of cells.
+  The points in the block are rearranged so that their values in every window,
+  the rows that an obstruction's points in the block span, keep their Knuth
+  class, and every run, a stretch of adjacent columns of the block, takes the RSK
+  shape of its mirror image. Its rules have forward and backward maps. No
+  built-in pack has the slide: it is added with
+  `pack = pack.add_initial(KnuthSlideFactory())`, as `add_initial` returns a new
+  pack.
+- `tilings.algorithms.KnuthSlide`, which finds a tiling's blocks, tells whether
+  each slides and why not, and gives the child and the map of gridded
+  permutations. A block slides when every obstruction on it depends only on the
+  Knuth classes of its windows of values or on the RSK shapes of its runs of
+  columns, and every requirement and tracking assumption on it is on whole
+  columns or whole rows. Blocks of any width slide, in one row of cells or,
+  unless `one_line_only` is set, in several.
+- With slides of up to three columns, Av(15432), which Tilings' sliding does not
+  reach, has a specification: `row_and_col_placements(row_only=True)` with
+  untracked fusion and the slide as an initial strategy finds an untracked one,
+  and the GuidedSearcher, with that pack, makes from it a tracked one that counts
+  the class.
+
+### Changed
+- Tilings needs a Permuta release with `permuta.permutils.robinson_schensted`,
+  whose RSK, evacuation and Knuth-closure tests the Knuth slide uses.
 
 ### Changed
 - Minimum Python version is now 3.11; CPython and PyPy 3.10 are no longer supported.
