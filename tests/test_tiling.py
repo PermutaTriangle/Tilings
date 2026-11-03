@@ -1232,6 +1232,17 @@ def test_is_empty(compresstil, empty_tiling, finite_tiling):
     assert empty_tiling.is_empty()
 
 
+@pytest.mark.timeout(1)
+def test_is_empty_row_of_point_requirements():
+    """A row of ten cells, each with a point requirement. Searching shortest
+    first, is_empty built the 9! orders of the points in the first nine cells
+    before it found a gridded perm."""
+    tiling = Tiling(
+        requirements=[[GriddedPerm.point_perm((column, 0))] for column in range(10)]
+    )
+    assert not tiling.is_empty()
+
+
 def test_is_finite(compresstil, empty_tiling, finite_tiling):
     assert not compresstil.is_finite()
     assert finite_tiling.is_finite()

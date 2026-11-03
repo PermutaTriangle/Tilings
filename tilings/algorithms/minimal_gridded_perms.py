@@ -543,3 +543,125 @@ class MinimalGriddedPerms:
             if not yielded_subgridded_perm(gp):
                 yielded.add(gp)
                 yield gp
+
+    def find_gridded_perm(self) -> Optional[GriddedPerm]:
+        """
+        Return a gridded perm that avoids the obstructions and contains the
+        requirements, or None if there is none.
+
+        It takes the work packets of `minimal_gridded_perms`, made by the
+        same rules, but depth first, and stops at the first gridded perm that
+        contains the requirements. `minimal_gridded_perms` takes the shortest
+        packet first, so it builds every shorter gridded perm before it yields
+        one: for a row of n cells, each with a point requirement, that is
+        every one of the (n - 1)! orders of the points in the first n - 1
+        cells that avoids the obstructions.
+
+        A packet is skipped only if the same packet, its minimum indices too,
+        was made before. `minimal_gridded_perms` also skips a packet whose
+        gridded perm, goal and last cell an earlier packet had with other
+        minimum indices, and which of the two comes first depends on the
+        order the packets are taken in. So every packet that
+        `minimal_gridded_perms` takes before it yields a gridded perm is taken
+        here too, in some order, and this finds a gridded perm whenever
+        `minimal_gridded_perms` yields one.
+        """
+        if not self.requirements:
+            if GriddedPerm.empty_perm() in self.obstructions:
+                return None
+            return GriddedPerm.empty_perm()
+        if len(self.requirements) == 1:
+            return next(
+                (
+                    requirement
+                    for requirement in self.requirements[0]
+                    if requirement.avoids(*self.obstructions)
+                ),
+                None,
+            )
+        # As in `_prepare_queue`, every initial gridded perm is tried before
+        # any packet is taken, and the shortest initial packet is taken first.
+        stack: List[QueuePacket] = []
+        for chosen_requirements in self._product_requirements():
+            initial_gridded_perm = self.initial_gp(*chosen_requirements)
+            if not self.satisfies_obstructions(initial_gridded_perm):
+                continue
+            if self.satisfies_requirements(initial_gridded_perm):
+                return initial_gridded_perm
+            stack.append(
+                QueuePacket(
+                    initial_gridded_perm, tuple(chosen_requirements), (-1, -1), True, {}
+                )
+            )
+        stack.sort(key=lambda packet: len(packet.gp), reverse=True)
+        return self._search_depth_first(stack)
+
+    def _search_depth_first(self, stack: List[QueuePacket]) -> Optional[GriddedPerm]:
+        """Take the packets on the stack, and those made from them, depth
+        first, and return the first gridded perm made that avoids the
+        obstructions and contains the requirements, or None."""
+        # For each gridded perm, goal and last cell made so far: None if the
+        # gridded perm contains an obstruction, and otherwise the minimum
+        # indices of the packets made with them. Whether a gridded perm
+        # avoids the obstructions does not depend on the packet it was made
+        # from, as that packet's own gridded perm avoids them, and the
+        # gridded perm did not contain the requirements, or it was returned.
+        made_before: Dict[WorkPackets, Optional[List[Dict[Cell, int]]]] = {}
+        while stack:
+            packet = stack.pop()
+            for cell, localised in self._get_cells_to_try(packet):
+                next_cell = packet.last_cell if localised else cell
+                for index, next_gridded_perm in self.insert_point(
+                    packet.gp, cell, packet.mindices.get(cell, 0)
+                ):
+                    packet_key = (next_gridded_perm, packet.gps, next_cell)
+                    if packet_key in made_before:
+                        minimum_indices_before = made_before[packet_key]
+                        if minimum_indices_before is None:
+                            continue
+                        next_minimum_indices = self._next_minimum_indices(
+                            packet.mindices, cell, index
+                        )
+                        if next_minimum_indices in minimum_indices_before:
+                            continue
+                        minimum_indices_before.append(next_minimum_indices)
+                    else:
+                        if not self.satisfies_obstructions(
+                            next_gridded_perm, must_contain=cell
+                        ):
+                            made_before[packet_key] = None
+                            continue
+                        self.known_patts[next_gridded_perm].update(
+                            self.known_patts[packet.gp]
+                        )
+                        if self.satisfies_requirements(next_gridded_perm):
+                            return next_gridded_perm
+                        next_minimum_indices = self._next_minimum_indices(
+                            packet.mindices, cell, index
+                        )
+                        made_before[packet_key] = [next_minimum_indices]
+                    stack.append(
+                        QueuePacket(
+                            next_gridded_perm,
+                            packet.gps,
+                            next_cell,
+                            localised,
+                            next_minimum_indices,
+                        )
+                    )
+        return None
+
+    @staticmethod
+    def _next_minimum_indices(
+        minimum_indices: Dict[Cell, int], cell: Cell, index: int
+    ) -> Dict[Cell, int]:
+        """The minimum indices of the packet made by inserting a point into
+        cell at index, from a packet with the given minimum indices, as
+        `minimal_gridded_perms` works them out."""
+        next_minimum_indices = {
+            other_cell: minimum_index if minimum_index <= index else minimum_index + 1
+            for other_cell, minimum_index in minimum_indices.items()
+            if other_cell != cell
+        }
+        next_minimum_indices[cell] = index + 1
+        return next_minimum_indices
