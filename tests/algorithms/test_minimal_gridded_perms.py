@@ -5,6 +5,7 @@ import pytest
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import MinimalGriddedPerms
+from tilings.algorithms.minimal_gridded_perms import QueuePacket
 
 tilings = [
     # Testing glueing indep cells
@@ -618,6 +619,129 @@ def test_find_gridded_perm_one_requirement_list_or_none():
         == decreasing
     )
     assert MinimalGriddedPerms((), ()).find_gridded_perm() == GriddedPerm.empty_perm()
+
+
+def test_points_lacking_by_patterns():
+    """10 in a cell lacks two points of 012 there by the pattern, where the
+    count says one, and a point in another cell lacks one."""
+    increasing = GriddedPerm((0, 1, 2), ((0, 0),) * 3)
+    point = GriddedPerm.point_perm((1, 0))
+    mgp = MinimalGriddedPerms((), ((increasing,), (point,)))
+    packet = QueuePacket(
+        GriddedPerm((1, 0), ((0, 0),) * 2), (increasing, point), (-1, -1), True, {}
+    )
+    assert mgp._points_lacking_by_patterns(packet) == 3
+
+
+def test_points_lacking_by_patterns_closed_cell():
+    """10 in a cell that holds the most points the goal can need there: no
+    gridded perm made from the packet contains 01 in it."""
+    increasing = GriddedPerm((0, 1), ((0, 0),) * 2)
+    point = GriddedPerm.point_perm((1, 0))
+    mgp = MinimalGriddedPerms((), ((increasing,), (point,)))
+    packet = QueuePacket(
+        GriddedPerm((1, 0), ((0, 0),) * 2), (increasing, point), (-1, -1), True, {}
+    )
+    assert mgp._points_lacking_by_patterns(packet) is None
+
+
+def test_points_lacking_by_patterns_across_closed_cells():
+    """A point in each of two cells before the last cell, as 10: no gridded
+    perm made from the packet contains 01 across them, though each cell holds
+    its point; as 01, the packet lacks only the point in the last cell."""
+    across = GriddedPerm((0, 1), ((0, 0), (1, 0)))
+    point = GriddedPerm.point_perm((2, 0))
+    mgp = MinimalGriddedPerms((), ((across,), (point,)))
+    for patt, points_lacking in (((1, 0), None), ((0, 1), 1)):
+        packet = QueuePacket(
+            GriddedPerm(patt, ((0, 0), (1, 0))), (across, point), (2, 0), False, {}
+        )
+        assert mgp._points_lacking_by_patterns(packet) == points_lacking
+
+
+# Found by checking every gridded perm on random tilings: taking no packets
+# before it prunes, find_gridded_perm drops a packet as a requirement lacks a
+# point in a closed cell, or only by the check across closed cells, or puts one
+# back with a sharper bound.
+TILINGS_WHERE_FIND_GRIDDED_PERM_PRUNES = {
+    "a point lacking in a closed cell": (
+        (
+            GriddedPerm((0, 1), ((0, 0), (0, 0))),
+            GriddedPerm((0, 2, 1), ((0, 0), (1, 1), (1, 0))),
+        ),
+        (
+            (GriddedPerm((0, 1), ((0, 1), (1, 1))),),
+            (GriddedPerm((0, 1), ((1, 0), (1, 0))),),
+            (GriddedPerm((1, 0), ((1, 1), (1, 1))),),
+        ),
+    ),
+    "a point lacking in a closed cell, empty": (
+        (
+            GriddedPerm((0, 2, 1), ((0, 1), (0, 2), (0, 2))),
+            GriddedPerm((1, 2, 0), ((0, 0), (0, 2), (0, 0))),
+            GriddedPerm((2, 1, 0), ((0, 2), (0, 1), (0, 0))),
+            GriddedPerm((0, 1, 3, 2), ((0, 0), (0, 2), (0, 2), (0, 2))),
+            GriddedPerm((0, 1, 3, 2), ((0, 1), (0, 1), (0, 2), (0, 1))),
+            GriddedPerm((2, 3, 0, 1), ((0, 2), (0, 2), (0, 0), (0, 0))),
+            GriddedPerm((2, 3, 1, 0), ((0, 0), (0, 1), (0, 0), (0, 0))),
+        ),
+        (
+            (GriddedPerm((1, 0), ((0, 2), (0, 2))),),
+            (GriddedPerm((1, 2, 0), ((0, 1), (0, 1), (0, 0))),),
+        ),
+    ),
+    "across closed cells, and a sharper bound": (
+        (
+            GriddedPerm((0, 1), ((0, 0), (0, 1))),
+            GriddedPerm((1, 0, 2), ((0, 1), (0, 1), (0, 1))),
+            GriddedPerm((1, 3, 0, 2), ((0, 2), (0, 2), (0, 0), (0, 2))),
+        ),
+        (
+            (GriddedPerm((0, 1), ((0, 1), (0, 1))),),
+            (GriddedPerm((1, 0), ((0, 1), (0, 1))),),
+            (GriddedPerm((1, 0), ((0, 2), (0, 0))),),
+        ),
+    ),
+    "across closed cells, empty": (
+        (
+            GriddedPerm((1, 0), ((0, 1), (0, 0))),
+            GriddedPerm((1, 0), ((0, 2), (0, 2))),
+            GriddedPerm((2, 0, 1), ((0, 2), (0, 0), (0, 1))),
+        ),
+        (
+            (GriddedPerm((1, 0), ((0, 2), (0, 0))),),
+            (GriddedPerm((1, 2, 0), ((0, 1), (0, 1), (0, 1))),),
+        ),
+    ),
+    "a sharper bound": (
+        (
+            GriddedPerm((1, 0), ((1, 0), (1, 0))),
+            GriddedPerm((2, 0, 1), ((1, 1), (1, 0), (1, 0))),
+        ),
+        (
+            (GriddedPerm((0,), ((1, 0),)),),
+            (GriddedPerm((0, 1), ((0, 0), (0, 1))),),
+            (GriddedPerm((0, 1), ((0, 1), (0, 1))),),
+        ),
+    ),
+}
+
+
+@pytest.mark.parametrize("name", TILINGS_WHERE_FIND_GRIDDED_PERM_PRUNES)
+@pytest.mark.parametrize("packets_taken_before_pruning", [0, 8])
+def test_find_gridded_perm_pruning(name, packets_taken_before_pruning, monkeypatch):
+    monkeypatch.setattr(
+        MinimalGriddedPerms,
+        "PACKETS_TAKEN_BEFORE_PRUNING",
+        packets_taken_before_pruning,
+    )
+    obstructions, requirements = TILINGS_WHERE_FIND_GRIDDED_PERM_PRUNES[name]
+    gridded_perm = MinimalGriddedPerms(obstructions, requirements).find_gridded_perm()
+    if name.endswith("empty"):
+        assert gridded_perm is None
+        assert not minimal_gridded_perms_by_brute_force(obstructions, requirements)
+    else:
+        assert is_gridded_perm_on(gridded_perm, obstructions, requirements)
 
 
 def test_order():

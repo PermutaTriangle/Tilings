@@ -1,6 +1,6 @@
 from collections import Counter, defaultdict
 from heapq import heapify, heappop, heappush
-from itertools import chain, product
+from itertools import chain, combinations, product
 from typing import Dict, FrozenSet, Iterator, List, Optional, Set, Tuple
 
 from permuta import Perm
@@ -49,6 +49,10 @@ class MinimalGriddedPerms:
         self.max_cell_counts: Dict[GPTuple, Dict[Cell, int]] = {}
         self.upward_closures: Dict[GPTuple, GPTuple] = {}
         self.known_patts: Dict[GriddedPerm, Set[GriddedPerm]] = defaultdict(set)
+        # For find_gridded_perm: each requirement's pattern in each of its cells,
+        # and the most points of one pattern that form a pattern another contains.
+        self.requirement_patterns: Dict[GriddedPerm, Dict[Cell, Perm]] = {}
+        self.points_in_common: Dict[Tuple[Perm, Perm], int] = {}
 
     def get_requirements_up_to_cell(self, cell: Cell, gps: GPTuple) -> GPTuple:
         """Given a goal gps and cell (x,y), return the truncations of the reqs
@@ -543,6 +547,9 @@ class MinimalGriddedPerms:
                 yielded.add(gp)
                 yield gp
 
+    # find_gridded_perm prunes only after this many packets: most searches end sooner.
+    PACKETS_TAKEN_BEFORE_PRUNING = 8
+
     def find_gridded_perm(self) -> Optional[GriddedPerm]:
         """
         Return a gridded perm that avoids the obstructions and contains the
@@ -572,6 +579,11 @@ class MinimalGriddedPerms:
         perm made from it, of length L say, so no packet is taken whose bound
         is more than L, and none whose length is L or more.
 
+        After the first `PACKETS_TAKEN_BEFORE_PRUNING` packets, a packet taken
+        is dropped if no gridded perm made from it contains the requirements,
+        and goes back on the heap if their patterns give it a higher bound,
+        which is again a lower bound (`_points_lacking_by_patterns`).
+
         A packet's open cells are those that it, and the packets made from it,
         may still insert into: the cells not yet holding the most points its
         goal can need, and not before its last cell. A packet is skipped if
@@ -585,8 +597,8 @@ class MinimalGriddedPerms:
         `minimal_gridded_perms` skips such a packet whatever its minimum
         indices. So for every packet that `minimal_gridded_perms` takes, one
         with its gridded perm, goal and last cell that makes all it makes is
-        taken here, unless a gridded perm is found first, and this finds a
-        gridded perm whenever `minimal_gridded_perms` yields one.
+        taken here, or dropped, unless a gridded perm is found first, and this
+        finds a gridded perm whenever `minimal_gridded_perms` yields one.
         """
         if not self.requirements:
             if GriddedPerm.empty_perm() in self.obstructions:
@@ -626,8 +638,7 @@ class MinimalGriddedPerms:
         # gridded perm made again does not contain the requirements, or it
         # would have been returned when it was first made.
         made_before: Dict[WorkPackets, Optional[List[Dict[Cell, int]]]] = {}
-        while heap:
-            _, _, packet, points_lacking = heappop(heap)
+        for packet, points_lacking in self._packets_taken(heap):
             for cell, localised in self._get_cells_to_try(packet):
                 found, next_packets = self._packets_made_in_cell(
                     packet, cell, localised, made_before
@@ -642,16 +653,41 @@ class MinimalGriddedPerms:
                     heappush(heap, self._heap_entry(next_packet, next_points_lacking))
         return None
 
+    def _packets_taken(
+        self, heap: List[Tuple[int, int, QueuePacket, int, bool]]
+    ) -> Iterator[Tuple[QueuePacket, int]]:
+        """Pop the heap's packets in turn and yield each with the points it
+        lacks, as the packets made from it are pushed onto the heap, but drop
+        or put back one taken after the first `PACKETS_TAKEN_BEFORE_PRUNING`,
+        as `find_gridded_perm` says."""
+        packets_taken = 0
+        while heap:
+            bound, negative_length, packet, points_lacking, sharpened = heappop(heap)
+            packets_taken += 1
+            if not sharpened and packets_taken > self.PACKETS_TAKEN_BEFORE_PRUNING:
+                points_lacking_by_patterns = self._points_lacking_by_patterns(packet)
+                if points_lacking_by_patterns is None:
+                    continue
+                sharper_bound = -negative_length + max(1, points_lacking_by_patterns)
+                if sharper_bound > bound:
+                    heappush(
+                        heap,
+                        (sharper_bound, negative_length, packet, points_lacking, True),
+                    )
+                    continue
+            yield packet, points_lacking
+
     @staticmethod
     def _heap_entry(
         packet: QueuePacket, points_lacking: int
-    ) -> Tuple[int, int, QueuePacket, int]:
-        """The packet's bound, the negative of its length, the packet and the
-        points it lacks, in the order the heap compares them. Of two packets
-        alike in bound and length, neither is less than the other, by
-        `QueuePacket.__lt__`, so the heap leaves them in its own order."""
+    ) -> Tuple[int, int, QueuePacket, int, bool]:
+        """The packet's bound, the negative of its length, the packet, the
+        points it lacks and False, for a bound not sharpened, in the order the
+        heap compares them. Of two packets alike in bound and length, neither
+        is less than the other, by `QueuePacket.__lt__`, so the heap leaves
+        them in its own order."""
         length = len(packet.gp)
-        return length + max(1, points_lacking), -length, packet, points_lacking
+        return length + max(1, points_lacking), -length, packet, points_lacking, False
 
     def _packets_made_in_cell(
         self,
@@ -763,6 +799,72 @@ class MinimalGriddedPerms:
             max(0, needed - gridded_perm.pos.count(cell))
             for cell, needed in points_needed.items()
         )
+
+    def _points_lacking_by_patterns(self, packet: QueuePacket) -> Optional[int]:
+        """The points that a gridded perm made from the packet lacks to
+        contain the requirements, by their patterns in each cell, or None if
+        none contains them. In each cell, the points of an occurrence of a
+        requirement in such a gridded perm that come from the packet form a
+        pattern of both the requirement's points there and the packet's, and
+        the rest are new: so the new points there are at least the most, over
+        the lists, of the least in a list of a requirement's points there less
+        the most of them that form a pattern the packet's points there
+        contain. Nothing made from the packet inserts into a cell that is not
+        open (`_open_cells`), so in those cells an occurrence has no new
+        points, and a requirement whose points in them, as a gridded perm, the
+        packet's do not contain is left out of its list."""
+        if not self.requirement_patterns:
+            self.requirement_patterns = {
+                requirement: self._cell_patterns(requirement)
+                for requirement in chain.from_iterable(self.requirements)
+            }
+        open_cells = self._open_cells(packet.gps, packet.gp, packet.last_cell)
+        packet_patterns = self._cell_patterns(packet.gp)
+        most_lacking: Dict[Cell, int] = defaultdict(int)
+        for requirement_list in self.requirements:
+            lacking_in_list: List[Dict[Cell, int]] = []
+            for requirement in requirement_list:
+                lacking = {
+                    cell: len(pattern)
+                    - self._most_points_in_common(pattern, packet_patterns[cell])
+                    for cell, pattern in self.requirement_patterns[requirement].items()
+                }
+                closed_cells = [cell for cell in lacking if cell not in open_cells]
+                if not any(lacking[cell] for cell in closed_cells) and (
+                    len(closed_cells) < 2
+                    or packet.gp.get_gridded_perm_in_cells(closed_cells).contains(
+                        requirement.get_gridded_perm_in_cells(closed_cells)
+                    )
+                ):
+                    lacking_in_list.append(lacking)
+            if not lacking_in_list:
+                return None
+            for cell in lacking_in_list[0]:
+                least = min(lacking.get(cell, 0) for lacking in lacking_in_list)
+                most_lacking[cell] = max(most_lacking[cell], least)
+        return sum(most_lacking.values())
+
+    @staticmethod
+    def _cell_patterns(gridded_perm: GriddedPerm) -> Dict[Cell, Perm]:
+        """The pattern of the gridded perm's points in each cell, empty if none."""
+        cell_patterns: Dict[Cell, Perm] = defaultdict(Perm)
+        for cell in set(gridded_perm.pos):
+            cell_patterns[cell] = gridded_perm.get_gridded_perm_in_cells((cell,)).patt
+        return cell_patterns
+
+    def _most_points_in_common(self, pattern: Perm, perm: Perm) -> int:
+        """The most points of the pattern that form a pattern the perm contains."""
+        key = (pattern, perm)
+        if key not in self.points_in_common:
+            self.points_in_common[key] = next(
+                size
+                for size in range(min(len(pattern), len(perm)), -1, -1)
+                if any(
+                    perm.contains(Perm.to_standard(pattern[index] for index in indices))
+                    for indices in combinations(range(len(pattern)), size)
+                )
+            )
+        return self.points_in_common[key]
 
     def _open_cells(
         self, goal: GPTuple, gridded_perm: GriddedPerm, last_cell: Cell

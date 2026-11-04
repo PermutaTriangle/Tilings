@@ -14,10 +14,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Black targets Python 3.11, the minimum supported version.
 - `Tiling.is_empty` looks for a gridded permutation with
   `MinimalGriddedPerms.find_gridded_perm`, which takes the work packets by a
-  lower bound on the length of the gridded permutations made from them, so it
-  no longer builds every shorter gridded permutation before it finds one: on a
-  row of n cells, each with a point requirement, every order of the points in
-  the first n - 1 cells.
+  lower bound on the length of the gridded permutations made from them, and
+  drops a packet that can make none, so it no longer builds every shorter
+  gridded permutation before it finds one: on a row of n cells, each with a
+  point requirement, every order of the points in the first n - 1 cells.
 
 ### Added
 - Required CI coverage for stable PyPy 3.12 alongside PyPy 3.11.
