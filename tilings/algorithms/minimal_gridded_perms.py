@@ -49,8 +49,7 @@ class MinimalGriddedPerms:
         self.max_cell_counts: Dict[GPTuple, Dict[Cell, int]] = {}
         self.upward_closures: Dict[GPTuple, GPTuple] = {}
         self.known_patts: Dict[GriddedPerm, Set[GriddedPerm]] = defaultdict(set)
-        # For find_gridded_perm: each requirement's pattern in each of its cells,
-        # and the most points of one pattern that form a pattern another contains.
+        # Caches for find_gridded_perm's _points_lacking_by_patterns.
         self.requirement_patterns: Dict[GriddedPerm, Dict[Cell, Perm]] = {}
         self.points_in_common: Dict[Tuple[Perm, Perm], int] = {}
 
@@ -657,9 +656,8 @@ class MinimalGriddedPerms:
         self, heap: List[Tuple[int, int, QueuePacket, int, bool]]
     ) -> Iterator[Tuple[QueuePacket, int]]:
         """Pop the heap's packets in turn and yield each with the points it
-        lacks, as the packets made from it are pushed onto the heap, but drop
-        or put back one taken after the first `PACKETS_TAKEN_BEFORE_PRUNING`,
-        as `find_gridded_perm` says."""
+        lacks, but drop or put back, as `find_gridded_perm` says, one popped
+        after the first `PACKETS_TAKEN_BEFORE_PRUNING`."""
         packets_taken = 0
         while heap:
             bound, negative_length, packet, points_lacking, sharpened = heappop(heap)
@@ -682,10 +680,9 @@ class MinimalGriddedPerms:
         packet: QueuePacket, points_lacking: int
     ) -> Tuple[int, int, QueuePacket, int, bool]:
         """The packet's bound, the negative of its length, the packet, the
-        points it lacks and False, for a bound not sharpened, in the order the
-        heap compares them. Of two packets alike in bound and length, neither
-        is less than the other, by `QueuePacket.__lt__`, so the heap leaves
-        them in its own order."""
+        points it lacks and False (the bound not sharpened), in the order the
+        heap compares them. Of two alike in bound and length neither is less,
+        by `QueuePacket.__lt__`, so the heap leaves them in its own order."""
         length = len(packet.gp)
         return length + max(1, points_lacking), -length, packet, points_lacking, False
 
@@ -847,9 +844,12 @@ class MinimalGriddedPerms:
     @staticmethod
     def _cell_patterns(gridded_perm: GriddedPerm) -> Dict[Cell, Perm]:
         """The pattern of the gridded perm's points in each cell, empty if none."""
+        values_in_cells: Dict[Cell, List[int]] = defaultdict(list)
+        for value, cell in gridded_perm:
+            values_in_cells[cell].append(value)
         cell_patterns: Dict[Cell, Perm] = defaultdict(Perm)
-        for cell in set(gridded_perm.pos):
-            cell_patterns[cell] = gridded_perm.get_gridded_perm_in_cells((cell,)).patt
+        for cell, values in values_in_cells.items():
+            cell_patterns[cell] = Perm.to_standard(values)
         return cell_patterns
 
     def _most_points_in_common(self, pattern: Perm, perm: Perm) -> int:
