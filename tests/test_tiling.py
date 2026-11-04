@@ -1243,6 +1243,47 @@ def test_is_empty_row_of_point_requirements():
     assert not tiling.is_empty()
 
 
+@pytest.mark.timeout(1)
+@pytest.mark.parametrize(
+    "tiling",
+    [
+        Tiling(
+            obstructions=(GriddedPerm((0, 1), ((1, 0), (1, 0))),),
+            requirements=(
+                (GriddedPerm((1, 2, 0), ((1, 0), (2, 0), (2, 0))),),
+                (GriddedPerm((2, 0, 1), ((2, 0), (2, 0), (2, 0))),),
+                (GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (1, 0))),),
+                (GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 0), (0, 0), (0, 0))),),
+            ),
+        ),
+        Tiling(
+            obstructions=(
+                GriddedPerm((3, 1, 2, 0), ((0, 0), (0, 0), (2, 0), (2, 0))),
+                GriddedPerm((1, 2, 3, 4, 0), ((0, 0), (1, 0), (1, 0), (2, 0), (2, 0))),
+            ),
+            requirements=(
+                (GriddedPerm((0, 2, 1, 3), ((0, 0), (0, 0), (0, 0), (2, 0))),),
+                (GriddedPerm((2, 1, 0, 3), ((0, 0), (1, 0), (2, 0), (2, 0))),),
+                (GriddedPerm((2, 3, 1, 0), ((0, 0), (1, 0), (1, 0), (2, 0))),),
+            ),
+        ),
+        Tiling(
+            requirements=(
+                (GriddedPerm((0, 2, 3, 1), ((0, 0), (1, 0), (1, 0), (2, 0))),),
+                (GriddedPerm((1, 2, 0, 3), ((0, 0), (1, 0), (1, 0), (2, 0))),),
+                (GriddedPerm((1, 3, 0, 2), ((0, 0), (2, 0), (2, 0), (2, 0))),),
+            ),
+        ),
+    ],
+)
+def test_is_empty_gridded_perm_off_the_first_branch(tiling):
+    """A row of three cells with requirements of three and four points, and
+    few obstructions or none. Searching depth first, is_empty took seconds in
+    branches that hold no gridded perm, where shortest first it finds one
+    within milliseconds."""
+    assert not tiling.is_empty()
+
+
 def test_is_finite(compresstil, empty_tiling, finite_tiling):
     assert not compresstil.is_finite()
     assert finite_tiling.is_finite()
