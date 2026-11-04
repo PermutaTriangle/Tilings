@@ -1233,13 +1233,19 @@ def test_is_empty(compresstil, empty_tiling, finite_tiling):
 
 
 @pytest.mark.timeout(1)
-def test_is_empty_row_of_point_requirements():
-    """A row of ten cells, each with a point requirement. Searching shortest
-    first, is_empty built the 9! orders of the points in the first nine cells
-    before it found a gridded perm."""
-    tiling = Tiling(
-        requirements=[[GriddedPerm.point_perm((column, 0))] for column in range(10)]
-    )
+@pytest.mark.parametrize(
+    "cells",
+    [
+        [(column, 0) for column in range(12)],
+        [(0, row) for row in range(12)],
+    ],
+    ids=["row", "column"],
+)
+def test_is_empty_point_requirement_in_each_cell(cells):
+    """Twelve cells in a row, or in a column, each with a point requirement.
+    Taking the shortest work packet first, is_empty built the 11! orders of
+    the points in the first eleven cells before it found a gridded perm."""
+    tiling = Tiling(requirements=[[GriddedPerm.point_perm(cell)] for cell in cells])
     assert not tiling.is_empty()
 
 
@@ -1276,11 +1282,11 @@ def test_is_empty_row_of_point_requirements():
         ),
     ],
 )
-def test_is_empty_gridded_perm_off_the_first_branch(tiling):
+def test_is_empty_where_longest_packet_first_is_slow(tiling):
     """A row of three cells with requirements of three and four points, and
-    few obstructions or none. Searching depth first, is_empty took seconds in
-    branches that hold no gridded perm, where shortest first it finds one
-    within milliseconds."""
+    few obstructions or none. Taking the longest work packet first, a search
+    takes seconds on packets from which no gridded perm is made, where taking
+    the shortest first finds one within milliseconds."""
     assert not tiling.is_empty()
 
 

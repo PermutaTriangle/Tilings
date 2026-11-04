@@ -418,8 +418,8 @@ class MinimalGriddedPerms:
 
         If `yield_non_minimal` is True, then it will yield some gridded perms
         that are non-minimal, found by the initial_gp method. Even though it
-        may not be minimal, this is useful when trying to determine whether or
-        not a tiling is empty.
+        may not be minimal, it is a gridded perm on the tiling. To find just
+        one gridded perm, `Tiling.is_empty` uses `find_gridded_perm` instead.
 
         If `max_length_to_build` it will only try to build minimal gridded
         perms of size shorter than this.
@@ -453,6 +453,8 @@ class MinimalGriddedPerms:
         def _process_work_packet(
             qpacket: QueuePacket, queue: List[QueuePacket]
         ) -> Iterator[GriddedPerm]:
+            # find_gridded_perm makes packets by the same steps, in
+            # _packets_made_in_cell: keep the two in step.
             # now we try inserting a new point into the cell
             for cell, localised in self._get_cells_to_try(qpacket):
                 # The `localised` bool tells us if we inserted into
@@ -544,7 +546,10 @@ class MinimalGriddedPerms:
     def find_gridded_perm(self) -> Optional[GriddedPerm]:
         """
         Return a gridded perm that avoids the obstructions and contains the
-        requirements, or None if there is none.
+        requirements, or None if there is none. It need not be minimal or the
+        shortest: an initial gridded perm that contains the requirements is
+        returned at once, and so, with one requirement list, is its first
+        requirement that avoids the obstructions.
 
         It takes the work packets of `minimal_gridded_perms`, made by the
         same rules, in another order, and stops at the first gridded perm that
@@ -564,23 +569,24 @@ class MinimalGriddedPerms:
         row, the search goes straight to a gridded perm; packets alike in both
         are taken as the heap leaves them, as in `minimal_gridded_perms`.
         While none is found, some packet on the heap has a shortest gridded
-        perm made from it, so no packet whose bound is more than its length is
-        taken, and none as long as it.
+        perm made from it, of length L say, so no packet is taken whose bound
+        is more than L, and none whose length is L or more.
 
-        A packet is skipped if one made before had its gridded perm, goal and
-        last cell, and minimum indices no larger in each cell that it, and the
-        packets made from it, may still insert into: a cell not yet holding
-        the most points the goal can need, and not before its last cell. The
-        last cell says whether a packet is still localising, as only the
-        initial packets and those made by localising have the last cell
-        (-1, -1), which is before every cell. The cells to try depend only on
-        the gridded perm, the goal and the last cell, so whatever is made from
-        the skipped packet is made from the earlier one, with minimum indices
-        no larger again. `minimal_gridded_perms` skips such a packet whatever
-        its minimum indices. So for every packet that `minimal_gridded_perms`
-        takes, one with its gridded perm, goal and last cell that makes all it
-        makes is taken here, unless a gridded perm is found first, and this
-        finds a gridded perm whenever `minimal_gridded_perms` yields one.
+        A packet's open cells are those that it, and the packets made from it,
+        may still insert into: the cells not yet holding the most points its
+        goal can need, and not before its last cell. A packet is skipped if
+        one made before had its gridded perm, goal and last cell, and minimum
+        indices no larger in each of its open cells. The last cell says
+        whether a packet is still localising, as only the initial packets and
+        those made by localising have the last cell (-1, -1), which is before
+        every cell. The cells to try depend only on the gridded perm, the goal
+        and the last cell, so whatever is made from the skipped packet is made
+        from the earlier one, with minimum indices no larger again.
+        `minimal_gridded_perms` skips such a packet whatever its minimum
+        indices. So for every packet that `minimal_gridded_perms` takes, one
+        with its gridded perm, goal and last cell that makes all it makes is
+        taken here, unless a gridded perm is found first, and this finds a
+        gridded perm whenever `minimal_gridded_perms` yields one.
         """
         if not self.requirements:
             if GriddedPerm.empty_perm() in self.obstructions:
@@ -607,26 +613,18 @@ class MinimalGriddedPerms:
         of those the longest, and return the first gridded perm made that
         avoids the obstructions and contains the requirements, or None."""
         points_needed = self._points_needed()
-        # Each packet with its bound, the negative of its length, and the
-        # points it lacks.
-        heap: List[Tuple[int, int, QueuePacket, int]] = []
-        for packet in packets:
-            points_lacking = self._points_lacking(packet.gp, points_needed)
-            heap.append(
-                (
-                    len(packet.gp) + max(1, points_lacking),
-                    -len(packet.gp),
-                    packet,
-                    points_lacking,
-                )
-            )
+        heap = [
+            self._heap_entry(packet, self._points_lacking(packet.gp, points_needed))
+            for packet in packets
+        ]
         heapify(heap)
         # For each gridded perm, goal and last cell made so far: None if the
         # gridded perm contains an obstruction, and otherwise the minimum
         # indices of the packets made with them that were kept. Whether a
         # gridded perm avoids the obstructions does not depend on the packet
-        # it was made from, as that packet's own gridded perm avoids them, and
-        # the gridded perm did not contain the requirements, or it was returned.
+        # it was made from, as that packet's own gridded perm avoids them. A
+        # gridded perm made again does not contain the requirements, or it
+        # would have been returned when it was first made.
         made_before: Dict[WorkPackets, Optional[List[Dict[Cell, int]]]] = {}
         while heap:
             _, _, packet, points_lacking = heappop(heap)
@@ -637,20 +635,23 @@ class MinimalGriddedPerms:
                 if found is not None:
                     return found
                 # A point inserted into a cell that lacks points is one of them.
-                next_points_lacking = points_lacking - (
-                    packet.gp.pos.count(cell) < points_needed.get(cell, 0)
-                )
+                next_points_lacking = points_lacking
+                if packet.gp.pos.count(cell) < points_needed.get(cell, 0):
+                    next_points_lacking -= 1
                 for next_packet in next_packets:
-                    heappush(
-                        heap,
-                        (
-                            len(next_packet.gp) + max(1, next_points_lacking),
-                            -len(next_packet.gp),
-                            next_packet,
-                            next_points_lacking,
-                        ),
-                    )
+                    heappush(heap, self._heap_entry(next_packet, next_points_lacking))
         return None
+
+    @staticmethod
+    def _heap_entry(
+        packet: QueuePacket, points_lacking: int
+    ) -> Tuple[int, int, QueuePacket, int]:
+        """The packet's bound, the negative of its length, the packet and the
+        points it lacks, in the order the heap compares them. Of two packets
+        alike in bound and length, neither is less than the other, by
+        `QueuePacket.__lt__`, so the heap leaves them in its own order."""
+        length = len(packet.gp)
+        return length + max(1, points_lacking), -length, packet, points_lacking
 
     def _packets_made_in_cell(
         self,
@@ -659,18 +660,34 @@ class MinimalGriddedPerms:
         localised: bool,
         made_before: Dict[WorkPackets, Optional[List[Dict[Cell, int]]]],
     ) -> Tuple[Optional[GriddedPerm], List[QueuePacket]]:
-        """The packets made by inserting a point into cell of the packet's
-        gridded perm that are not skipped, or a gridded perm so made that
-        avoids the obstructions and contains the requirements."""
+        """Insert a point into cell of the packet's gridded perm in every way
+        possible, and return a pair: a gridded perm so made that avoids the
+        obstructions and contains the requirements, or None, and the packets
+        made that are not skipped. Each gridded perm made is entered in
+        made_before, with the packet's goal and the next last cell.
+
+        It makes packets by the steps of `_process_work_packet` in
+        `minimal_gridded_perms`, and differs in the packets it skips: keep the
+        two in step."""
+        # The `localised` bool tells us if we inserted into a cell as it
+        # didn't contain the patterns in the cell. If not, then we update the
+        # last cell, to ensure we only insert into greater or equal cells.
         next_cell = packet.last_cell if localised else cell
         next_packets: List[QueuePacket] = []
+        # The open cells depend on the goal, the next last cell and the number
+        # of points in each cell, which are the same for every point inserted
+        # into cell, so they are worked out once, at the first gridded perm
+        # made again.
         open_cells: Optional[Set[Cell]] = None
+        # Insert a point in every way possible into cell, to the right of any
+        # previously placed points in that cell.
         for index, next_gridded_perm in self.insert_point(
             packet.gp, cell, packet.mindices.get(cell, 0)
         ):
             packet_key = (next_gridded_perm, packet.gps, next_cell)
             if packet_key in made_before:
                 minimum_indices_before = made_before[packet_key]
+                # The gridded perm contains an obstruction.
                 if minimum_indices_before is None:
                     continue
                 next_minimum_indices = self._next_minimum_indices(
@@ -680,20 +697,28 @@ class MinimalGriddedPerms:
                     open_cells = self._open_cells(
                         packet.gps, next_gridded_perm, next_cell
                     )
+                # Skip the packet if one kept before has minimum indices no
+                # larger in each open cell.
                 if self._made_with_no_larger(
                     minimum_indices_before, next_minimum_indices, open_cells
                 ):
                     continue
                 minimum_indices_before.append(next_minimum_indices)
             else:
+                # Only work with gridded permutations avoiding the
+                # obstructions.
                 if not self.satisfies_obstructions(
                     next_gridded_perm, must_contain=cell
                 ):
                     made_before[packet_key] = None
                     continue
+                # Update the next gridded perm about the patterns that are
+                # contained in the gridded perm it was made from.
                 self.known_patts[next_gridded_perm].update(self.known_patts[packet.gp])
                 if self.satisfies_requirements(next_gridded_perm):
                     return next_gridded_perm, next_packets
+                # Update the minimum index that we inserted a point into each
+                # cell.
                 next_minimum_indices = self._next_minimum_indices(
                     packet.mindices, cell, index
                 )
@@ -730,22 +755,29 @@ class MinimalGriddedPerms:
         return points_needed
 
     @staticmethod
-    def _points_lacking(gp: GriddedPerm, points_needed: Dict[Cell, int]) -> int:
+    def _points_lacking(
+        gridded_perm: GriddedPerm, points_needed: Dict[Cell, int]
+    ) -> int:
         """The points that the gridded perm lacks of those needed."""
         return sum(
-            max(0, needed - gp.pos.count(cell))
+            max(0, needed - gridded_perm.pos.count(cell))
             for cell, needed in points_needed.items()
         )
 
-    def _open_cells(self, gps: GPTuple, gp: GriddedPerm, last_cell: Cell) -> Set[Cell]:
-        """The cells that a packet with the goal gps, the gridded perm gp and
-        the last cell, and the packets made from it, may still insert into:
-        the cells not yet holding the most points the goal can need, and not
-        before its last cell."""
+    def _open_cells(
+        self, goal: GPTuple, gridded_perm: GriddedPerm, last_cell: Cell
+    ) -> Set[Cell]:
+        """The open cells of a packet with the goal, the gridded perm and the
+        last cell: those that it, and the packets made from it, may still
+        insert into, the cells not yet holding the most points the goal can
+        need, and not before the last cell. They hold every cell that
+        `_get_cells_to_try` may give the packet or one made from it, by its
+        `can_insert` and its rule for the last cell, which the skipping in
+        `_packets_made_in_cell` relies on."""
         return {
             cell
-            for cell, most_points in self.get_max_cell_count(gps).items()
-            if cell >= last_cell and gp.pos.count(cell) < most_points
+            for cell, most_points in self.get_max_cell_count(goal).items()
+            if cell >= last_cell and gridded_perm.pos.count(cell) < most_points
         }
 
     @staticmethod

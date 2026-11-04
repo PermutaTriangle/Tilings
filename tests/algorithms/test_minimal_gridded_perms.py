@@ -1,3 +1,5 @@
+from itertools import combinations_with_replacement
+
 import pytest
 
 from permuta import Perm
@@ -304,6 +306,104 @@ def is_gridded_perm_on(gridded_perm, obstructions, requirements):
     )
 
 
+def gridded_perms_on_a_grid(length, columns, rows):
+    """Every gridded perm of the given length on a grid of the given numbers
+    of columns and rows."""
+    columns_of_indices = list(combinations_with_replacement(range(columns), length))
+    rows_of_values = list(combinations_with_replacement(range(rows), length))
+    for patt in Perm.of_length(length):
+        for column_of_index in columns_of_indices:
+            for row_of_value in rows_of_values:
+                yield GriddedPerm(
+                    patt,
+                    tuple(
+                        (column_of_index[index], row_of_value[value])
+                        for index, value in enumerate(patt)
+                    ),
+                )
+
+
+def minimal_gridded_perms_by_brute_force(obstructions, requirements):
+    """Every gridded perm that avoids the obstructions and contains the
+    requirements, of which no gridded perm made by removing one point
+    contains them: every proper gridded subperm lies in one of those. A
+    minimal gridded perm is the union of a requirement from each list, so it
+    is no longer than the longest of each list together, and its cells are
+    those of the requirements."""
+    cells = [
+        cell
+        for requirement_list in requirements
+        for requirement in requirement_list
+        for cell in requirement.pos
+    ]
+    columns = max(x for x, _ in cells) + 1
+    rows = max(y for _, y in cells) + 1
+    longest = sum(max(map(len, requirement_list)) for requirement_list in requirements)
+    minimal = set()
+    for length in range(longest + 1):
+        for gridded_perm in gridded_perms_on_a_grid(length, columns, rows):
+            if is_gridded_perm_on(gridded_perm, obstructions, requirements) and not any(
+                all(
+                    gridded_perm.remove_point(index).contains(*requirement_list)
+                    for requirement_list in requirements
+                )
+                for index in range(length)
+            ):
+                minimal.add(gridded_perm)
+    return minimal
+
+
+# Found by a search of small tilings: on each, minimal gridded perms are lost if
+# the minimum indices are worked out as if each point inserted were one place
+# further right.
+TILINGS_FOR_THE_BRUTE_FORCE = {
+    "a row of two cells, three lists": (
+        (),
+        (
+            (GriddedPerm((1, 0), ((1, 0), (1, 0))),),
+            (GriddedPerm.point_perm((1, 0)),),
+            (GriddedPerm((1, 2, 0), ((0, 0), (0, 0), (0, 0))),),
+        ),
+    ),
+    "a row of two cells, an obstruction": (
+        (GriddedPerm((1, 3, 0, 2), ((0, 0), (1, 0), (1, 0), (1, 0))),),
+        (
+            (GriddedPerm((0, 1), ((0, 0), (0, 0))),),
+            (GriddedPerm((1, 0), ((1, 0), (1, 0))),),
+            (GriddedPerm.point_perm((1, 0)),),
+        ),
+    ),
+    "a column of three cells": (
+        (
+            GriddedPerm((0, 2, 3, 1), ((0, 1),) * 4),
+            GriddedPerm((1, 0), ((0, 0),) * 2),
+            GriddedPerm((1, 2, 0), ((0, 0), (0, 2), (0, 0))),
+            GriddedPerm((0, 2, 3, 1), ((0, 0),) * 4),
+            GriddedPerm((1, 2, 0, 3), ((0, 2),) * 4),
+        ),
+        (
+            (GriddedPerm((0, 1), ((0, 2), (0, 2))),),
+            (GriddedPerm((0, 1), ((0, 1), (0, 1))),),
+        ),
+    ),
+}
+
+
+@pytest.mark.parametrize("name", TILINGS_FOR_THE_BRUTE_FORCE)
+def test_minimal_gridded_perms_against_a_brute_force(name):
+    """Every minimal gridded perm, each once, and the shortest first."""
+    obstructions, requirements = TILINGS_FOR_THE_BRUTE_FORCE[name]
+    expected = minimal_gridded_perms_by_brute_force(obstructions, requirements)
+    assert expected
+    found = list(
+        MinimalGriddedPerms(obstructions, requirements).minimal_gridded_perms()
+    )
+    assert len(found) == len(set(found))
+    assert set(found) == expected
+    lengths = [len(gridded_perm) for gridded_perm in found]
+    assert lengths == sorted(lengths)
+
+
 @pytest.mark.parametrize("tiling", tilings)
 def test_find_gridded_perm(tiling):
     gridded_perm = MinimalGriddedPerms(
@@ -463,31 +563,61 @@ def test_find_gridded_perm_empty_perm_obstruction_and_two_requirement_lists():
     )
 
 
+# A column of three cells. One list is 01 in the bottom cell or 01 in the top
+# cell, so no cell is used by every requirement in it, and the other is 012 in
+# the middle cell, which the initial gridded perm holds: the search inserts the
+# points of the first list into a cell that no list needs points in.
+POINTS_NO_LIST_NEEDS = (
+    (
+        GriddedPerm((0, 1), ((0, 0), (0, 0))),
+        GriddedPerm((0, 1), ((0, 2), (0, 2))),
+    ),
+    (GriddedPerm((0, 1, 2), ((0, 1), (0, 1), (0, 1))),),
+)
+
+
+def test_find_gridded_perm_points_no_list_needs():
+    gridded_perm = MinimalGriddedPerms((), POINTS_NO_LIST_NEEDS).find_gridded_perm()
+    assert is_gridded_perm_on(gridded_perm, (), POINTS_NO_LIST_NEEDS)
+
+
+def test_is_empty_points_no_list_needs():
+    tiling = Tiling(requirements=POINTS_NO_LIST_NEEDS)
+    assert tiling.requirements == POINTS_NO_LIST_NEEDS
+    assert not tiling.is_empty()
+
+
+EMPTY_CELL = GriddedPerm((0,), ((0, 0),))
+INCREASING = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+
+
 def test_find_gridded_perm_none():
-    empty_cell = GriddedPerm((0,), ((0, 0),))
-    increasing = GriddedPerm((0, 1), ((0, 0), (0, 0)))
-    decreasing = GriddedPerm((1, 0), ((1, 0), (1, 0)))
-    point = GriddedPerm.point_perm((1, 0))
     # A requirement that contains an obstruction, alone in its list.
     assert (
         MinimalGriddedPerms(
-            (empty_cell,), ((increasing,), (point,))
+            (EMPTY_CELL,), ((INCREASING,), (GriddedPerm.point_perm((1, 0)),))
         ).find_gridded_perm()
         is None
     )
     assert (
-        MinimalGriddedPerms((empty_cell,), ((increasing,),)).find_gridded_perm() is None
+        MinimalGriddedPerms((EMPTY_CELL,), ((INCREASING,),)).find_gridded_perm() is None
     )
     assert (
+        MinimalGriddedPerms((GriddedPerm.empty_perm(),), ()).find_gridded_perm() is None
+    )
+
+
+def test_find_gridded_perm_one_requirement_list_or_none():
+    """With one requirement list, its first requirement that avoids the
+    obstructions, and with none, the empty perm."""
+    decreasing = GriddedPerm((1, 0), ((1, 0), (1, 0)))
+    assert (
         MinimalGriddedPerms(
-            (empty_cell,), ((increasing, decreasing),)
+            (EMPTY_CELL,), ((INCREASING, decreasing),)
         ).find_gridded_perm()
         == decreasing
     )
     assert MinimalGriddedPerms((), ()).find_gridded_perm() == GriddedPerm.empty_perm()
-    assert (
-        MinimalGriddedPerms((GriddedPerm.empty_perm(),), ()).find_gridded_perm() is None
-    )
 
 
 def test_order():
