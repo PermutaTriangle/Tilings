@@ -1,3 +1,4 @@
+from heapq import heapify
 from itertools import combinations_with_replacement
 
 import pytest
@@ -633,6 +634,28 @@ def test_points_lacking_by_patterns():
     assert mgp._points_lacking_by_patterns(packet) == 3
 
 
+def test_points_lacking_by_patterns_least_in_a_list_most_over_lists():
+    """A point in a cell: the first list, 012 there or a point in another cell,
+    lacks no point there, and 01 and 10, in lists of their own, lack one each,
+    so the packet lacks one."""
+    point = GriddedPerm.point_perm((1, 0))
+    decreasing = GriddedPerm((1, 0), ((0, 0),) * 2)
+    requirements = (
+        (GriddedPerm((0, 1, 2), ((0, 0),) * 3), point),
+        (INCREASING,),
+        (decreasing,),
+    )
+    mgp = MinimalGriddedPerms((), requirements)
+    packet = QueuePacket(
+        GriddedPerm.point_perm((0, 0)),
+        (point, INCREASING, decreasing),
+        (-1, -1),
+        True,
+        {},
+    )
+    assert mgp._points_lacking_by_patterns(packet) == 1
+
+
 def test_points_lacking_by_patterns_closed_cell():
     """10 in a cell that holds the most points the goal can need there: no
     gridded perm made from the packet contains 01 in it."""
@@ -657,6 +680,37 @@ def test_points_lacking_by_patterns_across_closed_cells():
             GriddedPerm(patt, ((0, 0), (1, 0))), (across, point), (2, 0), False, {}
         )
         assert mgp._points_lacking_by_patterns(packet) == points_lacking
+
+
+def test_packets_taken(monkeypatch):
+    """Taking no packets before it prunes: 210 in a cell before the last cell
+    is dropped, and 210 in an open cell, of bound 5 by the counts and 7 by the
+    pattern 0123, is taken after the packets of bound 5, 6 and 7 that are
+    longer."""
+    monkeypatch.setattr(MinimalGriddedPerms, "PACKETS_TAKEN_BEFORE_PRUNING", 0)
+    increasing = GriddedPerm((0, 1, 2, 3), ((0, 0),) * 4)
+    point = GriddedPerm.point_perm((1, 0))
+    mgp = MinimalGriddedPerms((), ((increasing,), (point,)))
+
+    def packet(patt, last_cell=(-1, -1)):
+        return QueuePacket(
+            GriddedPerm(patt, ((0, 0),) * len(patt)),
+            (increasing, point),
+            last_cell,
+            last_cell == (-1, -1),
+            {},
+        )
+
+    raised, dropped = packet((2, 1, 0)), packet((2, 1, 0), (1, 0))
+    longer = [packet(tuple(range(length))) for length in (4, 5, 6)]
+    points_needed = mgp._points_needed()
+    heap = [
+        mgp._heap_entry(packet, mgp._points_lacking(packet.gp, points_needed))
+        for packet in [raised, dropped] + longer
+    ]
+    heapify(heap)
+    taken = [packet for packet, _ in mgp._packets_taken(heap)]
+    assert taken == longer + [raised]
 
 
 # Found by checking every gridded perm on random tilings: taking no packets
