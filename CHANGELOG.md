@@ -7,7 +7,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-
 - The rotational cut. A class closed under rotation, where a rotation is the
   cyclic shift that moves a permutation's first entry to its end (not
   `Perm.rotate`), or closed under the same shift of its values, has n times as many
@@ -71,6 +70,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   and the GuidedSearcher, with that pack, makes from it a tracked one that counts
   the class.
 - Required CI coverage for stable PyPy 3.12 alongside PyPy 3.11.
+- `ReductionFactory` and `ReductionStrategy`, the reduction of a set of cells: the
+  cells are made increasing or decreasing, and their own tiling is counted beside
+  the reduced tiling, which keeps only what the rest of the tiling sees of them
+  (a Hadamard product, with object maps and random sampling). The factory's
+  `region` is `"cell"`, `"row"`, `"column"`, `"line"`, `"cut"` (the cells on one
+  side of a line between two columns or two rows) or `"any"`, the last two with
+  `max_cells`. The condition, the plan and the children are in
+  `tilings.algorithms.reduction`.
 
 ### Fixed
 
@@ -92,6 +99,30 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   two sides are given the same value, such as one with an untracked parent, says
   so, and that adding to the parent an assumption tracking one side of the region
   first makes the fusion one-sided.
+- `CellReductionFactory` and `CellReductionStrategy` are the reduction of single
+  cells: they count, generate and sample objects, and the kitchen sink pack uses
+  `ReductionFactory(tracked)`. A cell with no obstruction of its own, in a
+  component assumption, or in a tracked gridded permutation of two or more
+  points, is no longer reduced.
+- `CellReductionStrategy.formal_step` names the direction, as in "reducing cell
+  (0, 0) to increasing", where it was "reducing cell (0, 0)".
+- The cell reduction's reduced tiling is built with `Tiling`'s defaults
+  (simplified, empty rows and columns removed), where it was built with
+  `simplify=False`, `derive_empty=False` and `remove_empty_rows_and_cols=False`,
+  so a specification saved with the old `CellReductionStrategy` may not rebuild
+  its children identically. None could have been counted: the old constructor
+  raised `NotImplementedError`.
+- `CellReductionConstructor` is `ReductionConstructor`, which takes the parent,
+  the children, the plan and the map of the parent's parameters to the reduced
+  tiling's. The old `CellReductionConstructor(parameter)` counted nothing: each
+  of its methods raised `NotImplementedError`.
+
+### Removed
+
+- `CellReductionFactory.reducible_cells`,
+  `CellReductionFactory.can_reduce_cell_with_requirements_and_assumptions` and
+  `CellReductionFactory.gp_in_row_and_col`. The condition is
+  `tilings.algorithms.reduction.is_reducible`.
 
 ## [4.1.0] - 2026-01-15
 ### Changed

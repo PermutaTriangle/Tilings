@@ -409,7 +409,7 @@ class TileScopePack(StrategyPack):
                 strat.DeflationFactory(tracked),
                 strat.AssumptionAndPointJumpingFactory(),
                 strat.MonotoneSlidingFactory(),
-                strat.CellReductionFactory(tracked),
+                strat.ReductionFactory(tracked),
                 strat.RequirementCorroborationFactory(),
                 strat.RelaxAssumptionFactory(),
             ]

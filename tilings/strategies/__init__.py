@@ -26,6 +26,7 @@ from .pointing import (
     RequirementPointingFactory,
 )
 from .rearrange_assumption import RearrangeAssumptionFactory
+from .reduction import ReductionFactory
 from .relax_assumption import RelaxAssumptionFactory
 from .requirement_insertion import (
     BasisPatternInsertionFactory,
@@ -121,6 +122,7 @@ __all__ = [
     # Rotation
     "RotationalCutFactory",
     "RotationalCutStrategy",
+    "ReductionFactory",
     # Symmetry
     "SymmetriesFactory",
     # Verification
