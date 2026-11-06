@@ -36,6 +36,7 @@ from .algorithms import (
     FactorWithMonotoneInterleaving,
     Fusion,
     GriddedPermReduction,
+    GriddedPermSearch,
     GriddedPermsOnTiling,
     MinimalGriddedPerms,
     ObstructionTransitivity,
@@ -1458,8 +1459,8 @@ class Tiling(CombinatorialClass):
             return True
         if len(self.requirements) <= 1:
             return False
-        MGP = MinimalGriddedPerms(self.obstructions, self.requirements)
-        return MGP.find_gridded_perm() is None
+        search = GriddedPermSearch(self.obstructions, self.requirements)
+        return search.find() is None
 
     def is_finite(self) -> bool:
         """Returns True if all active cells have finite basis."""

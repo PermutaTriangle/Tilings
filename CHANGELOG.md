@@ -12,17 +12,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Python 3.15 is the primary version for linting, packaging, and cross-platform
   tests, with compatibility tests for CPython 3.11 through 3.14.
 - Black targets Python 3.11, the minimum supported version.
-- `Tiling.is_empty` looks for a gridded permutation with
-  `MinimalGriddedPerms.find_gridded_perm`, which takes the work packets by a
-  lower bound on the length of the gridded permutations made from them, and
-  drops a packet that can make none, so it no longer builds every shorter
-  gridded permutation before it finds one: on a row of n cells, each with a
-  point requirement, every order of the points in the first n - 1 cells.
+- `Tiling.is_empty` looks for one gridded permutation on the tiling with
+  `GriddedPermSearch`, where it built minimal gridded permutations, the
+  shortest first, until it had one: on a row of n cells, each with a point
+  requirement, every order of the points in the first n - 1 cells.
 
 ### Added
 - Required CI coverage for stable PyPy 3.12 alongside PyPy 3.11.
-- `MinimalGriddedPerms.find_gridded_perm`, a gridded permutation that avoids the
-  obstructions and contains the requirements, or None if there is none.
+- `GriddedPermSearch`, which finds a gridded permutation that avoids the
+  obstructions and contains a gridded permutation of each requirement list, or
+  None if there is none, by placing the points of the requirements one by one.
 
 ### Fixed
 - Install the dependencies of PyPy's bundled cffi and HPy packages in tox so

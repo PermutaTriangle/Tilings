@@ -1284,9 +1284,32 @@ def test_is_empty_point_requirement_in_each_cell(cells):
 )
 def test_is_empty_where_longest_packet_first_is_slow(tiling):
     """A row of three cells with requirements of three and four points, and
-    few obstructions or none. Taking the longest work packet first, a search
-    takes seconds on packets from which no gridded perm is made, where taking
-    the shortest first finds one within milliseconds."""
+    few obstructions or none. Taking the longest work packet of develop's search
+    of minimal gridded perms first, a search takes seconds on packets from which
+    no gridded perm is made, where taking the shortest first finds one within
+    milliseconds."""
+    assert not tiling.is_empty()
+
+
+@pytest.mark.timeout(1)
+@pytest.mark.parametrize("n", [22, 24])
+def test_is_empty_long_requirement_in_one_cell(n):
+    """Two cells in a row, no obstructions, and three requirement lists: 201 in
+    the right cell; n...21 in the left cell, or 01 across the two; 01...7 in the
+    left cell. A search that compares what it has made with the requirements'
+    patterns, cell by cell, tries the subsets of the points of n...21, a number
+    that doubles with each point."""
+    left, right = (0, 0), (1, 0)
+    tiling = Tiling(
+        requirements=(
+            (GriddedPerm((2, 0, 1), (right,) * 3),),
+            (
+                GriddedPerm(tuple(range(n - 1, -1, -1)), (left,) * n),
+                GriddedPerm((0, 1), (left, right)),
+            ),
+            (GriddedPerm(tuple(range(8)), (left,) * 8),),
+        )
+    )
     assert not tiling.is_empty()
 
 
