@@ -1,4 +1,6 @@
-from itertools import combinations, permutations, product
+import random
+from bisect import bisect_right
+from itertools import combinations, combinations_with_replacement, permutations, product
 
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
@@ -603,3 +605,133 @@ def test_remove_redundant_on_every_three_lists_from_four_patterns():
             implies(first_list, second_list)
             for first_list, second_list in permutations(kept_lists, 2)
         ), three_lists
+
+
+def gridded_perms_on_grid(size, dimensions):
+    """
+    Yield every gridded perm of the size on a grid of the dimensions, each perm of the
+    size cut into columns by index and into rows by value in every way.
+    """
+    columns, rows = dimensions
+    for perm in Perm.of_length(size):
+        for column_cuts in combinations_with_replacement(range(size + 1), columns - 1):
+            for row_cuts in combinations_with_replacement(range(size + 1), rows - 1):
+                yield GriddedPerm(
+                    perm,
+                    tuple(
+                        (
+                            bisect_right(column_cuts, index),
+                            bisect_right(row_cuts, value),
+                        )
+                        for index, value in enumerate(perm)
+                    ),
+                )
+
+
+def brute_force_counts(obstructions, requirements, dimensions):
+    """
+    Count the gridded perms of each size up to 4 on a grid of the dimensions that avoid
+    the obstructions and contain a gridded perm of each requirement list, without
+    reducing the requirements.
+    """
+    return [
+        sum(
+            1
+            for gridded_perm in gridded_perms_on_grid(size, dimensions)
+            if gridded_perm.avoids(*obstructions)
+            and all(gridded_perm.contains(*requirement) for requirement in requirements)
+        )
+        for size in range(5)
+    ]
+
+
+def random_obstructions_and_requirements(rng, dimensions):
+    """
+    Return obstructions that name every cell of a grid of the dimensions, and two to
+    five requirement lists, some of which often imply each other. They are made from a
+    smaller gridded perm, a larger one that contains it, and another: a list with the
+    smaller twice, and a copy of a list. A quarter of the time the smaller gridded perm
+    is an obstruction too, so that a list of it alone, or with the larger, cannot hold.
+    """
+    cells = list(product(range(dimensions[0]), range(dimensions[1])))
+    obstructions = [GriddedPerm((0, 1, 2, 3), (cell,) * 4) for cell in cells]
+    if rng.random() < 0.5:
+        obstructions.append(rng.choice(list(gridded_perms_on_grid(3, dimensions))))
+    smaller = rng.choice(list(gridded_perms_on_grid(rng.randint(1, 2), dimensions)))
+    if rng.random() < 0.25:
+        obstructions.append(smaller)
+    larger = rng.choice(
+        [
+            gridded_perm
+            for gridded_perm in gridded_perms_on_grid(len(smaller) + 1, dimensions)
+            if gridded_perm.contains(smaller)
+        ]
+    )
+    other = rng.choice(list(gridded_perms_on_grid(rng.randint(1, 2), dimensions)))
+    candidate_lists = [
+        [smaller],
+        [smaller, larger],
+        [other, smaller],
+        [other, larger, smaller],
+        [smaller, smaller, other],
+        [other],
+    ]
+    requirements = rng.sample(candidate_lists, rng.randint(2, 4))
+    if rng.random() < 0.5:
+        requirements.append(list(rng.choice(requirements)))
+    for requirement in requirements:
+        rng.shuffle(requirement)
+    return obstructions, requirements
+
+
+def check_tilings_against_a_brute_force(make_tiling, dimensions_to_choose, seed):
+    """
+    Check 50 random tilings, each made by make_tiling from its obstructions and
+    requirement lists. Its counts up to size 4 are the brute force's. It is empty when
+    a requirement list holds only gridded perms that contain an obstruction, and not
+    empty when the brute force finds a gridded perm.
+    """
+    rng = random.Random(seed)
+    for _ in range(50):
+        dimensions = rng.choice(dimensions_to_choose)
+        obstructions, requirements = random_obstructions_and_requirements(
+            rng, dimensions
+        )
+        expected = brute_force_counts(obstructions, requirements, dimensions)
+        tiling = make_tiling(obstructions, requirements)
+        case = (obstructions, requirements)
+        counts = [len(list(tiling.objects_of_size(size))) for size in range(5)]
+        assert counts == expected, case
+        cannot_hold = any(
+            all(gridded_perm.contains(*obstructions) for gridded_perm in requirement)
+            for requirement in requirements
+        )
+        if cannot_hold or any(expected):
+            assert tiling.is_empty() == cannot_hold, case
+
+
+def test_tiling_against_a_brute_force_of_gridded_perms():
+    check_tilings_against_a_brute_force(Tiling, [(1, 1), (1, 2), (2, 1), (2, 2)], 537)
+
+
+def test_add_list_requirement_against_a_brute_force_of_gridded_perms():
+    def make_tiling(obstructions, requirements):
+        tiling = Tiling(obstructions, requirements[:-1])
+        return tiling.add_list_requirement(requirements[-1])
+
+    check_tilings_against_a_brute_force(
+        make_tiling, [(1, 1), (1, 2), (2, 1), (2, 2)], 538
+    )
+
+
+def test_from_perms_against_a_brute_force_of_gridded_perms():
+    def make_tiling(obstructions, requirements):
+        return Tiling.from_perms(
+            [obstruction.patt for obstruction in obstructions],
+            [
+                [gridded_perm.patt for gridded_perm in requirement]
+                for requirement in requirements
+            ],
+        )
+
+    check_tilings_against_a_brute_force(make_tiling, [(1, 1)], 539)
