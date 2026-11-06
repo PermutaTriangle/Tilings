@@ -114,6 +114,7 @@ packs.extend(
     + [pack.add_initial(SlidingFactory()) for pack in packs]
     + [pack.add_initial(SlidingFactory(use_symmetries=True)) for pack in packs]
     + [pack.add_initial(AssumptionAndPointJumpingFactory()) for pack in packs]
+    + [pack.add_rotational_cuts() for pack in packs]
     + [
         pack.kitchen_sinkify(
             short_obs_len=4, obs_inferral_len=2, tracked=True, level=level
