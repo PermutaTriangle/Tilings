@@ -167,7 +167,8 @@ class GriddedPermReduction:
         requirement removed is then implied by one that is kept: if the later
         requirement that implies it is removed too, one kept before that one,
         or a later one still, implies both. Of two requirements that imply
-        each other, such as [12] and [12, 123], the later is kept.
+        each other without being copies, such as [12] and [12, 123], the
+        later is kept; of two copies, the earlier.
         """
         relevant_reqs: List[Requirement] = []
         for idx, requirement in enumerate(requirements):

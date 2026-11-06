@@ -1,3 +1,4 @@
+from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import GriddedPermReduction
 
@@ -396,28 +397,123 @@ def test_minimal_req_duplicate():
 
 
 def test_req_lists_that_imply_each_other():
-    inc = GriddedPerm((0, 1), ((0, 0), (0, 0)))
-    inc3 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
-    inc4 = GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (0, 0)))
-    dec3 = GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (0, 0)))
-    expected = Tiling([dec3], [[inc]])
-    counts = [len(list(expected.objects_of_size(n))) for n in range(6)]
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_123 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    pattern_1234 = GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (0, 0)))
+    pattern_321 = GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (0, 0)))
+    expected = Tiling([pattern_321], [[pattern_12]])
+    counts = [len(list(expected.objects_of_size(size))) for size in range(6)]
     assert counts == [0, 0, 1, 5, 14, 42]
-    assert Tiling([dec3], [[inc], [inc, inc3]]) == expected
-    assert Tiling([dec3], [[inc], [inc, inc3], [inc, inc4]]) == expected
-    assert Tiling([dec3], [[inc]]).add_list_requirement([inc, inc3]) == expected
+    assert Tiling([pattern_321], [[pattern_12], [pattern_12, pattern_123]]) == expected
+    assert (
+        Tiling(
+            [pattern_321],
+            [[pattern_12], [pattern_12, pattern_123], [pattern_12, pattern_1234]],
+        )
+        == expected
+    )
+    assert (
+        Tiling([pattern_321], [[pattern_12]]).add_list_requirement(
+            [pattern_12, pattern_123]
+        )
+        == expected
+    )
+
+
+def test_from_perms_with_req_lists_that_imply_each_other():
+    tiling = Tiling.from_perms(
+        [Perm((2, 1, 0))], [[Perm((0, 1))], [Perm((0, 1)), Perm((0, 1, 2))]]
+    )
+    assert tiling == Tiling.from_perms([Perm((2, 1, 0))], [[Perm((0, 1))]])
+
+
+def test_req_list_that_sorts_before_the_list_it_implies_and_is_implied_by():
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_123 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    pattern_321 = GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (0, 0)))
+    assert Tiling(
+        [], [[pattern_12, pattern_123, pattern_321], [pattern_12, pattern_321]]
+    ) == Tiling([], [[pattern_12, pattern_321]])
+
+
+def test_req_lists_that_imply_each_other_in_two_cells():
+    left_point = GriddedPerm((0,), ((0, 0),))
+    right_point = GriddedPerm((0,), ((1, 0),))
+    point_in_each_cell = GriddedPerm((0, 1), ((0, 0), (1, 0)))
+    assert Tiling(
+        [], [[left_point, right_point], [left_point, right_point, point_in_each_cell]]
+    ) == Tiling([], [[left_point, right_point]])
 
 
 def test_req_lists_that_imply_each_other_in_an_empty_cell():
     point = GriddedPerm((0,), ((0, 0),))
-    patt = GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0)))
-    assert Tiling([point], [[patt, point], [point]]).is_empty()
+    pattern_132 = GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0)))
+    assert Tiling([point], [[pattern_132, point], [point]]).is_empty()
+
+
+def test_req_lists_that_imply_each_other_in_a_cell_that_is_not_empty():
+    point = GriddedPerm((0,), ((0, 0),))
+    pattern_132 = GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0)))
+    tiling = Tiling([], [[pattern_132, point], [point]])
+    assert tiling == Tiling([], [[point]])
+    assert not tiling.is_empty()
 
 
 def test_remove_redundant_keeps_the_later_of_two_that_imply_each_other():
-    inc = GriddedPerm((0, 1), ((0, 0), (0, 0)))
-    inc3 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_123 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
     reduction = GriddedPermReduction((), (), manual=True)
-    assert reduction.remove_redundant([(inc,), (inc, inc3)]) == [(inc, inc3)]
-    assert reduction.remove_redundant([(inc, inc3), (inc,)]) == [(inc,)]
-    assert reduction.remove_redundant([(inc,), (inc,)]) == [(inc,)]
+    assert reduction.remove_redundant([(pattern_12,), (pattern_12, pattern_123)]) == [
+        (pattern_12, pattern_123)
+    ]
+    assert reduction.remove_redundant([(pattern_12, pattern_123), (pattern_12,)]) == [
+        (pattern_12,)
+    ]
+    assert reduction.remove_redundant([(pattern_12,), (pattern_12,)]) == [(pattern_12,)]
+
+
+def test_remove_redundant_with_the_empty_gridded_perm():
+    empty_gridded_perm = GriddedPerm.empty_perm()
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_123 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    reduction = GriddedPermReduction((), (), manual=True)
+    assert reduction.remove_redundant([]) == []
+    assert reduction.remove_redundant([(empty_gridded_perm, pattern_12)]) == []
+    assert reduction.remove_redundant(
+        [(pattern_12,), (empty_gridded_perm, pattern_123), (pattern_12, pattern_123)]
+    ) == [(pattern_12, pattern_123)]
+
+
+def test_remove_redundant_with_a_weaker_list_and_two_groups():
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_123 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    pattern_21 = GriddedPerm((1, 0), ((0, 0), (0, 0)))
+    pattern_321 = GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (0, 0)))
+    reduction = GriddedPermReduction((), (), manual=True)
+    assert reduction.remove_redundant(
+        [(pattern_12,), (pattern_12, pattern_123), (pattern_12, pattern_321)]
+    ) == [(pattern_12, pattern_123)]
+    assert reduction.remove_redundant(
+        [
+            (pattern_12,),
+            (pattern_21,),
+            (pattern_12, pattern_123),
+            (pattern_21, pattern_321),
+        ]
+    ) == [(pattern_12, pattern_123), (pattern_21, pattern_321)]
+
+
+def test_remove_redundant_with_chains_out_of_order_and_a_stronger_list():
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_123 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    pattern_1234 = GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (0, 0)))
+    reduction = GriddedPermReduction((), (), manual=True)
+    assert reduction.remove_redundant(
+        [(pattern_12, pattern_123), (pattern_12, pattern_1234), (pattern_12,)]
+    ) == [(pattern_12,)]
+    assert reduction.remove_redundant(
+        [(pattern_12, pattern_123), (pattern_12,), (pattern_12, pattern_1234)]
+    ) == [(pattern_12, pattern_1234)]
+    assert reduction.remove_redundant(
+        [(pattern_12,), (pattern_12, pattern_123), (pattern_123,)]
+    ) == [(pattern_123,)]
