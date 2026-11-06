@@ -31,7 +31,7 @@ Placing = Tuple[GriddedPerm, GriddedPerm, Images]
 
 
 class _OverBudget(Exception):
-    """A search took all the states it may take."""
+    """A search needed more states than it may take."""
 
 
 def _bounding_box(gridded_perm: GriddedPerm, cell: Cell) -> Tuple[int, int, int, int]:
@@ -72,18 +72,31 @@ def _combined(gridded_perms: Iterable[GriddedPerm]) -> GriddedPerm:
 
 
 class GriddedPermSearch:
-    """A search for one gridded perm on a tiling, given by its obstructions and
-    requirement lists: a gridded perm that avoids every obstruction and satisfies
-    every list, that is, contains a gridded perm of it.
+    """A search for one gridded perm on a tiling, by its obstructions and lists.
 
-        GriddedPermSearch(obstructions, requirements).find()
+    The gridded perm found avoids every obstruction and satisfies every
+    requirement list, that is, contains a gridded perm of it; find returns None if
+    there is none. Tiling.is_empty asks it whether there is one.
+    MinimalGriddedPerms lists the minimal gridded perms of a tiling; this search
+    stops at the first gridded perm it finds, of any length.
 
-    returns such a gridded perm, or None if there is none; Tiling.is_empty asks it
-    whether there is one. MinimalGriddedPerms lists the minimal gridded perms of a
-    tiling; this search stops at the first gridded perm it finds, of any length.
-    Whether it finds one does not depend on the order of the obstructions or of the
-    lists, but which one it finds can. Deciding whether a tiling has a gridded perm
-    can take time exponential in the size of the tiling, and so can the search.
+    Examples:
+        >>> left = GriddedPerm.point_perm((0, 0))
+        >>> right = GriddedPerm.point_perm((1, 0))
+        >>> lists = [[left], [right]]
+        >>> GriddedPermSearch([], lists).find()
+        GriddedPerm((1, 0), ((0, 0), (1, 0)))
+        >>> decreasing = GriddedPerm((1, 0), ((0, 0), (1, 0)))
+        >>> GriddedPermSearch([decreasing], lists).find()
+        GriddedPerm((0, 1), ((0, 0), (1, 0)))
+        >>> increasing = GriddedPerm((0, 1), ((0, 0), (1, 0)))
+        >>> GriddedPermSearch([increasing, decreasing], lists).find() is None
+        True
+
+    Which gridded perm it finds can depend on the order of the obstructions and
+    of the lists, but whether it finds one does not.
+    Deciding whether a tiling has a gridded perm can take time exponential in the
+    size of the tiling, and so can the search.
 
     The search
     ----------
@@ -197,19 +210,30 @@ class GriddedPermSearch:
             Tuple[Cell, FrozenSet[Cell]], Tuple[GriddedPerm, ...]
         ] = {}
         # The number of points in each cell of each gridded perm of a list.
-        self._cell_counts: Dict[RequirementList, List[Counter]] = {}
+        self._cell_counts: Dict[RequirementList, List[Counter[Cell]]] = {}
         # The dead ends each list has met: its placings whose next point could go
         # nowhere, and the rests the look-aheads dropped for it.
         self._dead_ends: Counter[RequirementList] = Counter()
         # The states the search under way may still take, its look-aheads' among
-        # them: until a search is given a budget, more than any can take. An int
-        # from the start, as an attribute that changes from a float to an int
-        # makes the search slower under PyPy.
+        # them: until a search is given a budget, more than any can take.
+        # sys.maxsize, not math.inf, so that it is an int throughout: under PyPy, an
+        # attribute that is a float and then an int makes the search slower.
         self._states_left = sys.maxsize
 
     def find(self) -> Optional[GriddedPerm]:
-        """Return a gridded perm on the tiling, or None if there is none. It need not
-        be minimal."""
+        """Return a gridded perm on the tiling, or None if there is none.
+
+        The gridded perm need not be minimal.
+
+        Examples:
+            >>> increasing = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+            >>> decreasing = GriddedPerm((1, 0), ((0, 0), (0, 0)))
+            >>> lists = [[increasing], [decreasing]]
+            >>> GriddedPermSearch([], lists).find()
+            GriddedPerm((1, 0, 2), ((0, 0), (0, 0), (0, 0)))
+            >>> GriddedPermSearch([decreasing], lists).find() is None
+            True
+        """
         if self._empty_obstruction:
             return None
         # Each call starts afresh, so that it finds what the call before found.
@@ -227,33 +251,37 @@ class GriddedPermSearch:
         except _OverBudget:
             pass
         groups = self._groups(lists)
-        found: Dict[int, GriddedPerm] = {}
+        found_for_group: Dict[int, GriddedPerm] = {}
         # A single group's first pass is the one above.
         if len(groups) > 1 and not self._search_groups(
-            groups, found, self._FIRST_PASS_STATES, look_ahead=False
+            groups, found_for_group, self._FIRST_PASS_STATES, look_ahead=False
         ):
             return None
         # At least 1, as a budget of 0 would never grow.
         budget = max(self._FIRST_PASS_STATES, 1)
-        while len(found) < len(groups):
+        while len(found_for_group) < len(groups):
             budget *= 2
-            if not self._search_groups(groups, found, budget, look_ahead=True):
+            if not self._search_groups(
+                groups, found_for_group, budget, look_ahead=True
+            ):
                 return None
-        return _combined(found[number] for number in range(len(groups)))
+        return _combined(
+            found_for_group[group_index] for group_index in range(len(groups))
+        )
 
     def _search_groups(
         self,
         groups: List[Tuple[RequirementList, ...]],
-        found: Dict[int, GriddedPerm],
+        found_for_group: Dict[int, GriddedPerm],
         budget: int,
         look_ahead: bool,
     ) -> bool:
-        """Search each group not yet in found once, within the budget, and put each
-        gridded perm found into found, by its group's index. With the look-aheads,
-        the lists go in the order of _by_dead_ends. Return False if a search finds
-        that its group has no gridded perm."""
-        for number, group in enumerate(groups):
-            if number in found:
+        """Search each group not yet in found_for_group once, within the budget, and
+        put each gridded perm found into it, by its group's index. With the
+        look-aheads, the lists go in the order of _by_dead_ends. Return False if a
+        search finds that its group has no gridded perm."""
+        for group_index, group in enumerate(groups):
+            if group_index in found_for_group:
                 continue
             lists = self._by_dead_ends(group) if look_ahead else group
             try:
@@ -262,7 +290,7 @@ class GriddedPermSearch:
                 continue
             if gridded_perm is None:
                 return False
-            found[number] = gridded_perm
+            found_for_group[group_index] = gridded_perm
         return True
 
     def _by_dead_ends(
@@ -297,6 +325,9 @@ class GriddedPermSearch:
         the search it looks ahead for."""
         if start is None:
             start = GriddedPerm.empty_perm()
+        # A budget starts a count of its own, so only a search that is not a
+        # look-ahead's may be given one: a look-ahead given one would reset the
+        # count of the search it looks ahead for.
         if budget is not None:
             self._states_left = budget
         rests_made: Set[GriddedPerm] = set()
@@ -348,7 +379,7 @@ class GriddedPermSearch:
     ) -> Iterator[State]:
         """The children of a placing that were not made before: a rest when its
         requirement is placed in full, and otherwise a placing. A placing with no
-        child at all is a dead end of the list it places."""
+        child at all is a dead end of the list it places, and is counted."""
         gridded_perm, requirement, images, satisfied, list_index = state
         assert requirement is not None
         dead_end = True
@@ -459,8 +490,8 @@ class GriddedPermSearch:
         return True
 
     def _index_obstructions(self) -> None:
-        """Sort the obstructions by the set of cells each uses, for each cell they
-        use, and note whether one is the empty perm."""
+        """Index the obstructions by the set of cells each uses, and those sets by
+        each of their cells, and note whether an obstruction is the empty perm."""
         by_cell_set: DefaultDict[FrozenSet[Cell], List[GriddedPerm]] = defaultdict(list)
         for obstruction in self._obstructions:
             # A gridded perm keeps the frozenset of its cells, which keeps its hash
@@ -482,9 +513,11 @@ class GriddedPermSearch:
         """The lists in groups, two lists in one group if their cells meet, or an
         obstruction uses cells of both. The lists have a gridded perm if and only if
         each group does. The groups come smallest first, by the sum over their lists
-        of the length of each list's longest gridded perm, and groups as small in
-        the order of their first lists: a group with no gridded perm decides the
-        search, and a small one is decided soonest.
+        of the length of each list's longest gridded perm, which bounds the length
+        of a minimal gridded perm, as Tiling.maximum_length_of_minimum_gridded_perm
+        does for a tiling; groups as small keep the order of their first lists. A
+        group with no gridded perm decides the search, and a small one is decided
+        soonest.
 
         Every point the search puts into a gridded perm is a point of a requirement,
         in that point's cell, so a gridded perm found for a group has its points in
@@ -496,10 +529,10 @@ class GriddedPermSearch:
         perm. And a gridded perm on the tiling, cut down to a group's cells, is a
         gridded perm for the group.
 
-        A group is not a factor of the tiling (Factor): an obstruction joins no
-        groups through a cell that no list uses, where the search puts no point, and
-        sharing a row or a column joins none, as _combined puts the groups' points
-        apart in each."""
+        A group is close to a factor with interleaving (FactorWithInterleaving),
+        which does not join cells by a row or a column either, as _combined puts the
+        groups' points apart in each. It differs in that an obstruction joins no
+        groups through a cell that no list uses, where the search puts no point."""
         union_find = UnionFind(len(lists))
         owners: Dict[Cell, int] = {}
         for list_index, requirement_list in enumerate(lists):
@@ -605,16 +638,16 @@ class GriddedPermSearch:
     def _needs_a_closed_cell(
         self,
         gridded_perm: GriddedPerm,
-        counts: Counter,
-        requirement_counts: Counter,
+        counts: Counter[Cell],
+        requirement_counts: Counter[Cell],
         closed: Dict[Cell, bool],
     ) -> bool:
         """Whether a gridded perm of a list, with requirement_counts points in each
         cell, needs more points in a cell than the gridded perm, with counts points
         in each, has there, in a cell where no point can be inserted into the gridded
         perm. Whether a cell is closed so is kept in closed."""
-        for cell, number in requirement_counts.items():
-            if number > counts[cell]:
+        for cell, needed in requirement_counts.items():
+            if needed > counts[cell]:
                 if cell not in closed:
                     closed[cell] = not self._takes_a_point(gridded_perm, cell)
                 if closed[cell]:
