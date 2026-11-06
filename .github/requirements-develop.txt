@@ -1,3 +1,4 @@
 # Install these inside tox for checks against the development branches.
-comb-spec-searcher @ git+https://github.com/PermutaTriangle/comb_spec_searcher.git@develop
-permuta @ git+https://github.com/PermutaTriangle/Permuta.git@develop
+# On bleeding-edge: the other libraries' bleeding-edge branches (develop with the reviewed pull requests).
+comb-spec-searcher @ git+https://github.com/PermutaTriangle/comb_spec_searcher.git@bleeding-edge
+permuta @ git+https://github.com/PermutaTriangle/Permuta.git@bleeding-edge
