@@ -86,6 +86,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   variables, rather than ending with an error.
 - Install the dependencies of PyPy's bundled cffi and HPy packages in tox so
   dependency checks pass.
+- A `Tiling` no longer drops two requirement lists that imply each other, such
+  as `[12]` and `[12, 123]`: `GriddedPermReduction.remove_redundant` tests each
+  list against the lists it kept before it, so one of the two stays.
 
 ### Changed
 

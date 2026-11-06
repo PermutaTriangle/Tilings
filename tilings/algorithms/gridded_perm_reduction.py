@@ -158,6 +158,17 @@ class GriddedPermReduction:
         return True
 
     def remove_redundant(self, requirements: List[Requirement]) -> List[Requirement]:
+        """
+        Remove the requirements implied by others, and those with the empty
+        gridded permutation, which always hold.
+
+        A requirement is removed if a requirement kept before it, or any
+        later requirement other than a copy of it, implies it. Every
+        requirement removed is then implied by one that is kept: if the later
+        requirement that implies it is removed too, one kept before that one,
+        or a later one still, implies both. Of two requirements that imply
+        each other, such as [12] and [12, 123], the later is kept.
+        """
         relevant_reqs: List[Requirement] = []
         for idx, requirement in enumerate(requirements):
             if not all(requirement):
@@ -165,7 +176,7 @@ class GriddedPermReduction:
             if self._requirement_implied_by_some_requirement(
                 requirement,
                 chain(
-                    islice(requirements, idx),
+                    relevant_reqs,
                     (
                         gps
                         for gps in islice(requirements, idx + 1, None)
@@ -173,8 +184,7 @@ class GriddedPermReduction:
                     ),
                 ),
             ):
-                # we only keep requirements which are not implies by other
-                # requirements
+                # implied by a requirement kept before it, or by a later one
                 continue
             relevant_reqs.append(requirement)
         return relevant_reqs
