@@ -142,10 +142,13 @@ class GriddedPermSearch:
       decides its group, and the rounds stop once a group has no gridded perm or
       every group has one, so no group waits for the whole search of another.
     - Each search starts afresh, and places first the lists that have met the most
-      dead ends so far. A dead end of a list is a placing of one of its gridded
-      perms whose next point can go nowhere, or a rest the look-aheads drop for the
-      list. A list that keeps failing late is so placed early, and what it rules
-      out is then ruled out as the points of the other lists are placed.
+      dead ends so far (_by_dead_ends). A dead end of a list is a placing of one of
+      its gridded perms whose next point can go nowhere, or a rest the look-aheads
+      drop for the list. A list that keeps failing late is so placed early, and
+      what it rules out is then ruled out as the points of the other lists are
+      placed. A list meets dead ends only once a search reaches it, so of lists
+      with as many, the one whose longest gridded perm is shortest goes first: it
+      is the quickest to place, or to find that it cannot be placed.
     - The look-aheads drop a rest that no gridded perm on the tiling contains: one
       with a list it does not satisfy that cannot be placed in it alone, or that
       needs, in each of its gridded perms, more points in a cell than the rest has
@@ -247,27 +250,36 @@ class GriddedPermSearch:
     ) -> bool:
         """Search each group not yet in found once, within the budget, and put each
         gridded perm found into found, by its group's index. With the look-aheads,
-        the lists with the most dead ends so far go first. Return False if a search
-        finds that its group has no gridded perm."""
+        the lists go in the order of _by_dead_ends. Return False if a search finds
+        that its group has no gridded perm."""
         for number, group in enumerate(groups):
             if number in found:
                 continue
-            if look_ahead:
-                # A stable sort: lists with as many dead ends keep their order.
-                group = tuple(
-                    sorted(
-                        group,
-                        key=lambda requirement_list: -self._dead_ends[requirement_list],
-                    )
-                )
+            lists = self._by_dead_ends(group) if look_ahead else group
             try:
-                gridded_perm = self._search(group, budget, look_ahead)
+                gridded_perm = self._search(lists, budget, look_ahead)
             except _OverBudget:
                 continue
             if gridded_perm is None:
                 return False
             found[number] = gridded_perm
         return True
+
+    def _by_dead_ends(
+        self, lists: Tuple[RequirementList, ...]
+    ) -> Tuple[RequirementList, ...]:
+        """The lists with the most dead ends so far first, and of those with as
+        many, the one whose longest gridded perm is shortest. Lists alike in both
+        keep their order."""
+        return tuple(
+            sorted(
+                lists,
+                key=lambda requirement_list: (
+                    -self._dead_ends[requirement_list],
+                    max(map(len, requirement_list), default=0),
+                ),
+            )
+        )
 
     def _search(
         self,

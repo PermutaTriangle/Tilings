@@ -718,12 +718,33 @@ def test_find_with_the_dead_ends_first():
     assert GriddedPermSearch(obstructions, requirements).find() is None
 
 
+def three_lists_across_two_cells_that_cannot_all_hold(cells_above):
+    """Three lists that cannot all hold: 01 across (0, 0) and (1, 0), across (2, 0)
+    and (3, 0), and across (4, 0) and (5, 0), with every order of a point in each
+    pair of cells an obstruction. Above them, cells in a row, a point required in
+    each, and each joined to (0, 0) by an obstruction that needs two points there,
+    which no gridded perm the search makes has. The search places the three last,
+    as they are not in one cell, and, of the lists with as many dead ends, after
+    the shorter point lists: so each round puts one more of the three first."""
+    pairs = [((0, 0), (1, 0)), ((2, 0), (3, 0)), ((4, 0), (5, 0))]
+    above = [(6 + column, 1) for column in range(cells_above)]
+    obstructions = tuple(
+        GriddedPerm(patt, cells)
+        for cells in product(*pairs)
+        for patt in permutations(range(3))
+    ) + tuple(GriddedPerm((0, 1, 2), ((0, 0), (0, 0), cell)) for cell in above)
+    requirements = tuple((GriddedPerm((0, 1), pair),) for pair in pairs) + tuple(
+        (GriddedPerm.point_perm(cell),) for cell in above
+    )
+    return obstructions, requirements
+
+
 def test_restarts_double_their_budget(monkeypatch):
-    obstructions, requirements = three_lists_that_cannot_all_hold(8, joined=True)
+    obstructions, requirements = three_lists_across_two_cells_that_cannot_all_hold(6)
     searched = searches_recorded(monkeypatch)
     assert GriddedPermSearch(obstructions, requirements).find() is None
     budgets = [budget for _, budget, look_ahead in searched if look_ahead]
-    assert len(budgets) > 1
+    assert len(budgets) > 2
     first_pass = GriddedPermSearch._FIRST_PASS_STATES
     assert budgets == [first_pass * 2 ** (i + 1) for i in range(len(budgets))]
 
@@ -940,18 +961,30 @@ def test_can_place_counts_the_dead_ends_it_meets():
 
 @pytest.mark.parametrize(
     "dead_ends, order",
-    [({1: 1, 2: 3}, (2, 1, 0)), ({0: 2, 2: 2}, (0, 2, 1)), ({1: 1}, (1, 0, 2))],
-    ids=["more first", "ties keep their order", "one dead end before none"],
+    [
+        ({1: 1, 3: 3}, (3, 1, 2, 0)),
+        ({0: 2, 3: 2}, (3, 0, 1, 2)),
+        ({}, (3, 1, 2, 0)),
+        ({2: 1}, (2, 3, 1, 0)),
+    ],
+    ids=[
+        "more first",
+        "ties the shortest first",
+        "ties as short keep their order",
+        "one dead end before none",
+    ],
 )
 def test_find_places_the_lists_with_the_most_dead_ends_first(
     dead_ends, order, monkeypatch
 ):
     """The dead ends as the searches before would leave them; no first pass, so the
-    first search with the look-aheads shows the order. All three lists share a
-    cell."""
+    first search with the look-aheads shows the order. The lists are 012, 01, 10
+    and a point, all in one cell; of those with as many dead ends, the one whose
+    longest gridded perm is shortest goes first."""
     monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", 0)
     lists = tuple(
-        (GriddedPerm(tuple(range(length)), (A,) * length),) for length in (3, 2, 1)
+        (GriddedPerm(patt, (A,) * len(patt)),)
+        for patt in ((0, 1, 2), (0, 1), (1, 0), (0,))
     )
     search = GriddedPermSearch((), lists)
     assert search.requirements == lists
