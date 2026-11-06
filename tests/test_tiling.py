@@ -8,6 +8,7 @@ import sympy
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import Fusion as FusionAlg
+from tilings.algorithms import GriddedPermSearch
 from tilings.assumptions import TrackingAssumption
 from tilings.exception import InvalidOperationError
 
@@ -1297,18 +1298,18 @@ def test_is_empty_rows_of_three_cells(tiling):
 
 
 @pytest.mark.timeout(1)
-@pytest.mark.parametrize("n", [22, 24])
-def test_is_empty_long_requirement_in_one_cell(n):
+@pytest.mark.parametrize("length", [22, 24])
+def test_is_empty_long_requirement_in_one_cell(length):
     """Two cells in a row, no obstructions, and three requirement lists: 201 in
-    the right cell; n...21 in the left cell, or 01 across the two; 01...7 in the
-    left cell. A search that tries the subsets of the points of n...21 in the
-    left cell tries a number that doubles with each point."""
+    the right cell; n...21 in the left cell, n the length given, or 01 across the
+    two; 01...7 in the left cell. A search that tries the subsets of the points of
+    n...21 in the left cell tries a number that doubles with each point."""
     left, right = (0, 0), (1, 0)
     tiling = Tiling(
         requirements=(
             (GriddedPerm((2, 0, 1), (right,) * 3),),
             (
-                GriddedPerm(tuple(range(n - 1, -1, -1)), (left,) * n),
+                GriddedPerm(tuple(range(length - 1, -1, -1)), (left,) * length),
                 GriddedPerm((0, 1), (left, right)),
             ),
             (GriddedPerm(tuple(range(8)), (left,) * 8),),
@@ -1318,30 +1319,34 @@ def test_is_empty_long_requirement_in_one_cell(n):
 
 
 @pytest.mark.timeout(1)
-@pytest.mark.parametrize("n", [6, 7])
-def test_is_empty_a_choice_no_gridded_perm_takes(n):
-    """Three cells in a row, A, B and C. If B has a point, A is monotone: each
-    pattern of three points in A that is neither increasing nor decreasing, with a
-    point in B at each of its four values, is an obstruction. The lists: n...21 in
-    A; 0123 in A, or 0123 in C; and a point in B. The gridded perms on the tiling
-    put 0123 in C. A search that places n...21, then 0123 in A in every way, and
-    only then the point in B, which none of those leaves room for, makes a number
-    of gridded perms that grows about as the square of (n + 4 choose 4)."""
-    a, b, c = (0, 0), (1, 0), (2, 0)
+@pytest.mark.parametrize("length", [6, 7])
+def test_is_empty_a_choice_no_gridded_perm_takes(length):
+    """Three cells in a row, left, middle and right. If the middle cell has a
+    point, the left one is monotone: each pattern of three points in the left cell
+    that is neither increasing nor decreasing, with a point in the middle cell at
+    each of its four values, is an obstruction. The lists: n...21 in the left
+    cell, n the length given; 0123 in the left cell, or 0123 in the right one; and
+    a point in the middle cell. The gridded perms on the tiling put 0123 in the
+    right cell. A search that places n...21, then 0123 in the left cell in every
+    way, and only then the point in the middle cell, which none of those leaves
+    room for, makes a number of gridded perms that grows about as the square of
+    (n + 4 choose 4)."""
+    left, middle, right = (0, 0), (1, 0), (2, 0)
     obstructions = tuple(
         GriddedPerm(
-            tuple(p if p < value else p + 1 for p in patt) + (value,), (a, a, a, b)
+            tuple(entry if entry < value else entry + 1 for entry in patt) + (value,),
+            (left, left, left, middle),
         )
         for patt in ((0, 2, 1), (1, 0, 2), (1, 2, 0), (2, 0, 1))
         for value in range(4)
     )
     requirements = (
-        (GriddedPerm(tuple(range(n - 1, -1, -1)), (a,) * n),),
+        (GriddedPerm(tuple(range(length - 1, -1, -1)), (left,) * length),),
         (
-            GriddedPerm(tuple(range(4)), (a,) * 4),
-            GriddedPerm(tuple(range(4)), (c,) * 4),
+            GriddedPerm(tuple(range(4)), (left,) * 4),
+            GriddedPerm(tuple(range(4)), (right,) * 4),
         ),
-        (GriddedPerm.point_perm(b),),
+        (GriddedPerm.point_perm(middle),),
     )
     tiling = Tiling(obstructions, requirements)
     assert len(tiling.requirements) == 3
@@ -1368,20 +1373,136 @@ def test_is_empty_three_lists_that_cannot_all_hold(cells_above):
 
 
 def test_is_empty_a_list_whose_gridded_perms_start_alike():
-    """If B has a point, A has no 10. The lists: a point in B, and 10 or 012 in A.
-    The search places 10 first, as the shorter, and 10 cannot go with the point in
-    B; 012 begins as 10 does."""
-    a, b = (0, 0), (1, 0)
+    """Two cells in a row. If the right cell has a point, the left one has no 10.
+    The lists: a point in the right cell, and 10 or 012 in the left one. The search
+    places 10 first, as the shorter, and 10 cannot go with the point in the right
+    cell; 012 begins as 10 does."""
+    left, right = (0, 0), (1, 0)
     obstructions = tuple(
-        GriddedPerm(patt, (a, a, b)) for patt in ((2, 1, 0), (2, 0, 1), (1, 0, 2))
+        GriddedPerm(patt, (left, left, right))
+        for patt in ((2, 1, 0), (2, 0, 1), (1, 0, 2))
     )
     requirements = (
-        (GriddedPerm.point_perm(b),),
-        (GriddedPerm((1, 0), (a, a)), GriddedPerm((0, 1, 2), (a, a, a))),
+        (GriddedPerm.point_perm(right),),
+        (GriddedPerm((1, 0), (left, left)), GriddedPerm((0, 1, 2), (left,) * 3)),
     )
     tiling = Tiling(obstructions, requirements)
     assert len(tiling.requirements) == 2
     assert not tiling.is_empty()
+
+
+def hard_lists_with_a_gridded_perm(increasing_length, decreasing_length, cells):
+    """Three cells in a row, left, middle and right: n...21 in the left cell, n the
+    decreasing length; 12...m in the left cell, or 12...m in the right one, m the
+    increasing length; and a point in the middle cell. 12...m in the left cell,
+    with a point in the middle cell at each of its m + 1 values, is an obstruction.
+    The gridded perms on them put 12...m in the right cell, which a search finds
+    after many gridded perms if it places 12...m in the left cell first."""
+    left, middle, right = cells
+    obstructions = tuple(
+        GriddedPerm(
+            tuple(
+                value if value < low else value + 1
+                for value in range(increasing_length)
+            )
+            + (low,),
+            (left,) * increasing_length + (middle,),
+        )
+        for low in range(increasing_length + 1)
+    )
+    requirements = (
+        (
+            GriddedPerm(
+                tuple(range(decreasing_length - 1, -1, -1)),
+                (left,) * decreasing_length,
+            ),
+        ),
+        (
+            GriddedPerm(tuple(range(increasing_length)), (left,) * increasing_length),
+            GriddedPerm(tuple(range(increasing_length)), (right,) * increasing_length),
+        ),
+        (GriddedPerm.point_perm(middle),),
+    )
+    return obstructions, requirements
+
+
+@pytest.mark.timeout(1)
+@pytest.mark.parametrize("increasing_length, decreasing_length", [(5, 6), (5, 7)])
+def test_is_empty_an_empty_group_beside_a_hard_one(
+    increasing_length, decreasing_length
+):
+    """Three cells in a row, a point required in each, and every order of the three
+    points an obstruction: no gridded perm. Beside them, in cells of their own, the
+    hard lists with a gridded perm. A search that finishes the hard lists before it
+    looks at the three point lists makes many gridded perms; the three point lists
+    alone are found empty at once."""
+    row = [(0, 0), (1, 0), (2, 0)]
+    hard_obstructions, hard_requirements = hard_lists_with_a_gridded_perm(
+        increasing_length, decreasing_length, [(3, 1), (4, 1), (5, 1)]
+    )
+    obstructions = (
+        tuple(GriddedPerm(patt, row) for patt in permutations(range(3)))
+        + hard_obstructions
+    )
+    requirements = (
+        tuple((GriddedPerm.point_perm(cell),) for cell in row) + hard_requirements
+    )
+    tiling = Tiling(obstructions, requirements)
+    assert len(tiling.requirements) == 6
+    assert tiling.is_empty()
+
+
+@pytest.mark.timeout(1)
+@pytest.mark.parametrize("increasing_length, decreasing_length", [(5, 6), (5, 7)])
+def test_is_empty_lists_that_cannot_all_hold_joined_to_a_hard_group(
+    increasing_length, decreasing_length
+):
+    """Three lists that cannot all hold: a point in one of the first two cells of a
+    row of six, in one of the next two, and in one of the last two, with every
+    order of a point in each pair an obstruction. Beside them, in cells of their
+    own, the hard lists with a gridded perm. The obstruction 021 in the first cell
+    and twice in the hard lists' right cell joins the two parts into one group,
+    and the Tiling keeps it. A search that checks, at each rest, that 12...m can
+    still be placed, and places it in the left cell in every way first, makes as
+    many gridded perms as a search of the hard lists alone."""
+    pairs = [[(0, 0), (1, 0)], [(2, 0), (3, 0)], [(4, 0), (5, 0)]]
+    hard_cells = [(6, 1), (7, 1), (8, 1)]
+    hard_obstructions, hard_requirements = hard_lists_with_a_gridded_perm(
+        increasing_length, decreasing_length, hard_cells
+    )
+    joining = GriddedPerm((0, 2, 1), (pairs[0][0], hard_cells[2], hard_cells[2]))
+    obstructions = (
+        tuple(
+            GriddedPerm(patt, cells)
+            for cells in product(*pairs)
+            for patt in permutations(range(3))
+        )
+        + hard_obstructions
+        + (joining,)
+    )
+    requirements = (
+        tuple(tuple(GriddedPerm.point_perm(cell) for cell in pair) for pair in pairs)
+        + hard_requirements
+    )
+    tiling = Tiling(obstructions, requirements)
+    assert len(tiling.requirements) == 6
+    assert joining in tiling.obstructions
+    assert tiling.is_empty()
+
+
+@pytest.mark.timeout(1)
+def test_is_empty_01_in_each_cell_of_a_diagonal():
+    """24 lists, past the first pass, where the diagonal of twelve point lists
+    above is decided by it."""
+    tiling = Tiling(
+        requirements=[[GriddedPerm((0, 1), ((i, i), (i, i)))] for i in range(24)]
+    )
+    assert not tiling.is_empty()
+
+
+def test_is_empty_with_one_list_does_not_search(monkeypatch):
+    monkeypatch.setattr(GriddedPermSearch, "find", lambda self: pytest.fail("searched"))
+    assert not Tiling(requirements=[[GriddedPerm.point_perm((0, 0))]]).is_empty()
 
 
 def test_is_finite(compresstil, empty_tiling, finite_tiling):
