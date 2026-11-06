@@ -1225,3 +1225,40 @@ def test_groups_are_ordered_by_the_longest_gridded_perm_of_each_list():
         (in_middle, pair_in_middle),
         (point_or_long,),
     ]
+
+
+def test_by_dead_ends_weighs_a_list_by_its_longest_gridded_perm():
+    """Of lists with as many dead ends, a point or 0123 in the left cell, whose
+    longest gridded perm has four points, goes after 012 in the middle or the right
+    cell, whose longest has three, though it has a shorter gridded perm, and fewer
+    points in all."""
+    point_or_long = (
+        GriddedPerm.point_perm(LEFT),
+        GriddedPerm((0, 1, 2, 3), (LEFT,) * 4),
+    )
+    three_in_middle_or_right = (
+        GriddedPerm((0, 1, 2), (MIDDLE,) * 3),
+        GriddedPerm((0, 1, 2), (RIGHT,) * 3),
+    )
+    lists = (point_or_long, three_in_middle_or_right)
+    search = GriddedPermSearch((), lists)
+    assert search._by_dead_ends(lists) == (three_in_middle_or_right, point_or_long)
+
+
+def test_each_group_has_a_first_pass_in_the_search_order(monkeypatch):
+    """With no first pass, two groups: a point and 01 in the left cell, which the
+    search's order places longest first, and a point in the right cell. The groups'
+    first passes keep the search's order; the rounds after them put the shorter
+    first, as neither has met a dead end."""
+    monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", 0)
+    in_left = (GriddedPerm.point_perm(LEFT),)
+    increasing_in_left = (GriddedPerm((0, 1), (LEFT, LEFT)),)
+    in_right = (GriddedPerm.point_perm(RIGHT),)
+    search = GriddedPermSearch((), (in_left, increasing_in_left, in_right))
+    assert search.requirements[:2] == (increasing_in_left, in_left)
+    searched = searches_recorded(monkeypatch)
+    assert is_gridded_perm_on(search.find(), (), search.requirements)
+    first_passes = [lists for lists, _, look_ahead, _ in searched if not look_ahead]
+    assert (increasing_in_left, in_left) in first_passes
+    rounds = [lists for lists, _, look_ahead, _ in searched if look_ahead]
+    assert (in_left, increasing_in_left) in rounds
