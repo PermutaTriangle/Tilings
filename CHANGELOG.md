@@ -25,6 +25,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   search for instead: the cut, cut again while it is closed under rotation.
   `tilescope spec` tells the user of the hints that the pack it runs does not
   follow.
+- The hint `one-point extension`: a class whose basis is every one-point
+  extension of a basis B, every way of adding a new maximum, or minimum, leftmost
+  or rightmost point, to its patterns, has n times as many permutations of length
+  n as Av(B) has of length n - 1. The hint names the class to search for instead,
+  Av(B), reduced again while it is such an extension.
+- `tilings.hints.one_point_extensions(pattern, direction)`, which makes a
+  pattern's one-point extensions; `find_one_point_extension(basis)`, which finds
+  the direction and the basis B of which a basis is every one-point extension, as
+  a `OnePointExtension(direction, reduced_basis)`;
+  `find_one_point_extension_chain(basis)`, which reduces it again while it is
+  one, as a list of such steps; and `extension_placement_arguments(chain)`, the
+  directions and length that `add_extension_placement` takes for the hint.
+- `TileScopePack.add_extension_placement(directions, length)`, which adds a
+  partial placement of the point furthest in the directions and obstruction
+  inferral to the length, turning such a class into that point and Av(B), and
+  the flag `-x`/`--extension-placement` of `tilescope spec`, which adds them for
+  the class's chain. The placement places the points of point requirements, so
+  the flag warns of a pack that inserts none into the class's tiling, such as
+  `row_and_col_placements`.
 
 ### Fixed
 - `tilescope spec` says when it cannot compute the generating function of the

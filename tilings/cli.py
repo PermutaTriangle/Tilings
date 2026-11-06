@@ -13,7 +13,15 @@ from permuta.permutils import (
     is_insertion_encodable_rightmost,
 )
 from tilings import Tiling
-from tilings.hints import hints_for
+from tilings.hints import (
+    extension_placement_arguments,
+    find_one_point_extension_chain,
+    hints_for,
+)
+from tilings.strategies.requirement_insertion import (
+    CellInsertionFactory,
+    RequirementInsertionFactory,
+)
 from tilings.strategy_pack import TileScopePack
 from tilings.tilescope import TileScope
 
@@ -90,7 +98,52 @@ def build_pack(args: argparse.Namespace) -> TileScopePack:
         pack = pack.make_elementary()
     if getattr(args, "rotational_cuts", False):  # callers' own namespaces may lack it
         pack = pack.add_rotational_cuts()
+    if getattr(args, "extension_placement", False):
+        pack = pack_with_extension_placement(pack, args.basis)
     return pack
+
+
+# The classes of the strategies of the command's packs that insert a point
+# requirement into the class's own 1x1 tiling, whose point the partial placement
+# places.
+# The corroborations of row_and_col_placements insert points only into tilings of
+# two or more cells.
+POINT_INSERTIONS = (CellInsertionFactory, RequirementInsertionFactory)
+
+
+def pack_with_extension_placement(pack: TileScopePack, basis: str) -> TileScopePack:
+    """
+    Return the pack with the partial placements and obstruction inferral that the
+    one-point extension hint for the basis asks for (tilings.hints). Exit with a
+    parser error if the basis is no one-point extension of a basis, or if the pack
+    has a requirement placement or obstruction inferral already. Warn if the pack
+    inserts no point requirement into the class's tiling, as the placements then
+    have no point to place.
+    """
+    chain = find_one_point_extension_chain(
+        Perm.to_standard(pattern) for pattern in basis.split("_")
+    )
+    if not chain:
+        parser.error(
+            "The basis is not every one-point extension of a basis, so "
+            "--extension-placement does not apply."
+        )
+    directions, length = extension_placement_arguments(chain)
+    try:
+        extended = pack.add_extension_placement(directions, length)
+    except ValueError:
+        parser.error(
+            "--extension-placement does not go with this pack: it has a requirement "
+            "placement or obstruction inferral already, and a pack holds one of each."
+        )
+    if not any(isinstance(strategy, POINT_INSERTIONS) for strategy in pack):
+        logger.warning(
+            "--extension-placement places the point of a point requirement in the "
+            "class's tiling, and %s inserts none there, so the placement may not "
+            "apply; point_placements does.",
+            pack.name,
+        )
+    return extended
 
 
 def search_spec(args):
@@ -167,6 +220,15 @@ parser_tree.add_argument(
     "--rotational-cuts",
     action="store_true",
     help="Adds the rotational cuts to the pack, for classes closed under rotation.",
+)
+parser_tree.add_argument(
+    "-x",
+    "--extension-placement",
+    action="store_true",
+    help="Adds a partial placement and obstruction inferral to the pack, for classes "
+    "whose basis is every one-point extension of a basis. The placement places the "
+    "point of a point requirement, so the pack must insert point requirements, as "
+    "point_placements does.",
 )
 parser_tree.set_defaults(func=search_spec)
 

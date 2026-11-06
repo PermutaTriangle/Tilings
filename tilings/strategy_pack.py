@@ -1,3 +1,4 @@
+import operator
 from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, Union
 
 from logzero import logger
@@ -284,6 +285,47 @@ class TileScopePack(StrategyPack):
         tiling the search finds, the cuts' own cuts included.
         """
         return self.add_initial(strat.RotationalCutFactory(), "rotational_cuts")
+
+    def add_extension_placement(
+        self, directions: Iterable[int], length: int
+    ) -> "TileScopePack":
+        """
+        Create a new pack by adding a partial placement and obstruction inferral.
+        In each of the directions, the placement places a requirement's point that is
+        furthest in it, the topmost point for DIR_NORTH, in a row of its own for
+        DIR_NORTH and DIR_SOUTH and in a column of its own for DIR_WEST and
+        DIR_EAST. The inferral infers obstructions up to the length. Take a class
+        whose basis is every one-point extension, in one of the directions, of the
+        patterns of a basis B, the longest of which has the length. With a point
+        requirement on the class, the two strategies turn it into that point and
+        Av(B) (see tilings.hints), so the pack must insert point requirements, as
+        point_placements does. The inferral's cost grows quickly with the length.
+
+        Raise TypeError if the length is not an integer, which is anything that
+        operator.index does not take, and a bool. Raise ValueError if there
+        are no directions, if one is not DIR_NORTH, DIR_SOUTH, DIR_WEST or
+        DIR_EAST, or if the length is less than 1; and, as add_expansion and
+        add_inferral do, if the pack has a requirement placement or obstruction
+        inferral already, as only_root_placements' packs have.
+        """
+        directions = tuple(dict.fromkeys(directions))
+        if not directions or any(direction not in DIRS for direction in directions):
+            raise ValueError(
+                "The directions must be one or more of DIR_NORTH, DIR_SOUTH, "
+                f"DIR_WEST and DIR_EAST, not {directions}."
+            )
+        # an integer as operator.index takes it, but not a bool, which it also takes
+        if isinstance(length, bool) or not hasattr(type(length), "__index__"):
+            raise TypeError(
+                f"The inferral's length must be an integer, not {length!r}."
+            )
+        length = operator.index(length)
+        if length < 1:
+            raise ValueError(f"The inferral's length must be at least 1, not {length}.")
+        return self.add_expansion(
+            [strat.RequirementPlacementFactory(partial=True, dirs=directions)],
+            name_ext="extension_placement",
+        ).add_inferral(strat.ObstructionInferralFactory(length))
 
     def add_all_symmetry(self) -> "TileScopePack":
         """Create a new pack by turning on symmetry on the current pack."""
