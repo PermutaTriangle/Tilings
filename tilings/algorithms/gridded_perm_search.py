@@ -1,4 +1,4 @@
-import math
+import sys
 from collections import Counter, defaultdict
 from typing import (
     DefaultDict,
@@ -199,8 +199,10 @@ class GriddedPermSearch:
         # nowhere, and the rests the look-aheads dropped for it.
         self._dead_ends: Counter[RequirementList] = Counter()
         # The states the search under way may still take, its look-aheads' among
-        # them: any number until find() gives it a budget.
-        self._states_left: float = math.inf
+        # them: until a search is given a budget, more than any can take. An int
+        # from the start, as an attribute that changes from a float to an int
+        # makes the search slower under PyPy.
+        self._states_left = sys.maxsize
 
     def find(self) -> Optional[GriddedPerm]:
         """Return a gridded perm on the tiling, or None if there is none. It need not
