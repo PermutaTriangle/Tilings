@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+
 - The rotational cut. A class closed under rotation, where a rotation is the
   cyclic shift that moves a permutation's first entry to its end (not
   `Perm.rotate`), or closed under the same shift of its values, has n times as many
@@ -69,6 +70,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   untracked fusion and the slide as an initial strategy finds an untracked one,
   and the GuidedSearcher, with that pack, makes from it a tracked one that counts
   the class.
+- Required CI coverage for stable PyPy 3.12 alongside PyPy 3.11.
 
 ### Fixed
 
@@ -86,10 +88,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Black targets Python 3.11, the minimum supported version.
 - Tilings needs a Permuta release with `permuta.permutils.robinson_schensted`,
   whose RSK, evacuation and Knuth-closure tests the Knuth slide uses.
-
-### Added
-
-- Required CI coverage for stable PyPy 3.12 alongside PyPy 3.11.
+- The `NotImplementedError` of `FusionConstructor.get_equation` for a fusion whose
+  two sides are given the same value, such as one with an untracked parent, says
+  so, and that adding to the parent an assumption tracking one side of the region
+  first makes the fusion one-sided.
 
 ## [4.1.0] - 2026-01-15
 ### Changed
