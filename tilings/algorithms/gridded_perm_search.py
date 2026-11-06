@@ -165,9 +165,9 @@ class GriddedPermSearch:
             )
         )
         self._obstructions = tuple(obstructions)
-        # The sets of cells the obstructions use, and the obstructions by the cells
-        # they use, for each cell they use.
-        self._obstruction_cells: List[FrozenSet[Cell]] = []
+        # The obstructions by the cells they use, and by the cells they use for each
+        # cell they use.
+        self._obstructions_by_cells: Dict[FrozenSet[Cell], List[GriddedPerm]] = {}
         self._obstructions_by_cell: DefaultDict[
             Cell, List[Tuple[FrozenSet[Cell], List[GriddedPerm]]]
         ] = defaultdict(list)
@@ -183,7 +183,7 @@ class GriddedPermSearch:
         self._cell_counts: Dict[RequirementList, List[Counter]] = {}
         # The dead ends each list has met: its placings whose next point could go
         # nowhere, and the rests the look-aheads dropped for it.
-        self._dead_ends: Counter = Counter()
+        self._dead_ends: DefaultDict[RequirementList, int] = defaultdict(int)
 
     def find(self) -> Optional[GriddedPerm]:
         """Return a gridded perm on the tiling, or None if there is none. It need not
@@ -220,7 +220,9 @@ class GriddedPermSearch:
             ordered = tuple(
                 sorted(
                     lists,
-                    key=lambda requirement_list: -self._dead_ends[requirement_list],
+                    key=lambda requirement_list: -self._dead_ends.get(
+                        requirement_list, 0
+                    ),
                 )
             )
             try:
@@ -410,7 +412,7 @@ class GriddedPermSearch:
             # call about 1.8 times as long.
             obstruction_cells = obstruction._cells  # pylint: disable=protected-access
             by_cells[obstruction_cells].append(obstruction)
-        self._obstruction_cells = list(by_cells)
+        self._obstructions_by_cells = by_cells
         self._empty_obstruction = frozenset() in by_cells
         for obstruction_cells, group in by_cells.items():
             for cell in obstruction_cells:
@@ -440,7 +442,7 @@ class GriddedPermSearch:
             for requirement in requirement_list:
                 for cell in requirement.pos:
                     parents[root(owners.setdefault(cell, i))] = root(i)
-        for obstruction_cells in self._obstruction_cells:
+        for obstruction_cells in self._obstructions_by_cells:
             joined = [owners[cell] for cell in obstruction_cells if cell in owners]
             for i in joined[1:]:
                 parents[root(i)] = root(joined[0])
