@@ -527,7 +527,7 @@ A_CHAIN_OF_OBSTRUCTIONS = (
 )
 def test_find_past_the_first_pass(tiling, empty, monkeypatch):
     """Each goes past the first pass, to the searches with the look-aheads, which
-    decide it in a few milliseconds."""
+    decide it within the second the test allows."""
     obstructions, requirements = tiling
     searched = searches_recorded(monkeypatch)
     found = GriddedPermSearch(obstructions, requirements).find()
@@ -651,6 +651,28 @@ def test_groups():
         groups((GriddedPerm((0, 1), (A, unused)), GriddedPerm((1, 0), (unused, B))))
         == alone
     )
+
+
+def test_groups_smallest_first():
+    """Three point lists that cannot all hold, three points in all, after a group
+    of 01 in two cells, four points, in the search's order: the three come first.
+    Groups as small keep the order of their first lists."""
+    obstructions, requirements = three_lists_that_cannot_all_hold(0)
+    increasing = tuple(
+        (GriddedPerm((0, 1), ((3 + column, 1),) * 2),) for column in (0, 1)
+    )
+    obstructions += (GriddedPerm((0, 1), ((3, 1), (4, 1))),)
+    search = GriddedPermSearch(obstructions, increasing + requirements)
+    assert search.requirements[:2] == increasing
+    groups = search._groups(search.requirements)
+    assert [sorted(group) for group in groups] == [
+        sorted(requirements),
+        sorted(increasing),
+    ]
+    points = tuple((GriddedPerm.point_perm(cell),) for cell in (A, B, C))
+    assert GriddedPermSearch((), points)._groups(points) == [
+        (requirement_list,) for requirement_list in points
+    ]
 
 
 def test_combined():

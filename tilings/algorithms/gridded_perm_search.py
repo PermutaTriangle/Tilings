@@ -133,9 +133,9 @@ class GriddedPermSearch:
       points of gridded_perm before new points.
     - The first pass takes at most _FIRST_PASS_STATES states, with no look-ahead.
     - If it does not finish, the lists are split into groups whose cells are apart
-      and that no obstruction joins, each searched alone (_groups), and the
-      gridded perms found for them put together (_combined). If there are two
-      groups or more, each has a first pass of its own.
+      and that no obstruction joins, each searched alone, the smallest first
+      (_groups), and the gridded perms found for them put together (_combined). If
+      there are two groups or more, each has a first pass of its own.
     - Then each group not yet decided is searched in turn with the look-aheads,
       round after round, each round's searches taking twice the states of the
       round before, their look-aheads' states among them. A search that finishes
@@ -466,8 +466,11 @@ class GriddedPermSearch:
         self, lists: Tuple[RequirementList, ...]
     ) -> List[Tuple[RequirementList, ...]]:
         """The lists in groups, two lists in one group if their cells meet, or an
-        obstruction uses cells of both, in the order of their first lists. The
-        lists have a gridded perm if and only if each group does.
+        obstruction uses cells of both. The lists have a gridded perm if and only if
+        each group does. The groups come smallest first, by the sum over their lists
+        of the length of each list's longest gridded perm, and groups as small in
+        the order of their first lists: a group with no gridded perm decides the
+        search, and a small one is decided soonest.
 
         Every point the search puts into a gridded perm is a point of a requirement,
         in that point's cell, so a gridded perm found for a group has its points in
@@ -496,7 +499,12 @@ class GriddedPermSearch:
         groups: DefaultDict[int, List[RequirementList]] = defaultdict(list)
         for list_index, requirement_list in enumerate(lists):
             groups[union_find.find(list_index)].append(requirement_list)
-        return [tuple(group) for group in groups.values()]
+        return sorted(
+            (tuple(group) for group in groups.values()),
+            key=lambda group: sum(
+                max(map(len, requirement_list), default=0) for requirement_list in group
+            ),
+        )
 
     @staticmethod
     def _unsatisfied(
