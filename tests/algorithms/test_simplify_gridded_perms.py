@@ -1,4 +1,5 @@
 from tilings import GriddedPerm, Tiling
+from tilings.algorithms import GriddedPermReduction
 
 
 def test_duplicate_req_lists():
@@ -392,3 +393,31 @@ def test_minimal_req_duplicate():
         requirements=((GriddedPerm((1, 0), ((1, 0), (1, 0))),),),
         assumptions=(),
     )
+
+
+def test_req_lists_that_imply_each_other():
+    inc = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    inc3 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    inc4 = GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (0, 0)))
+    dec3 = GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (0, 0)))
+    expected = Tiling([dec3], [[inc]])
+    counts = [len(list(expected.objects_of_size(n))) for n in range(6)]
+    assert counts == [0, 0, 1, 5, 14, 42]
+    assert Tiling([dec3], [[inc], [inc, inc3]]) == expected
+    assert Tiling([dec3], [[inc], [inc, inc3], [inc, inc4]]) == expected
+    assert Tiling([dec3], [[inc]]).add_list_requirement([inc, inc3]) == expected
+
+
+def test_req_lists_that_imply_each_other_in_an_empty_cell():
+    point = GriddedPerm((0,), ((0, 0),))
+    patt = GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0)))
+    assert Tiling([point], [[patt, point], [point]]).is_empty()
+
+
+def test_remove_redundant_keeps_the_later_of_two_that_imply_each_other():
+    inc = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    inc3 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    reduction = GriddedPermReduction((), (), manual=True)
+    assert reduction.remove_redundant([(inc,), (inc, inc3)]) == [(inc, inc3)]
+    assert reduction.remove_redundant([(inc, inc3), (inc,)]) == [(inc,)]
+    assert reduction.remove_redundant([(inc,), (inc,)]) == [(inc,)]
