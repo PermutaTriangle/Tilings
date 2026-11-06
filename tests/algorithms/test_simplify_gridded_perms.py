@@ -1,3 +1,8 @@
+import random
+from bisect import bisect_right
+from itertools import combinations, combinations_with_replacement, permutations, product
+
+from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import GriddedPermReduction
 
@@ -396,28 +401,337 @@ def test_minimal_req_duplicate():
 
 
 def test_req_lists_that_imply_each_other():
-    inc = GriddedPerm((0, 1), ((0, 0), (0, 0)))
-    inc3 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
-    inc4 = GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (0, 0)))
-    dec3 = GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (0, 0)))
-    expected = Tiling([dec3], [[inc]])
-    counts = [len(list(expected.objects_of_size(n))) for n in range(6)]
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_123 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    pattern_1234 = GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (0, 0)))
+    pattern_321 = GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (0, 0)))
+    expected = Tiling([pattern_321], [[pattern_12]])
+    counts = [len(list(expected.objects_of_size(size))) for size in range(6)]
     assert counts == [0, 0, 1, 5, 14, 42]
-    assert Tiling([dec3], [[inc], [inc, inc3]]) == expected
-    assert Tiling([dec3], [[inc], [inc, inc3], [inc, inc4]]) == expected
-    assert Tiling([dec3], [[inc]]).add_list_requirement([inc, inc3]) == expected
+    assert Tiling([pattern_321], [[pattern_12], [pattern_12, pattern_123]]) == expected
+    assert (
+        Tiling(
+            [pattern_321],
+            [[pattern_12], [pattern_12, pattern_123], [pattern_12, pattern_1234]],
+        )
+        == expected
+    )
+    assert (
+        Tiling([pattern_321], [[pattern_12]]).add_list_requirement(
+            [pattern_12, pattern_123]
+        )
+        == expected
+    )
+
+
+def test_from_perms_with_req_lists_that_imply_each_other():
+    tiling = Tiling.from_perms(
+        [Perm((2, 1, 0))], [[Perm((0, 1))], [Perm((0, 1)), Perm((0, 1, 2))]]
+    )
+    assert tiling == Tiling.from_perms([Perm((2, 1, 0))], [[Perm((0, 1))]])
+
+
+def test_req_list_that_sorts_before_the_list_it_implies_and_is_implied_by():
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_123 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    pattern_321 = GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (0, 0)))
+    assert Tiling(
+        [], [[pattern_12, pattern_123, pattern_321], [pattern_12, pattern_321]]
+    ) == Tiling([], [[pattern_12, pattern_321]])
+
+
+def test_req_lists_that_imply_each_other_in_two_cells():
+    left_point = GriddedPerm((0,), ((0, 0),))
+    right_point = GriddedPerm((0,), ((1, 0),))
+    point_in_each_cell = GriddedPerm((0, 1), ((0, 0), (1, 0)))
+    assert Tiling(
+        [], [[left_point, right_point], [left_point, right_point, point_in_each_cell]]
+    ) == Tiling([], [[left_point, right_point]])
+
+
+def test_req_lists_made_to_imply_each_other_by_the_constructor():
+    """
+    No two of the lists given imply each other, but the constructor makes each point
+    of the 21 a list of its own, and the point in (1, 0) and the first list then do.
+    """
+    point_top_left = GriddedPerm((0,), ((0, 1),))
+    point_bottom_right = GriddedPerm((0,), ((1, 0),))
+    pattern_12_bottom_right = GriddedPerm((0, 1), ((1, 0), (1, 0)))
+    pattern_21_across = GriddedPerm((1, 0), ((0, 1), (1, 0)))
+    tiling = Tiling(
+        [], [[point_bottom_right, pattern_12_bottom_right], [pattern_21_across]]
+    )
+    assert tiling == Tiling([], [[point_top_left], [point_bottom_right]])
+
+
+def test_add_list_requirement_with_a_gridded_perm_twice():
+    """
+    The list is added as given, not as a set, and as its gridded perms have no factor
+    in common, it reaches remove_redundant with 12 twice.
+    """
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_321 = GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (0, 0)))
+    tiling = Tiling([], [[pattern_12, pattern_321]])
+    assert tiling.add_list_requirement([pattern_12, pattern_12, pattern_321]) == tiling
 
 
 def test_req_lists_that_imply_each_other_in_an_empty_cell():
     point = GriddedPerm((0,), ((0, 0),))
-    patt = GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0)))
-    assert Tiling([point], [[patt, point], [point]]).is_empty()
+    pattern_132 = GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0)))
+    assert Tiling([point], [[pattern_132, point], [point]]).is_empty()
+
+
+def test_req_lists_that_imply_each_other_in_a_cell_that_is_not_empty():
+    point = GriddedPerm((0,), ((0, 0),))
+    pattern_132 = GriddedPerm((0, 2, 1), ((0, 0), (0, 0), (0, 0)))
+    tiling = Tiling([], [[pattern_132, point], [point]])
+    assert tiling == Tiling([], [[point]])
+    assert not tiling.is_empty()
 
 
 def test_remove_redundant_keeps_the_later_of_two_that_imply_each_other():
-    inc = GriddedPerm((0, 1), ((0, 0), (0, 0)))
-    inc3 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_123 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
     reduction = GriddedPermReduction((), (), manual=True)
-    assert reduction.remove_redundant([(inc,), (inc, inc3)]) == [(inc, inc3)]
-    assert reduction.remove_redundant([(inc, inc3), (inc,)]) == [(inc,)]
-    assert reduction.remove_redundant([(inc,), (inc,)]) == [(inc,)]
+    assert reduction.remove_redundant([(pattern_12,), (pattern_12, pattern_123)]) == [
+        (pattern_12, pattern_123)
+    ]
+    assert reduction.remove_redundant([(pattern_12, pattern_123), (pattern_12,)]) == [
+        (pattern_12,)
+    ]
+    assert reduction.remove_redundant([(pattern_12,), (pattern_12,)]) == [(pattern_12,)]
+
+
+def test_remove_redundant_with_the_empty_gridded_perm():
+    empty_gridded_perm = GriddedPerm.empty_perm()
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_123 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    reduction = GriddedPermReduction((), (), manual=True)
+    assert reduction.remove_redundant([]) == []
+    assert reduction.remove_redundant([(empty_gridded_perm, pattern_12)]) == []
+    assert reduction.remove_redundant(
+        [(pattern_12,), (empty_gridded_perm, pattern_123), (pattern_12, pattern_123)]
+    ) == [(pattern_12, pattern_123)]
+
+
+def test_remove_redundant_with_a_weaker_list_and_two_groups():
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_123 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    pattern_21 = GriddedPerm((1, 0), ((0, 0), (0, 0)))
+    pattern_321 = GriddedPerm((2, 1, 0), ((0, 0), (0, 0), (0, 0)))
+    reduction = GriddedPermReduction((), (), manual=True)
+    assert reduction.remove_redundant(
+        [(pattern_12,), (pattern_12, pattern_123), (pattern_12, pattern_321)]
+    ) == [(pattern_12, pattern_123)]
+    assert reduction.remove_redundant(
+        [
+            (pattern_12,),
+            (pattern_21,),
+            (pattern_12, pattern_123),
+            (pattern_21, pattern_321),
+        ]
+    ) == [(pattern_12, pattern_123), (pattern_21, pattern_321)]
+
+
+def test_remove_redundant_with_chains_out_of_order_and_a_stronger_list():
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_123 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    pattern_1234 = GriddedPerm((0, 1, 2, 3), ((0, 0), (0, 0), (0, 0), (0, 0)))
+    reduction = GriddedPermReduction((), (), manual=True)
+    assert reduction.remove_redundant(
+        [(pattern_12, pattern_123), (pattern_12, pattern_1234), (pattern_12,)]
+    ) == [(pattern_12,)]
+    assert reduction.remove_redundant(
+        [(pattern_12, pattern_123), (pattern_12,), (pattern_12, pattern_1234)]
+    ) == [(pattern_12, pattern_1234)]
+    assert reduction.remove_redundant(
+        [(pattern_12,), (pattern_12, pattern_123), (pattern_123,)]
+    ) == [(pattern_123,)]
+
+
+def test_remove_redundant_with_copies_around_a_list_they_imply_each_other_with():
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    pattern_123 = GriddedPerm((0, 1, 2), ((0, 0), (0, 0), (0, 0)))
+    shorter_list = (pattern_12,)
+    longer_list = (pattern_12, pattern_123)
+    reduction = GriddedPermReduction((), (), manual=True)
+    assert reduction.remove_redundant([shorter_list, longer_list, shorter_list]) == [
+        shorter_list
+    ]
+    assert reduction.remove_redundant([longer_list, shorter_list, shorter_list]) == [
+        shorter_list
+    ]
+
+
+def test_remove_redundant_with_a_gridded_perm_twice_in_a_list():
+    pattern_12 = GriddedPerm((0, 1), ((0, 0), (0, 0)))
+    reduction = GriddedPermReduction((), (), manual=True)
+    assert reduction.remove_redundant([(pattern_12, pattern_12), (pattern_12,)]) == [
+        (pattern_12,)
+    ]
+
+
+def test_remove_redundant_on_every_three_lists_from_four_patterns():
+    """
+    Every three lists, in every order, of one or two of 12, 21, 123 and 321 in one
+    cell: every list removed is implied by a list kept, and no list kept implies
+    another.
+    """
+    gridded_perms = [
+        GriddedPerm(pattern, ((0, 0),) * len(pattern))
+        for pattern in ((0, 1), (1, 0), (0, 1, 2), (2, 1, 0))
+    ]
+    requirement_lists = [(gridded_perm,) for gridded_perm in gridded_perms] + list(
+        combinations(gridded_perms, 2)
+    )
+
+    def implies(first_list, second_list):
+        return all(
+            any(
+                gridded_perm.contains(other_gridded_perm)
+                for other_gridded_perm in second_list
+            )
+            for gridded_perm in first_list
+        )
+
+    reduction = GriddedPermReduction((), (), manual=True)
+    for three_lists in product(requirement_lists, repeat=3):
+        kept_lists = reduction.remove_redundant(list(three_lists))
+        assert all(
+            any(implies(kept_list, given_list) for kept_list in kept_lists)
+            for given_list in three_lists
+        ), three_lists
+        assert not any(
+            implies(first_list, second_list)
+            for first_list, second_list in permutations(kept_lists, 2)
+        ), three_lists
+
+
+def gridded_perms_on_grid(size, dimensions):
+    """
+    Yield every gridded perm of the size on a grid of the dimensions, each perm of the
+    size cut into columns by index and into rows by value in every way.
+    """
+    columns, rows = dimensions
+    for perm in Perm.of_length(size):
+        for column_cuts in combinations_with_replacement(range(size + 1), columns - 1):
+            for row_cuts in combinations_with_replacement(range(size + 1), rows - 1):
+                yield GriddedPerm(
+                    perm,
+                    tuple(
+                        (
+                            bisect_right(column_cuts, index),
+                            bisect_right(row_cuts, value),
+                        )
+                        for index, value in enumerate(perm)
+                    ),
+                )
+
+
+def brute_force_counts(obstructions, requirements, dimensions):
+    """
+    Count the gridded perms of each size up to 4 on a grid of the dimensions that avoid
+    the obstructions and contain a gridded perm of each requirement list, without
+    reducing the requirements.
+    """
+    return [
+        sum(
+            1
+            for gridded_perm in gridded_perms_on_grid(size, dimensions)
+            if gridded_perm.avoids(*obstructions)
+            and all(gridded_perm.contains(*requirement) for requirement in requirements)
+        )
+        for size in range(5)
+    ]
+
+
+def random_obstructions_and_requirements(rng, dimensions):
+    """
+    Return obstructions that name every cell of a grid of the dimensions, and two to
+    five requirement lists, some of which often imply each other. They are made from a
+    smaller gridded perm, a larger one that contains it, and another: a list with the
+    smaller twice, and a copy of a list. A quarter of the time the smaller gridded perm
+    is an obstruction too, so that a list of it alone, or with the larger, cannot hold.
+    """
+    cells = list(product(range(dimensions[0]), range(dimensions[1])))
+    obstructions = [GriddedPerm((0, 1, 2, 3), (cell,) * 4) for cell in cells]
+    if rng.random() < 0.5:
+        obstructions.append(rng.choice(list(gridded_perms_on_grid(3, dimensions))))
+    smaller = rng.choice(list(gridded_perms_on_grid(rng.randint(1, 2), dimensions)))
+    if rng.random() < 0.25:
+        obstructions.append(smaller)
+    larger = rng.choice(
+        [
+            gridded_perm
+            for gridded_perm in gridded_perms_on_grid(len(smaller) + 1, dimensions)
+            if gridded_perm.contains(smaller)
+        ]
+    )
+    other = rng.choice(list(gridded_perms_on_grid(rng.randint(1, 2), dimensions)))
+    candidate_lists = [
+        [smaller],
+        [smaller, larger],
+        [other, smaller],
+        [other, larger, smaller],
+        [smaller, smaller, other],
+        [other],
+    ]
+    requirements = rng.sample(candidate_lists, rng.randint(2, 4))
+    if rng.random() < 0.5:
+        requirements.append(list(rng.choice(requirements)))
+    for requirement in requirements:
+        rng.shuffle(requirement)
+    return obstructions, requirements
+
+
+def check_tilings_against_a_brute_force(make_tiling, dimensions_to_choose, seed):
+    """
+    Check 50 random tilings, each made by make_tiling from its obstructions and
+    requirement lists. Its counts up to size 4 are the brute force's. It is empty when
+    a requirement list holds only gridded perms that contain an obstruction, and not
+    empty when the brute force finds a gridded perm.
+    """
+    rng = random.Random(seed)
+    for _ in range(50):
+        dimensions = rng.choice(dimensions_to_choose)
+        obstructions, requirements = random_obstructions_and_requirements(
+            rng, dimensions
+        )
+        expected = brute_force_counts(obstructions, requirements, dimensions)
+        tiling = make_tiling(obstructions, requirements)
+        case = (obstructions, requirements)
+        counts = [len(list(tiling.objects_of_size(size))) for size in range(5)]
+        assert counts == expected, case
+        cannot_hold = any(
+            all(gridded_perm.contains(*obstructions) for gridded_perm in requirement)
+            for requirement in requirements
+        )
+        if cannot_hold or any(expected):
+            assert tiling.is_empty() == cannot_hold, case
+
+
+def test_tiling_against_a_brute_force_of_gridded_perms():
+    check_tilings_against_a_brute_force(Tiling, [(1, 1), (1, 2), (2, 1), (2, 2)], 537)
+
+
+def test_add_list_requirement_against_a_brute_force_of_gridded_perms():
+    def make_tiling(obstructions, requirements):
+        tiling = Tiling(obstructions, requirements[:-1])
+        return tiling.add_list_requirement(requirements[-1])
+
+    check_tilings_against_a_brute_force(
+        make_tiling, [(1, 1), (1, 2), (2, 1), (2, 2)], 538
+    )
+
+
+def test_from_perms_against_a_brute_force_of_gridded_perms():
+    def make_tiling(obstructions, requirements):
+        return Tiling.from_perms(
+            [obstruction.patt for obstruction in obstructions],
+            [
+                [gridded_perm.patt for gridded_perm in requirement]
+                for requirement in requirements
+            ],
+        )
+
+    check_tilings_against_a_brute_force(make_tiling, [(1, 1)], 539)
