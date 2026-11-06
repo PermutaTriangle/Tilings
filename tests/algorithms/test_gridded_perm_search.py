@@ -168,8 +168,9 @@ def test_find_every_order_but_one(orders):
 
 
 def test_find_a_column_of_two_cells():
-    """A tiling on which a fault in the minimum indices of develop's search of
-    minimal gridded perms lost every gridded perm."""
+    """A tiling on which a search of minimal gridded perms whose minimum indices
+    were wrong by one, for a point inserted just after the last point inserted into
+    another cell of its column, lost every gridded perm."""
     obstructions = (GriddedPerm((1, 0, 2), ((0, 1), (0, 0), (1, 1))),)
     requirements = (
         (GriddedPerm((0, 2, 1), ((0, 0), (0, 1), (0, 0))),),
@@ -341,8 +342,8 @@ def test_find_pairs_of_lists(monkeypatch):
     ids=["two cells not both", "a chain of obstructions"],
 )
 def test_find_past_the_first_pass(tiling, empty):
-    """Depth first alone, the search took 0.16 s on the first and over 20 s on the
-    second, where develop's search of minimal gridded perms takes 1 ms and 0.2 s."""
+    """Without the pairs and the look-aheads, the search takes about a second on
+    each under PyPy, and with them a few milliseconds."""
     obstructions, requirements = tiling
     found = GriddedPermSearch(obstructions, requirements).find()
     assert (found is None) == empty
