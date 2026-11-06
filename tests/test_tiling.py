@@ -1,6 +1,6 @@
 import json
 from collections import Counter
-from itertools import chain, product
+from itertools import chain, permutations, product
 
 import pytest
 import sympy
@@ -1243,8 +1243,15 @@ def test_is_empty(compresstil, empty_tiling, finite_tiling):
 )
 def test_is_empty_point_requirement_in_each_cell(cells):
     """Twelve cells in a row, or in a column, each with a point requirement.
-    Taking the shortest work packet first, is_empty built the 11! orders of
-    the points in the first eleven cells before it found a gridded perm."""
+    MinimalGriddedPerms builds the gridded perms on it shortest first, and so the
+    11! orders of the points in the first eleven cells before it has one."""
+    tiling = Tiling(requirements=[[GriddedPerm.point_perm(cell)] for cell in cells])
+    assert not tiling.is_empty()
+
+
+@pytest.mark.timeout(1)
+def test_is_empty_point_requirement_in_each_cell_of_a_diagonal():
+    cells = [(i, i) for i in range(12)]
     tiling = Tiling(requirements=[[GriddedPerm.point_perm(cell)] for cell in cells])
     assert not tiling.is_empty()
 
@@ -1282,12 +1289,10 @@ def test_is_empty_point_requirement_in_each_cell(cells):
         ),
     ],
 )
-def test_is_empty_where_longest_packet_first_is_slow(tiling):
-    """A row of three cells with requirements of three and four points, and
-    few obstructions or none. Taking the longest work packet of develop's search
-    of minimal gridded perms first, a search takes seconds on packets from which
-    no gridded perm is made, where taking the shortest first finds one within
-    milliseconds."""
+def test_is_empty_rows_of_three_cells(tiling):
+    """A row of three cells with requirements of three and four points, and few
+    obstructions or none: a search that builds the longest gridded perms first
+    can take seconds on gridded perms that lead to none on the tiling."""
     assert not tiling.is_empty()
 
 
@@ -1296,9 +1301,8 @@ def test_is_empty_where_longest_packet_first_is_slow(tiling):
 def test_is_empty_long_requirement_in_one_cell(n):
     """Two cells in a row, no obstructions, and three requirement lists: 201 in
     the right cell; n...21 in the left cell, or 01 across the two; 01...7 in the
-    left cell. A search that compares what it has made with the requirements'
-    patterns, cell by cell, tries the subsets of the points of n...21, a number
-    that doubles with each point."""
+    left cell. A search that tries the subsets of the points of n...21 in the
+    left cell tries a number that doubles with each point."""
     left, right = (0, 0), (1, 0)
     tiling = Tiling(
         requirements=(
@@ -1310,6 +1314,73 @@ def test_is_empty_long_requirement_in_one_cell(n):
             (GriddedPerm(tuple(range(8)), (left,) * 8),),
         )
     )
+    assert not tiling.is_empty()
+
+
+@pytest.mark.timeout(1)
+@pytest.mark.parametrize("n", [6, 7])
+def test_is_empty_a_choice_no_gridded_perm_takes(n):
+    """Three cells in a row, A, B and C. If B has a point, A is monotone: each
+    pattern of three points in A that is neither increasing nor decreasing, with a
+    point in B at each of its four values, is an obstruction. The lists: n...21 in
+    A; 0123 in A, or 0123 in C; and a point in B. The gridded perms on the tiling
+    put 0123 in C. A search that places n...21, then 0123 in A in every way, and
+    only then the point in B, which none of those leaves room for, makes a number
+    of gridded perms that grows about as the square of (n + 4 choose 4)."""
+    a, b, c = (0, 0), (1, 0), (2, 0)
+    obstructions = tuple(
+        GriddedPerm(
+            tuple(p if p < value else p + 1 for p in patt) + (value,), (a, a, a, b)
+        )
+        for patt in ((0, 2, 1), (1, 0, 2), (1, 2, 0), (2, 0, 1))
+        for value in range(4)
+    )
+    requirements = (
+        (GriddedPerm(tuple(range(n - 1, -1, -1)), (a,) * n),),
+        (
+            GriddedPerm(tuple(range(4)), (a,) * 4),
+            GriddedPerm(tuple(range(4)), (c,) * 4),
+        ),
+        (GriddedPerm.point_perm(b),),
+    )
+    tiling = Tiling(obstructions, requirements)
+    assert len(tiling.requirements) == 3
+    assert not tiling.is_empty()
+
+
+@pytest.mark.timeout(1)
+@pytest.mark.parametrize("cells_above", [5, 6])
+def test_is_empty_three_lists_that_cannot_all_hold(cells_above):
+    """Three cells in a row, a point required in each, and every order of a point
+    in each an obstruction: each pair of the three lists has a gridded perm, and
+    the three do not. Beside them, cells in a row above, each needing 01, that
+    have nothing to do with the answer. A search that places the lists above first
+    and fails at the third point, for each way of placing them, makes a number of
+    gridded perms that grows with each cell above."""
+    row = [(0, 0), (1, 0), (2, 0)]
+    obstructions = tuple(GriddedPerm(patt, row) for patt in permutations(range(3)))
+    requirements = tuple((GriddedPerm.point_perm(cell),) for cell in row) + tuple(
+        (GriddedPerm((0, 1), ((3 + column, 1),) * 2),) for column in range(cells_above)
+    )
+    tiling = Tiling(obstructions, requirements)
+    assert len(tiling.requirements) == 3 + cells_above
+    assert tiling.is_empty()
+
+
+def test_is_empty_a_list_whose_gridded_perms_start_alike():
+    """If B has a point, A has no 10. The lists: a point in B, and 10 or 012 in A.
+    The search places 10 first, as the shorter, and 10 cannot go with the point in
+    B; 012 begins as 10 does."""
+    a, b = (0, 0), (1, 0)
+    obstructions = tuple(
+        GriddedPerm(patt, (a, a, b)) for patt in ((2, 1, 0), (2, 0, 1), (1, 0, 2))
+    )
+    requirements = (
+        (GriddedPerm.point_perm(b),),
+        (GriddedPerm((1, 0), (a, a)), GriddedPerm((0, 1, 2), (a, a, a))),
+    )
+    tiling = Tiling(obstructions, requirements)
+    assert len(tiling.requirements) == 2
     assert not tiling.is_empty()
 
 

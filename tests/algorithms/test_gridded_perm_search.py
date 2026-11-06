@@ -1,11 +1,12 @@
 import random
-from itertools import combinations, combinations_with_replacement, permutations
+from itertools import combinations, combinations_with_replacement, permutations, product
 
 import pytest
 
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import GriddedPermSearch
+from tilings.algorithms.gridded_perm_search import _bounding_box, _combined, _OverBudget
 
 A, B, C = (0, 0), (1, 0), (2, 0)
 
@@ -17,7 +18,10 @@ def is_gridded_perm_on(gridded_perm, obstructions, requirements):
         gridded_perm is not None
         and not gridded_perm.contradictory()
         and gridded_perm.avoids(*obstructions)
-        and all(gridded_perm.contains(*reqlist) for reqlist in requirements)
+        and all(
+            gridded_perm.contains(*requirement_list)
+            for requirement_list in requirements
+        )
     )
 
 
@@ -42,7 +46,9 @@ def has_gridded_perm_by_brute_force(obstructions, requirements, columns, rows):
     """Whether a gridded perm on the grid avoids the obstructions and contains a
     gridded perm of each list. A minimal one is a union of a gridded perm of each
     list, so it is no longer than the longest of each list together."""
-    longest = sum(max(map(len, reqlist), default=0) for reqlist in requirements)
+    longest = sum(
+        max(map(len, requirement_list), default=0) for requirement_list in requirements
+    )
     return any(
         is_gridded_perm_on(gridded_perm, obstructions, requirements)
         for length in range(longest + 1)
@@ -84,22 +90,34 @@ def small_tilings(seed, count):
             )
             for _ in range(rng.randint(2, 3))
         )
-        if sum(max(map(len, reqlist)) for reqlist in requirements) <= 5:
+        if (
+            sum(max(map(len, requirement_list)) for requirement_list in requirements)
+            <= 5
+        ):
             made += 1
             yield obstructions, requirements, columns, rows
 
 
-def find(obstructions, requirements, first_pass_states=None, monkeypatch=None):
-    if first_pass_states is not None:
-        monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", first_pass_states)
-    return GriddedPermSearch(obstructions, requirements).find()
+def searches_recorded(monkeypatch):
+    """The lists, budget and look-ahead of each search that GriddedPermSearch makes
+    from here on, but for those of _can_place, which start from a rest."""
+    searched = []
+    original = GriddedPermSearch._search
+
+    def search_recorded(self, lists, budget, look_ahead, start=None):
+        if start is None:
+            searched.append((lists, budget, look_ahead))
+        return original(self, lists, budget, look_ahead, start)
+
+    monkeypatch.setattr(GriddedPermSearch, "_search", search_recorded)
+    return searched
 
 
 @pytest.mark.parametrize("first_pass_states", [64, 0])
 def test_find_against_a_brute_force(first_pass_states, monkeypatch):
     """With the first pass as it is, and with none, so that every tiling is also
-    searched by pairs and with the look-aheads; with the lists, and the gridded
-    perms in each, in the search's order and reversed."""
+    split into groups and searched with the restarts and the look-aheads; with the
+    lists, and the gridded perms in each, in the search's order and reversed."""
     monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", first_pass_states)
     empty = 0
     for obstructions, requirements, columns, rows in small_tilings(1, 60):
@@ -111,7 +129,8 @@ def test_find_against_a_brute_force(first_pass_states, monkeypatch):
         for lists in (
             search.requirements,
             tuple(
-                tuple(reversed(reqlist)) for reqlist in reversed(search.requirements)
+                tuple(reversed(requirement_list))
+                for requirement_list in reversed(search.requirements)
             ),
         ):
             search = GriddedPermSearch(obstructions, requirements)
@@ -120,6 +139,7 @@ def test_find_against_a_brute_force(first_pass_states, monkeypatch):
             assert (found is not None) == expected, (obstructions, lists)
             if found is not None:
                 assert is_gridded_perm_on(found, obstructions, requirements)
+        assert Tiling(obstructions, requirements).is_empty() == (not expected)
     assert 0 < empty < 60
 
 
@@ -213,9 +233,23 @@ def test_find_the_second_gridded_perm_of_a_list():
     assert Tiling(obstructions, POINT_OR_INCREASING).is_empty()
 
 
+def test_find_a_list_whose_gridded_perms_start_alike():
+    """One cell avoiding 01 and 102: a point, and 210 or 01. The search places 01
+    first, as the shorter, and 01 cannot go; 210 begins as 01 does, with a point
+    at the same image, and its placings must not be taken as made before."""
+    obstructions = (GriddedPerm((0, 1), (A, A)), GriddedPerm((1, 0, 2), (A, A, A)))
+    decreasing = GriddedPerm((2, 1, 0), (A, A, A))
+    requirements = (
+        (GriddedPerm.point_perm(A),),
+        (decreasing, GriddedPerm((0, 1), (A, A))),
+    )
+    assert GriddedPermSearch(obstructions, requirements).find() == decreasing
+
+
 def test_find_a_point_of_the_gridded_perm_used_twice():
     """One cell avoiding 102 and 3201 and containing 01 and 210: placing 210 and
-    then 01 at a point of it, at its 2 with a new point above, gives 2310."""
+    then 01 at a point of it, at its 2 with a new point above, gives 2310, as the
+    points of a gridded perm are tried before new points."""
     obstructions = (
         GriddedPerm((1, 0, 2), (A,) * 3),
         GriddedPerm((3, 2, 0, 1), (A,) * 4),
@@ -248,6 +282,9 @@ def test_find_none():
         ).find()
         is None
     )
+    # A gridded perm whose points cannot be in their cells.
+    contradictory = GriddedPerm((0, 1), (B, A))
+    assert GriddedPermSearch((), ((contradictory,), (point,))).find() is None
 
 
 def test_find_one_list_or_none():
@@ -278,9 +315,154 @@ def test_find_in_a_cell_no_list_needs_in_full():
     )
 
 
+def test_find_twice_on_one_search():
+    """Each call starts afresh: the second finds what the first found, after the
+    same dead ends."""
+    obstructions, requirements = three_lists_that_cannot_all_hold(8, joined=True)
+    obstructions = obstructions[1:]
+    search = GriddedPermSearch(obstructions, requirements)
+    found = search.find()
+    dead_ends = dict(search._dead_ends)
+    assert dead_ends and is_gridded_perm_on(found, obstructions, requirements)
+    assert search.find() == found
+    assert search._dead_ends == dead_ends
+
+
+def test_search_makes_a_rest_and_a_placing_once(monkeypatch):
+    """The cell holds a point before 012 is placed in it, so a rest and placings
+    are reached in more than one way; a point in C is an obstruction, so the search
+    makes every state. It looks at each rest once and expands each placing once."""
+    point = GriddedPerm.point_perm
+    lists = ((point(A),), (GriddedPerm((0, 1, 2), (A,) * 3),), (point(C),))
+    search = GriddedPermSearch((point(C),), lists)
+    rests, expanded = [], []
+    unsatisfied, children = GriddedPermSearch._unsatisfied, GriddedPermSearch._children
+
+    def unsatisfied_recorded(gridded_perm, satisfied, lists):
+        rests.append(gridded_perm)
+        return unsatisfied(gridded_perm, satisfied, lists)
+
+    def children_recorded(self, gridded_perm, requirement, images):
+        expanded.append((gridded_perm, requirement, images))
+        return children(self, gridded_perm, requirement, images)
+
+    monkeypatch.setattr(
+        GriddedPermSearch, "_unsatisfied", staticmethod(unsatisfied_recorded)
+    )
+    monkeypatch.setattr(GriddedPermSearch, "_children", children_recorded)
+    assert search._search(lists, None, look_ahead=False) is None
+    assert len(rests) == len(set(rests)) > 1
+    assert len(expanded) == len(set(expanded)) > 1
+
+
+def test_can_place_makes_a_placing_once(monkeypatch):
+    """Placing 012 in a gridded perm with a point, 012 an obstruction: 01 is made
+    in two ways, with the point as its 0 or as its 1."""
+    increasing = GriddedPerm((0, 1, 2), (A,) * 3)
+    search = GriddedPermSearch((increasing,), ((increasing,),))
+    expanded = []
+    children = GriddedPermSearch._children
+
+    def children_recorded(self, gridded_perm, requirement, images):
+        expanded.append((gridded_perm, requirement, images))
+        return children(self, gridded_perm, requirement, images)
+
+    monkeypatch.setattr(GriddedPermSearch, "_children", children_recorded)
+    assert not search._can_place(GriddedPerm.point_perm(A), (increasing,))
+    assert len(expanded) == len(set(expanded)) > 1
+
+
+def test_search_counts_its_states():
+    """The first rest, the placing of A, the rest with A, the placing of B, and the
+    rest with both."""
+    in_a, in_b = (GriddedPerm.point_perm(A),), (GriddedPerm.point_perm(B),)
+    search = GriddedPermSearch((), (in_a, in_b))
+    assert search._search(search.requirements, 5, look_ahead=False) is not None
+    with pytest.raises(_OverBudget):
+        search._search(search.requirements, 4, look_ahead=False)
+
+
+def test_avoids_keeps_the_obstructions_to_check():
+    inside = GriddedPerm((0, 1), (A, B))
+    outside = GriddedPerm((0, 1), (A, C))
+    search = GriddedPermSearch((inside, outside), ())
+    cells = frozenset((A, B))
+    assert not search._avoids(inside, B, cells)
+    kept = search._obstructions_to_check[(B, cells)]
+    # Not an obstruction that uses a cell the gridded perm does not.
+    assert kept == (inside,)
+    assert not search._avoids(inside, B, cells)
+    assert search._obstructions_to_check[(B, cells)] is kept
+
+
+def test_unsatisfied_returns_the_lists_it_checked():
+    lists = tuple((GriddedPerm.point_perm(cell),) for cell in (A, B, C))
+    gridded_perm = GriddedPerm((0, 1), (A, B))
+    assert GriddedPermSearch._unsatisfied(gridded_perm, frozenset(), lists) == (
+        [2],
+        frozenset({0, 1}),
+    )
+    assert GriddedPermSearch._unsatisfied(gridded_perm, frozenset({0}), lists) == (
+        [2],
+        frozenset({0, 1}),
+    )
+
+
+def test_search_remembers_the_lists_a_rest_satisfies(monkeypatch):
+    seen, original = [], GriddedPermSearch._unsatisfied
+
+    def recorded(gridded_perm, satisfied, lists):
+        seen.append(satisfied)
+        return original(gridded_perm, satisfied, lists)
+
+    monkeypatch.setattr(GriddedPermSearch, "_unsatisfied", staticmethod(recorded))
+    lists = ((GriddedPerm.point_perm(A),), (GriddedPerm.point_perm(B),))
+    assert GriddedPermSearch((), lists).find() is not None
+    assert seen == [frozenset(), frozenset({0}), frozenset({0, 1})]
+
+
+def test_the_lists_and_each_list_are_sorted():
+    point = GriddedPerm.point_perm(A)
+    decreasing = GriddedPerm((1, 0), (A, A))
+    increasing = GriddedPerm((0, 1, 2), (A,) * 3)
+    across, longer_across = GriddedPerm((0, 1), (A, B)), GriddedPerm(
+        (0, 1, 2), (A, B, B)
+    )
+    search = GriddedPermSearch(
+        (), ((across,), (point,), (longer_across,), (increasing, decreasing))
+    )
+    assert search.requirements == (
+        (decreasing, increasing),
+        (point,),
+        (longer_across,),
+        (across,),
+    )
+
+
+def test_each_list_is_sorted_by_length_alone():
+    """GriddedPerm's own order puts the shorter first, so only gridded perms of one
+    length tell a sort by length from a sort by that order."""
+    first = GriddedPerm((1, 0), (C, C))
+    second = GriddedPerm((0, 1), (A, A))
+    longer = GriddedPerm((0, 1, 2), (A, A, A))
+    search = GriddedPermSearch([], [[longer, first, second]])
+    assert search.requirements == ((first, second, longer),)
+
+
+def test_bounding_box_is_get_bounding_box():
+    rng = random.Random(0)
+    for _ in range(200):
+        gridded_perm = random_gridded_perm(rng, rng.randint(0, 6), 3, 3)
+        for cell in product(range(4), range(4)):
+            assert _bounding_box(gridded_perm, cell) == gridded_perm.get_bounding_box(
+                cell
+            )
+
+
 # The cells (0, 0) and (1, 0) cannot both hold a point, and the first list needs a
 # point in one, the last in the other: each list can be placed alone, but these two
-# lists together cannot (round 2's hunt, 101:607).
+# lists together cannot, and the first pass, which places the lists in turn, fails
+# only at the last list, for each way of placing the two between them.
 TWO_CELLS_NOT_BOTH = (
     (
         GriddedPerm((0, 1), (A, B)),
@@ -296,7 +478,7 @@ TWO_CELLS_NOT_BOTH = (
 )
 # The first gridded perm of the first list cannot be placed with the third list,
 # by the two obstructions in a chain, and many gridded perms of the other two
-# lists can be placed between them (round 2's hunt, 102:264).
+# lists can be placed between them.
 A_CHAIN_OF_OBSTRUCTIONS = (
     (GriddedPerm((0, 1, 2), (A, C, C)), GriddedPerm((1, 2, 0), (B, B, C))),
     (
@@ -308,47 +490,50 @@ A_CHAIN_OF_OBSTRUCTIONS = (
 )
 
 
-def test_find_pairs_of_lists(monkeypatch):
-    """Each list can be placed alone, and each pair of lists but the first and the
-    last has a gridded perm; with no first pass, the pairs find that the tiling has
-    none."""
-    obstructions, requirements = TWO_CELLS_NOT_BOTH
-    search = GriddedPermSearch(obstructions, requirements)
-    for reqlist in requirements:
-        assert search._can_place(GriddedPerm.empty_perm(), reqlist)
-    for first, second in combinations(requirements, 2):
-        found = search._find((first, second))
-        if (first, second) == (requirements[0], requirements[-1]):
-            assert found is None
-        else:
-            assert is_gridded_perm_on(found, obstructions, (first, second))
-    searched = []
-
-    def search_recorded(self, lists, budget, look_ahead):
-        searched.append((len(lists), look_ahead))
-        return original(self, lists, budget, look_ahead)
-
-    original = GriddedPermSearch._search
-    monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", 0)
-    monkeypatch.setattr(GriddedPermSearch, "_search", search_recorded)
-    assert GriddedPermSearch(obstructions, requirements).find() is None
-    assert (4, True) not in searched
-
-
 @pytest.mark.timeout(1)
 @pytest.mark.parametrize(
     "tiling, empty",
     [(TWO_CELLS_NOT_BOTH, True), (A_CHAIN_OF_OBSTRUCTIONS, False)],
     ids=["two cells not both", "a chain of obstructions"],
 )
-def test_find_past_the_first_pass(tiling, empty):
-    """Without the pairs and the look-aheads, the search takes about a second on
-    each under PyPy, and with them a few milliseconds."""
+def test_find_past_the_first_pass(tiling, empty, monkeypatch):
+    """Each goes past the first pass, to the searches with the look-aheads, which
+    decide it in a few milliseconds."""
     obstructions, requirements = tiling
+    searched = searches_recorded(monkeypatch)
     found = GriddedPermSearch(obstructions, requirements).find()
     assert (found is None) == empty
     assert empty or is_gridded_perm_on(found, obstructions, requirements)
+    assert any(look_ahead for _, _, look_ahead in searched)
     assert Tiling(obstructions, requirements).is_empty() == empty
+
+
+def test_look_aheads_cut_the_search():
+    """With the lists in their own order, the look-aheads drop each rest whose
+    first gridded perm of the first list rules out the third list, and the search
+    takes a few dozen states; without them, it takes tens of thousands."""
+    obstructions, requirements = A_CHAIN_OF_OBSTRUCTIONS
+    search = GriddedPermSearch(obstructions, requirements)
+    assert search._search(search.requirements, 100, look_ahead=True) is not None
+    with pytest.raises(_OverBudget):
+        search._search(search.requirements, 10_000, look_ahead=False)
+
+
+def test_dropped_counts_a_dead_end():
+    obstructions, requirements = A_CHAIN_OF_OBSTRUCTIONS
+    search = GriddedPermSearch(obstructions, requirements)
+    first = requirements[0][0]
+    assert not search._dropped(first, [requirements[1], requirements[2]])
+    assert not search._dead_ends
+    # The dead ends of placing the list alone, and the rest dropped for it.
+    assert search._dropped(first, [requirements[1], requirements[3]])
+    assert list(search._dead_ends) == [requirements[3]]
+    # A list closed out, which no gridded perm on the tiling can hold.
+    obstructions = (GriddedPerm((0, 1), (A, B)), GriddedPerm((1, 0), (A, B)))
+    in_b = (GriddedPerm.point_perm(B),)
+    search = GriddedPermSearch(obstructions, ((GriddedPerm.point_perm(A),), in_b))
+    assert search._dropped(GriddedPerm.point_perm(A), [in_b])
+    assert search._dead_ends == {in_b: 1}
 
 
 def test_can_place():
@@ -368,13 +553,15 @@ def test_closed_out():
     requirements = ((GriddedPerm.point_perm(A),), (GriddedPerm.point_perm(B),))
     in_a, in_b = requirements
     search = GriddedPermSearch(obstructions, requirements)
-    assert search._closed_out(GriddedPerm.point_perm(A), [in_b])
-    assert not search._closed_out(GriddedPerm.point_perm(A), [])
-    assert not search._closed_out(GriddedPerm.empty_perm(), [in_a, in_b])
-    assert not search._closed_out(GriddedPerm((0, 1), (A, A)), [in_a])
+    assert search._closed_out(GriddedPerm.point_perm(A), [in_b]) == in_b
+    # A list closed out after one that is not.
+    assert search._closed_out(GriddedPerm.point_perm(A), [in_a, in_b]) == in_b
+    assert search._closed_out(GriddedPerm.point_perm(A), []) is None
+    assert search._closed_out(GriddedPerm.empty_perm(), [in_a, in_b]) is None
+    assert search._closed_out(GriddedPerm((0, 1), (A, A)), [in_a]) is None
     # A list closed out in one of its gridded perms only.
     in_b_or_c = (GriddedPerm.point_perm(B), GriddedPerm.point_perm(C))
-    assert not search._closed_out(GriddedPerm.point_perm(A), [in_b_or_c])
+    assert search._closed_out(GriddedPerm.point_perm(A), [in_b_or_c]) is None
     assert search.find() is None
     assert GriddedPermSearch(obstructions, (in_a, in_b_or_c)).find() is not None
 
@@ -387,11 +574,132 @@ def test_closed_out_a_cell_with_the_points_the_list_needs(monkeypatch):
     requirements = ((GriddedPerm.point_perm(A),), across)
     search = GriddedPermSearch(obstructions, requirements)
     assert not search._takes_a_point(GriddedPerm.point_perm(A), A)
-    assert not search._closed_out(GriddedPerm.point_perm(A), [across])
+    assert search._closed_out(GriddedPerm.point_perm(A), [across]) is None
     two_in_a = (GriddedPerm((0, 1), (A, A)),)
-    assert search._closed_out(GriddedPerm.point_perm(A), [two_in_a])
+    assert search._closed_out(GriddedPerm.point_perm(A), [two_in_a]) == two_in_a
     monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", 0)
     assert GriddedPermSearch(obstructions, requirements).find() == across[0]
+
+
+def three_lists_that_cannot_all_hold(cells_above, joined=False):
+    """The cells (0, 0), (1, 0) and (2, 0), a point required in each, and every
+    order of a point in each an obstruction: each pair of the three lists has a
+    gridded perm, and the three do not. Beside them, cells in a row above, each
+    needing 01. If joined, each cell above is joined to (0, 0) by an obstruction
+    that needs two points in (0, 0), which no gridded perm the search makes has."""
+    obstructions = tuple(
+        GriddedPerm(patt, (A, B, C)) for patt in permutations(range(3))
+    )
+    above = [(3 + column, 1) for column in range(cells_above)]
+    if joined:
+        obstructions += tuple(GriddedPerm((0, 1, 2), (A, A, cell)) for cell in above)
+    requirements = tuple((GriddedPerm.point_perm(cell),) for cell in (A, B, C)) + tuple(
+        (GriddedPerm((0, 1), (cell, cell)),) for cell in above
+    )
+    return obstructions, requirements
+
+
+def test_groups():
+    """Two lists are in one group if their cells meet, or an obstruction uses cells
+    of both; not if each of two obstructions uses a cell of one of them and a cell
+    no list uses."""
+    in_a, in_b, in_c = ((GriddedPerm.point_perm(cell),) for cell in (A, B, C))
+    increasing_in_a = (GriddedPerm((0, 1), (A, A)),)
+    lists = (in_a, in_b, in_c, increasing_in_a)
+
+    def groups(obstructions):
+        search = GriddedPermSearch(obstructions, lists)
+        return sorted(search._groups(lists))
+
+    alone = sorted([(in_a, increasing_in_a), (in_b,), (in_c,)])
+    assert groups(()) == alone
+    assert groups((GriddedPerm((0, 1), (A, B)),)) == sorted(
+        [(in_a, in_b, increasing_in_a), (in_c,)]
+    )
+    unused = (0, 1)
+    assert (
+        groups((GriddedPerm((0, 1), (A, unused)), GriddedPerm((1, 0), (unused, B))))
+        == alone
+    )
+
+
+def test_combined():
+    """A gridded perm cut into gridded perms on cells apart, and put together again:
+    each is what the result has in its cells."""
+    rng = random.Random(0)
+    for _ in range(200):
+        gridded_perm = random_gridded_perm(rng, rng.randint(0, 7), 3, 3)
+        cells = sorted(set(gridded_perm.pos))
+        rng.shuffle(cells)
+        cuts = sorted(rng.randint(0, len(cells)) for _ in range(2))
+        parts_cells = [cells[: cuts[0]], cells[cuts[0] : cuts[1]], cells[cuts[1] :]]
+        parts = [gridded_perm.get_gridded_perm_in_cells(part) for part in parts_cells]
+        combined = _combined(parts)
+        assert not combined.contradictory()
+        assert len(combined) == len(gridded_perm)
+        for part, part_cells in zip(parts, parts_cells):
+            assert combined.get_gridded_perm_in_cells(part_cells) == part
+
+
+def test_find_groups_alone(monkeypatch):
+    """The three lists that cannot all hold, and four lists in cells apart from
+    them: past the first pass, the group of the three is searched alone. With one
+    of the obstructions taken out, each group has a gridded perm, and together
+    they make one of the tiling."""
+    obstructions, requirements = three_lists_that_cannot_all_hold(4)
+    searched = searches_recorded(monkeypatch)
+    assert GriddedPermSearch(obstructions, requirements).find() is None
+    points = tuple(sorted(requirements[:3]))
+    assert any(tuple(sorted(lists)) == points for lists, _, _ in searched)
+    obstructions = obstructions[1:]
+    found = GriddedPermSearch(obstructions, requirements).find()
+    assert is_gridded_perm_on(found, obstructions, requirements)
+
+
+@pytest.mark.timeout(1)
+def test_find_with_the_dead_ends_first():
+    """The three lists that cannot all hold, with eight lists above that the
+    search places first, each joined to them by an obstruction: one group. The
+    first pass fails at the last point, for each way of placing the lists above;
+    the searches after it place first the lists that fail."""
+    obstructions, requirements = three_lists_that_cannot_all_hold(8, joined=True)
+    assert GriddedPermSearch(obstructions, requirements).find() is None
+
+
+def test_restarts_double_their_budget(monkeypatch):
+    obstructions, requirements = three_lists_that_cannot_all_hold(8, joined=True)
+    searched = searches_recorded(monkeypatch)
+    assert GriddedPermSearch(obstructions, requirements).find() is None
+    budgets = [budget for _, budget, look_ahead in searched if look_ahead]
+    assert len(budgets) > 1
+    first_pass = GriddedPermSearch._FIRST_PASS_STATES
+    assert budgets == [first_pass * 2 ** (i + 1) for i in range(len(budgets))]
+
+
+def test_dead_ends_put_a_list_first(monkeypatch):
+    """If B has a point, A is monotone; the lists n...21 in A, 12...m in A or in C,
+    and a point in B. The first pass places 12...m in A in every way, and each time
+    fails at the point in B; the search after it places the point first."""
+    obstructions = tuple(
+        GriddedPerm(
+            tuple(p if p < value else p + 1 for p in patt) + (value,), (A, A, A, B)
+        )
+        for patt in ((0, 2, 1), (1, 0, 2), (1, 2, 0), (2, 0, 1))
+        for value in range(4)
+    )
+    in_b = (GriddedPerm.point_perm(B),)
+    requirements = (
+        (GriddedPerm((5, 4, 3, 2, 1, 0), (A,) * 6),),
+        (GriddedPerm((0, 1, 2, 3), (A,) * 4), GriddedPerm((0, 1, 2, 3), (C,) * 4)),
+        in_b,
+    )
+    searched = searches_recorded(monkeypatch)
+    found = GriddedPermSearch(obstructions, requirements).find()
+    assert is_gridded_perm_on(found, obstructions, requirements)
+    first_lists, _, look_ahead = searched[0]
+    assert not look_ahead and first_lists[-1] == in_b
+    later = [lists for lists, _, look_ahead in searched if look_ahead]
+    assert later and later[0][0] == in_b
 
 
 def unique_gridded_perm_tiling(target):
@@ -408,8 +716,8 @@ def unique_gridded_perm_tiling(target):
     for gridded_perm in contained:
         for index in range(len(gridded_perm) + 1):
             for cell in (A, B):
-                if any(c > cell for c in gridded_perm.pos[:index]) or any(
-                    c < cell for c in gridded_perm.pos[index:]
+                if any(other > cell for other in gridded_perm.pos[:index]) or any(
+                    other < cell for other in gridded_perm.pos[index:]
                 ):
                     continue
                 for value in range(len(gridded_perm) + 1):
@@ -424,9 +732,7 @@ def unique_gridded_perm_tiling(target):
 
 def test_find_the_only_gridded_perm():
     """The tiling whose only gridded perm is 516374280 on two cells, its first five
-    points in (0, 0), with lists of one gridded perm each. With these lists in this
-    order, not sorted as Tiling sorts them, develop's minimal_gridded_perms yields
-    nothing; the search finds the gridded perm in each order of the lists."""
+    points in (0, 0), with lists of one gridded perm each, in three orders."""
     target = GriddedPerm((5, 1, 6, 3, 7, 4, 2, 8, 0), (A,) * 5 + (B,) * 4)
     requirements = tuple(
         (GriddedPerm(patt, cells),)
@@ -450,3 +756,18 @@ def test_find_the_only_gridded_perm():
         search.requirements = lists
         assert search.find() == target
     assert not Tiling(obstructions, requirements).is_empty()
+
+
+def test_find_two_lists_that_cannot_both_hold(monkeypatch):
+    """Points in each of three to five cells in a row, and each pair of the cells in
+    turn unable to hold a point each; with no first pass."""
+    monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", 0)
+    for count in (3, 4, 5):
+        cells = [(column, 0) for column in range(count)]
+        requirements = tuple((GriddedPerm.point_perm(cell),) for cell in cells)
+        for first, second in combinations(cells, 2):
+            obstructions = (
+                GriddedPerm((0, 1), (first, second)),
+                GriddedPerm((1, 0), (first, second)),
+            )
+            assert GriddedPermSearch(obstructions, requirements).find() is None
