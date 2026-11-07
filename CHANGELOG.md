@@ -19,9 +19,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 - Required CI coverage for stable PyPy 3.12 alongside PyPy 3.11.
-- `GriddedPermSearch`, whose `find` returns a gridded permutation that avoids
-  the obstructions given and contains a gridded permutation of each requirement
-  list given, or None if there is none.
+- `GriddedPermSearch`, whose `find` returns a gridded permutation, not
+  necessarily minimal, that avoids the obstructions given and contains a gridded
+  permutation of each requirement list given, or None if there is none.
 
 ### Fixed
 - Install the dependencies of PyPy's bundled cffi and HPy packages in tox so

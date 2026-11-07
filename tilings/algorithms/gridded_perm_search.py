@@ -66,19 +66,23 @@ Making it fast
   perms whose next point can go nowhere, or a rest the look-aheads drop for the
   list. A list that keeps failing late is so placed early, and what it rules
   out is then ruled out as the points of the other lists are placed.
-- A dead end also counts, as a dead end of a joined list, for each list that its
-  rest satisfies and that an obstruction joins to the list that met it, as the
-  points of such a list may be what shut that one out (_count_dead_end). Of
-  three lists that cannot all hold, only the last placed meets dead ends, and so
-  the other two go first with it: of lists with as many dead ends, those with
-  the most dead ends of joined lists go first.
+- An obstruction joins two lists if it uses a cell of each. A dead end also
+  counts, as a dead end of a joined list, for each list that its rest satisfies
+  and that an obstruction joins to the list that met it, as the points of such a
+  list may be what shut that one out (_count_dead_end). Of three lists that
+  cannot all hold, only the last placed meets dead ends, and so the other two go
+  first with it: of lists with as many dead ends, those with the most dead ends
+  of joined lists go first. A look-ahead's own search satisfies no list at its
+  rest, so its dead ends count for its list alone; the drop that follows counts
+  for the lists joined to it that the dropped rest satisfies.
 - A list meets dead ends only once a search reaches it, and two more keys order
-  those that have met as many. First those that the most obstructions use, of
-  those the search can make (_ListCells), as a constraint solver tries first a
+  those that have met as many. First those that the most obstructions use,
+  counting only the obstructions all of whose cells the lists use, as the search
+  puts points in no other cell (_ListCells), as a constraint solver tries first a
   variable that the most constraints use; then the one whose longest gridded
   perm is shortest, which tends to be the quickest to place, or to find that it
   cannot be placed. Without the dead ends of joined lists, or without the
-  obstructions, or with the obstructions counted that the search cannot make,
+  obstructions, or with the obstructions counted that use a cell no list uses,
   the order loses on tilings built against it, which this order decides quickly
   (the tests' families).
 - The look-aheads drop a rest that no gridded perm on the tiling contains: one
@@ -116,6 +120,8 @@ RequirementList = Tuple[GriddedPerm, ...]
 # satisfy; and the index of the list being placed, or at a rest of the list last
 # placed.
 State = Tuple[GriddedPerm, Optional[GriddedPerm], Images, FrozenSet[int], int]
+# A placing as a search keeps those it has made: its gridded perm, the requirement
+# being placed in it and its images.
 PlacingKey = Tuple[GriddedPerm, GriddedPerm, Images]
 
 
@@ -153,9 +159,10 @@ def _bounding_box(gridded_perm: GriddedPerm, cell: Cell) -> Tuple[int, int, int,
 def _combined(gridded_perms: Iterable[GriddedPerm]) -> GriddedPerm:
     """Return the gridded perm that puts together gridded perms in cells apart.
 
-    In each column, the points of an earlier gridded perm are left of those of a
-    later one, and in each row below them. Its points in the cells of one of the
-    gridded perms given are that gridded perm."""
+    No two of the gridded perms given may share a cell. In each column, the points
+    of an earlier gridded perm are left of those of a later one, and in each row
+    below them. Its points in the cells of one of the gridded perms given are that
+    gridded perm."""
     points = []
     for part_index, gridded_perm in enumerate(gridded_perms):
         for index, (value, (column, row)) in enumerate(gridded_perm):
@@ -217,10 +224,11 @@ class _ListCells:
         return cells
 
     def degree(self, requirement_list: RequirementList) -> int:
-        """Return the number of obstructions the search can make that use the list.
+        """Return the number of obstructions that use a cell of the list.
 
-        That is, that use a cell of the list. An obstruction that uses a cell no list
-        uses never occurs, as the search puts points only in the cells of the lists."""
+        Only the obstructions all of whose cells the lists use are counted: the
+        search puts points only in the cells of the lists, so it never makes an
+        occurrence of any other."""
         degree = self._degrees.get(requirement_list)
         if degree is None:
             if self._cells_of_lists is None:
@@ -252,12 +260,15 @@ class GriddedPermSearch:
     Which gridded perm it finds can depend on the order of the obstructions and
     of the lists, but whether it finds one does not. Deciding whether a tiling
     has a gridded perm can take time exponential in the size of the tiling, and
-    so can the search. The module's docstring says how it works, and why it
+    so can the search. The order in which it places the lists is a heuristic, and
+    on tilings built against it the search can be much slower than
+    MinimalGriddedPerms. The module's docstring says how it works, and why it
     finds a gridded perm when there is one.
 
     Examples:
-        A point in each of two cells side by side: in either order; with 10 across
-        the cells an obstruction, as 01; with 01 an obstruction too, in none.
+        Two lists, a point in each of two cells side by side. The search finds the
+        two points in some order. With 10 across the cells an obstruction, it finds
+        01, and with 01 an obstruction too, it finds nothing.
 
         >>> left = GriddedPerm.point_perm((0, 0))
         >>> right = GriddedPerm.point_perm((1, 0))
@@ -352,7 +363,8 @@ class GriddedPermSearch:
         The gridded perm need not be minimal.
 
         Examples:
-            01 and 10 in one cell, in three points; with 10 an obstruction, in none.
+            Lists of 01 and of 10 in one cell: the search finds both in three
+            points. With 10 an obstruction, it finds nothing.
 
             >>> increasing = GriddedPerm((0, 1), ((0, 0), (0, 0)))
             >>> decreasing = GriddedPerm((1, 0), ((0, 0), (0, 0)))
@@ -442,11 +454,10 @@ class GriddedPermSearch:
     ) -> Tuple[RequirementList, ...]:
         """Return the lists, those with the most dead ends so far first.
 
-        Of lists with as many, those with the most dead ends of the lists joined to
-        them go first, then those that the most obstructions use
-        (_ListCells.degree), then
-        the one whose longest gridded perm is shortest. Lists alike in all four keep
-        their order."""
+        Of lists with as many dead ends, those with the most dead ends of the lists
+        joined to them go first, then those that the most obstructions use
+        (_ListCells.degree), then the one whose longest gridded perm is shortest.
+        Lists alike in all four keys keep their order."""
         return tuple(
             sorted(
                 lists,
@@ -689,12 +700,11 @@ class GriddedPermSearch:
 
         Two lists are in one group if their cells meet, or an obstruction uses cells
         of both. The lists have a gridded perm if and only if each group does. The
-        groups come smallest first, by the sum over their lists
-        of the length of each list's longest gridded perm, which bounds the length
-        of a minimal gridded perm, as Tiling.maximum_length_of_minimum_gridded_perm
-        does for a tiling; groups as small keep the order of their first lists. A
-        group with no gridded perm decides the search, and a small one is decided
-        soonest.
+        groups come smallest first, by the sum over their lists of the length of
+        each list's longest gridded perm, which bounds the length of a minimal
+        gridded perm, as Tiling.maximum_length_of_minimum_gridded_perm does for a
+        tiling; groups as small keep the order of their first lists. A group with no
+        gridded perm decides the search, and a small one is decided soonest.
 
         Every point the search puts into a gridded perm is a point of a requirement,
         in that point's cell, so a gridded perm found for a group has its points in
@@ -762,7 +772,7 @@ class GriddedPermSearch:
         that no gridded perm on the tiling containing it satisfies: a list that needs
         more points in a cell than any such gridded perm has there (_closed_out), or
         that cannot be placed in the gridded perm alone. A gridded perm on the tiling
-        that contains it contains such a placing, by the class's argument with that
+        that contains it contains such a placing, by the module's argument with that
         list only. The list meets a dead end, which is counted (_count_dead_end)."""
         unsatisfied_lists = [lists[list_index] for list_index in unsatisfied]
         dropped_for = self._closed_out(gridded_perm, unsatisfied_lists)
