@@ -40,11 +40,13 @@ class _OverBudget(Exception):
 
 
 def _bounding_box(gridded_perm: GriddedPerm, cell: Cell) -> Tuple[int, int, int, int]:
-    """Return the least and the most index, and the least and the most value, that
-    a point inserted into the cell of the gridded perm can have, as
-    GriddedPerm.get_bounding_box does. This counts them in one pass over the
-    positions, where get_bounding_box makes lists of the points in the cell's row
-    and column and on each side of them, which costs a search more."""
+    """Return the bounds of a point inserted into the cell of the gridded perm.
+
+    They are the least and the most index, and the least and the most value, that
+    the point can have, as GriddedPerm.get_bounding_box gives them. This counts
+    them in one pass over the positions, where get_bounding_box makes lists of the
+    points in the cell's row and column and on each side of them, which costs a
+    search more."""
     x, y = cell
     left = in_column = below = in_row = 0
     for column, row in gridded_perm.pos:
@@ -60,10 +62,11 @@ def _bounding_box(gridded_perm: GriddedPerm, cell: Cell) -> Tuple[int, int, int,
 
 
 def _combined(gridded_perms: Iterable[GriddedPerm]) -> GriddedPerm:
-    """The gridded perm made of the points of the gridded perms given, whose cells
-    are apart: in each column, the points of an earlier gridded perm are left of
-    those of a later one, and in each row below them. Its points in the cells of one
-    of the gridded perms given are that gridded perm."""
+    """Return the gridded perm that puts together gridded perms in cells apart.
+
+    In each column, the points of an earlier gridded perm are left of those of a
+    later one, and in each row below them. Its points in the cells of one of the
+    gridded perms given are that gridded perm."""
     points = []
     for part_index, gridded_perm in enumerate(gridded_perms):
         for index, (value, (column, row)) in enumerate(gridded_perm):
@@ -80,12 +83,21 @@ class GriddedPermSearch:
     """A search for one gridded perm on a tiling, by its obstructions and lists.
 
     The gridded perm found avoids every obstruction and satisfies every
-    requirement list, that is, contains a gridded perm of it; find returns None if
-    there is none. Tiling.is_empty asks it whether there is one.
+    requirement list, that is, contains a gridded perm of the list, any one; find
+    returns None if there is none. Tiling.is_empty asks it whether there is one.
     MinimalGriddedPerms lists the minimal gridded perms of a tiling; this search
-    stops at the first gridded perm it finds, of any length.
+    stops at the first gridded perm it finds, of any length. The attribute
+    requirements holds the lists in the order the search places them.
+
+    Which gridded perm it finds can depend on the order of the obstructions and
+    of the lists, but whether it finds one does not. Deciding whether a tiling
+    has a gridded perm can take time exponential in the size of the tiling, and
+    so can the search.
 
     Examples:
+        A point in each of two cells side by side: in either order; with 10 across
+        the cells an obstruction, as 01; with 01 an obstruction too, in none.
+
         >>> left = GriddedPerm.point_perm((0, 0))
         >>> right = GriddedPerm.point_perm((1, 0))
         >>> lists = [[left], [right]]
@@ -98,10 +110,19 @@ class GriddedPermSearch:
         >>> GriddedPermSearch([increasing, decreasing], lists).find() is None
         True
 
-    Which gridded perm it finds can depend on the order of the obstructions and
-    of the lists, but whether it finds one does not.
-    Deciding whether a tiling has a gridded perm can take time exponential in the
-    size of the tiling, and so can the search.
+        A list is satisfied by any one of its gridded perms:
+
+        >>> GriddedPermSearch([increasing], [[increasing, decreasing]]).find()
+        GriddedPerm((1, 0), ((0, 0), (1, 0)))
+
+        Tiling.is_empty asks it of the tiling's obstructions and lists:
+
+        >>> from tilings import Tiling
+        >>> tiling = Tiling([decreasing], lists)
+        >>> GriddedPermSearch(tiling.obstructions, tiling.requirements).find()
+        GriddedPerm((0, 1), ((0, 0), (1, 0)))
+        >>> tiling.is_empty()
+        False
 
     The search
     ----------
@@ -253,6 +274,8 @@ class GriddedPermSearch:
         The gridded perm need not be minimal.
 
         Examples:
+            01 and 10 in one cell, in three points; with 10 an obstruction, in none.
+
             >>> increasing = GriddedPerm((0, 1), ((0, 0), (0, 0)))
             >>> decreasing = GriddedPerm((1, 0), ((0, 0), (0, 0)))
             >>> lists = [[increasing], [decreasing]]
@@ -260,6 +283,14 @@ class GriddedPermSearch:
             GriddedPerm((1, 0, 2), ((0, 0), (0, 0), (0, 0)))
             >>> GriddedPermSearch([decreasing], lists).find() is None
             True
+
+            01 in the right cell alone satisfies both lists below, but the search
+            places the first list's point first, and finds three points.
+
+            >>> point = GriddedPerm.point_perm((0, 0))
+            >>> pair = GriddedPerm((0, 1), ((1, 0), (1, 0)))
+            >>> GriddedPermSearch([], [[point, pair], [pair]]).find()
+            GriddedPerm((2, 0, 1), ((0, 0), (1, 0), (1, 0)))
         """
         if self._empty_obstruction:
             return None
@@ -355,10 +386,11 @@ class GriddedPermSearch:
         lists: Tuple[RequirementList, ...],
         satisfied: FrozenSet[int],
     ) -> None:
-        """Count a dead end of the list, met at a rest that satisfies the lists of
-        lists at the indices in satisfied; and count it as a dead end of a joined
-        list for each of those that an obstruction joins to the list, as their points
-        may be what shut it out."""
+        """Count a dead end of the list, and for the joined lists its rest satisfies.
+
+        The rest satisfies the lists of lists at the indices in satisfied. The dead
+        end counts as a dead end of a joined list for each of those that an
+        obstruction joins to the list, as their points may be what shut it out."""
         self._dead_ends[requirement_list] += 1
         joined_cells = self._joined_cells(requirement_list)
         for list_index in satisfied:
@@ -376,8 +408,9 @@ class GriddedPermSearch:
         return cells
 
     def _joined_cells(self, requirement_list: RequirementList) -> FrozenSet[Cell]:
-        """Return the cells that an obstruction uses together with a cell of the
-        list, the list's own among them if an obstruction uses them."""
+        """Return the cells that an obstruction uses with a cell of the list.
+
+        The list's own cells are among them if an obstruction uses them."""
         cells = self._joined_cells_of_list.get(requirement_list)
         if cells is None:
             cells = frozenset(
@@ -390,9 +423,10 @@ class GriddedPermSearch:
         return cells
 
     def _degree(self, requirement_list: RequirementList) -> int:
-        """Return the number of obstructions that use a cell of the list, of those
-        the search can make: an obstruction that uses a cell no list uses never
-        occurs, as the search puts points only in the cells of the lists."""
+        """Return the number of obstructions the search can make that use the list.
+
+        That is, that use a cell of the list. An obstruction that uses a cell no list
+        uses never occurs, as the search puts points only in the cells of the lists."""
         degree = self._degree_of_list.get(requirement_list)
         if degree is None:
             if self._cells_of_lists is None:
@@ -419,13 +453,14 @@ class GriddedPermSearch:
         look_ahead: bool,
         start: Optional[GriddedPerm] = None,
     ) -> Optional[GriddedPerm]:
-        """Search depth first from the rest start, the empty gridded perm if None,
-        placing the lists in their order, with the look-aheads if look_ahead. Return
-        a gridded perm that avoids the obstructions and contains start and a gridded
-        perm of each list, or None if there is none. Raise _OverBudget if it needs
+        """Return a gridded perm that contains start and satisfies the lists, or None.
+
+        The gridded perm also avoids the obstructions. The search is depth first from
+        the rest start, the empty gridded perm if None, and places the lists in their
+        order, with the look-aheads if look_ahead. It raises _OverBudget if it needs
         more than budget states, or, given None, more than the states left to the
-        search under way: so a look-ahead's search takes its states from those of
-        the search it looks ahead for."""
+        search under way: so a look-ahead's search takes its states from those of the
+        search it looks ahead for."""
         if start is None:
             start = GriddedPerm.empty_perm()
         # A budget starts a count of its own, so only a search that is not a
@@ -480,9 +515,11 @@ class GriddedPermSearch:
         rests_made: Set[GriddedPerm],
         placings_made: Set[PlacingKey],
     ) -> Iterator[State]:
-        """The children of a placing that were not made before: a rest when its
-        requirement is placed in full, and otherwise a placing. A placing with no
-        child at all is a dead end of the list it places, and is counted."""
+        """Yield the children of a placing that were not made before.
+
+        A child is a rest when its requirement is placed in full, and otherwise a
+        placing. A placing with no child at all is a dead end of the list it places,
+        and is counted (_count_dead_end)."""
         gridded_perm, requirement, images, satisfied, list_index = state
         assert requirement is not None
         dead_end = True
@@ -505,10 +542,10 @@ class GriddedPermSearch:
     def _children(
         self, gridded_perm: GriddedPerm, requirement: GriddedPerm, images: Images
     ) -> Iterator[Tuple[GriddedPerm, Images]]:
-        """The gridded perm and the images of the placed points after the
-        requirement's next point is placed in the gridded perm: first at the points
-        it can go to, from left to right, then at new points, by index and then by
-        value."""
+        """Yield the gridded perm and images after the requirement's next point.
+
+        The point goes first to the points of the gridded perm it can go to, from left
+        to right, then to new points, by index and then by value."""
         cell, index_left, value_below, value_above = self._window(
             gridded_perm, requirement, images
         )
@@ -529,12 +566,13 @@ class GriddedPermSearch:
         value_below: int,
         value_above: int,
     ) -> Iterator[Tuple[GriddedPerm, int]]:
-        """The gridded perms made by inserting a point into the cell of the gridded
-        perm, right of the point at index_left, and above the point with value
-        value_below and below the point with value value_above, that avoid the
-        obstructions, each with the new point's index. The points left of the new one
-        keep their indices. A point inserted at value value_above goes below the
-        point that had that value, as insert_specific_point moves it up."""
+        """Yield the gridded perm with a point inserted into the cell, in each way.
+
+        The point goes right of the point at index_left, above the point with value
+        value_below and below the point with value value_above, and each gridded perm
+        that avoids the obstructions comes with the new point's index. The points left
+        of the new one keep their indices. A point inserted at value value_above goes
+        below the point that had that value, as insert_specific_point moves it up."""
         least_index, most_index, least_value, most_value = _bounding_box(
             gridded_perm, cell
         )
@@ -551,11 +589,12 @@ class GriddedPermSearch:
     def _window(
         gridded_perm: GriddedPerm, requirement: GriddedPerm, images: Images
     ) -> Tuple[Cell, int, int, int]:
-        """The cell of the requirement's next point; the index of the point of the
-        gridded perm that the requirement's point before it went to, or -1; and the
-        values of the points that the requirement's points below and above it went
-        to, the nearest of each, or -1 and the length of the gridded perm if none
-        did."""
+        """Return where in the gridded perm the requirement's next point can go.
+
+        That is: the cell of the point; the index of the point of the gridded perm that
+        the requirement's point before it went to, or -1; and the values of the points
+        that the requirement's points below and above it went to, the nearest of each,
+        or -1 and the length of the gridded perm if none did."""
         placed = len(images)
         value = requirement.patt[placed]
         value_below, value_above = -1, len(gridded_perm)
@@ -571,11 +610,12 @@ class GriddedPermSearch:
     def _avoids(
         self, gridded_perm: GriddedPerm, cell: Cell, cells: FrozenSet[Cell]
     ) -> bool:
-        """Whether the gridded perm avoids the obstructions, given that it avoids
-        them with one of its points in the cell taken out; cells must be the set of
-        its cells. Only the obstructions that use the cell, and no cell the gridded
-        perm does not, are checked: an occurrence of any other would not use that
-        point."""
+        """Return whether the gridded perm with a new point avoids the obstructions.
+
+        The gridded perm avoids them with one of its points in the cell taken out, the
+        new one, and cells must be the set of its cells. Only the obstructions that use
+        the cell, and no cell the gridded perm does not, are checked: an occurrence of
+        any other would not use that point."""
         obstructions = self._obstructions_to_check.get((cell, cells))
         if obstructions is None:
             obstructions = tuple(
@@ -593,8 +633,10 @@ class GriddedPermSearch:
         return True
 
     def _index_obstructions(self) -> None:
-        """Index the obstructions by the set of cells each uses, and those sets by
-        each of their cells, and note whether an obstruction is the empty perm."""
+        """Index the obstructions by their cells, and note an empty one.
+
+        The obstructions go by the set of cells each uses, and those sets by each of
+        their cells; an obstruction that is the empty perm makes find return None."""
         by_cell_set: DefaultDict[FrozenSet[Cell], List[GriddedPerm]] = defaultdict(list)
         for obstruction in self._obstructions:
             # A gridded perm keeps the frozenset of its cells, which keeps its hash
@@ -613,9 +655,11 @@ class GriddedPermSearch:
     def _groups(
         self, lists: Tuple[RequirementList, ...]
     ) -> List[Tuple[RequirementList, ...]]:
-        """The lists in groups, two lists in one group if their cells meet, or an
-        obstruction uses cells of both. The lists have a gridded perm if and only if
-        each group does. The groups come smallest first, by the sum over their lists
+        """Return the lists in groups that the search can search apart.
+
+        Two lists are in one group if their cells meet, or an obstruction uses cells
+        of both. The lists have a gridded perm if and only if each group does. The
+        groups come smallest first, by the sum over their lists
         of the length of each list's longest gridded perm, which bounds the length
         of a minimal gridded perm, as Tiling.maximum_length_of_minimum_gridded_perm
         does for a tiling; groups as small keep the order of their first lists. A
@@ -660,8 +704,10 @@ class GriddedPermSearch:
         satisfied: FrozenSet[int],
         lists: Tuple[RequirementList, ...],
     ) -> Tuple[List[int], FrozenSet[int]]:
-        """The indices of the lists the gridded perm does not satisfy, and of those
-        it does."""
+        """Return the indices of the lists the gridded perm does not and does satisfy.
+
+        The lists at the indices in satisfied are known to be satisfied, and are not
+        checked."""
         unsatisfied = []
         for list_index, requirement_list in enumerate(lists):
             if list_index in satisfied:
@@ -679,15 +725,15 @@ class GriddedPermSearch:
         unsatisfied: List[int],
         satisfied: FrozenSet[int],
     ) -> bool:
-        """Return whether the look-aheads drop the rest gridded_perm, which satisfies
-        the lists of lists at the indices in satisfied and not those in unsatisfied.
+        """Return whether the look-aheads drop the rest gridded_perm.
 
-        They drop it for a list it does not satisfy that no gridded perm on the
-        tiling containing it satisfies: a list that needs more points in a cell than
-        any such gridded perm has there (_closed_out), or that cannot be placed in
-        the gridded perm alone. A gridded perm on the tiling that contains it
-        contains such a placing, by the class's argument with that list only. The
-        list meets a dead end, which is counted (_count_dead_end)."""
+        The rest satisfies the lists of lists at the indices in satisfied, and not
+        those in unsatisfied. The look-aheads drop it for a list it does not satisfy
+        that no gridded perm on the tiling containing it satisfies: a list that needs
+        more points in a cell than any such gridded perm has there (_closed_out), or
+        that cannot be placed in the gridded perm alone. A gridded perm on the tiling
+        that contains it contains such a placing, by the class's argument with that
+        list only. The list meets a dead end, which is counted (_count_dead_end)."""
         unsatisfied_lists = [lists[list_index] for list_index in unsatisfied]
         dropped_for = self._closed_out(gridded_perm, unsatisfied_lists)
         # Not "or": an empty list, which is always closed out, is falsy.
@@ -708,9 +754,10 @@ class GriddedPermSearch:
     def _can_place(
         self, gridded_perm: GriddedPerm, requirement_list: RequirementList
     ) -> bool:
-        """Whether a gridded perm of the list can be placed in the gridded perm. The
-        search for it takes its states from those left to the search under way, and
-        its dead ends count as the list's."""
+        """Return whether a gridded perm of the list can be placed in the gridded perm.
+
+        The search for it takes its states from those left to the search under way,
+        and its dead ends count as the list's."""
         return (
             self._search(
                 (requirement_list,), budget=None, look_ahead=False, start=gridded_perm
@@ -721,12 +768,14 @@ class GriddedPermSearch:
     def _closed_out(
         self, gridded_perm: GriddedPerm, unsatisfied_lists: List[RequirementList]
     ) -> Optional[RequirementList]:
-        """The first list the gridded perm does not satisfy each of whose gridded
-        perms needs more points in some cell than the gridded perm has there, in a
-        cell where no point can be inserted into the gridded perm; or None. A gridded
-        perm on the tiling that contains the gridded perm, and more points in such a
-        cell, contains it with one of those points too, which is the gridded perm
-        with a point inserted into the cell, and so it contains an obstruction."""
+        """Return the first of the lists that the gridded perm closes out, or None.
+
+        A list is closed out if each of its gridded perms needs more points in some
+        cell than the gridded perm has there, in a cell where no point can be inserted
+        into the gridded perm. A gridded perm on the tiling that contains the gridded
+        perm, and more points in such a cell, contains it with one of those points
+        too, which is the gridded perm with a point inserted into the cell, and so it
+        contains an obstruction."""
         counts = Counter(gridded_perm.pos)
         closed: Dict[Cell, bool] = {}
         for requirement_list in unsatisfied_lists:
@@ -750,10 +799,11 @@ class GriddedPermSearch:
         requirement_counts: Counter[Cell],
         closed: Dict[Cell, bool],
     ) -> bool:
-        """Whether a gridded perm of a list, with requirement_counts points in each
-        cell, needs more points in a cell than the gridded perm, with counts points
-        in each, has there, in a cell where no point can be inserted into the gridded
-        perm. Whether a cell is closed so is kept in closed."""
+        """Return whether a gridded perm of a list needs more points in a closed cell.
+
+        The gridded perm of the list has requirement_counts points in each cell, and
+        the gridded perm counts; a cell is closed if no point can be inserted into the
+        gridded perm there. Whether a cell is closed is kept in closed."""
         for cell, needed in requirement_counts.items():
             if needed > counts[cell]:
                 if cell not in closed:
@@ -763,9 +813,11 @@ class GriddedPermSearch:
         return False
 
     def _takes_a_point(self, gridded_perm: GriddedPerm, cell: Cell) -> bool:
-        """Whether a point can be inserted into the cell of the gridded perm without
-        making an occurrence of an obstruction: anywhere in the cell, as nothing is
-        left of index -1, above the value -1 or below the value len(gridded_perm)."""
+        """Return whether a point can be inserted into the cell of the gridded perm.
+
+        It must make no occurrence of an obstruction, and can go anywhere in the cell,
+        as nothing is left of index -1, above the value -1 or below the value
+        len(gridded_perm)."""
         return any(
             True
             for _ in self._new_points(
