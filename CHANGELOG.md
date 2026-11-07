@@ -78,6 +78,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   side of a line between two columns or two rows) or `"any"`, the last two with
   `max_cells`. The condition, the plan and the children are in
   `tilings.algorithms.reduction`.
+- `GriddedPermSearch`, whose `find` returns a gridded permutation that avoids
+  the obstructions given and contains a gridded permutation of each requirement
+  list given, or None if there is none.
 
 ### Fixed
 
@@ -119,6 +122,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   the children, the plan and the map of the parent's parameters to the reduced
   tiling's. The old `CellReductionConstructor(parameter)` counted nothing: each
   of its methods raised `NotImplementedError`.
+- `Tiling.is_empty` gives the same answers, and is faster on tilings with many
+  requirements: it looks for one gridded permutation on the tiling with
+  `GriddedPermSearch`, where it built minimal gridded permutations, the
+  shortest first, until it had one.
 
 ### Removed
 
