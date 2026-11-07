@@ -1635,9 +1635,9 @@ def test_gridded_perm_search_point_lists_padded_beside_lists_that_cannot_all_hol
     """As test_is_empty_point_lists_joined_to_each_list_that_cannot_all_hold with 28
     point lists, each with 80 padding cells above it: more obstructions use a point
     cell than a cell of the three, but only for the padding cells, where the search
-    puts no point. Given to the search as they are, as a Tiling takes most of a
-    second over so many obstructions; here, beside the builder it shares with the
-    tests of is_empty above."""
+    puts no point. The obstructions and lists go to the search as they are, as a
+    Tiling takes most of a second over so many obstructions, and the test is here,
+    beside the builder it shares with the tests of is_empty above."""
     obstructions, joins, requirements = lists_that_cannot_all_hold_beside_point_lists(
         28, copy_count=6, padding_count=80
     )

@@ -181,6 +181,22 @@ def test_find_against_a_brute_force(first_pass_states, monkeypatch):
     assert 0 < empty < 60
 
 
+def test_find_agrees_with_minimal_gridded_perms_on_the_brute_force_tilings():
+    """MinimalGriddedPerms, whose first gridded perm Tiling.is_empty asked for
+    before, is a second implementation to check the search against, on the brute
+    force's 60 tilings."""
+    empty = 0
+    for obstructions, requirements, _, _ in small_tilings(1, 60):
+        minimal = MinimalGriddedPerms(obstructions, requirements)
+        has_gridded_perm = any(
+            True for _ in minimal.minimal_gridded_perms(yield_non_minimal=True)
+        )
+        empty += not has_gridded_perm
+        found = GriddedPermSearch(obstructions, requirements).find()
+        assert (found is not None) == has_gridded_perm
+    assert 0 < empty < 60
+
+
 def test_find_every_order_of_the_lists():
     """Two cells in a row, four lists, and a gridded perm of eight points: each of
     the 24 orders of the lists finds one."""
@@ -250,11 +266,15 @@ POINT_OR_INCREASING = (
     (GriddedPerm.point_perm((0, 0)), GriddedPerm((0, 1), ((1, 1), (1, 1)))),
     (GriddedPerm.point_perm((0, 1)),),
 )
+
+
 # Every gridded perm with points in both (0, 0) and (0, 1) contains one of these.
 NOT_BOTH_IN_THE_COLUMN = (
     GriddedPerm((0, 1), ((0, 0), (0, 1))),
     GriddedPerm((1, 0), ((0, 1), (0, 0))),
 )
+
+
 # Every gridded perm with points in both (0, 1) and (1, 1) contains one of these.
 NOT_BOTH_IN_THE_ROW = (
     GriddedPerm((0, 1), ((0, 1), (1, 1))),
@@ -494,6 +514,16 @@ def test_each_list_is_sorted_by_length_alone():
     assert search.requirements == ((first, second, longer),)
 
 
+def test_requirements_puts_a_list_across_cells_after_the_single_cell_lists():
+    """A list with a gridded perm across two cells comes after the lists whose gridded
+    perms each lie in one cell, though its other gridded perm is a point: the search's
+    order asks that all of a list's gridded perms lie in one cell, not any."""
+    single = (GriddedPerm.point_perm(LEFT),)
+    mixed = (GriddedPerm.point_perm(RIGHT), GriddedPerm((0, 1), (LEFT, MIDDLE)))
+    assert GriddedPermSearch([], [mixed, single]).requirements == (single, mixed)
+    assert GriddedPermSearch([], [single, mixed]).requirements == (single, mixed)
+
+
 def test_bounding_box_is_get_bounding_box():
     random_source = random.Random(0)
     for _ in range(200):
@@ -526,6 +556,8 @@ TWO_CELLS_NOT_BOTH = (
         (GriddedPerm((1, 2, 0), (MIDDLE, MIDDLE, RIGHT)),),
     ),
 )
+
+
 # The first gridded perm of the first list cannot be placed with the third list,
 # by the two obstructions in a chain, and many gridded perms of the other two
 # lists can be placed between them.
@@ -1024,6 +1056,26 @@ def test_dropped_counts_each_dead_end():
     assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
 
 
+def test_dropped_counts_the_dead_end_for_an_empty_list_not_for_one_before_it():
+    """A rest is dropped for an empty list, which no gridded perm satisfies, though
+    an empty list is falsy: the dead end is the empty list's, and not that of the
+    list before it, which also cannot be placed. That list needs two points in the
+    middle cell, where 01 is an obstruction, but the cell has room for a point in
+    the rest, so the list is not closed out."""
+    two_in_middle = (GriddedPerm((0, 1), (MIDDLE, MIDDLE)),)
+    obstructions = (GriddedPerm((0, 1), (MIDDLE, MIDDLE)),)
+    empty_perm = GriddedPerm.empty_perm()
+    lists = (two_in_middle, ())
+    assert not GriddedPermSearch(obstructions, lists)._can_place(
+        empty_perm, two_in_middle
+    )
+    search = GriddedPermSearch(obstructions, lists)
+    assert search.requirements == lists
+    assert search._closed_out(empty_perm, list(lists)) == ()
+    assert search._dropped(empty_perm, lists, [0, 1], frozenset())
+    assert search._dead_ends == {(): 1}
+
+
 def test_can_place_counts_the_dead_ends_it_meets():
     """The dead ends of a look-ahead's search are its list's: they say the list is
     hard to place, which is what the order of the restarts asks."""
@@ -1304,6 +1356,47 @@ def test_unmade_children_counts_a_dead_end_for_the_joined_lists_it_satisfies():
     assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
 
 
+def test_unmade_children_and_dropped_read_the_lists_they_are_given():
+    """A group (middle, left), in an order a round can give it, the middle list at
+    index 0 placed in a rest that satisfies the left one, at index 1. A dead end of
+    the middle list counts for the left list as a dead end of a joined list, once as
+    a placing with no child and once as a rest dropped for the list."""
+    obstructions = (
+        GriddedPerm((0, 1), (LEFT, MIDDLE)),
+        GriddedPerm((1, 0), (LEFT, MIDDLE)),
+    )
+    group = (IN_MIDDLE, IN_LEFT)
+    search = GriddedPermSearch(obstructions, (IN_LEFT, IN_MIDDLE))
+    assert search.requirements == (IN_LEFT, IN_MIDDLE)
+    shut = (
+        GriddedPerm.point_perm(LEFT),
+        GriddedPerm.point_perm(MIDDLE),
+        (),
+        frozenset({1}),
+        0,
+    )
+    assert list(search._unmade_children(shut, group, set(), set())) == []
+    assert search._dead_ends == {IN_MIDDLE: 1}
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
+    assert search._dropped(GriddedPerm.point_perm(LEFT), group, [0], frozenset({1}))
+    assert search._dead_ends == {IN_MIDDLE: 2}
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 2}
+
+
+def test_can_place_counts_no_dead_end_of_a_joined_list():
+    """The nested search of _can_place knows no list but the one it places, so its
+    dead ends count for that list alone, though the gridded perm it starts from
+    satisfies the left list, which an obstruction joins to the middle one."""
+    obstructions = (
+        GriddedPerm((0, 1), (LEFT, MIDDLE)),
+        GriddedPerm((1, 0), (LEFT, MIDDLE)),
+    )
+    search = GriddedPermSearch(obstructions, (IN_LEFT, IN_MIDDLE))
+    assert not search._can_place(GriddedPerm.point_perm(LEFT), IN_MIDDLE)
+    assert search._dead_ends == {IN_MIDDLE: 1}
+    assert not search._dead_ends_of_joined_lists
+
+
 def test_count_dead_end_counts_it_for_the_joined_lists_its_rest_satisfies():
     """A dead end of the middle list, at a rest that satisfies the left and the
     right lists: an obstruction joins the left cell to the middle one, and none the
@@ -1316,6 +1409,67 @@ def test_count_dead_end_counts_it_for_the_joined_lists_its_rest_satisfies():
     assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
     search._count_dead_end(IN_MIDDLE, lists, frozenset({2}))
     assert search._dead_ends == {IN_MIDDLE: 2}
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
+
+
+def test_count_dead_end_counts_every_joined_list_its_rest_satisfies():
+    """A dead end of the middle list, at a rest that satisfies the lists in the cells
+    either side of it, each joined to it by an obstruction, and one in a cell far
+    off, joined to none: it counts for the first two and not the third."""
+    in_far = (GriddedPerm.point_perm((3, 0)),)
+    lists = (IN_LEFT, IN_MIDDLE, IN_RIGHT, in_far)
+    obstructions = (
+        GriddedPerm((0, 1), (LEFT, MIDDLE)),
+        GriddedPerm((0, 1), (MIDDLE, RIGHT)),
+    )
+    search = GriddedPermSearch(obstructions, lists)
+    assert search.requirements == lists
+    search._count_dead_end(IN_MIDDLE, lists, frozenset({0, 2, 3}))
+    assert search._dead_ends == {IN_MIDDLE: 1}
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1, IN_RIGHT: 1}
+
+
+def test_count_dead_end_adds_to_the_dead_ends_of_joined_lists():
+    """Each dead end of the middle list, at a rest that satisfies the left list, counts
+    once more for the left list, which an obstruction joins to it: the dead ends of
+    joined lists add up as the dead ends of a list do."""
+    lists = (IN_LEFT, IN_MIDDLE)
+    search = GriddedPermSearch((GriddedPerm((0, 1), (LEFT, MIDDLE)),), lists)
+    for expected in (1, 2, 3):
+        search._count_dead_end(IN_MIDDLE, lists, frozenset({0}))
+        assert search._dead_ends == {IN_MIDDLE: expected}
+        assert search._dead_ends_of_joined_lists == {IN_LEFT: expected}
+
+
+def test_count_dead_end_joins_lists_by_an_obstruction_and_not_by_a_shared_cell():
+    """The left list is in the left cell, and the list of a point in the left or the
+    middle cell shares it. A dead end of the second at a rest that satisfies the
+    first counts for the first only if an obstruction uses a cell of the first, here
+    the shared one, with a cell of the second: sharing the cell is not a join."""
+    left_or_middle = IN_LEFT + IN_MIDDLE
+    lists = (IN_LEFT, left_or_middle)
+    # No obstruction at all, and one in the middle cell alone, which the first list
+    # does not use.
+    for obstructions in ((), (GriddedPerm((0, 1), (MIDDLE, MIDDLE)),)):
+        search = GriddedPermSearch(obstructions, lists)
+        search._count_dead_end(left_or_middle, lists, frozenset({0}))
+        assert search._dead_ends == {left_or_middle: 1}
+        assert not search._dead_ends_of_joined_lists
+    # An obstruction in the shared cell joins them.
+    search = GriddedPermSearch((GriddedPerm((1, 0), (LEFT, LEFT)),), lists)
+    search._count_dead_end(left_or_middle, lists, frozenset({0}))
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
+
+
+def test_count_dead_end_reads_the_lists_it_is_given_by_their_indices():
+    """A search of a group is given the group's lists, in the order the round puts
+    them in, not the search's: in the group (middle, left) the index 1 is the left
+    list, which is index 0 in the search."""
+    obstructions = (GriddedPerm((0, 1), (LEFT, MIDDLE)),)
+    search = GriddedPermSearch(obstructions, (IN_LEFT, IN_MIDDLE, IN_RIGHT))
+    assert search.requirements == (IN_LEFT, IN_MIDDLE, IN_RIGHT)
+    search._count_dead_end(IN_MIDDLE, (IN_MIDDLE, IN_LEFT), frozenset({1}))
+    assert search._dead_ends == {IN_MIDDLE: 1}
     assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
 
 
@@ -1340,6 +1494,49 @@ def test_list_cells():
     assert list_cells.obstruction_count(IN_LEFT) == 3
     assert list_cells.obstruction_count(IN_MIDDLE) == 2
     assert list_cells.obstruction_count(left_or_middle) == 3
+
+
+def test_list_cells_keep_what_they_work_out():
+    """The cells, the points in each cell of each gridded perm, the cells joined by an
+    obstruction, the number of obstructions and the cells of all the lists are each
+    worked out for a list once: asked again, after the obstructions they are worked
+    out from are gone, they answer as before."""
+    obstructions = (
+        GriddedPerm((0, 1), (LEFT, MIDDLE)),
+        GriddedPerm((1, 0), (LEFT, LEFT)),
+    )
+    left_or_middle = IN_LEFT + IN_MIDDLE
+    search = GriddedPermSearch(obstructions, (IN_LEFT, left_or_middle))
+    list_cells = search._list_cells
+    cells = list_cells.cells(left_or_middle)
+    cell_counts = list_cells.cell_counts(left_or_middle)
+    joined_cells = list_cells.joined_cells(IN_LEFT)
+    cells_of_lists = list_cells.cells_of_lists()
+    assert cells == {LEFT, MIDDLE} and joined_cells == {LEFT, MIDDLE}
+    assert cell_counts == [{LEFT: 1}, {MIDDLE: 1}]
+    assert cells_of_lists == {LEFT, MIDDLE}
+    assert list_cells.obstruction_count(IN_LEFT) == 2
+    search._obstruction_index.through_cell.clear()
+    assert list_cells.cells(left_or_middle) is cells
+    assert list_cells.cell_counts(left_or_middle) is cell_counts
+    assert list_cells.joined_cells(IN_LEFT) is joined_cells
+    assert list_cells.cells_of_lists() is cells_of_lists
+    assert list_cells.obstruction_count(IN_LEFT) == 2
+
+
+def test_list_cells_count_the_points_of_each_gridded_perm_in_each_cell():
+    """For each gridded perm of a list, in the list's order, the number of its points
+    in each cell: 012 with two points in the left cell and one in the middle one,
+    after a point in the right cell, which is shorter."""
+    two_in_left_one_in_middle = GriddedPerm((0, 1, 2), (LEFT, LEFT, MIDDLE))
+    requirement_list = (GriddedPerm.point_perm(RIGHT), two_in_left_one_in_middle)
+    search = GriddedPermSearch((), (requirement_list, IN_LEFT))
+    assert requirement_list in search.requirements
+    assert search._list_cells.cell_counts(requirement_list) == [
+        {RIGHT: 1},
+        {LEFT: 2, MIDDLE: 1},
+    ]
+    assert search._list_cells.cell_counts(()) == []
 
 
 def test_each_round_orders_the_lists_by_the_dead_ends_so_far(monkeypatch):
@@ -1385,6 +1582,30 @@ def test_ordered_by_dead_ends_breaks_ties_by_each_key_in_turn():
     )
 
 
+def test_ordered_by_dead_ends_puts_each_key_before_the_next():
+    """Five lists given in the reverse of their order. Each two next to each other in
+    it are told apart by the key at that place alone, the later keys the other way.
+    First the list with a dead end of its own, though it is the longest and has no
+    dead end of a joined list. Then the one with dead ends of joined lists, though no
+    obstruction uses it. Then the one two obstructions use, though it is longer than
+    the next. Then the point, before 01."""
+    cells = [(column, 0) for column in range(5)]
+    own = (GriddedPerm((0, 1, 2, 3), (cells[0],) * 4),)
+    joined = (GriddedPerm((0, 1, 2), (cells[1],) * 3),)
+    obstructed = (GriddedPerm((0, 1), (cells[2],) * 2),)
+    point = (GriddedPerm.point_perm(cells[3]),)
+    pair = (GriddedPerm((0, 1), (cells[4],) * 2),)
+    expected = (own, joined, obstructed, point, pair)
+    obstructions = (
+        GriddedPerm((0, 1), (cells[2],) * 2),
+        GriddedPerm((1, 0), (cells[2],) * 2),
+    )
+    search = GriddedPermSearch(obstructions, expected)
+    search._dead_ends[own] = 1
+    search._dead_ends_of_joined_lists[joined] = 2
+    assert search._ordered_by_dead_ends(expected[::-1]) == expected
+
+
 def test_find_twice_starts_the_dead_ends_of_joined_lists_afresh():
     """The second call finds what the first found, after the same dead ends of
     joined lists."""
@@ -1401,10 +1622,10 @@ def test_find_twice_starts_the_dead_ends_of_joined_lists_afresh():
 def test_find_point_lists_joined_to_each_other_beside_lists_that_cannot_all_hold():
     """The three lists that cannot all hold, 01 in one of two cells each, and fifty
     point lists in their row, each two joined by 10, the first also joined to the
-    three's first cell: more obstructions that the search can make use a point cell
-    than a cell of the three. The first pass meets the dead ends of the last of the
-    three at rests that satisfy the other two, which so go first in the rounds,
-    ahead of the point lists."""
+    three's first cell: more obstructions use a point cell than a cell of the three,
+    of those all of whose cells the lists use. The first pass meets the dead ends of
+    the last of the three at rests that satisfy the other two, which so go first in
+    the rounds, ahead of the point lists."""
     pairs = [(LEFT, MIDDLE), (RIGHT, (3, 0)), ((4, 0), (5, 0))]
     cells = [(6 + point, 0) for point in range(50)]
     obstructions = [
@@ -1509,165 +1730,18 @@ def test_find_with_a_list_a_gridded_perm_and_an_obstruction_given_twice(
     assert GriddedPermSearch(obstructions, requirements).find() is None
 
 
-def test_count_dead_end_adds_to_the_dead_ends_of_joined_lists():
-    """Each dead end of the middle list, at a rest that satisfies the left list, counts
-    once more for the left list, which an obstruction joins to it: the dead ends of
-    joined lists add up as the dead ends of a list do."""
-    lists = (IN_LEFT, IN_MIDDLE)
-    search = GriddedPermSearch((GriddedPerm((0, 1), (LEFT, MIDDLE)),), lists)
-    for expected in (1, 2, 3):
-        search._count_dead_end(IN_MIDDLE, lists, frozenset({0}))
-        assert search._dead_ends == {IN_MIDDLE: expected}
-        assert search._dead_ends_of_joined_lists == {IN_LEFT: expected}
-
-
-def test_count_dead_end_joins_lists_by_an_obstruction_and_not_by_a_shared_cell():
-    """The left list is in the left cell, and the list of a point in the left or the
-    middle cell shares it. A dead end of the second at a rest that satisfies the
-    first counts for the first only if an obstruction uses the shared cell, or a
-    cell of the first, with a cell of the second: the shared cell alone is not
-    a join."""
-    left_or_middle = IN_LEFT + IN_MIDDLE
-    lists = (IN_LEFT, left_or_middle)
-    # No obstruction at all, and one in the middle cell alone, which the first list
-    # does not use.
-    for obstructions in ((), (GriddedPerm((0, 1), (MIDDLE, MIDDLE)),)):
-        search = GriddedPermSearch(obstructions, lists)
-        search._count_dead_end(left_or_middle, lists, frozenset({0}))
-        assert search._dead_ends == {left_or_middle: 1}
-        assert not search._dead_ends_of_joined_lists
-    # An obstruction in the shared cell joins them.
-    search = GriddedPermSearch((GriddedPerm((1, 0), (LEFT, LEFT)),), lists)
-    search._count_dead_end(left_or_middle, lists, frozenset({0}))
-    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
-
-
-def test_count_dead_end_reads_the_lists_it_is_given_by_their_indices():
-    """A search of a group is given the group's lists, in the order the round puts
-    them in, not the search's: in the group (middle, left) the index 1 is the left
-    list, which is index 0 in the search."""
-    obstructions = (GriddedPerm((0, 1), (LEFT, MIDDLE)),)
-    search = GriddedPermSearch(obstructions, (IN_LEFT, IN_MIDDLE, IN_RIGHT))
-    assert search.requirements == (IN_LEFT, IN_MIDDLE, IN_RIGHT)
-    search._count_dead_end(IN_MIDDLE, (IN_MIDDLE, IN_LEFT), frozenset({1}))
-    assert search._dead_ends == {IN_MIDDLE: 1}
-    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
-
-
-def test_unmade_children_and_dropped_read_the_lists_they_are_given():
-    """The same group (middle, left), the middle list at index 0 placed in a rest
-    that satisfies the left one, at index 1: a dead end of the middle list, counted
-    for the left list as a dead end of a joined list; once as a placing with no
-    child, once as a rest dropped for the list."""
-    obstructions = (
-        GriddedPerm((0, 1), (LEFT, MIDDLE)),
-        GriddedPerm((1, 0), (LEFT, MIDDLE)),
+def test_find_takes_obstructions_and_lists_that_are_iterators():
+    """Each of the obstructions, the lists and the gridded perms of a list is read
+    once, so that a generator is as good as a tuple, as the types say."""
+    obstructions = (GriddedPerm((1, 0), (LEFT, MIDDLE)),)
+    requirements = (
+        IN_LEFT,
+        (GriddedPerm.point_perm(MIDDLE), GriddedPerm((0, 1), (RIGHT, RIGHT))),
     )
-    group = (IN_MIDDLE, IN_LEFT)
-    search = GriddedPermSearch(obstructions, (IN_LEFT, IN_MIDDLE))
-    assert search.requirements == (IN_LEFT, IN_MIDDLE)
-    shut = (
-        GriddedPerm.point_perm(LEFT),
-        GriddedPerm.point_perm(MIDDLE),
-        (),
-        frozenset({1}),
-        0,
-    )
-    assert list(search._unmade_children(shut, group, set(), set())) == []
-    assert search._dead_ends == {IN_MIDDLE: 1}
-    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
-    assert search._dropped(GriddedPerm.point_perm(LEFT), group, [0], frozenset({1}))
-    assert search._dead_ends == {IN_MIDDLE: 2}
-    assert search._dead_ends_of_joined_lists == {IN_LEFT: 2}
-
-
-def test_can_place_counts_no_dead_end_of_a_joined_list():
-    """The nested search of _can_place knows no list but the one it places, so its
-    dead ends count for that list alone, though the gridded perm it starts from
-    satisfies the left list, which an obstruction joins to the middle one."""
-    obstructions = (
-        GriddedPerm((0, 1), (LEFT, MIDDLE)),
-        GriddedPerm((1, 0), (LEFT, MIDDLE)),
-    )
-    search = GriddedPermSearch(obstructions, (IN_LEFT, IN_MIDDLE))
-    assert not search._can_place(GriddedPerm.point_perm(LEFT), IN_MIDDLE)
-    assert search._dead_ends == {IN_MIDDLE: 1}
-    assert not search._dead_ends_of_joined_lists
-
-
-def test_list_cells_keep_what_they_work_out():
-    """The cells, the cells joined by an obstruction and the number of obstructions
-    are each worked out for a list once: asked again, after the obstructions they are
-    worked out from are gone, they answer as before."""
-    obstructions = (
-        GriddedPerm((0, 1), (LEFT, MIDDLE)),
-        GriddedPerm((1, 0), (LEFT, LEFT)),
-    )
-    left_or_middle = IN_LEFT + IN_MIDDLE
-    search = GriddedPermSearch(obstructions, (IN_LEFT, left_or_middle))
-    list_cells = search._list_cells
-    cells = list_cells.cells(left_or_middle)
-    joined_cells = list_cells.joined_cells(IN_LEFT)
-    assert cells == {LEFT, MIDDLE} and joined_cells == {LEFT, MIDDLE}
-    assert list_cells.obstruction_count(IN_LEFT) == 2
-    search._obstruction_index.through_cell.clear()
-    assert list_cells.cells(left_or_middle) is cells
-    assert list_cells.joined_cells(IN_LEFT) is joined_cells
-    assert list_cells.obstruction_count(IN_LEFT) == 2
-
-
-def test_ordered_by_dead_ends_puts_each_key_before_the_next():
-    """Five lists given in the reverse of their order, each pair next to each other
-    in it told apart by the key at that place alone, the later keys the other way:
-    the list with a dead end of its own, though it is the longest and has no joined
-    dead end; then the one with dead ends of joined lists, though no obstruction uses
-    it; then the one two obstructions use, though it is longer than the next; then
-    the point before 01."""
-    cells = [(column, 0) for column in range(5)]
-    own = (GriddedPerm((0, 1, 2, 3), (cells[0],) * 4),)
-    joined = (GriddedPerm((0, 1, 2), (cells[1],) * 3),)
-    obstructed = (GriddedPerm((0, 1), (cells[2],) * 2),)
-    point = (GriddedPerm.point_perm(cells[3]),)
-    pair = (GriddedPerm((0, 1), (cells[4],) * 2),)
-    expected = (own, joined, obstructed, point, pair)
-    obstructions = (
-        GriddedPerm((0, 1), (cells[2],) * 2),
-        GriddedPerm((1, 0), (cells[2],) * 2),
-    )
-    search = GriddedPermSearch(obstructions, expected)
-    search._dead_ends[own] = 1
-    search._dead_ends_of_joined_lists[joined] = 2
-    assert search._ordered_by_dead_ends(expected[::-1]) == expected
-
-
-def test_find_agrees_with_minimal_gridded_perms_on_the_brute_force_tilings():
-    """The way Tiling.is_empty asked before whether a tiling has a gridded perm, the
-    first of MinimalGriddedPerms, is a second implementation to check the search
-    against."""
-    empty = 0
-    for obstructions, requirements, _, _ in small_tilings(1, 60):
-        minimal = MinimalGriddedPerms(obstructions, requirements)
-        has_gridded_perm = any(
-            True for _ in minimal.minimal_gridded_perms(yield_non_minimal=True)
-        )
-        empty += not has_gridded_perm
-        found = GriddedPermSearch(obstructions, requirements).find()
-        assert (found is not None) == has_gridded_perm
-    assert 0 < empty < 60
-
-
-def test_count_dead_end_counts_every_joined_list_its_rest_satisfies():
-    """A dead end of the middle list, at a rest that satisfies the lists in the cells
-    either side of it, each joined to it by an obstruction, and one in a cell far
-    off, joined to none: it counts for the first two and not the third."""
-    in_far = (GriddedPerm.point_perm((3, 0)),)
-    lists = (IN_LEFT, IN_MIDDLE, IN_RIGHT, in_far)
-    obstructions = (
-        GriddedPerm((0, 1), (LEFT, MIDDLE)),
-        GriddedPerm((0, 1), (MIDDLE, RIGHT)),
-    )
-    search = GriddedPermSearch(obstructions, lists)
-    assert search.requirements == lists
-    search._count_dead_end(IN_MIDDLE, lists, frozenset({0, 2, 3}))
-    assert search._dead_ends == {IN_MIDDLE: 1}
-    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1, IN_RIGHT: 1}
+    expected = GriddedPermSearch(obstructions, requirements).find()
+    assert expected is not None
+    found = GriddedPermSearch(
+        (obstruction for obstruction in obstructions),
+        (iter(requirement_list) for requirement_list in requirements),
+    ).find()
+    assert found == expected
