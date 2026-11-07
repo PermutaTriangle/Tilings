@@ -51,10 +51,12 @@ Making it fast
 - The search is depth first, each state's children made as they are taken, the
   points of gridded_perm before new points.
 - The first pass takes at most _FIRST_PASS_STATES states, with no look-ahead.
-- If it does not finish, the lists are split into groups whose cells are apart
-  and that no obstruction joins, each searched alone, the smallest first
-  (_groups), and the gridded perms found for them put together (_combined). If
-  there are two groups or more, each has a first pass of its own.
+- If it does not finish, the lists are split into groups (_groups). An
+  obstruction joins two lists if it uses a cell of each, and two lists are in one
+  group if their cells meet or an obstruction joins them. Each group is searched
+  alone, the smallest first, and the gridded perms found for the groups are put
+  together (_combined). If there are two groups or more, each has a first pass of
+  its own.
 - Then each group not yet decided is searched in turn with the look-aheads,
   round after round, each round's searches taking twice the states of the
   round before, their look-aheads' states among them. A search that finishes
@@ -66,20 +68,20 @@ Making it fast
   perms whose next point can go nowhere, or a rest the look-aheads drop for the
   list. A list that keeps failing late is so placed early, and what it rules
   out is then ruled out as the points of the other lists are placed.
-- An obstruction joins two lists if it uses a cell of each. A dead end also
-  counts, as a dead end of a joined list, for each list that its rest satisfies
-  and that an obstruction joins to the list that met it, as the points of such a
-  list may be what shut that one out (_count_dead_end). Of three lists that
-  cannot all hold, only the last placed meets dead ends, and so the other two go
-  first with it: of lists with as many dead ends, those with the most dead ends
-  of joined lists go first. A look-ahead's own search satisfies no list at its
-  rest, so its dead ends count for its list alone; the drop that follows counts
-  for the lists joined to it that the dropped rest satisfies.
+- A dead end also counts, as a dead end of a joined list, for each list that its
+  rest satisfies and that an obstruction joins to the list that met it, as the
+  points of such a list may be what shut that one out (_count_dead_end). Of
+  three lists that cannot all hold, only the last placed meets dead ends, and so
+  the other two go first with it: of lists with as many dead ends, those with the
+  most dead ends of joined lists go first. A look-ahead's own search is given its
+  list alone, so it knows no list that its rest satisfies, and its dead ends
+  count for its list alone; the drop that follows counts for the lists joined to
+  it that the dropped rest satisfies.
 - A list meets dead ends only once a search reaches it, and two more keys order
-  those that have met as many. First those that the most obstructions use,
-  counting only the obstructions all of whose cells the lists use, as the search
-  puts points in no other cell (_ListCells), as a constraint solver tries first a
-  variable that the most constraints use; then the one whose longest gridded
+  those that have met as many. First those that the most obstructions use, as a
+  constraint solver tries first a variable that the most constraints use. Only
+  the obstructions all of whose cells the lists use are counted, as the search
+  puts points in no other cell (_ListCells). Then the one whose longest gridded
   perm is shortest, which tends to be the quickest to place, or to find that it
   cannot be placed. Without the dead ends of joined lists, or without the
   obstructions, or with the obstructions counted that use a cell no list uses,
@@ -120,8 +122,8 @@ RequirementList = Tuple[GriddedPerm, ...]
 # satisfy; and the index of the list being placed, or at a rest of the list last
 # placed.
 State = Tuple[GriddedPerm, Optional[GriddedPerm], Images, FrozenSet[int], int]
-# A placing as a search keeps those it has made: its gridded perm, the requirement
-# being placed in it and its images.
+# The key by which a search remembers the placings it has made: a placing's gridded
+# perm, the requirement being placed in it, and its images.
 PlacingKey = Tuple[GriddedPerm, GriddedPerm, Images]
 
 
@@ -178,10 +180,10 @@ def _combined(gridded_perms: Iterable[GriddedPerm]) -> GriddedPerm:
 class _ObstructionIndex:
     """The obstructions, by the cells they use.
 
-    by_cell_set holds the obstructions by the set of cells each uses, and
-    through_cell, for each cell, the sets of cells that hold it, each with the
-    obstructions that use those cells. empty is whether an obstruction is the empty
-    perm, which every gridded perm contains, so that no gridded perm avoids it."""
+    by_cell_set holds the obstructions by the set of cells each uses. through_cell
+    holds, for each cell, the sets of cells that hold it, each with the obstructions
+    that use those cells. empty is whether an obstruction is the empty perm, which
+    every gridded perm contains, so that no gridded perm avoids it."""
 
     def __init__(self, obstructions: Iterable[GriddedPerm]) -> None:
         by_cell_set: DefaultDict[FrozenSet[Cell], List[GriddedPerm]] = defaultdict(list)
@@ -256,11 +258,10 @@ class _ListCells:
         return cells
 
     def obstruction_count(self, requirement_list: RequirementList) -> int:
-        """Return the number of obstructions that use a cell of the list.
+        """Return how many obstructions use the list's cells and only cells of lists.
 
-        Only the obstructions all of whose cells the lists use are counted: the
-        search puts points only in the cells of the lists, so it never makes an
-        occurrence of any other."""
+        The search puts points only in the cells of the lists, so it never makes an
+        occurrence of any other obstruction."""
         count = self._obstruction_counts.get(requirement_list)
         if count is None:
             cells_of_lists = self._all_cells()
@@ -292,12 +293,13 @@ class GriddedPermSearch:
     stops at the first gridded perm it finds, of any length. The attribute
     requirements holds the lists in the order the search places them.
 
-    Which gridded perm it finds can depend on the order of the obstructions and
-    of the lists, but whether it finds one does not. Deciding whether a tiling
-    has a gridded perm can take time exponential in the size of the tiling, and
-    so can the search. The order in which it places the lists is a heuristic, and
-    on tilings built against it the search can be much slower than
-    MinimalGriddedPerms. The module's docstring says how it works, and why it
+    Which gridded perm it finds can depend on the order of the lists, and of the
+    gridded perms in a list, though not on that of the obstructions; whether it
+    finds one does not. Deciding whether a tiling has a gridded perm can take time
+    exponential in the size of the tiling, and so can the search. The order in
+    which it places the lists is a heuristic, and on tilings built against it the
+    search can be much slower than MinimalGriddedPerms. The docstring of its
+    module, tilings.algorithms.gridded_perm_search, says how it works, and why it
     finds a gridded perm when there is one.
 
     Examples:
