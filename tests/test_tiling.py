@@ -1500,6 +1500,107 @@ def test_is_empty_lists_that_cannot_all_hold_joined_to_hard_groups(
 
 
 @pytest.mark.timeout(1)
+def test_is_empty_point_lists_beside_lists_that_cannot_all_hold():
+    """Three lists that cannot all hold, each 01 in one of two cells, and 48 point
+    cells in their row, each with a point and joined to the three's first cell by 10,
+    which no gridded perm of the search has, so that all the lists are one group. No
+    list of a point has a dead end, and neither have two of the three, so the rounds
+    must not place every point before those two."""
+    pairs = [[(0, 0), (1, 0)], [(2, 0), (3, 0)], [(4, 0), (5, 0)]]
+    obstructions = [
+        GriddedPerm(patt, cells)
+        for cells in product(*pairs)
+        for patt in permutations(range(3))
+    ]
+    requirements = [
+        tuple(GriddedPerm((0, 1), (cell, cell)) for cell in pair) for pair in pairs
+    ]
+    joins = []
+    for column in range(6, 6 + 48):
+        cell = (column, 0)
+        obstructions.append(GriddedPerm((0, 1), (cell, cell)))
+        obstructions.append(GriddedPerm((1, 0), (cell, cell)))
+        joins.append(GriddedPerm((1, 0), (pairs[0][0], cell)))
+        requirements.append((GriddedPerm.point_perm(cell),))
+    tiling = Tiling(obstructions + joins, requirements)
+    assert len(tiling.requirements) == 3 + 48
+    assert all(join in tiling.obstructions for join in joins)
+    assert tiling.is_empty()
+
+
+def lists_that_cannot_all_hold_beside_point_lists(points, copies, padding=0):
+    """Three lists that cannot all hold, 01 in one of the first two cells of a row
+    of six, in one of the next two, or in one of the last two, with every order of a
+    point in each pair an obstruction; right of them in the row, cells each with a
+    point required and room for one, each joined to the first cell of each pair by
+    10; right of those, copies of the hard lists with a gridded perm, each in a row
+    of its own above and joined to the first cell by 021 in it and twice in the
+    copy's right cell, which no gridded perm of the search has. Above each point
+    cell, padding cells that no list uses, each joined to it by 01. Return the
+    obstructions and the lists, and the obstructions that join cells."""
+    pairs = [[(0, 0), (1, 0)], [(2, 0), (3, 0)], [(4, 0), (5, 0)]]
+    obstructions = [
+        GriddedPerm(patt, cells)
+        for cells in product(*pairs)
+        for patt in permutations(range(3))
+    ]
+    requirements = [
+        tuple(GriddedPerm((0, 1), (cell, cell)) for cell in pair) for pair in pairs
+    ]
+    joins = []
+    for column in range(6, 6 + points):
+        cell = (column, 0)
+        obstructions.append(GriddedPerm((0, 1), (cell, cell)))
+        obstructions.append(GriddedPerm((1, 0), (cell, cell)))
+        joins += [GriddedPerm((1, 0), (pair[0], cell)) for pair in pairs]
+        joins += [
+            GriddedPerm((0, 1), (cell, (column, 1 + copies + row)))
+            for row in range(padding)
+        ]
+        requirements.append((GriddedPerm.point_perm(cell),))
+    for copy in range(copies):
+        hard_cells = [(6 + points + 3 * copy + column, 1 + copy) for column in range(3)]
+        hard_obstructions, hard_requirements = hard_lists_with_a_gridded_perm(
+            5, 6, hard_cells
+        )
+        obstructions += hard_obstructions
+        joins.append(
+            GriddedPerm((0, 2, 1), (pairs[0][0], hard_cells[2], hard_cells[2]))
+        )
+        requirements += hard_requirements
+    return obstructions + joins, requirements, joins
+
+
+@pytest.mark.timeout(1)
+def test_is_empty_point_lists_joined_to_each_list_that_cannot_all_hold():
+    """Twelve point lists joined to each of the three lists that cannot all hold,
+    beside six copies of the hard lists, which the first pass places first. The
+    rounds' first search places the point lists before the three, and when the
+    three meet their dead ends, the point lists are as joined to them as the three
+    are to each other: the obstructions on their cells must put the three first."""
+    obstructions, requirements, joins = lists_that_cannot_all_hold_beside_point_lists(
+        12, copies=6
+    )
+    tiling = Tiling(obstructions, requirements)
+    assert len(tiling.requirements) == 3 + 12 + 3 * 6
+    assert all(join in tiling.obstructions for join in joins)
+    assert tiling.is_empty()
+
+
+@pytest.mark.timeout(1)
+def test_search_point_lists_with_more_obstructions_than_lists_that_cannot_all_hold():
+    """As test_is_empty_point_lists_joined_to_each_list_that_cannot_all_hold with 24
+    point lists, each with 80 padding cells above it: more obstructions use a point
+    cell than a cell of the three, but none that the search can make. Given to the
+    search as they are, as a Tiling takes most of a second over so many
+    obstructions."""
+    obstructions, requirements, _ = lists_that_cannot_all_hold_beside_point_lists(
+        24, copies=6, padding=80
+    )
+    assert GriddedPermSearch(obstructions, requirements).find() is None
+
+
+@pytest.mark.timeout(1)
 def test_is_empty_01_in_each_cell_of_a_diagonal():
     """24 lists, past the first pass, where the diagonal of twelve point lists
     above is decided by it."""

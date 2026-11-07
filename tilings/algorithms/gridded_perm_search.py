@@ -159,14 +159,26 @@ class GriddedPermSearch:
       round before, their look-aheads' states among them. A search that finishes
       decides its group, and the rounds stop once a group has no gridded perm or
       every group has one, so no group waits for the whole search of another.
-    - Each search starts afresh, and places first the lists that have met the most
-      dead ends so far (_ordered_by_dead_ends). A dead end of a list is a placing of
-      one of its gridded perms whose next point can go nowhere, or a rest the
-      look-aheads drop for the list. A list that keeps failing late is so placed
-      early, and what it rules out is then ruled out as the points of the other
-      lists are placed. A list meets dead ends only once a search reaches it, so of
-      lists with as many, the one whose longest gridded perm is shortest goes
-      first: it is the quickest to place, or to find that it cannot be placed.
+    - Each search of the rounds starts afresh, and places first the lists that have
+      met the most dead ends so far (_ordered_by_dead_ends); the first passes keep
+      the search's order. A dead end of a list is a placing of one of its gridded
+      perms whose next point can go nowhere, or a rest the look-aheads drop for the
+      list. A list that keeps failing late is so placed early, and what it rules
+      out is then ruled out as the points of the other lists are placed.
+    - A dead end also counts, as a dead end of a joined list, for each list that its
+      rest satisfies and that an obstruction joins to the list that met it, as the
+      points of such a list may be what shut that one out (_count_dead_end). Of
+      three lists that cannot all hold, only the last placed meets dead ends, and so
+      the other two go first with it: of lists with as many dead ends, those with
+      the most dead ends of joined lists go first.
+    - A list meets dead ends only once a search reaches it, and two more keys order
+      those that have met as many. First those that the most obstructions use, of
+      those the search can make (_degree), as a constraint solver tries first a
+      variable that the most constraints use; then the one whose longest gridded
+      perm is shortest, which tends to be the quickest to place, or to find that it
+      cannot be placed. Without either of the middle two keys, or with the
+      obstructions counted that the search cannot make, the order loses on tilings
+      built against it, which this order decides quickly (the tests' families).
     - The look-aheads drop a rest that no gridded perm on the tiling contains: one
       with a list it does not satisfy that cannot be placed in it alone, or that
       needs, in each of its gridded perms, more points in a cell than the rest has
@@ -219,6 +231,16 @@ class GriddedPermSearch:
         # The dead ends each list has met: its placings whose next point could go
         # nowhere, and the rests the look-aheads dropped for it.
         self._dead_ends: Counter[RequirementList] = Counter()
+        # For each list, the dead ends that the lists an obstruction joins to it met
+        # at rests that satisfy it.
+        self._joined_dead_ends: Counter[RequirementList] = Counter()
+        # The cells of each list's gridded perms, the cells an obstruction uses with
+        # one of them, and the obstructions the search can make that use one of
+        # them, each worked out once it is needed; and the cells the lists use.
+        self._cells_of_list: Dict[RequirementList, FrozenSet[Cell]] = {}
+        self._joined_cells_of_list: Dict[RequirementList, FrozenSet[Cell]] = {}
+        self._degree_of_list: Dict[RequirementList, int] = {}
+        self._cells_of_lists: Optional[FrozenSet[Cell]] = None
         # The states the search under way may still take, its look-aheads' among
         # them: until a search is given a budget, more than any can take.
         # sys.maxsize, not math.inf, so that it is an int throughout: under PyPy, an
@@ -243,6 +265,7 @@ class GriddedPermSearch:
             return None
         # Each call starts afresh, so that it finds what the call before found.
         self._dead_ends.clear()
+        self._joined_dead_ends.clear()
         return self._find(self.requirements)
 
     def _find(self, lists: Tuple[RequirementList, ...]) -> Optional[GriddedPerm]:
@@ -308,18 +331,86 @@ class GriddedPermSearch:
     def _ordered_by_dead_ends(
         self, lists: Tuple[RequirementList, ...]
     ) -> Tuple[RequirementList, ...]:
-        """The lists with the most dead ends so far first, and of those with as
-        many, the one whose longest gridded perm is shortest. Lists alike in both
-        keep their order."""
+        """Return the lists, those with the most dead ends so far first.
+
+        Of lists with as many, those with the most dead ends of the lists joined to
+        them go first, then those that the most obstructions use (_degree), then
+        the one whose longest gridded perm is shortest. Lists alike in all four keep
+        their order."""
         return tuple(
             sorted(
                 lists,
                 key=lambda requirement_list: (
                     -self._dead_ends[requirement_list],
+                    -self._joined_dead_ends[requirement_list],
+                    -self._degree(requirement_list),
                     _longest(requirement_list),
                 ),
             )
         )
+
+    def _count_dead_end(
+        self,
+        requirement_list: RequirementList,
+        lists: Tuple[RequirementList, ...],
+        satisfied: FrozenSet[int],
+    ) -> None:
+        """Count a dead end of the list, met at a rest that satisfies the lists of
+        lists at the indices in satisfied; and count it as a dead end of a joined
+        list for each of those that an obstruction joins to the list, as their points
+        may be what shut it out."""
+        self._dead_ends[requirement_list] += 1
+        joined_cells = self._joined_cells(requirement_list)
+        for list_index in satisfied:
+            if not self._cells(lists[list_index]).isdisjoint(joined_cells):
+                self._joined_dead_ends[lists[list_index]] += 1
+
+    def _cells(self, requirement_list: RequirementList) -> FrozenSet[Cell]:
+        """Return the cells of the list's gridded perms."""
+        cells = self._cells_of_list.get(requirement_list)
+        if cells is None:
+            cells = frozenset(
+                cell for requirement in requirement_list for cell in requirement.pos
+            )
+            self._cells_of_list[requirement_list] = cells
+        return cells
+
+    def _joined_cells(self, requirement_list: RequirementList) -> FrozenSet[Cell]:
+        """Return the cells that an obstruction uses together with a cell of the
+        list, the list's own among them if an obstruction uses them."""
+        cells = self._joined_cells_of_list.get(requirement_list)
+        if cells is None:
+            cells = frozenset(
+                joined_cell
+                for cell in self._cells(requirement_list)
+                for obstruction_cells, _ in self._obstructions_through_cell[cell]
+                for joined_cell in obstruction_cells
+            )
+            self._joined_cells_of_list[requirement_list] = cells
+        return cells
+
+    def _degree(self, requirement_list: RequirementList) -> int:
+        """Return the number of obstructions that use a cell of the list, of those
+        the search can make: an obstruction that uses a cell no list uses never
+        occurs, as the search puts points only in the cells of the lists."""
+        degree = self._degree_of_list.get(requirement_list)
+        if degree is None:
+            if self._cells_of_lists is None:
+                self._cells_of_lists = frozenset().union(
+                    *map(self._cells, self.requirements)
+                )
+            cells_of_lists = self._cells_of_lists
+            cell_sets = {
+                obstruction_cells
+                for cell in self._cells(requirement_list)
+                for obstruction_cells, _ in self._obstructions_through_cell[cell]
+                if obstruction_cells <= cells_of_lists
+            }
+            degree = sum(
+                len(self._obstructions_by_cell_set[cell_set]) for cell_set in cell_sets
+            )
+            self._degree_of_list[requirement_list] = degree
+        return degree
 
     def _search(
         self,
@@ -368,7 +459,7 @@ class GriddedPermSearch:
             if not unsatisfied:
                 return gridded_perm
             if look_ahead and self._dropped(
-                gridded_perm, [lists[i] for i in unsatisfied]
+                gridded_perm, lists, unsatisfied, satisfied
             ):
                 continue
             # A placing of each gridded perm of the first list not satisfied.
@@ -409,7 +500,7 @@ class GriddedPermSearch:
                     placings_made.add(key)
                     yield child, requirement, child_images, satisfied, list_index
         if dead_end:
-            self._dead_ends[lists[list_index]] += 1
+            self._count_dead_end(lists[list_index], lists, satisfied)
 
     def _children(
         self, gridded_perm: GriddedPerm, requirement: GriddedPerm, images: Images
@@ -582,15 +673,22 @@ class GriddedPermSearch:
         return unsatisfied, satisfied
 
     def _dropped(
-        self, gridded_perm: GriddedPerm, unsatisfied_lists: List[RequirementList]
+        self,
+        gridded_perm: GriddedPerm,
+        lists: Tuple[RequirementList, ...],
+        unsatisfied: List[int],
+        satisfied: FrozenSet[int],
     ) -> bool:
-        """Whether the look-aheads find a list the gridded perm does not satisfy
-        that no gridded perm on the tiling containing it satisfies: a list that
-        needs more points in a cell than any such gridded perm has there
-        (_closed_out), or that cannot be placed in the gridded perm alone. A gridded
-        perm on the tiling that contains it contains such a placing, by the class's
-        argument with that list only. Such a list meets a dead end, which is
-        counted."""
+        """Return whether the look-aheads drop the rest gridded_perm, which satisfies
+        the lists of lists at the indices in satisfied and not those in unsatisfied.
+
+        They drop it for a list it does not satisfy that no gridded perm on the
+        tiling containing it satisfies: a list that needs more points in a cell than
+        any such gridded perm has there (_closed_out), or that cannot be placed in
+        the gridded perm alone. A gridded perm on the tiling that contains it
+        contains such a placing, by the class's argument with that list only. The
+        list meets a dead end, which is counted (_count_dead_end)."""
+        unsatisfied_lists = [lists[list_index] for list_index in unsatisfied]
         dropped_for = self._closed_out(gridded_perm, unsatisfied_lists)
         # Not "or": an empty list, which is always closed out, is falsy.
         if dropped_for is None:
@@ -604,7 +702,7 @@ class GriddedPermSearch:
             )
         if dropped_for is None:
             return False
-        self._dead_ends[dropped_for] += 1
+        self._count_dead_end(dropped_for, lists, satisfied)
         return True
 
     def _can_place(
