@@ -1,3 +1,92 @@
+"""GriddedPermSearch: a search for one gridded perm on a tiling, for Tiling.is_empty.
+
+The class's docstring says what the search finds and how to call it. This one says
+how it works, for those who work on it; the names in parentheses are the class's
+methods and the module's helpers.
+
+The search
+----------
+A rest is a gridded perm that avoids the obstructions. A rest that satisfies
+every list is returned. Any other rest places the first list it does not
+satisfy: it has a placing for each gridded perm of that list.
+
+A placing is a rest gridded_perm, a requirement being placed in it, and images:
+for each of the requirement's leftmost points placed so far, the index of the
+point of gridded_perm it went to. Its children place the requirement's next
+point, at a point of gridded_perm in that point's cell, or at a new point
+inserted into gridded_perm there, if that avoids the obstructions. The point
+goes right of the point that the requirement's point before it went to, above
+the points that the requirement's points below it went to, and below those that
+its points above it went to (_window). When the requirement is placed in full,
+the child is a rest, which satisfies the list placed and every list its parent
+rest did.
+
+A state made before is skipped. That is right in whatever order the states are
+taken, as the children of a state depend on the state alone: on a rest's
+gridded perm, and on a placing's gridded perm, requirement and images. The other
+two things a state keeps, the lists its gridded perm is known to satisfy and the
+list it places, follow from these, as the order of the lists is fixed in a
+search. The search ends: each state has finitely many children, and along a
+path of states, a placing places one point more than its parent, and a rest
+satisfies one list more than the rest before it.
+
+Why it finds a gridded perm when there is one
+---------------------------------------------
+Let G be a gridded perm on the tiling. Say G holds a placing if G has an
+occurrence of its gridded_perm, and an occurrence of its requirement whose first
+len(images) points are the points of the first occurrence at images.
+
+- If G holds a placing, it holds one of its children. The point of G that the
+  requirement's next point is at is a point of G's occurrence of gridded_perm,
+  and so a child reuses that point of gridded_perm; or it is not, and then G
+  contains gridded_perm with that point inserted, which so avoids the
+  obstructions, and is a child.
+- If G contains a rest that does not satisfy every list, G contains a gridded
+  perm of the list the rest places, and so holds one of the rest's placings.
+- G contains the empty gridded perm, the first rest. So from it, the states G
+  holds lead to a rest that satisfies every list.
+
+Making it fast
+--------------
+- The search is depth first, each state's children made as they are taken, the
+  points of gridded_perm before new points.
+- The first pass takes at most _FIRST_PASS_STATES states, with no look-ahead.
+- If it does not finish, the lists are split into groups whose cells are apart
+  and that no obstruction joins, each searched alone, the smallest first
+  (_groups), and the gridded perms found for them put together (_combined). If
+  there are two groups or more, each has a first pass of its own.
+- Then each group not yet decided is searched in turn with the look-aheads,
+  round after round, each round's searches taking twice the states of the
+  round before, their look-aheads' states among them. A search that finishes
+  decides its group, and the rounds stop once a group has no gridded perm or
+  every group has one, so no group waits for the whole search of another.
+- Each search of the rounds starts afresh, and places first the lists that have
+  met the most dead ends so far (_ordered_by_dead_ends); the first passes keep
+  the search's order. A dead end of a list is a placing of one of its gridded
+  perms whose next point can go nowhere, or a rest the look-aheads drop for the
+  list. A list that keeps failing late is so placed early, and what it rules
+  out is then ruled out as the points of the other lists are placed.
+- A dead end also counts, as a dead end of a joined list, for each list that its
+  rest satisfies and that an obstruction joins to the list that met it, as the
+  points of such a list may be what shut that one out (_count_dead_end). Of
+  three lists that cannot all hold, only the last placed meets dead ends, and so
+  the other two go first with it: of lists with as many dead ends, those with
+  the most dead ends of joined lists go first.
+- A list meets dead ends only once a search reaches it, and two more keys order
+  those that have met as many. First those that the most obstructions use, of
+  those the search can make (_ListCells), as a constraint solver tries first a
+  variable that the most constraints use; then the one whose longest gridded
+  perm is shortest, which tends to be the quickest to place, or to find that it
+  cannot be placed. Without the dead ends of joined lists, or without the
+  obstructions, or with the obstructions counted that the search cannot make,
+  the order loses on tilings built against it, which this order decides quickly
+  (the tests' families).
+- The look-aheads drop a rest that no gridded perm on the tiling contains: one
+  with a list it does not satisfy that cannot be placed in it alone, or that
+  needs, in each of its gridded perms, more points in a cell than the rest has
+  there, in a cell where no point can be inserted into the rest (_dropped).
+"""
+
 import sys
 from collections import Counter, defaultdict
 from typing import (
@@ -163,7 +252,8 @@ class GriddedPermSearch:
     Which gridded perm it finds can depend on the order of the obstructions and
     of the lists, but whether it finds one does not. Deciding whether a tiling
     has a gridded perm can take time exponential in the size of the tiling, and
-    so can the search.
+    so can the search. The module's docstring says how it works, and why it
+    finds a gridded perm when there is one.
 
     Examples:
         A point in each of two cells side by side: in either order; with 10 across
@@ -194,88 +284,6 @@ class GriddedPermSearch:
         GriddedPerm((0, 1), ((0, 0), (1, 0)))
         >>> tiling.is_empty()
         False
-
-    The search
-    ----------
-    A rest is a gridded perm that avoids the obstructions. A rest that satisfies
-    every list is returned. Any other rest places the first list it does not
-    satisfy: it has a placing for each gridded perm of that list.
-
-    A placing is a rest gridded_perm, a requirement being placed in it, and images:
-    for each of the requirement's leftmost points placed so far, the index of the
-    point of gridded_perm it went to. Its children place the requirement's next
-    point, at a point of gridded_perm in that point's cell, or at a new point
-    inserted into gridded_perm there, if that avoids the obstructions. The point
-    goes right of the point that the requirement's point before it went to, above
-    the points that the requirement's points below it went to, and below those that
-    its points above it went to (_window). When the requirement is placed in full,
-    the child is a rest, which satisfies the list placed and every list its parent
-    rest did.
-
-    A state made before is skipped. That is right in whatever order the states are
-    taken, as the children of a state depend on the state alone: on a rest's
-    gridded perm, and on a placing's gridded perm, requirement and images. The other
-    two things a state keeps, the lists its gridded perm is known to satisfy and the
-    list it places, follow from these, as the order of the lists is fixed in a
-    search. The search ends: each state has finitely many children, and along a
-    path of states, a placing places one point more than its parent, and a rest
-    satisfies one list more than the rest before it.
-
-    Why it finds a gridded perm when there is one
-    ---------------------------------------------
-    Let G be a gridded perm on the tiling. Say G holds a placing if G has an
-    occurrence of its gridded_perm, and an occurrence of its requirement whose first
-    len(images) points are the points of the first occurrence at images.
-
-    - If G holds a placing, it holds one of its children. The point of G that the
-      requirement's next point is at is a point of G's occurrence of gridded_perm,
-      and so a child reuses that point of gridded_perm; or it is not, and then G
-      contains gridded_perm with that point inserted, which so avoids the
-      obstructions, and is a child.
-    - If G contains a rest that does not satisfy every list, G contains a gridded
-      perm of the list the rest places, and so holds one of the rest's placings.
-    - G contains the empty gridded perm, the first rest. So from it, the states G
-      holds lead to a rest that satisfies every list.
-
-    Making it fast
-    --------------
-    - The search is depth first, each state's children made as they are taken, the
-      points of gridded_perm before new points.
-    - The first pass takes at most _FIRST_PASS_STATES states, with no look-ahead.
-    - If it does not finish, the lists are split into groups whose cells are apart
-      and that no obstruction joins, each searched alone, the smallest first
-      (_groups), and the gridded perms found for them put together (_combined). If
-      there are two groups or more, each has a first pass of its own.
-    - Then each group not yet decided is searched in turn with the look-aheads,
-      round after round, each round's searches taking twice the states of the
-      round before, their look-aheads' states among them. A search that finishes
-      decides its group, and the rounds stop once a group has no gridded perm or
-      every group has one, so no group waits for the whole search of another.
-    - Each search of the rounds starts afresh, and places first the lists that have
-      met the most dead ends so far (_ordered_by_dead_ends); the first passes keep
-      the search's order. A dead end of a list is a placing of one of its gridded
-      perms whose next point can go nowhere, or a rest the look-aheads drop for the
-      list. A list that keeps failing late is so placed early, and what it rules
-      out is then ruled out as the points of the other lists are placed.
-    - A dead end also counts, as a dead end of a joined list, for each list that its
-      rest satisfies and that an obstruction joins to the list that met it, as the
-      points of such a list may be what shut that one out (_count_dead_end). Of
-      three lists that cannot all hold, only the last placed meets dead ends, and so
-      the other two go first with it: of lists with as many dead ends, those with
-      the most dead ends of joined lists go first.
-    - A list meets dead ends only once a search reaches it, and two more keys order
-      those that have met as many. First those that the most obstructions use, of
-      those the search can make (_ListCells), as a constraint solver tries first a
-      variable that the most constraints use; then the one whose longest gridded
-      perm is shortest, which tends to be the quickest to place, or to find that it
-      cannot be placed. Without the dead ends of joined lists, or without the
-      obstructions, or with the obstructions counted that the search cannot make,
-      the order loses on tilings built against it, which this order decides quickly
-      (the tests' families).
-    - The look-aheads drop a rest that no gridded perm on the tiling contains: one
-      with a list it does not satisfy that cannot be placed in it alone, or that
-      needs, in each of its gridded perms, more points in a cell than the rest has
-      there, in a cell where no point can be inserted into the rest (_dropped).
     """
 
     # The states the first pass may take. Most tilings are decided within it, and
