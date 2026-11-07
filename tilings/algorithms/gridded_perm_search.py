@@ -79,6 +79,77 @@ def _combined(gridded_perms: Iterable[GriddedPerm]) -> GriddedPerm:
     )
 
 
+class _ListCells:
+    """The cells of requirement lists, and the obstructions on them.
+
+    Each is worked out for a list once it is needed, as most searches end in the
+    first pass, which needs few of them."""
+
+    def __init__(
+        self,
+        lists: Tuple[RequirementList, ...],
+        obstructions_by_cell_set: Dict[FrozenSet[Cell], List[GriddedPerm]],
+        obstructions_through_cell: DefaultDict[
+            Cell, List[Tuple[FrozenSet[Cell], List[GriddedPerm]]]
+        ],
+    ) -> None:
+        self._lists = lists
+        self._obstructions_by_cell_set = obstructions_by_cell_set
+        self._obstructions_through_cell = obstructions_through_cell
+        self._cells: Dict[RequirementList, FrozenSet[Cell]] = {}
+        self._joined: Dict[RequirementList, FrozenSet[Cell]] = {}
+        self._degrees: Dict[RequirementList, int] = {}
+        # The cells that the lists use, where alone the search puts points.
+        self._cells_of_lists: Optional[FrozenSet[Cell]] = None
+
+    def cells(self, requirement_list: RequirementList) -> FrozenSet[Cell]:
+        """Return the cells of the list's gridded perms."""
+        cells = self._cells.get(requirement_list)
+        if cells is None:
+            cells = frozenset(
+                cell for requirement in requirement_list for cell in requirement.pos
+            )
+            self._cells[requirement_list] = cells
+        return cells
+
+    def joined(self, requirement_list: RequirementList) -> FrozenSet[Cell]:
+        """Return the cells that an obstruction uses with a cell of the list.
+
+        The list's own cells are among them if an obstruction uses them."""
+        cells = self._joined.get(requirement_list)
+        if cells is None:
+            cells = frozenset(
+                joined_cell
+                for cell in self.cells(requirement_list)
+                for obstruction_cells, _ in self._obstructions_through_cell[cell]
+                for joined_cell in obstruction_cells
+            )
+            self._joined[requirement_list] = cells
+        return cells
+
+    def degree(self, requirement_list: RequirementList) -> int:
+        """Return the number of obstructions the search can make that use the list.
+
+        That is, that use a cell of the list. An obstruction that uses a cell no list
+        uses never occurs, as the search puts points only in the cells of the lists."""
+        degree = self._degrees.get(requirement_list)
+        if degree is None:
+            if self._cells_of_lists is None:
+                self._cells_of_lists = frozenset().union(*map(self.cells, self._lists))
+            cells_of_lists = self._cells_of_lists
+            cell_sets = {
+                obstruction_cells
+                for cell in self.cells(requirement_list)
+                for obstruction_cells, _ in self._obstructions_through_cell[cell]
+                if obstruction_cells <= cells_of_lists
+            }
+            degree = sum(
+                len(self._obstructions_by_cell_set[cell_set]) for cell_set in cell_sets
+            )
+            self._degrees[requirement_list] = degree
+        return degree
+
+
 class GriddedPermSearch:
     """A search for one gridded perm on a tiling, by its obstructions and lists.
 
@@ -194,7 +265,7 @@ class GriddedPermSearch:
       the most dead ends of joined lists go first.
     - A list meets dead ends only once a search reaches it, and two more keys order
       those that have met as many. First those that the most obstructions use, of
-      those the search can make (_degree), as a constraint solver tries first a
+      those the search can make (_ListCells), as a constraint solver tries first a
       variable that the most constraints use; then the one whose longest gridded
       perm is shortest, which tends to be the quickest to place, or to find that it
       cannot be placed. Without either of the middle two keys, or with the
@@ -255,13 +326,11 @@ class GriddedPermSearch:
         # For each list, the dead ends that the lists an obstruction joins to it met
         # at rests that satisfy it.
         self._joined_dead_ends: Counter[RequirementList] = Counter()
-        # The cells of each list's gridded perms, the cells an obstruction uses with
-        # one of them, and the obstructions the search can make that use one of
-        # them, each worked out once it is needed; and the cells the lists use.
-        self._cells_of_list: Dict[RequirementList, FrozenSet[Cell]] = {}
-        self._joined_cells_of_list: Dict[RequirementList, FrozenSet[Cell]] = {}
-        self._degree_of_list: Dict[RequirementList, int] = {}
-        self._cells_of_lists: Optional[FrozenSet[Cell]] = None
+        self._list_cells = _ListCells(
+            self.requirements,
+            self._obstructions_by_cell_set,
+            self._obstructions_through_cell,
+        )
         # The states the search under way may still take, its look-aheads' among
         # them: until a search is given a budget, more than any can take.
         # sys.maxsize, not math.inf, so that it is an int throughout: under PyPy, an
@@ -365,7 +434,8 @@ class GriddedPermSearch:
         """Return the lists, those with the most dead ends so far first.
 
         Of lists with as many, those with the most dead ends of the lists joined to
-        them go first, then those that the most obstructions use (_degree), then
+        them go first, then those that the most obstructions use
+        (_ListCells.degree), then
         the one whose longest gridded perm is shortest. Lists alike in all four keep
         their order."""
         return tuple(
@@ -374,7 +444,7 @@ class GriddedPermSearch:
                 key=lambda requirement_list: (
                     -self._dead_ends[requirement_list],
                     -self._joined_dead_ends[requirement_list],
-                    -self._degree(requirement_list),
+                    -self._list_cells.degree(requirement_list),
                     _longest(requirement_list),
                 ),
             )
@@ -392,59 +462,10 @@ class GriddedPermSearch:
         end counts as a dead end of a joined list for each of those that an
         obstruction joins to the list, as their points may be what shut it out."""
         self._dead_ends[requirement_list] += 1
-        joined_cells = self._joined_cells(requirement_list)
+        joined_cells = self._list_cells.joined(requirement_list)
         for list_index in satisfied:
-            if not self._cells(lists[list_index]).isdisjoint(joined_cells):
+            if not self._list_cells.cells(lists[list_index]).isdisjoint(joined_cells):
                 self._joined_dead_ends[lists[list_index]] += 1
-
-    def _cells(self, requirement_list: RequirementList) -> FrozenSet[Cell]:
-        """Return the cells of the list's gridded perms."""
-        cells = self._cells_of_list.get(requirement_list)
-        if cells is None:
-            cells = frozenset(
-                cell for requirement in requirement_list for cell in requirement.pos
-            )
-            self._cells_of_list[requirement_list] = cells
-        return cells
-
-    def _joined_cells(self, requirement_list: RequirementList) -> FrozenSet[Cell]:
-        """Return the cells that an obstruction uses with a cell of the list.
-
-        The list's own cells are among them if an obstruction uses them."""
-        cells = self._joined_cells_of_list.get(requirement_list)
-        if cells is None:
-            cells = frozenset(
-                joined_cell
-                for cell in self._cells(requirement_list)
-                for obstruction_cells, _ in self._obstructions_through_cell[cell]
-                for joined_cell in obstruction_cells
-            )
-            self._joined_cells_of_list[requirement_list] = cells
-        return cells
-
-    def _degree(self, requirement_list: RequirementList) -> int:
-        """Return the number of obstructions the search can make that use the list.
-
-        That is, that use a cell of the list. An obstruction that uses a cell no list
-        uses never occurs, as the search puts points only in the cells of the lists."""
-        degree = self._degree_of_list.get(requirement_list)
-        if degree is None:
-            if self._cells_of_lists is None:
-                self._cells_of_lists = frozenset().union(
-                    *map(self._cells, self.requirements)
-                )
-            cells_of_lists = self._cells_of_lists
-            cell_sets = {
-                obstruction_cells
-                for cell in self._cells(requirement_list)
-                for obstruction_cells, _ in self._obstructions_through_cell[cell]
-                if obstruction_cells <= cells_of_lists
-            }
-            degree = sum(
-                len(self._obstructions_by_cell_set[cell_set]) for cell_set in cell_sets
-            )
-            self._degree_of_list[requirement_list] = degree
-        return degree
 
     def _search(
         self,

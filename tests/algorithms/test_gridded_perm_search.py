@@ -1302,24 +1302,27 @@ def test_count_dead_end_counts_it_for_the_joined_lists_its_rest_satisfies():
     assert search._joined_dead_ends == {IN_LEFT: 1}
 
 
-def test_joined_cells_and_degree():
-    """The left cell is joined to the middle one by 01, to itself by 10 in it, and
-    to the cell above it by 012, which no list uses: so the search can make 01 and
-    10, and not 012. A list in the left or the middle cell counts 01 once."""
+def test_list_cells():
+    """The left cell is joined to the middle one by 01 and 10 across them, to itself
+    by 10 in it, and to the cell above it by 012, which no list uses: so the search
+    can make the first three, and not 012. A list in the left or the middle cell
+    counts each of 01 and 10 across once."""
     above_left = (0, 1)
     obstructions = (
         GriddedPerm((0, 1), (LEFT, MIDDLE)),
+        GriddedPerm((1, 0), (LEFT, MIDDLE)),
         GriddedPerm((1, 0), (LEFT, LEFT)),
         GriddedPerm((0, 1, 2), (LEFT, LEFT, above_left)),
     )
     left_or_middle = IN_LEFT + IN_MIDDLE
     search = GriddedPermSearch(obstructions, (IN_LEFT, IN_MIDDLE, left_or_middle))
-    assert search._cells(left_or_middle) == {LEFT, MIDDLE}
-    assert search._joined_cells(IN_LEFT) == {LEFT, MIDDLE, above_left}
-    assert search._joined_cells(IN_MIDDLE) == {LEFT, MIDDLE}
-    assert search._degree(IN_LEFT) == 2
-    assert search._degree(IN_MIDDLE) == 1
-    assert search._degree(left_or_middle) == 2
+    list_cells = search._list_cells
+    assert list_cells.cells(left_or_middle) == {LEFT, MIDDLE}
+    assert list_cells.joined(IN_LEFT) == {LEFT, MIDDLE, above_left}
+    assert list_cells.joined(IN_MIDDLE) == {LEFT, MIDDLE}
+    assert list_cells.degree(IN_LEFT) == 3
+    assert list_cells.degree(IN_MIDDLE) == 2
+    assert list_cells.degree(left_or_middle) == 3
 
 
 def test_ordered_by_dead_ends_breaks_ties_by_each_key_in_turn():
