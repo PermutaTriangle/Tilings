@@ -268,9 +268,10 @@ class GriddedPermSearch:
       those the search can make (_ListCells), as a constraint solver tries first a
       variable that the most constraints use; then the one whose longest gridded
       perm is shortest, which tends to be the quickest to place, or to find that it
-      cannot be placed. Without either of the middle two keys, or with the
-      obstructions counted that the search cannot make, the order loses on tilings
-      built against it, which this order decides quickly (the tests' families).
+      cannot be placed. Without the dead ends of joined lists, or without the
+      obstructions, or with the obstructions counted that the search cannot make,
+      the order loses on tilings built against it, which this order decides quickly
+      (the tests' families).
     - The look-aheads drop a rest that no gridded perm on the tiling contains: one
       with a list it does not satisfy that cannot be placed in it alone, or that
       needs, in each of its gridded perms, more points in a cell than the rest has
