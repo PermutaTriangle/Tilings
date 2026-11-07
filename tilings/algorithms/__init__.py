@@ -3,6 +3,7 @@ from .factor import Factor, FactorWithInterleaving, FactorWithMonotoneInterleavi
 from .fusion import ComponentFusion, Fusion
 from .gridded_perm_generation import GriddedPermsOnTiling
 from .gridded_perm_reduction import GriddedPermReduction
+from .gridded_perm_search import GriddedPermSearch
 from .guess_obstructions import guess_obstructions
 from .map import RowColMap
 from .minimal_gridded_perms import MinimalGriddedPerms
@@ -32,6 +33,7 @@ __all__ = [
     "ObstructionTransitivity",
     "GriddedPermsOnTiling",
     "GriddedPermReduction",
+    "GriddedPermSearch",
     "RequirementPlacement",
     "RowColSeparation",
     "RowColMap",
