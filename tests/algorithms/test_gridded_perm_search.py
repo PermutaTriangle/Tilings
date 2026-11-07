@@ -47,14 +47,14 @@ def gridded_perms_on_a_grid(length, columns, rows):
     columns and rows."""
     columns_of_indices = list(combinations_with_replacement(range(columns), length))
     rows_of_values = list(combinations_with_replacement(range(rows), length))
-    for patt in Perm.of_length(length):
+    for pattern in Perm.of_length(length):
         for column_of_index in columns_of_indices:
             for row_of_value in rows_of_values:
                 yield GriddedPerm(
-                    patt,
+                    pattern,
                     tuple(
                         (column_of_index[index], row_of_value[value])
-                        for index, value in enumerate(patt)
+                        for index, value in enumerate(pattern)
                     ),
                 )
 
@@ -73,16 +73,16 @@ def has_gridded_perm_by_brute_force(obstructions, requirements, columns, rows):
     )
 
 
-def random_gridded_perm(rng, length, columns, rows):
-    patt = list(range(length))
-    rng.shuffle(patt)
-    column_of_index = sorted(rng.randrange(columns) for _ in range(length))
-    row_of_value = sorted(rng.randrange(rows) for _ in range(length))
+def random_gridded_perm(random_source, length, columns, rows):
+    pattern = list(range(length))
+    random_source.shuffle(pattern)
+    column_of_index = sorted(random_source.randrange(columns) for _ in range(length))
+    row_of_value = sorted(random_source.randrange(rows) for _ in range(length))
     return GriddedPerm(
-        patt,
+        pattern,
         tuple(
             (column_of_index[index], row_of_value[value])
-            for index, value in enumerate(patt)
+            for index, value in enumerate(pattern)
         ),
     )
 
@@ -92,20 +92,24 @@ def small_tilings(seed, count):
     three lists of one or two gridded perms of one to three points, no more than
     five points in a minimal gridded perm, and up to three obstructions of two or
     three points."""
-    rng = random.Random(seed)
+    random_source = random.Random(seed)
     made = 0
     while made < count:
-        columns, rows = rng.choice([(1, 1), (2, 1), (1, 2), (2, 2), (3, 1)])
+        columns, rows = random_source.choice([(1, 1), (2, 1), (1, 2), (2, 2), (3, 1)])
         obstructions = tuple(
-            random_gridded_perm(rng, rng.randint(2, 3), columns, rows)
-            for _ in range(rng.randint(0, 3))
+            random_gridded_perm(
+                random_source, random_source.randint(2, 3), columns, rows
+            )
+            for _ in range(random_source.randint(0, 3))
         )
         requirements = tuple(
             tuple(
-                random_gridded_perm(rng, rng.randint(1, 3), columns, rows)
-                for _ in range(rng.randint(1, 2))
+                random_gridded_perm(
+                    random_source, random_source.randint(1, 3), columns, rows
+                )
+                for _ in range(random_source.randint(1, 2))
             )
-            for _ in range(rng.randint(2, 3))
+            for _ in range(random_source.randint(2, 3))
         )
         if (
             sum(max(map(len, requirement_list)) for requirement_list in requirements)
@@ -204,14 +208,14 @@ def test_find_every_order_of_the_lists():
 
 def orders_in_a_row(length):
     cells = tuple((column, 0) for column in range(length))
-    return cells, [GriddedPerm(patt, cells) for patt in Perm.of_length(length)]
+    return cells, [GriddedPerm(pattern, cells) for pattern in Perm.of_length(length)]
 
 
 def orders_in_a_column(length):
     cells = tuple((0, row) for row in range(length))
     return cells, [
-        GriddedPerm(patt, tuple(cells[value] for value in patt))
-        for patt in Perm.of_length(length)
+        GriddedPerm(pattern, tuple(cells[value] for value in pattern))
+        for pattern in Perm.of_length(length)
     ]
 
 
@@ -491,9 +495,11 @@ def test_each_list_is_sorted_by_length_alone():
 
 
 def test_bounding_box_is_get_bounding_box():
-    rng = random.Random(0)
+    random_source = random.Random(0)
     for _ in range(200):
-        gridded_perm = random_gridded_perm(rng, rng.randint(0, 6), 3, 3)
+        gridded_perm = random_gridded_perm(
+            random_source, random_source.randint(0, 6), 3, 3
+        )
         for cell in product(range(4), range(4)):
             assert _bounding_box(gridded_perm, cell) == gridded_perm.get_bounding_box(
                 cell
@@ -658,7 +664,8 @@ def three_lists_that_cannot_all_hold(cells_above, joined=False):
     needing 01. If joined, each cell above is joined to (0, 0) by an obstruction
     that needs two points in (0, 0), which no gridded perm the search makes has."""
     obstructions = tuple(
-        GriddedPerm(patt, (LEFT, MIDDLE, RIGHT)) for patt in permutations(range(3))
+        GriddedPerm(pattern, (LEFT, MIDDLE, RIGHT))
+        for pattern in permutations(range(3))
     )
     above = [(3 + column, 1) for column in range(cells_above)]
     if joined:
@@ -721,12 +728,14 @@ def test_groups_smallest_first():
 def test_combined():
     """A gridded perm cut into gridded perms on cells apart, and put together again:
     each is what the result has in its cells."""
-    rng = random.Random(0)
+    random_source = random.Random(0)
     for _ in range(200):
-        gridded_perm = random_gridded_perm(rng, rng.randint(0, 7), 3, 3)
+        gridded_perm = random_gridded_perm(
+            random_source, random_source.randint(0, 7), 3, 3
+        )
         cells = sorted(set(gridded_perm.pos))
-        rng.shuffle(cells)
-        cuts = sorted(rng.randint(0, len(cells)) for _ in range(2))
+        random_source.shuffle(cells)
+        cuts = sorted(random_source.randint(0, len(cells)) for _ in range(2))
         parts_cells = [cells[: cuts[0]], cells[cuts[0] : cuts[1]], cells[cuts[1] :]]
         parts = [gridded_perm.get_gridded_perm_in_cells(part) for part in parts_cells]
         combined = _combined(parts)
@@ -771,9 +780,9 @@ def three_lists_across_two_cells_that_cannot_all_hold(cells_above):
     pairs = [((0, 0), (1, 0)), ((2, 0), (3, 0)), ((4, 0), (5, 0))]
     above = [(6 + column, 1) for column in range(cells_above)]
     obstructions = tuple(
-        GriddedPerm(patt, cells)
+        GriddedPerm(pattern, cells)
         for cells in product(*pairs)
-        for patt in permutations(range(3))
+        for pattern in permutations(range(3))
     ) + tuple(GriddedPerm((0, 1, 2), ((0, 0), (0, 0), cell)) for cell in above)
     requirements = tuple((GriddedPerm((0, 1), pair),) for pair in pairs) + tuple(
         (GriddedPerm.point_perm(cell),) for cell in above
@@ -802,10 +811,11 @@ def test_dead_ends_put_a_list_first(monkeypatch):
     first."""
     obstructions = tuple(
         GriddedPerm(
-            tuple(p if p < value else p + 1 for p in patt) + (value,),
+            tuple(entry if entry < value else entry + 1 for entry in pattern)
+            + (value,),
             (LEFT, LEFT, LEFT, MIDDLE),
         )
-        for patt in ((0, 2, 1), (1, 0, 2), (1, 2, 0), (2, 0, 1))
+        for pattern in ((0, 2, 1), (1, 0, 2), (1, 2, 0), (2, 0, 1))
         for value in range(4)
     )
     requirements = (
@@ -857,8 +867,8 @@ def test_find_the_only_gridded_perm():
     points in (0, 0), with lists of one gridded perm each, in three orders."""
     target = GriddedPerm((5, 1, 6, 3, 7, 4, 2, 8, 0), (LEFT,) * 5 + (MIDDLE,) * 4)
     requirements = tuple(
-        (GriddedPerm(patt, cells),)
-        for patt, cells in [
+        (GriddedPerm(pattern, cells),)
+        for pattern, cells in [
             ((1, 2, 0), (LEFT, MIDDLE, MIDDLE)),
             ((2, 1, 0), (MIDDLE, MIDDLE, MIDDLE)),
             ((1, 0, 2), (LEFT, LEFT, MIDDLE)),
@@ -1051,8 +1061,8 @@ def test_find_places_the_lists_with_the_most_dead_ends_first(
     longest gridded perm is shortest goes first."""
     monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", 0)
     lists = tuple(
-        (GriddedPerm(patt, (LEFT,) * len(patt)),)
-        for patt in ((0, 1, 2), (0, 1), (1, 0), (0,))
+        (GriddedPerm(pattern, (LEFT,) * len(pattern)),)
+        for pattern in ((0, 1, 2), (0, 1), (1, 0), (0,))
     )
     search = GriddedPermSearch((), lists)
     assert search.requirements == lists
@@ -1146,7 +1156,9 @@ def test_find_stops_at_the_first_group_with_none(monkeypatch):
     is the last."""
     monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", 0)
     cells = (LEFT, MIDDLE, RIGHT)
-    obstructions = tuple(GriddedPerm(patt, cells) for patt in permutations(range(3)))
+    obstructions = tuple(
+        GriddedPerm(pattern, cells) for pattern in permutations(range(3))
+    )
     increasing = tuple((GriddedPerm((0, 1), (cell, cell)),) for cell in cells)
     points_above = tuple(
         (GriddedPerm.point_perm((3 + column, 1)),) for column in range(2)
@@ -1396,12 +1408,14 @@ def test_find_point_lists_joined_to_each_other_beside_lists_that_cannot_all_hold
     pairs = [(LEFT, MIDDLE), (RIGHT, (3, 0)), ((4, 0), (5, 0))]
     cells = [(6 + point, 0) for point in range(50)]
     obstructions = [
-        GriddedPerm(patt, three_cells)
+        GriddedPerm(pattern, three_cells)
         for three_cells in product(*pairs)
-        for patt in permutations(range(3))
+        for pattern in permutations(range(3))
     ]
     obstructions += [
-        GriddedPerm(patt, (cell, cell)) for cell in cells for patt in ((0, 1), (1, 0))
+        GriddedPerm(pattern, (cell, cell))
+        for cell in cells
+        for pattern in ((0, 1), (1, 0))
     ]
     obstructions.append(GriddedPerm((1, 0), (LEFT, cells[0])))
     obstructions += [GriddedPerm((1, 0), pair) for pair in combinations(cells, 2)]
@@ -1461,8 +1475,8 @@ def test_find_places_more_dead_ends_before_a_shorter_list(
     whether a list has any, are compared."""
     monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", 0)
     lists = tuple(
-        (GriddedPerm(patt, (LEFT,) * len(patt)),)
-        for patt in ((0, 1, 2), (0, 1), (1, 0), (0,))
+        (GriddedPerm(pattern, (LEFT,) * len(pattern)),)
+        for pattern in ((0, 1, 2), (0, 1), (1, 0), (0,))
     )
     search = GriddedPermSearch((), lists)
     assert search.requirements == lists
@@ -1633,13 +1647,12 @@ def test_find_agrees_with_minimal_gridded_perms_on_the_brute_force_tilings():
     empty = 0
     for obstructions, requirements, _, _ in small_tilings(1, 60):
         minimal = MinimalGriddedPerms(obstructions, requirements)
-        by_minimal_gridded_perms = not any(
+        has_gridded_perm = any(
             True for _ in minimal.minimal_gridded_perms(yield_non_minimal=True)
         )
-        empty += by_minimal_gridded_perms
-        assert (GriddedPermSearch(obstructions, requirements).find() is None) == (
-            by_minimal_gridded_perms
-        )
+        empty += not has_gridded_perm
+        found = GriddedPermSearch(obstructions, requirements).find()
+        assert (found is not None) == has_gridded_perm
     assert 0 < empty < 60
 
 

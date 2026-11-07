@@ -1334,10 +1334,11 @@ def test_is_empty_a_choice_no_gridded_perm_takes(length):
     left, middle, right = (0, 0), (1, 0), (2, 0)
     obstructions = tuple(
         GriddedPerm(
-            tuple(entry if entry < value else entry + 1 for entry in patt) + (value,),
+            tuple(entry if entry < value else entry + 1 for entry in pattern)
+            + (value,),
             (left, left, left, middle),
         )
-        for patt in ((0, 2, 1), (1, 0, 2), (1, 2, 0), (2, 0, 1))
+        for pattern in ((0, 2, 1), (1, 0, 2), (1, 2, 0), (2, 0, 1))
         for value in range(4)
     )
     requirements = (
@@ -1363,7 +1364,9 @@ def test_is_empty_three_lists_that_cannot_all_hold(cells_above):
     and fails at the third point, for each way of placing them, makes a number of
     gridded perms that grows with each cell above."""
     row = [(0, 0), (1, 0), (2, 0)]
-    obstructions = tuple(GriddedPerm(patt, row) for patt in permutations(range(3)))
+    obstructions = tuple(
+        GriddedPerm(pattern, row) for pattern in permutations(range(3))
+    )
     requirements = tuple((GriddedPerm.point_perm(cell),) for cell in row) + tuple(
         (GriddedPerm((0, 1), ((3 + column, 1),) * 2),) for column in range(cells_above)
     )
@@ -1379,8 +1382,8 @@ def test_is_empty_a_list_whose_gridded_perms_start_alike():
     cell; 012 begins as 10 does."""
     left, right = (0, 0), (1, 0)
     obstructions = tuple(
-        GriddedPerm(patt, (left, left, right))
-        for patt in ((2, 1, 0), (2, 0, 1), (1, 0, 2))
+        GriddedPerm(pattern, (left, left, right))
+        for pattern in ((2, 1, 0), (2, 0, 1), (1, 0, 2))
     )
     requirements = (
         (GriddedPerm.point_perm(right),),
@@ -1441,7 +1444,7 @@ def test_is_empty_an_empty_group_beside_a_hard_one(
         increasing_length, decreasing_length, [(3, 1), (4, 1), (5, 1)]
     )
     obstructions = (
-        tuple(GriddedPerm(patt, row) for patt in permutations(range(3)))
+        tuple(GriddedPerm(pattern, row) for pattern in permutations(range(3)))
         + hard_obstructions
     )
     requirements = (
@@ -1452,34 +1455,38 @@ def test_is_empty_an_empty_group_beside_a_hard_one(
     assert tiling.is_empty()
 
 
-def lists_that_cannot_all_hold(length):
-    """Three lists that cannot all hold, in the first six cells of a row: 12...length
-    in one of the first two cells, in one of the next two, and in one of the last
-    two, with every order of a point in each pair an obstruction. Return the three
-    pairs of cells, the obstructions and the lists."""
+def lists_that_cannot_all_hold(requirement_length):
+    """Three lists that cannot all hold, in the first six cells of a row: 12...L, for
+    L the requirement_length, in one of the first two cells, in one of the next two,
+    and in one of the last two, with every order of a point in each pair an
+    obstruction. Return the three pairs of cells, the obstructions and the lists."""
     pairs = [[(0, 0), (1, 0)], [(2, 0), (3, 0)], [(4, 0), (5, 0)]]
     obstructions = [
-        GriddedPerm(patt, cells)
+        GriddedPerm(pattern, cells)
         for cells in product(*pairs)
-        for patt in permutations(range(3))
+        for pattern in permutations(range(3))
     ]
     requirements = [
-        tuple(GriddedPerm(tuple(range(length)), (cell,) * length) for cell in pair)
+        tuple(
+            GriddedPerm(tuple(range(requirement_length)), (cell,) * requirement_length)
+            for cell in pair
+        )
         for pair in pairs
     ]
     return pairs, obstructions, requirements
 
 
 def hard_groups_joined_to(
-    cell, copies, first_column, increasing_length=5, decreasing_length=6
+    cell, copy_count, first_column, increasing_length=5, decreasing_length=6
 ):
     """Copies of the hard lists with a gridded perm, each in three cells of a row of
     its own above the first, from first_column on, each right of the one before.
     Each is joined to the cell by 021 in it and twice in the copy's right cell,
-    which no gridded perm of the search has. Return the obstructions, the joins and
-    the lists."""
+    which no gridded perm of the search has. The lengths are those of
+    hard_lists_with_a_gridded_perm, 12...5 and 6...21 unless given. Return the
+    obstructions, the joins and the lists."""
     obstructions, joins, requirements = [], [], []
-    for copy in range(copies):
+    for copy in range(copy_count):
         hard_cells = [
             (first_column + 3 * copy + column, 1 + copy) for column in range(3)
         ]
@@ -1494,11 +1501,11 @@ def hard_groups_joined_to(
 
 @pytest.mark.timeout(1)
 @pytest.mark.parametrize(
-    "copies, increasing_length, decreasing_length",
+    "copy_count, increasing_length, decreasing_length",
     [(1, 5, 6), (1, 5, 7), (3, 5, 6), (4, 5, 6)],
 )
 def test_is_empty_lists_that_cannot_all_hold_joined_to_hard_groups(
-    copies, increasing_length, decreasing_length
+    copy_count, increasing_length, decreasing_length
 ):
     """Three lists that cannot all hold: a point in one of the first two cells of a
     row of six, in one of the next two, and in one of the last two, with every
@@ -1515,12 +1522,16 @@ def test_is_empty_lists_that_cannot_all_hold_joined_to_hard_groups(
       before."""
     pairs, obstructions, requirements = lists_that_cannot_all_hold(1)
     hard_obstructions, joins, hard_requirements = hard_groups_joined_to(
-        pairs[0][0], copies, 6, increasing_length, decreasing_length
+        pairs[0][0],
+        copy_count,
+        first_column=6,
+        increasing_length=increasing_length,
+        decreasing_length=decreasing_length,
     )
     tiling = Tiling(
         obstructions + hard_obstructions + joins, requirements + hard_requirements
     )
-    assert len(tiling.requirements) == 3 + 3 * copies
+    assert len(tiling.requirements) == 3 + 3 * copy_count
     assert all(join in tiling.obstructions for join in joins)
     assert tiling.is_empty()
 
@@ -1546,7 +1557,9 @@ def test_is_empty_point_lists_beside_lists_that_cannot_all_hold():
     assert tiling.is_empty()
 
 
-def lists_that_cannot_all_hold_beside_point_lists(point_count, copies, padding_count=0):
+def lists_that_cannot_all_hold_beside_point_lists(
+    point_count, copy_count, padding_count=0
+):
     """The three lists of lists_that_cannot_all_hold(2), and right of them in the row,
     point_count cells, each with a point required and room for one, and each joined
     to the first cell of each pair by 10. Right of those, copies of the hard lists
@@ -1561,12 +1574,12 @@ def lists_that_cannot_all_hold_beside_point_lists(point_count, copies, padding_c
         obstructions.append(GriddedPerm((1, 0), (cell, cell)))
         joins += [GriddedPerm((1, 0), (pair[0], cell)) for pair in pairs]
         joins += [
-            GriddedPerm((0, 1), (cell, (column, 1 + copies + row)))
+            GriddedPerm((0, 1), (cell, (column, 1 + copy_count + row)))
             for row in range(padding_count)
         ]
         requirements.append((GriddedPerm.point_perm(cell),))
     hard_obstructions, hard_joins, hard_requirements = hard_groups_joined_to(
-        pairs[0][0], copies, 6 + point_count
+        pairs[0][0], copy_count, first_column=6 + point_count
     )
     return (
         obstructions + hard_obstructions,
@@ -1583,7 +1596,7 @@ def test_is_empty_point_lists_joined_to_each_list_that_cannot_all_hold():
     three meet their dead ends, the point lists are as joined to them as the three
     are to each other: the obstructions on their cells must put the three first."""
     obstructions, joins, requirements = lists_that_cannot_all_hold_beside_point_lists(
-        12, copies=6
+        12, copy_count=6
     )
     tiling = Tiling(obstructions + joins, requirements)
     assert len(tiling.requirements) == 3 + 12 + 3 * 6
@@ -1599,12 +1612,14 @@ def test_is_empty_point_lists_beside_lists_that_can_all_hold():
     can hold, with each of their points below the next's, and the search finds a
     gridded perm of the tiling, which is checked here and not by the search."""
     obstructions, joins, requirements = lists_that_cannot_all_hold_beside_point_lists(
-        12, copies=6
+        12, copy_count=6
     )
     open_triple = GriddedPerm((0, 1, 2), ((0, 0), (2, 0), (4, 0)))
     assert open_triple in obstructions
     tiling = Tiling(
-        [ob for ob in obstructions if ob != open_triple] + joins, requirements
+        [obstruction for obstruction in obstructions if obstruction != open_triple]
+        + joins,
+        requirements,
     )
     assert len(tiling.requirements) == 3 + 12 + 3 * 6
     found = GriddedPermSearch(tiling.obstructions, tiling.requirements).find()
@@ -1624,7 +1639,7 @@ def test_gridded_perm_search_point_lists_padded_beside_lists_that_cannot_all_hol
     second over so many obstructions; here, beside the builder it shares with the
     tests of is_empty above."""
     obstructions, joins, requirements = lists_that_cannot_all_hold_beside_point_lists(
-        28, copies=6, padding_count=80
+        28, copy_count=6, padding_count=80
     )
     assert GriddedPermSearch(obstructions + joins, requirements).find() is None
 

@@ -182,8 +182,9 @@ class _ObstructionIndex:
 
     by_cell_set holds the obstructions by the set of cells each uses. through_cell
     holds, for each cell, the sets of cells that hold it, each with the obstructions
-    that use those cells. empty is whether an obstruction is the empty perm, which
-    every gridded perm contains, so that no gridded perm avoids it."""
+    that use those cells. has_empty_obstruction is whether an obstruction is the
+    empty perm, which every gridded perm contains, so that no gridded perm avoids
+    it."""
 
     def __init__(self, obstructions: Iterable[GriddedPerm]) -> None:
         by_cell_set: DefaultDict[FrozenSet[Cell], List[GriddedPerm]] = defaultdict(list)
@@ -201,7 +202,7 @@ class _ObstructionIndex:
                 through_cell[cell].append((obstruction_cells, obstructions_there))
         self.by_cell_set = by_cell_set
         self.through_cell = through_cell
-        self.empty = frozenset() in by_cell_set
+        self.has_empty_obstruction = frozenset() in by_cell_set
 
 
 class _ListCells:
@@ -264,19 +265,21 @@ class _ListCells:
         occurrence of any other obstruction."""
         count = self._obstruction_counts.get(requirement_list)
         if count is None:
-            cells_of_lists = self._all_cells()
-            index = self._obstruction_index
+            cells_of_lists = self.cells_of_lists()
+            obstruction_index = self._obstruction_index
             cell_sets = {
                 obstruction_cells
                 for cell in self.cells(requirement_list)
-                for obstruction_cells, _ in index.through_cell[cell]
+                for obstruction_cells, _ in obstruction_index.through_cell[cell]
                 if obstruction_cells <= cells_of_lists
             }
-            count = sum(len(index.by_cell_set[cell_set]) for cell_set in cell_sets)
+            count = sum(
+                len(obstruction_index.by_cell_set[cell_set]) for cell_set in cell_sets
+            )
             self._obstruction_counts[requirement_list] = count
         return count
 
-    def _all_cells(self) -> FrozenSet[Cell]:
+    def cells_of_lists(self) -> FrozenSet[Cell]:
         """Return the cells that the lists use, where alone the search puts points."""
         if self._cells_of_lists is None:
             self._cells_of_lists = frozenset().union(*map(self.cells, self._lists))
@@ -404,7 +407,7 @@ class GriddedPermSearch:
             >>> GriddedPermSearch([], [[point, pair], [pair]]).find()
             GriddedPerm((2, 0, 1), ((0, 0), (1, 0), (1, 0)))
         """
-        if self._obstruction_index.empty:
+        if self._obstruction_index.has_empty_obstruction:
             return None
         # Each call starts afresh, so that it finds what the call before found.
         self._dead_ends.clear()
