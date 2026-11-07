@@ -1001,12 +1001,12 @@ def test_dropped_counts_each_dead_end():
     assert search._dropped(
         GriddedPerm.point_perm(LEFT), (IN_LEFT, IN_MIDDLE), [1], frozenset()
     )
-    assert search._dead_ends == {IN_MIDDLE: 1} and not search._joined_dead_ends
+    assert search._dead_ends == {IN_MIDDLE: 1} and not search._dead_ends_of_joined_lists
     assert search._dropped(
         GriddedPerm.point_perm(LEFT), (IN_LEFT, IN_MIDDLE), [1], frozenset({0})
     )
     assert search._dead_ends == {IN_MIDDLE: 2}
-    assert search._joined_dead_ends == {IN_LEFT: 1}
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
 
 
 def test_can_place_counts_the_dead_ends_it_meets():
@@ -1284,7 +1284,7 @@ def test_unmade_children_counts_a_dead_end_for_the_joined_lists_it_satisfies():
     )
     assert list(search._unmade_children(shut, lists, set(), set())) == []
     assert search._dead_ends == {IN_MIDDLE: 1}
-    assert search._joined_dead_ends == {IN_LEFT: 1}
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
 
 
 def test_count_dead_end_counts_it_for_the_joined_lists_its_rest_satisfies():
@@ -1296,10 +1296,10 @@ def test_count_dead_end_counts_it_for_the_joined_lists_its_rest_satisfies():
     search = GriddedPermSearch((GriddedPerm((0, 1), (LEFT, MIDDLE)),), lists)
     search._count_dead_end(IN_MIDDLE, lists, frozenset({0, 2}))
     assert search._dead_ends == {IN_MIDDLE: 1}
-    assert search._joined_dead_ends == {IN_LEFT: 1}
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
     search._count_dead_end(IN_MIDDLE, lists, frozenset({2}))
     assert search._dead_ends == {IN_MIDDLE: 2}
-    assert search._joined_dead_ends == {IN_LEFT: 1}
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
 
 
 def test_list_cells():
@@ -1318,11 +1318,11 @@ def test_list_cells():
     search = GriddedPermSearch(obstructions, (IN_LEFT, IN_MIDDLE, left_or_middle))
     list_cells = search._list_cells
     assert list_cells.cells(left_or_middle) == {LEFT, MIDDLE}
-    assert list_cells.joined(IN_LEFT) == {LEFT, MIDDLE, above_left}
-    assert list_cells.joined(IN_MIDDLE) == {LEFT, MIDDLE}
-    assert list_cells.degree(IN_LEFT) == 3
-    assert list_cells.degree(IN_MIDDLE) == 2
-    assert list_cells.degree(left_or_middle) == 3
+    assert list_cells.joined_cells(IN_LEFT) == {LEFT, MIDDLE, above_left}
+    assert list_cells.joined_cells(IN_MIDDLE) == {LEFT, MIDDLE}
+    assert list_cells.obstruction_count(IN_LEFT) == 3
+    assert list_cells.obstruction_count(IN_MIDDLE) == 2
+    assert list_cells.obstruction_count(left_or_middle) == 3
 
 
 def test_each_round_orders_the_lists_by_the_dead_ends_so_far(monkeypatch):
@@ -1356,7 +1356,7 @@ def test_ordered_by_dead_ends_breaks_ties_by_each_key_in_turn():
     lists = (points[4], increasing, points[2], points[1], points[0])
     search = GriddedPermSearch((GriddedPerm((0, 1), (cells[2], cells[2])),), lists)
     search._dead_ends[points[0]] = 1
-    search._joined_dead_ends[points[1]] = 5
+    search._dead_ends_of_joined_lists[points[1]] = 5
     assert search._ordered_by_dead_ends(lists) == (
         points[0],
         points[1],
@@ -1373,9 +1373,9 @@ def test_find_twice_starts_the_dead_ends_of_joined_lists_afresh():
     obstructions = obstructions[1:]
     search = GriddedPermSearch(obstructions, requirements)
     found = search.find()
-    joined_dead_ends = dict(search._joined_dead_ends)
-    assert joined_dead_ends and search.find() == found
-    assert search._joined_dead_ends == joined_dead_ends
+    dead_ends_of_joined_lists = dict(search._dead_ends_of_joined_lists)
+    assert dead_ends_of_joined_lists and search.find() == found
+    assert search._dead_ends_of_joined_lists == dead_ends_of_joined_lists
 
 
 @pytest.mark.timeout(1)
