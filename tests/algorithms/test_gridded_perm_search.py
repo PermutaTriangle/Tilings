@@ -11,7 +11,7 @@ import pytest
 
 from permuta import Perm
 from tilings import GriddedPerm, Tiling
-from tilings.algorithms import GriddedPermSearch
+from tilings.algorithms import GriddedPermSearch, MinimalGriddedPerms
 from tilings.algorithms.gridded_perm_search import _bounding_box, _combined, _OverBudget
 
 # A loop that never ends fails its test, rather than holding up the run.
@@ -24,6 +24,8 @@ IN_LEFT, IN_MIDDLE, IN_RIGHT = (
     (GriddedPerm.point_perm(MIDDLE),),
     (GriddedPerm.point_perm(RIGHT),),
 )
+# How a search that needed more states than its budget ended, in a Search.
+OVER_BUDGET = "over budget"
 
 
 def is_gridded_perm_on(gridded_perm, obstructions, requirements):
@@ -115,7 +117,7 @@ def small_tilings(seed, count):
 
 class Search(NamedTuple):
     """A search that GriddedPermSearch made: its lists, budget and look-ahead, and
-    how it ended, the gridded perm it found, None, or "over budget"."""
+    how it ended, the gridded perm it found, None, or OVER_BUDGET."""
 
     lists: Tuple[Tuple[GriddedPerm, ...], ...]
     budget: Optional[int]
@@ -136,7 +138,7 @@ def searches_recorded(monkeypatch):
         try:
             found = original(self, lists, budget, look_ahead, start)
         except _OverBudget:
-            searches.append(Search(lists, budget, look_ahead, "over budget"))
+            searches.append(Search(lists, budget, look_ahead, OVER_BUDGET))
             raise
         searches.append(Search(lists, budget, look_ahead, found))
         return found
@@ -552,7 +554,7 @@ def test_find_past_the_first_pass(tiling, empty, monkeypatch):
     found = GriddedPermSearch(obstructions, requirements).find()
     assert (found is None) == empty
     assert empty or is_gridded_perm_on(found, obstructions, requirements)
-    assert any(search.look_ahead for search in searches)
+    assert any(recorded.look_ahead for recorded in searches)
     assert Tiling(obstructions, requirements).is_empty() == empty
 
 
@@ -743,7 +745,7 @@ def test_find_groups_alone(monkeypatch):
     searches = searches_recorded(monkeypatch)
     assert GriddedPermSearch(obstructions, requirements).find() is None
     points = tuple(sorted(requirements[:3]))
-    assert any(tuple(sorted(search.lists)) == points for search in searches)
+    assert any(tuple(sorted(recorded.lists)) == points for recorded in searches)
     obstructions = obstructions[1:]
     found = GriddedPermSearch(obstructions, requirements).find()
     assert is_gridded_perm_on(found, obstructions, requirements)
@@ -786,7 +788,7 @@ def test_restarts_double_their_budget(monkeypatch):
     obstructions, requirements = three_lists_across_two_cells_that_cannot_all_hold(6)
     searches = searches_recorded(monkeypatch)
     assert GriddedPermSearch(obstructions, requirements).find() is None
-    budgets = [search.budget for search in searches if search.look_ahead]
+    budgets = [recorded.budget for recorded in searches if recorded.look_ahead]
     assert len(budgets) > 2
     first_pass = GriddedPermSearch._FIRST_PASS_STATES
     assert budgets == [first_pass * 2 ** (i + 1) for i in range(len(budgets))]
@@ -818,7 +820,7 @@ def test_dead_ends_put_a_list_first(monkeypatch):
     found = GriddedPermSearch(obstructions, requirements).find()
     assert is_gridded_perm_on(found, obstructions, requirements)
     assert not searches[0].look_ahead and searches[0].lists[-1] == IN_MIDDLE
-    later = [search.lists for search in searches if search.look_ahead]
+    later = [recorded.lists for recorded in searches if recorded.look_ahead]
     assert later and later[0][0] == IN_MIDDLE
 
 
@@ -929,15 +931,17 @@ def test_groups_are_searched_in_rounds(monkeypatch):
     assert len(search._groups(search.requirements)) == 3
     searches = searches_recorded(monkeypatch)
     assert search.find() is None
-    rounds = [search for search in searches if search.look_ahead]
-    budgets = [search.budget for search in rounds]
+    rounds = [recorded for recorded in searches if recorded.look_ahead]
+    budgets = [recorded.budget for recorded in rounds]
     assert budgets == sorted(budgets)
     assert budgets[:3] == [2, 2, 2]
     # A group by the set of its lists, whose order the rounds can change.
-    groups = [frozenset(search.lists) for search in rounds]
+    groups = [frozenset(recorded.lists) for recorded in rounds]
     assert len(set(groups[:3])) == 3
     decided = [
-        index for index, search in enumerate(rounds) if search.outcome != "over budget"
+        index
+        for index, recorded in enumerate(rounds)
+        if recorded.outcome != OVER_BUDGET
     ]
     for index in decided:
         assert groups[index] not in groups[index + 1 :]
@@ -955,9 +959,10 @@ def test_each_group_has_a_first_pass(monkeypatch):
     first_pass = GriddedPermSearch._FIRST_PASS_STATES
     assert len(searches) == 6
     assert all(
-        search.budget == first_pass and not search.look_ahead for search in searches
+        recorded.budget == first_pass and not recorded.look_ahead
+        for recorded in searches
     )
-    assert searches[0].outcome == "over budget" and searches[-1].outcome is None
+    assert searches[0].outcome == OVER_BUDGET and searches[-1].outcome is None
 
 
 def test_unmade_children_counts_each_dead_end():
@@ -1064,7 +1069,7 @@ def test_find_two_groups_apart_are_searched_alone(monkeypatch):
     lists = ((GriddedPerm.point_perm(LEFT),), (GriddedPerm.point_perm(RIGHT),))
     searches = searches_recorded(monkeypatch)
     assert is_gridded_perm_on(GriddedPermSearch((), lists).find(), (), lists)
-    assert {len(search.lists) for search in searches[1:]} == {1}
+    assert {len(recorded.lists) for recorded in searches[1:]} == {1}
 
 
 def test_restarts_with_no_first_pass_start_at_two_states(monkeypatch):
@@ -1072,7 +1077,7 @@ def test_restarts_with_no_first_pass_start_at_two_states(monkeypatch):
     obstructions, requirements = three_lists_that_cannot_all_hold(2, joined=True)
     searches = searches_recorded(monkeypatch)
     assert GriddedPermSearch(obstructions, requirements).find() is None
-    budgets = [search.budget for search in searches if search.look_ahead]
+    budgets = [recorded.budget for recorded in searches if recorded.look_ahead]
     assert budgets[:3] == [2, 4, 8]
 
 
@@ -1150,7 +1155,7 @@ def test_find_stops_at_the_first_group_with_none(monkeypatch):
     assert GriddedPermSearch(obstructions, increasing + points_above).find() is None
     assert set(searches[-1].lists) == set(increasing)
     assert searches[-1].outcome is None
-    assert all(search.outcome is not None for search in searches[:-1])
+    assert all(recorded.outcome is not None for recorded in searches[:-1])
 
 
 def test_two_groups_each_have_a_first_pass_of_their_own(monkeypatch):
@@ -1166,8 +1171,8 @@ def test_two_groups_each_have_a_first_pass_of_their_own(monkeypatch):
         (len(recorded.lists), recorded.budget, recorded.look_ahead)
         for recorded in searches
     ] == [(2, 3, False), (1, 3, False), (1, 3, False)]
-    assert searches[0].outcome == "over budget"
-    assert all(recorded.outcome != "over budget" for recorded in searches[1:])
+    assert searches[0].outcome == OVER_BUDGET
+    assert all(recorded.outcome != OVER_BUDGET for recorded in searches[1:])
 
 
 def test_a_single_group_has_no_first_pass_of_its_own(monkeypatch):
@@ -1304,8 +1309,8 @@ def test_count_dead_end_counts_it_for_the_joined_lists_its_rest_satisfies():
 
 def test_list_cells():
     """The left cell is joined to the middle one by 01 and 10 across them, to itself
-    by 10 in it, and to the cell above it by 012, which no list uses: so the search
-    can make the first three, and not 012. A list in the left or the middle cell
+    by 10 in it, and to the cell above it by 012: the first three are counted, and
+    not 012, which uses a cell no list uses. A list in the left or the middle cell
     counts each of 01 and 10 across once."""
     above_left = (0, 1)
     obstructions = (
@@ -1335,6 +1340,8 @@ def test_each_round_orders_the_lists_by_the_dead_ends_so_far(monkeypatch):
     orders = []
     original = GriddedPermSearch._search
 
+    # Checked as each search starts: searches_recorded records the searches as they
+    # end, when their dead ends have changed the order.
     def search_checked(self, lists, budget, look_ahead, start=None):
         if look_ahead and start is None:
             orders.append(lists)
@@ -1347,21 +1354,21 @@ def test_each_round_orders_the_lists_by_the_dead_ends_so_far(monkeypatch):
 
 
 def test_ordered_by_dead_ends_breaks_ties_by_each_key_in_turn():
-    """Five lists given in reverse: the one with a dead end of its own first, before
-    one with more dead ends of joined lists; then the one an obstruction uses; then
-    the point before 01."""
+    """Five lists given in the reverse of their order: the one with a dead end of its
+    own first, before one with more dead ends of joined lists; then the one an
+    obstruction uses; then the point before 01."""
     cells = [(column, 0) for column in range(5)]
     points = [(GriddedPerm.point_perm(cell),) for cell in cells]
     increasing = (GriddedPerm((0, 1), (cells[3], cells[3])),)
-    lists = (points[4], increasing, points[2], points[1], points[0])
+    lists = (increasing, points[4], points[2], points[1], points[0])
     search = GriddedPermSearch((GriddedPerm((0, 1), (cells[2], cells[2])),), lists)
     search._dead_ends[points[0]] = 1
     search._dead_ends_of_joined_lists[points[1]] = 5
     assert search._ordered_by_dead_ends(lists) == (
-        points[0],
-        points[1],
-        points[2],
-        points[4],
+        points[0],  # a dead end of its own
+        points[1],  # dead ends of joined lists, and none of its own
+        points[2],  # an obstruction uses its cell
+        points[4],  # alike in the first three keys, and shorter than the 01
         increasing,
     )
 
@@ -1472,8 +1479,8 @@ def test_find_with_a_list_a_gridded_perm_and_an_obstruction_given_twice(
     first_pass_states, monkeypatch
 ):
     """A Tiling keeps none twice, but GriddedPermSearch is given what it is given: the
-    same list twice, a gridded perm twice in a list, an obstruction twice. They share
-    a count of dead ends, and need no more than one of each."""
+    same list twice, a gridded perm twice in a list, an obstruction twice. The search
+    answers as it would with one of each."""
     monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", first_pass_states)
     increasing = GriddedPerm((0, 1), (MIDDLE, MIDDLE))
     below_across = GriddedPerm((0, 1), (LEFT, MIDDLE))
@@ -1486,3 +1493,168 @@ def test_find_with_a_list_a_gridded_perm_and_an_obstruction_given_twice(
     # With the other order forbidden too, a point in each of the two cells cannot be.
     obstructions += (above_across, above_across)
     assert GriddedPermSearch(obstructions, requirements).find() is None
+
+
+def test_count_dead_end_adds_to_the_dead_ends_of_joined_lists():
+    """Each dead end of the middle list, at a rest that satisfies the left list, counts
+    once more for the left list, which an obstruction joins to it: the dead ends of
+    joined lists add up as the dead ends of a list do."""
+    lists = (IN_LEFT, IN_MIDDLE)
+    search = GriddedPermSearch((GriddedPerm((0, 1), (LEFT, MIDDLE)),), lists)
+    for expected in (1, 2, 3):
+        search._count_dead_end(IN_MIDDLE, lists, frozenset({0}))
+        assert search._dead_ends == {IN_MIDDLE: expected}
+        assert search._dead_ends_of_joined_lists == {IN_LEFT: expected}
+
+
+def test_count_dead_end_joins_lists_by_an_obstruction_and_not_by_a_shared_cell():
+    """The left list is in the left cell, and the list of a point in the left or the
+    middle cell shares it. A dead end of the second at a rest that satisfies the
+    first counts for the first only if an obstruction uses the shared cell, or a
+    cell of the first, with a cell of the second: the shared cell alone is not
+    a join."""
+    left_or_middle = IN_LEFT + IN_MIDDLE
+    lists = (IN_LEFT, left_or_middle)
+    # No obstruction at all, and one in the middle cell alone, which the first list
+    # does not use.
+    for obstructions in ((), (GriddedPerm((0, 1), (MIDDLE, MIDDLE)),)):
+        search = GriddedPermSearch(obstructions, lists)
+        search._count_dead_end(left_or_middle, lists, frozenset({0}))
+        assert search._dead_ends == {left_or_middle: 1}
+        assert not search._dead_ends_of_joined_lists
+    # An obstruction in the shared cell joins them.
+    search = GriddedPermSearch((GriddedPerm((1, 0), (LEFT, LEFT)),), lists)
+    search._count_dead_end(left_or_middle, lists, frozenset({0}))
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
+
+
+def test_count_dead_end_reads_the_lists_it_is_given_by_their_indices():
+    """A search of a group is given the group's lists, in the order the round puts
+    them in, not the search's: in the group (middle, left) the index 1 is the left
+    list, which is index 0 in the search."""
+    obstructions = (GriddedPerm((0, 1), (LEFT, MIDDLE)),)
+    search = GriddedPermSearch(obstructions, (IN_LEFT, IN_MIDDLE, IN_RIGHT))
+    assert search.requirements == (IN_LEFT, IN_MIDDLE, IN_RIGHT)
+    search._count_dead_end(IN_MIDDLE, (IN_MIDDLE, IN_LEFT), frozenset({1}))
+    assert search._dead_ends == {IN_MIDDLE: 1}
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
+
+
+def test_unmade_children_and_dropped_read_the_lists_they_are_given():
+    """The same group (middle, left), the middle list at index 0 placed in a rest
+    that satisfies the left one, at index 1: a dead end of the middle list, counted
+    for the left list as a dead end of a joined list; once as a placing with no
+    child, once as a rest dropped for the list."""
+    obstructions = (
+        GriddedPerm((0, 1), (LEFT, MIDDLE)),
+        GriddedPerm((1, 0), (LEFT, MIDDLE)),
+    )
+    group = (IN_MIDDLE, IN_LEFT)
+    search = GriddedPermSearch(obstructions, (IN_LEFT, IN_MIDDLE))
+    assert search.requirements == (IN_LEFT, IN_MIDDLE)
+    shut = (
+        GriddedPerm.point_perm(LEFT),
+        GriddedPerm.point_perm(MIDDLE),
+        (),
+        frozenset({1}),
+        0,
+    )
+    assert list(search._unmade_children(shut, group, set(), set())) == []
+    assert search._dead_ends == {IN_MIDDLE: 1}
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1}
+    assert search._dropped(GriddedPerm.point_perm(LEFT), group, [0], frozenset({1}))
+    assert search._dead_ends == {IN_MIDDLE: 2}
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 2}
+
+
+def test_can_place_counts_no_dead_end_of_a_joined_list():
+    """The nested search of _can_place knows no list but the one it places, so its
+    dead ends count for that list alone, though the gridded perm it starts from
+    satisfies the left list, which an obstruction joins to the middle one."""
+    obstructions = (
+        GriddedPerm((0, 1), (LEFT, MIDDLE)),
+        GriddedPerm((1, 0), (LEFT, MIDDLE)),
+    )
+    search = GriddedPermSearch(obstructions, (IN_LEFT, IN_MIDDLE))
+    assert not search._can_place(GriddedPerm.point_perm(LEFT), IN_MIDDLE)
+    assert search._dead_ends == {IN_MIDDLE: 1}
+    assert not search._dead_ends_of_joined_lists
+
+
+def test_list_cells_keep_what_they_work_out():
+    """The cells, the cells joined by an obstruction and the number of obstructions
+    are each worked out for a list once: asked again, after the obstructions they are
+    worked out from are gone, they answer as before."""
+    obstructions = (
+        GriddedPerm((0, 1), (LEFT, MIDDLE)),
+        GriddedPerm((1, 0), (LEFT, LEFT)),
+    )
+    left_or_middle = IN_LEFT + IN_MIDDLE
+    search = GriddedPermSearch(obstructions, (IN_LEFT, left_or_middle))
+    list_cells = search._list_cells
+    cells = list_cells.cells(left_or_middle)
+    joined_cells = list_cells.joined_cells(IN_LEFT)
+    assert cells == {LEFT, MIDDLE} and joined_cells == {LEFT, MIDDLE}
+    assert list_cells.obstruction_count(IN_LEFT) == 2
+    search._obstruction_index.through_cell.clear()
+    assert list_cells.cells(left_or_middle) is cells
+    assert list_cells.joined_cells(IN_LEFT) is joined_cells
+    assert list_cells.obstruction_count(IN_LEFT) == 2
+
+
+def test_ordered_by_dead_ends_puts_each_key_before_the_next():
+    """Five lists given in the reverse of their order, each pair next to each other
+    in it told apart by the key at that place alone, the later keys the other way:
+    the list with a dead end of its own, though it is the longest and has no joined
+    dead end; then the one with dead ends of joined lists, though no obstruction uses
+    it; then the one two obstructions use, though it is longer than the next; then
+    the point before 01."""
+    cells = [(column, 0) for column in range(5)]
+    own = (GriddedPerm((0, 1, 2, 3), (cells[0],) * 4),)
+    joined = (GriddedPerm((0, 1, 2), (cells[1],) * 3),)
+    obstructed = (GriddedPerm((0, 1), (cells[2],) * 2),)
+    point = (GriddedPerm.point_perm(cells[3]),)
+    pair = (GriddedPerm((0, 1), (cells[4],) * 2),)
+    expected = (own, joined, obstructed, point, pair)
+    obstructions = (
+        GriddedPerm((0, 1), (cells[2],) * 2),
+        GriddedPerm((1, 0), (cells[2],) * 2),
+    )
+    search = GriddedPermSearch(obstructions, expected)
+    search._dead_ends[own] = 1
+    search._dead_ends_of_joined_lists[joined] = 2
+    assert search._ordered_by_dead_ends(expected[::-1]) == expected
+
+
+def test_find_agrees_with_minimal_gridded_perms_on_the_brute_force_tilings():
+    """The way Tiling.is_empty asked before whether a tiling has a gridded perm, the
+    first of MinimalGriddedPerms, is a second implementation to check the search
+    against."""
+    empty = 0
+    for obstructions, requirements, _, _ in small_tilings(1, 60):
+        minimal = MinimalGriddedPerms(obstructions, requirements)
+        by_minimal_gridded_perms = not any(
+            True for _ in minimal.minimal_gridded_perms(yield_non_minimal=True)
+        )
+        empty += by_minimal_gridded_perms
+        assert (GriddedPermSearch(obstructions, requirements).find() is None) == (
+            by_minimal_gridded_perms
+        )
+    assert 0 < empty < 60
+
+
+def test_count_dead_end_counts_every_joined_list_its_rest_satisfies():
+    """A dead end of the middle list, at a rest that satisfies the lists in the cells
+    either side of it, each joined to it by an obstruction, and one in a cell far
+    off, joined to none: it counts for the first two and not the third."""
+    in_far = (GriddedPerm.point_perm((3, 0)),)
+    lists = (IN_LEFT, IN_MIDDLE, IN_RIGHT, in_far)
+    obstructions = (
+        GriddedPerm((0, 1), (LEFT, MIDDLE)),
+        GriddedPerm((0, 1), (MIDDLE, RIGHT)),
+    )
+    search = GriddedPermSearch(obstructions, lists)
+    assert search.requirements == lists
+    search._count_dead_end(IN_MIDDLE, lists, frozenset({0, 2, 3}))
+    assert search._dead_ends == {IN_MIDDLE: 1}
+    assert search._dead_ends_of_joined_lists == {IN_LEFT: 1, IN_RIGHT: 1}
