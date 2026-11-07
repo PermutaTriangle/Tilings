@@ -1379,3 +1379,86 @@ def test_find_point_lists_joined_to_each_other_beside_lists_that_cannot_all_hold
     ]
     requirements += [(GriddedPerm.point_perm(cell),) for cell in cells]
     assert GriddedPermSearch(obstructions, requirements).find() is None
+
+
+def test_ordered_by_dead_ends_keeps_the_order_of_lists_alike_in_every_key():
+    """Lists alike in every key keep the order they are given in, here neither the
+    order of their own sort nor its reverse."""
+    decreasing = (GriddedPerm((1, 0), (LEFT, LEFT)),)
+    increasing = (GriddedPerm((0, 1), (LEFT, LEFT)),)
+    across = (GriddedPerm((0, 1), (LEFT, MIDDLE)),)
+    alike = (decreasing, increasing, across)
+    assert alike not in (tuple(sorted(alike)), tuple(sorted(alike, reverse=True)))
+    lists = alike + (IN_RIGHT,)
+    search = GriddedPermSearch((), lists)
+    assert search._ordered_by_dead_ends(lists) == (IN_RIGHT,) + alike
+    # Two of them with two dead ends each: those two first, in the order given.
+    search._dead_ends[across] = 2
+    search._dead_ends[decreasing] = 2
+    assert search._ordered_by_dead_ends(lists) == (
+        decreasing,
+        across,
+        IN_RIGHT,
+        increasing,
+    )
+
+
+def test_ordered_by_dead_ends_weighs_an_empty_list_as_nothing():
+    """An empty list has no gridded perm, so no longest one: it goes before a point
+    list when both have as many dead ends, and after a list with more."""
+    pair = (GriddedPerm((0, 1), (LEFT, LEFT)),)
+    lists = (IN_LEFT, pair, ())
+    search = GriddedPermSearch((), lists)
+    assert search._ordered_by_dead_ends(lists) == ((), IN_LEFT, pair)
+    search._dead_ends[pair] = 1
+    assert search._ordered_by_dead_ends(lists) == (pair, (), IN_LEFT)
+
+
+@pytest.mark.parametrize(
+    "dead_ends, order",
+    [
+        ({0: 3, 3: 2}, (0, 3, 1, 2)),
+        ({0: 5, 3: 1}, (0, 3, 1, 2)),
+    ],
+    ids=["more dead ends before a shorter list", "many more before a shorter list"],
+)
+def test_find_places_more_dead_ends_before_a_shorter_list(
+    dead_ends, order, monkeypatch
+):
+    """The lists are 012, 01, 10 and a point, all in one cell: 012 with more dead ends
+    than the point goes before it, though it is longer, and the counts, not only
+    whether a list has any, are compared."""
+    monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", 0)
+    lists = tuple(
+        (GriddedPerm(patt, (LEFT,) * len(patt)),)
+        for patt in ((0, 1, 2), (0, 1), (1, 0), (0,))
+    )
+    search = GriddedPermSearch((), lists)
+    assert search.requirements == lists
+    for index, count in dead_ends.items():
+        search._dead_ends[lists[index]] = count
+    searches = searches_recorded(monkeypatch)
+    assert search._find(lists) is not None
+    first = next(recorded.lists for recorded in searches if recorded.look_ahead)
+    assert first == tuple(lists[index] for index in order)
+
+
+@pytest.mark.parametrize("first_pass_states", [64, 0])
+def test_find_with_a_list_a_gridded_perm_and_an_obstruction_given_twice(
+    first_pass_states, monkeypatch
+):
+    """A Tiling keeps none twice, but GriddedPermSearch is given what it is given: the
+    same list twice, a gridded perm twice in a list, an obstruction twice. They share
+    a count of dead ends, and need no more than one of each."""
+    monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", first_pass_states)
+    increasing = GriddedPerm((0, 1), (MIDDLE, MIDDLE))
+    below_across = GriddedPerm((0, 1), (LEFT, MIDDLE))
+    above_across = GriddedPerm((1, 0), (LEFT, MIDDLE))
+    requirements = (IN_LEFT, IN_LEFT, (increasing, increasing), IN_MIDDLE)
+    obstructions = (below_across, below_across)
+    # The point in the left cell goes above the increasing pair in the middle one.
+    found = GriddedPermSearch(obstructions, requirements).find()
+    assert is_gridded_perm_on(found, obstructions, requirements)
+    # With the other order forbidden too, a point in each of the two cells cannot be.
+    obstructions += (above_across, above_across)
+    assert GriddedPermSearch(obstructions, requirements).find() is None

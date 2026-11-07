@@ -1500,6 +1500,42 @@ def test_is_empty_lists_that_cannot_all_hold_joined_to_hard_groups(
 
 
 @pytest.mark.timeout(1)
+@pytest.mark.parametrize("list_length", [2, 3])
+def test_is_empty_longer_lists_that_cannot_all_hold_joined_to_hard_groups(list_length):
+    """As the joined test with three copies, but the three lists that cannot all hold
+    are 12...L in one of two cells, not a point, so that an order of the rounds that
+    puts point lists first does not pass it alone."""
+    pairs = [[(0, 0), (1, 0)], [(2, 0), (3, 0)], [(4, 0), (5, 0)]]
+    obstructions = tuple(
+        GriddedPerm(patt, cells)
+        for cells in product(*pairs)
+        for patt in permutations(range(3))
+    )
+    requirements = tuple(
+        tuple(
+            GriddedPerm(tuple(range(list_length)), (cell,) * list_length)
+            for cell in pair
+        )
+        for pair in pairs
+    )
+    joins = []
+    for copy in range(3):
+        hard_cells = [(6 + 3 * copy + column, 1 + copy) for column in range(3)]
+        hard_obstructions, hard_requirements = hard_lists_with_a_gridded_perm(
+            5, 6, hard_cells
+        )
+        joins.append(
+            GriddedPerm((0, 2, 1), (pairs[0][0], hard_cells[2], hard_cells[2]))
+        )
+        obstructions += hard_obstructions
+        requirements += hard_requirements
+    tiling = Tiling(obstructions + tuple(joins), requirements)
+    assert len(tiling.requirements) == 12
+    assert all(join in tiling.obstructions for join in joins)
+    assert tiling.is_empty()
+
+
+@pytest.mark.timeout(1)
 def test_is_empty_point_lists_beside_lists_that_cannot_all_hold():
     """Three lists that cannot all hold, each 01 in one of two cells, and 48 point
     cells in their row, each with a point and joined to the three's first cell by 10,
