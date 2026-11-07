@@ -27,7 +27,12 @@ RequirementList = Tuple[GriddedPerm, ...]
 # satisfy; and the index of the list being placed, or at a rest of the list last
 # placed.
 State = Tuple[GriddedPerm, Optional[GriddedPerm], Images, FrozenSet[int], int]
-Placing = Tuple[GriddedPerm, GriddedPerm, Images]
+PlacingKey = Tuple[GriddedPerm, GriddedPerm, Images]
+
+
+def _longest(requirement_list: Iterable[GriddedPerm]) -> int:
+    """Return the length of the list's longest gridded perm, 0 if it has none."""
+    return max(map(len, requirement_list), default=0)
 
 
 class _OverBudget(Exception):
@@ -60,9 +65,9 @@ def _combined(gridded_perms: Iterable[GriddedPerm]) -> GriddedPerm:
     those of a later one, and in each row below them. Its points in the cells of one
     of the gridded perms given are that gridded perm."""
     points = []
-    for number, gridded_perm in enumerate(gridded_perms):
+    for part_index, gridded_perm in enumerate(gridded_perms):
         for index, (value, (column, row)) in enumerate(gridded_perm):
-            points.append(((column, number, index), (row, number, value)))
+            points.append(((column, part_index, index), (row, part_index, value)))
     # From left to right: by column, then by gridded perm, then by index in it.
     points.sort()
     return GriddedPerm(
@@ -155,13 +160,13 @@ class GriddedPermSearch:
       decides its group, and the rounds stop once a group has no gridded perm or
       every group has one, so no group waits for the whole search of another.
     - Each search starts afresh, and places first the lists that have met the most
-      dead ends so far (_by_dead_ends). A dead end of a list is a placing of one of
-      its gridded perms whose next point can go nowhere, or a rest the look-aheads
-      drop for the list. A list that keeps failing late is so placed early, and
-      what it rules out is then ruled out as the points of the other lists are
-      placed. A list meets dead ends only once a search reaches it, so of lists
-      with as many, the one whose longest gridded perm is shortest goes first: it
-      is the quickest to place, or to find that it cannot be placed.
+      dead ends so far (_ordered_by_dead_ends). A dead end of a list is a placing of
+      one of its gridded perms whose next point can go nowhere, or a rest the
+      look-aheads drop for the list. A list that keeps failing late is so placed
+      early, and what it rules out is then ruled out as the points of the other
+      lists are placed. A list meets dead ends only once a search reaches it, so of
+      lists with as many, the one whose longest gridded perm is shortest goes
+      first: it is the quickest to place, or to find that it cannot be placed.
     - The look-aheads drop a rest that no gridded perm on the tiling contains: one
       with a list it does not satisfy that cannot be placed in it alone, or that
       needs, in each of its gridded perms, more points in a cell than the rest has
@@ -190,7 +195,7 @@ class GriddedPermSearch:
                     not all(
                         requirement.is_single_cell() for requirement in requirement_list
                     ),
-                    -max(map(len, requirement_list), default=0),
+                    -_longest(requirement_list),
                 ),
             )
         )
@@ -241,11 +246,12 @@ class GriddedPermSearch:
         return self._find(self.requirements)
 
     def _find(self, lists: Tuple[RequirementList, ...]) -> Optional[GriddedPerm]:
-        """A gridded perm that avoids the obstructions and contains a gridded perm of
-        each of the lists given, or None if there is none: the first pass; if it
-        does not finish, a first pass for each group of the lists; then rounds of
-        searches with the look-aheads, in each a search of each group not yet
-        decided, with twice the budget of the round before."""
+        """Return a gridded perm that avoids the obstructions and contains a gridded
+        perm of each of the lists given, or None if there is none.
+
+        The first pass; if it does not finish, a first pass for each group of the
+        lists; then rounds of searches with the look-aheads, in each a search of
+        each group not yet decided, with twice the budget of the round before."""
         try:
             return self._search(lists, self._FIRST_PASS_STATES, look_ahead=False)
         except _OverBudget:
@@ -253,39 +259,45 @@ class GriddedPermSearch:
         groups = self._groups(lists)
         found_for_group: Dict[int, GriddedPerm] = {}
         # A single group's first pass is the one above.
-        if len(groups) > 1 and not self._search_groups(
-            groups, found_for_group, self._FIRST_PASS_STATES, look_ahead=False
-        ):
-            return None
+        if len(groups) > 1:
+            if not self._search_undecided_groups(
+                groups, found_for_group, self._FIRST_PASS_STATES, look_ahead=False
+            ):
+                return None
         # At least 1, as a budget of 0 would never grow.
         budget = max(self._FIRST_PASS_STATES, 1)
         while len(found_for_group) < len(groups):
             budget *= 2
-            if not self._search_groups(
-                groups, found_for_group, budget, look_ahead=True
+            # A group's searches change the dead ends of its own lists alone, so
+            # each group's order is the same here as just before its search.
+            ordered_groups = [self._ordered_by_dead_ends(group) for group in groups]
+            if not self._search_undecided_groups(
+                ordered_groups, found_for_group, budget, look_ahead=True
             ):
                 return None
         return _combined(
             found_for_group[group_index] for group_index in range(len(groups))
         )
 
-    def _search_groups(
+    def _search_undecided_groups(
         self,
         groups: List[Tuple[RequirementList, ...]],
         found_for_group: Dict[int, GriddedPerm],
         budget: int,
         look_ahead: bool,
     ) -> bool:
-        """Search each group not yet in found_for_group once, within the budget, and
-        put each gridded perm found into it, by its group's index. With the
-        look-aheads, the lists go in the order of _by_dead_ends. Return False if a
-        search finds that its group has no gridded perm."""
+        """Search once each group not yet in found_for_group, and return False if one
+        has no gridded perm, and True otherwise.
+
+        Each search places the group's lists in their order, within the budget,
+        with the look-aheads if look_ahead, and puts the gridded perm it finds into
+        found_for_group, by its group's index. A group with no gridded perm decides
+        that the lists have none, so the searches stop there."""
         for group_index, group in enumerate(groups):
             if group_index in found_for_group:
                 continue
-            lists = self._by_dead_ends(group) if look_ahead else group
             try:
-                gridded_perm = self._search(lists, budget, look_ahead)
+                gridded_perm = self._search(group, budget, look_ahead)
             except _OverBudget:
                 continue
             if gridded_perm is None:
@@ -293,7 +305,7 @@ class GriddedPermSearch:
             found_for_group[group_index] = gridded_perm
         return True
 
-    def _by_dead_ends(
+    def _ordered_by_dead_ends(
         self, lists: Tuple[RequirementList, ...]
     ) -> Tuple[RequirementList, ...]:
         """The lists with the most dead ends so far first, and of those with as
@@ -304,7 +316,7 @@ class GriddedPermSearch:
                 lists,
                 key=lambda requirement_list: (
                     -self._dead_ends[requirement_list],
-                    max(map(len, requirement_list), default=0),
+                    _longest(requirement_list),
                 ),
             )
         )
@@ -331,7 +343,7 @@ class GriddedPermSearch:
         if budget is not None:
             self._states_left = budget
         rests_made: Set[GriddedPerm] = set()
-        placings_made: Set[Placing] = set()
+        placings_made: Set[PlacingKey] = set()
         stack: List[Iterator[State]] = [iter(((start, None, (), frozenset(), -1),))]
         while stack:
             # The next state of the iterator on top, or the iterator is done. This
@@ -375,7 +387,7 @@ class GriddedPermSearch:
         state: State,
         lists: Tuple[RequirementList, ...],
         rests_made: Set[GriddedPerm],
-        placings_made: Set[Placing],
+        placings_made: Set[PlacingKey],
     ) -> Iterator[State]:
         """The children of a placing that were not made before: a rest when its
         requirement is placed in full, and otherwise a placing. A placing with no
@@ -548,9 +560,7 @@ class GriddedPermSearch:
             groups[union_find.find(list_index)].append(requirement_list)
         return sorted(
             (tuple(group) for group in groups.values()),
-            key=lambda group: sum(
-                max(map(len, requirement_list), default=0) for requirement_list in group
-            ),
+            key=lambda group: sum(map(_longest, group)),
         )
 
     @staticmethod

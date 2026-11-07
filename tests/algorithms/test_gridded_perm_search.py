@@ -1227,7 +1227,7 @@ def test_groups_are_ordered_by_the_longest_gridded_perm_of_each_list():
     ]
 
 
-def test_by_dead_ends_weighs_a_list_by_its_longest_gridded_perm():
+def test_ordered_by_dead_ends_weighs_a_list_by_its_longest_gridded_perm():
     """Of lists with as many dead ends, a point or 0123 in the left cell, whose
     longest gridded perm has four points, goes after 012 in the middle or the right
     cell, whose longest has three, though it has a shorter gridded perm, and fewer
@@ -1242,7 +1242,10 @@ def test_by_dead_ends_weighs_a_list_by_its_longest_gridded_perm():
     )
     lists = (point_or_long, three_in_middle_or_right)
     search = GriddedPermSearch((), lists)
-    assert search._by_dead_ends(lists) == (three_in_middle_or_right, point_or_long)
+    assert search._ordered_by_dead_ends(lists) == (
+        three_in_middle_or_right,
+        point_or_long,
+    )
 
 
 def test_each_group_has_a_first_pass_in_the_search_order(monkeypatch):
