@@ -1624,7 +1624,7 @@ def test_is_empty_point_lists_joined_to_each_list_that_cannot_all_hold():
 
 
 @pytest.mark.timeout(1)
-def test_search_point_lists_with_more_obstructions_than_lists_that_cannot_all_hold():
+def test_gridded_perm_search_point_lists_padded_beside_lists_that_cannot_all_hold():
     """As test_is_empty_point_lists_joined_to_each_list_that_cannot_all_hold with 24
     point lists, each with 80 padding cells above it: more obstructions use a point
     cell than a cell of the three, but none that the search can make. Given to the

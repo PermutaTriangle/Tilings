@@ -1325,6 +1325,27 @@ def test_list_cells():
     assert list_cells.degree(left_or_middle) == 3
 
 
+def test_each_round_orders_the_lists_by_the_dead_ends_so_far(monkeypatch):
+    """With a first pass of four states, the rounds of three lists across two cells
+    each that cannot all hold: each round's search places the lists in the order of
+    the dead ends that the searches before it left, which change from round to
+    round."""
+    monkeypatch.setattr(GriddedPermSearch, "_FIRST_PASS_STATES", 4)
+    obstructions, requirements = three_lists_across_two_cells_that_cannot_all_hold(6)
+    orders = []
+    original = GriddedPermSearch._search
+
+    def search_checked(self, lists, budget, look_ahead, start=None):
+        if look_ahead and start is None:
+            orders.append(lists)
+            assert lists == self._ordered_by_dead_ends(lists)
+        return original(self, lists, budget, look_ahead, start)
+
+    monkeypatch.setattr(GriddedPermSearch, "_search", search_checked)
+    assert GriddedPermSearch(obstructions, requirements).find() is None
+    assert len(set(orders)) > 1
+
+
 def test_ordered_by_dead_ends_breaks_ties_by_each_key_in_turn():
     """Five lists given in reverse: the one with a dead end of its own first, before
     one with more dead ends of joined lists; then the one an obstruction uses; then
