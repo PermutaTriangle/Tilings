@@ -292,6 +292,24 @@ def test_from_tiling():
     assert sympy.simplify(spec.get_genf() - sympy.sympify("(1+x)/(1-x)")) == 0
 
 
+@pytest.mark.timeout(20)
+def test_from_tiling_with_subclass_verification():
+    """A search from a 2x1 tiling with subclass verification in its pack. Its gridded
+    perms are a perm avoiding 012 below and to the left of one avoiding 021, so they
+    are counted by the Catalan numbers, shifted by one."""
+    t = Tiling(
+        obstructions=(
+            GriddedPerm.single_cell(Perm((0, 1, 2)), (0, 0)),
+            GriddedPerm.single_cell(Perm((0, 2, 1)), (1, 0)),
+            GriddedPerm((1, 0), ((0, 0), (1, 0))),
+        )
+    )
+    pack = point_placements.add_verification(strat.SubclassVerificationFactory())
+    spec = TileScope(t, pack).auto_search()
+    catalan_numbers = [1, 1, 2, 5, 14, 42, 132, 429, 1430]
+    assert [spec.count_objects_of_size(n) for n in range(8)] == catalan_numbers[1:]
+
+
 @collect_before
 @pytest.mark.timeout(5)
 def test_expansion():

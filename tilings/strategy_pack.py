@@ -64,13 +64,30 @@ class TileScopePack(StrategyPack):
         )
 
     def setup_subclass_verification(self, start_tiling: "Tiling") -> "TileScopePack":
-        """
-        If the subclass verification strategy already has a list of perms to check,
-        we leave it alone. Otherwise we:
-         - compute the cell basis for each cell
-         - consider the permutations avoiding some cell basis
-         - add to the list of perms to check any perm that avoids some cell basis and
-           has length strictly smaller than the maximum length cell basis element.
+        """Return the pack with its subclass verification set up for a start tiling.
+
+        A subclass verification factory that has perms to check keeps them. One that
+        has none gets every nonempty perm that avoids the basis of some cell of the
+        start tiling and is shorter than the longest perm in the cells' bases.
+
+        Examples:
+            >>> from tilings import GriddedPerm, Tiling
+            >>> from tilings.strategies import SubclassVerificationFactory
+            >>> start_tiling = Tiling(
+            ...     obstructions=(
+            ...         GriddedPerm.single_cell(Perm((0, 1, 2)), (0, 0)),
+            ...         GriddedPerm.single_cell(Perm((0, 2, 1)), (1, 0)),
+            ...     )
+            ... )
+            >>> factory = SubclassVerificationFactory()
+            >>> pack = TileScopePack.point_placements().add_verification(factory)
+            >>> pack = pack.setup_subclass_verification(start_tiling)
+            >>> sorted(pack.ver_strats[-1].perms_to_check)
+            [Perm((0,)), Perm((0, 1)), Perm((1, 0))]
+            >>> factory = SubclassVerificationFactory([Perm((0, 1))])
+            >>> pack = TileScopePack.point_placements().add_verification(factory)
+            >>> pack.setup_subclass_verification(start_tiling).ver_strats[-1]
+            SubclassVerificationFactory(perms_to_check={Perm((0, 1))})
         """
 
         def replace_list(
@@ -97,7 +114,7 @@ class TileScopePack(StrategyPack):
                                 continue
                             if any(perm.avoids(*basis) for basis in cell_bases):
                                 new_perms_to_check.add(perm)
-                        res.append(strategy.change_perms(new_perms_to_check))
+                        strategy = strategy.change_perms(new_perms_to_check)
                         if start_tiling.dimensions == (1, 1):
                             logger.info(
                                 "SubclassVerification set up to check the proper "
@@ -112,8 +129,7 @@ class TileScopePack(StrategyPack):
                             "Av(%s)",
                             "), Av(".join(map(str, strategy.perms_to_check)),
                         )
-                else:
-                    res.append(strategy)
+                res.append(strategy)
             return res
 
         return self.__class__(
