@@ -12,9 +12,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Python 3.15 is the primary version for linting, packaging, and cross-platform
   tests, with compatibility tests for CPython 3.11 through 3.14.
 - Black targets Python 3.11, the minimum supported version.
+- `Tiling.is_empty` gives the same answers, and is faster on tilings with many
+  requirements: it looks for one gridded permutation on the tiling with
+  `GriddedPermSearch`, where it built minimal gridded permutations, the
+  shortest first, until it had one.
 
 ### Added
 - Required CI coverage for stable PyPy 3.12 alongside PyPy 3.11.
+- `GriddedPermSearch`, in `tilings.algorithms`, whose `find` returns a gridded
+  permutation, not necessarily minimal, that avoids the obstructions given and
+  contains a gridded permutation of each requirement list given, or None if there
+  is none.
 
 ### Fixed
 - Install the dependencies of PyPy's bundled cffi and HPy packages in tox so
