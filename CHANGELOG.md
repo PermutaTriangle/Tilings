@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A `Tiling` no longer drops two requirement lists that imply each other, such
   as `[12]` and `[12, 123]`: `GriddedPermReduction.remove_redundant` tests each
   list against the lists it kept before it, so one of the two stays.
+- `TileScope` sets up subclass verification from a start tiling that is not
+  1x1: `TileScopePack.setup_subclass_verification` no longer fails an assertion
+  there, and keeps a `SubclassVerificationFactory` whose perms to check are
+  given.
 
 ## [4.1.0] - 2026-01-15
 ### Changed

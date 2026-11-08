@@ -5,6 +5,7 @@ import pytest
 
 from permuta import Perm
 from permuta.misc import DIRS
+from tilings import GriddedPerm, Tiling
 from tilings import strategies as strat
 from tilings.strategies import AssumptionAndPointJumpingFactory, SlidingFactory
 from tilings.strategy_pack import TileScopePack
@@ -139,3 +140,50 @@ def test_inject_basis():
     assert isinstance(fixed_pack, TileScopePack)
     assert isinstance(fixed_pack.ver_strats[2], strat.OneByOneVerificationStrategy)
     assert fixed_pack.ver_strats[2].basis == (Perm((0, 1, 2, 3)),)
+
+
+AV_012_BESIDE_AV_021 = Tiling(
+    obstructions=(
+        GriddedPerm.single_cell(Perm((0, 1, 2)), (0, 0)),
+        GriddedPerm.single_cell(Perm((0, 2, 1)), (1, 0)),
+    )
+)
+
+
+def subclass_verification_factories(pack):
+    """Return the pack's subclass verification factories, in order."""
+    return [
+        strategy
+        for strategy in pack.ver_strats
+        if isinstance(strategy, strat.SubclassVerificationFactory)
+    ]
+
+
+@pytest.mark.parametrize(
+    "start_tiling",
+    [Tiling.from_string("012"), AV_012_BESIDE_AV_021],
+    ids=["1x1", "2x1"],
+)
+def test_setup_subclass_verification_sets_up_the_perms(start_tiling):
+    """A factory with no perms to check gets the nonempty perms shorter than 3 that
+    avoid a cell's basis, here all of them, whether the start tiling is 1x1 or 2x1."""
+    pack = TileScopePack.point_placements().add_verification(
+        strat.SubclassVerificationFactory()
+    )
+    (factory,) = subclass_verification_factories(
+        pack.setup_subclass_verification(start_tiling)
+    )
+    assert factory.perms_to_check == {Perm((0,)), Perm((0, 1)), Perm((1, 0))}
+
+
+@pytest.mark.parametrize(
+    "start_tiling",
+    [Tiling.from_string("012"), AV_012_BESIDE_AV_021],
+    ids=["1x1", "2x1"],
+)
+def test_setup_subclass_verification_keeps_given_perms(start_tiling):
+    """A factory whose perms to check are given stays in the pack as it is."""
+    factory = strat.SubclassVerificationFactory([Perm((0, 1))])
+    pack = TileScopePack.point_placements().add_verification(factory)
+    new_pack = pack.setup_subclass_verification(start_tiling)
+    assert subclass_verification_factories(new_pack) == [factory]
