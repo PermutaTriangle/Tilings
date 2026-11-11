@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ## [Unreleased]
+### Changed
+- The `NotImplementedError` of `FusionConstructor.get_equation` for a fusion whose
+  two sides are given the same value, such as one with an untracked parent, says
+  so, and that adding to the parent an assumption tracking one side of the region
+  first makes the fusion one-sided.
 
 ### Changed
 - Minimum Python version is now 3.11; CPython and PyPy 3.10 are no longer supported.
