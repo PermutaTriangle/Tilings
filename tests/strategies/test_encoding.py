@@ -25,6 +25,7 @@ from tilings.strategies import (
     FusableRowAndColumnPlacementFactory,
     FusionFactory,
     InsertionEncodingVerificationStrategy,
+    KnuthSlideFactory,
     LocallyFactorableVerificationStrategy,
     LocalVerificationStrategy,
     MonotoneSlidingFactory,
@@ -66,6 +67,7 @@ from tilings.strategies.factor import (
     FactorWithMonotoneInterleavingStrategy,
 )
 from tilings.strategies.fusion import ComponentFusionStrategy, FusionStrategy
+from tilings.strategies.knuth_slide import KnuthSlideStrategy
 from tilings.strategies.monotone_sliding import GeneralizedSlidingStrategy
 from tilings.strategies.obstruction_inferral import ObstructionInferralStrategy
 from tilings.strategies.point_jumping import (
@@ -499,6 +501,12 @@ strategy_objects = (
     + indices_and_row(AssumptionJumpingStrategy)
     + indices_and_row(AssumptionAndPointJumpingStrategy)
     + [MonotoneSlidingFactory(), GeneralizedSlidingStrategy(1)]
+    + [
+        KnuthSlideFactory(),
+        KnuthSlideFactory(max_width=2, one_line_only=True, slide_rows=False),
+        KnuthSlideStrategy(1, 2),
+        KnuthSlideStrategy(0, 3, of_rows=True),
+    ]
     + indices_and_row(PointJumpingStrategy)
     + [TargetedCellInsertionFactory()]
     + ignoreparent(SubobstructionInsertionFactory)
