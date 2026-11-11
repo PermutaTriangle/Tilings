@@ -36,6 +36,7 @@ from tilings.strategies import (
     PatternPlacementFactory,
     PointingStrategy,
     RearrangeAssumptionFactory,
+    ReductionFactory,
     RelaxAssumptionFactory,
     RequirementCorroborationFactory,
     RequirementExtensionFactory,
@@ -79,6 +80,7 @@ from tilings.strategies.pointing import (
     RequirementPointingStrategy,
 )
 from tilings.strategies.rearrange_assumption import RearrangeAssumptionStrategy
+from tilings.strategies.reduction import ReductionStrategy
 from tilings.strategies.requirement_insertion import RequirementInsertionStrategy
 from tilings.strategies.requirement_placement import RequirementPlacementStrategy
 from tilings.strategies.sliding import SlidingStrategy
@@ -470,6 +472,17 @@ strategy_objects = (
         CellReductionStrategy((2, 1), True, False),
         CellReductionStrategy((3, 3), False, True),
         CellReductionStrategy((4, 1), False, False),
+    ]
+    + [
+        ReductionFactory(tracked, region, max_cells)
+        for tracked in (True, False)
+        for region in ("cell", "row", "column", "line", "any")
+        for max_cells in (None, 3)
+    ]
+    + [
+        ReductionStrategy(((0, 0), (1, 0)), True, True),
+        ReductionStrategy(((2, 1),), False, False),
+        ReductionStrategy(((0, 1), (2, 0), (3, 3)), False, True),
     ]
     + [
         DeflationStrategy((0, 0), True, True),
