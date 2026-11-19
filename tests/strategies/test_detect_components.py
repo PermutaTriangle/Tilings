@@ -38,3 +38,12 @@ def test_removed_point_and_surviving_markers(tracked_cell, child_markers):
     assert eq == sympy.Eq(
         tiling.get_function(labels), u * sympy.Function("F_1")(x, *child_markers)
     )
+
+
+def test_no_component_to_remove():
+    tiling = Tiling.from_string("210").add_assumption(
+        TrackingAssumption.from_cells([(0, 0)])
+    )
+    rule = DetectComponentsStrategy()(tiling)
+    assert rule.children == (tiling,)
+    assert rule.get_equation(lambda t: t.get_function(lambda _: 0)) == sympy.true
