@@ -5,7 +5,18 @@ from operator import mul
 from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Tuple, cast
 
 import requests
-from sympy import Eq, Expr, Function, Symbol, collect, degree, solve, sympify, var
+from sympy import (
+    Dummy,
+    Eq,
+    Expr,
+    Function,
+    Symbol,
+    collect,
+    degree,
+    solve,
+    sympify,
+    var,
+)
 
 from comb_spec_searcher import (
     AtomStrategy,
@@ -140,28 +151,25 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
         request = requests.get(uri, timeout=10)
         if request.status_code == 404:
             return super().get_equation(get_function, funcs)
-        data = request.json()
-        min_poly = data["min_poly_maple"]
+        min_poly = request.json()["min_poly_maple"]
         if min_poly is None:
             return Eq(
                 get_function(self.comb_class),
                 self.tiling_to_symbol_eq(self.comb_class),
             )
         min_poly = min_poly.replace("^", "**").replace("F(x)", "F")
-        lhs, _ = min_poly.split("=")
-        # We now need to worry about the requirements. The min poly we got is
-        # for the class with requirements.
-        eq = Eq(self.without_req_genf(self.comb_class), get_function(self.comb_class))
-        subs = solve([eq], var("F"), dict=True)[0]
+        relation = sympify(min_poly.split("=", 1)[0])
+        required = Dummy("required")
+        eq = Eq(self.without_req_genf(self.comb_class), required)
+        relation = relation.subs(solve(eq, var("F"), dict=True)[0])
         if self.comb_class.assumptions:
-            subs["x"] = var("x") * var("k_0")
-        res, _ = sympify(lhs).subs(subs, simultaneous=True).as_numer_denom()
+            relation = relation.subs(x, x * var("k_0"))
+        lhs = get_function(self.comb_class)
+        res = relation.subs(required, lhs).as_numer_denom()[0]
         # Pick the unique factor that contains F
         for factor in res.as_ordered_factors():
             if factor.atoms(Function):
                 res = factor
-        # currently we have 0 = rhs,
-        lhs = get_function(self.comb_class)
         if degree(res, lhs) == 1:
             # solve for rational gf
             rhs = solve([Eq(res, 0)], lhs, dict=True)[0][lhs]
@@ -204,28 +212,13 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
         )
 
     def without_req_genf(self, tiling: Tiling):
-        """
-        Find the equation for the tiling in terms of F, the generating
-        function where the reqs are reomoved from tiling.
-        """
-        if tiling == self.no_req_tiling:
+        """Use F for the unmarked series of the class without requirements."""
+        base = self.no_req_tiling
+        if tiling == base:
             return var("F")
-        if tiling.requirements:
-            reqs = tiling.requirements[0]
-            avoided = tiling.__class__(
-                tiling.obstructions + reqs,
-                tiling.requirements[1:],
-                tiling.assumptions,
-            )
-            without = tiling.__class__(
-                tiling.obstructions,
-                tiling.requirements[1:],
-                tiling.assumptions,
-            )
-            avgf = self.without_req_genf(avoided)
-            wogf = self.without_req_genf(without)
-            return wogf - avgf
-        return LocalEnumeration(tiling).get_genf()
+        return LocalEnumeration(tiling.remove_assumptions()).get_genf(
+            funcs={base.remove_assumptions(): var("F")}
+        )
 
 
 class OneByOneVerificationStrategy(BasisAwareVerificationStrategy):
