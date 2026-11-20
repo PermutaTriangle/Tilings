@@ -10,7 +10,6 @@ from sympy import (
     Eq,
     Expr,
     Function,
-    Symbol,
     collect,
     degree,
     solve,
@@ -197,13 +196,13 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
             )
             return self.tiling_to_symbol_eq(without) - self.tiling_to_symbol_eq(avoided)
         params = self.comb_class.extra_parameters
-        x_var = "x"
+        x_var = x
         if params:
             assert len(params) == 1
-            x_var += "*" + params[0]
+            x_var *= var(params[0])
         basis = [ob.patt for ob in tiling.obstructions]
         one_based_basis = ",".join(("".join(str(i + 1) for i in b) for b in basis))
-        return Symbol(f"F_Av({one_based_basis})({x_var})")
+        return Function(f"F_Av({one_based_basis})")(x_var)
 
     @property
     def no_req_tiling(self) -> Tiling:

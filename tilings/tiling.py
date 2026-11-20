@@ -1,5 +1,6 @@
 # pylint: disable=too-many-lines
 import json
+import re
 from array import array
 from collections import Counter, defaultdict
 from functools import reduce
@@ -505,6 +506,17 @@ class Tiling(CombinatorialClass):
             simplify=False,
             sorted_input=True,
         )
+
+    @classmethod
+    def from_genf_name(cls, name: str) -> Optional["Tiling"]:
+        """Resolve a named one-cell avoidance class in a generating function."""
+        match = re.fullmatch(r"F_Av\(([1-9]+(?:,[1-9]+)*)\)", name)
+        if not match:
+            return None
+        patterns = match[1].split(",")
+        if any(sorted(p) != list("123456789"[: len(p)]) for p in patterns):
+            return None
+        return cls.from_string("_".join(patterns))
 
     @classmethod
     def from_string(cls, string: str) -> "Tiling":

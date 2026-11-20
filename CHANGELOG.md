@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - Component removal equations now multiply parent markers that share a child
   parameter and preserve swaps between distinct parameters.
+- Named one-cell generating functions retain their size argument for substitution and equation checks.
 - One-cell verification equations now apply the size marker to the classes
   subtracted when enforcing requirements.
 - Install the dependencies of PyPy's bundled cffi and HPy packages in tox so

@@ -912,6 +912,22 @@ class TestElementaryVerificationStrategy(CommonTest):
 
 
 class TestOneByOneVerificationStrategy(CommonTest):
+    def test_named_class_equation(self, strategy, monkeypatch):
+        cell = (0, 0)
+        tiling = Tiling.from_string("0123_0213")
+        marked = tiling.add_assumption(TrackingAssumption.from_cells([cell]))
+        monkeypatch.setattr(
+            "requests.get",
+            lambda *a, **kw: Mock(
+                status_code=200, json=lambda: {"min_poly_maple": None}
+            ),
+        )
+        eq = strategy(marked).get_equation(lambda t: t.get_function(lambda _: 0))
+        assert eq.rhs.args == (sympy.Symbol("x") * sympy.Symbol("k_0"),)
+        assert Tiling.from_genf_name(eq.rhs.func.__name__) == tiling
+        assert Tiling.from_genf_name("F_Av(112)") is None
+        assert Tiling.from_genf_name("NOTIMPLEMENTED") is None
+
     @pytest.mark.parametrize(
         ("basis", "required"),
         [("210", "10"), ("0132_0312_0321", "01"), ("0231_1230_2130", "120")],
