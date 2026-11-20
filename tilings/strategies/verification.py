@@ -5,17 +5,8 @@ from operator import mul
 from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Tuple, cast
 
 import requests
-from sympy import (
-    Dummy,
-    Eq,
-    Expr,
-    Function,
-    collect,
-    degree,
-    solve,
-    sympify,
-    var,
-)
+from sympy import Dummy, Eq, Expr, Function, collect, degree, solve, sympify, var
+from sympy.core.function import UndefinedFunction
 
 from comb_spec_searcher import (
     AtomStrategy,
@@ -202,7 +193,7 @@ class OneByOneVerificationRule(VerificationRule[Tiling, GriddedPerm]):
             x_var *= var(params[0])
         basis = [ob.patt for ob in tiling.obstructions]
         one_based_basis = ",".join(("".join(str(i + 1) for i in b) for b in basis))
-        return Function(f"F_Av({one_based_basis})")(x_var)
+        return UndefinedFunction(f"F_Av({one_based_basis})")(x_var)
 
     @property
     def no_req_tiling(self) -> Tiling:
