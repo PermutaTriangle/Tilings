@@ -1,4 +1,5 @@
 import abc
+from unittest.mock import Mock
 
 import pytest
 import sympy
@@ -911,6 +912,63 @@ class TestElementaryVerificationStrategy(CommonTest):
 
 
 class TestOneByOneVerificationStrategy(CommonTest):
+    def test_named_class_equation(self, strategy, monkeypatch):
+        cell = (0, 0)
+        tiling = Tiling.from_string("0123_0213")
+        marked = tiling.add_assumption(TrackingAssumption.from_cells([cell]))
+        monkeypatch.setattr(
+            "requests.get",
+            lambda *a, **kw: Mock(
+                status_code=200, json=lambda: {"min_poly_maple": None}
+            ),
+        )
+        eq = strategy(marked).get_equation(lambda t: t.get_function(lambda _: 0))
+        assert eq.rhs.args == (sympy.Symbol("x") * sympy.Symbol("k_0"),)
+        assert Tiling.from_genf_name(eq.rhs.func.__name__) == tiling
+        assert Tiling.from_genf_name("F_Av(112)") is None
+        assert Tiling.from_genf_name("NOTIMPLEMENTED") is None
+
+    @pytest.mark.parametrize(
+        ("basis", "required"),
+        [("210", "10"), ("0132_0312_0321", "01"), ("0231_1230_2130", "120")],
+    )
+    @pytest.mark.parametrize("weight", [1, 2, 5])
+    def test_marked_requirement_equation(
+        self, strategy, monkeypatch, basis, required, weight
+    ):
+        cell = (0, 0)
+        tiling = Tiling.from_string(basis).add_single_cell_requirement(
+            Perm.from_string(required), cell
+        )
+        tiling = tiling.add_assumption(TrackingAssumption.from_cells([cell]))
+
+        # PermPAL supplies ordinary generating functions and minimal polynomials.
+        responses = {
+            "01": {"generating_function_sympy": "1/(1-x)"},
+            "012": {"min_poly_maple": "x*F(x)^2-F(x)+1 = 0"},
+            "0132_0231_0321": {"min_poly_maple": "x*(x-2)*F(x)^2+(x+1)*F(x)-1 = 0"},
+            "021": {"generating_function_sympy": "(1-sqrt(1-4*x))/(2*x)"},
+            "0231_0321_3021": {
+                "min_poly_maple": "(x^2+4*x-1)*F(x)^2+(2*x^2-13*x+3)*F(x)+x^2+8*x-2 = 0"
+            },
+        }
+
+        def permpal_response(url, **kwargs):
+            data = responses[url.rsplit("/", 1)[-1]]
+            return Mock(status_code=200, json=lambda: data)
+
+        monkeypatch.setattr("requests.get", permpal_response)
+        eq = strategy(tiling).get_equation(lambda t: t.get_function(lambda _: 0))
+
+        x, u = sympy.symbols("x k_0")
+        # Every point is marked, so each size-n object contributes (weight*x)**n.
+        counted = sum(
+            sum(1 for _ in tiling.gridded_perms_of_length(n)) * (weight * x) ** n
+            for n in range(7)
+        )
+        residual = (eq.lhs - eq.rhs).subs(eq.lhs, counted).subs(u, weight)
+        assert residual.series(x, 0, 7).removeO() == 0
+
     @pytest.fixture
     def strategy(self):
         return OneByOneVerificationStrategy()

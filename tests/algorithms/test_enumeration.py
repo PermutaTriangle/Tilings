@@ -6,6 +6,7 @@ import sympy
 from comb_spec_searcher.utils import taylor_expand
 from tilings import GriddedPerm, Tiling
 from tilings.algorithms import LocalEnumeration, MonotoneTreeEnumeration
+from tilings.assumptions import SumComponentAssumption, TrackingAssumption
 from tilings.exception import InvalidOperationError
 
 
@@ -424,3 +425,39 @@ class TestMonotoneTreeEnumeration(CommonTest):
         expected_enum = [0, 1, 5, 17, 50, 138, 370, 979, 2575, 6755, 17700]
         assert enum.verified()
         assert taylor_expand(enum.get_genf()) == expected_enum
+
+    @pytest.mark.parametrize("mark_bottom_row", [False, True])
+    def test_marked_corner(self, mark_bottom_row):
+        left = TrackingAssumption.from_cells([(0, 0)])
+        bottom = TrackingAssumption.from_cells([(0, 0), (1, 0)])
+        tiling = Tiling(
+            obstructions=[
+                GriddedPerm.single_cell((0,), (0, 1)),
+                GriddedPerm.single_cell((1, 0), (0, 0)),
+                GriddedPerm.single_cell((1, 0), (1, 0)),
+                GriddedPerm.single_cell((1, 0), (1, 1)),
+            ],
+            requirements=[[GriddedPerm.single_cell((0,), (0, 0))]],
+            assumptions=[left, bottom] if mark_bottom_row else [left],
+        )
+        x = sympy.Symbol("x")
+        k = sympy.Symbol(tiling.get_assumption_parameter(left))
+        b = (
+            sympy.Symbol(tiling.get_assumption_parameter(bottom))
+            if mark_bottom_row
+            else 1
+        )
+        expected = 1 / ((1 - x * k * b) * (1 - x) - x * b) - 1 / (1 - x - x * b)
+        assert sympy.cancel(MonotoneTreeEnumeration(tiling).get_genf() - expected) == 0
+
+    @pytest.mark.parametrize(
+        "assumption",
+        [
+            SumComponentAssumption.from_cells([(0, 0)]),
+            TrackingAssumption([GriddedPerm.single_cell((1, 0), (0, 0))]),
+        ],
+    )
+    def test_unsupported_markings(self, enum_verified, assumption):
+        tiling = enum_verified.tiling.add_assumption(assumption)
+        with pytest.raises(NotImplementedError):
+            MonotoneTreeEnumeration(tiling).get_genf()
