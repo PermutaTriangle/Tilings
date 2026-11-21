@@ -3,7 +3,7 @@ from functools import reduce
 from operator import mul
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
-from sympy import Eq, Function, var
+from sympy import Dummy, Eq, Function, var
 
 from comb_spec_searcher import Constructor, Strategy
 from comb_spec_searcher.exception import StrategyDoesNotApply
@@ -49,9 +49,7 @@ class CountComponent(Constructor[Tiling, GriddedPerm]):
         }
 
     def get_equation(self, lhs_func: Function, rhs_funcs: Tuple[Function, ...]) -> Eq:
-        rhs_func = rhs_funcs[0].subs(
-            {b: a for a, b in self.extra_parameters.items()}, simultaneously=True
-        )
+        rhs_func = self.disjoint_constructor.get_equation(Dummy(), rhs_funcs).rhs
         return Eq(
             lhs_func,
             rhs_func

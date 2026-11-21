@@ -88,6 +88,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `tilescope spec` says when it cannot compute the generating function of the
   specification it found, as for one with a rotational cut or with catalytic
   variables, rather than ending with an error.
+- Component removal equations now multiply parent markers that share a child
+  parameter and preserve swaps between distinct parameters.
+- Named one-cell generating functions retain their size argument for substitution and equation checks.
+- One-cell verification equations now apply the size marker to the classes
+  subtracted when enforcing requirements.
 - Install the dependencies of PyPy's bundled cffi and HPy packages in tox so
   dependency checks pass.
 - A `Tiling` no longer drops two requirement lists that imply each other, such
