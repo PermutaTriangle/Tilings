@@ -78,9 +78,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   side of a line between two columns or two rows) or `"any"`, the last two with
   `max_cells`. The condition, the plan and the children are in
   `tilings.algorithms.reduction`.
-- `GriddedPermSearch`, whose `find` returns a gridded permutation that avoids
-  the obstructions given and contains a gridded permutation of each requirement
-  list given, or None if there is none.
+- `GriddedPermSearch`, in `tilings.algorithms`, whose `find` returns a gridded
+  permutation, not necessarily minimal, that avoids the obstructions given and
+  contains a gridded permutation of each requirement list given, or None if there
+  is none.
 
 ### Fixed
 
