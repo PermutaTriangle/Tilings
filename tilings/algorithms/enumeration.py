@@ -9,6 +9,7 @@ from sympy import Expr, Symbol, diff, simplify, sympify, var
 from comb_spec_searcher.utils import taylor_expand
 from permuta import Av
 from permuta.permutils.symmetry import lex_min
+from tilings.assumptions import ComponentAssumption
 from tilings.exception import InvalidOperationError
 from tilings.griddedperm import GriddedPerm
 from tilings.misc import is_tree
@@ -206,10 +207,19 @@ class MonotoneTreeEnumeration(Enumeration):
         # pylint: disable=too-many-locals
         if not self.verified():
             raise InvalidOperationError("The tiling is not verified")
-        if self.tiling.extra_parameters:
-            raise NotImplementedError(
-                "Not implemented monotone verified with extra parameters."
-            )
+        cell_weights = {
+            self._cell_variable(cell): 1 for cell in self.tiling.active_cells
+        }
+        for assumption in self.tiling.assumptions:
+            if isinstance(assumption, ComponentAssumption) or any(
+                len(gp) != 1 for gp in assumption.gps
+            ):
+                raise NotImplementedError(
+                    "Monotone trees only support marking points in cells"
+                )
+            marker = Symbol(self.tiling.get_assumption_parameter(assumption))
+            for cell in assumption.get_cells():
+                cell_weights[self._cell_variable(cell)] *= marker
         try:
             start = next(
                 c
@@ -241,13 +251,11 @@ class MonotoneTreeEnumeration(Enumeration):
             else:
                 F = self._interleave_fixed_lengths(F_tracked, cell, minlen, maxlen)
             visited.add(cell)
-        F = simplify(
-            F.subs({v: 1 for v in F.free_symbols if v != x})
-        )  # type: ignore[operator]
+        F = simplify(F.subs(cell_weights))
         # A simple test to warn us if the code is wrong
         if __debug__:
             lhs = taylor_expand(F, n=6)
-            rhs = [len(list(self.tiling.objects_of_size(i))) for i in range(7)]
+            rhs = self.tiling.initial_conditions(6)
             assert lhs == rhs, f"Bad genf\n{lhs}\n{rhs}"
         return F
 

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Required CI coverage for stable PyPy 3.12 alongside PyPy 3.11.
 
 ### Fixed
+- Monotone-tree generating functions retain the markers for points in tracked cells.
 - Component removal equations now multiply parent markers that share a child
   parameter and preserve swaps between distinct parameters.
 - Named one-cell generating functions retain their size argument for substitution and equation checks.
